@@ -1,119 +1,79 @@
-# DreamUtopia Clone — Cursor 临摹站（不是 pikbo）
+# DreamUtopia Clone｜AI 图像与视频生成复刻项目
 
-这是 **Cursor 做的** [dreamutopia.net](https://dreamutopia.net) 1:1 临摹。  
-**不是** 主站 pikbo，**也不是** OpenCode 做的 Magic Remover。
+基于 Cloudflare Pages、D1、KV 和 R2 的生成工具站。前端使用 HTML、CSS 与原生 JavaScript，后端通过 Pages Functions 调用 KIE API，提供图生视频、文生视频、首尾帧生成及图片生成流程。
 
-## 你同时在做的三个网站
+这是参考 [DreamUtopia](https://dreamutopia.net) 的学习与复刻项目。产品代码、部署资源与 [Pikbo](https://github.com/CharlesHarry7/pikbo)、[MagicRemover Clone](https://github.com/CharlesHarry7/magicremover-clone) 各自独立。
 
-| # | 谁做的 | 仓库 | 抄谁 / 产品 | 线上 |
-|---|---|---|---|---|
-| 1 主站 | 你自己 | [**pikbo**](https://github.com/CharlesHarry7/pikbo) | 原创：潮玩私密 AI 视频 | [pikbo.ai](https://pikbo.ai) |
-| 2 本仓库 | **Cursor** | [**dreamutopia-clone**](https://github.com/CharlesHarry7/dreamutopia-clone) | 临摹 dreamutopia.net（图生视频） | [dreamutopia-clone.pages.dev](https://dreamutopia-clone.pages.dev) |
-| 3 另一个临摹 | **OpenCode** | [**magicremover-clone**](https://github.com/CharlesHarry7/magicremover-clone) | 临摹 magicremover.org（AI 去物体） | 看该仓库 README / 部署 |
+## 功能与状态
 
-记法：`pikbo` = 正业 · `dreamutopia-clone` = Cursor 抄 DreamUtopia · `magicremover-clone` = OpenCode 抄 Magic Remover。
+- 游客 Lite 图生视频试用；次数由 KV 记录。
+- 账号注册、登录、积分与生成记录。
+- 图片上传到 R2，生成任务轮询、结果下载和主动发布到图库。
+- 图生视频、文生视频、首尾帧与图片生成接口。
+- 英文、中文、日文、西班牙文界面与 PWA 资源。
+- 可选 Stripe 积分包和 Resend 邮件。
 
-GitHub 简介若还写 `taletok.io`，是旧文案，忽略。仓库曾从 `taletok-clone` 改名而来。
+上述为仓库实现范围。线上生成、上传、邮件和支付是否可用取决于对应绑定与密钥；运行状态应以 `/api/health` 和实际流程验证为准。
 
-## 本仓库内部名字（DreamUtopia 这一站）
+## 技术栈
 
-| 名字 | 是什么 |
-|---|---|
-| dreamutopia.net | 原站（抄的对象，不是我们的） |
-| dreamutopia-clone | GitHub 仓库 + Cloudflare Pages 项目 |
-| https://dreamutopia-clone.pages.dev | **生产**（`main`，合 PR 前仍是旧版） |
-| https://cursor-r2-upload-product-pol.dreamutopia-clone.pages.dev | **PR #12 预览**（最新功能） |
-| [PR #12](https://github.com/CharlesHarry7/dreamutopia-clone/pull/12) | 游客试用 / 文生视频 / 首尾帧，待合并 |
-| dreamutopia-db | D1 数据库 |
-| dreamutopia-media | R2 媒体桶 |
-| SESSIONS | KV（登录 + 游客次数） |
-| KIE_API_KEY | 出图/出视频密钥（生产有，预览没有） |
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Pure HTML + CSS + vanilla JS (no build step) |
-| Hosting | Cloudflare Pages (unlimited bandwidth, free) |
+| 层 | 技术 |
+| --- | --- |
+| 前端 | 静态 HTML / CSS / JavaScript，无前端构建步骤 |
 | API | Cloudflare Pages Functions |
-| Database | Cloudflare D1 (SQLite at the edge) |
-| Sessions | Cloudflare KV (login sessions + guest trial counters) |
-| Inference | [KIE](https://kie.ai) Market API (`KIE_API_KEY` secret) |
-| File Storage | Cloudflare R2 (`MEDIA`) for start-image uploads |
-| Payments | Stripe Checkout (`STRIPE_SECRET_KEY` + webhook) — optional |
-| Auth | Session token + KV + PBKDF2 (Web Crypto); optional Resend reset |
+| 数据 | D1 数据库、KV 会话与游客状态 |
+| 文件 | R2 上传与结果存储 |
+| 生成 | KIE Market API |
+| 支付 | 可选 Stripe Checkout 与 webhook |
+| 邮件 | 可选 Resend |
 
-## Project Structure
+## 本地预览
 
-```
-/out               # Static pages (build output dir)
-  index.html       # Homepage (2 free Lite I2V on-page)
-  pricing.html     # Pricing (Stripe when configured; otherwise honest no-charge CTAs)
-  workspace.html   # Generation workspace + invite link
-  auth.html        # Login / register / forgot password
-  reset.html       # Password reset from email token
-  image-to-video.html / photo-to-video.html / free-ai-video.html
-  privacy.html     # Privacy
-  terms.html       # Terms
-  assets/js/du.js  # Shared fetch / upload / poll / download
-  assets/js/i18n.js # EN / 中文 / 日本語 / Español
-  assets/js/pwa.js  # Service worker + install banner
-  assets/js/seo.js  # Canonical + Open Graph
-  manifest.webmanifest
-  sw.js
-/functions          # Pages Functions
-  robots.txt.ts    # GET /robots.txt
-  sitemap.xml.ts   # GET /sitemap.xml
-/functions/api     # API routes
-  health.ts        # GET /api/health
-  auth/            # register / login / logout / me / forgot / reset
-  credits.ts       # GET /api/credits (account or guest remaining)
-  upload.ts        # GET probe + POST file → R2 (auth or guest)
-  media.ts         # GET/HEAD /api/media?key= (public image bytes)
-  generate.ts      # POST/GET /api/generate (KIE)
-  gallery.ts       # GET public gallery + POST opt-in publish
-  checkout.ts      # GET catalog + POST Stripe session
-  stripe/          # template aliases → checkout + stripe webhook
-  webhooks/stripe.ts
-  webhooks/kie.ts  # KIE callBackUrl (re-verify + idempotent refund)
-  upload-ticket.ts # Legacy probe
-/libs              # Shared backend logic
-/schema.sql        # D1 database schema
-/migrations        # D1 ALTER scripts for existing DBs
-/wrangler.toml     # Cloudflare configuration
+仅预览静态界面：
+
+```bash
+python3 -m http.server 4173 --directory out
 ```
 
-## Generate path
+需要 Functions 的本地开发：
 
-1. **Guest:** homepage or `/workspace` — 2 Lite image-to-video tries per device/IP, no account. Jobs live in KV, not D1.
-2. **Account:** sign up (10 credits). Video: text-to-video, image-to-video, or first+last frame (Medium/Pro). Image: T2I / I2I / blend, 1K–4K.
-3. `POST /api/generate` creates a KIE task (`kling-2.6/image-to-video`, `kling-2.6/text-to-video`, `kling-3.0/video`, or `nano-banana-2`).
-4. Client polls `GET /api/generate?id=…` until `status=done` (UI shows provider state: queue → render). When R2 is bound, the provider file is copied to `/api/media`.
-5. Signed-in users can **Download** a result or **Share to gallery** (opt-in). Homepage loads live gallery items when any exist.
-6. Language selector switches EN / 中文 / 日本語 / Español. PWA: add to home screen (`manifest.webmanifest` + `sw.js`).
-7. Paid packs: without Stripe secrets, `GET/POST /api/checkout` is **503** (`configured: false`) — no fake charge. With secrets, signed-in POST redirects to Stripe. First purchase +31 credits; invites earn 10% of the pack. Password reset needs Resend. `/robots.txt` and `/sitemap.xml` are Functions.
+```bash
+npx wrangler pages dev out
+```
 
-## Backend setup
+真实生成还需要 Cloudflare 绑定和 KIE 密钥。完整配置与迁移顺序见 [BACKEND.md](BACKEND.md)。
 
-See **[BACKEND.md](./BACKEND.md)** for bindings, Pages secrets (`KIE_API_KEY`, optional Stripe + Resend + KIE webhook HMAC), and D1 migrations `001`–`004`.
+## 仓库导航
 
-**Required for live generate:** `SESSIONS` + `KIE_API_KEY` (guest trials). Signed-in generate also needs `DB`.  
-**Required for file upload:** `MEDIA` / R2. Public `imageUrl` still works without R2.
+| 路径 | 用途 |
+| --- | --- |
+| [out/](out/) | 首页、工作区、账号、定价、政策及多语言静态资源 |
+| [functions/api/](functions/api/) | 账号、上传、生成、图库、支付和回调接口 |
+| [libs/](libs/) | 鉴权、积分、限流、供应商调用和结算逻辑 |
+| [schema.sql](schema.sql) | 新数据库初始结构 |
+| [migrations/](migrations/) | 已有数据库升级脚本 |
+| [wrangler.toml](wrangler.toml) | Pages 与 Cloudflare 绑定配置 |
+| [BACKEND.md](BACKEND.md) | 后端配置、API 示例与验证清单 |
 
-## Deploy
+## 必要配置
 
-1. Follow BACKEND.md (D1/KV/R2 + schema/migration + `KIE_API_KEY` secret)
-2. Bind `DB` / `SESSIONS` / `MEDIA` in Pages Settings
-3. Connect repo to Cloudflare Pages (build command: none, output dir: `out`) or `wrangler pages deploy out`
+| 绑定／变量 | 用途 |
+| --- | --- |
+| `SESSIONS` | 会话与游客生成状态 |
+| `DB` | 账号、积分、生成记录与支付数据 |
+| `MEDIA` | R2 图片上传与媒体存储 |
+| `KIE_API_KEY` | 真实图片／视频生成 |
+| `KIE_WEBHOOK_HMAC_KEY` | 可选供应商回调认证 |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | 可选支付与支付回调 |
+| `RESEND_API_KEY` / `MAIL_FROM` | 可选找回密码与邮件 |
 
-`out/_routes.json` sends `/api/*` to Pages Functions so unknown API paths return Function responses instead of the homepage.
+缺少 KIE、R2、Stripe 或 Resend 配置时，相应接口返回配置错误；这些功能分别配置和验收。
 
-## Cost
+## 部署与验证
 
-| Item | Monthly Cost |
-|---|---|
-| Cloudflare Pages | $0 (free tier) |
-| Cloudflare D1 | $0 (5GB free) |
-| Cloudflare KV | $0 (1GB free) |
-| Cloudflare R2 | $0 (10 GB storage / 1M Class A on free) |
-| KIE API | usage-based (your KIE account) |
+1. 按 `BACKEND.md` 创建 D1、KV、R2，并初始化数据库及适用迁移。
+2. 配置 `DB`、`SESSIONS`、`MEDIA` 绑定与服务密钥。
+3. Pages 输出目录设置为 `out`，不设置前端构建命令；也可运行 `npx wrangler pages deploy out`。
+4. 检查 `/api/health`，再分别验证账号、上传、生成、下载与可选支付流程。
+
+Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dreamutopia-media`。生成 API 按账户用量计费，托管服务的免费额度以平台当前规则为准。
