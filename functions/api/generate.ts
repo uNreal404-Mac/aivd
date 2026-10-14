@@ -3,11 +3,13 @@ import {
   error,
   structuredError,
   preflight,
+  asHead,
   hasDb,
   hasSessions,
   hasKieKey,
+  workerExceptionJson,
 } from "../../libs/utils";
-import { getSession, tokenFromRequest } from "../../libs/auth";
+import { getSession, tokenFromRequest, type Session } from "../../libs/auth";
 import {
   createImageToVideoTask,
   createTextToVideoTask,
@@ -51,6 +53,24 @@ import type { Env } from "../../libs/utils";
 
 export const onRequestOptions = (): Response => preflight();
 
+/** HEAD /api/generate — liveness only. Must not poll KIE. */
+export const onRequestHead: PagesFunction<Env> = async ({ env }) => {
+  try {
+    if (!hasSessions(env)) {
+      return asHead(
+        structuredError(
+          "bindings_missing",
+          "backend not configured: missing SESSIONS binding — see BACKEND.md",
+          503
+        )
+      );
+    }
+    return asHead(json({ ok: true, poll: false }));
+  } catch {
+    return workerExceptionJson("Generation failed. Please try again.");
+  }
+};
+
 const MAX_IN_FLIGHT = 3;
 
 type InputImages = { first: string | null; last: string | null };
@@ -73,12 +93,45 @@ function decodeInputImages(raw: string | null): InputImages {
   return { first: raw, last: null };
 }
 
-function kieMissingResponse(): Response {
+function kieMissingResponse(
+  extra?: Record<string, unknown>,
+  extraHeaders?: Record<string, string>
+): Response {
   return structuredError(
     "kie_api_key_missing",
-    "KIE_API_KEY is not configured. Set it as a Cloudflare Pages secret to enable generation.",
+    "Generation isn’t available yet. Try again later.",
     503,
-    { kieConfigured: false, mediaRequired: false }
+    { kieConfigured: false, mediaRequired: false, generateReady: false, ...(extra || {}) },
+    extraHeaders
+  );
+}
+
+function guestImageRequiredResponse(extraHeaders?: Record<string, string>): Response {
+  return json(
+    {
+      error: "image_url_required",
+      code: "image_url_required",
+      message: "Free trial needs a start image. Upload a file or paste a public https URL.",
+      mediaRequired: false,
+      guestRemaining: GUEST_LIMIT,
+      guestLimit: GUEST_LIMIT,
+    },
+    400,
+    extraHeaders
+  );
+}
+
+function guestLiteOnlyResponse(extraHeaders?: Record<string, string>): Response {
+  return json(
+    {
+      error: "guest_lite_only",
+      code: "guest_lite_only",
+      message: "Free trial is Lite image-to-video only. Sign up for 10 credits and every model.",
+      guestRemaining: GUEST_LIMIT,
+      guestLimit: GUEST_LIMIT,
+    },
+    401,
+    extraHeaders
   );
 }
 
@@ -218,6 +271,15 @@ function uniqueUrls(...lists: (string | null | undefined)[][]): string[] {
 function createFailedResponse(
   created: { message: string; code?: number; status: number }
 ): Response {
+  const msg = created.message || "";
+  if (created.code === 402 || /insufficient|balance/i.test(msg)) {
+    return structuredError(
+      "kie_insufficient_balance",
+      "The video provider is out of credit right now. This is not your DreamUtopia balance — nothing was marked as successful. Try again later.",
+      502,
+      { providerCode: created.code ?? null }
+    );
+  }
   const status =
     created.code === 401 || created.status === 401
       ? 502
@@ -238,13 +300,34 @@ function createFailedResponse(
  * Guests (no session): 2 Lite image-to-video tries per device/IP.
  * Signed-in: T2V, I2V, first+last (Medium/Pro), image T2I/I2I/blend.
  */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  let body: GenerateBody;
+export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   try {
-    body = await request.json();
+    return await handleGeneratePost(ctx);
+  } catch {
+    try {
+      return structuredError(
+        "worker_exception",
+        "Generation failed. Please try again.",
+        500,
+        { mediaRequired: false }
+      );
+    } catch {
+      return workerExceptionJson("Generation failed. Please try again.");
+    }
+  }
+};
+
+async function handleGeneratePost({ request, env }: { request: Request; env: Env }): Promise<Response> {
+  let parsed: unknown;
+  try {
+    parsed = await request.json();
   } catch {
     return error("invalid json");
   }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return error("invalid json");
+  }
+  const body = parsed as GenerateBody;
 
   const prompt = (body.prompt || "").trim();
   if (!prompt) return error("prompt required");
@@ -254,6 +337,23 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const imageUrl = (body.imageUrl || body.image_url || "").trim();
   const lastImageUrl = (body.lastImageUrl || body.last_image_url || "").trim();
   const extraUrls = collectHttpsUrls(body.imageUrls || body.image_urls);
+
+  const tokenEarly = tokenFromRequest(request);
+  const modelEarly =
+    kind === "image"
+      ? IMAGE_COST[body.model || ""]
+        ? (body.model as string)
+        : "lite"
+      : VIDEO_COST[body.model || ""]
+        ? (body.model as string)
+        : "lite";
+  // Guest 4xx before hasSessions / getSession / rate-limit KV — those throws were CF 1101.
+  if (!tokenEarly && kind === "video" && modelEarly === "lite" && !imageUrl && !lastImageUrl) {
+    return guestImageRequiredResponse();
+  }
+  if (!tokenEarly && (kind === "image" || modelEarly !== "lite")) {
+    return guestLiteOnlyResponse();
+  }
 
   if (imageUrl && !isPublicHttpsUrl(imageUrl)) {
     return structuredError(
@@ -321,31 +421,72 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const token = tokenFromRequest(request);
-  const session = await getSession(env, token);
+  let session: Session | null = null;
+  if (token) {
+    try {
+      session = await getSession(env, token);
+    } catch {
+      return structuredError(
+        "worker_exception",
+        "Generation failed. Please try again.",
+        500,
+        { mediaRequired: false }
+      );
+    }
+  }
+
+  if (!session) {
+    try {
+      const blocked = await guestRequestError(env, request, {
+        kind,
+        model,
+        imageUrl,
+        lastImageUrl,
+      });
+      if (blocked) return blocked;
+    } catch {
+      if (!imageUrl) return guestImageRequiredResponse();
+      return structuredError(
+        "worker_exception",
+        "Generation failed. Please try again.",
+        500,
+        { mediaRequired: false }
+      );
+    }
+  }
+
   const ip = clientIp(request);
-  const rl = await takeRateLimit(
-    env.SESSIONS,
-    session ? `gen:u:${session.userId}` : `gen:ip:${ip || "unknown"}`,
-    session ? 30 : 10,
-    60
-  );
+  let rl;
+  try {
+    rl = await takeRateLimit(
+      env.SESSIONS,
+      session ? `gen:u:${session.userId}` : `gen:ip:${ip || "unknown"}`,
+      session ? 30 : 10,
+      60
+    );
+  } catch {
+    rl = { ok: true as const, remaining: session ? 30 : 10, resetSec: Math.floor(Date.now() / 1000) + 60 };
+  }
   if (!rl.ok) return rateLimitedResponse(json, rl.retryAfter);
 
   const idempotencyKey = normalizeIdempotencyKey(
     body.idempotencyKey || body.idempotency_key || request.headers.get("idempotency-key")
   );
 
-  if (!session) {
-    const blocked = await guestRequestError(env, request, {
-      kind,
-      model,
-      imageUrl,
-      lastImageUrl,
-    });
-    if (blocked) return blocked;
-  }
-
   if (!hasKieKey(env)) {
+    if (!session) {
+      try {
+        const guestId = ensureGuestId(request);
+        const rec = await loadGuest(env, guestId);
+        const quota = await guestQuota(env, rec, clientIp(request));
+        return kieMissingResponse(
+          { guestRemaining: quota.remaining, guestLimit: GUEST_LIMIT },
+          guestHeaders(guestId, request)
+        );
+      } catch {
+        return kieMissingResponse({ guestRemaining: GUEST_LIMIT, guestLimit: GUEST_LIMIT });
+      }
+    }
     return kieMissingResponse();
   }
 
@@ -428,7 +569,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       .bind(session.userId)
       .first<{ credits: number }>();
     const credits = row ? Number(row.credits) : 0;
-    return json({ error: "insufficient credits", credits }, 402);
+    return json(
+      {
+        error: "insufficient_credits",
+        code: "insufficient_credits",
+        message:
+          "This model costs more credits than you currently have. Buy a pack on Pricing, or pick a cheaper model. Nothing was generated.",
+        credits,
+      },
+      402
+    );
   }
 
   const callBackUrl = kieCallbackUrl(new URL(request.url).origin);
@@ -531,7 +681,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       guest: false,
     })
   );
-};
+}
 
 async function guestRequestError(
   env: Env & { SESSIONS: KVNamespace },
@@ -727,7 +877,29 @@ function randomGuestJobId(): string {
  * GET /api/generate — history (account or this device's guest jobs)
  * GET /api/generate?id=N — single job; polls KIE when still processing
  */
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestGet: PagesFunction<Env> = async (ctx) => {
+  try {
+    return await handleGenerateGet(ctx);
+  } catch {
+    return workerExceptionJson("Could not load history. Please try again.");
+  }
+};
+
+/** Pages on some deploys does not invoke onRequestHead / onRequestPost. */
+export const onRequest: PagesFunction<Env> = async (ctx) => {
+  try {
+    const method = ctx.request.method;
+    if (method === "HEAD") return onRequestHead(ctx);
+    if (method === "OPTIONS") return onRequestOptions();
+    if (method === "GET") return onRequestGet(ctx);
+    if (method === "POST") return onRequestPost(ctx);
+    return json({ error: "method_not_allowed", code: "method_not_allowed" }, 405);
+  } catch {
+    return workerExceptionJson("Request failed. Please try again.");
+  }
+};
+
+async function handleGenerateGet({ request, env }: { request: Request; env: Env }): Promise<Response> {
   if (!hasSessions(env)) {
     return structuredError(
       "bindings_missing",
@@ -803,6 +975,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     return json({
       ok: true,
       demo: false,
+      generateReady: hasKieKey(env),
       generation: publicGeneration(row),
       resultUrl: row.result_url,
       status: row.status,
@@ -847,6 +1020,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       ok: true,
       demo: false,
       guest: false,
+      generateReady: true,
       generations: (refreshed.results || []).map(publicGeneration),
     });
   }
@@ -855,9 +1029,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     ok: true,
     demo: false,
     guest: false,
+    generateReady: hasKieKey(env),
     generations: list.map(publicGeneration),
   });
-};
+}
 
 async function handleGuestGet(
   env: Env & { SESSIONS: KVNamespace },
@@ -889,6 +1064,7 @@ async function handleGuestGet(
         ok: true,
         demo: false,
         guest: true,
+        generateReady: hasKieKey(env),
         generation: publicGuestJob(job),
         resultUrl: job.resultUrl,
         status: job.status,
@@ -913,6 +1089,7 @@ async function handleGuestGet(
       ok: true,
       demo: false,
       guest: true,
+      generateReady: hasKieKey(env),
       guestRemaining: q2.remaining,
       guestLimit: GUEST_LIMIT,
       generations: fresh.jobs.map(publicGuestJob),
