@@ -6,7 +6,7 @@
 
 import { costForStoredModel } from "./costs";
 import { mediaKeyFromUrl, persistRemoteMedia } from "./media";
-import { getTaskInfo, type KieTaskInfo, type KieTaskError } from "./kie";
+import { getTaskInfo, mapKieTaskOutcome, type KieTaskInfo, type KieTaskError } from "./kie";
 import {
   loadGuest,
   loadIpUsed,
@@ -183,8 +183,9 @@ export async function settleAccountJob(
     return { row, providerState: null };
   }
 
-  if (info.state === "success" && info.resultUrl) {
-    const resultUrl = await persistResult(env, row.user_id, info.resultUrl, origin);
+  const outcome = mapKieTaskOutcome(info);
+  if (outcome.action === "done") {
+    const resultUrl = await persistResult(env, row.user_id, outcome.resultUrl, origin);
     const mediaKey = mediaKeyFromUrl(resultUrl);
     const upd = await env.DB.prepare(
       `UPDATE generations
@@ -218,8 +219,8 @@ export async function settleAccountJob(
     };
   }
 
-  if (info.state === "fail") {
-    const msg = info.failMsg || info.failCode || "provider generation failed";
+  if (outcome.action === "fail") {
+    const msg = outcome.message;
     const upd = await env.DB.prepare(
       "UPDATE generations SET status = 'failed', error_message = ? WHERE id = ? AND status = 'processing'"
     )
@@ -236,7 +237,7 @@ export async function settleAccountJob(
     };
   }
 
-  return { row, providerState: info.state || "generating" };
+  return { row, providerState: outcome.providerState || "generating" };
 }
 
 export async function settleGuestJob(
@@ -272,18 +273,18 @@ export async function settleGuestJob(
     };
   }
 
+  const outcome = mapKieTaskOutcome(info);
   let next: GuestJob = current;
-  if (info.state === "success" && info.resultUrl) {
-    const resultUrl = await persistResult(env, GUEST_USER_ID, info.resultUrl, origin);
+  if (outcome.action === "done") {
+    const resultUrl = await persistResult(env, GUEST_USER_ID, outcome.resultUrl, origin);
     next = { ...current, status: "done", resultUrl, errorMessage: null };
-  } else if (info.state === "fail") {
-    const msg = info.failMsg || info.failCode || "provider generation failed";
-    next = { ...current, status: "failed", errorMessage: msg };
+  } else if (outcome.action === "fail") {
+    next = { ...current, status: "failed", errorMessage: outcome.message };
     fresh.used = Math.max(0, fresh.used - 1);
     const ipUsed = await loadIpUsed(env, ip);
     await saveIpUsed(env, ip, Math.max(0, ipUsed - 1));
   } else {
-    return { job: current, rec: fresh, providerState: info.state || "generating" };
+    return { job: current, rec: fresh, providerState: outcome.providerState || "generating" };
   }
 
   fresh.jobs = fresh.jobs.map((j) => (j.id === job.id ? next : j));

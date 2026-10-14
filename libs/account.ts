@@ -58,11 +58,20 @@ export async function lookupReferrer(
   return row ? Number(row.id) : null;
 }
 
+/**
+ * Copy THIS browser's guest KV jobs into the signed-in user's D1 history.
+ *
+ * Guest jobs live in KV keyed by the HttpOnly `du_guest` cookie — they are
+ * never stored as D1 `user_id = 0` (that would leak every guest's work).
+ * Migration is therefore INSERT-into-account, scoped to the cookie on this
+ * request. Other guests' records are not readable from this path.
+ */
 export async function mergeGuestJobs(
   env: { DB: D1Database; SESSIONS: KVNamespace },
   request: Request,
   userId: number
 ): Promise<number> {
+  if (!Number.isFinite(userId) || userId <= 0) return 0;
   const guestId = guestIdFromRequest(request);
   if (!guestId) return 0;
   const rec = await loadGuest(env, guestId);

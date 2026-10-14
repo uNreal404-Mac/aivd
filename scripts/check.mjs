@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fail = [];
@@ -181,9 +182,45 @@ mustContain("out/workspace.html", 'id="historyEmpty" hidden', "history empty sta
 mustContain("out/workspace.html", "function setHistoryEmptyVisible", "empty state only enabled on History tab");
 mustContain("out/workspace.html", "function historyTabActive", "empty visibility gated on History tab");
 
+mustContain("libs/account.ts", "export async function mergeGuestJobs", "guest jobs migrate on register/login");
+mustContain("functions/api/auth/register.ts", "mergeGuestJobs", "register copies this guest cookie's jobs");
+mustContain("functions/api/auth/login.ts", "mergeGuestJobs", "login copies this guest cookie's jobs");
+mustContain("functions/api/auth/me.ts", "mergedJobs", "me reports how many guest jobs were copied");
+mustContain("out/auth.html", 'credentials: "same-origin"', "auth fetch sends HttpOnly du_guest cookie");
+mustContain("out/workspace.html", 'id="guestPersistNotice"', "workspace guest persist notice");
+mustContain("out/assets/js/i18n.js", "ws.guest.persist", "guest persist notice i18n");
+mustContain("out/assets/js/i18n.js", "Your creations are saved only in this browser until you sign up.", "guest persist English copy");
+mustContain("libs/kie.ts", "nano-banana-2-lite", "image-lite uses official KIE lite model");
+mustContain("libs/kie.ts", "export function buildImageTaskSpec", "image payload is unit-testable");
+mustContain("libs/kie.ts", "export function mapKieTaskOutcome", "KIE state mapping is unit-testable");
+mustContain("functions/api/generate.ts", 'tier: model === "pro" ? "pro" : "lite"', "generate passes image tier");
+mustNotContain("libs/costs.ts", "lite: 2", "image lite cost stays 1");
+mustContain("libs/costs.ts", "lite: 1", "image lite cost unchanged");
+mustContain("libs/costs.ts", "pro: 2", "image pro cost unchanged");
+mustContain("libs/costs.ts", "lite: 3", "video lite cost unchanged");
+if (!exists("scripts/test-p1.mjs")) fail.push("missing scripts/test-p1.mjs");
+else ok.push("scripts/test-p1.mjs exists");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
 }
 for (const o of ok) console.log("ok ", o);
 console.log(`\nAll checks passed (${ok.length})`);
+
+const unit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-p1.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(unit.stdout || "");
+process.stderr.write(unit.stderr || "");
+if (unit.status !== 0) {
+  console.log("FAIL scripts/test-p1.mjs");
+  process.exit(unit.status || 1);
+}

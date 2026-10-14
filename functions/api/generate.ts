@@ -589,6 +589,7 @@ async function handleGeneratePost({ request, env }: { request: Request; env: Env
           prompt,
           imageUrls: blendUrls,
           resolution,
+          tier: model === "pro" ? "pro" : "lite",
           callBackUrl,
         })
       : lastImageUrl
