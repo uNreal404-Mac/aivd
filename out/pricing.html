@@ -343,7 +343,7 @@ nav{display:none}
 </div>
 <div class="faq-item" onclick="this.classList.toggle('open')">
 <div class="faq-q">What payment methods do you accept?</div>
-<div class="faq-a">Card payments go through Stripe Checkout when the operator has set <code>STRIPE_SECRET_KEY</code>. Until that secret exists, Select will not charge a card — it only remembers the pack. First paid purchase also adds 31 bonus credits (5 Lite + 1 Pro). Invites earn 10% of the friend’s pack.</div>
+<div class="faq-a"><b>支付即将开放</b> / Payments coming soon. Select will not charge a card until checkout is live — it only remembers the pack. When payments open, the first paid purchase also adds 31 bonus credits (5 Lite + 1 Pro). Invites earn 10% of the friend’s pack.</div>
 </div>
 <div class="faq-item" onclick="this.classList.toggle('open')">
 <div class="faq-q">Do credits expire?</div>
@@ -459,23 +459,26 @@ nav{display:none}
   function applyUnavailableCopy(signedIn) {
     if (note) {
       note.classList.add("show");
-      note.innerHTML = signedIn
-        ? "<b>Stripe is not configured yet.</b> No payment will be charged. Continue opens your workspace and remembers the pack."
-        : "<b>Stripe is not configured yet.</b> No payment will be charged. Continue free opens sign-up — new accounts still get 10 free credits.";
+      const soon = (window.DU && DU.t("price.soon", "支付即将开放")) || "支付即将开放";
+      const soonEn = (window.DU && DU.t("price.soon.en", "Payments coming soon")) || "Payments coming soon";
+      const extra = signedIn
+        ? ((window.DU && DU.t("price.soon.extra.signed", "Continue opens your workspace and remembers the pack — no charge.")) || "Continue opens your workspace and remembers the pack — no charge.")
+        : ((window.DU && DU.t("price.soon.extra.guest", "Continue free opens sign-up — no charge. New accounts still get 10 free credits.")) || "Continue free opens sign-up — no charge. New accounts still get 10 free credits.");
+      note.innerHTML = "<b>" + soon + "</b> <span lang=\"en\">" + soonEn + "</span>. " + extra;
     }
     ctas.forEach(function (a) {
       const pack = a.getAttribute("data-pack");
       a.textContent = signedIn ? "Continue" : "Continue free";
-      a.setAttribute("title", "Paid checkout not configured — continues without charging");
+      a.setAttribute("title", "Payments coming soon — continues without charging");
       a.setAttribute(
         "aria-label",
-        (signedIn ? "Continue with " : "Continue free with ") + pack + " pack (checkout not live)"
+        (signedIn ? "Continue with " : "Continue free with ") + pack + " pack (no charge)"
       );
       const caption = document.querySelector('[data-pack-caption="' + pack + '"]');
       if (caption) {
         caption.textContent = signedIn
-          ? "Checkout coming soon · no charge"
-          : "Free account · pack saved · no charge";
+          ? ((window.DU && DU.t("price.caption.signed", "Continue · no charge")) || "Continue · no charge")
+          : ((window.DU && DU.t("price.caption.guest", "Continue free · no charge")) || "Continue free · no charge");
       }
     });
   }

@@ -146,6 +146,10 @@ function currentRef() {
   return (params.get("ref") || localStorage.getItem(REF_KEY) || "").trim();
 }
 let mode = params.get("mode") === "login" ? "login" : params.get("mode") === "forgot" ? "forgot" : "register";
+const nextPathRaw = params.get("next") || "";
+const nextPath = nextPathRaw.charAt(0) === "/" && nextPathRaw.charAt(1) !== "/" && !nextPathRaw.includes("://")
+  ? nextPathRaw
+  : "";
 const packId = PACKS[params.get("pack")] ? params.get("pack") : "";
 const selectedPack = packId ? PACKS[packId] : null;
 const nextMode = params.get("next") === "image" ? "image" : "";
@@ -166,13 +170,20 @@ const hdrSignup = document.getElementById("hdrSignup");
 function authUrl(nextAuthMode) {
   let url = "/auth?mode=" + nextAuthMode;
   if (packId) url += "&pack=" + encodeURIComponent(packId);
-  if (nextMode) url += "&next=" + encodeURIComponent(nextMode);
+  if (nextPath) url += "&next=" + encodeURIComponent(nextPath);
+  else if (nextMode) url += "&next=" + encodeURIComponent(nextMode);
   const ref = currentRef();
   if (ref) url += "&ref=" + encodeURIComponent(ref);
   return url;
 }
 
 function workspaceUrl() {
+  if (nextPath && nextPath !== "/workspace") {
+    try {
+      const dest = new URL(nextPath, location.origin);
+      if (dest.origin === location.origin) return dest.pathname + dest.search;
+    } catch (e) {}
+  }
   const q = [];
   if (packId) q.push("pack=" + encodeURIComponent(packId));
   if (nextMode) q.push("mode=" + encodeURIComponent(nextMode));
@@ -215,7 +226,7 @@ function setMode(next) {
   if (forgotWrap) forgotWrap.hidden = !isLogin;
   perk.style.display = isLogin || isForgot ? "none" : "";
   if (selectedPack && !isLogin && !isForgot) {
-    perk.innerHTML = "Selected: <b>" + selectedPack.name + "</b> (" + selectedPack.price + " · " + selectedPack.credits + " credits). After signup, open Pricing to pay with Stripe when checkout is configured. New accounts still get <b>10 free credits</b>. First paid pack adds <b>31 bonus credits</b>.";
+    perk.innerHTML = "Selected: <b>" + selectedPack.name + "</b> (" + selectedPack.price + " · " + selectedPack.credits + " credits). 支付即将开放 / Payments coming soon — this does not charge a card. New accounts still get <b>10 free credits</b>. First paid pack adds <b>31 bonus credits</b>.";
   } else if (!isLogin && !isForgot) {
     const ref = currentRef();
     perk.innerHTML = DU.t("auth.perk", "New accounts get <b>10 free credits</b> instantly — no credit card required.")
