@@ -92,6 +92,95 @@ mustNotContain("out/pricing.html", "Stripe is not configured yet", "no operator 
 mustContain("out/assets/js/i18n.js", "gallery.empty", "gallery empty i18n");
 mustContain("out/assets/js/i18n.js", "price.soon", "payments coming soon i18n");
 
+const CANON = "https://dreamutopia-clone.pages.dev";
+const PUBLIC_PAGES = [
+  { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
+  { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
+  { rel: "out/workspace.html", path: "/workspace", title: "Workspace — DreamUtopia" },
+  { rel: "out/auth.html", path: "/auth", title: "Sign in — DreamUtopia" },
+  { rel: "out/privacy.html", path: "/privacy", title: "Privacy Policy — DreamUtopia" },
+  { rel: "out/terms.html", path: "/terms", title: "Terms of Service — DreamUtopia" },
+  { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
+  { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
+  { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
+];
+{
+  const titles = new Set();
+  const descs = new Set();
+  for (const page of PUBLIC_PAGES) {
+    const src = read(page.rel);
+    const title = (src.match(/<title>([^<]+)<\/title>/) || [])[1];
+    const desc = (src.match(/<meta name="description" content="([^"]+)"/) || [])[1];
+    if (!title) fail.push(`${page.rel}: missing <title>`);
+    else if (titles.has(title)) fail.push(`${page.rel}: duplicate title ${JSON.stringify(title)}`);
+    else {
+      titles.add(title);
+      ok.push(`${page.rel}: unique title`);
+    }
+    if (title && title !== page.title) fail.push(`${page.rel}: unexpected title ${JSON.stringify(title)}`);
+    if (!desc) fail.push(`${page.rel}: missing meta description`);
+    else if (descs.has(desc)) fail.push(`${page.rel}: duplicate description`);
+    else {
+      descs.add(desc);
+      ok.push(`${page.rel}: unique description`);
+    }
+    const canon = `${CANON}${page.path}`;
+    if (!src.includes(`rel="canonical" href="${canon}"`)) fail.push(`${page.rel}: missing canonical ${canon}`);
+    else ok.push(`${page.rel}: canonical ${canon}`);
+    if (!src.includes(`property="og:title"`) || !src.includes(`property="og:description"`) || !src.includes(`property="og:url"`) || !src.includes(`property="og:image"`)) {
+      fail.push(`${page.rel}: missing Open Graph tags`);
+    } else ok.push(`${page.rel}: Open Graph tags`);
+    if (!src.includes(`name="twitter:card"`) || !src.includes(`name="twitter:title"`) || !src.includes(`name="twitter:description"`)) {
+      fail.push(`${page.rel}: missing Twitter card tags`);
+    } else ok.push(`${page.rel}: Twitter card tags`);
+    if (!src.includes('type="application/ld+json"')) fail.push(`${page.rel}: missing JSON-LD`);
+    else ok.push(`${page.rel}: JSON-LD`);
+  }
+}
+mustContain("out/index.html", '"@type":"Organization"', "home JSON-LD Organization");
+mustContain("out/index.html", '"@type":"WebSite"', "home JSON-LD WebSite");
+mustContain("out/pricing.html", '"@type":"SoftwareApplication"', "pricing JSON-LD SoftwareApplication");
+mustContain("out/pricing.html", '"@type":"Product"', "pricing JSON-LD Product");
+mustContain("out/pricing.html", '"@type":"Offer"', "pricing JSON-LD Offer");
+mustContain("out/pricing.html", '"price":"0"', "pricing Offer is free (checkout not live)");
+mustContain("out/assets/js/seo.js", CANON, "seo.js pins production origin");
+mustContain("libs/site.ts", CANON, "shared canonical origin");
+mustContain("libs/site.ts", "PUBLIC_PATHS", "shared public path list");
+if (!exists("out/sitemap.xml")) fail.push("missing out/sitemap.xml");
+else ok.push("out/sitemap.xml exists");
+if (!exists("out/robots.txt")) fail.push("missing out/robots.txt");
+else ok.push("out/robots.txt exists");
+if (!exists("functions/sitemap.xml.ts")) fail.push("missing functions/sitemap.xml.ts");
+else ok.push("functions/sitemap.xml.ts exists");
+if (!exists("functions/robots.txt.ts")) fail.push("missing functions/robots.txt.ts");
+else ok.push("functions/robots.txt.ts exists");
+for (const page of PUBLIC_PAGES) {
+  mustContain("out/sitemap.xml", `${CANON}${page.path}`, `sitemap lists ${page.path}`);
+  mustContain("functions/sitemap.xml.ts", "PUBLIC_PATHS", "function sitemap uses PUBLIC_PATHS");
+}
+mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
+mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
+mustContain("functions/robots.txt.ts", "CANONICAL_ORIGIN", "function robots uses canonical origin");
+
+mustContain("out/pricing.html", 'id="rules"', "pricing rules section");
+mustContain("out/pricing.html", "Watermark", "pricing watermark rule");
+mustContain("out/pricing.html", "Refund policy", "pricing refund rule");
+mustContain("out/pricing.html", "Credit expiration", "pricing expiration rule");
+mustContain("out/pricing.html", "do not expire", "honest credits do not expire");
+mustContain("out/assets/js/i18n.js", "price.rules.mark.h", "pricing rules i18n");
+mustContain("out/pricing.html", "$5", "starter price unchanged");
+mustContain("out/pricing.html", "$25", "plus price unchanged");
+mustContain("out/pricing.html", "$90", "pro price unchanged");
+mustContain("out/pricing.html", "$200", "premium price unchanged");
+mustContain("out/pricing.html", "10 credits", "starter credits unchanged");
+mustContain("out/pricing.html", "50 credits", "plus credits unchanged");
+mustContain("out/pricing.html", "200 credits", "pro credits unchanged");
+mustContain("out/pricing.html", "500 credits", "premium credits unchanged");
+
+mustContain("out/workspace.html", 'id="historyEmpty" hidden', "history empty starts hidden (not enabled while parent is display:none)");
+mustContain("out/workspace.html", "function setHistoryEmptyVisible", "empty state only enabled on History tab");
+mustContain("out/workspace.html", "function historyTabActive", "empty visibility gated on History tab");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
