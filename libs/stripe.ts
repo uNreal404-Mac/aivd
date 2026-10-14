@@ -108,6 +108,82 @@ export async function createCheckoutSession(opts: {
   return { ok: true, url: body.url, id: body.id };
 }
 
+/** One-off ZCV Checkout: amount and product are supplied by server catalog only. */
+export async function createZcvCheckoutSession(opts: {
+  secretKey: string;
+  origin: string;
+  userId: number;
+  email: string;
+  orderId: string;
+  customerId?: string | null;
+  amountCents: number;
+  productId: string;
+  productName: string;
+}): Promise<{ ok: true; url: string; id: string } | { ok: false; status: number; message: string; certainty: "rejected" | "unknown" }> {
+  const params = new URLSearchParams();
+  params.set("mode", "payment");
+  params.set("success_url", `${opts.origin}/orders/${encodeURIComponent(opts.orderId)}?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
+  params.set("cancel_url", `${opts.origin}/zombie-couple-video?checkout=cancel`);
+  params.set("client_reference_id", String(opts.userId));
+  if (opts.customerId) params.set("customer", opts.customerId);
+  else params.set("customer_email", opts.email);
+  params.set("metadata[orderId]", opts.orderId);
+  params.set("metadata[userId]", String(opts.userId));
+  params.set("metadata[productId]", opts.productId);
+  params.set("line_items[0][quantity]", "1");
+  params.set("line_items[0][price_data][currency]", "usd");
+  params.set("line_items[0][price_data][unit_amount]", String(opts.amountCents));
+  params.set("line_items[0][price_data][product_data][name]", opts.productName);
+  params.set("line_items[0][price_data][product_data][description]", "One 10-second, 1080p, silent zombie couple video");
+  let res: Response;
+  try {
+    res = await fetch(STRIPE_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${opts.secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": `zcv-checkout-${opts.orderId}`,
+      },
+      body: params,
+    });
+  } catch (e) {
+    return { ok: false, status: 502, message: e instanceof Error ? e.message : "Stripe request failed", certainty: "unknown" };
+  }
+  const body = (await res.json().catch(() => ({}))) as { id?: string; url?: string; error?: { message?: string } };
+  if (res.ok && body.url && body.id) return { ok: true, url: body.url, id: body.id };
+  return {
+    ok: false,
+    status: res.status || 502,
+    message: body.error?.message || "Stripe Checkout session failed",
+    certainty: res.status >= 400 && res.status < 500 ? "rejected" : "unknown",
+  };
+}
+
+export async function refundZcvPayment(opts: {
+  secretKey: string;
+  paymentIntentId: string;
+  orderId: string;
+}): Promise<{ ok: true; id: string } | { ok: false; status: number; message: string }> {
+  const params = new URLSearchParams({ payment_intent: opts.paymentIntentId });
+  let res: Response;
+  try {
+    res = await fetch("https://api.stripe.com/v1/refunds", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${opts.secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": `zcv-refund-${opts.orderId}`,
+      },
+      body: params,
+    });
+  } catch (e) {
+    return { ok: false, status: 502, message: e instanceof Error ? e.message : "Stripe refund request failed" };
+  }
+  const body = (await res.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+  if (res.ok && body.id) return { ok: true, id: body.id };
+  return { ok: false, status: res.status || 502, message: body.error?.message || "Stripe refund failed" };
+}
+
 export function packFromMetadata(pack: unknown): CreditPack | null {
   if (typeof pack !== "string") return null;
   return PACKS[pack as keyof typeof PACKS] || null;

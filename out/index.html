@@ -75,6 +75,7 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .hero .credits-note{font-size:13.5px;color:var(--text2);margin-bottom:28px}
 .hero .credits-note b{color:#fff;font-weight:600}
 .hero-cta{display:flex;gap:12px;justify-content:center;margin-bottom:48px}
+.zcv-home-link{margin:-32px auto 38px;color:var(--text2);font-size:14px}.zcv-home-link a{color:var(--primary2);font-weight:700}.zcv-home-link strong{color:#fff}
 .btn-primary-lg{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;transition:opacity .2s}
 .btn-primary-lg:hover{opacity:.9}
 .btn-outline-lg{background:transparent;border:1px solid var(--border2);color:var(--text);padding:12px 28px;border-radius:10px;font-size:15px;font-weight:500;transition:border-color .2s}
@@ -277,6 +278,7 @@ nav{display:none}
 <nav>
 <a href="/" class="active" data-i18n="nav.home">Home</a>
 <a href="/pricing" data-i18n="nav.pricing">Pricing</a>
+<a href="/zombie-couple-video">Zombie Couple Video</a>
 <a href="/#faq" data-i18n="nav.faq">FAQ</a>
 <details class="nav-drop">
 <summary data-i18n="nav.features">Features</summary>
@@ -315,6 +317,7 @@ nav{display:none}
 <a href="/workspace" class="btn-primary-lg" data-i18n="hero.cta">Start Creating Free →</a>
 <a href="#get-started" class="btn-outline-lg" data-i18n="hero.how">See how it works</a>
 </div>
+<p class="zcv-home-link">Try the <a href="/zombie-couple-video">AI Zombie Couple Video Generator</a> free portrait preview · one-time video <strong id="zcvHomePrice">Loading price…</strong></p>
 
 <!-- Tabs + Generator -->
 <div class="gen-tabs">
@@ -558,6 +561,7 @@ nav{display:none}
 <li><a href="/photo-to-video">Photo to Video AI</a></li>
 <li><a href="/image-to-video">Image to Video AI</a></li>
 <li><a href="/workspace">Workspace</a></li>
+<li><a href="/zombie-couple-video">AI Zombie Couple Video Generator</a></li>
 <li><a href="/#gallery">Gallery</a></li>
 </ul>
 </div>
@@ -604,6 +608,7 @@ nav{display:none}
 <script src="/assets/js/i18n.js"></script>
 <script src="/assets/js/pwa.js"></script>
 <script src="/assets/js/seo.js"></script>
+<script>fetch("/api/zcv/product").then(r=>r.json()).then(d=>{var n=document.getElementById("zcvHomePrice");if(n)n.textContent=d.priceLabel;}).catch(()=>{});</script>
 <script>
 let homeFile = null;
 let homeImageUrl = "";

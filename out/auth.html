@@ -149,6 +149,12 @@ let mode = params.get("mode") === "login" ? "login" : params.get("mode") === "fo
 const packId = PACKS[params.get("pack")] ? params.get("pack") : "";
 const selectedPack = packId ? PACKS[packId] : null;
 const nextMode = params.get("next") === "image" ? "image" : "";
+function safeReturnPath(raw) {
+  if (!raw || raw.indexOf("\\") >= 0 || raw.indexOf("//") === 0) return "";
+  if (raw === "/zombie-couple-video" || raw === "/zombie-couple-video?resume=buy") return raw;
+  return /^\/orders\/zco_[a-f0-9]{16}$/.test(raw) ? raw : "";
+}
+const returnPath = safeReturnPath(params.get("return") || "");
 
 const title = document.getElementById("title");
 const lead = document.getElementById("lead");
@@ -167,12 +173,14 @@ function authUrl(nextAuthMode) {
   let url = "/auth?mode=" + nextAuthMode;
   if (packId) url += "&pack=" + encodeURIComponent(packId);
   if (nextMode) url += "&next=" + encodeURIComponent(nextMode);
+  if (returnPath) url += "&return=" + encodeURIComponent(returnPath);
   const ref = currentRef();
   if (ref) url += "&ref=" + encodeURIComponent(ref);
   return url;
 }
 
 function workspaceUrl() {
+  if (returnPath) return returnPath;
   const q = [];
   if (packId) q.push("pack=" + encodeURIComponent(packId));
   if (nextMode) q.push("mode=" + encodeURIComponent(nextMode));

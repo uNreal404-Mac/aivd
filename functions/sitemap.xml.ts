@@ -10,6 +10,7 @@ const PATHS = [
   "/image-to-video",
   "/photo-to-video",
   "/free-ai-video",
+  "/zombie-couple-video",
 ];
 
 export const onRequestGet: PagesFunction<Env> = async ({ request }) => {

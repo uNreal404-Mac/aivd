@@ -1,6 +1,9 @@
 import { json, hasDb, type Env } from "../../../libs/utils";
 import { applyPaidPack, isSchemaError, saveStripeCustomerId } from "../../../libs/account";
 import { hasStripeWebhook, packFromMetadata, verifyStripeSignature } from "../../../libs/stripe";
+import { acceptZcvPaidCheckout } from "../../../libs/zcv";
+import { ZCV_PRODUCT } from "../../../libs/zcvCore";
+import { startZcvPaidVideo } from "../../../libs/zcvWorkflow";
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   if (!hasStripeWebhook(env) || !env.STRIPE_WEBHOOK_SECRET) {
@@ -14,13 +17,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   if (!ok) return json({ error: "invalid_signature" }, 400);
 
   let event: {
+    id?: string;
+    livemode?: boolean;
     type?: string;
     data?: {
       object?: {
         id?: string;
         customer?: string;
         client_reference_id?: string;
-        metadata?: { userId?: string; pack?: string };
+        mode?: string;
+        status?: string;
+        payment_status?: string;
+        amount_total?: number;
+        currency?: string;
+        payment_intent?: string;
+        metadata?: { userId?: string; pack?: string; orderId?: string; productId?: string };
       };
     };
   };
@@ -35,6 +46,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   }
 
   const session = event.data?.object;
+  if (session?.metadata?.productId === ZCV_PRODUCT.id) {
+    const testStripeKey = env.STRIPE_SECRET_KEY?.startsWith("sk_test_") || env.STRIPE_SECRET_KEY?.startsWith("rk_test_");
+    if (!testStripeKey || event.livemode !== false) return json({ error: "live_zcv_payments_disabled" }, 503);
+    if (!event.id || !session.id) return json({ error: "stripe_event_missing_id" }, 400);
+    const accepted = await acceptZcvPaidCheckout(env.DB, event.id, session);
+    if (!accepted.ok) return json({ error: accepted.reason }, 400);
+    const state = await startZcvPaidVideo(env as Env & { DB: D1Database; SESSIONS: KVNamespace; MEDIA: R2Bucket }, accepted.order.id, new URL(request.url).origin);
+    return json({ ok: true, product: ZCV_PRODUCT.id, orderId: accepted.order.id, newlyPaid: accepted.newlyPaid, status: state });
+  }
+
   const sessionId = session?.id;
   const userId = Number(session?.metadata?.userId || session?.client_reference_id || 0);
   const pack = packFromMetadata(session?.metadata?.pack);

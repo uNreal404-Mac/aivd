@@ -31,6 +31,7 @@ export interface KieCreateError {
   status: number;
   code?: number;
   message: string;
+  certainty: "rejected" | "unknown";
 }
 
 export interface KieTaskInfo {
@@ -40,6 +41,7 @@ export interface KieTaskInfo {
   resultUrl: string | null;
   failCode: string | null;
   failMsg: string | null;
+  creditsConsumed?: number | null;
 }
 
 export interface KieTaskError {
@@ -122,12 +124,14 @@ async function createKieTask(
       method: "POST",
       headers: authHeaders(apiKey),
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(25_000),
     });
   } catch (e) {
     return {
       ok: false,
       status: 502,
       message: e instanceof Error ? e.message : "KIE request failed",
+      certainty: "unknown",
     };
   }
 
@@ -143,11 +147,17 @@ async function createKieTask(
     return { ok: true, taskId };
   }
 
+  const effectiveStatus = res.status >= 400 ? res.status : (body.code && body.code !== 200 ? body.code : 502);
   return {
     ok: false,
-    status: res.status || 502,
+    status: effectiveStatus || 502,
     code: body.code,
     message: body.msg || body.message || `KIE createTask failed (${res.status})`,
+    certainty:
+      (!res.ok && res.status >= 400 && res.status < 500) ||
+      (res.ok && body.code !== undefined && body.code >= 400 && body.code < 500)
+        ? "rejected"
+        : "unknown",
   };
 }
 
@@ -275,6 +285,7 @@ export async function getTaskInfo(
       resultJson?: string;
       failCode?: string | null;
       failMsg?: string | null;
+      creditsConsumed?: number;
     };
   } = {};
   try {
@@ -300,5 +311,8 @@ export async function getTaskInfo(
     resultUrl: parseResultUrl(data.resultJson),
     failCode: data.failCode || null,
     failMsg: data.failMsg || null,
+    creditsConsumed: typeof data.creditsConsumed === "number" && Number.isFinite(data.creditsConsumed) && data.creditsConsumed >= 0
+      ? data.creditsConsumed
+      : null,
   };
 }
