@@ -1,22 +1,10 @@
+import { CANONICAL_ORIGIN, PUBLIC_PATHS } from "../libs/site";
 import type { Env } from "../libs/utils";
 
-const PATHS = [
-  "/",
-  "/pricing",
-  "/workspace",
-  "/auth",
-  "/privacy",
-  "/terms",
-  "/image-to-video",
-  "/photo-to-video",
-  "/free-ai-video",
-];
-
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
-  const origin = new URL(request.url).origin;
-  const urls = PATHS.map(
+export const onRequestGet: PagesFunction<Env> = async () => {
+  const urls = PUBLIC_PATHS.map(
     (path) =>
-      `  <url><loc>${origin}${path}</loc><changefreq>${path === "/" ? "daily" : "weekly"}</changefreq></url>`
+      `  <url><loc>${CANONICAL_ORIGIN}${path}</loc><changefreq>${path === "/" ? "daily" : "weekly"}</changefreq></url>`
   ).join("\n");
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
   return new Response(xml, {
