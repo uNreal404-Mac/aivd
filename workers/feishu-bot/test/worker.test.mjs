@@ -104,14 +104,37 @@ function makeGithubFetch({
   calls = [],
   comments = [],
   issues = [],
+  issue = {
+    number: 20,
+    title: "主任务卡",
+    body: "## 任务\n- [ ] 新定价方案\n- [ ] 定域名\n## 卡点\n- 支付：Stripe",
+  },
+  closedPulls = [
+    {
+      title: "Public /examples sample pages from existing HD clips (#20) (#34)",
+      merged_at: "2026-10-15T08:00:53Z",
+      labels: [],
+    },
+  ],
+  openPulls = [{ title: "Bind Feishu bot KV namespace", merged_at: null, labels: [] }],
 } = {}) {
   const feishu = makeFeishuFetch({ failReplyCount, replies, calls });
   return async (url, init = {}) => {
-    if (String(url).includes("api.github.com") && String(url).includes("/comments")) {
+    const href = String(url);
+    if (href.includes("api.github.com") && href.includes("/comments")) {
       calls.push({ url, init });
       return Response.json(comments);
     }
-    if (String(url).includes("api.github.com") && /\/issues$/.test(String(url)) && init.method === "POST") {
+    if (href.includes("api.github.com") && href.includes("/pulls")) {
+      calls.push({ url, init });
+      const state = new URL(href).searchParams.get("state") || "open";
+      return Response.json(state === "closed" ? closedPulls : openPulls);
+    }
+    if (href.includes("api.github.com") && /\/issues\/\d+$/.test(href.split("?")[0]) && init.method !== "POST") {
+      calls.push({ url, init });
+      return Response.json(issue);
+    }
+    if (href.includes("api.github.com") && /\/issues$/.test(href) && init.method === "POST") {
       calls.push({ url, init });
       const posted = JSON.parse(init.body);
       const created = {
@@ -372,24 +395,74 @@ test("acknowledges unrelated event types without making API calls", async () => 
   assert.equal(fetchCalls, 0);
 });
 
-test("summarizes GitHub issue comments for the progress command", async () => {
+test("replies to 进度 with a website-progress summary and no PR/SHA trackers", async () => {
   const replies = [];
   const worker = createWorker({
-    fetchImpl: makeGithubFetch({
-      replies,
-      comments: [{
-        user: { login: "alice" },
-        created_at: "2026-10-15T10:41:00.000Z",
-        body: "验收通过，只剩报价待确认。",
-      }],
-    }),
+    fetchImpl: makeGithubFetch({ replies }),
   });
   const env = makeEnv();
   assert.equal((await send(worker, messagePayload({ text: "进度", messageId: "om_progress_gh" }), env)).status, 200);
   const replyText = JSON.parse(replies[0].content).text;
-  assert.match(replyText, /验收通过/);
-  assert.match(replyText, /台北时间/);
-  assert.doesNotMatch(replyText, /https?:\/\//i);
+  assert.match(replyText, /网站进度/);
+  assert.match(replyText, /案例页换成我们自己的样片/);
+  assert.match(replyText, /还没做/);
+  assert.match(replyText, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.doesNotMatch(replyText, /老三/);
+  assert.doesNotMatch(replyText, /#\d+/);
+  assert.doesNotMatch(replyText, /\b[0-9a-f]{7,40}\b/i);
+  assert.equal((replyText.match(/详情/g) || []).length, 1);
+});
+
+test("optional LLM is off by default so freeform text still gets the rule help reply", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  assert.equal((await send(worker, messagePayload({ text: "做个视频", messageId: "om_help_default" }), makeEnv())).status, 200);
+  assert.equal(JSON.parse(replies[0].content).text, signOutboundText(HELP_MESSAGE));
+  assert.equal(calls.some(({ url }) => String(url).includes("/chat/completions")), false);
+});
+
+test("allowlisted freeform @/p2p text uses mocked LLM and keeps known commands off the model", async () => {
+  const replies = [];
+  const llmBodies = [];
+  const githubFetch = makeGithubFetch({ replies });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url).includes("/chat/completions")) {
+        llmBodies.push(JSON.parse(init.body));
+        return Response.json({
+          choices: [{ message: { role: "assistant", content: "案例页已经换了样片。见 PR #34 和 1c5dd76。" } }],
+        });
+      }
+      return githubFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.LLM_BASE_URL = "https://llm.test/v1";
+  env.LLM_MODEL = "test-model";
+  env.LLM_API_KEY = "llm-test-key";
+  env.ALLOWED_CHAT_IDS = "oc_chat";
+
+  assert.equal((await send(worker, messagePayload({
+    text: "案例页现在怎样",
+    messageId: "om_llm",
+    eventId: "evt-llm",
+  }), env)).status, 200);
+  const llmReply = JSON.parse(replies[0].content).text;
+  assert.match(llmReply, /案例页已经换了样片/);
+  assert.doesNotMatch(llmReply, /#\d+/);
+  assert.doesNotMatch(llmReply, /1c5dd76/);
+  assert.match(llmReply, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.equal(llmBodies.length, 1);
+  assert.match(llmBodies[0].messages[0].content, /网站进度|服务状态|健康/);
+
+  assert.equal((await send(worker, messagePayload({
+    text: "网址",
+    messageId: "om_url_llm",
+    eventId: "evt-url-llm",
+  }), env)).status, 200);
+  assert.equal(JSON.parse(replies[1].content).text, signOutboundText("https://dreamutopia-clone.pages.dev"));
+  assert.equal(llmBodies.length, 1);
 });
 
 test("creates a GitHub issue from a group 需求 mention and replies with the link", async () => {
@@ -485,3 +558,84 @@ test("returns 503 for GitHub webhooks when the signing secret is missing", async
   }), makeEnv(), {});
   assert.equal(response.status, 503);
 });
+
+
+test("acks Feishu before model work finishes when ctx.waitUntil is used", async () => {
+  let releaseModel;
+  const modelGate = new Promise((resolve) => { releaseModel = resolve; });
+  const replies = [];
+  const pending = [];
+  const ctx = {
+    waitUntil(promise) {
+      pending.push(promise);
+    },
+  };
+  const githubFetch = makeGithubFetch({ replies });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url).includes("/chat/completions")) {
+        await modelGate;
+        return Response.json({
+          choices: [{ message: { role: "assistant", content: "先聊两句，站点正常。" } }],
+        });
+      }
+      return githubFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.LLM_BASE_URL = "https://llm.test/v1";
+  env.LLM_MODEL = "test-model";
+  env.LLM_API_KEY = "llm-test-key";
+  env.ALLOWED_CHAT_IDS = "oc_chat";
+
+  const responsePromise = worker.fetch(new Request("https://example.com/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(messagePayload({
+      text: "随便聊聊",
+      messageId: "om_waituntil_1",
+      eventId: "evt_waituntil_1",
+    })),
+  }), env, ctx);
+
+  const response = await responsePromise;
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 0, "reply must not happen before ack returns");
+
+  releaseModel();
+  await Promise.all(pending);
+  assert.equal(replies.length, 1, "reply should be sent after waitUntil work");
+  assert.match(JSON.parse(replies[0].content).text, /先聊两句/);
+});
+
+test("ignores duplicate event_id when ctx.waitUntil is used", async () => {
+  const replies = [];
+  const pending = [];
+  const ctx = {
+    waitUntil(promise) {
+      pending.push(promise);
+    },
+  };
+  const worker = createWorker({ fetchImpl: makeGithubFetch({ replies }) });
+  const env = makeEnv();
+  const payload = messagePayload({
+    text: "网址",
+    messageId: "om_dup_wait",
+    eventId: "evt_dup_wait",
+  });
+  const req = () => new Request("https://example.com/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  assert.equal((await worker.fetch(req(), env, ctx)).status, 200);
+  await Promise.all(pending.splice(0));
+  const firstCount = replies.length;
+  assert.ok(firstCount >= 1);
+
+  assert.equal((await worker.fetch(req(), env, ctx)).status, 200);
+  await Promise.all(pending.splice(0));
+  assert.equal(replies.length, firstCount, "duplicate event_id must not send another reply");
+});
+

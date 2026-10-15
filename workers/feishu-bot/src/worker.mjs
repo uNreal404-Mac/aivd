@@ -1,10 +1,11 @@
-import { parseCommand, HELP_MESSAGE } from "./commands.mjs";
+import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
 import { decodeFeishuRequest, messageContext, selectMessageEvent, validateVerificationToken } from "./events.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
+import { replyWithOptionalLlm } from "./llm.mjs";
 import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
 
 const SITE_URL = botConfig.siteUrl;
@@ -161,7 +162,14 @@ async function commandReply({
   if (command === "request") {
     return handleFeishuRequest({ kv, env, selected, context, fetchImpl });
   }
-  return HELP_MESSAGE;
+  return replyWithOptionalLlm({
+    kv,
+    env,
+    chatId: context?.chatId,
+    userText: selected?.text,
+    fetchImpl,
+    now,
+  });
 }
 
 async function handleGithubRequest(request, env, { fetchImpl, now, monotonicNow }) {
@@ -193,7 +201,7 @@ export function createWorker({
   monotonicNow = () => performance.now(),
 } = {}) {
   return {
-    async fetch(request, env) {
+    async fetch(request, env, ctx) {
       const url = new URL(request.url);
       if (url.pathname === "/github/webhook") {
         if (request.method !== "POST") return textResponse("Not found", 404);
@@ -208,6 +216,7 @@ export function createWorker({
         : CALLBACK_BUDGET_MS;
       const deadlineAt = monotonicNow() + requestBudgetMs;
       const boundedFetch = createDeadlineFetch(fetchImpl, deadlineAt, monotonicNow);
+      const deferWork = typeof ctx?.waitUntil === "function";
 
       let payload;
       try {
@@ -226,37 +235,41 @@ export function createWorker({
       if (payload?.header?.event_type !== EVENT_TYPE) return textResponse("ok", 200);
 
       if (!env.BOT_KV) return textResponse("Storage is not configured", 503);
-      const kv = createDeadlineKv(env.BOT_KV, deadlineAt, monotonicNow);
 
-      let token = null;
-      let selected = null;
-      const chatType = payload?.event?.message?.chat_type;
-      try {
+      const processMessage = async () => {
+        // Background work may exceed Feishu's ~2.5s ack budget (LLM timeout stays 9s).
+        const workDeadlineAt = deferWork ? monotonicNow() + 60_000 : deadlineAt;
+        const workFetch = deferWork ? fetchImpl : boundedFetch;
+        const kv = deferWork ? env.BOT_KV : createDeadlineKv(env.BOT_KV, deadlineAt, monotonicNow);
+
+        let token = null;
+        let selected = null;
+        const chatType = payload?.event?.message?.chat_type;
         if (chatType === "p2p") {
           selected = selectMessageEvent(payload, "");
         } else if (chatType === "group") {
-          if (!eligibleGroupShape(payload)) return textResponse("ok", 200);
+          if (!eligibleGroupShape(payload)) return;
           token = await getTenantAccessToken({
             kv,
             appId: env.FEISHU_APP_ID,
             appSecret: env.FEISHU_APP_SECRET,
-            fetchImpl: boundedFetch,
+            fetchImpl: workFetch,
             now,
           });
-          const botOpenId = await getBotOpenId({ kv, token, fetchImpl: boundedFetch, now });
+          const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now });
           selected = selectMessageEvent(payload, botOpenId);
         } else {
-          return textResponse("ok", 200);
+          return;
         }
 
-        if (!selected) return textResponse("ok", 200);
-        if (await hasProcessed(kv, selected.eventId, selected.messageId)) return textResponse("ok", 200);
+        if (!selected) return;
+        if (await hasProcessed(kv, selected.eventId, selected.messageId)) return;
         if (!token) {
           token = await getTenantAccessToken({
             kv,
             appId: env.FEISHU_APP_ID,
             appSecret: env.FEISHU_APP_SECRET,
-            fetchImpl: boundedFetch,
+            fetchImpl: workFetch,
             now,
           });
         }
@@ -269,18 +282,27 @@ export function createWorker({
           context,
           kv,
           env,
-          fetchImpl: boundedFetch,
+          fetchImpl: workFetch,
           now,
-          deadlineAt,
+          deadlineAt: workDeadlineAt,
           monotonicNow,
         });
         await replyToMessage({
           token,
           messageId: selected.messageId,
           text,
-          fetchImpl: boundedFetch,
+          fetchImpl: workFetch,
         });
         await markProcessed(kv, selected.eventId, selected.messageId);
+      };
+
+      if (deferWork) {
+        ctx.waitUntil(processMessage().catch(() => {}));
+        return textResponse("ok", 200);
+      }
+
+      try {
+        await processMessage();
         return textResponse("ok", 200);
       } catch {
         return textResponse("Temporary Feishu bot failure", 503);

@@ -678,7 +678,7 @@ if (!exists("workers/feishu-bot/src/config.mjs")) fail.push("feishu bot must kee
 else ok.push("feishu bot has src/config.mjs");
 if (!exists("workers/feishu-bot/TEMPLATE.md")) fail.push("feishu bot must document copy steps in TEMPLATE.md");
 else ok.push("feishu bot has TEMPLATE.md");
-mustContain("workers/feishu-bot/src/config.mjs", "github-issue-comments", "progress command is config-driven");
+mustContain("workers/feishu-bot/src/config.mjs", "github-website-progress", "progress command is config-driven");
 mustContain("workers/feishu-bot/src/config.mjs", "github-create-issue", "request command is config-driven");
 mustContain("workers/feishu-bot/src/config.mjs", "Grok Bot · AI视频项目专属机器人 三儿", "shared Feishu signature default");
 mustContain("workers/feishu-bot/src/config.mjs", "allowedChatIds", "需求 allowlist lives in config");
@@ -687,10 +687,27 @@ mustContain("workers/feishu-bot/README.md", "GITHUB_TOKEN", "bot README names GI
 mustContain("workers/feishu-bot/README.md", "GITHUB_WEBHOOK_SECRET", "bot README names GITHUB_WEBHOOK_SECRET");
 mustContain("workers/feishu-bot/README.md", "ALLOWED_CHAT_IDS", "bot README tells operator to set partner group id");
 mustContain("workers/feishu-bot/README.md", "im:message:send_as_bot", "bot README lists send_as_bot");
+mustContain("workers/feishu-bot/README.md", "LLM_BASE_URL", "bot README documents optional LLM base URL");
+mustContain("workers/feishu-bot/README.md", "LLM_MODEL", "bot README documents optional LLM model");
+mustContain("workers/feishu-bot/README.md", "LLM_API_KEY", "bot README documents optional LLM secret name");
+mustContain("workers/feishu-bot/README.md", "LLM_DAILY_LIMIT", "bot README documents optional LLM daily cap");
+mustContain("workers/feishu-bot/README.md", "LLM_TIMEOUT_MS", "bot README documents optional LLM timeout");
+mustContain("workers/feishu-bot/README.md", "https://api.openai.com/v1", "bot README shows OpenAI-compatible base example");
+mustContain("workers/feishu-bot/README.md", "gpt-4o-mini", "bot README shows example model name");
+mustContain("workers/feishu-bot/src/llm.mjs", "resolveLlmConfig", "optional LLM helper is fail-closed when unset");
+mustContain("workers/feishu-bot/wrangler.toml", "LLM_API_KEY", "wrangler comments document LLM secret name");
+mustContain("workers/feishu-bot/wrangler.toml", "https://api.openai.com/v1", "wrangler comments show OpenAI-compatible base example");
+mustContain("workers/feishu-bot/wrangler.toml", "gpt-4o-mini", "wrangler comments show example model name");
+mustNotContain("workers/feishu-bot/src/llm.mjs", "api.openai.com", "runtime LLM helper must not hardcode a vendor URL");
+mustNotContain("workers/feishu-bot/src/llm.mjs", "gpt-4o-mini", "runtime LLM helper must not hardcode a model name");
+mustNotContain("workers/feishu-bot/src/llm.mjs", "sk-", "runtime LLM helper must not contain API key prefixes");
 mustContain("workers/feishu-bot/TEMPLATE.md", "signature", "TEMPLATE documents overridable signature");
 mustContain("workers/feishu-bot/TEMPLATE.md", "allowedChatIds", "TEMPLATE documents 需求 allowlist");
 mustContain("scripts/feishu-notify.mjs", "DEFAULT_SIGNATURE", "notify cards share the bot signature");
 mustContain("scripts/feishu-notify.mjs", "workers/feishu-bot/src/config.mjs", "notify script imports the shared signature");
+mustContain("scripts/feishu-notify.mjs", "网站进度", "deploy cards use the website-progress title");
+mustContain("workers/feishu-bot/src/site-progress.mjs", "网站进度", "shared progress formatter uses 网站进度");
+mustContain("workers/feishu-bot/src/site-progress.mjs", "还没做", "shared progress formatter has a 还没做 section");
 mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
 {
   const botSrcDir = path.join(root, "workers/feishu-bot/src");

@@ -73,6 +73,26 @@ function collectFeishuFetch({ replies = [], comments = [] } = {}) {
     if (String(url).includes("api.github.com") && String(url).includes("/comments")) {
       return Response.json(comments);
     }
+    if (String(url).includes("api.github.com") && String(url).includes("/pulls")) {
+      const state = new URL(String(url)).searchParams.get("state") || "open";
+      if (state === "closed") {
+        return Response.json([
+          {
+            title: "Public /examples sample pages from existing HD clips (#20) (#34)",
+            merged_at: "2026-10-15T08:00:53Z",
+            labels: [],
+          },
+        ]);
+      }
+      return Response.json([{ title: "Bind Feishu bot KV namespace", merged_at: null, labels: [] }]);
+    }
+    if (String(url).includes("api.github.com") && /\/issues\/\d+$/.test(String(url).split("?")[0])) {
+      return Response.json({
+        number: 20,
+        title: "主任务卡",
+        body: "## 任务\n- [ ] 新定价方案\n- [ ] 定域名\n## 卡点\n- 支付：Stripe",
+      });
+    }
     if (String(url).includes("api.github.com") && /\/issues$/.test(String(url)) && init.method === "POST") {
       return Response.json({
         number: 21,
@@ -198,10 +218,12 @@ test("every Feishu-facing outbound message includes the signature and excludes �
 
   const deploy = buildDeployCard({
     pr: 39,
-    title: "feat: feishu bot",
+    title: "Public /examples sample pages from existing HD clips (#20) (#34)",
     sha: "08cca68",
+    files: ["out/examples.html", "out/examples/rain-couple.html"],
     link: "https://github.com/CharlesHarry7/dreamutopia-clone/pull/39",
     site: "https://dreamutopia-clone.pages.dev",
+    pendingItems: ["定价方案还没定", "正式域名还没定", "支付还没开通"],
   });
   const acceptance = buildAcceptanceCard({
     title: "主路径回归",
@@ -216,4 +238,18 @@ test("every Feishu-facing outbound message includes the signature and excludes �
   for (const [label, text] of outbound) {
     assertSignedOutbound(text, label);
   }
+
+  const progressReply = outbound.find(([label]) => label.includes("进度"))?.[1] || "";
+  assert.match(progressReply, /网站进度/);
+  assert.match(progressReply, /还没做/);
+  assert.doesNotMatch(progressReply, /#\d+/);
+  assert.doesNotMatch(progressReply, /\b[0-9a-f]{7,40}\b/i);
+
+  const deployJson = outbound.find(([label]) => label === "deploy card")?.[1] || "";
+  assert.match(deployJson, /网站进度/);
+  assert.match(deployJson, /案例页换成我们自己的样片/);
+  assert.doesNotMatch(deployJson, /#\d+/);
+  assert.doesNotMatch(deployJson, /\b[0-9a-f]{7,40}\b/i);
+  assert.doesNotMatch(deployJson, /PR #39/);
+  assert.doesNotMatch(deployJson, /08cca68/);
 });

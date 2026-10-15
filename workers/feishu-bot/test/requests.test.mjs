@@ -72,6 +72,13 @@ test("builds a public issue without requester name, open_id, or chat_id", () => 
   assert.deepEqual(content.labels, ["feishu-request"]);
 });
 
+test("redacts honorific names like 王总 without treating 汇总 as a name", () => {
+  const out = sanitizeRequestText("联系王总确认进度汇总");
+  assert.doesNotMatch(out, /王总/);
+  assert.match(out, /已脱敏-姓名/);
+  assert.match(out, /进度汇总/);
+});
+
 test("redacts phones, emails, and money amounts before writing the public issue", () => {
   const content = buildIssueContent({
     requester: { name: "老王", openId: "ou_user" },
