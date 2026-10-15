@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fail = [];
@@ -430,8 +431,61 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
   }
   if (i18nCopy < 8) fail.push("expected demo.* i18n keys");
   else ok.push("demo i18n keys omit clone and 暂未开放");
-  if (!demoSrc.includes("TODO:")) fail.push("demo sample list must mark TODO placeholders");
-  else ok.push("demo sample list has TODO placeholders");
+
+  const require = createRequire(import.meta.url);
+  const demoMod = require("../out/assets/js/demo.js");
+  const renderedCopy = []
+    .concat(demoMod.visibleCopy())
+    .concat(
+      (demoMod.DEMO_SAMPLES || []).map(function (row) {
+        return row && row.title;
+      })
+    );
+  const todoInCopy = renderedCopy.some(function (row) {
+    return /TODO/i.test(String(row || ""));
+  });
+  if (todoInCopy) fail.push("rendered demo copy contains TODO");
+  else ok.push("rendered demo copy contains no TODO");
+
+  const samples = demoMod.DEMO_SAMPLES || [];
+  const requiredKeys = [
+    "0_out_f7d00e65d3c1a45d.mp4",
+    "0_out_68e31a44b7b1d011.mp4",
+    "0_out_980c5a0e163959b6.mp4",
+  ];
+  if (samples.length !== 3) fail.push("demo ships exactly three titled clips");
+  else ok.push("demo ships three titled clips");
+  for (const key of requiredKeys) {
+    const row = samples.find((s) => s && String(s.src || "").endsWith(key));
+    if (!row) fail.push(`demo sample list missing published clip ${key}`);
+    else if (!String(row.title || "").trim()) fail.push(`demo sample ${key} is missing a plain title`);
+    else ok.push(`demo sample ${key} has title ${JSON.stringify(row.title)}`);
+    if (!exists("out/assets/demo/" + key)) fail.push(`missing static demo asset out/assets/demo/${key}`);
+    else ok.push(`static demo asset present: ${key}`);
+  }
+  for (const row of samples) {
+    const title = String((row && row.title) || "").trim();
+    const src = String((row && row.src) || "");
+    if (!title) fail.push(`demo sample ${row && row.id} has no title and must be hidden`);
+    if (!src.startsWith("/assets/demo/") || !src.endsWith(".mp4")) {
+      fail.push(`demo sample ${row && row.id} must be our published clip under /assets/demo/`);
+    }
+  }
+
+  const shippedJs = [
+    "out/assets/js/demo.js",
+    "out/assets/js/du.js",
+    "out/workspace.html",
+  ];
+  for (const rel of shippedJs) {
+    const src = rel === "out/assets/js/demo.js" ? demoSrc : read(rel);
+    if (/TODO/i.test(src)) fail.push(`${rel} shipped copy contains TODO`);
+    else ok.push(`${rel} contains no TODO`);
+  }
+  for (const rel of ["out/workspace.html", "out/demo.html", "out/index.html"]) {
+    if (/TODO/i.test(read(rel))) fail.push(`${rel} rendered HTML contains TODO`);
+    else ok.push(`${rel} rendered HTML contains no TODO`);
+  }
 }
 {
   const metas = [
