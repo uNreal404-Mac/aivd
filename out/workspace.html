@@ -293,6 +293,17 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .hist-modal-actions{display:flex;gap:8px;flex-wrap:wrap}
 .hist-modal-actions button{border:1px solid var(--border2);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}
 .hist-modal-actions button.primary{background:linear-gradient(135deg,var(--primary),var(--accent));border:none;color:#fff}
+.demo-banner{display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.55);background:linear-gradient(135deg,rgba(251,146,60,.16),rgba(168,85,247,.12))}
+.demo-banner.show{display:flex}
+.demo-banner p{font-size:13.5px;color:var(--text);margin:0;font-weight:600}
+.demo-banner .demo-exit{font-size:12.5px;color:var(--primary2);font-weight:600}
+.btn-demo{border:1px solid rgba(251,146,60,.7);background:rgba(251,146,60,.12);color:#fff;padding:8px 16px;border-radius:9px;font-size:13px;font-weight:700}
+.btn-demo:hover{border-color:var(--orange)}
+.demo-sample-badge{display:inline-flex;align-items:center;justify-content:center;margin:10px auto 0;padding:6px 12px;border-radius:999px;background:linear-gradient(135deg,#fb923c,#a855f7);color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em;box-shadow:0 8px 20px rgba(251,146,60,.35)}
+.gen-result .demo-sample-badge{display:none}
+.gen-result.show .demo-sample-badge[data-on="1"],.gen-result.show #demoSampleBadge:not([hidden]){display:inline-flex}
+.history-card-media .demo-sample-badge,.hist-modal-media .demo-sample-badge{position:absolute;left:10px;bottom:10px;top:auto;margin:0;z-index:2;font-size:11px;padding:5px 10px}
+.hist-modal-media{position:relative}
 @media(min-width:1100px){.history-grid{column-count:3}}
 @media(max-width:600px){.history-grid{column-count:1}}
 
@@ -362,6 +373,7 @@ nav{display:none}
 </nav>
 <div class="header-right">
 <span class="credits-pill" id="creditsPill" hidden>⚡ <span id="creditsBadge" class="loading"></span> credits <a href="/pricing" id="buyCreditsLink" hidden>+ Buy Credits</a></span>
+<a href="/workspace?demo=1" class="btn-demo" id="tryDemoLink" data-demo-enter data-i18n="demo.try">Try demo</a>
 <a href="/auth?mode=login" class="btn-login" id="loginBtn" data-i18n="hdr.login">Log In</a>
 <a href="/auth?mode=register" class="btn-signup" id="signupBtn" data-i18n="hdr.signup">Sign Up</a>
 <script>
@@ -415,9 +427,15 @@ nav{display:none}
 <p data-i18n="ws.welcome.p">Browse the generator without an account. Generate asks you to sign in.</p>
 </div>
 <div class="welcome-actions">
+<a href="/workspace?demo=1" class="btn-demo" id="welcomeDemo" data-demo-enter data-i18n="demo.try">Try demo</a>
 <a href="/auth?mode=login" class="btn-outline" id="welcomeLogin" data-i18n="hdr.login">Log In</a>
 <a href="/auth?mode=register" class="btn-primary" id="welcomeSignup" data-i18n="hdr.signup">Sign Up Free</a>
 </div>
+</section>
+
+<section class="demo-banner" id="demoBanner" hidden>
+<p data-i18n="demo.banner">Demo mode — sample clips only. Uploads stay in this browser.</p>
+<a href="/workspace?demo=0" class="demo-exit" data-i18n="demo.exit">Exit demo</a>
 </section>
 
 <section class="guest-persist" id="guestPersistNotice" hidden>
@@ -574,6 +592,7 @@ nav{display:none}
 <div class="gen-result" id="genResult">
 <video id="genResultVideo" controls playsinline></video>
 <img id="genResultImage" class="preview-out" alt="Generated image" hidden>
+<div class="demo-sample-badge" id="demoSampleBadge" hidden>演示样片 / Demo sample</div>
 <div class="result-actions">
 <a id="genResultLink" href="#" target="_blank" rel="noopener" data-i18n="ws.result.open">Open result URL</a>
 <button type="button" id="genDownload" data-i18n="gen.download">Download</button>
@@ -721,6 +740,7 @@ nav{display:none}
 </div>
 
 <script src="/assets/js/du.js"></script>
+<script src="/assets/js/demo.js"></script>
 <script src="/assets/js/i18n.js"></script>
 <script src="/assets/js/pwa.js"></script>
 <script src="/assets/js/seo.js"></script>
@@ -829,7 +849,23 @@ async function fetchAuthMe(retriesLeft) {
   }
 }
 
-function showResult(url, kind, generationId) {
+function demoActive() {
+  return !!(window.DU_DEMO && DU_DEMO.isDemoMode());
+}
+
+function brandFile(id) {
+  const name = (window.DU && DU.BRAND_NAME) || "DreamUtopia";
+  return name.replace(/\s+/g, "-").toLowerCase() + "-" + (id || "result");
+}
+
+function setDemoResultBadge(on) {
+  const el = document.getElementById("demoSampleBadge");
+  if (!el) return;
+  el.hidden = !on;
+  if (on) el.textContent = (window.DU_DEMO && DU_DEMO.BADGE_LABEL) || "演示样片 / Demo sample";
+}
+
+function showResult(url, kind, generationId, meta) {
   const box = document.getElementById("genResult");
   const video = document.getElementById("genResultVideo");
   const image = document.getElementById("genResultImage");
@@ -841,6 +877,7 @@ function showResult(url, kind, generationId) {
   const skel = document.getElementById("genSkel");
   if (url && skel) { skel.hidden = true; skel.classList.remove("show"); }
   if (!url) {
+    setDemoResultBadge(false);
     box.classList.remove("show");
     video.removeAttribute("src");
     video.load();
@@ -864,13 +901,14 @@ function showResult(url, kind, generationId) {
     video.src = url;
   }
   link.href = url;
+  setDemoResultBadge(!!(meta && meta.demo) || demoActive());
   if (download) {
     download.onclick = function () {
-      DU.downloadResult(url, "dreamutopia-" + (lastGenerationId || "result"));
+      DU.downloadResult(url, brandFile(lastGenerationId || "result"));
     };
   }
   if (share) {
-    const numeric = lastGenerationId && String(lastGenerationId).indexOf("g_") !== 0 && token;
+    const numeric = lastGenerationId && String(lastGenerationId).indexOf("g_") !== 0 && token && !demoActive();
     share.hidden = !numeric;
     share.disabled = false;
     share.textContent = DU.t("ws.result.share", "Share to gallery");
@@ -1231,6 +1269,11 @@ function updateGenCost() {
   const wrap = document.getElementById("genCostWrap");
   const el = document.getElementById("genCost");
   if (!wrap || !el) return;
+  if (demoActive()) {
+    wrap.hidden = false;
+    el.textContent = String(currentCost());
+    return;
+  }
   if (generationIsClosed()) {
     wrap.hidden = true;
     return;
@@ -1385,7 +1428,58 @@ async function uploadImageFile(file) {
   return DU.uploadImage(file);
 }
 
+function localPreviewSrc(areaId) {
+  const img = document.querySelector("#" + areaId + " img.preview");
+  return (img && img.src) || "";
+}
+
+async function generateDemoFlow() {
+  const prompt = document.getElementById("promptInput").value.trim();
+  if (!prompt) return toast("Please enter a prompt.", true);
+  const btn = document.getElementById("genBtn");
+  const status = document.getElementById("genStatus");
+  const statusText = document.getElementById("genStatusText");
+  const spinner = document.getElementById("genSpinner");
+  btn.disabled = true;
+  btn.classList.remove("ready");
+  document.getElementById("genBtnLabel").textContent = "Generating...";
+  status.classList.add("show");
+  spinner.style.display = "";
+  showResult(null);
+  const skel = document.getElementById("genSkel");
+  if (skel) { skel.hidden = false; skel.classList.add("show"); }
+  statusText.textContent = DU.progressLabel("waiting");
+  try {
+    const item = await DU_DEMO.runGenerate({
+      kind: currentMode,
+      model: currentModel,
+      prompt: prompt,
+      durationSec: durationSec,
+      localImageUrl: localPreviewSrc("uploadArea"),
+      localLastImageUrl: localPreviewSrc("lastUploadArea"),
+      onProgress: function (st) {
+        statusText.textContent = DU.progressLabel(st);
+      },
+    });
+    spinner.style.display = "none";
+    if (skel) { skel.hidden = true; skel.classList.remove("show"); }
+    statusText.innerHTML = `<span style="color:var(--green)">Done</span> · ${escapeHtml(item.kind)} · ${escapeHtml(currentModel)}`;
+    showResult(item.resultUrl, item.kind, item.id, { demo: true });
+    toast(item.kind === "image" ? "Image ready" : "Video ready");
+    loadHistory();
+  } catch (e) {
+    spinner.style.display = "none";
+    if (skel) { skel.hidden = true; skel.classList.remove("show"); }
+    statusText.textContent = (e && e.message) || "Demo failed";
+    toast(statusText.textContent, true);
+  }
+  resetGenBtn();
+}
+
 async function generate() {
+  if (demoActive()) {
+    return generateDemoFlow();
+  }
   if (generationIsClosed() || (window.DU && DU.generationEnabled === false)) {
     toast(DU.t("gen.closed", "暂未开放"), true);
     return;
@@ -1514,6 +1608,21 @@ async function generate() {
 function resetGenBtn() {
   const btn = document.getElementById("genBtn");
   const foot = document.getElementById("genFoot");
+  if (demoActive()) {
+    const hasPrompt = document.getElementById("promptInput").value.trim().length > 0;
+    btn.disabled = !hasPrompt;
+    btn.classList.toggle("ready", hasPrompt);
+    document.getElementById("genBtnLabel").textContent = DU.t("ws.gen.go", "Generate");
+    if (foot) {
+      foot.hidden = false;
+      foot.textContent = DU.t("demo.foot", "Sample walkthrough. Nothing is billed.");
+    }
+    const wrap = document.getElementById("genCostWrap");
+    if (wrap) wrap.hidden = false;
+    const cost = document.getElementById("genCost");
+    if (cost) cost.textContent = String(currentCost());
+    return;
+  }
   if (generationIsClosed()) {
     btn.disabled = true;
     btn.classList.remove("ready");
@@ -1735,6 +1844,9 @@ function openHistoryDetail(g) {
   } else {
     media.innerHTML = `<div class="history-card-ph">${escapeHtml(String(g.status || "processing"))}</div>`;
   }
+  if (g.demo || demoActive()) {
+    media.insertAdjacentHTML("beforeend", window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>');
+  }
   document.getElementById("historyDetailPrompt").textContent = g.prompt || "—";
   document.getElementById("historyDetailModel").textContent = itemModel(g);
   document.getElementById("historyDetailDuration").textContent = displayDuration(g);
@@ -1745,10 +1857,11 @@ function openHistoryDetail(g) {
   const dl = document.getElementById("historyDetailDownload");
   dl.hidden = !url;
   dl.onclick = function () {
-    DU.downloadResult(url, "dreamutopia-" + g.id);
+    DU.downloadResult(url, brandFile(g.id));
   };
   document.getElementById("historyDetailRegen").onclick = function () {
     refillFromGeneration(g);
+    if (demoActive()) generate();
   };
   document.getElementById("historyDetailCopy").onclick = function () {
     copyHistoryPrompt(g.prompt);
@@ -1776,6 +1889,9 @@ function historyCardHtml(g) {
   const kind = itemKind(g);
   const status = String(g.status || "");
   const play = url && kind === "video" ? `<span class="history-card-play" aria-hidden="true">▶</span>` : "";
+  const demoBadge = (g.demo || demoActive())
+    ? (window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>')
+    : "";
   const media = !url
     ? `<div class="history-card-ph">${escapeHtml(status || "…")}</div>`
     : kind === "image"
@@ -1794,6 +1910,7 @@ function historyCardHtml(g) {
   return `<article class="history-card" data-id="${escapeHtml(String(g.id))}" data-kind="${escapeHtml(kind)}" tabindex="0" role="button">
     <div class="history-card-media">
       ${media}
+      ${demoBadge}
       <span class="history-card-status ${escapeHtml(status)}">${escapeHtml(status || "saved")}</span>
     </div>
     <div class="history-card-cap">
@@ -1831,8 +1948,11 @@ function renderHistoryGrid() {
         const g = historyItems.find((row) => String(row.id) === String(id));
         if (!g) return;
         const act = btn.getAttribute("data-act");
-        if (act === "download") DU.downloadResult(resultUrlOf(g), "dreamutopia-" + g.id);
-        else if (act === "regen") refillFromGeneration(g);
+        if (act === "download") DU.downloadResult(resultUrlOf(g), brandFile(g.id));
+        else if (act === "regen") {
+          refillFromGeneration(g);
+          if (demoActive()) generate();
+        }
         else if (act === "copy") copyHistoryPrompt(g.prompt);
         return;
       }
@@ -1854,6 +1974,11 @@ function renderHistoryGrid() {
 
 async function loadHistory() {
   const list = document.getElementById("historyList");
+  if (demoActive()) {
+    historyItems = DU_DEMO.loadHistory();
+    renderHistoryGrid();
+    return;
+  }
   try {
     let data;
     try {
@@ -1891,31 +2016,42 @@ function escapeHtml(s) {
   if (token) userCredits = readCachedCredits();
   updateAuthUI();
   showPackBanner();
-  try {
-    const cap = await fetch("/api/upload").then((r) => r.json());
-    uploadReady = !!(cap && cap.mediaBound);
-  } catch (e) {
-    uploadReady = false;
-  }
-  try {
-    const health = await fetch("/api/health").then((r) => r.json());
-    const enabled = !!(health && health.generationEnabled === true);
-    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(enabled);
-    if (!enabled || (health && health.generateReady === false)) {
-      generateReady = false;
-      const welcomeP = document.querySelector("#welcomeBanner p");
-      if (welcomeP && !token && !enabled) {
-        welcomeP.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
-      }
-    }
-    resetGenBtn();
-  } catch (e) {
-    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(false);
+  const inDemo = demoActive();
+  if (inDemo && window.DU_DEMO) {
+    DU_DEMO.installNetworkGuard();
+    DU_DEMO.keepDemoQuery();
     generateReady = false;
+    if (window.DU) DU.generationEnabled = false;
+    DU_DEMO.applyChrome();
     resetGenBtn();
+  }
+  if (!inDemo) {
+    try {
+      const cap = await fetch("/api/upload").then((r) => r.json());
+      uploadReady = !!(cap && cap.mediaBound);
+    } catch (e) {
+      uploadReady = false;
+    }
+    try {
+      const health = await fetch("/api/health").then((r) => r.json());
+      const enabled = !!(health && health.generationEnabled === true);
+      if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(enabled);
+      if (!enabled || (health && health.generateReady === false)) {
+        generateReady = false;
+        const welcomeP = document.querySelector("#welcomeBanner p");
+        if (welcomeP && !token && !enabled) {
+          welcomeP.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
+        }
+      }
+      resetGenBtn();
+    } catch (e) {
+      if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(false);
+      generateReady = false;
+      resetGenBtn();
+    }
   }
   const hint = document.getElementById("urlHint");
-  if (hint && !uploadReady) {
+  if (hint && !uploadReady && !inDemo) {
     hint.innerHTML = 'File upload isn’t bound yet — paste a <strong style="color:rgba(255,255,255,.7);font-weight:600">public https image URL</strong> that KIE can fetch.';
   }
   const params = new URLSearchParams(location.search);
@@ -1938,7 +2074,9 @@ function escapeHtml(s) {
   }
   const urlInput = document.getElementById("imageUrlInput");
   if (urlInput) urlInput.addEventListener("input", syncVideoOptions);
-  if (token) {
+  if (inDemo) {
+    loadHistory();
+  } else if (token) {
     try {
       // Only a real unauthorized response may wipe the session. Transient
       // network/timeout/5xx failures keep token + cached credits + logged-in UI.
@@ -1979,6 +2117,7 @@ function escapeHtml(s) {
 
 document.addEventListener("du:i18n", function () {
   updateAuthUI();
+  if (demoActive() && window.DU_DEMO) DU_DEMO.applyChrome();
   resetGenBtn();
   const title = document.getElementById("genTitle");
   if (title) title.textContent = currentMode === "video" ? DU.t("gen.videoTitle", "AI Video Generator") : DU.t("gen.imageTitle", "AI Image Generator");
