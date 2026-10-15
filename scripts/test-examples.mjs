@@ -18,6 +18,8 @@ import {
   relatedExamples,
   renderDetailHtml,
   renderListHtml,
+  exampleContentUrl,
+  videoObjectFields,
   videoObjectJsonLd,
 } from "../libs/examples.ts";
 import { onRequestGet as listGet } from "../functions/examples.ts";
@@ -124,13 +126,18 @@ const KNOWN_CLIPS = [
 {
   for (const ex of EXAMPLES) {
     const obj = videoObjectJsonLd(ex);
+    const fields = videoObjectFields(ex);
+    const contentUrl = exampleContentUrl(ex);
     assert(obj["@type"] === "VideoObject", `${ex.slug} JSON-LD is VideoObject`);
     assert(typeof obj.name === "string" && obj.name.length > 0, `${ex.slug} VideoObject.name`);
     assert(typeof obj.description === "string" && obj.description.length > 0, `${ex.slug} VideoObject.description`);
     assert(obj.thumbnailUrl === `${CANONICAL_ORIGIN}${ex.poster}`, `${ex.slug} VideoObject.thumbnailUrl`);
     assert(obj.uploadDate, `${ex.slug} VideoObject.uploadDate`);
     assert(obj.duration === "PT5S", `${ex.slug} VideoObject.duration is PT5S`);
-    assert(obj.contentUrl === `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`, `${ex.slug} VideoObject.contentUrl`);
+    assert(typeof contentUrl === "string" && /^https:\/\//i.test(contentUrl), `${ex.slug} contentUrl is absolute`);
+    assert(contentUrl === `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`, `${ex.slug} contentUrl is our published mp4`);
+    assert(obj.contentUrl === contentUrl, `${ex.slug} VideoObject.contentUrl`);
+    assert(fields.contentUrl === contentUrl, `${ex.slug} list/detail share the same contentUrl`);
     assert(obj.publisher && obj.publisher.name === BRAND_NAME, `${ex.slug} VideoObject.publisher is BRAND_NAME`);
   }
 }
@@ -141,6 +148,20 @@ const KNOWN_CLIPS = [
   assert(html.includes(`content="${EXAMPLE_LIST_DESCRIPTION}"`), "list HTML has the specified description");
   assert(html.includes(`rel="canonical" href="${CANONICAL_ORIGIN}/examples"`), "list HTML self-canonical");
   assert(html.includes('type="application/ld+json"'), "list HTML has JSON-LD");
+  const listLd = JSON.parse((html.match(/<script type="application\/ld\+json">\s*([\s\S]*?)<\/script>/) || [])[1] || "null");
+  assert(listLd && Array.isArray(listLd.hasPart) && listLd.hasPart.length === EXAMPLES.length, "list JSON-LD hasPart covers every sample");
+  for (let i = 0; i < EXAMPLES.length; i++) {
+    const part = listLd.hasPart[i];
+    const ex = EXAMPLES[i];
+    assert(part && part["@type"] === "VideoObject", `list hasPart[${i}] is VideoObject`);
+    assert(typeof part.contentUrl === "string" && /^https:\/\//i.test(part.contentUrl), `list ${ex.slug} contentUrl is present and absolute`);
+    assert(part.contentUrl === exampleContentUrl(ex), `list ${ex.slug} contentUrl is our mp4`);
+    assert(part.thumbnailUrl === `${CANONICAL_ORIGIN}${ex.poster}`, `list ${ex.slug} thumbnailUrl`);
+    assert(part.uploadDate === ex.uploadDate, `list ${ex.slug} uploadDate`);
+    assert(typeof part.name === "string" && part.name.length > 0, `list ${ex.slug} name`);
+    assert(typeof part.description === "string" && part.description.length > 0, `list ${ex.slug} description`);
+    assert(part.duration === "PT5S", `list ${ex.slug} duration`);
+  }
   assert(!/free|instant/i.test((html.match(/<meta name="description" content="([^"]+)"/) || [])[1] || ""), "list meta omits free/instant");
   for (const ex of EXAMPLES) {
     assert(html.includes(`/examples/${ex.slug}`), `list links to /examples/${ex.slug}`);
@@ -158,6 +179,11 @@ const KNOWN_CLIPS = [
     assert(html.includes(`<h1>${examplePageH1(ex)}</h1>`), `${ex.slug} detail H1`);
     assert(html.includes(`rel="canonical" href="${CANONICAL_ORIGIN}/examples/${ex.slug}"`), `${ex.slug} self-canonical`);
     assert(html.includes('"@type":"VideoObject"'), `${ex.slug} has VideoObject JSON-LD`);
+    const detailLd = JSON.parse((html.match(/<script type="application\/ld\+json">\s*([\s\S]*?)<\/script>/) || [])[1] || "null");
+    assert(detailLd && detailLd["@type"] === "VideoObject", `${ex.slug} JSON-LD object is VideoObject`);
+    assert(typeof detailLd.contentUrl === "string" && /^https:\/\//i.test(detailLd.contentUrl), `${ex.slug} detail contentUrl is present and absolute`);
+    assert(detailLd.contentUrl === exampleContentUrl(ex), `${ex.slug} detail contentUrl is our mp4`);
+    assert(detailLd.thumbnailUrl && detailLd.uploadDate && detailLd.name && detailLd.description && detailLd.duration, `${ex.slug} detail VideoObject has required fields`);
     assert(html.includes(ex.mediaKey), `${ex.slug} embeds the known clip`);
     assert(html.includes(ex.model), `${ex.slug} shows the model`);
     assert(html.includes("5s") && html.includes("1080p"), `${ex.slug} shows duration and resolution`);

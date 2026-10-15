@@ -272,6 +272,59 @@ mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examp
     }
   }
 }
+{
+  function jsonLdBlocks(html) {
+    const blocks = [];
+    const re = /<script type="application\/ld\+json">\s*([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = re.exec(html))) {
+      try {
+        blocks.push(JSON.parse(m[1]));
+      } catch (e) {
+        fail.push("JSON-LD did not parse");
+      }
+    }
+    return blocks;
+  }
+  function collectVideoObjects(node, acc = []) {
+    if (!node || typeof node !== "object") return acc;
+    if (Array.isArray(node)) {
+      for (const item of node) collectVideoObjects(item, acc);
+      return acc;
+    }
+    const type = node["@type"];
+    const isVideo = type === "VideoObject" || (Array.isArray(type) && type.includes("VideoObject"));
+    if (isVideo) acc.push(node);
+    for (const value of Object.values(node)) collectVideoObjects(value, acc);
+    return acc;
+  }
+  function assertVideoObject(obj, label) {
+    const required = ["contentUrl", "thumbnailUrl", "uploadDate", "name", "description", "duration"];
+    for (const key of required) {
+      if (!obj[key]) fail.push(`${label}: VideoObject missing ${key}`);
+      else ok.push(`${label}: VideoObject has ${key}`);
+    }
+    const url = String(obj.contentUrl || "");
+    if (!url) fail.push(`${label}: contentUrl is missing`);
+    else if (!/^https:\/\//i.test(url)) fail.push(`${label}: contentUrl must be absolute, got ${JSON.stringify(url)}`);
+    else if (!/\.mp4(\?|$)/i.test(url) || !/0_out_[a-f0-9]+\.mp4/i.test(url)) {
+      fail.push(`${label}: contentUrl must be an absolute URL to our own mp4`);
+    } else ok.push(`${label}: contentUrl is present and absolute`);
+  }
+  const listVideos = collectVideoObjects(jsonLdBlocks(read("out/examples.html")));
+  if (listVideos.length < 3) fail.push("examples list JSON-LD must include VideoObject entries");
+  else ok.push(`examples list JSON-LD has ${listVideos.length} VideoObject entries`);
+  listVideos.forEach((obj, i) => assertVideoObject(obj, `examples list VideoObject[${i}]`));
+  if (exists("out/examples")) {
+    const files = fs.readdirSync(path.join(root, "out/examples")).filter((f) => f.endsWith(".html"));
+    for (const file of files) {
+      const rel = `out/examples/${file}`;
+      const videos = collectVideoObjects(jsonLdBlocks(read(rel)));
+      if (!videos.length) fail.push(`${rel}: no VideoObject in JSON-LD`);
+      videos.forEach((obj, i) => assertVideoObject(obj, `${rel} VideoObject[${i}]`));
+    }
+  }
+}
 mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
 mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
 mustContain("functions/robots.txt.ts", "CANONICAL_ORIGIN", "function robots uses canonical origin");
