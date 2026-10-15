@@ -59,7 +59,7 @@ npx wrangler dev
    使用 Wrangler 显示的 `workers.dev` 主机名填事件订阅地址，格式为：
 
    ```text
-   https://feishu-bot.<account-subdomain>.workers.dev/feishu/events
+   https://feishu-bot.guochao950518.workers.dev/feishu/events
    ```
 
 ## 飞书开放平台配置
@@ -67,13 +67,12 @@ npx wrangler dev
 在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本：
 
 1. 启用机器人能力。
-2. 在事件订阅中填写部署后的完整回调地址，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
+2. 在事件订阅中选择「将事件发送至开发者服务器」，填写 `https://feishu-bot.guochao950518.workers.dev/feishu/events`，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
 3. 将应用凭据中的 App ID、App Secret、Verification Token 和 Encrypt Key 分别通过上面的 Wrangler secret 命令设置。平台启用了事件加密时，Encrypt Key 必须与 Worker secret 相同。
-4. 申请并在应用版本中启用这些权限：
-   - `im:message`
-   - `im:message.group_at_msg`
-   - `im:message:send_as_bot`
-   - 如果飞书权限面板把私聊接收权限单独列出，再申请 `im:message.p2p_msg`。
+4. 申请并在应用版本中启用这些最小必要权限：
+   - `im:message.p2p_msg:readonly`：接收发给机器人的私聊。
+   - `im:message.group_at_msg:readonly`：接收群聊中 @ 机器人的消息。
+   - `im:message:send_as_bot`：以应用身份回复消息。
 5. 将应用版本提交发布，并确认机器人对测试用户可见、已加入要测试的群聊。
 
 在群聊中只有 @ 到此应用机器人本身才会触发回复。Worker 使用 KV 的事件和消息标记以及飞书回复 UUID 尽量避免重复回复；Workers KV 最终一致，因此不承诺并发或跨地域投递下严格 exactly-once。
