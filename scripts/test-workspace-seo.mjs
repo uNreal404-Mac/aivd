@@ -65,10 +65,13 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(!/name=["']robots["']/i.test(staticHtml), "static HTML has no robots noindex");
   assert(!/\/api\/media\?/i.test(staticHtml), "static HTML has no /api/media user-work URLs");
   assert(!staticHtml.includes("href=\"/business\""), "workspace does not fall back to /business");
-  assert(staticHtml.includes('id="audioRow"') && staticHtml.includes('id="durationRow"') && staticHtml.includes('id="aspectRow"'), "chip selectors present");
+  assert(staticHtml.includes('id="audioRow"') && staticHtml.includes('id="durationRow"') && staticHtml.includes('id="aspectRow"') && staticHtml.includes('id="resolutionRow"'), "chip selectors present");
   assert(staticHtml.includes('id="uploadArea"') && staticHtml.includes('id="lastUploadArea"'), "start/end frame cards present");
-  assert(staticHtml.includes('id="composerDock"') && staticHtml.includes('id="genSticky"'), "Generate dock is always in the create view");
+  assert(staticHtml.includes('id="composerDock"') && staticHtml.includes('id="genSticky"') && staticHtml.includes('class="ws-stage"'), "left panel + right history stage");
+  assert(staticHtml.includes('id="presetCard"') && staticHtml.includes('id="genCost"'), "preset card and Generate credit cost");
+  assert(staticHtml.includes("DU.alertDialog"), "logged-out Generate opens login, not /business");
   assert(staticHtml.includes("generationIsClosed") && staticHtml.includes('DU.t("gen.closed"'), "closed Generate stays 暂未开放");
+  assert(staticHtml.includes('data-i18n="ws.tab.history"') && staticHtml.includes(">History<"), "right canvas History tab");
   assert(!/Seedance|Higgsfield|Genjutsu|Katana/i.test(staticHtml), "no competitor copy in workspace HTML");
 }
 

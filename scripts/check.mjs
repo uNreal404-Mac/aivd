@@ -90,7 +90,29 @@ mustContain("out/workspace.html", "gen-sticky", "workspace sticky Generate");
 mustContain("out/workspace.html", "preview-skeleton", "generate preview skeleton");
 mustContain("out/workspace.html", 'id="wsH1"', "workspace H1 id");
 mustContain("out/workspace.html", "Create AI Videos from Images", "workspace H1 copy");
-mustContain("out/workspace.html", 'id="composerDock"', "single-screen composer dock");
+mustContain("out/workspace.html", 'id="composerDock"', "left parameter panel");
+mustContain("out/workspace.html", 'class="panel-scroll"', "left panel scrolls above pinned Generate");
+mustContain("out/workspace.html", 'class="chip-dock"', "model/duration/aspect/resolution chips stay pinned");
+mustContain("out/workspace.html", 'class="ws-stage"', "left params + right history stage");
+mustContain("out/workspace.html", 'id="presetCard"', "preset look card");
+mustContain("out/workspace.html", 'id="genCost"', "Generate button shows credit cost");
+mustContain("out/workspace.html", 'id="resolutionRow"', "resolution chip selector");
+mustContain("out/workspace.html", "DU.alertDialog", "Generate asks login when logged out");
+mustContain("out/workspace.html", 'data-i18n="ws.tab.history"', "right canvas History tab");
+mustContain("out/workspace.html", 'data-i18n="ws.tab.how"', "right canvas How it works tab");
+mustContain("out/assets/js/i18n.js", '"ws.tab.history": "History"', "History tab English copy");
+{
+  const src = read("out/workspace.html");
+  const start = src.indexOf("async function generate()");
+  const end = src.indexOf("function resetGenBtn()");
+  const body = start >= 0 && end > start ? src.slice(start, end) : "";
+  const closedAt = body.indexOf("generationIsClosed");
+  const tokenAt = body.indexOf("if (!token)");
+  const loginAt = body.indexOf("DU.alertDialog");
+  if (closedAt < 0 || tokenAt < 0 || loginAt < 0 || !(closedAt < tokenAt && tokenAt < loginAt)) {
+    fail.push("generate() must show 暂未开放 when closed, then login wall when logged out");
+  } else ok.push("generate() closed-first then login dialog for guests");
+}
 mustContain("out/workspace.html", 'id="audioRow"', "audio chip selector");
 mustContain("out/workspace.html", 'id="durationRow"', "duration chip selector");
 mustContain("out/workspace.html", 'id="aspectRow"', "aspect chip selector");
