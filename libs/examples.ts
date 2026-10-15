@@ -235,25 +235,34 @@ function brandOrganization() {
   return { "@type": "Organization", "name": BRAND_NAME };
 }
 
-function exampleListPart(ex: Example) {
-  return {
-    "@type": "VideoObject",
-    name: examplePageH1(ex),
-    url: exampleCanonical(`/examples/${ex.slug}`),
-    thumbnailUrl: `${CANONICAL_ORIGIN}${ex.poster}`,
-  };
+/** Absolute URL of the published mp4 this sample plays. */
+export function exampleContentUrl(ex: Example): string {
+  return `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`;
 }
 
-export function videoObjectJsonLd(ex: Example): Record<string, unknown> {
+export function videoObjectFields(ex: Example): Record<string, unknown> {
   return {
-    "@context": "https://schema.org",
     "@type": "VideoObject",
     name: examplePageH1(ex),
     description: examplePageDescription(ex),
     thumbnailUrl: `${CANONICAL_ORIGIN}${ex.poster}`,
     uploadDate: ex.uploadDate,
     duration: `PT${ex.durationSec}S`,
-    contentUrl: `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`,
+    contentUrl: exampleContentUrl(ex),
+  };
+}
+
+function exampleListPart(ex: Example) {
+  return {
+    ...videoObjectFields(ex),
+    url: exampleCanonical(`/examples/${ex.slug}`),
+  };
+}
+
+export function videoObjectJsonLd(ex: Example): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    ...videoObjectFields(ex),
     publisher: brandOrganization(),
   };
 }
