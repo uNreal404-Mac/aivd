@@ -243,6 +243,7 @@ if (!exists("scripts/test-p1.mjs")) fail.push("missing scripts/test-p1.mjs");
 else ok.push("scripts/test-p1.mjs exists");
 
 mustContain("out/business.html", "<h1 data-i18n=\"biz.h1\">企业 AI 短视频定制</h1>", "business H1 is 企业 AI 短视频定制");
+mustContain("out/business.html", 'localStorage.setItem("du_lang", "zh")', "business defaults to zh when no saved lang");
 mustContain("out/business.html", "人工交付，先报价", "business human-delivery badge");
 mustContain("out/business.html", "免费查看行业样片，先报价再制作", "business sample copy");
 mustContain("out/business.html", "24 小时内报价", "business 24h quote");
