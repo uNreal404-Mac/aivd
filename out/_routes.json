@@ -9,7 +9,10 @@
     "/workspace",
     "/workspace/",
     "/workspace.html",
-    "/examples/*"
+    "/examples/*",
+    "/partners",
+    "/partners/",
+    "/partners.html"
   ],
   "exclude": []
 }

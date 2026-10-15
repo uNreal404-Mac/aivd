@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fail = [];
@@ -271,6 +272,59 @@ mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examp
     }
   }
 }
+{
+  function jsonLdBlocks(html) {
+    const blocks = [];
+    const re = /<script type="application\/ld\+json">\s*([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = re.exec(html))) {
+      try {
+        blocks.push(JSON.parse(m[1]));
+      } catch (e) {
+        fail.push("JSON-LD did not parse");
+      }
+    }
+    return blocks;
+  }
+  function collectVideoObjects(node, acc = []) {
+    if (!node || typeof node !== "object") return acc;
+    if (Array.isArray(node)) {
+      for (const item of node) collectVideoObjects(item, acc);
+      return acc;
+    }
+    const type = node["@type"];
+    const isVideo = type === "VideoObject" || (Array.isArray(type) && type.includes("VideoObject"));
+    if (isVideo) acc.push(node);
+    for (const value of Object.values(node)) collectVideoObjects(value, acc);
+    return acc;
+  }
+  function assertVideoObject(obj, label) {
+    const required = ["contentUrl", "thumbnailUrl", "uploadDate", "name", "description", "duration"];
+    for (const key of required) {
+      if (!obj[key]) fail.push(`${label}: VideoObject missing ${key}`);
+      else ok.push(`${label}: VideoObject has ${key}`);
+    }
+    const url = String(obj.contentUrl || "");
+    if (!url) fail.push(`${label}: contentUrl is missing`);
+    else if (!/^https:\/\//i.test(url)) fail.push(`${label}: contentUrl must be absolute, got ${JSON.stringify(url)}`);
+    else if (!/\.mp4(\?|$)/i.test(url) || !/0_out_[a-f0-9]+\.mp4/i.test(url)) {
+      fail.push(`${label}: contentUrl must be an absolute URL to our own mp4`);
+    } else ok.push(`${label}: contentUrl is present and absolute`);
+  }
+  const listVideos = collectVideoObjects(jsonLdBlocks(read("out/examples.html")));
+  if (listVideos.length < 3) fail.push("examples list JSON-LD must include VideoObject entries");
+  else ok.push(`examples list JSON-LD has ${listVideos.length} VideoObject entries`);
+  listVideos.forEach((obj, i) => assertVideoObject(obj, `examples list VideoObject[${i}]`));
+  if (exists("out/examples")) {
+    const files = fs.readdirSync(path.join(root, "out/examples")).filter((f) => f.endsWith(".html"));
+    for (const file of files) {
+      const rel = `out/examples/${file}`;
+      const videos = collectVideoObjects(jsonLdBlocks(read(rel)));
+      if (!videos.length) fail.push(`${rel}: no VideoObject in JSON-LD`);
+      videos.forEach((obj, i) => assertVideoObject(obj, `${rel} VideoObject[${i}]`));
+    }
+  }
+}
 mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
 mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
 mustContain("functions/robots.txt.ts", "CANONICAL_ORIGIN", "function robots uses canonical origin");
@@ -496,8 +550,61 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
   }
   if (i18nCopy < 8) fail.push("expected demo.* i18n keys");
   else ok.push("demo i18n keys omit clone and 暂未开放");
-  if (!demoSrc.includes("TODO:")) fail.push("demo sample list must mark TODO placeholders");
-  else ok.push("demo sample list has TODO placeholders");
+
+  const require = createRequire(import.meta.url);
+  const demoMod = require("../out/assets/js/demo.js");
+  const renderedCopy = []
+    .concat(demoMod.visibleCopy())
+    .concat(
+      (demoMod.DEMO_SAMPLES || []).map(function (row) {
+        return row && row.title;
+      })
+    );
+  const todoInCopy = renderedCopy.some(function (row) {
+    return /TODO/i.test(String(row || ""));
+  });
+  if (todoInCopy) fail.push("rendered demo copy contains TODO");
+  else ok.push("rendered demo copy contains no TODO");
+
+  const samples = demoMod.DEMO_SAMPLES || [];
+  const requiredKeys = [
+    "0_out_f7d00e65d3c1a45d.mp4",
+    "0_out_68e31a44b7b1d011.mp4",
+    "0_out_980c5a0e163959b6.mp4",
+  ];
+  if (samples.length !== 3) fail.push("demo ships exactly three titled clips");
+  else ok.push("demo ships three titled clips");
+  for (const key of requiredKeys) {
+    const row = samples.find((s) => s && String(s.src || "").endsWith(key));
+    if (!row) fail.push(`demo sample list missing published clip ${key}`);
+    else if (!String(row.title || "").trim()) fail.push(`demo sample ${key} is missing a plain title`);
+    else ok.push(`demo sample ${key} has title ${JSON.stringify(row.title)}`);
+    if (!exists("out/assets/demo/" + key)) fail.push(`missing static demo asset out/assets/demo/${key}`);
+    else ok.push(`static demo asset present: ${key}`);
+  }
+  for (const row of samples) {
+    const title = String((row && row.title) || "").trim();
+    const src = String((row && row.src) || "");
+    if (!title) fail.push(`demo sample ${row && row.id} has no title and must be hidden`);
+    if (!src.startsWith("/assets/demo/") || !src.endsWith(".mp4")) {
+      fail.push(`demo sample ${row && row.id} must be our published clip under /assets/demo/`);
+    }
+  }
+
+  const shippedJs = [
+    "out/assets/js/demo.js",
+    "out/assets/js/du.js",
+    "out/workspace.html",
+  ];
+  for (const rel of shippedJs) {
+    const src = rel === "out/assets/js/demo.js" ? demoSrc : read(rel);
+    if (/TODO/i.test(src)) fail.push(`${rel} shipped copy contains TODO`);
+    else ok.push(`${rel} contains no TODO`);
+  }
+  for (const rel of ["out/workspace.html", "out/demo.html", "out/index.html"]) {
+    if (/TODO/i.test(read(rel))) fail.push(`${rel} rendered HTML contains TODO`);
+    else ok.push(`${rel} rendered HTML contains no TODO`);
+  }
 }
 {
   const metas = [
@@ -612,6 +719,91 @@ mustContain("scripts/feishu-notify.mjs", "createHmac", "notify script supports F
 mustContain("README.md", "FEISHU_WEBHOOK_URL", "root README documents webhook secret name");
 mustContain("README.md", "FEISHU_WEBHOOK_SECRET", "root README documents optional signing secret");
 mustNotContain("scripts/feishu-notify.mjs", "open.feishu.cn/open-apis/bot/v2/hook/", "notify script has no hardcoded webhook URL");
+
+if (!exists("out/partners.html")) fail.push("missing out/partners.html");
+else ok.push("out/partners.html exists");
+if (!exists("libs/partners.ts")) fail.push("missing libs/partners.ts status + noindex helpers");
+else ok.push("libs/partners.ts exists");
+if (exists("out/partners.html")) {
+  mustContain("out/partners.html", '<meta name="robots" content="noindex">', "/partners static HTML is noindex");
+  mustContain("out/partners.html", 'href="/workspace?demo=1"', "/partners has demo entry");
+  mustContain("out/partners.html", "演示样片", "/partners mentions 演示样片 label");
+  mustContain("out/partners.html", "选定域名并换牌子", "step 1 rendered");
+  mustContain("out/partners.html", "开通美元收款", "step 2 rendered");
+  mustContain("out/partners.html", "批准生成预算并打开生成", "step 3 rendered");
+  mustContain("out/partners.html", "老三", "remaining steps owned by 老三");
+  mustContain("out/partners.html", "公开样片", "/partners lists public samples");
+  mustContain("out/partners.html", 'href="/examples"', "/partners links live /examples");
+  mustContain("out/partners.html", "DU.BRAND_NAME", "/partners reads the central brand constant");
+  mustNotContain("out/partners.html", "/api/generate", "partners page does not call generate");
+  mustNotContain("out/partners.html", "/api/upload", "partners page does not call upload");
+  mustNotContain("out/partners.html", "clone", "partners copy has no clone");
+  mustNotContain("out/partners.html", "暂未开放", "partners copy has no 暂未开放");
+}
+if (exists("libs/partners.ts")) {
+  mustContain("libs/partners.ts", 'status: "live"', "status config marks live features");
+  mustContain("libs/partners.ts", 'id: "examples"', "status config includes public samples");
+  mustContain("libs/partners.ts", 'status: "pending"', "status config marks pending steps");
+  mustContain("libs/partners.ts", "x-robots-tag", "partners helper sets X-Robots-Tag");
+  mustContain("libs/partners.ts", "isPartnersPath", "partners path helper");
+}
+mustContain("functions/_middleware.ts", "isPartnersPath", "middleware applies partners noindex");
+mustContain("functions/_middleware.ts", "rewritePartnersHtmlResponse", "middleware rewrites /partners HTML");
+mustContain("out/_routes.json", '"/partners"', "Functions include /partners so middleware runs");
+mustContain("out/_routes.json", '"/partners/"', "Functions include /partners/ alias");
+mustContain("out/_routes.json", '"/partners.html"', "Functions include /partners.html alias");
+mustContain("out/_routes.json", '"/examples/*"', "merge keeps /examples/* so slug Functions run");
+mustNotContain("out/_routes.json", '"/partners/*"', "no /partners/* splat (would overlap /partners/)");
+mustContain("out/_routes.json", '"/workspace"', "partners change keeps /workspace include");
+mustContain("out/_routes.json", '"/workspace.html"', "partners change keeps /workspace.html include");
+mustNotContain("out/sitemap.xml", "/partners", "sitemap omits /partners");
+mustNotContain("libs/site.ts", '"/partners"', "PUBLIC_PATHS omits /partners");
+mustNotContain("out/robots.txt", "Disallow: /partners", "robots.txt must not publicize /partners");
+mustNotContain("functions/robots.txt.ts", "Disallow: /partners", "function robots must not publicize /partners");
+{
+  const partnersSrc =
+    (exists("out/partners.html") ? read("out/partners.html") : "") +
+    (exists("libs/partners.ts") ? `\n${read("libs/partners.ts")}` : "");
+  const forbidden = [
+    "miko.video",
+    "popovid.com",
+    "Miko",
+    "Popovid",
+    "Stripe",
+    "KIE",
+    "sk_live",
+    "sk_test",
+    "whsec_",
+  ];
+  for (const needle of forbidden) {
+    if (partnersSrc.includes(needle)) fail.push(`partners page/config must not contain ${JSON.stringify(needle)}`);
+    else ok.push(`partners page/config omits ${JSON.stringify(needle)}`);
+  }
+  if (/\$\d/.test(partnersSrc)) fail.push("partners page/config must not show dollar amounts");
+  else ok.push("partners page/config omits dollar amounts");
+}
+{
+  const publicHtml = [
+    "out/index.html",
+    "out/workspace.html",
+    "out/pricing.html",
+    "out/auth.html",
+    "out/privacy.html",
+    "out/terms.html",
+    "out/image-to-video.html",
+    "out/photo-to-video.html",
+    "out/free-ai-video.html",
+    "out/reset.html",
+    "out/demo.html",
+    "out/examples.html",
+  ];
+  for (const rel of publicHtml) {
+    mustNotContain(rel, 'href="/partners"', `${rel} public chrome has no /partners link`);
+  }
+  mustNotContain("out/assets/js/i18n.js", "/partners", "i18n has no /partners nav entry");
+}
+if (!exists("scripts/test-partners.mjs")) fail.push("missing scripts/test-partners.mjs");
+else ok.push("scripts/test-partners.mjs exists");
 
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
@@ -780,4 +972,21 @@ process.stderr.write(feishuBotUnit.stderr || "");
 if (feishuBotUnit.status !== 0) {
   console.log("FAIL workers/feishu-bot tests");
   process.exit(feishuBotUnit.status || 1);
+}
+
+const partnersUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-partners.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(partnersUnit.stdout || "");
+process.stderr.write(partnersUnit.stderr || "");
+if (partnersUnit.status !== 0) {
+  console.log("FAIL scripts/test-partners.mjs");
+  process.exit(partnersUnit.status || 1);
 }
