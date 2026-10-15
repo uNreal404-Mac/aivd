@@ -33,7 +33,8 @@ export const onRequestOptions = (): Response => preflight();
 
 /** GET /api/upload — capability probe for the workspace UI */
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
-  const generationEnabled = isGenerationEnabled(env);
+  if (!isGenerationEnabled(env)) return generationDisabledResponse();
+  const generationEnabled = true;
   return json({
     ok: true,
     mediaBound: hasMedia(env),

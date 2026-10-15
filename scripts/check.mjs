@@ -88,6 +88,51 @@ mustContain("out/index.html", "gallery-empty", "gallery empty placeholder");
 mustContain("out/index.html", "gen-sticky", "sticky mobile Generate");
 mustContain("out/workspace.html", "gen-sticky", "workspace sticky Generate");
 mustContain("out/workspace.html", "preview-skeleton", "generate preview skeleton");
+mustContain("out/workspace.html", 'id="wsH1"', "workspace H1 id");
+mustContain("out/workspace.html", "Create AI Videos from Images", "workspace H1 copy");
+mustContain("out/workspace.html", 'id="composerDock"', "left parameter panel");
+mustContain("out/workspace.html", 'class="panel-scroll"', "left panel scrolls above pinned Generate");
+mustContain("out/workspace.html", 'class="chip-dock"', "model/duration/aspect/resolution chips stay pinned");
+mustContain("out/workspace.html", 'class="ws-stage"', "left params + right history stage");
+mustContain("out/workspace.html", 'id="presetCard"', "preset look card");
+mustContain("out/workspace.html", 'id="genCost"', "Generate button shows credit cost");
+mustContain("out/workspace.html", 'id="resolutionRow"', "resolution chip selector");
+mustContain("out/workspace.html", "DU.alertDialog", "Generate asks login when logged out");
+mustContain("out/workspace.html", 'data-i18n="ws.tab.history"', "right canvas History tab");
+mustContain("out/workspace.html", 'data-i18n="ws.tab.how"', "right canvas How it works tab");
+mustContain("out/assets/js/i18n.js", '"ws.tab.history": "History"', "History tab English copy");
+{
+  const src = read("out/workspace.html");
+  const start = src.indexOf("async function generate()");
+  const end = src.indexOf("function resetGenBtn()");
+  const body = start >= 0 && end > start ? src.slice(start, end) : "";
+  const closedAt = body.indexOf("generationIsClosed");
+  const tokenAt = body.indexOf("if (!token)");
+  const loginAt = body.indexOf("DU.alertDialog");
+  if (closedAt < 0 || tokenAt < 0 || loginAt < 0 || !(closedAt < tokenAt && tokenAt < loginAt)) {
+    fail.push("generate() must show 暂未开放 when closed, then login wall when logged out");
+  } else ok.push("generate() closed-first then login dialog for guests");
+}
+mustContain("out/workspace.html", 'id="audioRow"', "audio chip selector");
+mustContain("out/workspace.html", 'id="durationRow"', "duration chip selector");
+mustContain("out/workspace.html", 'id="aspectRow"', "aspect chip selector");
+mustContain("out/workspace.html", 'id="lastUploadArea"', "end-frame card");
+mustContain("out/workspace.html", "Start frame", "start-frame card label");
+mustContain("out/workspace.html", "End frame", "end-frame card label");
+mustContain("out/workspace.html", "function generationIsClosed", "Generate stays closed when flag is off");
+mustContain("out/workspace.html", "function pickAudio", "audio chip maps to existing Pro model");
+mustContain("out/workspace.html", "lastFrameOn", "last-frame payload still Medium/Pro only");
+mustNotContain("out/workspace.html", 'href="/business"', "workspace Generate does not fall back to /business");
+mustNotContain("out/workspace.html", "/api/media?", "server HTML has no user-work media URLs");
+mustNotContain("out/workspace.html", 'name="robots"', "static /workspace HTML has no robots noindex");
+mustContain("out/index.html", 'property="og:title" content="AI Image & Video Generator | DreamUtopia"', "home og:title drops Free");
+mustContain("out/index.html", 'name="twitter:title" content="AI Image & Video Generator | DreamUtopia"', "home twitter:title drops Free");
+mustContain("out/assets/js/seo.js", 'meta("property", "og:title", title, true)', "seo.js keeps authored og:title");
+mustContain("libs/workspaceSeo.ts", "applyWorkspaceHtmlSeo", "workspace HTML SEO helper");
+mustContain("functions/_middleware.ts", "applyWorkspaceHtmlSeo", "Pages middleware rewrites /workspace HTML");
+mustContain("functions/_middleware.ts", "x-robots-tag", "parameterized workspace sends X-Robots-Tag");
+mustContain("functions/api/upload-ticket.ts", "isGenerationEnabled", "upload-ticket honors GENERATION_ENABLED");
+mustContain("functions/api/upload-ticket.ts", "generationDisabledResponse", "upload-ticket returns 503 when closed");
 mustContain("out/pricing.html", "支付即将开放", "honest payments-coming-soon note");
 mustContain("out/pricing.html", 'id="checkoutNote"', "pricing top checkout banner");
 mustContain("out/pricing.html", 'class="checkout-note show"', "coming-soon banner visible before JS");
@@ -99,7 +144,7 @@ const CANON = "https://dreamutopia-clone.pages.dev";
 const PUBLIC_PAGES = [
   { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
   { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
-  { rel: "out/workspace.html", path: "/workspace", title: "Workspace — DreamUtopia" },
+  { rel: "out/workspace.html", path: "/workspace", title: "AI Video Generator – Turn Photos into Videos | DreamUtopia" },
   { rel: "out/auth.html", path: "/auth", title: "Sign in — DreamUtopia" },
   { rel: "out/privacy.html", path: "/privacy", title: "Privacy Policy — DreamUtopia" },
   { rel: "out/terms.html", path: "/terms", title: "Terms of Service — DreamUtopia" },
@@ -272,7 +317,20 @@ mustNotContain("libs/generation.ts", '"/business"', "generation lib has no /busi
 mustNotContain("libs/generation.ts", "企业定制询价", "generation lib has no quote CTA");
 mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST honors GENERATION_ENABLED");
 mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
-mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload POST honors GENERATION_ENABLED");
+mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload honors GENERATION_ENABLED");
+{
+  const src = read("functions/api/upload.ts");
+  const getStart = src.indexOf("export const onRequestGet");
+  const postStart = src.indexOf("export const onRequestPost");
+  const getFn = getStart >= 0 && postStart > getStart ? src.slice(getStart, postStart) : "";
+  const postFn = postStart >= 0 ? src.slice(postStart) : "";
+  if (!getFn.includes("isGenerationEnabled") || !getFn.includes("generationDisabledResponse")) {
+    fail.push("GET /api/upload must return 503 when generation is off");
+  } else ok.push("GET /api/upload checks GENERATION_ENABLED before probing");
+  if (!postFn.includes("isGenerationEnabled") || !postFn.includes("generationDisabledResponse")) {
+    fail.push("POST /api/upload must return 503 when generation is off");
+  } else ok.push("POST /api/upload checks GENERATION_ENABLED before R2/KIE");
+}
 mustContain("functions/api/health.ts", "generationEnabled", "health exposes generationEnabled");
 mustContain("functions/api/health.ts", "guestTrials: generationEnabled", "health guestTrials follows generation kill switch");
 mustContain(
@@ -424,4 +482,21 @@ process.stderr.write(bizUnit.stderr || "");
 if (bizUnit.status !== 0) {
   console.log("FAIL scripts/test-business.mjs");
   process.exit(bizUnit.status || 1);
+}
+
+const wsSeoUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-workspace-seo.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(wsSeoUnit.stdout || "");
+process.stderr.write(wsSeoUnit.stderr || "");
+if (wsSeoUnit.status !== 0) {
+  console.log("FAIL scripts/test-workspace-seo.mjs");
+  process.exit(wsSeoUnit.status || 1);
 }

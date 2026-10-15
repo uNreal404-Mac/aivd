@@ -25,13 +25,15 @@
     el.setAttribute("href", href);
   }
 
-  function meta(attr, key, content) {
+  function meta(attr, key, content, keepExisting) {
     var sel = "meta[" + attr + '="' + key + '"]';
     var el = document.querySelector(sel);
     if (!el) {
       el = document.createElement("meta");
       el.setAttribute(attr, key);
       document.head.appendChild(el);
+    } else if (keepExisting && el.getAttribute("content")) {
+      return;
     }
     el.setAttribute("content", content);
   }
@@ -47,12 +49,12 @@
   if (!noindex) link("canonical", url);
   meta("property", "og:type", path === "/pricing" ? "product" : "website");
   meta("property", "og:site_name", "DreamUtopia");
-  meta("property", "og:title", title);
+  meta("property", "og:title", title, true);
   meta("property", "og:description", desc);
   meta("property", "og:url", url);
   meta("property", "og:image", image);
   meta("name", "twitter:card", "summary_large_image");
-  meta("name", "twitter:title", title);
+  meta("name", "twitter:title", title, true);
   meta("name", "twitter:description", desc);
   meta("name", "twitter:image", image);
 
