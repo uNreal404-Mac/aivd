@@ -104,6 +104,7 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
+  { rel: "out/business.html", path: "/business", title: "AI 短视频代做｜企业定制 1080p 商品视频，单条 ¥299 起" },
 ];
 {
   const titles = new Set();
@@ -241,6 +242,34 @@ mustContain("libs/costs.ts", "lite: 3", "video lite cost unchanged");
 if (!exists("scripts/test-p1.mjs")) fail.push("missing scripts/test-p1.mjs");
 else ok.push("scripts/test-p1.mjs exists");
 
+mustContain("out/business.html", "<h1 data-i18n=\"biz.h1\">企业 AI 短视频定制</h1>", "business H1 is 企业 AI 短视频定制");
+mustContain("out/business.html", "人工交付，先报价", "business human-delivery badge");
+mustContain("out/business.html", "免费查看行业样片，先报价再制作", "business sample copy");
+mustContain("out/business.html", "24 小时内报价", "business 24h quote");
+mustContain("out/business.html", "我们会在 24 小时内联系您报价", "business success copy");
+mustContain("out/business.html", "单条 ¥299 起", "business single starting price");
+mustContain("out/business.html", "30 条月包 ¥2980 起", "business monthly pack starting price");
+mustContain("out/business.html", "参考价，最终以报价为准", "business reference-price note");
+mustContain("out/business.html", "0_out_f7d00e65d3c1a45d.mp4", "reuses existing 1080p sample A");
+mustContain("out/business.html", "0_out_68e31a44b7b1d011.mp4", "reuses existing 1080p sample B");
+mustContain("out/business.html", "0_out_980c5a0e163959b6.mp4", "reuses existing 1080p sample C");
+mustContain("out/business.html", 'name="website"', "business honeypot field");
+mustNotContain("out/business.html", "免费样片", "do not call samples 免费样片");
+mustNotContain("out/business.html", "¥799", "no single-clip upper price");
+mustNotContain("out/business.html", "¥4980", "no monthly-pack upper price");
+mustNotContain("out/business.html", "/api/checkout", "business has no checkout");
+mustNotContain("out/business.html", "Stripe", "business has no Stripe");
+mustNotContain("out/business.html", "立即支付", "business has no pay CTA");
+mustContain("out/assets/js/i18n.js", "biz.form.ok", "business i18n");
+mustContain("migrations/007_business_inquiries.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "D1 business_inquiries migration");
+mustContain("migrations/007_business_inquiries.sql", "created_at", "business_inquiries has created_at");
+mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "fresh schema includes business_inquiries");
+mustContain("functions/api/business.ts", "validateBusinessInquiry", "business API validates");
+mustContain("functions/api/business.ts", "insertBusinessInquiry", "business API writes D1");
+mustContain("libs/site.ts", '"/business"', "PUBLIC_PATHS includes /business");
+if (!exists("scripts/test-business.mjs")) fail.push("missing scripts/test-business.mjs");
+else ok.push("scripts/test-business.mjs exists");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
@@ -280,4 +309,21 @@ process.stderr.write(stripeUnit.stderr || "");
 if (stripeUnit.status !== 0) {
   console.log("FAIL scripts/test-stripe.mjs");
   process.exit(stripeUnit.status || 1);
+}
+
+const bizUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-business.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(bizUnit.stdout || "");
+process.stderr.write(bizUnit.stderr || "");
+if (bizUnit.status !== 0) {
+  console.log("FAIL scripts/test-business.mjs");
+  process.exit(bizUnit.status || 1);
 }
