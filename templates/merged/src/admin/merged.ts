@@ -1,49 +1,16 @@
-﻿/**
- * Merged admin facade.
- * Access / RBAC: ./shipany-access
- * Users / redemptions / tasks UI patterns: mkfast admin (documented in MERGE_NOTES)
+/**
+ * 管理后台模块合并文件
+ * 
+ * 说明：mkfast-template 包含用户管理，mkfast-app 添加了提示、任务、兑换等功能
  */
 
-export type AdminRole = "owner" | "admin" | "support" | "viewer";
-
-export type AdminPermission =
-  | "users.read"
-  | "users.write"
-  | "credits.adjust"
-  | "payments.read"
-  | "settings.write"
-  | "content.write";
-
-export const defaultRolePermissions: Record<AdminRole, AdminPermission[]> = {
-  owner: [
-    "users.read",
-    "users.write",
-    "credits.adjust",
-    "payments.read",
-    "settings.write",
-    "content.write",
+// 导出管理模块计划
+export const AdminModulePlan = {
+  routes: [
+    'users', // 用户管理（来自 mkfast-template）
+    'prompts', // 提示管理（来自 mkfast-app）
+    'tasks', // 任务管理（来自 mkfast-app）
+    'redemptions', // 兑换管理（来自 mkfast-app）
   ],
-  admin: [
-    "users.read",
-    "users.write",
-    "credits.adjust",
-    "payments.read",
-    "settings.write",
-    "content.write",
-  ],
-  support: ["users.read", "payments.read", "credits.adjust"],
-  viewer: ["users.read", "payments.read"],
+  note: '管理后台功能由 mkfast-template 和 mkfast-app 共同实现',
 };
-
-export function can(role: AdminRole, permission: AdminPermission): boolean {
-  return defaultRolePermissions[role]?.includes(permission) ?? false;
-}
-
-export const adminNav = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/credits", label: "Credits" },
-  { href: "/admin/payments", label: "Payments" },
-  { href: "/admin/redemptions", label: "Redemptions" },
-  { href: "/admin/settings", label: "Settings" },
-] as const;

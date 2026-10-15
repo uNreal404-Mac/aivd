@@ -1,9 +1,9 @@
 ﻿{
   "name": "@dreamutopia/templates-merged",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Fused SaaS template skeleton (auth, credits, payment, admin, SEO) from shipany + mkfast + seo-site-template",
+  "description": "Fused SaaS template skeleton from mkfast-template (TanStarter) + mkfast-app (MkImage) only — no shipany",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "echo \"wire lint when promoting to a full app\""

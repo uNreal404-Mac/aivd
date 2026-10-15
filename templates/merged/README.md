@@ -1,27 +1,27 @@
-﻿# Merged SaaS Template Skeleton
+# Dreamutopia 项目骨架
 
-Fused strengths from **shipany-tanstack**, **mkfast-app**, and **seo-site-template**.
+这是一个基于 TanStarter（mkfast-template）和 MkImage（mkfast-app）的项目骨架，用于快速构建 SaaS 应用。
 
-See [MERGE_NOTES.md](./MERGE_NOTES.md) for source mapping and plan.
+## 使用方式
 
-## Modules
+1. 安装依赖
+2. 配置环境变量（如 API 密钥等）
+3. 启动开发服务器
 
-| Module | Status | Primary source |
-|--------|--------|----------------|
-| Auth / Login | skeleton + references | mkfast (+ shipany RBAC) |
-| Credits | skeleton + references | mkfast + shipany |
-| Payment | skeleton + references | mkfast providers + shipany extras |
-| Admin | access skeleton | shipany |
-| SEO | merged helpers | mkfast + seo-site |
-| Pages | stubs | all |
+## 模块表
 
-## Quick start (when promoting to a site)
+| 模块 | 描述 |
+|------|------|
+| `auth/merged.ts` | 身份验证模块，基于 mkfast-template，覆盖 Google 扩展令牌处理等 |
+| `credits/merged.ts` | 信用系统模块，仅存在于 mkfast-app，包含类型和计划 |
+| `payment/merged.ts` | 支付模块，使用 Stripe、Creem、Waffo 等提供商 |
+| `admin/merged.ts` | 管理后台模块，包含用户管理、提示、任务、兑换等功能 |
+| `seo/merged.ts` | SEO 模块，融合 mkfast-template 和 mkfast-app 的 SEO 工具 |
+| `pages/index.ts` | 页面模块，列出所有可用页面路径（如 `pages/mkfast-*`） |
+| `src/index.ts` | 入口文件，导出所有合并模块 |
 
-1. Copy this folder to a new app or wire it into your TanStack Start project.
-2. Copy `.env.example` → `.env` and fill placeholders locally (never commit secrets).
-3. Keep `GENERATION_ENABLED=false` unless you intentionally enable generation APIs.
-4. Install deps from `package.json` outline and adapt import paths.
+## 合并说明
+请参考 [MERGE_NOTES.md](MERGE_NOTES.md) 了解合并策略和优先级规则。
 
-## License notes
-
-Upstream templates retain their own licenses (see each source repo). This merge is for CharlesHarry7 internal reuse under `dreamutopia-clone`.
+## License
+Upstream mkfast-app / mkfast-template keep their own LICENSE (purchased private sources). Internal reuse only.

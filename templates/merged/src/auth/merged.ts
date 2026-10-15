@@ -1,58 +1,20 @@
-﻿/**
- * Merged auth facade.
- * Primary implementation reference: ./mkfast (better-auth)
- * RBAC helpers reference: ./shipany
- *
- * This file is the stable import surface for consumers of templates/merged.
- * Wire `createAuth` to your runtime env when promoting to a full app.
- */
-
-export type AuthUser = {
-  id: string;
-  email: string;
-  name?: string | null;
-  role?: string | null;
-  emailVerified?: boolean;
-};
-
-export type AuthSession = {
-  user: AuthUser;
-  sessionId: string;
-  expiresAt?: string;
-};
-
-export type SignInInput = {
-  email: string;
-  password: string;
-};
-
-export type SignUpInput = {
-  email: string;
-  password: string;
-  name?: string;
-};
-
-/** Feature flags for which auth paths are enabled in the fused template. */
-export const authFeatures = {
-  emailPassword: true,
-  googleOAuth: true,
-  magicLink: false,
-  passkey: false,
-  inviteCodes: true, // from shipany
-  rbac: true, // from shipany
-} as const;
-
 /**
- * Placeholder session helper — replace with better-auth client/server calls.
- * See ./mkfast/auth.ts and ./shipany/index.ts for full implementations.
+ * 身份验证模块合并文件
+ * 
+ * 主要来源：mkfast-template/*
+ * 覆盖内容：mkfast-app 中的 Google 扩展令牌处理等
  */
-export async function getSessionPlaceholder(): Promise<AuthSession | null> {
-  return null;
-}
 
-export function requireAuthPlaceholder(session: AuthSession | null): AuthSession {
-  if (!session) {
-    throw new Error("UNAUTHORIZED");
-  }
-  return session;
-}
+// 导出合并计划
+export const MergedAuthPlan = {
+  primary: 'mkfast-template', // 主要来源
+  overlay: 'mkfast-app', // 覆盖内容
+  notes: [
+    'Google 扩展令牌处理逻辑来自 mkfast-app',
+    '其他身份验证逻辑基于 mkfast-template',
+  ],
+};
+
+// 重新导出主要模块
+
+// 重新导出覆盖模块

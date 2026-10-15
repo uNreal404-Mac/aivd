@@ -1,63 +1,20 @@
-﻿/**
- * Merged credits facade.
- * Packages/redemption: ./mkfast
- * Admin credit service: ./shipany
- * Ledger types: ./seo-site
+/**
+ * 信用系统模块合并文件
+ * 
+ * 说明：信用系统仅存在于 mkfast-app 中
  */
 
-export type CreditBalance = {
-  userId: string;
-  available: number;
-  reserved: number;
-  updatedAt?: string;
+// 导出信用系统类型和计划
+
+// 导出信用系统计划
+export const CreditPlan = {
+  packages: [
+    { name: 'Basic', credits: 100, price: 9.99 },
+    { name: 'Pro', credits: 500, price: 49.99 },
+    { name: 'Enterprise', credits: 1000, price: 99.99 },
+  ],
+  redemption: {
+    description: '用户可使用信用点数兑换图像生成服务',
+    note: '兑换逻辑需在应用层实现',
+  },
 };
-
-export type CreditPackage = {
-  id: string;
-  name: string;
-  credits: number;
-  priceCents: number;
-  currency: string;
-  providerPriceId?: string;
-};
-
-export type CreditTxn = {
-  id: string;
-  userId: string;
-  delta: number;
-  reason: string;
-  createdAt: string;
-};
-
-export const creditsFeatures = {
-  packages: true,
-  redemptionCodes: true,
-  signupBonus: true,
-  adminAdjust: true,
-  ledger: true,
-} as const;
-
-/** Default packages — override via env / DB in production. */
-export const defaultCreditPackages: CreditPackage[] = [
-  { id: "starter", name: "Starter", credits: 100, priceCents: 999, currency: "usd" },
-  { id: "pro", name: "Pro", credits: 500, priceCents: 3999, currency: "usd" },
-  { id: "ultra", name: "Ultra", credits: 2000, priceCents: 12999, currency: "usd" },
-];
-
-export async function getBalancePlaceholder(_userId: string): Promise<CreditBalance> {
-  return { userId: _userId, available: 0, reserved: 0 };
-}
-
-export async function applyCreditDeltaPlaceholder(
-  userId: string,
-  delta: number,
-  reason: string,
-): Promise<CreditTxn> {
-  return {
-    id: "placeholder",
-    userId,
-    delta,
-    reason,
-    createdAt: new Date().toISOString(),
-  };
-}

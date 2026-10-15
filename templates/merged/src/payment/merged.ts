@@ -1,55 +1,14 @@
-﻿/**
- * Merged payment facade.
- * Provider interface + Stripe/Creem/Waffo: ./mkfast
- * Extra adapters (PayPal/Alipay/WeChat): ./shipany
- * Team billing / payment-return: ./seo-site
+/**
+ * 支付模块合并文件
+ * 
+ * 说明：使用 Stripe、Creem、Waffo 等提供商
+ * 注意：应用层可能在支付成功后挂钩信用系统
  */
 
-export type PaymentProviderId = "stripe" | "creem" | "waffo" | "paypal" | "alipay" | "wechat";
+// 导出支付提供商
 
-export type CheckoutInput = {
-  userId: string;
-  priceId: string;
-  successUrl: string;
-  cancelUrl: string;
-  mode?: "payment" | "subscription";
-  metadata?: Record<string, string>;
+// 导出支付计划
+export const PaymentPlan = {
+  providers: ['Stripe', 'Creem', 'Waffo'],
+  note: '应用层可能在支付成功后挂钩信用系统',
 };
-
-export type CheckoutResult = {
-  provider: PaymentProviderId;
-  checkoutUrl: string;
-  sessionId?: string;
-};
-
-export const paymentFeatures = {
-  stripe: true,
-  creem: true,
-  waffo: true,
-  paypal: true,
-  alipay: false, // optional shipany adapter
-  wechat: false, // optional shipany adapter
-  customerPortal: true,
-  webhooks: true,
-} as const;
-
-export function resolvePaymentProvider(
-  raw: string | undefined = process.env.VITE_PAYMENT_PROVIDER,
-): PaymentProviderId {
-  const v = (raw || "stripe").toLowerCase();
-  if (v === "creem" || v === "waffo" || v === "paypal" || v === "alipay" || v === "wechat") {
-    return v;
-  }
-  return "stripe";
-}
-
-export async function createCheckoutPlaceholder(
-  input: CheckoutInput,
-  provider: PaymentProviderId = resolvePaymentProvider(),
-): Promise<CheckoutResult> {
-  return {
-    provider,
-    checkoutUrl: `${input.successUrl}?placeholder=1`,
-    sessionId: "placeholder-session",
-  };
-}
