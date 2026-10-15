@@ -48,6 +48,7 @@ Register/login copies guest KV jobs into D1 history (`mergeGuestJobs`). Register
 | `STRIPE_WEBHOOK_SECRET` | Pages **secret** | paid packs | `POST /api/stripe/webhook` |
 | `RESEND_API_KEY` | Pages **secret** | password reset email | `POST /api/auth/forgot` |
 | `MAIL_FROM` | Pages var/secret | password reset email | verified Resend from-address |
+| `GENERATION_ENABLED` | Pages **var** | public generate / upload | only `"true"` opens `/api/generate` and `/api/upload`; unset or any other value → 503 `暂未开放` before KIE or credit deduct |
 
 ## Generate path
 

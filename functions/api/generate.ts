@@ -50,6 +50,7 @@ import {
   type GuestJob,
 } from "../../libs/guest";
 import type { Env } from "../../libs/utils";
+import { isGenerationEnabled, generationDisabledResponse } from "../../libs/generation";
 
 export const onRequestOptions = (): Response => preflight();
 
@@ -302,6 +303,7 @@ function createFailedResponse(
  */
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   try {
+    if (!isGenerationEnabled(ctx.env)) return generationDisabledResponse();
     return await handleGeneratePost(ctx);
   } catch {
     try {
@@ -318,6 +320,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
 };
 
 async function handleGeneratePost({ request, env }: { request: Request; env: Env }): Promise<Response> {
+  if (!isGenerationEnabled(env)) return generationDisabledResponse();
   let parsed: unknown;
   try {
     parsed = await request.json();

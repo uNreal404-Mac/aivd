@@ -266,6 +266,10 @@ function setMode(next) {
     history.replaceState(null, "", nextUrl);
   }
   document.title = (isForgot ? "Reset password" : isLogin ? "Log in" : "Sign up") + " — DreamUtopia";
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle) ogTitle.setAttribute("content", document.title);
+  const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+  if (twitterTitle) twitterTitle.setAttribute("content", document.title);
 }
 
 tabRegister.onclick = () => setMode("register");

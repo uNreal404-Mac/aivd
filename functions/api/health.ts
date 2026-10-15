@@ -2,6 +2,7 @@ import { json, preflight, hasDb, hasSessions, hasMedia, hasKieKey } from "../../
 import { hasStripe } from "../../libs/stripe";
 import { hasMailer } from "../../libs/mail";
 import { hasKieWebhookHmac } from "../../libs/kieWebhook";
+import { isGenerationEnabled } from "../../libs/generation";
 import type { Env } from "../../libs/utils";
 
 export const onRequestOptions = (): Response => preflight();
@@ -18,8 +19,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const checkoutConfigured = hasStripe(env);
   const mailConfigured = hasMailer(env);
   const kieWebhookHmac = hasKieWebhookHmac(env);
+  const generationEnabled = isGenerationEnabled(env);
   // Guest trials need SESSIONS + KIE; signed-in generate also needs DB
-  const generateReady = bindings.SESSIONS && kieConfigured;
+  const generateReady = bindings.SESSIONS && kieConfigured && generationEnabled;
   const uploadReady = bindings.MEDIA;
 
   return json({
@@ -29,6 +31,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     bindings,
     authReady,
     kieConfigured,
+    generationEnabled,
     generateReady,
     uploadReady,
     checkoutConfigured,

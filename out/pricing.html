@@ -196,7 +196,7 @@ nav{display:none}
 <span><b>Video:</b> Lite 3 · Med 5 · Pro 16</span>
 <span><b>Image:</b> Lite 1 · Pro 2</span>
 </div>
-<p class="checkout-note" id="checkoutNote" role="status" aria-live="polite"></p>
+<p class="checkout-note show" id="checkoutNote" role="status" aria-live="polite"><b data-i18n="price.soon">支付即将开放</b> <span lang="en" data-i18n="price.soon.en">Payments coming soon</span>.</p>
 </section>
 
 <div class="container">
@@ -619,14 +619,25 @@ nav{display:none}
     const signedIn = await isSignedIn();
     if (!signedIn) hydrateHeader(false);
     else hydrateHeader(true);
-    document.addEventListener("du:i18n", function () { hydrateHeader(signedIn); });
+    function applyComingSoon() {
+      applyUnavailableCopy(signedIn);
+      wireFallbackHrefs(signedIn);
+    }
+    document.addEventListener("du:i18n", function () {
+      hydrateHeader(signedIn);
+      if (!window.DU || !DU.PAYMENTS_ENABLED) applyComingSoon();
+    });
+    // PAYMENTS_ENABLED=false: never probe /api/checkout or open Stripe.
+    if (!window.DU || !DU.PAYMENTS_ENABLED) {
+      applyComingSoon();
+      return;
+    }
     const live = await checkoutAvailable();
     if (live) {
       applyLiveCopy(signedIn);
       return;
     }
-    applyUnavailableCopy(signedIn);
-    wireFallbackHrefs(signedIn);
+    applyComingSoon();
   })();
 })();
 </script>

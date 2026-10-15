@@ -17,6 +17,8 @@ export interface Env {
   MAIL_FROM?: string;
   /** Optional KIE callback HMAC (kie.ai Settings → webhookHmacKey). */
   KIE_WEBHOOK_HMAC_KEY?: string;
+  /** Pages var. Only the exact string "true" opens /api/generate. Unset or any other value is off. */
+  GENERATION_ENABLED?: string;
 }
 
 const CORS_HEADERS: Record<string, string> = {
