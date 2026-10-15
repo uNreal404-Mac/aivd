@@ -104,14 +104,37 @@ function makeGithubFetch({
   calls = [],
   comments = [],
   issues = [],
+  issue = {
+    number: 20,
+    title: "主任务卡",
+    body: "## 任务\n- [ ] 新定价方案\n- [ ] 定域名\n## 卡点\n- 支付：Stripe",
+  },
+  closedPulls = [
+    {
+      title: "Public /examples sample pages from existing HD clips (#20) (#34)",
+      merged_at: "2026-10-15T08:00:53Z",
+      labels: [],
+    },
+  ],
+  openPulls = [{ title: "Bind Feishu bot KV namespace", merged_at: null, labels: [] }],
 } = {}) {
   const feishu = makeFeishuFetch({ failReplyCount, replies, calls });
   return async (url, init = {}) => {
-    if (String(url).includes("api.github.com") && String(url).includes("/comments")) {
+    const href = String(url);
+    if (href.includes("api.github.com") && href.includes("/comments")) {
       calls.push({ url, init });
       return Response.json(comments);
     }
-    if (String(url).includes("api.github.com") && /\/issues$/.test(String(url)) && init.method === "POST") {
+    if (href.includes("api.github.com") && href.includes("/pulls")) {
+      calls.push({ url, init });
+      const state = new URL(href).searchParams.get("state") || "open";
+      return Response.json(state === "closed" ? closedPulls : openPulls);
+    }
+    if (href.includes("api.github.com") && /\/issues\/\d+$/.test(href.split("?")[0]) && init.method !== "POST") {
+      calls.push({ url, init });
+      return Response.json(issue);
+    }
+    if (href.includes("api.github.com") && /\/issues$/.test(href) && init.method === "POST") {
       calls.push({ url, init });
       const posted = JSON.parse(init.body);
       const created = {
@@ -372,24 +395,22 @@ test("acknowledges unrelated event types without making API calls", async () => 
   assert.equal(fetchCalls, 0);
 });
 
-test("summarizes GitHub issue comments for the progress command", async () => {
+test("replies to 进度 with a website-progress summary and no PR/SHA trackers", async () => {
   const replies = [];
   const worker = createWorker({
-    fetchImpl: makeGithubFetch({
-      replies,
-      comments: [{
-        user: { login: "alice" },
-        created_at: "2026-10-15T10:41:00.000Z",
-        body: "验收通过，只剩报价待确认。",
-      }],
-    }),
+    fetchImpl: makeGithubFetch({ replies }),
   });
   const env = makeEnv();
   assert.equal((await send(worker, messagePayload({ text: "进度", messageId: "om_progress_gh" }), env)).status, 200);
   const replyText = JSON.parse(replies[0].content).text;
-  assert.match(replyText, /验收通过/);
-  assert.match(replyText, /台北时间/);
-  assert.doesNotMatch(replyText, /https?:\/\//i);
+  assert.match(replyText, /网站进度/);
+  assert.match(replyText, /案例页换成我们自己的样片/);
+  assert.match(replyText, /还没做/);
+  assert.match(replyText, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.doesNotMatch(replyText, /老三/);
+  assert.doesNotMatch(replyText, /#\d+/);
+  assert.doesNotMatch(replyText, /\b[0-9a-f]{7,40}\b/i);
+  assert.equal((replyText.match(/详情/g) || []).length, 1);
 });
 
 test("creates a GitHub issue from a group 需求 mention and replies with the link", async () => {

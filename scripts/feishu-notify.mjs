@@ -14,6 +14,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DEFAULT_SIGNATURE } from "../workers/feishu-bot/src/config.mjs";
+import { fetchWebsiteProgressData } from "../workers/feishu-bot/src/github.mjs";
+import {
+  DEFAULT_PENDING_ITEMS,
+  PROGRESS_TITLE,
+  describeUserVisibleChanges,
+  formatWebsiteProgress,
+  pendingItemsFromGithub,
+} from "../workers/feishu-bot/src/site-progress.mjs";
 
 export const SITE_URL = "https://dreamutopia-clone.pages.dev";
 export const WEBHOOK_URL_ENV = "FEISHU_WEBHOOK_URL";
@@ -102,6 +110,37 @@ function readGithubEvent(env, event) {
   }
 }
 
+function addFiles(target, list) {
+  const values = Array.isArray(list) ? list : String(list || "").split(/[, \n]+/);
+  for (const item of values) {
+    const value = String(item || "").trim();
+    if (value) target.add(value);
+  }
+}
+
+export function filesFromGithubEvent(event, args = {}) {
+  const files = new Set();
+  if (args.files && args.files !== true) addFiles(files, args.files);
+  const commits = [];
+  if (Array.isArray(event?.commits)) commits.push(...event.commits);
+  if (event?.head_commit) commits.push(event.head_commit);
+  for (const commit of commits) {
+    addFiles(files, commit?.added);
+    addFiles(files, commit?.modified);
+    addFiles(files, commit?.removed);
+  }
+  return [...files];
+}
+
+export function labelsFromGithubEvent(event, args = {}) {
+  if (args.labels && args.labels !== true) {
+    return String(args.labels).split(/[, \n]+/).map((value) => value.trim()).filter(Boolean);
+  }
+  const labels = event?.pull_request?.labels;
+  if (!Array.isArray(labels)) return [];
+  return labels.map((label) => (typeof label === "string" ? label : label?.name)).filter(Boolean);
+}
+
 export function resolveDeployContext({ env = process.env, args = {}, event = undefined } = {}) {
   const githubEvent = readGithubEvent(env, event);
   if (githubEvent?.pull_request && githubEvent.action === "closed" && githubEvent.pull_request.merged !== true) {
@@ -143,6 +182,9 @@ export function resolveDeployContext({ env = process.env, args = {}, event = und
     sha: shortSha(sha),
     fullSha: String(sha || ""),
     link,
+    files: filesFromGithubEvent(githubEvent, args),
+    labels: labelsFromGithubEvent(githubEvent, args),
+    pendingItems: Array.isArray(args.pendingItems) ? args.pendingItems : undefined,
     site: (args.site && args.site !== true ? String(args.site) : SITE_URL),
   };
 }
@@ -168,33 +210,22 @@ function signatureNote(signature = DEFAULT_SIGNATURE) {
 }
 
 export function buildDeployCard(ctx) {
-  const lines = [];
-  if (ctx.pr != null && ctx.title) lines.push(`**PR #${ctx.pr}** ${ctx.title}`);
-  else if (ctx.pr != null) lines.push(`**PR #${ctx.pr}**`);
-  else if (ctx.title) lines.push(`**提交** ${ctx.title}`);
-  if (ctx.sha) lines.push(`合并提交 \`${ctx.sha}\``);
-  lines.push(`生产站 ${mdLink("dreamutopia-clone.pages.dev", ctx.site || SITE_URL)}`);
-  if (ctx.link) lines.push(`详情 ${mdLink(ctx.link, ctx.link)}`);
-
-  const elements = [
-    {
-      tag: "div",
-      text: { tag: "lark_md", content: lines.join("\n") },
-    },
-  ];
-  if (ctx.link) {
-    elements.push({
-      tag: "action",
-      actions: [
-        {
-          tag: "button",
-          text: { tag: "plain_text", content: "查看变更" },
-          type: "primary",
-          url: ctx.link,
-        },
-      ],
+  const doneItems = Array.isArray(ctx.doneItems)
+    ? ctx.doneItems
+    : describeUserVisibleChanges({
+      title: ctx.title,
+      labels: ctx.labels,
+      files: ctx.files,
     });
-  }
+  const pendingItems = Array.isArray(ctx.pendingItems) && ctx.pendingItems.length
+    ? ctx.pendingItems
+    : DEFAULT_PENDING_ITEMS;
+  const body = formatWebsiteProgress({
+    doneItems,
+    pendingItems,
+    detailUrl: ctx.site || SITE_URL,
+    title: PROGRESS_TITLE,
+  });
 
   return {
     msg_type: "interactive",
@@ -202,9 +233,15 @@ export function buildDeployCard(ctx) {
       config: { wide_screen_mode: true },
       header: {
         template: "green",
-        title: { tag: "plain_text", content: "生产环境已更新" },
+        title: { tag: "plain_text", content: PROGRESS_TITLE },
       },
-      elements: [...elements, signatureNote()],
+      elements: [
+        {
+          tag: "div",
+          text: { tag: "lark_md", content: body },
+        },
+        signatureNote(),
+      ],
     },
   };
 }
@@ -329,9 +366,22 @@ export async function notify(kind, options = {}) {
   if (kind === "deploy") {
     const ctx = resolveDeployContext({ env, args, event });
     if (ctx.skipped) return ctx;
-    const payload = buildDeployCard(ctx);
+    let pendingItems = Array.isArray(ctx.pendingItems) ? ctx.pendingItems : null;
+    if (!pendingItems) {
+      try {
+        const data = await fetchWebsiteProgressData({
+          fetchImpl,
+          token: env.GITHUB_TOKEN,
+          includeClosed: false,
+        });
+        pendingItems = pendingItemsFromGithub(data);
+      } catch {
+        pendingItems = DEFAULT_PENDING_ITEMS;
+      }
+    }
+    const payload = buildDeployCard({ ...ctx, pendingItems });
     const result = await postFeishuWebhook(payload, { env, fetchImpl, now });
-    return { ...result, kind, ctx };
+    return { ...result, kind, ctx: { ...ctx, pendingItems } };
   }
 
   if (kind === "acceptance") {

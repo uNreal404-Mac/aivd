@@ -678,7 +678,7 @@ if (!exists("workers/feishu-bot/src/config.mjs")) fail.push("feishu bot must kee
 else ok.push("feishu bot has src/config.mjs");
 if (!exists("workers/feishu-bot/TEMPLATE.md")) fail.push("feishu bot must document copy steps in TEMPLATE.md");
 else ok.push("feishu bot has TEMPLATE.md");
-mustContain("workers/feishu-bot/src/config.mjs", "github-issue-comments", "progress command is config-driven");
+mustContain("workers/feishu-bot/src/config.mjs", "github-website-progress", "progress command is config-driven");
 mustContain("workers/feishu-bot/src/config.mjs", "github-create-issue", "request command is config-driven");
 mustContain("workers/feishu-bot/src/config.mjs", "Grok Bot · AI视频项目专属机器人 三儿", "shared Feishu signature default");
 mustContain("workers/feishu-bot/src/config.mjs", "allowedChatIds", "需求 allowlist lives in config");
@@ -691,6 +691,9 @@ mustContain("workers/feishu-bot/TEMPLATE.md", "signature", "TEMPLATE documents o
 mustContain("workers/feishu-bot/TEMPLATE.md", "allowedChatIds", "TEMPLATE documents 需求 allowlist");
 mustContain("scripts/feishu-notify.mjs", "DEFAULT_SIGNATURE", "notify cards share the bot signature");
 mustContain("scripts/feishu-notify.mjs", "workers/feishu-bot/src/config.mjs", "notify script imports the shared signature");
+mustContain("scripts/feishu-notify.mjs", "网站进度", "deploy cards use the website-progress title");
+mustContain("workers/feishu-bot/src/site-progress.mjs", "网站进度", "shared progress formatter uses 网站进度");
+mustContain("workers/feishu-bot/src/site-progress.mjs", "还没做", "shared progress formatter has a 还没做 section");
 mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
 {
   const botSrcDir = path.join(root, "workers/feishu-bot/src");

@@ -4,7 +4,7 @@
 
 | 命令 | 行为 |
 | --- | --- |
-| 进度 | 读取本仓库 GitHub issue `#20` 最近几条评论，用规则模板整理成简体中文摘要（台北时间），写入 KV 短缓存 |
+| 进度 | 读取本仓库最近合并的改动、公开待办（主任务卡未完成项 / 未合并的网站 PR），用规则整理成「网站进度」摘要：用户能在站点上看到的变化 + 页面 + 「还没做」。不写 PR 号、提交 SHA 或分支名。写入 KV 短缓存 |
 | 网址 | 返回演示站 `https://dreamutopia-clone.pages.dev` |
 | 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
 | 需求： / 需求: | 仅白名单群可建单：群 `chat_id` 必须在 `config.allowedChatIds` 或环境变量 `ALLOWED_CHAT_IDS` 中。未设置或为空时 **失败关闭**。通过后在本仓库创建带 `feishu-request` 标签的 GitHub issue（正文已脱敏，不含提出人 / `open_id` / `chat_id`），并在原消息线程回复链接。映射只写 KV。issue 关闭后通过 GitHub webhook 回帖 |
@@ -13,7 +13,7 @@
 
 其他内容返回帮助说明。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
-机器人不会调用生成、上传、KIE 或任何付费 LLM。进度摘要不用模型，只用去 Markdown / 链接 / 提交哈希后的固定中文模板。
+机器人不会调用生成、上传、KIE 或任何付费 LLM。进度摘要不用模型，只用文件路径 / 标题 / 标签上的固定中文规则；正文会去掉 `#数字` 和提交哈希。
 
 未配置 `FEISHU_ENCRYPT_KEY` 时，按飞书未启用事件加密处理明文回调。以后若重新打开加密，再设置该 secret，Worker 会恢复签名校验与解密。
 
@@ -33,7 +33,7 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `FEISHU_APP_SECRET` | 必须 | 飞书 App Secret，与 App ID 一起换 token |
 | `FEISHU_VERIFICATION_TOKEN` | 必须 | 校验飞书 URL Verification 与事件 `header.token` |
 | `FEISHU_ENCRYPT_KEY` | 可选 | 飞书事件 Encrypt Key。当前飞书侧加密已关闭，**不要设置**。以后若开启加密，再 `wrangler secret put` 同一把密钥 |
-| `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度可读公开评论 API；没有 token 时进度仍走公开接口。创建/关单回帖需要写权限 |
+| `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度读公开 issue 正文与 pulls（不用模型）；没有 token 时仍走公开接口。创建/关单回帖需要写权限 |
 | `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
 | `ALLOWED_CHAT_IDS` | **需求** 必须（合入后由运营填写） | 允许提交需求的飞书群 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时拒绝所有需求建单。这不是 secret，不要把真实群 id 以外的密钥写进仓库 |
 

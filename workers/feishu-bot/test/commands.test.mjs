@@ -22,7 +22,9 @@ test("returns help for ambiguous or unsupported text", () => {
 });
 
 test("exports editable, safe progress and usage copy", () => {
-  assert.match(PROGRESS_MESSAGE, /回复「网址」/);
-  assert.match(PROGRESS_MESSAGE, /回复「健康」/);
+  assert.match(PROGRESS_MESSAGE, /网站进度/);
+  assert.match(PROGRESS_MESSAGE, /还没做/);
+  assert.doesNotMatch(PROGRESS_MESSAGE, /#\d+/);
+  assert.doesNotMatch(PROGRESS_MESSAGE, /\b[0-9a-f]{7,40}\b/i);
   assert.match(HELP_MESSAGE, /进度.*网址.*健康/);
 });

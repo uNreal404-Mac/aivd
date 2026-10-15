@@ -13,8 +13,9 @@ workers/feishu-bot/
   src/worker.mjs         路由：POST /feishu/events 与 POST /github/webhook
   src/commands.mjs       按 config.commands 解析「进度 / 网址 / 健康 / 需求」
   src/summary.mjs        规则摘要（去 Markdown、链接、提交哈希，台北时间）
+  src/site-progress.mjs  网站进度：页面规则、还没做、去掉 PR 号 / SHA
   src/github.mjs         GitHub REST 与 webhook HMAC
-  src/progress.mjs       issue 评论 + KV 短缓存
+  src/progress.mjs       网站进度数据 + KV 短缓存
   src/requests.mjs       需求建单、映射、关闭回帖、去重限流
   src/events.mjs         飞书回调解码与是否 @ 本机器人
   src/feishu-api.mjs     token、回复、发群
@@ -33,8 +34,8 @@ workers/feishu-bot/
 | `name` | `parseCommand` 返回值，Worker 用来选数据源 |
 | `match` | `prefix`（如 `需求：`）或 `pattern`（正则片段，如 `进度`） |
 | `prefixes` / `pattern` | 匹配文本 |
-| `source` | `github-issue-comments` / `static` / `health-http` / `github-create-issue` |
-| `formatter` | `plainChineseComments` / `static` / `healthSummary` / `issueCreatedReply` |
+| `source` | `github-website-progress` / `static` / `health-http` / `github-create-issue` |
+| `formatter` | `websiteProgress` / `static` / `healthSummary` / `issueCreatedReply` |
 
 新增命令时：在 `commands` 数组里加一项，再在 `src/worker.mjs` 的 `commandReply` 中接上对应 source。不要在命令处理里调用模型 API。
 

@@ -96,6 +96,78 @@ export async function listIssueComments({
   return payload;
 }
 
+export async function getIssue({
+  fetchImpl = fetch,
+  token,
+  owner = botConfig.github.owner,
+  repo = botConfig.github.repo,
+  issueNumber = botConfig.github.progressIssueNumber,
+} = {}) {
+  const url = `${botConfig.github.apiBase}/repos/${owner}/${repo}/issues/${issueNumber}`;
+  const response = await fetchImpl(url, {
+    method: "GET",
+    headers: githubHeaders(token),
+    redirect: "error",
+  });
+  const payload = await readGithubJson(response, "GitHub issue");
+  if (!payload || typeof payload !== "object") throw new Error("GitHub issue response was invalid");
+  return {
+    number: Number.isFinite(payload.number) ? payload.number : issueNumber,
+    title: typeof payload.title === "string" ? payload.title : "",
+    body: typeof payload.body === "string" ? payload.body : "",
+    state: typeof payload.state === "string" ? payload.state : "",
+  };
+}
+
+export async function listPulls({
+  fetchImpl = fetch,
+  token,
+  owner = botConfig.github.owner,
+  repo = botConfig.github.repo,
+  state = "open",
+  perPage = 10,
+} = {}) {
+  const url = `${botConfig.github.apiBase}/repos/${owner}/${repo}/pulls?state=${encodeURIComponent(state)}&sort=updated&direction=desc&per_page=${perPage}`;
+  const response = await fetchImpl(url, {
+    method: "GET",
+    headers: githubHeaders(token),
+    redirect: "error",
+  });
+  const payload = await readGithubJson(response, "GitHub pulls");
+  if (!Array.isArray(payload)) throw new Error("GitHub pulls response was invalid");
+  return payload.map((pull) => ({
+    number: pull?.number,
+    title: typeof pull?.title === "string" ? pull.title : "",
+    labels: Array.isArray(pull?.labels) ? pull.labels : [],
+    merged_at: pull?.merged_at ?? null,
+    draft: Boolean(pull?.draft),
+    state: pull?.state,
+  }));
+}
+
+export async function fetchWebsiteProgressData({
+  fetchImpl = fetch,
+  token,
+  config = botConfig,
+  includeClosed = true,
+} = {}) {
+  const owner = config.github.owner;
+  const repo = config.github.repo;
+  const issueNumber = config.github.progressIssueNumber;
+  const [issue, openPulls, closedPulls] = await Promise.all([
+    getIssue({ fetchImpl, token, owner, repo, issueNumber }),
+    listPulls({ fetchImpl, token, owner, repo, state: "open", perPage: 15 }),
+    includeClosed
+      ? listPulls({ fetchImpl, token, owner, repo, state: "closed", perPage: 10 })
+      : Promise.resolve([]),
+  ]);
+  return {
+    issueBody: issue.body,
+    openPulls,
+    mergedPulls: closedPulls.filter((pull) => pull.merged_at).slice(0, 8),
+  };
+}
+
 export async function createIssue({
   fetchImpl = fetch,
   token,

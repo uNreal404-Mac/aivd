@@ -1,17 +1,17 @@
 import { PROGRESS_MESSAGE } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
-import { listIssueComments } from "./github.mjs";
-import { formatCommentSummary } from "./summary.mjs";
+import { fetchWebsiteProgressData } from "./github.mjs";
+import { buildProgressFromGithub } from "./site-progress.mjs";
 
 export function progressCacheKey(issueNumber = botConfig.github.progressIssueNumber) {
-  return `progress:issue:${issueNumber}`;
+  return `progress:site:${issueNumber}`;
 }
 
 export async function fetchProgressSummary({
   kv,
   token,
   fetchImpl = fetch,
-  now = Date.now,
+  now: _now = Date.now,
   config = botConfig,
 } = {}) {
   const issueNumber = config.github.progressIssueNumber;
@@ -20,18 +20,12 @@ export async function fetchProgressSummary({
   if (typeof cached === "string" && cached) return cached;
 
   try {
-    const comments = await listIssueComments({
-      fetchImpl,
-      token,
-      owner: config.github.owner,
-      repo: config.github.repo,
-      issueNumber,
-    });
-    const summary = formatCommentSummary(comments, {
-      issueNumber,
-      timeZone: config.progress.timeZone,
-      limit: config.progress.commentLimit,
-      now: typeof now === "function" ? now() : now,
+    const data = await fetchWebsiteProgressData({ fetchImpl, token, config });
+    const summary = buildProgressFromGithub({
+      issueBody: data.issueBody,
+      mergedPulls: data.mergedPulls,
+      openPulls: data.openPulls,
+      detailUrl: config.siteUrl,
     });
     await kv.put(cacheKey, summary, {
       expirationTtl: Math.max(60, config.progress.cacheTtlSeconds),

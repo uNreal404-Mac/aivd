@@ -40,8 +40,8 @@ export const botConfig = {
       name: "progress",
       match: "pattern",
       pattern: "进度",
-      source: "github-issue-comments",
-      formatter: "plainChineseComments",
+      source: "github-website-progress",
+      formatter: "websiteProgress",
     },
     {
       name: "url",

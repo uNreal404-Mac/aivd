@@ -17,19 +17,29 @@ function fakeKv(seed = {}) {
   };
 }
 
-test("caches a GitHub comment summary in KV with a short TTL", async () => {
+test("caches a website-progress summary in KV with a short TTL", async () => {
   const kv = fakeKv();
-  let githubCalls = 0;
+  const urls = [];
   const fetchImpl = async (url) => {
-    if (String(url).includes("/issues/20/comments")) {
-      githubCalls += 1;
+    urls.push(String(url));
+    if (String(url).includes("/pulls") && String(url).includes("state=closed")) {
       return Response.json([
         {
-          user: { login: "alice" },
-          created_at: "2026-10-15T10:41:00.000Z",
-          body: "验收通过，只剩报价待确认。",
+          title: "Public /examples sample pages from existing HD clips (#20) (#34)",
+          merged_at: "2026-10-15T08:00:53Z",
+          labels: [],
         },
       ]);
+    }
+    if (String(url).includes("/pulls")) {
+      return Response.json([{ title: "Bind Feishu bot KV namespace", merged_at: null, labels: [] }]);
+    }
+    if (/\/issues\/20$/.test(String(url).split("?")[0])) {
+      return Response.json({
+        number: 20,
+        title: "主任务卡",
+        body: "## 任务\n- [ ] 新定价方案\n- [ ] 定域名\n## 卡点\n- 支付：Stripe",
+      });
     }
     throw new Error(`unexpected ${url}`);
   };
@@ -37,12 +47,16 @@ test("caches a GitHub comment summary in KV with a short TTL", async () => {
   const first = await fetchProgressSummary({ kv, fetchImpl, now: () => Date.parse("2026-10-15T10:41:00.000Z") });
   const second = await fetchProgressSummary({ kv, fetchImpl, now: () => Date.parse("2026-10-15T10:41:00.000Z") });
 
-  assert.equal(githubCalls, 1);
   assert.equal(first, second);
-  assert.match(first, /验收通过/);
-  assert.match(first, /台北时间/);
-  assert.equal(kv.writes[0].key, "progress:issue:20");
+  assert.match(first, /网站进度/);
+  assert.match(first, /案例页换成我们自己的样片/);
+  assert.match(first, /还没做/);
+  assert.match(first, /定价方案还没定/);
+  assert.doesNotMatch(first, /#\d+/);
+  assert.doesNotMatch(first, /\b[0-9a-f]{7,40}\b/i);
+  assert.equal(kv.writes[0].key, "progress:site:20");
   assert.equal(kv.writes[0].options.expirationTtl, 300);
+  assert.equal(urls.some((url) => /\/api\/(generate|upload)(?:\?|$)/.test(url)), false);
 });
 
 test("falls back to the static progress copy when GitHub is unavailable", async () => {

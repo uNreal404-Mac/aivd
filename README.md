@@ -101,7 +101,7 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
 | `FEISHU_WEBHOOK_URL` | 要真正发消息时必须 | 自定义机器人 webhook |
 | `FEISHU_WEBHOOK_SECRET` | 可选 | 签名校验密钥；未设置则不带 `timestamp` / `sign` |
 
-工作流 [`.github/workflows/feishu-notify.yml`](.github/workflows/feishu-notify.yml) 在 **push 到 `main`**（含 PR 合并进 main、Pages 生产部署）时运行 `node scripts/feishu-notify.mjs deploy`。卡片为简体中文，含 PR 号 / 标题、合并提交短 SHA、生产站和变更链接，页脚署名为 `Grok Bot · AI视频项目专属机器人 三儿`。
+工作流 [`.github/workflows/feishu-notify.yml`](.github/workflows/feishu-notify.yml) 在 **push 到 `main`**（含 PR 合并进 main、Pages 生产部署）时运行 `node scripts/feishu-notify.mjs deploy`。卡片标题为「网站进度」，用规则（改动文件路径 / 标题 / 标签，不用模型）写成用户能在站点上看到的中文变化，并带「还没做」待办；正文不含 PR 号、提交 SHA 或分支名，最多一个「详情」指向生产站。页脚署名为 `Grok Bot · AI视频项目专属机器人 三儿`。
 
 **未配置 `FEISHU_WEBHOOK_URL` 时步骤会跳过并以成功结束，不会让 CI 失败。** 本地或 CI 都不会打印 webhook 或签名密钥。
 

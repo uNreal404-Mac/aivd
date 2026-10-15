@@ -18,6 +18,7 @@ import {
   main,
   normalizeStatus,
   notify,
+  filesFromGithubEvent,
   parseArgs,
   parsePrNumberFromTitle,
   postFeishuWebhook,
@@ -89,6 +90,9 @@ function jsonResponse(body, status = 200) {
         id: "7edc5db0123abcd",
         message: "feat: /business 企业定制询价页（人工交付，先报价） (#27)\n\nmore",
         url: "https://github.com/CharlesHarry7/dreamutopia-clone/commit/7edc5db0123abcd",
+        added: ["out/index.html"],
+        modified: [],
+        removed: ["out/business.html"],
       },
     },
   });
@@ -97,6 +101,7 @@ function jsonResponse(body, status = 200) {
   check(ctx.sha === "7edc5db", "push event short sha");
   check(ctx.link === "https://github.com/CharlesHarry7/dreamutopia-clone/pull/27", "push event PR link");
   check(ctx.site === SITE_URL, "default production site");
+  check(ctx.files.includes("out/index.html") && ctx.files.includes("out/business.html"), "push event collects changed files");
 }
 
 {
@@ -127,21 +132,52 @@ function jsonResponse(body, status = 200) {
 }
 
 {
+  const files = filesFromGithubEvent({
+    commits: [{ added: ["out/examples.html"], modified: ["libs/examples.ts"], removed: [] }],
+  });
+  check(files.includes("out/examples.html") && files.includes("libs/examples.ts"), "filesFromGithubEvent reads commit paths");
+}
+
+{
   const card = buildDeployCard({
     pr: 27,
-    title: "feat: 企业定制询价页",
+    title: "Public /examples sample pages from existing HD clips (#20) (#34)",
     sha: "7edc5db",
+    files: ["out/examples.html", "out/examples/rain-couple.html", "libs/examples.ts"],
     link: "https://github.com/CharlesHarry7/dreamutopia-clone/pull/27",
     site: SITE_URL,
+    pendingItems: ["定价方案还没定", "正式域名还没定", "支付还没开通"],
   });
   const md = card.card.elements[0].text.content;
+  const serialized = JSON.stringify(card);
   check(card.msg_type === "interactive", "deploy uses interactive card");
-  check(card.card.header.title.content === "生产环境已更新", "deploy header is Simplified Chinese");
-  check(md.includes("PR #27") && md.includes("feat: 企业定制询价页"), "deploy card has PR number and title");
-  check(md.includes("7edc5db"), "deploy card has short sha");
-  check(md.includes(SITE_URL) && md.includes("/pull/27"), "deploy card has site and PR links");
-  check(JSON.stringify(card).includes("Grok Bot · AI视频项目专属机器人 三儿"), "deploy card footer signs as 三儿");
-  check(!JSON.stringify(card).includes("老三"), "deploy card omits 老三");
+  check(card.card.header.title.content === "网站进度", "deploy header is 网站进度");
+  check(md.includes("网站进度") && md.includes("案例页换成我们自己的样片"), "deploy card describes the visible site change");
+  check(md.includes("还没做") && md.includes("定价方案还没定"), "deploy card lists pending work in plain Chinese");
+  check(md.includes(SITE_URL), "deploy card has a single site 详情 link");
+  check(!md.includes("/pull/27"), "deploy card omits GitHub PR links");
+  check(!/#\d+/.test(md) && !/#\d+/.test(serialized), "deploy card has no #\d+ refs");
+  check(!/\b[0-9a-f]{7,40}\b/i.test(md) && !/\b[0-9a-f]{7,40}\b/i.test(serialized), "deploy card has no commit SHAs");
+  check(!md.includes("PR #27") && !md.includes("7edc5db"), "deploy card omits PR number and short sha");
+  check((md.match(/详情/g) || []).length === 1, "deploy card has at most one 详情 link");
+  check(!serialized.includes("查看变更"), "deploy card has no extra action button");
+  check(serialized.includes("Grok Bot · AI视频项目专属机器人 三儿"), "deploy card footer signs as 三儿");
+  check(!serialized.includes("老三"), "deploy card omits 老三");
+}
+
+{
+  const dirty = buildDeployCard({
+    title: "fix: history JSON (#16) 6f3fe2a on cursor/overnight-prod-polish-db63",
+    sha: "6f3fe2abcdef",
+    files: ["out/workspace.html"],
+    link: "https://github.com/CharlesHarry7/dreamutopia-clone/pull/16",
+    site: SITE_URL,
+    pendingItems: ["还要合并 PR #13 和 08cca68"],
+  });
+  const dirtyText = JSON.stringify(dirty);
+  check(!/#\d+/.test(dirtyText), "dirty deploy input still strips #\d+");
+  check(!/\b[0-9a-f]{7,40}\b/i.test(dirtyText), "dirty deploy input still strips SHAs");
+  check(!dirtyText.includes("cursor/"), "dirty deploy input still strips branch names");
 }
 
 {
