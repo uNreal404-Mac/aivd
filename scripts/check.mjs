@@ -388,6 +388,51 @@ mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA go
 mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
 mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
+mustContain("out/assets/js/du.js", 'const BRAND_NAME = "DreamUtopia"', "brand name is one constant");
+mustContain("out/assets/js/du.js", "BRAND_NAME: BRAND_NAME", "DU exports BRAND_NAME");
+mustContain("out/assets/js/demo.js", "演示样片 / Demo sample", "demo badge copy");
+mustContain("out/assets/js/demo.js", "function runGenerate", "demo generate helper");
+mustContain("out/workspace.html", 'src="/assets/js/demo.js"', "workspace loads demo.js");
+mustContain("out/workspace.html", 'id="demoSampleBadge"', "workspace result badge");
+mustContain("out/workspace.html", "Try demo", "visible Try demo entry");
+mustContain("out/workspace.html", "function generateDemoFlow", "demo generate does not use live generate");
+mustContain("out/workspace.html", "demoActive()", "workspace branches on demo mode");
+mustContain("out/index.html", 'href="/workspace?demo=1"', "home has Try demo entry");
+mustContain("out/robots.txt", "Disallow: /demo", "robots disallows /demo");
+mustContain("functions/robots.txt.ts", "Disallow: /demo", "function robots disallows /demo");
+mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not turn generation on");
+{
+  const demoSrc = read("out/assets/js/demo.js");
+  const flowStart = read("out/workspace.html").indexOf("async function generateDemoFlow()");
+  const flowEnd = read("out/workspace.html").indexOf("async function generate()");
+  const flow = flowStart >= 0 && flowEnd > flowStart ? read("out/workspace.html").slice(flowStart, flowEnd) : "";
+  if (flow.includes("/api/generate") || flow.includes("/api/upload") || flow.includes("upload-ticket")) {
+    fail.push("generateDemoFlow must not mention /api/generate, /api/upload, or upload-ticket");
+  } else ok.push("generateDemoFlow has no generate/upload API URLs");
+  const genStart = read("out/workspace.html").indexOf("async function generate()");
+  const genEnd = read("out/workspace.html").indexOf("function resetGenBtn()");
+  const gen = genStart >= 0 && genEnd > genStart ? read("out/workspace.html").slice(genStart, genEnd) : "";
+  const demoAt = gen.indexOf("demoActive()");
+  const closedAt = gen.indexOf("generationIsClosed");
+  if (demoAt < 0 || closedAt < 0 || demoAt > closedAt) {
+    fail.push("generate() must take the demo path before the 暂未开放 closed gate");
+  } else ok.push("generate() demo path runs before closed 暂未开放 gate");
+  const copyRe = /"(demo\.[^"]+)":\s*"([^"]*)"/g;
+  let m;
+  let i18nCopy = 0;
+  const i18nSrc = read("out/assets/js/i18n.js");
+  while ((m = copyRe.exec(i18nSrc))) {
+    i18nCopy += 1;
+    const val = m[2];
+    if (/clone/i.test(val) || val.includes("暂未开放")) {
+      fail.push(`demo i18n ${m[1]} must not contain clone or 暂未开放`);
+    }
+  }
+  if (i18nCopy < 8) fail.push("expected demo.* i18n keys");
+  else ok.push("demo i18n keys omit clone and 暂未开放");
+  if (!demoSrc.includes("TODO:")) fail.push("demo sample list must mark TODO placeholders");
+  else ok.push("demo sample list has TODO placeholders");
+}
 {
   const metas = [
     ["out/index.html", "Start free — no account needed", "home"],
@@ -544,4 +589,21 @@ process.stderr.write(histGalleryUnit.stderr || "");
 if (histGalleryUnit.status !== 0) {
   console.log("FAIL scripts/test-history-gallery.mjs");
   process.exit(histGalleryUnit.status || 1);
+}
+
+const demoUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-demo-mode.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(demoUnit.stdout || "");
+process.stderr.write(demoUnit.stderr || "");
+if (demoUnit.status !== 0) {
+  console.log("FAIL scripts/test-demo-mode.mjs");
+  process.exit(demoUnit.status || 1);
 }

@@ -54,6 +54,7 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?tab=history"), "?tab=history is parameterized");
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?mode=image"), "?mode=image is parameterized");
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?pack=starter"), "any query is parameterized");
+  assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?demo=1"), "?demo=1 is parameterized so middleware noindexes it");
 }
 
 {
@@ -91,6 +92,14 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(hist.headers["x-robots-tag"] === "noindex", "?tab=history sends X-Robots-Tag: noindex");
   assert(hist.html.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), "?tab=history canonical points back to /workspace");
   assert(!hist.html.includes("?tab=history"), "?tab=history canonical is not self-referencing the query URL");
+}
+
+{
+  const demoSeo = applyWorkspaceHtmlSeo(staticHtml, "https://dreamutopia-clone.pages.dev/workspace?demo=1");
+  assert(demoSeo.noindex === true, "?demo=1 is noindex");
+  assert(/<meta name="robots" content="noindex">/i.test(demoSeo.html), "?demo=1 HTML has robots noindex");
+  assert(demoSeo.headers["x-robots-tag"] === "noindex", "?demo=1 sends X-Robots-Tag: noindex");
+  assert(demoSeo.html.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), "?demo=1 canonical still points at /workspace");
 }
 
 {

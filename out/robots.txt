@@ -2,4 +2,5 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /reset
+Disallow: /demo
 Sitemap: https://dreamutopia-clone.pages.dev/sitemap.xml
