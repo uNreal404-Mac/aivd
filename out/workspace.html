@@ -429,7 +429,7 @@ nav{display:none}
 <section class="welcome" id="welcomeBanner">
 <div>
 <h2 data-i18n="ws.welcome.h">Welcome to DreamUtopia Workspace</h2>
-<p data-i18n="ws.welcome.p">Browse the generator without an account. Generate asks you to sign in.</p>
+<p data-i18n="ws.welcome.p">Preview the workflow first. Sign up to claim 10 credits when generation opens.</p>
 </div>
 <div class="welcome-actions">
 <a href="/workspace?demo=1" class="btn-demo" id="welcomeDemo" data-demo-enter data-i18n="demo.try">Try demo</a>
@@ -574,7 +574,7 @@ nav{display:none}
 <span class="gen-cost" id="genCostWrap">⚡ <span id="genCost">3</span></span>
 </button>
 <p class="gen-foot" id="genFoot">Sign in when you are ready to generate.</p>
-<p class="gen-foot" data-gen-closed-note hidden>暂未开放</p>
+<p class="gen-foot" data-gen-closed-note hidden>No credits are charged while generation is closed. Try the demo for a sample clip.</p>
 </div>
 </div>
 </aside>
@@ -1289,7 +1289,8 @@ function updateGenCost() {
     return;
   }
   if (generationIsClosed()) {
-    wrap.hidden = true;
+    wrap.hidden = false;
+    el.textContent = String(currentCost());
     return;
   }
   wrap.hidden = false;
@@ -2069,7 +2070,7 @@ function escapeHtml(s) {
         generateReady = false;
         const welcomeP = document.querySelector("#welcomeBanner p");
         if (welcomeP && !token && !enabled) {
-          welcomeP.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
+          welcomeP.textContent = (window.DU && DU.t("ws.gen.closed", "No credits are charged while generation is closed. Try the demo for a sample clip.")) || "No credits are charged while generation is closed. Try the demo for a sample clip.";
         }
       }
       resetGenBtn();

@@ -92,7 +92,7 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .hero .credits-note{font-size:13.5px;color:var(--text2);margin-bottom:28px}
 .hero .credits-note b{color:#fff;font-weight:600}
 .hero-cta{display:flex;gap:12px;justify-content:center;margin-bottom:48px}
-.btn-primary-lg{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;transition:opacity .2s}
+.btn-primary-lg{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;box-shadow:0 8px 24px rgba(168,85,247,.2);transition:opacity .2s,box-shadow .2s}
 .btn-primary-lg:hover{opacity:.9}
 .btn-outline-lg{background:transparent;border:1px solid var(--border2);color:var(--text);padding:12px 28px;border-radius:10px;font-size:15px;font-weight:500;transition:border-color .2s}
 .btn-outline-lg:hover{border-color:var(--primary)}
@@ -351,11 +351,11 @@ nav{display:none}
 <span class="new" data-i18n="hero.new">NEW: Pro Model with Sound</span>
 </div>
 <h1 data-i18n-html="hero.title">Turn Any Image Into<br><span class="gradient">Stunning AI Video</span></h1>
-<p class="sub" data-i18n="hero.sub">Transform your photos into cinematic AI-powered videos in seconds. Choose from multiple premium AI models. Start free — no account needed, no credit card required.</p>
-<div class="free-tag"><span class="star">☆</span> <span data-i18n="hero.free">2 FREE generations for everyone — no login needed</span></div>
-<p class="credits-note" data-i18n-html="hero.credits">Sign up to get <b>10 free credits</b> — unlock more advanced models with full controls</p>
+<p class="sub" data-i18n="hero.sub">Explore the workflow with sample clips. Sign up to claim 10 free credits when live generation opens.</p>
+<div class="free-tag"><span class="star">☆</span> <span data-i18n="hero.free">Try the sample workflow — no signup or card required</span></div>
+<p class="credits-note" data-i18n-html="hero.credits">Sign up for <b>10 free credits</b>. Video costs 3 / 5 / 16 credits (Lite / Medium / Pro).</p>
 <div class="hero-cta">
-<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="hero.cta" data-open-label="Start Creating Free →" data-i18n="hero.cta">Start Creating Free →</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-closed-i18n="cta.samples" data-open-href="/workspace" data-open-i18n="hero.cta" data-open-label="Start Creating Free →" data-i18n="hero.cta">Start Creating Free →</a>
 <a href="/workspace?demo=1" class="btn-outline-lg" data-i18n="demo.try">Try demo</a>
 <a href="#get-started" class="btn-outline-lg" data-i18n="hero.how">See how it works</a>
 </div>
@@ -384,9 +384,9 @@ nav{display:none}
 <textarea class="prompt-input" id="homePrompt" maxlength="8000" data-i18n-placeholder="gen.placeholder" placeholder="A futuristic city with flying cars..." oninput="updateGen(this)"></textarea>
 
 <div class="gen-sticky" id="homeGenSticky">
-<button class="gen-btn" id="genBtn" data-gen-cta="samples" data-open-i18n="gen.btn" data-open-label="Generate Free Trial" data-i18n="gen.btn">Generate Free Trial</button>
+<button class="gen-btn" id="genBtn" data-gen-cta="samples" data-closed-i18n="cta.samples" data-open-i18n="gen.btn" data-open-label="Generate Free Trial" data-i18n="gen.btn">Generate Free Trial</button>
 <p class="gen-foot" id="homeFoot" data-i18n-html="gen.foot">Free trial. <a href="/auth?mode=signup&amp;next=/workspace">Sign up</a> for more.</p>
-<p class="gen-foot" data-gen-closed-note>暂未开放</p>
+<p class="gen-foot" data-gen-closed-note>Generation is currently closed. No credits are charged.</p>
 </div>
 <div class="gen-status" id="homeStatus">
 <div class="spinner"></div>

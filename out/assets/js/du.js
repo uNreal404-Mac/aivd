@@ -103,9 +103,10 @@
       const openHref = el.getAttribute("data-open-href") || "/workspace";
       const openKey = el.getAttribute("data-open-i18n") || "";
       const openLabel = el.getAttribute("data-open-label") || "";
+      const closedKey = el.getAttribute("data-closed-i18n") || "";
       const next = generationCta(enabled, {
         href: openHref,
-        label: openKey ? t(openKey, openLabel || openKey) : openLabel,
+        label: !enabled && closedKey ? t(closedKey, openLabel || closedKey) : (openKey ? t(openKey, openLabel || openKey) : openLabel),
       });
       if (el.tagName === "A") el.setAttribute("href", next.href);
       const slot = el.querySelector("[data-gen-cta-label]");
@@ -124,7 +125,7 @@
         closedNotes[j].textContent = t("demo.foot", "Sample walkthrough. Nothing is billed.");
       } else {
         closedNotes[j].hidden = !!enabled;
-        if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+        if (!enabled) closedNotes[j].textContent = t("ws.gen.closed", "Generation is currently closed. No credits are charged.");
       }
     }
   }
