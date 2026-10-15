@@ -547,6 +547,26 @@ if (!exists("scripts/test-business.mjs")) fail.push("missing scripts/test-busine
 else ok.push("scripts/test-business.mjs exists");
 if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
 else ok.push("feishu bot worker left in place");
+if (!exists("workers/feishu-bot/src/config.mjs")) fail.push("feishu bot must keep a copy-friendly src/config.mjs");
+else ok.push("feishu bot has src/config.mjs");
+if (!exists("workers/feishu-bot/TEMPLATE.md")) fail.push("feishu bot must document copy steps in TEMPLATE.md");
+else ok.push("feishu bot has TEMPLATE.md");
+mustContain("workers/feishu-bot/src/config.mjs", "github-issue-comments", "progress command is config-driven");
+mustContain("workers/feishu-bot/src/config.mjs", "github-create-issue", "request command is config-driven");
+mustContain("workers/feishu-bot/README.md", "GITHUB_TOKEN", "bot README names GITHUB_TOKEN");
+mustContain("workers/feishu-bot/README.md", "GITHUB_WEBHOOK_SECRET", "bot README names GITHUB_WEBHOOK_SECRET");
+mustContain("workers/feishu-bot/README.md", "im:message:send_as_bot", "bot README lists send_as_bot");
+mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
+{
+  const botSrcDir = path.join(root, "workers/feishu-bot/src");
+  for (const name of fs.readdirSync(botSrcDir).filter((file) => file.endsWith(".mjs"))) {
+    const rel = `workers/feishu-bot/src/${name}`;
+    mustNotContain(rel, "/api/generate", `${rel} must not call /api/generate`);
+    mustNotContain(rel, "/api/upload", `${rel} must not call /api/upload`);
+    mustNotContain(rel, "GENERATION_ENABLED", `${rel} must not touch GENERATION_ENABLED`);
+    mustNotContain(rel, "kie.ai", `${rel} must not call KIE`);
+  }
+}
 
 if (!exists("scripts/feishu-notify.mjs")) fail.push("missing scripts/feishu-notify.mjs");
 else ok.push("scripts/feishu-notify.mjs exists");

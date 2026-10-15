@@ -98,11 +98,33 @@ export async function replyUuid(messageId) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export async function replyToMessage({ token, messageId, text, fetchImpl = fetch }) {
+export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, uuid }) {
+  if (typeof token !== "string" || !token || typeof text !== "string" || typeof chatId !== "string" || !chatId) {
+    throw new TypeError("A token, chat id, and text reply are required");
+  }
+  const replyId = uuid ?? await replyUuid(`chat:${chatId}`);
+  const response = await fetchImpl(`${FEISHU_API}/im/v1/messages?receive_id_type=chat_id`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      receive_id: chatId,
+      msg_type: "text",
+      content: JSON.stringify({ text }),
+      uuid: replyId,
+    }),
+  });
+  const payload = await jsonResponse(response);
+  if (payload?.code !== 0) throw new Error("Feishu chat message was rejected");
+}
+
+export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid }) {
   if (typeof token !== "string" || !token || typeof text !== "string") {
     throw new TypeError("A token and text reply are required");
   }
-  const uuid = await replyUuid(messageId);
+  const replyId = uuid ?? await replyUuid(messageId);
   const response = await fetchImpl(`${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reply`, {
     method: "POST",
     headers: {
@@ -112,7 +134,7 @@ export async function replyToMessage({ token, messageId, text, fetchImpl = fetch
     body: JSON.stringify({
       msg_type: "text",
       content: JSON.stringify({ text }),
-      uuid,
+      uuid: replyId,
     }),
   });
   const payload = await jsonResponse(response);

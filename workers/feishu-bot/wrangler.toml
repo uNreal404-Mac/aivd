@@ -1,3 +1,9 @@
+# Independent Feishu role-bot Worker on the Workers Free plan.
+# Secrets (wrangler secret put; never commit values):
+#   FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_VERIFICATION_TOKEN
+#   FEISHU_ENCRYPT_KEY          optional; omit while Feishu encryption is off
+#   GITHUB_TOKEN                fine-grained, this repo, Issues read/write
+#   GITHUB_WEBHOOK_SECRET       HMAC secret for POST /github/webhook
 name = "feishu-bot"
 main = "src/worker.mjs"
 compatibility_date = "2026-10-15"

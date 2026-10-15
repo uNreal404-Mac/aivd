@@ -1,12 +1,16 @@
-import { parseCommand, HELP_MESSAGE, PROGRESS_MESSAGE } from "./commands.mjs";
+import { parseCommand, HELP_MESSAGE } from "./commands.mjs";
+import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
-import { decodeFeishuRequest, selectMessageEvent, validateVerificationToken } from "./events.mjs";
+import { decodeFeishuRequest, messageContext, selectMessageEvent, validateVerificationToken } from "./events.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api.mjs";
+import { fetchProgressSummary } from "./progress.mjs";
+import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
 
-const SITE_URL = "https://dreamutopia-clone.pages.dev";
+const SITE_URL = botConfig.siteUrl;
 const EVENT_TYPE = "im.message.receive_v1";
 const CALLBACK_BUDGET_MS = 2500;
+const GITHUB_WEBHOOK_BUDGET_MS = 8000;
 const MAX_CALLBACK_BODY_BYTES = 1024 * 1024;
 const HEALTH_TIMEOUT_MS = 700;
 const HEALTH_REPLY_RESERVE_MS = 700;
@@ -134,11 +138,52 @@ function eligibleGroupShape(payload) {
     && hasMessageIdentity(payload);
 }
 
-function replyText(command, healthText) {
-  if (command === "progress") return PROGRESS_MESSAGE;
+async function commandReply({
+  command,
+  selected,
+  context,
+  kv,
+  env,
+  fetchImpl,
+  now,
+  deadlineAt,
+  monotonicNow,
+}) {
   if (command === "url") return SITE_URL;
-  if (command === "health") return healthText;
+  if (command === "health") {
+    const remainingHealthMs = deadlineAt - monotonicNow() - HEALTH_REPLY_RESERVE_MS;
+    const healthTimeoutMs = Math.max(1, Math.min(HEALTH_TIMEOUT_MS, remainingHealthMs));
+    return fetchHealthSummary({ fetchImpl, timeoutMs: healthTimeoutMs });
+  }
+  if (command === "progress") {
+    return fetchProgressSummary({ kv, token: env.GITHUB_TOKEN, fetchImpl, now });
+  }
+  if (command === "request") {
+    return handleFeishuRequest({ kv, env, selected, context, fetchImpl });
+  }
   return HELP_MESSAGE;
+}
+
+async function handleGithubRequest(request, env, { fetchImpl, now, monotonicNow }) {
+  if (typeof env?.GITHUB_WEBHOOK_SECRET !== "string" || !env.GITHUB_WEBHOOK_SECRET) {
+    return textResponse("GitHub webhook is not configured", 503);
+  }
+  if (!env.BOT_KV) return textResponse("Storage is not configured", 503);
+  const deadlineAt = monotonicNow() + GITHUB_WEBHOOK_BUDGET_MS;
+  try {
+    const rawBody = await readRequestBody(request, deadlineAt, monotonicNow);
+    const result = await handleGithubWebhook({
+      rawBody,
+      headers: request.headers,
+      kv: createDeadlineKv(env.BOT_KV, deadlineAt, monotonicNow),
+      env,
+      fetchImpl: createDeadlineFetch(fetchImpl, deadlineAt, monotonicNow),
+      now,
+    });
+    return textResponse(result.body ?? "ok", result.status ?? 200);
+  } catch (error) {
+    return textResponse("GitHub webhook rejected", error?.status ?? 500);
+  }
 }
 
 export function createWorker({
@@ -150,6 +195,10 @@ export function createWorker({
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
+      if (url.pathname === "/github/webhook") {
+        if (request.method !== "POST") return textResponse("Not found", 404);
+        return handleGithubRequest(request, env, { fetchImpl, now, monotonicNow });
+      }
       if (url.pathname !== "/feishu/events" || request.method !== "POST") return textResponse("Not found", 404);
       if (typeof env?.FEISHU_VERIFICATION_TOKEN !== "string" || !env.FEISHU_VERIFICATION_TOKEN) {
         return textResponse("Webhook is not configured", 503);
@@ -213,15 +262,22 @@ export function createWorker({
         }
 
         const command = parseCommand(selected.text);
-        const remainingHealthMs = deadlineAt - monotonicNow() - HEALTH_REPLY_RESERVE_MS;
-        const healthTimeoutMs = Math.max(1, Math.min(HEALTH_TIMEOUT_MS, remainingHealthMs));
-        const healthText = command === "health"
-          ? await fetchHealthSummary({ fetchImpl: boundedFetch, timeoutMs: healthTimeoutMs })
-          : "";
+        const context = messageContext(payload);
+        const text = await commandReply({
+          command,
+          selected,
+          context,
+          kv,
+          env,
+          fetchImpl: boundedFetch,
+          now,
+          deadlineAt,
+          monotonicNow,
+        });
         await replyToMessage({
           token,
           messageId: selected.messageId,
-          text: replyText(command, healthText),
+          text,
           fetchImpl: boundedFetch,
         });
         await markProcessed(kv, selected.eventId, selected.messageId);
