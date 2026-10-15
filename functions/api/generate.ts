@@ -107,6 +107,15 @@ function kieMissingResponse(
   );
 }
 
+/** GET status: same formula as /api/health (SESSIONS already required on this path). */
+function generateReadyOf(env: Env): boolean {
+  return isGenerationEnabled(env) && hasKieKey(env);
+}
+
+function reportedGuestRemaining(env: Env, remaining: number): number {
+  return isGenerationEnabled(env) ? remaining : 0;
+}
+
 function guestImageRequiredResponse(extraHeaders?: Record<string, string>): Response {
   return json(
     {
@@ -967,7 +976,7 @@ async function handleGenerateGet({ request, env }: { request: Request; env: Env 
     if (!row) return error("not found", 404);
 
     let providerState: string | null = null;
-    if (row.status === "processing" && row.provider_job_id) {
+    if (row.status === "processing" && row.provider_job_id && isGenerationEnabled(env)) {
       if (!hasKieKey(env)) {
         return kieMissingResponse();
       }
@@ -979,7 +988,7 @@ async function handleGenerateGet({ request, env }: { request: Request; env: Env 
     return json({
       ok: true,
       demo: false,
-      generateReady: hasKieKey(env),
+      generateReady: generateReadyOf(env),
       generation: publicGeneration(row),
       resultUrl: row.result_url,
       status: row.status,
@@ -1009,7 +1018,7 @@ async function handleGenerateGet({ request, env }: { request: Request; env: Env 
   }
 
   const list = rows.results || [];
-  if (hasKieKey(env)) {
+  if (isGenerationEnabled(env) && hasKieKey(env)) {
     for (const g of list.filter((r) => r.status === "processing" && r.provider_job_id).slice(0, 3)) {
       await settleAccountJob(env, g, origin);
     }
@@ -1024,7 +1033,7 @@ async function handleGenerateGet({ request, env }: { request: Request; env: Env 
       ok: true,
       demo: false,
       guest: false,
-      generateReady: true,
+      generateReady: generateReadyOf(env),
       generations: (refreshed.results || []).map(publicGeneration),
     });
   }
@@ -1033,7 +1042,7 @@ async function handleGenerateGet({ request, env }: { request: Request; env: Env 
     ok: true,
     demo: false,
     guest: false,
-    generateReady: hasKieKey(env),
+    generateReady: generateReadyOf(env),
     generations: list.map(publicGeneration),
   });
 }
@@ -1057,7 +1066,7 @@ async function handleGuestGet(
     let job = rec.jobs.find((j) => j.id === idParam) || null;
     if (!job) return json({ error: "not found", code: "not_found" }, 404, headers);
     let providerState: string | null = null;
-    if (job.status === "processing" && job.providerJobId) {
+    if (job.status === "processing" && job.providerJobId && isGenerationEnabled(env)) {
       if (!hasKieKey(env)) return kieMissingResponse();
       const synced = await settleGuestJob(env, rec, job, origin, ip);
       job = synced.job;
@@ -1068,12 +1077,12 @@ async function handleGuestGet(
         ok: true,
         demo: false,
         guest: true,
-        generateReady: hasKieKey(env),
+        generateReady: generateReadyOf(env),
         generation: publicGuestJob(job),
         resultUrl: job.resultUrl,
         status: job.status,
         providerState,
-        guestRemaining: quota.remaining,
+        guestRemaining: reportedGuestRemaining(env, quota.remaining),
         guestLimit: GUEST_LIMIT,
       },
       200,
@@ -1081,7 +1090,7 @@ async function handleGuestGet(
     );
   }
 
-  if (hasKieKey(env)) {
+  if (isGenerationEnabled(env) && hasKieKey(env)) {
     for (const j of rec.jobs.filter((x) => x.status === "processing" && x.providerJobId).slice(0, 3)) {
       await settleGuestJob(env, rec, j, origin, ip);
     }
@@ -1093,8 +1102,8 @@ async function handleGuestGet(
       ok: true,
       demo: false,
       guest: true,
-      generateReady: hasKieKey(env),
-      guestRemaining: q2.remaining,
+      generateReady: generateReadyOf(env),
+      guestRemaining: reportedGuestRemaining(env, q2.remaining),
       guestLimit: GUEST_LIMIT,
       generations: fresh.jobs.map(publicGuestJob),
     },
