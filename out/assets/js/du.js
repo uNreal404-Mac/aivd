@@ -5,7 +5,7 @@
   const TOKEN_KEY = "dreamutopia_token";
   const CREDITS_KEY = "dreamutopia_credits";
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-  // Placeholder brand — rename here when the product becomes Miko or Popovid.
+  // Must match libs/site.ts BRAND_NAME (canonical). Rebrand = change site.ts, then this mirror.
   const BRAND_NAME = "DreamUtopia";
 
   try {
