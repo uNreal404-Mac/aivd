@@ -85,10 +85,65 @@
     return code;
   }
 
+  function generationCta(enabled, kind, open) {
+    if (enabled) return { href: open.href, label: open.label, closed: false };
+    return {
+      href: "/business",
+      label: kind === "quote" ? t("cta.quote", "企业定制询价") : t("cta.samples", "查看样片"),
+      closed: true,
+    };
+  }
+
+  function applyGenerationCtas(enabled) {
+    generationEnabled = !!enabled;
+    const nodes = document.querySelectorAll("[data-gen-cta]");
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      const kind = el.getAttribute("data-gen-cta") === "quote" ? "quote" : "samples";
+      const openHref = el.getAttribute("data-open-href") || "";
+      const openKey = el.getAttribute("data-open-i18n") || "";
+      const openLabel = el.getAttribute("data-open-label") || "";
+      const next = generationCta(enabled, kind, {
+        href: openHref,
+        label: openKey ? t(openKey, openLabel || openKey) : openLabel,
+      });
+      if (el.tagName === "A") el.setAttribute("href", next.href);
+      const slot = el.querySelector("[data-gen-cta-label]");
+      if (slot) slot.textContent = next.label;
+      else if (el.tagName === "A" || el.tagName === "BUTTON") el.textContent = next.label;
+      if (el.tagName === "BUTTON") {
+        el.disabled = false;
+        el.setAttribute("data-closed-nav", next.closed ? "1" : "0");
+      }
+    }
+    const closedNotes = document.querySelectorAll("[data-gen-closed-note]");
+    for (let j = 0; j < closedNotes.length; j++) {
+      closedNotes[j].hidden = !!enabled;
+      if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+    }
+  }
+
+  async function fetchGenerationEnabled() {
+    try {
+      const res = await fetch("/api/health");
+      const data = await res.json();
+      return !!(data && data.generationEnabled === true);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function bootGenerationCtas() {
+    const enabled = await fetchGenerationEnabled();
+    applyGenerationCtas(enabled);
+    return enabled;
+  }
+
   function mapApiError(err) {
     const code = normalizeErrorCode(err);
     const fallback = (err && err.message) || t("progress.failed", "Generation failed");
     const messages = {
+      generation_disabled: t("gen.closed", "暂未开放"),
       kie_insufficient_balance: t(
         "err.kie_balance",
         "The video provider is out of credit right now. This is not your DreamUtopia balance — nothing was marked as successful. Try again later."
@@ -419,10 +474,26 @@
     return api("/gallery", { method: "POST", body: JSON.stringify({ generationId: generationId }) });
   }
 
+  // Flip to true to let pricing Select POST /api/checkout and open Stripe.
+  // Backend /api/checkout is unchanged; this only gates visitor-facing CTAs.
+  const PAYMENTS_ENABLED = false;
+  let generationEnabled = false;
+
   global.DU = {
     TOKEN_KEY: TOKEN_KEY,
     CREDITS_KEY: CREDITS_KEY,
     MAX_UPLOAD_BYTES: MAX_UPLOAD_BYTES,
+    PAYMENTS_ENABLED: PAYMENTS_ENABLED,
+    get generationEnabled() {
+      return generationEnabled;
+    },
+    set generationEnabled(v) {
+      generationEnabled = !!v;
+    },
+    generationCta: generationCta,
+    applyGenerationCtas: applyGenerationCtas,
+    fetchGenerationEnabled: fetchGenerationEnabled,
+    bootGenerationCtas: bootGenerationCtas,
     getToken: getToken,
     t: t,
     api: api,

@@ -25,3 +25,9 @@ bucket_name = "dreamutopia-media"
 #   Webhook: https://dreamutopia-clone.pages.dev/api/stripe/webhook  (checkout.session.completed)
 #   D1: npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql
 #   RESEND_API_KEY + MAIL_FROM                 (password reset + welcome email)
+#
+# GENERATION_ENABLED: only the exact string "true" opens /api/generate and /api/upload.
+# Unset / false / anything else → 503 暂未开放 (no KIE call, no credit deduct).
+
+[vars]
+GENERATION_ENABLED = "false"
