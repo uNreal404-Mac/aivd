@@ -83,6 +83,10 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .welcome-actions .btn-outline{border:1px solid var(--border2);padding:9px 18px;border-radius:9px;font-size:14px;font-weight:600;color:var(--text)}
 .welcome-actions .btn-outline:hover{border-color:var(--primary)}
 .welcome-actions .btn-primary{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:600}
+.guest-persist{display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.08)}
+.guest-persist.show{display:flex}
+.guest-persist p{font-size:13.5px;color:var(--text2);line-height:1.5;margin:0;max-width:720px}
+.guest-persist a{color:var(--primary2);font-weight:600;flex-shrink:0}
 .pack-banner{display:none;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.35);border-radius:16px;padding:16px 20px;margin-bottom:22px;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .pack-banner.show{display:flex}
 .pack-banner h2{font-size:16px;font-weight:700;margin-bottom:4px;color:var(--orange)}
@@ -364,6 +368,11 @@ nav{display:none}
 </div>
 </section>
 
+<section class="guest-persist" id="guestPersistNotice" hidden>
+<p data-i18n="ws.guest.persist">Your creations are saved only in this browser until you sign up.</p>
+<a href="/auth?mode=register" id="guestPersistSignup" data-i18n="ws.guest.persist.cta">Sign up to keep them</a>
+</section>
+
 <!-- Selected credit pack from /pricing -->
 <section class="pack-banner" id="packBanner" hidden>
 <div>
@@ -642,6 +651,20 @@ function toast(msg, isError) {
   setTimeout(() => el.classList.remove("show"), 3500);
 }
 
+function maybeToastMergedJobs(count) {
+  let n = Number(count);
+  if (!Number.isFinite(n) || n <= 0) {
+    try {
+      n = Number(sessionStorage.getItem("du_merged_jobs") || 0);
+    } catch (e) {
+      n = 0;
+    }
+  }
+  if (!Number.isFinite(n) || n <= 0) return;
+  try { sessionStorage.removeItem("du_merged_jobs"); } catch (e) {}
+  toast(DU.t("toast.merged", "Moved your guest creations into this account."));
+}
+
 async function api(path, options = {}) {
   return DU.api(path, options);
 }
@@ -816,6 +839,8 @@ function bindAuthTriggers() {
   const welcomeSignup = document.getElementById("welcomeSignup");
   if (welcomeLogin) welcomeLogin.href = authHref("login");
   if (welcomeSignup) welcomeSignup.href = authHref("register");
+  const persistSignup = document.getElementById("guestPersistSignup");
+  if (persistSignup) persistSignup.href = authHref("register");
   const saveLogin = document.getElementById("saveLogin");
   const saveSignup = document.getElementById("saveSignup");
   if (saveLogin) saveLogin.href = authHref("login");
@@ -850,6 +875,8 @@ function updateAuthUI(credits) {
     buy.hidden = false;
     welcome.classList.remove("show");
     save.classList.remove("show");
+    const persist = document.getElementById("guestPersistNotice");
+    if (persist) { persist.hidden = true; persist.classList.remove("show"); }
     foot.innerHTML = 'Credits never expire. <a href="/pricing">Buy more credits</a>';
     btnLabel.textContent = DU.t("ws.gen.go", "Generate");
     const loginBtn = document.getElementById("loginBtn");
@@ -874,6 +901,8 @@ function updateAuthUI(credits) {
     writeCachedCredits(null);
     welcome.classList.add("show");
     save.classList.add("show");
+    const persist = document.getElementById("guestPersistNotice");
+    if (persist) { persist.hidden = false; persist.classList.add("show"); }
     const left = guestRemaining == null ? 2 : guestRemaining;
     foot.innerHTML = left > 0
       ? left + ' free Lite video' + (left === 1 ? '' : 's') + ' left. <a href="' + authHref("register") + '" id="genFootSignup">Sign up</a> for 10 credits.'
@@ -1421,6 +1450,7 @@ function escapeHtml(s) {
       updateAuthUI(me.user.credits);
       showPackBanner();
       showInviteCard(me.user);
+      maybeToastMergedJobs(me.mergedJobs);
       loadHistory();
     } catch (e) {
       if (isUnauthorizedError(e)) {

@@ -283,6 +283,7 @@ async function api(path, body) {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    credentials: "same-origin",
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || data.error || "request failed");
@@ -326,6 +327,9 @@ document.getElementById("authForm").onsubmit = async (e) => {
     if (data.credits !== undefined && data.credits !== null) {
       localStorage.setItem(CREDITS_KEY, String(data.credits));
     }
+    if (data.mergedJobs > 0) {
+      try { sessionStorage.setItem("du_merged_jobs", String(data.mergedJobs)); } catch (e) {}
+    }
     location.href = workspaceUrl();
   } catch (err) {
     formError.textContent = err.message || "Something went wrong";
@@ -342,6 +346,7 @@ document.getElementById("authForm").onsubmit = async (e) => {
   try {
     const res = await fetch("/api/auth/me", {
       headers: { authorization: "Bearer " + existing },
+      credentials: "same-origin",
     });
     if (res.ok) {
       location.replace(workspaceUrl());

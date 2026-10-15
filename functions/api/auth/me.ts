@@ -39,10 +39,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   if (!row) return error("user not found", 404);
 
+  let mergedJobs = 0;
   try {
-    await mergeGuestJobs(env, request, Number(row.id));
+    mergedJobs = await mergeGuestJobs(env, request, Number(row.id));
   } catch {
-    /* guest cookie missing or schema — history still loads from D1 */
+    mergedJobs = 0;
   }
 
   let referralCode: string | null = row.referral_code || null;
@@ -55,6 +56,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const origin = new URL(request.url).origin;
   return json({
     ok: true,
+    mergedJobs,
     user: {
       id: row.id,
       email: row.email,

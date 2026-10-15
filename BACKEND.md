@@ -73,7 +73,8 @@ POST /api/generate
      video + lastImageUrl → kling-3.0/video (Medium/Pro)
      video + imageUrl     → kling-2.6/image-to-video
      video, no image      → kling-2.6/text-to-video
-     image                → nano-banana-2 (1K / 2K / 4K, optional blend)
+     image lite           → nano-banana-2-lite (1K JPEG, optional image_urls)
+     image pro            → nano-banana-2 (1K / 2K / 4K, optional image_input blend)
 → { generationId, kind, status, providerJobId, credits?, guestRemaining? }
 
 GET /api/generate?id=<generationId>
