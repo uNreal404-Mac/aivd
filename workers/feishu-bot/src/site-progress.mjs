@@ -94,9 +94,11 @@ function uniqueKeepOrder(items) {
 function collapseEmptyFragments(value) {
   let text = String(value ?? "");
   // Leftover shells after stripping "见 PR #34（sha）。" → "见 。"
-  text = text.replace(/(?:^|[\s（(，,、:：])(?:详见|参见)?见\s*[。．.]+/g, (match) => (
-    /^[\s（(，,、:：]/.test(match) ? match[0] : ""
+  // Also covers "案例页已更新。见 PR #34。" / "详见 PR #34。" after the link is gone.
+  text = text.replace(/(?:^|[\s（(【，,、:：。．.])(?:详见|参见|见)\s*[。．.]+/g, (match) => (
+    /^[\s（(【，,、:：。．.]/.test(match) ? match[0] : ""
   ));
+  text = text.replace(/(?:详见|参见|见)\s*[。．.]+/g, "");
   // Leftover shells after stripping "合并 PR #21 与 #16" → "合并 与"
   text = text.replace(/合并\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");
   text = text.replace(/\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");

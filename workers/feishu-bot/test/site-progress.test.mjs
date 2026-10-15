@@ -99,6 +99,12 @@ test("collapses leftover 见 。 and 合并 与 shells after stripping PR/SHA li
   assert.doesNotMatch(merge, /与/);
 });
 
+
+test("drops dangling 见。 after a Chinese period when PR link is stripped", () => {
+  assert.equal(stripTrackerTokens("案例页已更新。见 PR #34。"), "案例页已更新。");
+  assert.equal(stripTrackerTokens("案例页已更新。详见 PR #34。"), "案例页已更新。");
+});
+
 test("redacts names, phones, and money from #20 open-item fallback in the progress card", () => {
   const raw = "联系王总 13900001111 谈报价 ¥20000";
   const item = describePendingItem(raw);

@@ -558,3 +558,84 @@ test("returns 503 for GitHub webhooks when the signing secret is missing", async
   }), makeEnv(), {});
   assert.equal(response.status, 503);
 });
+
+
+test("acks Feishu before model work finishes when ctx.waitUntil is used", async () => {
+  let releaseModel;
+  const modelGate = new Promise((resolve) => { releaseModel = resolve; });
+  const replies = [];
+  const pending = [];
+  const ctx = {
+    waitUntil(promise) {
+      pending.push(promise);
+    },
+  };
+  const githubFetch = makeGithubFetch({ replies });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url).includes("/chat/completions")) {
+        await modelGate;
+        return Response.json({
+          choices: [{ message: { role: "assistant", content: "先聊两句，站点正常。" } }],
+        });
+      }
+      return githubFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.LLM_BASE_URL = "https://llm.test/v1";
+  env.LLM_MODEL = "test-model";
+  env.LLM_API_KEY = "llm-test-key";
+  env.ALLOWED_CHAT_IDS = "oc_chat";
+
+  const responsePromise = worker.fetch(new Request("https://example.com/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(messagePayload({
+      text: "随便聊聊",
+      messageId: "om_waituntil_1",
+      eventId: "evt_waituntil_1",
+    })),
+  }), env, ctx);
+
+  const response = await responsePromise;
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 0, "reply must not happen before ack returns");
+
+  releaseModel();
+  await Promise.all(pending);
+  assert.equal(replies.length, 1, "reply should be sent after waitUntil work");
+  assert.match(JSON.parse(replies[0].content).text, /先聊两句/);
+});
+
+test("ignores duplicate event_id when ctx.waitUntil is used", async () => {
+  const replies = [];
+  const pending = [];
+  const ctx = {
+    waitUntil(promise) {
+      pending.push(promise);
+    },
+  };
+  const worker = createWorker({ fetchImpl: makeGithubFetch({ replies }) });
+  const env = makeEnv();
+  const payload = messagePayload({
+    text: "网址",
+    messageId: "om_dup_wait",
+    eventId: "evt_dup_wait",
+  });
+  const req = () => new Request("https://example.com/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  assert.equal((await worker.fetch(req(), env, ctx)).status, 200);
+  await Promise.all(pending.splice(0));
+  const firstCount = replies.length;
+  assert.ok(firstCount >= 1);
+
+  assert.equal((await worker.fetch(req(), env, ctx)).status, 200);
+  await Promise.all(pending.splice(0));
+  assert.equal(replies.length, firstCount, "duplicate event_id must not send another reply");
+});
+
