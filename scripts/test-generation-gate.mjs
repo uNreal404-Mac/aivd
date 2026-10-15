@@ -2,7 +2,7 @@
  * GENERATION_ENABLED kill switch — mocks only. Never calls real KIE.
  */
 import {
-  BUSINESS_PATH,
+  WORKSPACE_PATH,
   GENERATION_DISABLED_CODE,
   GENERATION_DISABLED_MESSAGE,
   generationCta,
@@ -76,13 +76,13 @@ try {
 
   {
     const samples = generationCta(false, "samples", { href: "/workspace", label: "Start Creating Free →" });
-    assert(samples.href === BUSINESS_PATH && samples.label === "查看样片" && samples.closed, "closed samples CTA → /business 查看样片");
-    const quote = generationCta(false, "quote", { href: "/auth?mode=register", label: "Claim 10 Free Credits" });
-    assert(quote.href === BUSINESS_PATH && quote.label === "企业定制询价" && quote.closed, "closed quote CTA → /business 企业定制询价");
+    assert(samples.href === WORKSPACE_PATH && samples.label === "Start Creating Free →" && samples.closed, "closed samples CTA → /workspace");
+    const quote = generationCta(false, "quote", { href: "/workspace", label: "Claim 10 Free Credits" });
+    assert(quote.href === WORKSPACE_PATH && quote.label === "Claim 10 Free Credits" && quote.closed, "closed quote CTA → /workspace (no /business)");
     const open = generationCta(true, "samples", { href: "/workspace", label: "Start Creating Free →" });
-    assert(open.href === "/workspace" && open.label === "Start Creating Free →" && !open.closed, "enabled CTA restores original");
-    const openQuote = generationCta(true, "quote", { href: "/auth?mode=register", label: "Claim 10 Free Credits" });
-    assert(openQuote.href === "/auth?mode=register" && openQuote.label === "Claim 10 Free Credits", "enabled quote CTA restores original");
+    assert(open.href === "/workspace" && open.label === "Start Creating Free →" && !open.closed, "enabled CTA stays on /workspace");
+    const openQuote = generationCta(true, "quote", { href: "/workspace", label: "Claim 10 Free Credits" });
+    assert(openQuote.href === "/workspace" && openQuote.label === "Claim 10 Free Credits", "enabled quote CTA goes to /workspace");
   }
 
   {

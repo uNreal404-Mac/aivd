@@ -15,5 +15,4 @@ export const PUBLIC_PATHS = [
   "/image-to-video",
   "/photo-to-video",
   "/free-ai-video",
-  "/business",
 ] as const;

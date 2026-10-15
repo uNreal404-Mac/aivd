@@ -85,12 +85,11 @@
     return code;
   }
 
-  function generationCta(enabled, kind, open) {
-    if (enabled) return { href: open.href, label: open.label, closed: false };
+  function generationCta(enabled, open) {
     return {
-      href: "/business",
-      label: kind === "quote" ? t("cta.quote", "企业定制询价") : t("cta.samples", "查看样片"),
-      closed: true,
+      href: open.href || "/workspace",
+      label: open.label,
+      closed: !enabled,
     };
   }
 
@@ -99,11 +98,10 @@
     const nodes = document.querySelectorAll("[data-gen-cta]");
     for (let i = 0; i < nodes.length; i++) {
       const el = nodes[i];
-      const kind = el.getAttribute("data-gen-cta") === "quote" ? "quote" : "samples";
-      const openHref = el.getAttribute("data-open-href") || "";
+      const openHref = el.getAttribute("data-open-href") || "/workspace";
       const openKey = el.getAttribute("data-open-i18n") || "";
       const openLabel = el.getAttribute("data-open-label") || "";
-      const next = generationCta(enabled, kind, {
+      const next = generationCta(enabled, {
         href: openHref,
         label: openKey ? t(openKey, openLabel || openKey) : openLabel,
       });
