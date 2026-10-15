@@ -115,6 +115,16 @@ async function refundOnce(
   generationId: number
 ): Promise<void> {
   if (cost <= 0) return;
+  // Rows imported from free guest jobs were never charged — never refund them.
+  try {
+    const imported = await db
+      .prepare("SELECT 1 AS x FROM credit_events WHERE user_id = ? AND reason = ?")
+      .bind(userId, `guest_import:gen:${generationId}`)
+      .first();
+    if (imported) return;
+  } catch {
+    // credit_events missing: fall through (no guest import could have been marked either).
+  }
   const reason = `refund:gen:${generationId}`;
   try {
     await db

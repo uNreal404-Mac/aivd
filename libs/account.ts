@@ -93,15 +93,26 @@ export async function mergeGuestJobs(
   return copied;
 }
 
+/** credit_events reason marking a D1 row that was imported from a free guest job (never charged). */
+export function guestImportReason(generationId: number): string {
+  return `guest_import:gen:${generationId}`;
+}
+
 async function insertGuestJob(db: D1Database, userId: number, job: GuestJob): Promise<boolean> {
   const mediaKey = job.resultUrl ? mediaKeyFromUrl(job.resultUrl) : null;
+  const providerJobId = job.providerJobId || null;
+  let res: D1Result | undefined;
   try {
-    await db
+    // Single atomic statement: a provider job can be imported into exactly one
+    // account (any user), so parallel auth requests or a second account using
+    // the same du_guest cookie cannot create duplicate rows.
+    res = await db
       .prepare(
         `INSERT INTO generations (
            user_id, model, prompt, status, media_key, duration_sec,
            input_image_url, provider_job_id, result_url, error_message, created_at
-         ) VALUES (?, ?, ?, ?, ?, 5, ?, ?, ?, ?, ?)`
+         ) SELECT ?, ?, ?, ?, ?, 5, ?, ?, ?, ?, ?
+           WHERE NOT EXISTS (SELECT 1 FROM generations WHERE provider_job_id = ?)`
       )
       .bind(
         userId,
@@ -110,16 +121,33 @@ async function insertGuestJob(db: D1Database, userId: number, job: GuestJob): Pr
         job.status || "done",
         mediaKey,
         job.inputImageUrl,
-        job.providerJobId || null,
+        providerJobId,
         job.resultUrl,
         job.errorMessage,
-        job.createdAt || new Date().toISOString()
+        job.createdAt || new Date().toISOString(),
+        providerJobId
       )
       .run();
-    return true;
   } catch {
     return false;
   }
+  const changes = res?.meta?.changes ?? 1;
+  if (changes === 0) return false;
+  const newId = Number(res?.meta?.last_row_id);
+  if (job.status === "processing" && Number.isFinite(newId) && newId > 0) {
+    // Guest jobs cost 0 credits: mark the row so a later provider failure never refunds.
+    try {
+      await db
+        .prepare("INSERT INTO credit_events (user_id, delta, reason) VALUES (?, 0, ?)")
+        .bind(userId, guestImportReason(newId))
+        .run();
+    } catch {
+      // Cannot mark as free -> do not keep an in-flight row that could be refunded.
+      await db.prepare("DELETE FROM generations WHERE id = ?").bind(newId).run();
+      return false;
+    }
+  }
+  return true;
 }
 
 export function isSchemaError(err: unknown): boolean {
