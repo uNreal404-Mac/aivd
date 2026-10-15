@@ -14,6 +14,7 @@
 #   LLM_BASE_URL = "https://api.openai.com/v1"
 #   LLM_MODEL = "gpt-4o-mini"
 #   LLM_DAILY_LIMIT = "200"
+#   LLM_TIMEOUT_MS = "9000"
 # Put the key only via: wrangler secret put LLM_API_KEY
 # Never commit an API key value.
 name = "feishu-bot"

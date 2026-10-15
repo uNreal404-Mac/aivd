@@ -32,7 +32,7 @@ export const botConfig = {
     historyTurns: 6,
     historyTtlSeconds: 86400,
     dailyLimit: 200,
-    timeoutMs: 1200,
+    timeoutMs: 9000,
   },
   commands: [
     {

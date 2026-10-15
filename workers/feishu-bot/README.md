@@ -40,7 +40,8 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `LLM_BASE_URL` | 可选 LLM 必须（与下面两项同时有才开启） | Worker `[vars]` 示例：`https://api.openai.com/v1`（或其他 OpenAI 兼容 host）。**不要**把该值写进源码当运行时默认；缺省则 LLM 关闭 |
 | `LLM_MODEL` | 可选 LLM 必须 | Worker `[vars]` 示例：`gpt-4o-mini`。**不要**把模型名写进源码当运行时默认 |
 | `LLM_API_KEY` | 可选 LLM 必须 | **仅 Cloudflare Worker Secret**（`wrangler secret put LLM_API_KEY`）。运行时从 `env.LLM_API_KEY` 读取。禁止写入代码、测试、注释、日志或 PR |
-| `LLM_DAILY_LIMIT` | 可选 | Worker `[vars]`。每个会话每天最多模型调用次数，默认 `200`。达到上限后礼貌回复并退回规则命令 |
+| `LLM_DAILY_LIMIT` | 可选 | Worker `[vars]`。每个会话每天最多模型调用次数，默认 `200`。达到上限后礼貌回复并退回规则命令。计数在向模型发请求**之前**写入，超时和 HTTP 错误也计入上限 |
+| `LLM_TIMEOUT_MS` | 可选 | Worker `[vars]`。模型 HTTP 请求超时，默认 `9000` 毫秒；会夹到约 200–20000 毫秒。飞书事件路径仍受 Worker 2.5 秒回调预算限制 |
 
 不要把飞书 / GitHub secrets 写进 `wrangler.toml`、`.dev.vars`、仓库文件、命令参数或 pull request。`ALLOWED_CHAT_IDS` 可以放在 Worker `[vars]` 或 `config.mjs`。
 
@@ -92,6 +93,7 @@ npx wrangler dev
    LLM_BASE_URL = "https://api.openai.com/v1"
    LLM_MODEL = "gpt-4o-mini"
    LLM_DAILY_LIMIT = "200"
+   LLM_TIMEOUT_MS = "9000"
    ```
 
    确认 `ALLOWED_CHAT_IDS` 已包含允许对话的 `chat_id`，再单独运行（只在 Wrangler 提示中粘贴密钥，不要写进文件或命令参数）：

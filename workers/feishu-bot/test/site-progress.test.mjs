@@ -90,6 +90,44 @@ test("strips PR numbers, SHAs, and branch names from any leftover copy", () => {
   assert.equal(hasTrackerTokens("见 #20 和 7edc5db"), true);
 });
 
+test("collapses leftover 见 。 and 合并 与 shells after stripping PR/SHA links", () => {
+  const see = stripTrackerTokens("见 PR #34（6f3fe2a）。");
+  assert.doesNotMatch(see, /见\s*。/);
+  assert.doesNotMatch(see, /见/);
+  const merge = stripTrackerTokens("合并 PR #21 与 #16");
+  assert.doesNotMatch(merge, /合并\s*与/);
+  assert.doesNotMatch(merge, /与/);
+});
+
+test("redacts names, phones, and money from #20 open-item fallback in the progress card", () => {
+  const raw = "联系王总 13900001111 谈报价 ¥20000";
+  const item = describePendingItem(raw);
+  assert.ok(item, "fallback pending text should remain after redaction");
+  assert.doesNotMatch(item, /王总/);
+  assert.doesNotMatch(item, /13900001111/);
+  assert.doesNotMatch(item, /¥\s*20000|20000/);
+  assert.match(item, /已脱敏/);
+
+  const card = formatWebsiteProgress({
+    doneItems: ["案例页换成我们自己的样片"],
+    pendingItems: [raw],
+    detailUrl: "https://dreamutopia-clone.pages.dev",
+  });
+  const fromGithub = buildProgressFromGithub({
+    issueBody: `## 任务\n- [ ] ${raw}`,
+    detailUrl: "https://dreamutopia-clone.pages.dev",
+  });
+  for (const text of [card, fromGithub]) {
+    assert.match(text, /^网站进度/m);
+    assert.match(text, /还没做/);
+    assert.doesNotMatch(text, /王总/);
+    assert.doesNotMatch(text, /13900001111/);
+    assert.doesNotMatch(text, /¥\s*20000|20000/);
+    assert.match(text, /已脱敏/);
+    assertClean(text);
+  }
+});
+
 test("maps issue checklist and open PRs into 还没做 lines without tracker tokens", () => {
   const issueBody = [
     "不混进 ZCV（#17）。",

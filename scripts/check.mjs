@@ -691,6 +691,7 @@ mustContain("workers/feishu-bot/README.md", "LLM_BASE_URL", "bot README document
 mustContain("workers/feishu-bot/README.md", "LLM_MODEL", "bot README documents optional LLM model");
 mustContain("workers/feishu-bot/README.md", "LLM_API_KEY", "bot README documents optional LLM secret name");
 mustContain("workers/feishu-bot/README.md", "LLM_DAILY_LIMIT", "bot README documents optional LLM daily cap");
+mustContain("workers/feishu-bot/README.md", "LLM_TIMEOUT_MS", "bot README documents optional LLM timeout");
 mustContain("workers/feishu-bot/README.md", "https://api.openai.com/v1", "bot README shows OpenAI-compatible base example");
 mustContain("workers/feishu-bot/README.md", "gpt-4o-mini", "bot README shows example model name");
 mustContain("workers/feishu-bot/src/llm.mjs", "resolveLlmConfig", "optional LLM helper is fail-closed when unset");

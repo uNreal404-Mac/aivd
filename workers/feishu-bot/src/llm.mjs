@@ -3,13 +3,15 @@ import { botConfig, isAllowedRequestChat } from "./config.mjs";
 import { listIssueComments } from "./github.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
-import { sanitizeRequestText } from "./requests.mjs";
+import { sanitizeRequestText } from "./privacy.mjs";
 import { formatPlainNotes, stripTrackerTokens } from "./site-progress.mjs";
 
 export const LLM_CAP_MESSAGE = "今天的对话次数已经用完，请明天再试。也可以回复「进度」「网址」或「健康」。";
 export const DEFAULT_LLM_DAILY_LIMIT = 200;
 export const DEFAULT_LLM_HISTORY_TURNS = 6;
-export const DEFAULT_LLM_TIMEOUT_MS = 1200;
+export const DEFAULT_LLM_TIMEOUT_MS = 9000;
+export const MIN_LLM_TIMEOUT_MS = 200;
+export const MAX_LLM_TIMEOUT_MS = 20000;
 export const DEFAULT_LLM_HISTORY_TTL_SECONDS = 86400;
 
 const encoder = new TextEncoder();
@@ -22,7 +24,6 @@ export function resolveLlmConfig(env = {}, config = botConfig) {
 
   const dailyLimit = Number.parseInt(String(env?.LLM_DAILY_LIMIT ?? ""), 10);
   const historyTurns = Number.parseInt(String(env?.LLM_HISTORY_TURNS ?? ""), 10);
-  const timeoutMs = Number.parseInt(String(env?.LLM_TIMEOUT_MS ?? ""), 10);
   const defaults = config?.llm ?? {};
   return {
     baseUrl,
@@ -30,9 +31,17 @@ export function resolveLlmConfig(env = {}, config = botConfig) {
     apiKey,
     dailyLimit: Number.isFinite(dailyLimit) && dailyLimit > 0 ? dailyLimit : (defaults.dailyLimit || DEFAULT_LLM_DAILY_LIMIT),
     historyTurns: Number.isFinite(historyTurns) && historyTurns > 0 ? historyTurns : (defaults.historyTurns || DEFAULT_LLM_HISTORY_TURNS),
-    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : (defaults.timeoutMs || DEFAULT_LLM_TIMEOUT_MS),
+    timeoutMs: resolveLlmTimeoutMs(env?.LLM_TIMEOUT_MS, defaults.timeoutMs),
     historyTtlSeconds: defaults.historyTtlSeconds || DEFAULT_LLM_HISTORY_TTL_SECONDS,
   };
+}
+
+export function resolveLlmTimeoutMs(raw, fallback = DEFAULT_LLM_TIMEOUT_MS) {
+  const parsed = Number.parseInt(String(raw ?? ""), 10);
+  const base = Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : (Number.isFinite(Number(fallback)) && Number(fallback) > 0 ? Number(fallback) : DEFAULT_LLM_TIMEOUT_MS);
+  return Math.min(MAX_LLM_TIMEOUT_MS, Math.max(MIN_LLM_TIMEOUT_MS, base));
 }
 
 export function chatCompletionsUrl(baseUrl) {
@@ -202,11 +211,18 @@ export async function replyWithOptionalLlm({
     const user = filterLlmOutput(userText);
     if (!user) return HELP_MESSAGE;
 
+    // Count the attempt before the model HTTP call so timeouts / HTTP errors
+    // still consume quota. KV get+put is not atomic; concurrent requests may
+    // both read the same `used` value.
+    await kv.put(dailyKvKey(hash, day), String(used + 1), { expirationTtl: 172800 });
+
     const messages = [
       { role: "system", content: system },
       ...history,
       { role: "user", content: user },
     ];
+    // Feishu event path still has a 2.5s callback budget in worker.mjs; this
+    // timeout only bounds the model HTTP call when the Worker is not already cut off.
     const raw = await completeChat({
       llm,
       messages,
@@ -216,7 +232,6 @@ export async function replyWithOptionalLlm({
     const reply = filterLlmOutput(raw);
     if (!reply) return HELP_MESSAGE;
 
-    await kv.put(dailyKvKey(hash, day), String(used + 1), { expirationTtl: 172800 });
     await saveHistory(kv, hash, [...history, { role: "user", content: user }, { role: "assistant", content: reply }], {
       limit: llm.historyTurns,
       ttlSeconds: llm.historyTtlSeconds,

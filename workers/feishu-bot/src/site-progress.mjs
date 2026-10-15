@@ -3,6 +3,8 @@
  * Partner-facing text must never include PR numbers, issue refs, commit SHAs, or branch names.
  */
 
+import { sanitizeRequestText } from "./privacy.mjs";
+
 export const PROGRESS_TITLE = "网站进度";
 export const PENDING_HEADING = "还没做";
 export const PUBLIC_SITE_URL = "https://dreamutopia-clone.pages.dev";
@@ -89,6 +91,21 @@ function uniqueKeepOrder(items) {
   return out;
 }
 
+function collapseEmptyFragments(value) {
+  let text = String(value ?? "");
+  // Leftover shells after stripping "见 PR #34（sha）。" → "见 。"
+  text = text.replace(/(?:^|[\s（(，,、:：])(?:详见|参见)?见\s*[。．.]+/g, (match) => (
+    /^[\s（(，,、:：]/.test(match) ? match[0] : ""
+  ));
+  // Leftover shells after stripping "合并 PR #21 与 #16" → "合并 与"
+  text = text.replace(/合并\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");
+  text = text.replace(/\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");
+  text = text.replace(/\s+([。．.，,、:：])/g, "$1");
+  text = text.replace(/^[。．.，,、:：]+/, "");
+  text = text.replace(/[。．]{2,}/g, "。");
+  return text;
+}
+
 export function stripTrackerTokens(text) {
   let value = String(text ?? "");
   value = value.replace(/\bPR\s*#?\s*\d+\b/gi, "");
@@ -97,6 +114,7 @@ export function stripTrackerTokens(text) {
   value = value.replace(/\b(?=[0-9a-f]{7,40}\b)[0-9a-f]*[a-f][0-9a-f]*\b/gi, "");
   value = value.replace(/\b(?:cursor|codex|origin)\/[A-Za-z0-9._/-]+/g, "");
   value = value.replace(/[（(]\s*[）)]/g, "");
+  value = collapseEmptyFragments(value);
   value = value.replace(/[，、]{2,}/g, "、");
   value = value.replace(/[ \t]{2,}/g, " ");
   return value.replace(/[ \t]+\n/g, "\n").trim();
@@ -108,7 +126,7 @@ export function hasTrackerTokens(text) {
 }
 
 function sanitizeLine(text) {
-  const stripped = stripTrackerTokens(text);
+  const stripped = stripTrackerTokens(sanitizeRequestText(text));
   return hasTrackerTokens(stripped) ? "" : stripped;
 }
 

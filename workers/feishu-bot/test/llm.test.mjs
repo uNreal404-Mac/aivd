@@ -4,7 +4,10 @@ import { HELP_MESSAGE } from "../src/commands.mjs";
 import { signOutboundText } from "../src/config.mjs";
 import {
   DEFAULT_LLM_DAILY_LIMIT,
+  DEFAULT_LLM_TIMEOUT_MS,
   LLM_CAP_MESSAGE,
+  MAX_LLM_TIMEOUT_MS,
+  MIN_LLM_TIMEOUT_MS,
   buildSystemPrompt,
   chatCompletionsUrl,
   dailyKvKey,
@@ -103,6 +106,15 @@ test("LLM stays off unless base URL, model, and API key are all set", () => {
   assert.equal(cfg.dailyLimit, 50);
   assert.equal(resolveLlmConfig(llmEnv()).dailyLimit, DEFAULT_LLM_DAILY_LIMIT);
   assert.equal(resolveLlmConfig({ LLM_API_KEY: LLM_KEY }), null);
+});
+
+test("LLM request timeout defaults to 9000ms and clamps LLM_TIMEOUT_MS to a sane range", () => {
+  assert.equal(DEFAULT_LLM_TIMEOUT_MS, 9000);
+  assert.equal(resolveLlmConfig(llmEnv()).timeoutMs, 9000);
+  assert.equal(resolveLlmConfig(llmEnv({ LLM_TIMEOUT_MS: "5000" })).timeoutMs, 5000);
+  assert.equal(resolveLlmConfig(llmEnv({ LLM_TIMEOUT_MS: "20" })).timeoutMs, MIN_LLM_TIMEOUT_MS);
+  assert.equal(resolveLlmConfig(llmEnv({ LLM_TIMEOUT_MS: "999999" })).timeoutMs, MAX_LLM_TIMEOUT_MS);
+  assert.equal(resolveLlmConfig(llmEnv({ LLM_TIMEOUT_MS: "nope" })).timeoutMs, DEFAULT_LLM_TIMEOUT_MS);
 });
 
 test("chat completions URL is derived from the configured base without putting the key in it", () => {
@@ -248,24 +260,34 @@ test("daily cap replies politely without calling the model", async () => {
   assert.match(signOutboundText(text), /三儿/);
 });
 
-test("LLM HTTP errors and timeouts fall back to the rule help text", async () => {
+test("LLM HTTP errors and timeouts fall back to the rule help text and still count toward the daily cap", async () => {
+  const now = () => Date.parse("2026-10-15T10:00:00Z");
+  const hash = await hashChatId("oc_partner");
+  const day = llmDayKey(now());
+
+  const kvFail = fakeKv();
   const failed = await replyWithOptionalLlm({
-    kv: fakeKv(),
+    kv: kvFail,
     env: llmEnv(),
     chatId: "oc_partner",
     userText: "在吗",
     fetchImpl: githubAndLlmFetch({ failLlm: true }),
+    now,
   });
   assert.equal(failed, HELP_MESSAGE);
+  assert.equal(await kvFail.get(dailyKvKey(hash, day)), "1");
 
+  const kvTimeout = fakeKv();
   const timedOut = await replyWithOptionalLlm({
-    kv: fakeKv(),
-    env: llmEnv({ LLM_TIMEOUT_MS: "20" }),
+    kv: kvTimeout,
+    env: llmEnv({ LLM_TIMEOUT_MS: String(MIN_LLM_TIMEOUT_MS) }),
     chatId: "oc_partner",
     userText: "在吗",
-    fetchImpl: githubAndLlmFetch({ delayMs: 80 }),
+    fetchImpl: githubAndLlmFetch({ delayMs: MIN_LLM_TIMEOUT_MS + 400 }),
+    now,
   });
   assert.equal(timedOut, HELP_MESSAGE);
+  assert.equal(await kvTimeout.get(dailyKvKey(hash, day)), "1");
 });
 
 test("LLM path never calls generate, upload, or KIE", async () => {

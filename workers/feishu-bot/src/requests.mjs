@@ -2,6 +2,9 @@ import { HELP_MESSAGE } from "./commands.mjs";
 import { botConfig, isAllowedRequestChat, signOutboundText } from "./config.mjs";
 import { getTenantAccessToken, replyToMessage, replyUuid, sendTextToChat } from "./feishu-api.mjs";
 import { createIssue, verifyGitHubSignature } from "./github.mjs";
+import { sanitizeRequestText } from "./privacy.mjs";
+
+export { sanitizeRequestText };
 
 export const ISSUE_MAP_PREFIX = "github:issue-map:";
 export const REQUEST_ISSUE_PREFIX = "feishu:request-issue:";
@@ -9,12 +12,6 @@ export const PUBLIC_ISSUE_NOTICE = "将公开到 GitHub，请勿写客户名、�
 const DELIVERY_PREFIX = "github:delivery:";
 const CLOSED_PREFIX = "github:closed-notified:";
 const decoder = new TextDecoder("utf-8", { fatal: true });
-const ARABIC_AMOUNT = String.raw`[\d,]+(?:\.\d{1,2})?`;
-const CN_AMOUNT_DIGITS = String.raw`[零〇一二三四五六七八九十百两]+`;
-const CURRENCY_UNITS = String.raw`万美元|万元|块钱|人民币|美元|刀|USD|RMB|CNY|元|块`;
-const SCALE_UNITS = String.raw`万|千|[kKw]`;
-const NON_MONEY_COUNTERS = String.raw`次|播放|人|条|个|浏览`;
-const SCALE_THEN_OPTIONAL_CURRENCY = String.raw`(?:${SCALE_UNITS})(?!\s*(?:${NON_MONEY_COUNTERS}))(?:\s*(?:${CURRENCY_UNITS}))?`;
 
 function headerValue(headers, name) {
   if (headers && typeof headers.get === "function") return headers.get(name);
@@ -37,24 +34,6 @@ export function parseRequestBody(text) {
   const match = normalized.match(/^需求[：:]\s*([\s\S]*)$/u);
   if (!match) return null;
   return match[1].trim();
-}
-
-export function sanitizeRequestText(text) {
-  let value = String(text ?? "");
-  value = value.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[已脱敏-邮箱]");
-  value = value.replace(/(?:\+?86[-\s]*)?1[3-9]\d(?:[-\s]?\d){8}\b/g, "[已脱敏-电话]");
-  value = value.replace(/0\d{2,3}-?\d{7,8}\b/g, "[已脱敏-电话]");
-  value = value.replace(/(?:[¥￥$€£]|RMB|CNY|USD)\s*[\d,]+(?:\.\d{1,2})?/gi, "[已脱敏-金额]");
-  value = value.replace(
-    new RegExp(`${ARABIC_AMOUNT}\\s*(?:${CURRENCY_UNITS}|${SCALE_THEN_OPTIONAL_CURRENCY})`, "gi"),
-    "[已脱敏-金额]",
-  );
-  value = value.replace(
-    new RegExp(`${CN_AMOUNT_DIGITS}(?:万|千)(?!\\s*(?:${NON_MONEY_COUNTERS}))(?:\\s*(?:${CURRENCY_UNITS}))?`, "g"),
-    "[已脱敏-金额]",
-  );
-  value = value.replace(new RegExp(`${CN_AMOUNT_DIGITS}\\s*(?:${CURRENCY_UNITS})`, "g"), "[已脱敏-金额]");
-  return value;
 }
 
 export function buildIssueContent({ body } = {}) {
