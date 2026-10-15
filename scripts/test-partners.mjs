@@ -106,6 +106,15 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(headRes.status === 200, "middleware HEAD /partners is 200");
   assert(headRes.headers.get("x-robots-tag") === "noindex", "HEAD /partners sends X-Robots-Tag: noindex");
   assert((await headRes.text()) === "", "HEAD /partners has an empty body");
+
+  const redirectReq = new Request("https://dreamutopia-clone.pages.dev/partners.html");
+  const redirectRes = await pagesMw({
+    ...pagesCtx(redirectReq, "unused"),
+    next: async () => new Response(null, { status: 308, headers: { Location: "/partners" } }),
+  });
+  assert(redirectRes.status === 308, "pretty-URL alias can 308 to /partners");
+  assert(redirectRes.headers.get("location") === "/partners", "308 Location is preserved");
+  assert(redirectRes.headers.get("x-robots-tag") === "noindex", "308 alias still sends X-Robots-Tag: noindex");
 }
 
 {
