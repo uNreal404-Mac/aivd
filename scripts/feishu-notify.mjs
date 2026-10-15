@@ -233,7 +233,7 @@ export function buildDeployCard(ctx) {
       config: { wide_screen_mode: true },
       header: {
         template: "green",
-        title: { tag: "plain_text", content: PROGRESS_TITLE },
+        title: { tag: "plain_text", content: "网站进度" },
       },
       elements: [
         {
