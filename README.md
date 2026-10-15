@@ -53,7 +53,7 @@ npx wrangler pages dev out
 | [schema.sql](schema.sql) | 新数据库初始结构 |
 | [migrations/](migrations/) | 已有数据库升级脚本 |
 | [wrangler.toml](wrangler.toml) | Pages 与 Cloudflare 绑定配置 |
-| [workers/feishu-bot/](workers/feishu-bot/) | 独立的飞书项目机器人 Worker（只回复 @），与下方出站群通知分开 |
+| [workers/feishu-bot/](workers/feishu-bot/) | 独立的飞书项目机器人 Worker（进度 / 网址 / 健康 / 需求，只回复 @），与下方出站群通知分开 |
 | [BACKEND.md](BACKEND.md) | 后端配置、API 示例与验证清单 |
 
 ## 必要配置

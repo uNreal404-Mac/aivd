@@ -7,6 +7,12 @@ test("parses supported commands and natural phrases", () => {
   assert.equal(parseCommand("麻烦及时汇报项目进度！"), "progress");
   assert.equal(parseCommand("请把网址发我"), "url");
   assert.equal(parseCommand("帮我查一下服务健康状态"), "health");
+  assert.equal(parseCommand("需求：落地页要中文"), "request");
+  assert.equal(parseCommand("需求:先出报价"), "request");
+});
+
+test("treats a 需求 prefix as a request even if the body mentions other commands", () => {
+  assert.equal(parseCommand("需求：请同步进度和网址"), "request");
 });
 
 test("returns help for ambiguous or unsupported text", () => {
