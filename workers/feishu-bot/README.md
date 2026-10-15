@@ -4,7 +4,7 @@
 
 机器人不会调用生成、上传或付费 AI 服务。健康命令只请求固定的 `https://dreamutopia-clone.pages.dev/api/health`，并返回 HTTP 状态及选定的布尔状态字段。
 
-配置了 Encrypt Key 后，普通回调必须通过基于原始请求体的签名校验；飞书 URL Verification 握手可不带签名，但仍须解密（如果加密）并匹配 Verification Token。Worker 将同步处理限制在 2.5 秒内，健康请求最多等待 700 毫秒，为飞书 API 回复留出时间；外部依赖超过总时限时返回可重试错误。
+配置了 Encrypt Key 后，普通回调必须通过基于原始请求体的签名校验；飞书 URL Verification 握手可不带签名，但仍须解密（如果加密）并匹配 Verification Token。Worker 将回调请求体限制在 1 MiB，并把请求体读取、外部请求和 KV 操作合计限制在 2.5 秒内。健康请求最多等待 700 毫秒，为飞书 API 回复留出时间；外部依赖超过总时限时返回可重试错误。
 
 ## 费用边界
 

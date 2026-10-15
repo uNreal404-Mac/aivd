@@ -7,22 +7,69 @@ import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api
 const SITE_URL = "https://dreamutopia-clone.pages.dev";
 const EVENT_TYPE = "im.message.receive_v1";
 const CALLBACK_BUDGET_MS = 2500;
+const MAX_CALLBACK_BODY_BYTES = 1024 * 1024;
 const HEALTH_TIMEOUT_MS = 700;
 const HEALTH_REPLY_RESERVE_MS = 700;
 
+function deadlineError() {
+  const error = new Error("Feishu callback deadline exceeded");
+  error.status = 503;
+  return error;
+}
+
 function runBeforeDeadline(operation, deadlineAt, monotonicNow, onTimeout) {
   const remainingMs = deadlineAt - monotonicNow();
-  if (remainingMs <= 0) return Promise.reject(new Error("Feishu callback deadline exceeded"));
+  if (remainingMs <= 0) return Promise.reject(deadlineError());
 
   let timer;
   const timeout = new Promise((_, reject) => {
     timer = setTimeout(() => {
       onTimeout?.();
-      reject(new Error("Feishu callback deadline exceeded"));
+      reject(deadlineError());
     }, remainingMs);
   });
 
   return Promise.race([Promise.resolve().then(operation), timeout]).finally(() => clearTimeout(timer));
+}
+
+async function readRequestBody(request, deadlineAt, monotonicNow) {
+  if (!request.body) return new Uint8Array();
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await runBeforeDeadline(
+        () => reader.read(),
+        deadlineAt,
+        monotonicNow,
+        () => { void reader.cancel().catch(() => {}); },
+      );
+      if (done) break;
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      totalBytes += chunk.byteLength;
+      if (totalBytes > MAX_CALLBACK_BODY_BYTES) {
+        const error = new Error("Feishu callback body is too large");
+        error.status = 413;
+        throw error;
+      }
+      chunks.push(chunk);
+    }
+  } catch (error) {
+    void reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
 }
 
 function createDeadlineFetch(fetchImpl, deadlineAt, monotonicNow) {
@@ -115,7 +162,7 @@ export function createWorker({
 
       let payload;
       try {
-        const rawBody = new Uint8Array(await request.arrayBuffer());
+        const rawBody = await readRequestBody(request, deadlineAt, monotonicNow);
         payload = await decodeFeishuRequest({ rawBody, headers: request.headers, encryptKey: env.FEISHU_ENCRYPT_KEY ?? "" });
       } catch (error) {
         return textResponse("Invalid Feishu callback", error?.status ?? 400);

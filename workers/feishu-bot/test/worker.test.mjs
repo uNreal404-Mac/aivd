@@ -220,6 +220,52 @@ test("bounds a slow health command below Feishu's callback deadline", async () =
   assert.ok(elapsedMs < 250, `callback took ${elapsedMs}ms`);
 });
 
+test("bounds streaming request body reads by the callback deadline", async () => {
+  const worker = createWorker({
+    callbackBudgetMs: 40,
+    fetchImpl: async () => { throw new Error("unexpected fetch"); },
+  });
+  let delayedEnqueue;
+  const body = new ReadableStream({
+    start(controller) {
+      delayedEnqueue = setTimeout(() => {
+        controller.enqueue(encoder.encode(JSON.stringify({
+          type: "url_verification",
+          token: "verify-token",
+          challenge: "late-body",
+        })));
+        controller.close();
+      }, 200);
+    },
+    cancel() {
+      clearTimeout(delayedEnqueue);
+    },
+  });
+  const request = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+    duplex: "half",
+  });
+  const startedAt = performance.now();
+  const response = await worker.fetch(request, makeEnv(), {});
+  const elapsedMs = performance.now() - startedAt;
+
+  assert.equal(response.status, 503);
+  assert.ok(elapsedMs < 150, `callback took ${elapsedMs}ms`);
+});
+
+test("rejects callback bodies larger than one mebibyte", async () => {
+  const worker = createWorker({ fetchImpl: async () => { throw new Error("unexpected fetch"); } });
+  const request = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: new Uint8Array(1024 * 1024 + 1),
+  });
+
+  assert.equal((await worker.fetch(request, makeEnv(), {})).status, 413);
+});
+
 test("replies to a group message only when the mention matches the bot open_id", async () => {
   const replies = [];
   const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies }) });
