@@ -1,5 +1,14 @@
 {
   "version": 1,
-  "include": ["/api/*", "/robots.txt", "/sitemap.xml", "/business", "/business/"],
+  "include": [
+    "/api/*",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/business",
+    "/business/",
+    "/examples",
+    "/examples/",
+    "/examples/*"
+  ],
   "exclude": []
 }

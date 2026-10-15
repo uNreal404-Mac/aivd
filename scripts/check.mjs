@@ -151,6 +151,7 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
+  { rel: "out/examples.html", path: "/examples", title: "AI Video Examples – Image to Video Samples | DreamUtopia" },
 ];
 {
   const titles = new Set();
@@ -205,6 +206,47 @@ else ok.push("functions/robots.txt.ts exists");
 for (const page of PUBLIC_PAGES) {
   mustContain("out/sitemap.xml", `${CANON}${page.path}`, `sitemap lists ${page.path}`);
   mustContain("functions/sitemap.xml.ts", "PUBLIC_PATHS", "function sitemap uses PUBLIC_PATHS");
+}
+mustContain("functions/sitemap.xml.ts", "exampleDetailPaths", "function sitemap lists /examples/{slug}");
+mustContain("out/index.html", 'href="/examples"', "home links to /examples");
+mustContain("out/workspace.html", 'href="/examples"', "workspace links to /examples");
+mustNotContain("out/examples.html", "href=\"/business\"", "examples list has no /business");
+mustContain("out/_routes.json", '"/examples"', "Pages Functions include /examples");
+mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examples/* so slug routes run");
+{
+  const listDesc = (read("out/examples.html").match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
+  if (/free|instant/i.test(listDesc)) fail.push("examples list description must not contain free/instant");
+  else ok.push("examples list description omits free/instant");
+  if (!exists("out/examples")) fail.push("missing out/examples/ detail HTML");
+  else {
+    const files = fs.readdirSync(path.join(root, "out/examples")).filter((f) => f.endsWith(".html"));
+    if (files.length < 3) fail.push("out/examples/ must contain at least 3 sample pages");
+    else ok.push(`out/examples/ has ${files.length} sample pages`);
+    for (const file of files) {
+      const rel = `out/examples/${file}`;
+      const slug = file.replace(/\.html$/, "");
+      const src = read(rel);
+      const title = (src.match(/<title>([^<]+)<\/title>/) || [])[1] || "";
+      const desc = (src.match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
+      const h1 = (src.match(/<h1>([^<]+)<\/h1>/) || [])[1] || "";
+      if (!/ AI Video – .+ from a Photo \| DreamUtopia$/.test(title)) fail.push(`${rel}: title must follow {Subject} AI Video – {Style} from a Photo | DreamUtopia`);
+      else ok.push(`${rel}: title pattern`);
+      if (!/^See how this .+ photo became a 5s 1080p AI video with .+\. Prompt included\. Try a similar style in DreamUtopia\.$/.test(desc)) {
+        fail.push(`${rel}: description must follow the specified template`);
+      } else ok.push(`${rel}: description template`);
+      if (!/ AI Video$/.test(h1)) fail.push(`${rel}: H1 must be {Subject} AI Video`);
+      else ok.push(`${rel}: H1 pattern`);
+      if (/free|instant/i.test(desc)) fail.push(`${rel}: description must not contain free/instant`);
+      else ok.push(`${rel}: description omits free/instant`);
+      if (!src.includes('"@type":"VideoObject"')) fail.push(`${rel}: missing VideoObject JSON-LD`);
+      else ok.push(`${rel}: VideoObject JSON-LD`);
+      if (!src.includes(`rel="canonical" href="${CANON}/examples/${slug}"`)) fail.push(`${rel}: missing self canonical`);
+      else ok.push(`${rel}: self canonical`);
+      if (!src.includes('href="/workspace"')) fail.push(`${rel}: missing Workspace button`);
+      else ok.push(`${rel}: Workspace button`);
+      mustContain("out/sitemap.xml", `${CANON}/examples/${slug}`, `sitemap lists /examples/${slug}`);
+    }
+  }
 }
 mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
 mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
@@ -499,4 +541,21 @@ process.stderr.write(wsSeoUnit.stderr || "");
 if (wsSeoUnit.status !== 0) {
   console.log("FAIL scripts/test-workspace-seo.mjs");
   process.exit(wsSeoUnit.status || 1);
+}
+
+const examplesUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-examples.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(examplesUnit.stdout || "");
+process.stderr.write(examplesUnit.stderr || "");
+if (examplesUnit.status !== 0) {
+  console.log("FAIL scripts/test-examples.mjs");
+  process.exit(examplesUnit.status || 1);
 }
