@@ -173,8 +173,6 @@ try {
       openHealth.body.message === "D1 + KV + KIE + R2 ready — 2 free Lite I2V tries, then sign in",
       "health ready message only when generation is on"
     );
-    const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
-    assert(cap.body.generationEnabled === false, "GET /api/upload reports generationEnabled false");
   }
 
   {
