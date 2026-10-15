@@ -252,7 +252,23 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-empty h3{font-size:18px;font-weight:700;margin-bottom:8px}
 .history-empty p{font-size:14px;color:var(--text2);margin-bottom:18px}
 .history-empty .btn-primary{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:10px 20px;border-radius:9px;font-size:14px;font-weight:600}
-.history-list{display:grid;gap:12px}
+.history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.history-filters{display:flex;gap:6px;flex-wrap:wrap}
+.history-grid{column-count:2;column-gap:12px}
+.history-card{break-inside:avoid;margin:0 0 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;cursor:pointer;position:relative}
+.history-card:hover,.history-card:focus-visible{border-color:rgba(168,85,247,.55);outline:none}
+.history-card-media{position:relative;background:#111;min-height:120px}
+.history-card-media img,.history-card-media video{width:100%;height:auto;display:block;vertical-align:middle}
+.history-card-ph{min-height:160px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;background:rgba(255,255,255,.03)}
+.history-card-play{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none}
+.history-card-status{position:absolute;left:10px;top:10px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:capitalize}
+.history-card-status.done,.history-card-status.completed{background:rgba(34,197,94,.18);color:var(--green)}
+.history-card-status.processing,.history-card-status.pending{background:rgba(168,85,247,.2);color:var(--primary2)}
+.history-card-status.failed{background:rgba(239,68,68,.2);color:#ef4444}
+.history-card-cap{padding:10px 12px 12px}
+.history-card-prompt{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 0 8px}
+.history-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.history-card-actions button{border:1px solid var(--border);padding:5px 9px;border-radius:8px;font-size:11.5px;font-weight:600;color:var(--primary2)}
 .history-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 18px}
 .history-item .h-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;align-items:center}
 .history-item .h-meta{font-size:13px;font-weight:600}
@@ -261,6 +277,24 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-item .h-status.processing,.history-item .h-status.pending{background:rgba(168,85,247,.15);color:var(--primary2)}
 .history-item .h-status.failed{background:rgba(239,68,68,.15);color:#ef4444}
 .history-item .h-prompt{font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px}
+.hist-modal[hidden]{display:none!important}
+.hist-modal-card{background:var(--card);border:1px solid var(--border);border-radius:18px;max-width:720px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.hist-modal-media{background:#000}
+.hist-modal-media video,.hist-modal-media img{width:100%;max-height:360px;object-fit:contain;display:block;margin:0 auto}
+.hist-modal-body{padding:16px 18px 20px}
+.hist-modal-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.hist-modal-top h3{font-size:16px;font-weight:700}
+.hist-modal-x{width:32px;height:32px;border-radius:8px;color:var(--text2);font-size:18px}
+.hist-modal-x:hover{background:rgba(255,255,255,.06);color:#fff}
+.hist-dl{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;margin:0 0 14px;font-size:13px}
+.hist-dl dt{color:var(--text3);font-weight:600}
+.hist-dl dd{margin:0;color:var(--text);word-break:break-word}
+.hist-modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hist-modal-actions button{border:1px solid var(--border2);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}
+.hist-modal-actions button.primary{background:linear-gradient(135deg,var(--primary),var(--accent));border:none;color:#fff}
+@media(min-width:1100px){.history-grid{column-count:3}}
+@media(max-width:600px){.history-grid{column-count:1}}
 
 .toast{position:fixed;top:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:13px;z-index:100;display:none;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .toast.show{display:block;animation:fadeIn .3s}
@@ -546,13 +580,20 @@ nav{display:none}
 <button type="button" class="primary" id="genShare" hidden data-i18n="ws.result.share">Share to gallery</button>
 </div>
 </div>
+<div class="history-toolbar" id="historyToolbar" hidden>
+<div class="history-filters" id="historyFilter" role="group" aria-label="Filter your creations">
+<button type="button" class="opt-chip active" data-filter="all" onclick="setHistoryFilter('all')" data-i18n="ws.history.filter.all">All</button>
+<button type="button" class="opt-chip" data-filter="video" onclick="setHistoryFilter('video')" data-i18n="ws.history.filter.video">Video</button>
+<button type="button" class="opt-chip" data-filter="image" onclick="setHistoryFilter('image')" data-i18n="ws.history.filter.image">Image</button>
+</div>
+</div>
 <div class="history-empty" id="historyEmpty" hidden>
 <div class="history-empty-icon" aria-hidden="true">✦</div>
 <h3 id="historyEmptyTitle" data-i18n="ws.history.empty.h">No creations yet</h3>
 <p id="historyEmptyDesc" data-i18n="ws.history.empty.p">Start creating to see your work here.</p>
 <button class="btn-primary" id="historyEmptyCta" onclick="document.getElementById('promptInput').focus()" data-i18n="ws.history.start">Start Creating</button>
 </div>
-<div class="history-list" id="historyList" hidden></div>
+<div class="history-grid" id="historyList" hidden></div>
 </div>
 
 <div class="how-panel" id="howView">
@@ -594,6 +635,39 @@ nav{display:none}
 </div>
 
 </main>
+
+<div class="hist-modal" id="historyDetail" hidden role="dialog" aria-modal="true" aria-labelledby="historyDetailTitle">
+<div class="hist-modal-card">
+<div class="hist-modal-media" id="historyDetailMedia"></div>
+<div class="hist-modal-body">
+<div class="hist-modal-top">
+<h3 id="historyDetailTitle" data-i18n="ws.history.detail.title">Creation details</h3>
+<button type="button" class="hist-modal-x" id="historyDetailClose" onclick="closeHistoryDetail()" aria-label="Close">✕</button>
+</div>
+<dl class="hist-dl">
+<dt data-i18n="ws.history.detail.prompt">Prompt</dt>
+<dd id="historyDetailPrompt"></dd>
+<dt data-i18n="ws.history.detail.model">Model</dt>
+<dd id="historyDetailModel"></dd>
+<dt data-i18n="ws.history.detail.duration">Duration</dt>
+<dd id="historyDetailDuration"></dd>
+<dt data-i18n="ws.history.detail.aspect">Aspect</dt>
+<dd id="historyDetailAspect"></dd>
+<dt data-i18n="ws.history.detail.resolution">Resolution</dt>
+<dd id="historyDetailResolution"></dd>
+<dt data-i18n="ws.history.detail.credits">Credits used</dt>
+<dd id="historyDetailCredits"></dd>
+<dt data-i18n="ws.history.detail.created">Created</dt>
+<dd id="historyDetailCreated"></dd>
+</dl>
+<div class="hist-modal-actions">
+<button type="button" class="primary" id="historyDetailDownload" data-i18n="gen.download">Download</button>
+<button type="button" id="historyDetailRegen" data-i18n="ws.history.regen">Regenerate</button>
+<button type="button" id="historyDetailCopy" data-i18n="ws.history.copy">Copy prompt</button>
+</div>
+</div>
+</div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -689,6 +763,9 @@ let userCredits = null;
 let guestRemaining = 2;
 let lastGenerationId = null;
 let lastResultUrl = "";
+let historyItems = [];
+let historyKindFilter = "all";
+let historyDetailItem = null;
 
 function readCachedCredits() {
   const raw = localStorage.getItem(CREDITS_KEY);
@@ -1452,20 +1529,326 @@ function resetGenBtn() {
   updateGenCost();
 }
 
+function itemKind(g) {
+  if (g && (g.kind === "image" || g.kind === "video")) return g.kind;
+  if (g && g.storedModel && String(g.storedModel).indexOf("image-") === 0) return "image";
+  return g && String(g.model).indexOf("image") === 0 ? "image" : "video";
+}
+
+function itemModel(g) {
+  if (g && g.model) return String(g.model);
+  if (g && g.storedModel && String(g.storedModel).indexOf("image-") === 0) return String(g.storedModel).slice(6) || "lite";
+  return "lite";
+}
+
+function creditCostForItem(g) {
+  const kind = itemKind(g);
+  const model = itemModel(g);
+  if (kind === "image") return model === "pro" ? 2 : 1;
+  if (model === "pro") return 16;
+  if (model === "medium") return 5;
+  return 3;
+}
+
+function displayDuration(g) {
+  if (itemKind(g) === "image") return "—";
+  const n = Number(g && g.duration_sec);
+  return Number.isFinite(n) && n > 0 ? n + "s" : "—";
+}
+
+function displayAspect(g) {
+  return "—";
+}
+
+function displayResolution(g) {
+  if (itemKind(g) !== "image") return "—";
+  return itemModel(g) === "pro" ? "2K" : "1K";
+}
+
+function resultUrlOf(g) {
+  return String((g && (g.result_url || g.resultUrl)) || "");
+}
+
+function filterOwnWorks(items, filter) {
+  const list = Array.isArray(items) ? items : [];
+  if (filter === "all") return list.slice();
+  return list.filter((g) => itemKind(g) === filter);
+}
+
+function formatHistoryCreated(raw) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return String(raw);
+  try {
+    return d.toLocaleString();
+  } catch (e) {
+    return d.toISOString();
+  }
+}
+
+function setHistoryFilter(filter) {
+  historyKindFilter = filter === "video" || filter === "image" ? filter : "all";
+  document.querySelectorAll("#historyFilter [data-filter]").forEach((el) => {
+    el.classList.toggle("active", el.dataset.filter === historyKindFilter);
+  });
+  renderHistoryGrid();
+}
+
 function refreshHistoryEmpty() {
   const title = document.getElementById("historyEmptyTitle");
   const desc = document.getElementById("historyEmptyDesc");
   const cta = document.getElementById("historyEmptyCta");
-  if (token) {
-    title.textContent = DU.t("ws.history.empty.h", "No creations yet");
-    desc.textContent = DU.t("ws.history.empty.p", "Start creating to see your work here.");
+  const filtered = filterOwnWorks(historyItems, historyKindFilter);
+  if (historyItems.length && !filtered.length) {
+    if (historyKindFilter === "video") {
+      title.textContent = DU.t("ws.history.filter.empty.video.h", "No videos yet");
+      desc.textContent = DU.t("ws.history.filter.empty.video.p", "Your images stay under Image. Generate a video to fill this view.");
+    } else {
+      title.textContent = DU.t("ws.history.filter.empty.image.h", "No images yet");
+      desc.textContent = DU.t("ws.history.filter.empty.image.p", "Your videos stay under Video. Generate an image to fill this view.");
+    }
     cta.textContent = DU.t("ws.history.start", "Start Creating");
     cta.onclick = () => document.getElementById("promptInput").focus();
+    return;
+  }
+  title.textContent = DU.t("ws.history.empty.h", "No creations yet");
+  desc.textContent = DU.t("ws.history.empty.p", "Start creating to see your work here.");
+  cta.textContent = DU.t("ws.history.start", "Start Creating");
+  cta.onclick = () => document.getElementById("promptInput").focus();
+}
+
+function previewOnAreaSrc(area, src) {
+  if (!area || !src) return;
+  area.classList.add("has-img");
+  let img = area.querySelector("img.preview");
+  if (!img) {
+    img = document.createElement("img");
+    img.className = "preview";
+    img.alt = "upload preview";
+    area.appendChild(img);
+  }
+  img.src = src;
+  const icon = area.querySelector(".icon");
+  const p1 = area.querySelector(".p1");
+  const p2 = area.querySelector(".p2");
+  if (icon) icon.style.display = "none";
+  if (p1) p1.style.display = "none";
+  if (p2) p2.style.display = "none";
+}
+
+function refillFromGeneration(g) {
+  if (!g) return;
+  const kind = itemKind(g);
+  switchMode(kind);
+  pickModel(itemModel(g));
+  if (kind === "video") pickDuration(Number(g.duration_sec) === 10 ? 10 : 5);
+  const ta = document.getElementById("promptInput");
+  if (ta) {
+    ta.value = String(g.prompt || "").slice(0, 8000);
+    onPromptInput();
+  }
+  const startUrl = String(g.input_image_url || "");
+  const lastUrl = String(g.last_image_url || "");
+  if (startUrl) {
+    uploadedImage = null;
+    uploadedImageUrl = startUrl;
+    uploadedMediaKey = "";
+    const startInput = document.getElementById("imageUrlInput");
+    if (startInput) startInput.value = startUrl;
+    previewOnAreaSrc(document.getElementById("uploadArea"), startUrl);
+  }
+  if (lastUrl) {
+    lastImage = null;
+    lastImageUrlStored = lastUrl;
+    const lastInput = document.getElementById("lastImageUrlInput");
+    if (lastInput) lastInput.value = lastUrl;
+    previewOnAreaSrc(document.getElementById("lastUploadArea"), lastUrl);
+  }
+  closeHistoryDetail();
+  if (ta) ta.focus();
+  toast(DU.t("ws.history.refilled", "Parameters filled — adjust and generate when ready."));
+}
+
+async function copyHistoryPrompt(text) {
+  const value = String(text || "");
+  if (!value) return toast(DU.t("ws.history.copy.empty", "No prompt to copy"), true);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    toast(DU.t("ws.history.copied", "Prompt copied"));
+  } catch (e) {
+    toast(DU.t("ws.history.copy.fail", "Could not copy prompt"), true);
+  }
+}
+
+function bindHistoryHoverPreview(list) {
+  if (!list || list.dataset.hoverBound) return;
+  list.dataset.hoverBound = "1";
+  list.addEventListener("pointerenter", function (e) {
+    const card = e.target.closest(".history-card");
+    if (!card || !list.contains(card)) return;
+    const vid = card.querySelector("video[data-preview]");
+    if (!vid) return;
+    vid.muted = true;
+    const play = vid.play();
+    if (play && play.catch) play.catch(function () {});
+  }, true);
+  list.addEventListener("pointerleave", function (e) {
+    const card = e.target.closest(".history-card");
+    if (!card || !list.contains(card)) return;
+    const related = e.relatedTarget;
+    if (related && card.contains(related)) return;
+    const vid = card.querySelector("video[data-preview]");
+    if (!vid) return;
+    vid.pause();
+    try { vid.currentTime = 0; } catch (err) {}
+  }, true);
+}
+
+function openHistoryDetail(g) {
+  historyDetailItem = g || null;
+  const modal = document.getElementById("historyDetail");
+  if (!modal || !g) return;
+  const kind = itemKind(g);
+  const url = resultUrlOf(g);
+  const media = document.getElementById("historyDetailMedia");
+  media.innerHTML = "";
+  if (url && kind === "image") {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.src = url;
+    media.appendChild(img);
+  } else if (url) {
+    const vid = document.createElement("video");
+    vid.controls = true;
+    vid.playsInline = true;
+    vid.src = url;
+    media.appendChild(vid);
   } else {
-    title.textContent = DU.t("ws.history.empty.h", "No creations yet");
-    desc.textContent = DU.t("ws.history.empty.p", "Start creating to see your work here.");
-    cta.textContent = DU.t("ws.history.start", "Start Creating");
-    cta.onclick = () => document.getElementById("promptInput").focus();
+    media.innerHTML = `<div class="history-card-ph">${escapeHtml(String(g.status || "processing"))}</div>`;
+  }
+  document.getElementById("historyDetailPrompt").textContent = g.prompt || "—";
+  document.getElementById("historyDetailModel").textContent = itemModel(g);
+  document.getElementById("historyDetailDuration").textContent = displayDuration(g);
+  document.getElementById("historyDetailAspect").textContent = displayAspect(g);
+  document.getElementById("historyDetailResolution").textContent = displayResolution(g);
+  document.getElementById("historyDetailCredits").textContent = String(creditCostForItem(g));
+  document.getElementById("historyDetailCreated").textContent = formatHistoryCreated(g.created_at);
+  const dl = document.getElementById("historyDetailDownload");
+  dl.hidden = !url;
+  dl.onclick = function () {
+    DU.downloadResult(url, "dreamutopia-" + g.id);
+  };
+  document.getElementById("historyDetailRegen").onclick = function () {
+    refillFromGeneration(g);
+  };
+  document.getElementById("historyDetailCopy").onclick = function () {
+    copyHistoryPrompt(g.prompt);
+  };
+  modal.hidden = false;
+}
+
+function closeHistoryDetail() {
+  const modal = document.getElementById("historyDetail");
+  if (modal) modal.hidden = true;
+  const media = document.getElementById("historyDetailMedia");
+  if (media) {
+    media.querySelectorAll("video").forEach((vid) => {
+      vid.pause();
+      vid.removeAttribute("src");
+      if (vid.load) vid.load();
+    });
+    media.innerHTML = "";
+  }
+  historyDetailItem = null;
+}
+
+function historyCardHtml(g) {
+  const url = resultUrlOf(g);
+  const kind = itemKind(g);
+  const status = String(g.status || "");
+  const play = url && kind === "video" ? `<span class="history-card-play" aria-hidden="true">▶</span>` : "";
+  const media = !url
+    ? `<div class="history-card-ph">${escapeHtml(status || "…")}</div>`
+    : kind === "image"
+      ? `<img src="${escapeHtml(url)}" alt="">`
+      : `<video src="${escapeHtml(url)}" muted loop playsinline preload="metadata" data-preview></video>${play}`;
+  const actions = url
+    ? `<div class="history-card-actions">
+        <button type="button" data-act="download" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
+        <button type="button" data-act="regen" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.regen", "Regenerate"))}</button>
+        <button type="button" data-act="copy" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.copy", "Copy prompt"))}</button>
+      </div>`
+    : `<div class="history-card-actions">
+        <button type="button" data-act="regen" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.regen", "Regenerate"))}</button>
+        <button type="button" data-act="copy" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.copy", "Copy prompt"))}</button>
+      </div>`;
+  return `<article class="history-card" data-id="${escapeHtml(String(g.id))}" data-kind="${escapeHtml(kind)}" tabindex="0" role="button">
+    <div class="history-card-media">
+      ${media}
+      <span class="history-card-status ${escapeHtml(status)}">${escapeHtml(status || "saved")}</span>
+    </div>
+    <div class="history-card-cap">
+      <p class="history-card-prompt">${escapeHtml(g.prompt || "")}</p>
+      ${actions}
+    </div>
+  </article>`;
+}
+
+function renderHistoryGrid() {
+  const list = document.getElementById("historyList");
+  const toolbar = document.getElementById("historyToolbar");
+  const filtered = filterOwnWorks(historyItems, historyKindFilter);
+  if (toolbar) toolbar.hidden = !historyItems.length;
+  if (!historyItems.length || !filtered.length) {
+    setHistoryEmptyVisible(true);
+    if (list) list.hidden = true;
+    refreshHistoryEmpty();
+    return;
+  }
+  setHistoryEmptyVisible(false);
+  refreshHistoryEmpty();
+  if (!list) return;
+  list.hidden = false;
+  list.innerHTML = filtered.map(historyCardHtml).join("");
+  bindHistoryHoverPreview(list);
+  if (!list.dataset.bound) {
+    list.dataset.bound = "1";
+    list.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-act]");
+      const card = e.target.closest(".history-card");
+      if (btn) {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        const g = historyItems.find((row) => String(row.id) === String(id));
+        if (!g) return;
+        const act = btn.getAttribute("data-act");
+        if (act === "download") DU.downloadResult(resultUrlOf(g), "dreamutopia-" + g.id);
+        else if (act === "regen") refillFromGeneration(g);
+        else if (act === "copy") copyHistoryPrompt(g.prompt);
+        return;
+      }
+      if (card) {
+        const g = historyItems.find((row) => String(row.id) === String(card.getAttribute("data-id")));
+        if (g) openHistoryDetail(g);
+      }
+    });
+    list.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".history-card");
+      if (!card || e.target.closest("[data-act]")) return;
+      e.preventDefault();
+      const g = historyItems.find((row) => String(row.id) === String(card.getAttribute("data-id")));
+      if (g) openHistoryDetail(g);
+    });
   }
 }
 
@@ -1476,76 +1859,20 @@ async function loadHistory() {
     try {
       data = await api("/history");
     } catch (histErr) {
-      data = await api("/generate");
+      data = await api("/generations");
     }
     if (data.guestRemaining !== undefined && !token) {
       guestRemaining = data.guestRemaining;
       updateAuthUI();
     }
-    const gens = data.generations || [];
-    if (!gens.length) {
-      setHistoryEmptyVisible(true);
-      list.hidden = true;
-      refreshHistoryEmpty();
-      return;
-    }
-    setHistoryEmptyVisible(false);
-    list.hidden = false;
-    list.innerHTML = gens.map((g) => {
-      const url = g.result_url || g.resultUrl || "";
-      const kind = g.kind || (String(g.model).indexOf("image") === 0 ? "image" : "video");
-      const guestTag = g.guest ? " · guest" : "";
-      const meta = kind === "image"
-        ? `#${g.id} · image · ${escapeHtml(String(g.model))}${guestTag}`
-        : `#${g.id} · ${escapeHtml(String(g.model))} · ${g.duration_sec || "—"}s${guestTag}`;
-      const link = url
-        ? `<div class="h-actions">
-            <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(DU.t("gen.open", "Open result"))}</a>
-            <button type="button" data-act="download" data-url="${escapeHtml(url)}" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
-            ${g.guest ? "" : `<button type="button" data-act="share" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.result.share", "Share to gallery"))}</button>`}
-          </div>`
-        : "";
-      const preview = !url
-        ? ""
-        : kind === "image"
-          ? `<img src="${escapeHtml(url)}" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-top:8px">`
-          : `<video src="${escapeHtml(url)}" muted playsinline preload="metadata" style="width:100%;max-height:180px;border-radius:8px;margin-top:8px;background:#000"></video>`;
-      return `
-      <div class="history-item">
-        <div class="h-top">
-          <span class="h-meta">${meta}</span>
-          <span class="h-status ${escapeHtml(String(g.status))}">${escapeHtml(String(g.status))}</span>
-        </div>
-        <div class="h-prompt">${escapeHtml(g.prompt || "")}</div>
-        ${preview}
-        ${link}
-      </div>`;
-    }).join("");
-    if (!list.dataset.bound) {
-      list.dataset.bound = "1";
-      list.addEventListener("click", async function (e) {
-        const btn = e.target.closest("[data-act]");
-        if (!btn) return;
-        const id = btn.getAttribute("data-id");
-        const url = btn.getAttribute("data-url");
-        if (btn.getAttribute("data-act") === "download") {
-          DU.downloadResult(url, "dreamutopia-" + id);
-        } else if (btn.getAttribute("data-act") === "share") {
-          btn.disabled = true;
-          try {
-            const res = await DU.publishGallery(Number(id));
-            btn.textContent = DU.t("ws.result.shared", "In gallery");
-            toast(res.already ? DU.t("ws.result.shared", "In gallery") : "Shared");
-          } catch (err) {
-            btn.disabled = false;
-            toast(err.message || "Could not share", true);
-          }
-        }
-      });
-    }
+    historyItems = data.generations || [];
+    renderHistoryGrid();
   } catch (e) {
+    historyItems = [];
+    if (list) list.hidden = true;
+    const toolbar = document.getElementById("historyToolbar");
+    if (toolbar) toolbar.hidden = true;
     setHistoryEmptyVisible(true);
-    list.hidden = true;
     refreshHistoryEmpty();
   }
 }
@@ -1639,6 +1966,15 @@ function escapeHtml(s) {
   }
   const wantHistory = params.get("tab") === "history" || location.hash === "#history";
   if (wantHistory) switchPrimaryTab("history");
+  const detail = document.getElementById("historyDetail");
+  if (detail) {
+    detail.addEventListener("click", function (e) {
+      if (e.target === detail) closeHistoryDetail();
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeHistoryDetail();
+  });
 })();
 
 document.addEventListener("du:i18n", function () {
