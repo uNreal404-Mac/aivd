@@ -55,7 +55,7 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
 
 {
   assert(PARTNERS_STATUS.features.some((item) => item.id === "demo" && item.status === "live"), "demo mode is live on main");
-  assert(PARTNERS_STATUS.features.some((item) => item.id === "examples" && item.status === "soon"), "public samples stay 即将上线");
+  assert(PARTNERS_STATUS.features.some((item) => item.id === "examples" && item.status === "live"), "public samples are live on main");
   assert(PARTNERS_STATUS.features.some((item) => item.id === "workspace" && item.status === "live"), "generation page is live");
   assert(PARTNERS_STATUS.features.some((item) => item.id === "gallery" && item.status === "live"), "user gallery is live");
   assert(PARTNERS_STATUS.steps.length === 3, "exactly three remaining steps");
@@ -135,6 +135,8 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   }
   assert(!include.includes("/partners/*"), "_routes.json has no /partners/* splat");
   assert(include.includes("/workspace") && include.includes("/workspace.html"), "workspace includes stay intact");
+  assert(include.includes("/examples/*"), "examples splat stays intact");
+  assert(!include.includes("/examples") && !include.includes("/examples/"), "no overlapping exact /examples next to /examples/*");
 }
 
 {

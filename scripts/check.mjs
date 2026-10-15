@@ -145,6 +145,11 @@ mustContain("out/assets/js/i18n.js", "gallery.empty", "gallery empty i18n");
 mustContain("out/assets/js/i18n.js", "price.soon", "payments coming soon i18n");
 
 const CANON = "https://dreamutopia-clone.pages.dev";
+const BRAND = (read("libs/site.ts").match(/export const BRAND_NAME = "([^"]+)"/) || [])[1] || "";
+if (!BRAND) fail.push("libs/site.ts must export BRAND_NAME");
+else ok.push(`BRAND_NAME is ${JSON.stringify(BRAND)}`);
+mustContain("libs/examples.ts", "BRAND_NAME", "examples pages read BRAND_NAME");
+mustNotContain("libs/examples.ts", "DreamUtopia", "examples.ts does not hardcode DreamUtopia");
 const PUBLIC_PAGES = [
   { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
   { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
@@ -155,6 +160,7 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
+  { rel: "out/examples.html", path: "/examples", title: `AI Video Examples – Image to Video Samples | ${BRAND}` },
 ];
 {
   const titles = new Set();
@@ -209,6 +215,61 @@ else ok.push("functions/robots.txt.ts exists");
 for (const page of PUBLIC_PAGES) {
   mustContain("out/sitemap.xml", `${CANON}${page.path}`, `sitemap lists ${page.path}`);
   mustContain("functions/sitemap.xml.ts", "PUBLIC_PATHS", "function sitemap uses PUBLIC_PATHS");
+}
+mustContain("functions/sitemap.xml.ts", "exampleDetailPaths", "function sitemap lists /examples/{slug}");
+mustContain("out/index.html", 'href="/examples"', "home links to /examples");
+mustContain("out/workspace.html", 'href="/examples"', "workspace links to /examples");
+mustNotContain("out/examples.html", "href=\"/business\"", "examples list has no /business");
+mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examples/* so slug routes run");
+{
+  const routes = JSON.parse(read("out/_routes.json"));
+  const include = routes.include || [];
+  const hasExact = include.includes("/examples") || include.includes("/examples/");
+  const hasSplat = include.includes("/examples/*");
+  if (hasExact && hasSplat) {
+    fail.push("wrangler rejects overlapping /examples and /examples/* — keep splat only; list is static HTML");
+  } else ok.push("examples routes do not overlap a splat with an exact /examples rule");
+  if (!hasSplat) fail.push("include must contain /examples/* so /examples/{slug} Functions run");
+  else ok.push("/examples/* is on the Functions whitelist");
+}
+{
+  const listDesc = (read("out/examples.html").match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
+  if (/free|instant/i.test(listDesc)) fail.push("examples list description must not contain free/instant");
+  else ok.push("examples list description omits free/instant");
+  if (!exists("out/examples")) fail.push("missing out/examples/ detail HTML");
+  else {
+    const files = fs.readdirSync(path.join(root, "out/examples")).filter((f) => f.endsWith(".html"));
+    if (files.length < 3) fail.push("out/examples/ must contain at least 3 sample pages");
+    else ok.push(`out/examples/ has ${files.length} sample pages`);
+    for (const file of files) {
+      const rel = `out/examples/${file}`;
+      const slug = file.replace(/\.html$/, "");
+      const src = read(rel);
+      const title = (src.match(/<title>([^<]+)<\/title>/) || [])[1] || "";
+      const desc = (src.match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
+      const h1 = (src.match(/<h1>([^<]+)<\/h1>/) || [])[1] || "";
+      const titleRe = new RegExp(` AI Video – .+ from a Photo \\| ${BRAND.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+      const descRe = new RegExp(
+        `^See how this .+ photo became a 5s 1080p AI video with .+\\. Prompt included\\. Try a similar style in ${BRAND.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.$`
+      );
+      if (!titleRe.test(title)) fail.push(`${rel}: title must follow {Subject} AI Video – {Style} from a Photo | ${BRAND}`);
+      else ok.push(`${rel}: title pattern`);
+      if (!descRe.test(desc)) {
+        fail.push(`${rel}: description must follow the specified template`);
+      } else ok.push(`${rel}: description template`);
+      if (!/ AI Video$/.test(h1)) fail.push(`${rel}: H1 must be {Subject} AI Video`);
+      else ok.push(`${rel}: H1 pattern`);
+      if (/free|instant/i.test(desc)) fail.push(`${rel}: description must not contain free/instant`);
+      else ok.push(`${rel}: description omits free/instant`);
+      if (!src.includes('"@type":"VideoObject"')) fail.push(`${rel}: missing VideoObject JSON-LD`);
+      else ok.push(`${rel}: VideoObject JSON-LD`);
+      if (!src.includes(`rel="canonical" href="${CANON}/examples/${slug}"`)) fail.push(`${rel}: missing self canonical`);
+      else ok.push(`${rel}: self canonical`);
+      if (!src.includes('href="/workspace"')) fail.push(`${rel}: missing Workspace button`);
+      else ok.push(`${rel}: Workspace button`);
+      mustContain("out/sitemap.xml", `${CANON}/examples/${slug}`, `sitemap lists /examples/${slug}`);
+    }
+  }
 }
 mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
 mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
@@ -388,8 +449,13 @@ mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA go
 mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
 mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
-mustContain("out/assets/js/du.js", 'const BRAND_NAME = "DreamUtopia"', "brand name is one constant");
+mustContain("out/assets/js/du.js", `const BRAND_NAME = "${BRAND}"`, "du.js BRAND_NAME matches libs/site.ts");
 mustContain("out/assets/js/du.js", "BRAND_NAME: BRAND_NAME", "DU exports BRAND_NAME");
+{
+  const duBrand = (read("out/assets/js/du.js").match(/const BRAND_NAME = "([^"]+)"/) || [])[1] || "";
+  if (!BRAND || duBrand !== BRAND) fail.push(`frontend DU.BRAND_NAME ${JSON.stringify(duBrand)} must equal libs/site.ts ${JSON.stringify(BRAND)}`);
+  else ok.push("DU.BRAND_NAME and libs/site.ts BRAND_NAME are the same source value");
+}
 mustContain("out/assets/js/demo.js", "演示样片 / Demo sample", "demo badge copy");
 mustContain("out/assets/js/demo.js", "function runGenerate", "demo generate helper");
 mustContain("out/workspace.html", 'src="/assets/js/demo.js"', "workspace loads demo.js");
@@ -482,6 +548,21 @@ else ok.push("scripts/test-business.mjs exists");
 if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
 else ok.push("feishu bot worker left in place");
 
+if (!exists("scripts/feishu-notify.mjs")) fail.push("missing scripts/feishu-notify.mjs");
+else ok.push("scripts/feishu-notify.mjs exists");
+if (!exists("scripts/test-feishu-notify.mjs")) fail.push("missing scripts/test-feishu-notify.mjs");
+else ok.push("scripts/test-feishu-notify.mjs exists");
+if (!exists(".github/workflows/feishu-notify.yml")) fail.push("missing .github/workflows/feishu-notify.yml");
+else ok.push(".github/workflows/feishu-notify.yml exists");
+mustContain(".github/workflows/feishu-notify.yml", "secrets.FEISHU_WEBHOOK_URL", "workflow reads webhook URL from Actions secret");
+mustContain(".github/workflows/feishu-notify.yml", "secrets.FEISHU_WEBHOOK_SECRET", "workflow reads optional signing secret");
+mustContain(".github/workflows/feishu-notify.yml", "scripts/feishu-notify.mjs deploy", "workflow posts deploy cards via the shared script");
+mustContain("scripts/feishu-notify.mjs", "FEISHU_WEBHOOK_URL", "notify script reads webhook from env");
+mustContain("scripts/feishu-notify.mjs", "createHmac", "notify script supports Feishu HMAC-SHA256 sign");
+mustContain("README.md", "FEISHU_WEBHOOK_URL", "root README documents webhook secret name");
+mustContain("README.md", "FEISHU_WEBHOOK_SECRET", "root README documents optional signing secret");
+mustNotContain("scripts/feishu-notify.mjs", "open.feishu.cn/open-apis/bot/v2/hook/", "notify script has no hardcoded webhook URL");
+
 if (!exists("out/partners.html")) fail.push("missing out/partners.html");
 else ok.push("out/partners.html exists");
 if (!exists("libs/partners.ts")) fail.push("missing libs/partners.ts status + noindex helpers");
@@ -494,7 +575,8 @@ if (exists("out/partners.html")) {
   mustContain("out/partners.html", "开通美元收款", "step 2 rendered");
   mustContain("out/partners.html", "批准生成预算并打开生成", "step 3 rendered");
   mustContain("out/partners.html", "老三", "remaining steps owned by 老三");
-  mustContain("out/partners.html", "即将上线", "open-PR features marked 即将上线");
+  mustContain("out/partners.html", "公开样片", "/partners lists public samples");
+  mustContain("out/partners.html", 'href="/examples"', "/partners links live /examples");
   mustContain("out/partners.html", "DU.BRAND_NAME", "/partners reads the central brand constant");
   mustNotContain("out/partners.html", "/api/generate", "partners page does not call generate");
   mustNotContain("out/partners.html", "/api/upload", "partners page does not call upload");
@@ -503,7 +585,7 @@ if (exists("out/partners.html")) {
 }
 if (exists("libs/partners.ts")) {
   mustContain("libs/partners.ts", 'status: "live"', "status config marks live features");
-  mustContain("libs/partners.ts", 'status: "soon"', "status config marks upcoming features");
+  mustContain("libs/partners.ts", 'id: "examples"', "status config includes public samples");
   mustContain("libs/partners.ts", 'status: "pending"', "status config marks pending steps");
   mustContain("libs/partners.ts", "x-robots-tag", "partners helper sets X-Robots-Tag");
   mustContain("libs/partners.ts", "isPartnersPath", "partners path helper");
@@ -513,6 +595,7 @@ mustContain("functions/_middleware.ts", "rewritePartnersHtmlResponse", "middlewa
 mustContain("out/_routes.json", '"/partners"', "Functions include /partners so middleware runs");
 mustContain("out/_routes.json", '"/partners/"', "Functions include /partners/ alias");
 mustContain("out/_routes.json", '"/partners.html"', "Functions include /partners.html alias");
+mustContain("out/_routes.json", '"/examples/*"', "merge keeps /examples/* so slug Functions run");
 mustNotContain("out/_routes.json", '"/partners/*"', "no /partners/* splat (would overlap /partners/)");
 mustContain("out/_routes.json", '"/workspace"', "partners change keeps /workspace include");
 mustContain("out/_routes.json", '"/workspace.html"', "partners change keeps /workspace.html include");
@@ -555,6 +638,7 @@ mustNotContain("functions/robots.txt.ts", "Disallow: /partners", "function robot
     "out/free-ai-video.html",
     "out/reset.html",
     "out/demo.html",
+    "out/examples.html",
   ];
   for (const rel of publicHtml) {
     mustNotContain(rel, 'href="/partners"', `${rel} public chrome has no /partners link`);
@@ -688,6 +772,49 @@ process.stderr.write(demoUnit.stderr || "");
 if (demoUnit.status !== 0) {
   console.log("FAIL scripts/test-demo-mode.mjs");
   process.exit(demoUnit.status || 1);
+}
+
+const examplesUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-examples.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(examplesUnit.stdout || "");
+process.stderr.write(examplesUnit.stderr || "");
+if (examplesUnit.status !== 0) {
+  console.log("FAIL scripts/test-examples.mjs");
+  process.exit(examplesUnit.status || 1);
+}
+
+const feishuNotifyUnit = spawnSync(process.execPath, [path.join(root, "scripts/test-feishu-notify.mjs")], {
+  encoding: "utf8",
+  cwd: root,
+});
+process.stdout.write(feishuNotifyUnit.stdout || "");
+process.stderr.write(feishuNotifyUnit.stderr || "");
+if (feishuNotifyUnit.status !== 0) {
+  console.log("FAIL scripts/test-feishu-notify.mjs");
+  process.exit(feishuNotifyUnit.status || 1);
+}
+
+const feishuBotTests = fs
+  .readdirSync(path.join(root, "workers/feishu-bot/test"))
+  .filter((name) => name.endsWith(".test.mjs"))
+  .map((name) => path.join(root, "workers/feishu-bot/test", name));
+const feishuBotUnit = spawnSync(process.execPath, ["--test", ...feishuBotTests], {
+  encoding: "utf8",
+  cwd: path.join(root, "workers/feishu-bot"),
+});
+process.stdout.write(feishuBotUnit.stdout || "");
+process.stderr.write(feishuBotUnit.stderr || "");
+if (feishuBotUnit.status !== 0) {
+  console.log("FAIL workers/feishu-bot tests");
+  process.exit(feishuBotUnit.status || 1);
 }
 
 const partnersUnit = spawnSync(

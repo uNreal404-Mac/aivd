@@ -35,7 +35,7 @@ export const PARTNERS_STATUS = {
       title: "公开样片",
       detail: "给客户浏览的样片页。",
       href: "/examples",
-      status: "soon" as FeatureStatus,
+      status: "live" as FeatureStatus,
     },
     {
       id: "demo",

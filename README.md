@@ -53,7 +53,7 @@ npx wrangler pages dev out
 | [schema.sql](schema.sql) | 新数据库初始结构 |
 | [migrations/](migrations/) | 已有数据库升级脚本 |
 | [wrangler.toml](wrangler.toml) | Pages 与 Cloudflare 绑定配置 |
-| [workers/feishu-bot/](workers/feishu-bot/) | 独立的飞书项目机器人 Worker 与部署说明 |
+| [workers/feishu-bot/](workers/feishu-bot/) | 独立的飞书项目机器人 Worker（只回复 @），与下方出站群通知分开 |
 | [BACKEND.md](BACKEND.md) | 后端配置、API 示例与验证清单 |
 
 ## 必要配置
@@ -78,3 +78,55 @@ npx wrangler pages dev out
 4. 检查 `/api/health`，再分别验证账号、上传、生成、下载与可选支付流程。
 
 Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dreamutopia-media`。生成 API 按账户用量计费，托管服务的免费额度以平台当前规则为准。
+
+## 飞书群通知（自定义机器人）
+
+向飞书群推送两类**出站**消息：（1）`main` 合入并部署到生产站；（2）只读验收 / 回归结果。这与 [`workers/feishu-bot/`](workers/feishu-bot/) 的入站 @ 回复机器人无关，也不调用生成、上传或任何付费 Cloudflare / AI 能力。生产站为 https://dreamutopia-clone.pages.dev 。
+
+### 在群里添加自定义机器人
+
+1. 打开目标飞书群 → 右上角 **设置** → **群机器人** → **添加机器人** → 选择 **自定义机器人**。
+2. 填写名称（例如「DreamUtopia 通知」）后添加。复制 webhook 地址，格式形如：
+   `https://open.feishu.cn/open-apis/bot/v2/hook/<token>`
+   **不要**把完整地址写入仓库、Issue、PR 或日志。
+3. 安全设置建议启用 **签名校验**（不要用 IP 白名单：GitHub Actions 出口 IP 会变）。保存签名密钥。
+4. 若改用 **自定义关键词**，请包含消息里会出现的词，例如「生产」或「验收」。
+
+### 把密钥放到 GitHub Actions
+
+在 GitHub 仓库 **Settings → Secrets and variables → Actions** 中新增：
+
+| Secret 名称 | 是否必须 | 用途 |
+| --- | --- | --- |
+| `FEISHU_WEBHOOK_URL` | 要真正发消息时必须 | 自定义机器人 webhook |
+| `FEISHU_WEBHOOK_SECRET` | 可选 | 签名校验密钥；未设置则不带 `timestamp` / `sign` |
+
+工作流 [`.github/workflows/feishu-notify.yml`](.github/workflows/feishu-notify.yml) 在 **push 到 `main`**（含 PR 合并进 main、Pages 生产部署）时运行 `node scripts/feishu-notify.mjs deploy`。卡片为简体中文，含 PR 号 / 标题、合并提交短 SHA、生产站和变更链接。
+
+**未配置 `FEISHU_WEBHOOK_URL` 时步骤会跳过并以成功结束，不会让 CI 失败。** 本地或 CI 都不会打印 webhook 或签名密钥。
+
+### 发送验收（回归）结果
+
+在已导出上述环境变量的 shell 中：
+
+```bash
+# 通过
+node scripts/feishu-notify.mjs acceptance \
+  --title "主路径回归" \
+  --status pass \
+  --summary "登录、定价页、/api/health 只读检查通过" \
+  --link "https://dreamutopia-clone.pages.dev/api/health"
+
+# 未通过
+node scripts/feishu-notify.mjs acceptance \
+  --title "主路径回归" \
+  --status fail \
+  --summary "健康检查返回非 200" \
+  --link "https://dreamutopia-clone.pages.dev/api/health"
+```
+
+未设置 `FEISHU_WEBHOOK_URL` 时同样跳过并返回成功。单元测试不访问网络、不需要真实密钥：
+
+```bash
+node scripts/test-feishu-notify.mjs
+```
