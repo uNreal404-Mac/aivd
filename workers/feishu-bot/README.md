@@ -2,6 +2,8 @@
 
 这是独立的 Cloudflare Worker，与仓库根目录的 Pages 配置分开部署。机器人只响应私聊文本和群聊中明确 @ 它的文本。
 
+> 本次 Cron 仅完成代码和本地 mock 测试。不要部署；部署、创建 KV、填写 secrets 和飞书群配置都等 Charles／老三批准。
+
 | 命令 | 行为 |
 | --- | --- |
 | 进度 | 读取本仓库最近合并的改动、公开待办（主任务卡未完成项 / 未合并的网站 PR），用规则整理成「网站进度」摘要：用户能在站点上看到的变化 + 页面 + 「还没做」。不写 PR 号、提交 SHA 或分支名。写入 KV 短缓存 |
@@ -11,6 +13,14 @@
 | 其他 @ / 私聊文本 | **默认关闭**。仅当同时配置 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 且会话在白名单内时，才把未识别文本发给 OpenAI 兼容 chat；否则仍返回帮助说明 |
 
 所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
+
+## 三小时 Cron：Higgsfield 参考项目
+
+Worker 还配置了 `0 */3 * * *` 的 Cloudflare Cron（每 3 小时）。它只读取公开 GitHub API 的 `CharlesHarry7/higgsfield-1` 最新提交 SHA，并把最后看到的 SHA 写入 `BOT_KV` 的 `cron:higgsfield-1:last-seen-sha`。首次运行只建立基线；之后只有 SHA 变化才向 `AI视频网站项目群` 发一条规则式中文进度消息，发送成功后才推进 KV，失败会保留旧 SHA 以便重试。
+
+定时群发使用飞书应用的 `im:message:send_as_bot`，需要把目标群的 `chat_id` 放到 Worker 变量 `FEISHU_PROGRESS_CHAT_ID`。代码中的群名只用于明确目标，不把群名当作可发送的 ID。Cron 默认不调用任何 LLM；只有同时已有 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`，且额外设置 `CRON_LLM_REWRITE=true`，并且配置指向 DeepSeek 时，才会尝试改写，失败自动退回规则文案。
+
+该 Cron 不调用 KIE、`/api/generate`、`/api/upload`，不创建付费绑定，也不启用 Workers Paid。Free 计划允许在配置中保留 Cron；实际部署仍等 Charles／老三批准。
 
 未配置可选 LLM 时，其他内容返回帮助说明。「进度 / 网址 / 健康 / 需求」始终走规则，不经过模型。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
@@ -23,7 +33,7 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 ## 费用边界
 
 - 账号必须使用 Cloudflare Workers Free。部署前在 Cloudflare 账单／Workers 计划设置中确认当前账号没有启用 Workers Paid；不确定时先不要部署。
-- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费 Cloudflare 绑定、自定义域名、Workers AI 或定时任务。issue 关闭通知用免费的 GitHub webhook，不用 Cron。可选 LLM 走你自己的 OpenAI 兼容接口，**默认不调用**；启用后的模型费用由该接口的运营方承担，本仓库不代为开通。
+- 本配置只使用 Workers Free、Workers KV、`workers.dev` 地址和上述免费 Cron，不添加付费 Cloudflare 绑定、自定义域名或 Workers AI。issue 关闭通知仍用免费的 GitHub webhook。可选 DeepSeek 重写走已有 LLM 配置，**默认不调用**；启用后的模型费用由该接口的运营方承担，本仓库不代为开通。
 - Free 计划有每日请求和 KV 用量上限（含 KV 每日约 1000 次写入）；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
 
 ## 密钥（只放 Wrangler / Actions，不要写入代码、日志或 PR 正文）
@@ -37,6 +47,8 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度读公开 issue 正文与 pulls（不用模型）；没有 token 时仍走公开接口。创建/关单回帖需要写权限 |
 | `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
 | `ALLOWED_CHAT_IDS` | **需求** 与可选 LLM 必须（合入后由运营填写） | 允许提交需求、以及（若已配置 LLM）自由对话的飞书 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时 **失败关闭**。这不是 secret |
+| `FEISHU_PROGRESS_CHAT_ID` | Cron 发群消息必须 | `AI视频网站项目群` 的飞书 `chat_id`。这是变量，不是 secret；不要把群名或真实 ID 写进源码 |
+| `CRON_LLM_REWRITE` | 可选 | 只有值为 `true` 且已有 DeepSeek 兼容的三项 LLM 配置时，Cron 才尝试改写；缺省或失败均走规则文案 |
 | `LLM_BASE_URL` | 可选 LLM 必须（与下面两项同时有才开启） | Worker `[vars]` 示例：`https://api.openai.com/v1`（或其他 OpenAI 兼容 host）。**不要**把该值写进源码当运行时默认；缺省则 LLM 关闭 |
 | `LLM_MODEL` | 可选 LLM 必须 | Worker `[vars]` 示例：`gpt-4o-mini`。**不要**把模型名写进源码当运行时默认 |
 | `LLM_API_KEY` | 可选 LLM 必须 | **仅 Cloudflare Worker Secret**（`wrangler secret put LLM_API_KEY`）。运行时从 `env.LLM_API_KEY` 读取。禁止写入代码、测试、注释、日志或 PR |
@@ -60,11 +72,11 @@ node --test test/*.test.mjs
 npx wrangler dev
 ```
 
-没有 Wrangler secrets 的本地 Worker 会对回调返回未配置状态；不要为本地调试把凭据写入 `.dev.vars`、仓库文件或 shell 命令参数。
+没有 Wrangler secrets 的本地 Worker 会对回调返回未配置状态；不要为本地调试把凭据写入 `.dev.vars`、仓库文件或 shell 命令参数。Cron 的 `test/cron.test.mjs` 只使用 mock，不访问网络。
 
 ## 部署到 Workers Free
 
-以下命令都在 `workers/feishu-bot/` 目录运行。先确认 Wrangler 登录的是目标账号，并已确认 Workers Free 计划。
+以下命令都在 `workers/feishu-bot/` 目录运行。当前不要执行；部署、创建 KV、写入 secrets 和填写 `FEISHU_PROGRESS_CHAT_ID` 都等待 Charles／老三批准。获批后先确认 Wrangler 登录的是目标账号，并确认 Workers Free 计划。
 
 1. 创建专用 KV 命名空间：
 
@@ -83,6 +95,8 @@ npx wrangler dev
    npx wrangler secret put GITHUB_TOKEN
    npx wrangler secret put GITHUB_WEBHOOK_SECRET
    ```
+
+   将 `AI视频网站项目群` 的 `chat_id` 作为公开变量配置为 `FEISHU_PROGRESS_CHAT_ID`；不要把它写进源码。Cron 不需要额外的 GitHub token，因为读取的是公开 API。
 
    不要运行 `FEISHU_ENCRYPT_KEY`，除非飞书开放平台重新启用了事件加密。
 

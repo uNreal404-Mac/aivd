@@ -22,6 +22,10 @@ main = "src/worker.mjs"
 compatibility_date = "2026-10-15"
 workers_dev = true
 
+# Workers Free supports this Cron trigger. Deployment remains pending Charles/老三 approval.
+[triggers]
+crons = ["0 */3 * * *"]
+
 [[kv_namespaces]]
 binding = "BOT_KV"
 id = "00000000000000000000000000000000"

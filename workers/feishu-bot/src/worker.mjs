@@ -7,6 +7,7 @@ import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api
 import { fetchProgressSummary } from "./progress.mjs";
 import { replyWithOptionalLlm } from "./llm.mjs";
 import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
+import { runHiggsfieldCron } from "./cron.mjs";
 
 const SITE_URL = botConfig.siteUrl;
 const EVENT_TYPE = "im.message.receive_v1";
@@ -308,9 +309,18 @@ export function createWorker({
         return textResponse("Temporary Feishu bot failure", 503);
       }
     },
+    async scheduled(event, env, ctx) {
+      const work = runHiggsfieldCron({ kv: env?.BOT_KV, env, fetchImpl });
+      if (typeof ctx?.waitUntil === "function") {
+        ctx.waitUntil(work);
+        return undefined;
+      }
+      return work;
+    },
   };
 }
 
 const worker = createWorker();
 export const fetch = worker.fetch;
+export const scheduled = worker.scheduled;
 export default worker;
