@@ -21,9 +21,13 @@ The first commit in this repo is the purchased Cloudflare Pages backend template
 
 `POST /api/checkout` `{ packId }` (signed-in) creates a Stripe Checkout Session (`price_data`, no pre-created Price IDs). If the secret is missing it returns `checkout_not_configured` (503) — the UI does not pretend to charge.
 
-Webhook: `POST /api/webhooks/stripe` (alias `POST /api/stripe/webhook`) with `Stripe-Signature`. On `checkout.session.completed` credits are added (idempotent via `credit_events.stripe_session_id`). First purchase adds **31** bonus credits (5 Lite + 1 Pro). If the buyer has `referred_by`, the referrer gets **10%** of the pack credits. Repeat checkouts reuse `users.stripe_customer_id` when migration `004` is applied.
+`POST /api/stripe/webhook` (alias `POST /api/webhooks/stripe`) verifies `Stripe-Signature` (HMAC-SHA256 + timestamp tolerance) with `STRIPE_WEBHOOK_SECRET`. On `checkout.session.completed` with `payment_status=paid` **and** `metadata.site=dreamutopia`, credits are added (idempotent via `stripe_sessions.session_id` unique primary key, plus `credit_events.stripe_session_id`). Events from other products on the same Stripe account are ignored. First purchase adds **31** bonus credits (5 Lite + 1 Pro). If the buyer has `referred_by`, the referrer gets **10%** of the pack credits. Repeat checkouts reuse `users.stripe_customer_id` when migration `004` is applied.
 
-Stripe Dashboard → Developers → Webhooks → endpoint `https://<host>/api/webhooks/stripe` → event `checkout.session.completed`. Paste the signing secret as Pages secret `STRIPE_WEBHOOK_SECRET`.
+Stripe Dashboard → Developers → Webhooks → endpoint `https://dreamutopia-clone.pages.dev/api/stripe/webhook` → event `checkout.session.completed`. Paste the signing secret as Pages secret `STRIPE_WEBHOOK_SECRET`. Then apply the D1 migration:
+
+```bash
+npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql
+```
 
 ## Password reset (optional Resend)
 
@@ -41,7 +45,7 @@ Register/login copies guest KV jobs into D1 history (`mergeGuestJobs`). Register
 | `KIE_WEBHOOK_HMAC_KEY` | Pages **secret** | optional callback auth | `POST /api/webhooks/kie` (`X-Webhook-Signature`) |
 | `MEDIA` | R2 | **file upload** | `POST /api/upload`, `GET /api/media` |
 | `STRIPE_SECRET_KEY` | Pages **secret** | paid packs | `POST /api/checkout` |
-| `STRIPE_WEBHOOK_SECRET` | Pages **secret** | paid packs | `POST /api/webhooks/stripe` |
+| `STRIPE_WEBHOOK_SECRET` | Pages **secret** | paid packs | `POST /api/stripe/webhook` |
 | `RESEND_API_KEY` | Pages **secret** | password reset email | `POST /api/auth/forgot` |
 | `MAIL_FROM` | Pages var/secret | password reset email | verified Resend from-address |
 
@@ -168,9 +172,10 @@ Do **not** commit the key.
 **Stripe (paid credit packs)**
 
 1. Stripe Dashboard → Developers → API keys → Secret key → Pages secret `STRIPE_SECRET_KEY`
-2. Developers → Webhooks → Add endpoint `https://<your-host>/api/webhooks/stripe` → event `checkout.session.completed`
+2. Developers → Webhooks → Add endpoint `https://dreamutopia-clone.pages.dev/api/stripe/webhook` → event `checkout.session.completed`
 3. Paste the webhook signing secret as Pages secret `STRIPE_WEBHOOK_SECRET`
-4. Redeploy. `GET /api/health` → `checkoutConfigured: true`. Pricing CTAs then open Stripe.
+4. Apply `migrations/005_stripe_sessions.sql` on D1 (command above)
+5. Redeploy. `GET /api/health` → `checkoutConfigured: true`. Pricing Select then opens Stripe for signed-in users.
 
 Optional: after enabling webhook HMAC on [kie.ai Settings](https://kie.ai/settings), set Pages secret `KIE_WEBHOOK_HMAC_KEY` to the same `webhookHmacKey`. Until then, `/api/webhooks/kie` still settles by re-querying KIE (does not trust the POST body for credits).
 
@@ -252,10 +257,10 @@ Without the secret, the same POST returns `code: "kie_api_key_missing"` (503).
 ## Checklist
 
 - [ ] `wrangler d1 create` + `kv namespace create` + `r2 bucket create`
-- [ ] `schema.sql` (+ `001`–`004` migrations if the DB already existed)
+- [ ] `schema.sql` (+ `001`–`005` migrations if the DB already existed)
 - [ ] Pages bindings: `DB`, `SESSIONS`, `MEDIA`
 - [ ] Pages secret: `KIE_API_KEY`
-- [ ] Optional: `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (webhook URL `/api/webhooks/stripe`)
+- [ ] Optional: `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (webhook URL `https://dreamutopia-clone.pages.dev/api/stripe/webhook`)
 - [ ] Optional: `RESEND_API_KEY` + `MAIL_FROM` (password reset + welcome)
 - [ ] Optional: `KIE_WEBHOOK_HMAC_KEY` after enabling HMAC on kie.ai Settings
 - [ ] Redeploy

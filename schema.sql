@@ -27,6 +27,14 @@ CREATE TABLE IF NOT EXISTS credit_events (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_events_stripe ON credit_events(stripe_session_id)
   WHERE stripe_session_id IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS stripe_sessions (
+  session_id TEXT PRIMARY KEY NOT NULL,
+  user_id INTEGER NOT NULL,
+  pack TEXT NOT NULL,
+  credits INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS generations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
