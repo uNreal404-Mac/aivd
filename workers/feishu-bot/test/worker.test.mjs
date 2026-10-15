@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { dedupeKeys } from "../src/dedupe.mjs";
 import { HELP_MESSAGE, PROGRESS_MESSAGE } from "../src/commands.mjs";
+import { hmacSha256Hex } from "../src/github.mjs";
 import { createWorker } from "../src/worker.mjs";
 
 const encoder = new TextEncoder();
@@ -41,14 +42,18 @@ function messagePayload({
   messageType = "text",
   mentions = [],
   token = "verify-token",
+  chatId = "oc_chat",
+  senderOpenId = "ou_user",
+  senderName = "老王",
 } = {}) {
   return {
     schema: "2.0",
     header: { event_id: eventId, event_type: eventType, token },
     event: {
-      sender: { sender_type: senderType },
+      sender: { sender_type: senderType, sender_id: { open_id: senderOpenId, name: senderName } },
       message: {
         message_id: messageId,
+        chat_id: chatId,
         chat_type: chatType,
         message_type: messageType,
         content: JSON.stringify({ text }),
@@ -89,6 +94,33 @@ function makeFeishuFetch({ failReplyCount = 0, replies = [], calls = [] } = {}) 
       return Response.json({ code: 0, data: { message_id: "om_reply" } });
     }
     throw new Error("Unexpected outbound request");
+  };
+}
+
+function makeGithubFetch({
+  failReplyCount = 0,
+  replies = [],
+  calls = [],
+  comments = [],
+  issues = [],
+} = {}) {
+  const feishu = makeFeishuFetch({ failReplyCount, replies, calls });
+  return async (url, init = {}) => {
+    if (String(url).includes("api.github.com") && String(url).includes("/comments")) {
+      calls.push({ url, init });
+      return Response.json(comments);
+    }
+    if (String(url).includes("api.github.com") && /\/issues$/.test(String(url)) && init.method === "POST") {
+      calls.push({ url, init });
+      const created = {
+        number: 21,
+        html_url: "https://github.com/CharlesHarry7/dreamutopia-clone/issues/21",
+        title: JSON.parse(init.body).title,
+      };
+      issues.push(created);
+      return Response.json(created, { status: 201 });
+    }
+    return feishu(url, init);
   };
 }
 
@@ -335,4 +367,95 @@ test("acknowledges unrelated event types without making API calls", async () => 
 
   assert.equal(response.status, 200);
   assert.equal(fetchCalls, 0);
+});
+
+test("summarizes GitHub issue comments for the progress command", async () => {
+  const replies = [];
+  const worker = createWorker({
+    fetchImpl: makeGithubFetch({
+      replies,
+      comments: [{
+        user: { login: "alice" },
+        created_at: "2026-10-15T10:41:00.000Z",
+        body: "验收通过，只剩报价待确认。",
+      }],
+    }),
+  });
+  const env = makeEnv();
+  assert.equal((await send(worker, messagePayload({ text: "进度", messageId: "om_progress_gh" }), env)).status, 200);
+  const replyText = JSON.parse(replies[0].content).text;
+  assert.match(replyText, /验收通过/);
+  assert.match(replyText, /台北时间/);
+  assert.doesNotMatch(replyText, /https?:\/\//i);
+});
+
+test("creates a GitHub issue from a group 需求 mention and replies with the link", async () => {
+  const replies = [];
+  const issues = [];
+  const worker = createWorker({ fetchImpl: makeGithubFetch({ replies, issues }) });
+  const env = makeEnv();
+  env.GITHUB_TOKEN = "ghs_test_token";
+  const payload = messagePayload({
+    chatType: "group",
+    text: "@_bot_1 需求：落地页要加中文",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    messageId: "om_request",
+    eventId: "evt-request",
+  });
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(issues.length, 1);
+  assert.match(issues[0].title, /落地页要加中文/);
+  assert.match(JSON.parse(replies[0].content).text, /issues\/21/);
+  assert.equal(await env.BOT_KV.get("feishu:request-issue:om_request"), "21");
+});
+
+test("posts a close notice through the GitHub webhook and ignores a duplicate delivery", async () => {
+  const replies = [];
+  const kv = fakeKv();
+  await kv.put("github:issue-map:21", JSON.stringify({
+    chatId: "oc_chat",
+    messageId: "om_request",
+    requester: "老王",
+  }));
+  const env = makeEnv(kv);
+  env.GITHUB_WEBHOOK_SECRET = "webhook-secret";
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies }) });
+  const closed = {
+    action: "closed",
+    issue: {
+      number: 21,
+      title: "飞书需求：落地页要加中文",
+      html_url: "https://github.com/CharlesHarry7/dreamutopia-clone/issues/21",
+      closed_at: "2026-10-15T12:00:00Z",
+    },
+  };
+  const raw = JSON.stringify(closed);
+  const digest = await hmacSha256Hex(env.GITHUB_WEBHOOK_SECRET, raw);
+  const headers = {
+    "content-type": "application/json",
+    "X-Hub-Signature-256": `sha256=${digest}`,
+    "X-GitHub-Event": "issues",
+    "X-GitHub-Delivery": "delivery-worker-1",
+  };
+  const post = () => worker.fetch(new Request("https://worker.test/github/webhook", {
+    method: "POST",
+    headers,
+    body: raw,
+  }), env, {});
+
+  assert.equal((await post()).status, 200);
+  assert.equal((await post()).status, 200);
+  assert.equal(replies.length, 1);
+  assert.match(JSON.parse(replies[0].content).text, /已关闭/);
+});
+
+test("returns 503 for GitHub webhooks when the signing secret is missing", async () => {
+  const worker = createWorker({ fetchImpl: async () => { throw new Error("unexpected fetch"); } });
+  const response = await worker.fetch(new Request("https://worker.test/github/webhook", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{}",
+  }), makeEnv(), {});
+  assert.equal(response.status, 503);
 });

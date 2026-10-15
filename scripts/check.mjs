@@ -635,6 +635,26 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
     fail.push("onRequestPost must return 503 before handleGeneratePost when generation is off");
   } else ok.push("onRequestPost checks GENERATION_ENABLED before handleGeneratePost");
 }
+{
+  const src = read("functions/api/generate.ts");
+  const getStart = src.indexOf("async function handleGenerateGet");
+  const guestStart = src.indexOf("async function handleGuestGet");
+  const getFn = getStart >= 0 && guestStart > getStart ? src.slice(getStart, guestStart) : "";
+  const guestFn = guestStart >= 0 ? src.slice(guestStart) : "";
+  if (!getFn.includes("isGenerationEnabled")) {
+    fail.push("GET /api/generate must honor GENERATION_ENABLED the same way /api/health does");
+  } else ok.push("GET /api/generate handleGenerateGet honors GENERATION_ENABLED");
+  if (!guestFn.includes("isGenerationEnabled")) {
+    fail.push("GET /api/generate guest status must honor GENERATION_ENABLED");
+  } else ok.push("GET /api/generate guest status honors GENERATION_ENABLED");
+  if (getFn.includes("generateReady: hasKieKey(env)") || getFn.includes("generateReady: true") || guestFn.includes("generateReady: hasKieKey(env)")) {
+    fail.push('GET /api/generate must not claim generateReady true when GENERATION_ENABLED is "false"');
+  } else ok.push('GET /api/generate does not claim generateReady true when GENERATION_ENABLED is "false"');
+  if (guestFn.includes("guestRemaining: quota.remaining") || guestFn.includes("guestRemaining: q2.remaining")) {
+    fail.push("GET /api/generate must report guestRemaining 0 when generation is off");
+  } else ok.push("GET /api/generate guestRemaining follows GENERATION_ENABLED");
+}
+mustContain("functions/api/credits.ts", "isGenerationEnabled", "GET /api/credits honors GENERATION_ENABLED");
 if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test-generation-gate.mjs");
 else ok.push("scripts/test-generation-gate.mjs exists");
 
@@ -654,6 +674,26 @@ if (!exists("scripts/test-business.mjs")) fail.push("missing scripts/test-busine
 else ok.push("scripts/test-business.mjs exists");
 if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
 else ok.push("feishu bot worker left in place");
+if (!exists("workers/feishu-bot/src/config.mjs")) fail.push("feishu bot must keep a copy-friendly src/config.mjs");
+else ok.push("feishu bot has src/config.mjs");
+if (!exists("workers/feishu-bot/TEMPLATE.md")) fail.push("feishu bot must document copy steps in TEMPLATE.md");
+else ok.push("feishu bot has TEMPLATE.md");
+mustContain("workers/feishu-bot/src/config.mjs", "github-issue-comments", "progress command is config-driven");
+mustContain("workers/feishu-bot/src/config.mjs", "github-create-issue", "request command is config-driven");
+mustContain("workers/feishu-bot/README.md", "GITHUB_TOKEN", "bot README names GITHUB_TOKEN");
+mustContain("workers/feishu-bot/README.md", "GITHUB_WEBHOOK_SECRET", "bot README names GITHUB_WEBHOOK_SECRET");
+mustContain("workers/feishu-bot/README.md", "im:message:send_as_bot", "bot README lists send_as_bot");
+mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
+{
+  const botSrcDir = path.join(root, "workers/feishu-bot/src");
+  for (const name of fs.readdirSync(botSrcDir).filter((file) => file.endsWith(".mjs"))) {
+    const rel = `workers/feishu-bot/src/${name}`;
+    mustNotContain(rel, "/api/generate", `${rel} must not call /api/generate`);
+    mustNotContain(rel, "/api/upload", `${rel} must not call /api/upload`);
+    mustNotContain(rel, "GENERATION_ENABLED", `${rel} must not touch GENERATION_ENABLED`);
+    mustNotContain(rel, "kie.ai", `${rel} must not call KIE`);
+  }
+}
 
 if (!exists("scripts/feishu-notify.mjs")) fail.push("missing scripts/feishu-notify.mjs");
 else ok.push("scripts/feishu-notify.mjs exists");

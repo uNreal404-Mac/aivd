@@ -1,20 +1,44 @@
 # 飞书项目机器人 Worker
 
-这是独立的 Cloudflare Worker，与仓库根目录的 Pages 配置分开部署。机器人只响应私聊文本和群聊中明确 @ 它的文本，支持「进度」「网址」「健康」三个命令；其他内容返回帮助说明。进度文案可在 `src/commands.mjs` 的 `PROGRESS_MESSAGE` 常量中维护。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
+这是独立的 Cloudflare Worker，与仓库根目录的 Pages 配置分开部署。机器人只响应私聊文本和群聊中明确 @ 它的文本。
 
-机器人不会调用生成、上传或付费 AI 服务。健康命令只请求固定的 `https://dreamutopia-clone.pages.dev/api/health`，并返回 HTTP 状态及选定的布尔状态字段。
+| 命令 | 行为 |
+| --- | --- |
+| 进度 | 读取本仓库 GitHub issue `#20` 最近几条评论，用规则模板整理成简体中文摘要（台北时间），写入 KV 短缓存 |
+| 网址 | 返回演示站 `https://dreamutopia-clone.pages.dev` |
+| 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
+| 需求： / 需求: | 群里 @ 机器人后，在本仓库创建带 `feishu-request` 标签的 GitHub issue，并在原消息线程回复链接。issue 关闭后通过 GitHub webhook 回帖 |
 
-配置了 Encrypt Key 后，普通回调必须通过基于原始请求体的签名校验；飞书 URL Verification 握手可不带签名，但仍须解密（如果加密）并匹配 Verification Token。Worker 将回调请求体限制在 1 MiB，并把请求体读取、外部请求和 KV 操作合计限制在 2.5 秒内。健康请求最多等待 700 毫秒，为飞书 API 回复留出时间；外部依赖超过总时限时返回可重试错误。
+其他内容返回帮助说明。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
+
+机器人不会调用生成、上传、KIE 或任何付费 LLM。进度摘要不用模型，只用去 Markdown / 链接 / 提交哈希后的固定中文模板。
+
+未配置 `FEISHU_ENCRYPT_KEY` 时，按飞书未启用事件加密处理明文回调。以后若重新打开加密，再设置该 secret，Worker 会恢复签名校验与解密。
+
+Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外部请求和 KV 合计限制在 2.5 秒内；健康请求最多 700 毫秒。GitHub webhook 路径单独限 8 秒。外部依赖超过时限时返回可重试错误。
 
 ## 费用边界
 
 - 账号必须使用 Cloudflare Workers Free。部署前在 Cloudflare 账单／Workers 计划设置中确认当前账号没有启用 Workers Paid；不确定时先不要部署。
-- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费绑定、自定义域名、AI 服务或定时任务。
-- Free 计划有每日请求和 KV 用量上限；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
+- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费绑定、自定义域名、AI 服务或定时任务。issue 关闭通知用免费的 GitHub webhook，不用 Cron。
+- Free 计划有每日请求和 KV 用量上限（含 KV 每日约 1000 次写入）；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
+
+## 密钥（只放 Wrangler / Actions，不要写入代码、日志或 PR 正文）
+
+| 名称 | 是否必须 | 用途与范围 |
+| --- | --- | --- |
+| `FEISHU_APP_ID` | 必须 | 飞书自建应用 App ID，用来换 `tenant_access_token` |
+| `FEISHU_APP_SECRET` | 必须 | 飞书 App Secret，与 App ID 一起换 token |
+| `FEISHU_VERIFICATION_TOKEN` | 必须 | 校验飞书 URL Verification 与事件 `header.token` |
+| `FEISHU_ENCRYPT_KEY` | 可选 | 飞书事件 Encrypt Key。当前飞书侧加密已关闭，**不要设置**。以后若开启加密，再 `wrangler secret put` 同一把密钥 |
+| `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度可读公开评论 API；没有 token 时进度仍走公开接口。创建/关单回帖需要写权限 |
+| `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
+
+不要把上述值写进 `wrangler.toml`、`.dev.vars`、仓库文件、命令参数或 pull request。
 
 ## 本地测试和开发
 
-需要 Node.js 22 或更新版本，以及 Wrangler。纯单元测试不需要 Cloudflare 登录、飞书凭据或网络请求：
+需要 Node.js 22 或更新版本，以及 Wrangler。纯单元测试不需要 Cloudflare 登录、飞书凭据、GitHub 凭据或网络请求：
 
 ```bash
 cd workers/feishu-bot
@@ -27,7 +51,7 @@ node --test test/*.test.mjs
 npx wrangler dev
 ```
 
-没有 Wrangler secrets 的本地 Worker 会对回调返回未配置状态；不要为本地调试把飞书凭据写入 `.dev.vars`、仓库文件或 shell 命令参数。回调、安全和 API 行为由上面的单元测试覆盖。
+没有 Wrangler secrets 的本地 Worker 会对回调返回未配置状态；不要为本地调试把凭据写入 `.dev.vars`、仓库文件或 shell 命令参数。
 
 ## 部署到 Workers Free
 
@@ -41,14 +65,17 @@ npx wrangler dev
 
 2. 将命令输出的 namespace ID 填入本目录 `wrangler.toml` 的 `BOT_KV` 绑定，替换示例 ID。不要改仓库根目录 Pages 的 `wrangler.toml`。
 
-3. 逐项运行以下命令。Wrangler 会提示输入值；只在提示中输入飞书开放平台提供的凭据，不要把值放到命令参数、文件、日志或 PR 中：
+3. 逐项运行以下命令。Wrangler 会提示输入值；只在提示中粘贴，不要把值放到命令参数、文件、日志或 PR 中：
 
    ```bash
    npx wrangler secret put FEISHU_APP_ID
    npx wrangler secret put FEISHU_APP_SECRET
    npx wrangler secret put FEISHU_VERIFICATION_TOKEN
-   npx wrangler secret put FEISHU_ENCRYPT_KEY
+   npx wrangler secret put GITHUB_TOKEN
+   npx wrangler secret put GITHUB_WEBHOOK_SECRET
    ```
+
+   不要运行 `FEISHU_ENCRYPT_KEY`，除非飞书开放平台重新启用了事件加密。
 
 4. 发布 Worker：
 
@@ -56,24 +83,41 @@ npx wrangler dev
    npx wrangler deploy
    ```
 
-   使用 Wrangler 显示的 `workers.dev` 主机名填事件订阅地址，格式为：
+   Wrangler 会给出 `workers.dev` 主机名。两个回调地址为：
 
    ```text
    https://feishu-bot.<account-subdomain>.workers.dev/feishu/events
+   https://feishu-bot.<account-subdomain>.workers.dev/github/webhook
    ```
 
-## 飞书开放平台配置
+## 飞书开放平台配置（老三）
 
-在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本：
+在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本。当前加密已关闭，保持关闭即可。
 
 1. 启用机器人能力。
-2. 在事件订阅中填写部署后的完整回调地址，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
-3. 将应用凭据中的 App ID、App Secret、Verification Token 和 Encrypt Key 分别通过上面的 Wrangler secret 命令设置。平台启用了事件加密时，Encrypt Key 必须与 Worker secret 相同。
+2. 事件订阅：填写 `https://feishu-bot.<account-subdomain>.workers.dev/feishu/events`，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
+3. 事件订阅页确认 **Encrypt Key / 事件加密为关闭**。不要再生成 Encrypt Key。若以后打开加密，再把同一密钥写入 `FEISHU_ENCRYPT_KEY`。
 4. 申请并在应用版本中启用这些权限：
    - `im:message`
    - `im:message.group_at_msg`
    - `im:message:send_as_bot`
-   - 如果飞书权限面板把私聊接收权限单独列出，再申请 `im:message.p2p_msg`。
-5. 将应用版本提交发布，并确认机器人对测试用户可见、已加入要测试的群聊。
+   - 如果飞书权限面板把私聊接收权限单独列出，再申请 `im:message.p2p_msg`
+5. 将应用版本提交发布，确认机器人对测试用户可见，并已加入要收集需求的群聊。群里只有 @ 到此应用本人才会回复；群里的 `需求：` 也必须 @ 机器人。私聊可以直接发送 `需求：`。
 
-在群聊中只有 @ 到此应用机器人本身才会触发回复。Worker 使用 KV 的事件和消息标记以及飞书回复 UUID 尽量避免重复回复；Workers KV 最终一致，因此不承诺并发或跨地域投递下严格 exactly-once。
+## GitHub 配置（老三）
+
+1. 在本仓库创建标签 `feishu-request`（Issues → Labels）。没有该标签时，Worker 会退化为不带标签建 issue。
+2. 创建 **fine-grained personal access token**：
+   - Resource owner / Repository：仅 `CharlesHarry7/dreamutopia-clone`
+   - Repository permissions：Issues = **Read and write**
+   - 不要勾选 Contents 或其他仓库权限
+   - 写入 Wrangler secret `GITHUB_TOKEN`（不要提交到仓库）
+3. 仓库 **Settings → Webhooks → Add webhook**：
+   - Payload URL：`https://feishu-bot.<account-subdomain>.workers.dev/github/webhook`
+   - Content type：`application/json`
+   - Secret：与 `GITHUB_WEBHOOK_SECRET` 相同的随机串
+   - SSL verification：Enable
+   - Which events：Let me select individual events → 勾选 **Issues**（关闭 issue 时会收到 `issues` + `action=closed`）
+   - Active：勾选
+
+Worker 用 KV 记录 issue 号与飞书 `chat_id` / `message_id` 的对应关系，并用 GitHub `X-GitHub-Delivery` 以及飞书 `event_id` / `message_id` 做去重。同一用户 60 秒内重复提交 `需求：` 会被限流。Workers KV 最终一致，不承诺并发下严格 exactly-once。

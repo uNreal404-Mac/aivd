@@ -100,6 +100,20 @@ function textFromMessage(message) {
   }
 }
 
+export function messageContext(payload) {
+  const message = payload?.event?.message ?? {};
+  const sender = payload?.event?.sender ?? {};
+  const senderId = sender.sender_id ?? {};
+  const named = typeof senderId.name === "string" && senderId.name
+    ? senderId.name
+    : (typeof sender.name === "string" ? sender.name : "");
+  return {
+    chatId: typeof message.chat_id === "string" ? message.chat_id : "",
+    senderOpenId: typeof senderId.open_id === "string" ? senderId.open_id : "",
+    senderName: named,
+  };
+}
+
 export function selectMessageEvent(payload, botOpenId) {
   if (payload?.header?.event_type !== "im.message.receive_v1") return null;
   const eventId = payload.header.event_id;
