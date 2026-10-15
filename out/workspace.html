@@ -1867,16 +1867,28 @@ async function copyResultLink(url) {
     : "";
   if (!href) return toast(DU.t("ws.result.copy.fail", "Could not copy link"), true);
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(href);
-    } else {
+    let copied = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(href);
+        copied = true;
+      }
+    } catch (clipErr) {
+      copied = false;
+    }
+    if (!copied) {
       const ta = document.createElement("textarea");
       ta.value = href;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
       document.body.appendChild(ta);
+      ta.focus();
       ta.select();
-      document.execCommand("copy");
+      copied = document.execCommand("copy");
       ta.remove();
     }
+    if (!copied) throw new Error("copy failed");
     toast(DU.t("ws.result.copied", "Link copied"));
   } catch (e) {
     toast(DU.t("ws.result.copy.fail", "Could not copy link"), true);
