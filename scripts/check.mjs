@@ -264,6 +264,59 @@ mustContain("libs/costs.ts", "lite: 3", "video lite cost unchanged");
 if (!exists("scripts/test-p1.mjs")) fail.push("missing scripts/test-p1.mjs");
 else ok.push("scripts/test-p1.mjs exists");
 
+mustContain("libs/generation.ts", 'env.GENERATION_ENABLED === "true"', "only exact true opens generation");
+mustContain("libs/generation.ts", "暂未开放", "closed generate message is 暂未开放");
+mustContain("libs/generation.ts", "BUSINESS_PATH", "closed marketing CTAs go to /business");
+mustContain("libs/generation.ts", '"/business"', "business path is /business");
+mustContain("libs/generation.ts", "查看样片", "closed samples CTA label");
+mustContain("libs/generation.ts", "企业定制询价", "closed quote CTA label");
+mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST honors GENERATION_ENABLED");
+mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
+mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload POST honors GENERATION_ENABLED");
+mustContain("functions/api/health.ts", "generationEnabled", "health exposes generationEnabled");
+mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "Pages var defaults generation off");
+mustContain("out/assets/js/du.js", "applyGenerationCtas", "shared CTA switch helper");
+mustContain("out/assets/js/i18n.js", "cta.samples", "查看样片 i18n");
+mustContain("out/assets/js/i18n.js", "cta.quote", "企业定制询价 i18n");
+mustContain("out/assets/js/i18n.js", "gen.closed", "暂未开放 i18n");
+mustContain("out/index.html", 'data-gen-cta="samples"', "home generate CTAs are switchable");
+mustContain("out/index.html", 'href="/business"', "home closed CTAs link to /business");
+mustContain("out/image-to-video.html", 'data-gen-cta="samples"', "image-to-video CTA is switchable");
+mustContain("out/photo-to-video.html", 'data-gen-cta="samples"', "photo-to-video CTA is switchable");
+mustContain("out/free-ai-video.html", 'data-gen-cta="samples"', "free-ai-video CTA is switchable");
+mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
+{
+  const metas = [
+    ["out/index.html", "Start free — no account needed", "home"],
+    ["out/image-to-video.html", "Two free Lite clips per device", "image-to-video"],
+    ["out/photo-to-video.html", "Two free Lite tries", "photo-to-video"],
+    ["out/free-ai-video.html", "two Lite image-to-video clips per device with no account", "free-ai-video"],
+  ];
+  for (const [rel, needle, label] of metas) {
+    const src = read(rel);
+    const desc = src.match(/<meta name="description" content="([^"]+)"/);
+    if (!desc) fail.push(`${label} missing meta description`);
+    else if (desc[1].includes(needle)) fail.push(`${label} meta description still promises ${JSON.stringify(needle)}`);
+    else ok.push(`${label} meta description no longer promises ${JSON.stringify(needle)}`);
+    if (!src.includes("Public generation is not open yet")) {
+      fail.push(`${label} meta should say public generation is not open yet`);
+    } else ok.push(`${label} meta says generation is not open yet`);
+  }
+}
+{
+  const post = read("functions/api/generate.ts");
+  const start = post.indexOf("export const onRequestPost");
+  const end = post.indexOf("async function handleGeneratePost");
+  const fn = start >= 0 && end > start ? post.slice(start, end) : "";
+  const flagAt = fn.indexOf("isGenerationEnabled");
+  const handleAt = fn.indexOf("handleGeneratePost");
+  if (flagAt < 0 || handleAt < 0 || flagAt > handleAt) {
+    fail.push("onRequestPost must return 503 before handleGeneratePost when generation is off");
+  } else ok.push("onRequestPost checks GENERATION_ENABLED before handleGeneratePost");
+}
+if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test-generation-gate.mjs");
+else ok.push("scripts/test-generation-gate.mjs exists");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
@@ -303,4 +356,21 @@ process.stderr.write(stripeUnit.stderr || "");
 if (stripeUnit.status !== 0) {
   console.log("FAIL scripts/test-stripe.mjs");
   process.exit(stripeUnit.status || 1);
+}
+
+const genUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-generation-gate.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(genUnit.stdout || "");
+process.stderr.write(genUnit.stderr || "");
+if (genUnit.status !== 0) {
+  console.log("FAIL scripts/test-generation-gate.mjs");
+  process.exit(genUnit.status || 1);
 }

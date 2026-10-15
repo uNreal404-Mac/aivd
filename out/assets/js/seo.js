@@ -68,7 +68,7 @@
     "@id": ORIGIN + "/#website",
     name: "DreamUtopia",
     url: ORIGIN + "/",
-    description: "Free AI image and video generator. Two Lite trials, then 10 signup credits.",
+    description: "AI image and video tools. Public generation is not open yet.",
     publisher: { "@id": ORIGIN + "/#org" },
   };
 

@@ -490,6 +490,7 @@ Image
 <span id="genBtnLabel">Generate Free Trial</span>
 </button>
 <p class="gen-foot" id="genFoot">2 free Lite videos. <a href="/auth?mode=signup&next=/workspace" id="genFootSignup">Sign up</a> for 10 credits.</p>
+<p class="gen-foot" data-gen-closed-note hidden>暂未开放</p>
 </div>
 
 <div class="gen-status" id="genStatus">
@@ -1163,6 +1164,10 @@ async function uploadImageFile(file) {
 }
 
 async function generate() {
+  if (window.DU && DU.generationEnabled === false) {
+    toast(DU.t("gen.closed", "暂未开放"), true);
+    return;
+  }
   const prompt = document.getElementById("promptInput").value.trim();
   if (!prompt) return toast("Please enter a prompt.", true);
 
@@ -1287,6 +1292,12 @@ async function generate() {
 
 function resetGenBtn() {
   const btn = document.getElementById("genBtn");
+  if (window.DU && DU.generationEnabled === false) {
+    btn.disabled = true;
+    btn.classList.remove("ready");
+    document.getElementById("genBtnLabel").textContent = DU.t("gen.closed", "暂未开放");
+    return;
+  }
   const hasPrompt = document.getElementById("promptInput").value.trim().length > 0;
   btn.disabled = !hasPrompt;
   btn.classList.toggle("ready", hasPrompt);
@@ -1413,18 +1424,27 @@ function escapeHtml(s) {
   }
   try {
     const health = await fetch("/api/health").then((r) => r.json());
-    if (health && health.generateReady === false) {
+    const enabled = !!(health && health.generationEnabled === true);
+    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(enabled);
+    if (!enabled || (health && health.generateReady === false)) {
       generateReady = false;
       const welcomeP = document.querySelector("#welcomeBanner p");
       if (welcomeP && !token) {
-        welcomeP.textContent = "Generation isn’t available on this preview yet. You can still sign up — free trials will work when the provider is configured.";
+        welcomeP.textContent = enabled
+          ? "Generation isn’t available on this preview yet. You can still sign up — free trials will work when the provider is configured."
+          : ((window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放");
       }
       const foot = document.getElementById("genFoot");
-      if (foot && !token) {
-        foot.innerHTML = 'Generation isn’t ready yet. <a href="' + DU.signupHref({ next: "/workspace" }) + '" id="genFootSignup">Sign up</a> to be ready when it is.';
+      if (foot) {
+        foot.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
       }
+      resetGenBtn();
     }
-  } catch (e) {}
+  } catch (e) {
+    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(false);
+    generateReady = false;
+    resetGenBtn();
+  }
   const hint = document.getElementById("urlHint");
   if (hint && !uploadReady) {
     hint.innerHTML = 'File upload isn’t bound yet — paste a <strong style="color:rgba(255,255,255,.7);font-weight:600">public https image URL</strong> that KIE can fetch.';

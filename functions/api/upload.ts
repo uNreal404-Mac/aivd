@@ -27,11 +27,13 @@ import {
   clientIp,
 } from "../../libs/guest";
 import type { Env } from "../../libs/utils";
+import { isGenerationEnabled, generationDisabledResponse } from "../../libs/generation";
 
 export const onRequestOptions = (): Response => preflight();
 
 /** GET /api/upload — capability probe for the workspace UI */
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+  const generationEnabled = isGenerationEnabled(env);
   return json({
     ok: true,
     mediaBound: hasMedia(env),
@@ -40,6 +42,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       (t) => t !== "image/jpg" && t !== "image/tif" && t !== "image/x-tiff"
     ),
     generateUsesMedia: hasMedia(env),
+    generationEnabled,
   });
 };
 
@@ -50,6 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
  * Stores in R2 and returns a public HTTPS URL KIE can fetch.
  */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  if (!isGenerationEnabled(env)) return generationDisabledResponse();
   if (!hasSessions(env)) return bindingsUnavailable("SESSIONS");
   if (!hasMedia(env)) {
     return structuredError(
