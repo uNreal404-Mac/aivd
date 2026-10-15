@@ -9,7 +9,7 @@
 ## 费用边界
 
 - 账号必须使用 Cloudflare Workers Free。部署前在 Cloudflare 账单／Workers 计划设置中确认当前账号没有启用 Workers Paid；不确定时先不要部署。
-- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费绑定、自定义域名、AI 服务或定时任务。
+- 本配置使用 Workers Free、Workers KV 与自定义域名 `ai.textsanalyzer.com`，不添加付费绑定、AI 服务或定时任务。Cloudflare 自动管理此 Worker 域名的 DNS 记录和证书。
 - Free 计划有每日请求和 KV 用量上限；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
 
 ## 本地测试和开发
@@ -56,10 +56,10 @@ npx wrangler dev
    npx wrangler deploy
    ```
 
-   使用 Wrangler 显示的 `workers.dev` 主机名填事件订阅地址，格式为：
+   使用短地址填事件订阅地址：
 
    ```text
-   https://feishu-bot.guochao950518.workers.dev/feishu/events
+   https://ai.textsanalyzer.com/feishu/events
    ```
 
 ## 飞书开放平台配置
@@ -67,7 +67,7 @@ npx wrangler dev
 在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本：
 
 1. 启用机器人能力。
-2. 在事件订阅中选择「将事件发送至开发者服务器」，填写 `https://feishu-bot.guochao950518.workers.dev/feishu/events`，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
+2. 在事件订阅中选择「将事件发送至开发者服务器」，填写 `https://ai.textsanalyzer.com/feishu/events`，保存并通过 URL Verification。订阅 `im.message.receive_v1`。
 3. 将应用凭据中的 App ID、App Secret、Verification Token 和 Encrypt Key 分别通过上面的 Wrangler secret 命令设置。平台启用了事件加密时，Encrypt Key 必须与 Worker secret 相同。
 4. 申请并在应用版本中启用这些最小必要权限：
    - `im:message.p2p_msg:readonly`：接收发给机器人的私聊。
