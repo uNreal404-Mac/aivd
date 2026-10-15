@@ -114,6 +114,14 @@ function textResponse(text, status) {
   return new Response(text, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
 }
 
+function callbackErrorCategory(error) {
+  if (error?.cause?.name === "OperationError") return "decryption_failed";
+  if (error?.message === "Invalid Feishu callback payload") return "payload_invalid";
+  if (error?.status === 413) return "body_too_large";
+  if (error?.status === 503) return "deadline_exceeded";
+  return "callback_rejected";
+}
+
 function challengeResponse(challenge) {
   return new Response(JSON.stringify({ challenge }), {
     status: 200,
@@ -146,6 +154,7 @@ export function createWorker({
   now = Date.now,
   callbackBudgetMs = CALLBACK_BUDGET_MS,
   monotonicNow = () => performance.now(),
+  logger = console,
 } = {}) {
   return {
     async fetch(request, env) {
@@ -165,6 +174,14 @@ export function createWorker({
         const rawBody = await readRequestBody(request, deadlineAt, monotonicNow);
         payload = await decodeFeishuRequest({ rawBody, headers: request.headers, encryptKey: env.FEISHU_ENCRYPT_KEY ?? "" });
       } catch (error) {
+        try {
+          logger?.warn?.("Rejected Feishu callback", {
+            status: error?.status ?? 400,
+            category: callbackErrorCategory(error),
+          });
+        } catch {
+          // Logging must never change the callback response.
+        }
         return textResponse("Invalid Feishu callback", error?.status ?? 400);
       }
 

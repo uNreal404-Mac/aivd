@@ -156,6 +156,31 @@ test("accepts an encrypted URL verification handshake without signature headers"
   assert.equal(invalidTokenResponse.status, 401);
 });
 
+test("logs only a safe category when an encrypted handshake cannot be decrypted", async () => {
+  const warnings = [];
+  const logger = { warn(...args) { warnings.push(args); } };
+  const worker = createWorker({ logger, fetchImpl: async () => { throw new Error("unexpected fetch"); } });
+  const env = makeEnv();
+  env.FEISHU_VERIFICATION_TOKEN = "never-log-this-token";
+  env.FEISHU_ENCRYPT_KEY = "expected-test-encrypt-key";
+  const request = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: await encryptedEnvelope({
+      type: "url_verification",
+      token: env.FEISHU_VERIFICATION_TOKEN,
+      challenge: "Never-Log-This-Challenge",
+    }, "different-test-encrypt-key"),
+  });
+
+  const response = await worker.fetch(request, env, {});
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(warnings, [["Rejected Feishu callback", { status: 400, category: "decryption_failed" }]]);
+  assert.equal(JSON.stringify(warnings).includes("never-log-this-token"), false);
+  assert.equal(JSON.stringify(warnings).includes("Never-Log-This-Challenge"), false);
+});
+
 test("rejects a callback with the wrong verification token", async () => {
   const worker = createWorker({ fetchImpl: async () => { throw new Error("unexpected fetch"); } });
   const response = await send(worker, messagePayload({ token: "wrong-token" }), makeEnv());
