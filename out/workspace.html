@@ -213,6 +213,8 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .composer-inner{max-width:none;margin-top:0;width:100%;flex:0 0 auto}
 .composer-bar{display:flex;flex-direction:column;gap:8px}
 .gen-sticky{flex:0 0 auto;width:100%;min-width:0;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);background:rgba(13,13,18,.92)}
+.gen-param-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px;pointer-events:none}
+.gen-param-chips .opt-chip{cursor:default}
 .gen-btn{width:100%;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(107,114,128,.4);color:rgba(255,255,255,.45);cursor:not-allowed;transition:opacity .2s,background .2s}
 .gen-btn.ready{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(168,85,247,.25)}
 .gen-btn.ready:hover{opacity:.92}
@@ -569,8 +571,13 @@ nav{display:none}
 
 <div class="composer-inner">
 <div class="gen-sticky" id="genSticky">
+<div class="chip-row gen-param-chips" id="genParamChips" aria-label="Current parameters">
+<span class="opt-chip active" id="genChipDuration">5s</span>
+<span class="opt-chip active" id="genChipAspect">16:9</span>
+<span class="opt-chip active" id="genChipResolution">1080p</span>
+</div>
 <button class="gen-btn" id="genBtn" disabled onclick="generate()">
-<span id="genBtnLabel">Generate</span>
+<span id="genBtnLabel">Generate · 3 credits</span>
 <span class="gen-cost" id="genCostWrap">⚡ <span id="genCost">3</span></span>
 </button>
 <p class="gen-foot" id="genFoot">Sign in when you are ready to generate.</p>
@@ -602,6 +609,7 @@ nav{display:none}
 <div class="result-actions">
 <a id="genResultLink" href="#" target="_blank" rel="noopener" data-i18n="ws.result.open">Open result URL</a>
 <button type="button" id="genDownload" data-i18n="gen.download">Download</button>
+<button type="button" id="genCopyLink" data-i18n="ws.result.copy" hidden>Copy link</button>
 <button type="button" class="primary" id="genShare" hidden data-i18n="ws.result.share">Share to gallery</button>
 </div>
 </div>
@@ -687,6 +695,7 @@ nav{display:none}
 </dl>
 <div class="hist-modal-actions">
 <button type="button" class="primary" id="historyDetailDownload" data-i18n="gen.download">Download</button>
+<button type="button" id="historyDetailCopyLink" data-i18n="ws.result.copy" hidden>Copy link</button>
 <button type="button" id="historyDetailRegen" data-i18n="ws.history.regen">Regenerate</button>
 <button type="button" id="historyDetailCopy" data-i18n="ws.history.copy">Copy prompt</button>
 </div>
@@ -899,6 +908,8 @@ function showResult(url, kind, generationId, meta) {
     image.hidden = true;
     video.hidden = false;
     if (share) share.hidden = true;
+    const copyLink = document.getElementById("genCopyLink");
+    if (copyLink) copyLink.hidden = true;
     return;
   }
   const isImage = kind === "image" || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
@@ -916,6 +927,14 @@ function showResult(url, kind, generationId, meta) {
   }
   link.href = url;
   setDemoResultBadge(!!(meta && meta.demo) || demoActive(), meta && meta.title);
+  const copyLink = document.getElementById("genCopyLink");
+  const ownClip = window.DU_DEMO && DU_DEMO.isOwnDemoClip && DU_DEMO.isOwnDemoClip(url);
+  if (copyLink) {
+    copyLink.hidden = !ownClip;
+    copyLink.onclick = function () {
+      copyResultLink(url);
+    };
+  }
   if (download) {
     download.onclick = function () {
       DU.downloadResult(url, brandFile(lastGenerationId || "result"));
@@ -1063,8 +1082,6 @@ function updateAuthUI(credits) {
   const welcome = document.getElementById("welcomeBanner");
   const save = document.getElementById("saveCard");
   const foot = document.getElementById("genFoot");
-  const btnLabel = document.getElementById("genBtnLabel");
-
   if (token) {
     const pill = document.getElementById("creditsPill");
     if (pill) pill.hidden = false;
@@ -1082,7 +1099,6 @@ function updateAuthUI(credits) {
     const persist = document.getElementById("guestPersistNotice");
     if (persist) { persist.hidden = true; persist.classList.remove("show"); }
     foot.innerHTML = 'Credits never expire. <a href="/pricing">Buy more credits</a>';
-    btnLabel.textContent = DU.t("ws.gen.go", "Generate");
     updateGenCost();
     const loginBtn = document.getElementById("loginBtn");
     loginBtn.textContent = DU.t("hdr.logout", "Log Out");
@@ -1109,7 +1125,6 @@ function updateAuthUI(credits) {
     const persist = document.getElementById("guestPersistNotice");
     if (persist) { persist.hidden = true; persist.classList.remove("show"); }
     foot.innerHTML = DU.t("ws.gen.browse", "Browse freely. Generate asks you to sign in.");
-    btnLabel.textContent = DU.t("ws.gen.go", "Generate");
     updateGenCost();
     bindAuthTriggers();
   }
@@ -1234,6 +1249,7 @@ function pickDuration(n) {
   document.querySelectorAll("#durationRow .opt-chip").forEach((el) => {
     el.classList.toggle("active", Number(el.dataset.dur) === durationSec);
   });
+  syncGenParamChips();
 }
 
 function pickVideoRes(v) {
@@ -1241,6 +1257,7 @@ function pickVideoRes(v) {
   document.querySelectorAll("#resolutionRow .video-res").forEach((el) => {
     el.classList.toggle("active", el.dataset.vres === videoRes);
   });
+  syncGenParamChips();
 }
 
 function pickImageRes(v) {
@@ -1258,6 +1275,7 @@ function pickImageRes(v) {
   document.querySelectorAll("#resolutionRow .image-res").forEach((el) => {
     el.classList.toggle("active", el.dataset.ires === imageResolution);
   });
+  syncGenParamChips();
 }
 
 function cyclePreset() {
@@ -1276,16 +1294,55 @@ function currentCost() {
   if (currentMode === "image") return currentModel === "pro" ? 2 : 1;
   if (currentModel === "pro") return 16;
   if (currentModel === "medium") return 5;
-  return 3;
+  return (window.DU_DEMO && DU_DEMO.DISPLAY_COST_LITE) || 3;
+}
+
+function generateCostLabel(n) {
+  const cost = Number(n);
+  const value = Number.isFinite(cost) && cost > 0 ? cost : currentCost();
+  if (window.DU_DEMO && typeof DU_DEMO.generateCostLabel === "function") {
+    return DU_DEMO.generateCostLabel(value, function (key, fallback) {
+      return DU.t(key, fallback);
+    });
+  }
+  return DU.t("ws.gen.cost", "Generate · {n} credits").replace(/\{n\}/g, String(value));
+}
+
+function applyGenerateLabel() {
+  const el = document.getElementById("genBtnLabel");
+  if (!el) return;
+  if (!demoActive() && generationIsClosed()) return;
+  el.textContent = generateCostLabel(currentCost());
+}
+
+function syncGenParamChips() {
+  const resolution = currentMode === "image" ? imageResolution : videoRes;
+  const chips = window.DU_DEMO && typeof DU_DEMO.paramChipValues === "function"
+    ? DU_DEMO.paramChipValues({ durationSec: durationSec, aspectRatio: aspectRatio, resolution: resolution })
+    : { duration: (durationSec === 10 ? 10 : 5) + "s", aspect: aspectRatio || "16:9", resolution: resolution || "1080p" };
+  const dur = document.getElementById("genChipDuration");
+  const aspect = document.getElementById("genChipAspect");
+  const res = document.getElementById("genChipResolution");
+  if (dur) {
+    dur.textContent = chips.duration;
+    dur.hidden = currentMode !== "video";
+  }
+  if (aspect) {
+    aspect.textContent = chips.aspect;
+    aspect.hidden = currentMode !== "video";
+  }
+  if (res) res.textContent = chips.resolution;
 }
 
 function updateGenCost() {
+  syncGenParamChips();
+  applyGenerateLabel();
   const wrap = document.getElementById("genCostWrap");
   const el = document.getElementById("genCost");
   if (!wrap || !el) return;
+  el.textContent = String(currentCost());
   if (demoActive()) {
-    wrap.hidden = false;
-    el.textContent = String(currentCost());
+    wrap.hidden = true;
     return;
   }
   if (generationIsClosed()) {
@@ -1293,7 +1350,6 @@ function updateGenCost() {
     return;
   }
   wrap.hidden = false;
-  el.textContent = String(currentCost());
 }
 
 function pickAspect(v) {
@@ -1301,6 +1357,7 @@ function pickAspect(v) {
   document.querySelectorAll("#aspectRow .opt-chip").forEach((el) => {
     el.classList.toggle("active", el.dataset.ar === aspectRatio);
   });
+  syncGenParamChips();
 }
 
 function generationIsClosed() {
@@ -1632,15 +1689,16 @@ function resetGenBtn() {
     const hasPrompt = document.getElementById("promptInput").value.trim().length > 0;
     btn.disabled = !hasPrompt;
     btn.classList.toggle("ready", hasPrompt);
-    document.getElementById("genBtnLabel").textContent = DU.t("ws.gen.go", "Generate");
+    applyGenerateLabel();
     if (foot) {
       foot.hidden = false;
       foot.textContent = DU.t("demo.foot", "Sample walkthrough. Nothing is billed.");
     }
     const wrap = document.getElementById("genCostWrap");
-    if (wrap) wrap.hidden = false;
+    if (wrap) wrap.hidden = true;
     const cost = document.getElementById("genCost");
     if (cost) cost.textContent = String(currentCost());
+    syncGenParamChips();
     return;
   }
   if (generationIsClosed()) {
@@ -1653,7 +1711,7 @@ function resetGenBtn() {
   }
   btn.disabled = false;
   btn.classList.add("ready");
-  document.getElementById("genBtnLabel").textContent = DU.t("ws.gen.go", "Generate");
+  applyGenerateLabel();
   if (foot) foot.hidden = false;
   updateGenCost();
 }
@@ -1803,6 +1861,28 @@ function refillFromGeneration(g) {
   toast(DU.t("ws.history.refilled", "Parameters filled — adjust and generate when ready."));
 }
 
+async function copyResultLink(url) {
+  const href = window.DU_DEMO && typeof DU_DEMO.shareableClipUrl === "function"
+    ? DU_DEMO.shareableClipUrl(url, location.origin)
+    : "";
+  if (!href) return toast(DU.t("ws.result.copy.fail", "Could not copy link"), true);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(href);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = href;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    toast(DU.t("ws.result.copied", "Link copied"));
+  } catch (e) {
+    toast(DU.t("ws.result.copy.fail", "Could not copy link"), true);
+  }
+}
+
 async function copyHistoryPrompt(text) {
   const value = String(text || "");
   if (!value) return toast(DU.t("ws.history.copy.empty", "No prompt to copy"), true);
@@ -1886,6 +1966,14 @@ function openHistoryDetail(g) {
   dl.onclick = function () {
     DU.downloadResult(url, brandFile(g.id));
   };
+  const detailCopyLink = document.getElementById("historyDetailCopyLink");
+  const ownClip = window.DU_DEMO && DU_DEMO.isOwnDemoClip && DU_DEMO.isOwnDemoClip(url);
+  if (detailCopyLink) {
+    detailCopyLink.hidden = !ownClip;
+    detailCopyLink.onclick = function () {
+      copyResultLink(url);
+    };
+  }
   document.getElementById("historyDetailRegen").onclick = function () {
     refillFromGeneration(g);
     if (demoActive()) generate();
@@ -1925,9 +2013,14 @@ function historyCardHtml(g) {
     : kind === "image"
       ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(heading)}">`
       : `<video src="${escapeHtml(url)}"${g.poster ? ` poster="${escapeHtml(g.poster)}"` : ""} muted loop playsinline preload="metadata" data-preview></video>${play}`;
+  const ownClip = url && window.DU_DEMO && DU_DEMO.isOwnDemoClip && DU_DEMO.isOwnDemoClip(url);
+  const copyLinkBtn = ownClip
+    ? `<button type="button" data-act="copy-link" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.result.copy", "Copy link"))}</button>`
+    : "";
   const actions = url
     ? `<div class="history-card-actions">
         <button type="button" data-act="download" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
+        ${copyLinkBtn}
         <button type="button" data-act="regen" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.regen", "Regenerate"))}</button>
         <button type="button" data-act="copy" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.copy", "Copy prompt"))}</button>
       </div>`
@@ -1978,6 +2071,7 @@ function renderHistoryGrid() {
         if (!g) return;
         const act = btn.getAttribute("data-act");
         if (act === "download") DU.downloadResult(resultUrlOf(g), brandFile(g.id));
+        else if (act === "copy-link") copyResultLink(resultUrlOf(g));
         else if (act === "regen") {
           refillFromGeneration(g);
           if (demoActive()) generate();

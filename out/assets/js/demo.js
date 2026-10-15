@@ -7,6 +7,8 @@
   var HISTORY_KEY = "du_demo_history";
   var BADGE_LABEL = "演示样片 / Demo sample";
   var BLOCKED_API = ["/api/generate", "/api/upload", "/api/upload-ticket"];
+  /** Display-only. Same number as libs/costs.ts VIDEO_COST.lite — demo never deducts credits. */
+  var DISPLAY_COST_LITE = 3;
 
   /**
    * Partner walkthrough clips — our published 1080p outputs from /examples.
@@ -246,6 +248,41 @@
     return '<span class="demo-sample-badge" data-demo-badge="1">' + BADGE_LABEL + "</span>";
   }
 
+  function generateCostLabel(n, translate) {
+    var cost = Number(n);
+    if (!isFinite(cost) || cost <= 0) cost = DISPLAY_COST_LITE;
+    var tr = typeof translate === "function" ? translate : t;
+    var template = tr("ws.gen.cost", "Generate · {n} credits");
+    return String(template).replace(/\{n\}/g, String(cost));
+  }
+
+  function paramChipValues(opts) {
+    opts = opts || {};
+    var dur = Number(opts.durationSec) === 10 ? 10 : 5;
+    var aspect = opts.aspectRatio === "9:16" || opts.aspectRatio === "1:1" ? opts.aspectRatio : "16:9";
+    var res = String(opts.resolution || "1080p");
+    if (res !== "720p" && res !== "1080p" && res !== "1K" && res !== "2K" && res !== "4K") res = "1080p";
+    return { duration: dur + "s", aspect: aspect, resolution: res };
+  }
+
+  function isOwnDemoClip(url) {
+    var s = String(url || "");
+    if (s.indexOf("/assets/demo/") === -1) return false;
+    if (!/\.mp4(\?|#|$)/i.test(s)) return false;
+    if (/higgsfield|runwayml|kling/i.test(s)) return false;
+    return true;
+  }
+
+  function shareableClipUrl(url, origin) {
+    if (!isOwnDemoClip(url)) return "";
+    var base = origin || (typeof location !== "undefined" ? location.origin : "");
+    try {
+      return new URL(String(url), base || "https://dreamutopia-clone.pages.dev").href;
+    } catch (e) {
+      return "";
+    }
+  }
+
   function visibleCopy() {
     var name = brandName();
     var titles = DEMO_SAMPLES.filter(isShippedSample).map(sampleTitle);
@@ -255,6 +292,8 @@
       t("demo.foot", "Sample walkthrough. Nothing is billed."),
       t("demo.welcome", "Walk through upload, generate, view, and download with sample clips."),
       t("demo.in", "You are in demo"),
+      generateCostLabel(DISPLAY_COST_LITE),
+      t("ws.result.copy", "Copy link"),
       BADGE_LABEL,
       name,
     ].concat(titles);
@@ -353,6 +392,11 @@
     BADGE_LABEL: BADGE_LABEL,
     BLOCKED_API: BLOCKED_API,
     DEMO_SAMPLES: DEMO_SAMPLES,
+    DISPLAY_COST_LITE: DISPLAY_COST_LITE,
+    generateCostLabel: generateCostLabel,
+    paramChipValues: paramChipValues,
+    isOwnDemoClip: isOwnDemoClip,
+    shareableClipUrl: shareableClipUrl,
     brandName: brandName,
     isDemoMode: isDemoMode,
     blockedUrl: blockedUrl,

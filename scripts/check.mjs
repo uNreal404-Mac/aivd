@@ -97,6 +97,17 @@ mustContain("out/workspace.html", 'class="chip-dock"', "model/duration/aspect/re
 mustContain("out/workspace.html", 'class="ws-stage"', "left params + right history stage");
 mustContain("out/workspace.html", 'id="presetCard"', "preset look card");
 mustContain("out/workspace.html", 'id="genCost"', "Generate button shows credit cost");
+mustContain("out/workspace.html", 'id="genParamChips"', "Generate sticky shows duration/aspect/resolution chips");
+mustContain("out/workspace.html", 'id="genChipDuration"', "sticky duration chip");
+mustContain("out/workspace.html", 'id="genChipAspect"', "sticky aspect chip");
+mustContain("out/workspace.html", 'id="genChipResolution"', "sticky resolution chip");
+mustContain("out/workspace.html", "generateCostLabel", "Generate label includes credit cost helper");
+mustContain("out/workspace.html", 'id="genCopyLink"', "demo result card Copy link");
+mustContain("out/workspace.html", 'data-act="copy-link"', "demo history cards Copy link");
+mustContain("out/assets/js/i18n.js", '"ws.gen.cost": "Generate · {n} credits"', "English generate cost label");
+mustContain("out/assets/js/i18n.js", '"ws.gen.cost": "生成 · 消耗 {n} 积分"', "Chinese generate cost label");
+mustContain("out/assets/js/demo.js", "DISPLAY_COST_LITE", "demo credit cost is a single display-only constant");
+mustContain("out/assets/js/demo.js", "shareableClipUrl", "Copy link only shares our sample clips");
 mustContain("out/workspace.html", 'id="resolutionRow"', "resolution chip selector");
 mustContain("out/workspace.html", "DU.alertDialog", "Generate asks login when logged out");
 mustContain("out/workspace.html", 'data-i18n="ws.tab.history"', "right canvas History tab");
@@ -526,9 +537,9 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
   const flowStart = read("out/workspace.html").indexOf("async function generateDemoFlow()");
   const flowEnd = read("out/workspace.html").indexOf("async function generate()");
   const flow = flowStart >= 0 && flowEnd > flowStart ? read("out/workspace.html").slice(flowStart, flowEnd) : "";
-  if (flow.includes("/api/generate") || flow.includes("/api/upload") || flow.includes("upload-ticket")) {
-    fail.push("generateDemoFlow must not mention /api/generate, /api/upload, or upload-ticket");
-  } else ok.push("generateDemoFlow has no generate/upload API URLs");
+  if (flow.includes("/api/generate") || flow.includes("/api/upload") || flow.includes("upload-ticket") || flow.includes("/api/credits")) {
+    fail.push("generateDemoFlow must not mention /api/generate, /api/upload, upload-ticket, or /api/credits");
+  } else ok.push("generateDemoFlow has no generate/upload/credits API URLs");
   const genStart = read("out/workspace.html").indexOf("async function generate()");
   const genEnd = read("out/workspace.html").indexOf("function resetGenBtn()");
   const gen = genStart >= 0 && genEnd > genStart ? read("out/workspace.html").slice(genStart, genEnd) : "";

@@ -206,6 +206,78 @@ const demoSrc = fs.readFileSync(path.join(root, "out/assets/js/demo.js"), "utf8"
   assert(/name="robots" content="noindex/.test(demoPage), "/demo static HTML is noindex");
 }
 
+{
+  assert(typeof demo.DISPLAY_COST_LITE === "number" && demo.DISPLAY_COST_LITE === 3, "demo display cost matches video Lite (3)");
+  assert(typeof demo.generateCostLabel === "function", "generateCostLabel is exported");
+  if (typeof demo.generateCostLabel === "function") {
+    const en = demo.generateCostLabel(3, function (_k, fallback) { return fallback; });
+    assert(/Generate · 3 credits/.test(en), "English generate label includes credit cost");
+    const zh = demo.generateCostLabel(3, function (key, fallback) {
+      if (key === "ws.gen.cost") return "生成 · 消耗 {n} 积分";
+      return fallback;
+    });
+    assert(/生成 · 消耗 3 积分/.test(zh), "Chinese generate label includes 消耗积分");
+  }
+  assert(i18n.includes('"ws.gen.cost": "Generate · {n} credits"'), "English i18n generate cost template");
+  assert(i18n.includes('"ws.gen.cost": "生成 · 消耗 {n} 积分"'), "Chinese i18n generate cost template");
+  assert(workspace.includes("generateCostLabel"), "workspace fills Generate label from generateCostLabel");
+  const resetStart = workspace.indexOf("function resetGenBtn()");
+  const resetEnd = workspace.indexOf("function itemKind(");
+  const reset = resetStart >= 0 && resetEnd > resetStart ? workspace.slice(resetStart, resetEnd) : "";
+  assert(reset.includes("applyGenerateLabel") || reset.includes("generateCostLabel"), "resetGenBtn writes cost into the Generate label");
+}
+
+{
+  assert(workspace.includes('id="genParamChips"'), "Generate sticky shows parameter chips");
+  assert(workspace.includes('id="genChipDuration"'), "duration chip on Generate sticky");
+  assert(workspace.includes('id="genChipAspect"'), "aspect chip on Generate sticky");
+  assert(workspace.includes('id="genChipResolution"'), "resolution chip on Generate sticky");
+  assert(workspace.includes("function syncGenParamChips"), "chips stay in sync with current UI values");
+  assert(typeof demo.paramChipValues === "function", "paramChipValues is exported");
+  if (typeof demo.paramChipValues === "function") {
+    const chips = demo.paramChipValues({ durationSec: 5, aspectRatio: "16:9", resolution: "1080p" });
+    assert(chips.duration === "5s" && chips.aspect === "16:9" && chips.resolution === "1080p", "default chips are 5s / 16:9 / 1080p");
+  }
+  const chipAt = workspace.indexOf('id="genParamChips"');
+  const htmlChips = chipAt >= 0 ? workspace.slice(chipAt, chipAt + 900) : "";
+  assert(/5s/.test(htmlChips) && /16:9/.test(htmlChips) && /1080p/.test(htmlChips), "sticky chips render site defaults in HTML");
+}
+
+{
+  assert(typeof demo.isOwnDemoClip === "function", "isOwnDemoClip is exported");
+  assert(typeof demo.shareableClipUrl === "function", "shareableClipUrl is exported");
+  if (typeof demo.isOwnDemoClip === "function") {
+    assert(demo.isOwnDemoClip("/assets/demo/0_out_f7d00e65d3c1a45d.mp4") === true, "our sample mp4 is allowed");
+    assert(demo.isOwnDemoClip("https://higgsfield.ai/clip.mp4") === false, "competitor URLs are not download/copy targets");
+    assert(demo.isOwnDemoClip("/api/media?key=user-work.mp4") === false, "user-work media URLs are not demo clips");
+  }
+  if (typeof demo.shareableClipUrl === "function") {
+    const share = demo.shareableClipUrl("/assets/demo/0_out_f7d00e65d3c1a45d.mp4", "https://dreamutopia-clone.pages.dev");
+    assert(share === "https://dreamutopia-clone.pages.dev/assets/demo/0_out_f7d00e65d3c1a45d.mp4", "Copy link uses our sample mp4 URL");
+    assert(demo.shareableClipUrl("https://cdn.higgsfield.ai/x.mp4", "https://dreamutopia-clone.pages.dev") === "", "Copy link refuses competitor assets");
+  }
+  assert(workspace.includes('id="genCopyLink"'), "result card has Copy link");
+  assert(workspace.includes('data-act="copy-link"'), "history demo cards have Copy link");
+  assert(workspace.includes('id="historyDetailCopyLink"'), "detail modal has Copy link");
+  assert(i18n.includes('"ws.result.copy": "Copy link"'), "English Copy link i18n");
+  assert(i18n.includes('"ws.result.copy": "复制链接"'), "Chinese Copy link i18n");
+  const cardFn = workspace.slice(workspace.indexOf("function historyCardHtml"), workspace.indexOf("function renderHistoryGrid"));
+  assert(cardFn.includes('data-act="download"'), "history cards still have Download");
+  assert(cardFn.includes('data-act="copy-link"'), "history cards add Copy link");
+  assert(!/exportIg|tiktok/i.test(workspace), "no aspect-ratio re-encode / social export");
+  assert(!/Featured Creators/.test(workspace), "no public waterfall gallery");
+  assert(workspace.includes("async function copyResultLink"), "Copy link helper exists");
+  const copyAt = workspace.indexOf("async function copyResultLink");
+  const copyFn = copyAt >= 0 ? workspace.slice(copyAt, copyAt + 900) : "";
+  assert(copyFn.includes("shareableClipUrl") || copyFn.includes("isOwnDemoClip"), "Copy link only shares our sample clips");
+  const demoFlow = workspace.slice(
+    workspace.indexOf("async function generateDemoFlow()"),
+    workspace.indexOf("async function generate()")
+  );
+  assert(!demoFlow.includes("/api/credits"), "demo generate does not hit /api/credits");
+  assert(!demoFlow.includes("userCredits"), "demo generate does not deduct credits");
+}
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
