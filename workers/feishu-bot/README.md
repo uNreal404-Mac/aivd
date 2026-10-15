@@ -14,7 +14,7 @@
 
 所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
 
-## 三小时 Cron：Higgsfield 参考项目
+## 三小时 Cron：视频站进度推送
 
 Worker 还配置了 `0 */3 * * *` 的 Cloudflare Cron（每 3 小时）。它只读取公开 GitHub API 的 `CharlesHarry7/higgsfield-1` 最新提交 SHA，并把最后看到的 SHA 写入 `BOT_KV` 的 `cron:higgsfield-1:last-seen-sha`。首次运行只建立基线；之后只有 SHA 变化才向 `AI视频网站项目群` 发一条规则式中文进度消息，发送成功后才推进 KV，失败会保留旧 SHA 以便重试。
 
