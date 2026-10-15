@@ -4,6 +4,9 @@
 #   FEISHU_ENCRYPT_KEY          optional; omit while Feishu encryption is off
 #   GITHUB_TOKEN                fine-grained, this repo, Issues read/write
 #   GITHUB_WEBHOOK_SECRET       HMAC secret for POST /github/webhook
+# Public var (not a secret): ALLOWED_CHAT_IDS = comma-separated Feishu group chat_ids
+# allowed to create 需求 issues. Fail-closed when unset/empty. Set the partner
+# group id after merge in [vars] or src/config.mjs allowedChatIds.
 name = "feishu-bot"
 main = "src/worker.mjs"
 compatibility_date = "2026-10-15"

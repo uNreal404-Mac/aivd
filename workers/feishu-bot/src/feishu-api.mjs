@@ -1,3 +1,5 @@
+import { botConfig, signOutboundText } from "./config.mjs";
+
 const FEISHU_API = "https://open.feishu.cn/open-apis";
 const TOKEN_CACHE_KEY = "feishu:tenant_access_token";
 const BOT_OPEN_ID_CACHE_KEY = "feishu:bot:open_id";
@@ -98,10 +100,11 @@ export async function replyUuid(messageId) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, uuid }) {
+export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, uuid, config = botConfig }) {
   if (typeof token !== "string" || !token || typeof text !== "string" || typeof chatId !== "string" || !chatId) {
     throw new TypeError("A token, chat id, and text reply are required");
   }
+  const signed = signOutboundText(text, config);
   const replyId = uuid ?? await replyUuid(`chat:${chatId}`);
   const response = await fetchImpl(`${FEISHU_API}/im/v1/messages?receive_id_type=chat_id`, {
     method: "POST",
@@ -112,7 +115,7 @@ export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, u
     body: JSON.stringify({
       receive_id: chatId,
       msg_type: "text",
-      content: JSON.stringify({ text }),
+      content: JSON.stringify({ text: signed }),
       uuid: replyId,
     }),
   });
@@ -120,10 +123,11 @@ export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, u
   if (payload?.code !== 0) throw new Error("Feishu chat message was rejected");
 }
 
-export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid }) {
+export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid, config = botConfig }) {
   if (typeof token !== "string" || !token || typeof text !== "string") {
     throw new TypeError("A token and text reply are required");
   }
+  const signed = signOutboundText(text, config);
   const replyId = uuid ?? await replyUuid(messageId);
   const response = await fetchImpl(`${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reply`, {
     method: "POST",
@@ -133,7 +137,7 @@ export async function replyToMessage({ token, messageId, text, fetchImpl = fetch
     },
     body: JSON.stringify({
       msg_type: "text",
-      content: JSON.stringify({ text }),
+      content: JSON.stringify({ text: signed }),
       uuid: replyId,
     }),
   });

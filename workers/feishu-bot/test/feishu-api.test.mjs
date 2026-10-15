@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { signOutboundText } from "../src/config.mjs";
 import { getBotOpenId, getTenantAccessToken, replyToMessage, replyUuid } from "../src/feishu-api.mjs";
 
 function fakeKv(seed = {}) {
@@ -121,7 +122,7 @@ test("replies with text and the deterministic uuid in the Feishu request body", 
   assert.equal(request.init.headers.Authorization, "Bearer tenant-token");
   const body = JSON.parse(request.init.body);
   assert.equal(body.msg_type, "text");
-  assert.deepEqual(JSON.parse(body.content), { text: "回复内容" });
+  assert.deepEqual(JSON.parse(body.content), { text: signOutboundText("回复内容") });
   assert.equal(body.uuid, await replyUuid("om/message-1"));
 });
 
