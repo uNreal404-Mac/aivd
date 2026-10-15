@@ -335,8 +335,12 @@ if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test
 else ok.push("scripts/test-generation-gate.mjs exists");
 
 mustContain("out/_redirects", "/business /workspace 301", "legacy /business 301s to /workspace");
+mustContain("out/_redirects", "/business.html /workspace 301", "legacy /business.html 301s to /workspace");
+mustContain("out/_routes.json", '"/business"', "Pages Functions include /business so the 301 function runs");
 mustContain("functions/business.ts", "301", "/business function returns 301");
 mustContain("functions/business.ts", "/workspace", "/business redirects to /workspace");
+if (exists("out/business.html")) fail.push("out/business.html must be removed so /business cannot serve the quote page");
+else ok.push("out/business.html removed");
 mustContain("functions/api/business.ts", "410", "POST/GET /api/business is 410");
 mustNotContain("functions/api/business.ts", "insertBusinessInquiry", "business API no longer writes inquiries");
 mustNotContain("libs/site.ts", '"/business"', "PUBLIC_PATHS omits /business");
