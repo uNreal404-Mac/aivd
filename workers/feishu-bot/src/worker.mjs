@@ -6,6 +6,62 @@ import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api
 
 const SITE_URL = "https://dreamutopia-clone.pages.dev";
 const EVENT_TYPE = "im.message.receive_v1";
+const CALLBACK_BUDGET_MS = 2500;
+const HEALTH_TIMEOUT_MS = 700;
+const HEALTH_REPLY_RESERVE_MS = 700;
+
+function runBeforeDeadline(operation, deadlineAt, monotonicNow, onTimeout) {
+  const remainingMs = deadlineAt - monotonicNow();
+  if (remainingMs <= 0) return Promise.reject(new Error("Feishu callback deadline exceeded"));
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      onTimeout?.();
+      reject(new Error("Feishu callback deadline exceeded"));
+    }, remainingMs);
+  });
+
+  return Promise.race([Promise.resolve().then(operation), timeout]).finally(() => clearTimeout(timer));
+}
+
+function createDeadlineFetch(fetchImpl, deadlineAt, monotonicNow) {
+  return async (input, init = {}) => {
+    const controller = new AbortController();
+    const upstreamSignal = init.signal;
+    const relayAbort = () => controller.abort(upstreamSignal?.reason);
+    if (upstreamSignal?.aborted) relayAbort();
+    else upstreamSignal?.addEventListener("abort", relayAbort, { once: true });
+
+    try {
+      return await runBeforeDeadline(async () => {
+        const response = await fetchImpl(input, { ...init, signal: controller.signal });
+        const body = await response.arrayBuffer();
+        return new Response(body.byteLength ? body : null, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        });
+      }, deadlineAt, monotonicNow, () => controller.abort());
+    } catch (error) {
+      controller.abort();
+      throw error;
+    } finally {
+      upstreamSignal?.removeEventListener("abort", relayAbort);
+    }
+  };
+}
+
+function createDeadlineKv(kv, deadlineAt, monotonicNow) {
+  return {
+    get(...args) {
+      return runBeforeDeadline(() => kv.get(...args), deadlineAt, monotonicNow);
+    },
+    put(...args) {
+      return runBeforeDeadline(() => kv.put(...args), deadlineAt, monotonicNow);
+    },
+  };
+}
 
 function textResponse(text, status) {
   return new Response(text, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
@@ -38,7 +94,12 @@ function replyText(command, healthText) {
   return HELP_MESSAGE;
 }
 
-export function createWorker({ fetchImpl = globalThis.fetch, now = Date.now } = {}) {
+export function createWorker({
+  fetchImpl = globalThis.fetch,
+  now = Date.now,
+  callbackBudgetMs = CALLBACK_BUDGET_MS,
+  monotonicNow = () => performance.now(),
+} = {}) {
   return {
     async fetch(request, env) {
       const url = new URL(request.url);
@@ -46,6 +107,11 @@ export function createWorker({ fetchImpl = globalThis.fetch, now = Date.now } = 
       if (typeof env?.FEISHU_VERIFICATION_TOKEN !== "string" || !env.FEISHU_VERIFICATION_TOKEN) {
         return textResponse("Webhook is not configured", 503);
       }
+      const requestBudgetMs = Number.isFinite(callbackBudgetMs) && callbackBudgetMs > 0
+        ? Math.min(CALLBACK_BUDGET_MS, callbackBudgetMs)
+        : CALLBACK_BUDGET_MS;
+      const deadlineAt = monotonicNow() + requestBudgetMs;
+      const boundedFetch = createDeadlineFetch(fetchImpl, deadlineAt, monotonicNow);
 
       let payload;
       try {
@@ -63,8 +129,8 @@ export function createWorker({ fetchImpl = globalThis.fetch, now = Date.now } = 
       if (!validateVerificationToken(payload, env.FEISHU_VERIFICATION_TOKEN)) return textResponse("Unauthorized", 401);
       if (payload?.header?.event_type !== EVENT_TYPE) return textResponse("ok", 200);
 
-      const kv = env.BOT_KV;
-      if (!kv) return textResponse("Storage is not configured", 503);
+      if (!env.BOT_KV) return textResponse("Storage is not configured", 503);
+      const kv = createDeadlineKv(env.BOT_KV, deadlineAt, monotonicNow);
 
       let token = null;
       let selected = null;
@@ -78,10 +144,10 @@ export function createWorker({ fetchImpl = globalThis.fetch, now = Date.now } = 
             kv,
             appId: env.FEISHU_APP_ID,
             appSecret: env.FEISHU_APP_SECRET,
-            fetchImpl,
+            fetchImpl: boundedFetch,
             now,
           });
-          const botOpenId = await getBotOpenId({ kv, token, fetchImpl, now });
+          const botOpenId = await getBotOpenId({ kv, token, fetchImpl: boundedFetch, now });
           selected = selectMessageEvent(payload, botOpenId);
         } else {
           return textResponse("ok", 200);
@@ -94,18 +160,22 @@ export function createWorker({ fetchImpl = globalThis.fetch, now = Date.now } = 
             kv,
             appId: env.FEISHU_APP_ID,
             appSecret: env.FEISHU_APP_SECRET,
-            fetchImpl,
+            fetchImpl: boundedFetch,
             now,
           });
         }
 
         const command = parseCommand(selected.text);
-        const healthText = command === "health" ? await fetchHealthSummary({ fetchImpl }) : "";
+        const remainingHealthMs = deadlineAt - monotonicNow() - HEALTH_REPLY_RESERVE_MS;
+        const healthTimeoutMs = Math.max(1, Math.min(HEALTH_TIMEOUT_MS, remainingHealthMs));
+        const healthText = command === "health"
+          ? await fetchHealthSummary({ fetchImpl: boundedFetch, timeoutMs: healthTimeoutMs })
+          : "";
         await replyToMessage({
           token,
           messageId: selected.messageId,
           text: replyText(command, healthText),
-          fetchImpl,
+          fetchImpl: boundedFetch,
         });
         await markProcessed(kv, selected.eventId, selected.messageId);
         return textResponse("ok", 200);

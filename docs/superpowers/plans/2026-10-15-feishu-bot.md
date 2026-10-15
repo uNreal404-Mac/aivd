@@ -23,11 +23,12 @@
 
 ## Review Focus
 
-- Missing, malformed, or mismatched signature inputs on encrypted callbacks must fail closed; Task 1 tests missing signature values and altered raw bytes, while Task 2 tests missing HTTP signature headers.
+- Missing, malformed, or mismatched signature inputs on every non-handshake delivery must fail closed whenever Encrypt Key is configured, including plaintext envelopes; URL-verification handshakes are the sole exception because Feishu can omit signature headers, and their payload must still be decrypted when encrypted and its top-level Verification Token validated before echoing a challenge.
 - Corrupt base64, short ciphertext, and invalid PKCS#7 padding must not reach event parsing; Task 1 tests malformed and tampered ciphertext.
 - Duplicate event deliveries, distinct event IDs for the same message, and failed replies must preserve retry behavior; Tasks 1 and 4 test marker lookup, marker timing, and retryable failure.
 - Group mentions of a human or a different bot must not trigger a reply; Task 2 tests these alongside a matching bot mention and DMs.
 - Slow, non-OK, or malformed health responses must yield a short safe summary without leaking raw payloads; Task 3 tests each health failure class and checks raw error bodies are omitted.
+- The complete callback path must stay below the platform response window; Task 4 tests that a delayed health endpoint cannot hold a callback beyond the configured budget.
 
 ---
 
@@ -74,7 +75,7 @@ git commit -m "feat: add Feishu bot security and command helpers"
 
 **Interfaces:**
 - Consume Task 1 `verifyLarkSignature` and `decryptLarkPayload`.
-- Produce `decodeFeishuRequest({ rawBody, headers, encryptKey }) -> Promise<object>`; read `X-Lark-Request-Timestamp`, `X-Lark-Request-Nonce`, and `X-Lark-Signature`, verify encrypted delivery signature over the original bytes before decrypting, parse plaintext callbacks directly, and reject malformed JSON or missing signature headers on encrypted deliveries.
+- Produce `decodeFeishuRequest({ rawBody, headers, encryptKey }) -> Promise<object>`; read `X-Lark-Request-Timestamp`, `X-Lark-Request-Nonce`, and `X-Lark-Signature`; when Encrypt Key is configured, require and verify signatures over the original bytes for all non-handshake deliveries, encrypted or plaintext. Allow a `url_verification` handshake to omit signature headers, decrypt it when encrypted, and let the Worker validate its top-level Verification Token before replying. Parse plaintext callbacks directly when encryption is not configured and reject malformed JSON or unsigned ordinary deliveries when encryption is configured.
 - Produce `validateVerificationToken(payload, configuredToken) -> boolean`; accept the callback handshake shape and event-envelope token shape only when the configured token matches.
 - Produce `selectMessageEvent(payload, botOpenId) -> { eventId, messageId, chatType, text } | null`; read schema 2.0 `header.event_type`, `header.event_id`, `event.message`, and sender type; accept only `im.message.receive_v1`, `message_type: 'text'` messages from users, every `chat_type: 'p2p'` message, and `chat_type: 'group'` messages whose `mentions[].id.open_id` equals `botOpenId`; remove only that mention's `key` placeholder from the JSON-encoded message text. Reject selected events missing either ID.
 
@@ -138,7 +139,7 @@ git commit -m "feat: add Feishu API and health clients"
 
 **Interfaces:**
 - Consume Tasks 1–3 helper interfaces.
-- Produce the module Worker export `fetch(request, env, ctx) -> Promise<Response>`; serve only `POST /feishu/events`, return 404 for other paths/methods, 400 for malformed payloads, 401 for invalid signatures/tokens, and 503 for transient KV/Feishu failures; handle `url_verification` with a 200 JSON response preserving the challenge value exactly after decrypt/token validation.
+- Produce the module Worker export `fetch(request, env, ctx) -> Promise<Response>`; serve only `POST /feishu/events`, return 404 for other paths/methods, 400 for malformed payloads, 401 for invalid signatures/tokens, and 503 for transient KV/Feishu failures; handle `url_verification` with a 200 JSON response preserving the challenge value exactly after decrypt/token validation. Bound the complete synchronous path, outbound response-body reads, and KV operations to 2.5 seconds; cap the health request at 700 milliseconds while reserving time for the Feishu reply.
 - For selected messages, check both dedupe keys before work; map progress/url/health/help to text replies; acquire cached token and send reply; write completion markers only after a successful reply or confirmed duplicate reply UUID; return retryable 5xx for transient API/KV failure and do not mark failed replies complete.
 - Inject a single fixed `PROGRESS_MESSAGE` constant with conservative project wording, plus the fixed site URL `https://dreamutopia-clone.pages.dev`.
 

@@ -17,10 +17,11 @@ The provided group screenshot is a style and usage reference. Its statements abo
 ## Event and security flow
 
 1. Read and retain the original request body bytes.
-2. If `FEISHU_ENCRYPT_KEY` is configured and the request is an encrypted event delivery, verify `X-Lark-Signature` as SHA-256 of `timestamp + nonce + encrypt key + raw body`, then decrypt the Base64 payload with AES-256-CBC. Derive the AES key as SHA-256 of the UTF-8 Encrypt Key; the first 16 decoded bytes are the IV. Do not parse and re-serialize JSON before signature verification.
-3. URL verification may use the platform's handshake form. Decrypt its payload when encrypted, validate the top-level Verification Token, and return the challenge in `{"challenge":"..."}`. For schema 2.0 events, validate `header.token` after decryption. Reject invalid tokens, signatures, malformed payloads, and decryption failures without logging the body.
+2. If `FEISHU_ENCRYPT_KEY` is configured, every non-handshake delivery, whether encrypted or plaintext, requires `X-Lark-Signature` as SHA-256 of `timestamp + nonce + encrypt key + raw body`; validate the exact original body bytes before accepting an event. For signed encrypted deliveries, verify before decrypting. Derive the AES key as SHA-256 of the UTF-8 Encrypt Key; the first 16 decoded bytes are the IV. Do not parse and re-serialize JSON before signature verification.
+3. A URL-verification handshake may be plaintext or encrypted and can omit signature headers. Decrypt it when encrypted, validate the top-level Verification Token, and return the challenge in `{"challenge":"..."}`. For schema 2.0 events, require a valid signature when an Encrypt Key is configured and validate `header.token`. Reject invalid tokens, signatures, malformed payloads, and decryption failures without logging the body.
 4. Acknowledge event types other than `im.message.receive_v1` without side effects. Ignore messages sent by bots and non-text messages.
 5. Respond to all user text in `p2p` chats. In groups, resolve and cache the bot's own `open_id` using the Bot Info API and respond only when a mention's `id.open_id` matches it; mentioning another person or bot is insufficient.
+6. Bound the complete synchronous event flow to 2.5 seconds, including outbound response bodies and KV calls; cap the health request at 700 ms and return a retryable status if the overall deadline is exceeded.
 
 ## Commands and replies
 

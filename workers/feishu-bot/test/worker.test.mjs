@@ -4,6 +4,8 @@ import { dedupeKeys } from "../src/dedupe.mjs";
 import { HELP_MESSAGE, PROGRESS_MESSAGE } from "../src/commands.mjs";
 import { createWorker } from "../src/worker.mjs";
 
+const encoder = new TextEncoder();
+
 function fakeKv() {
   const values = new Map();
   const writes = [];
@@ -16,6 +18,17 @@ function fakeKv() {
       writes.push({ key, value, options });
     },
   };
+}
+
+async function encryptedEnvelope(payload, encryptKey) {
+  const keyDigest = await crypto.subtle.digest("SHA-256", encoder.encode(encryptKey));
+  const key = await crypto.subtle.importKey("raw", keyDigest, { name: "AES-CBC" }, false, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-CBC", iv }, key, encoder.encode(JSON.stringify(payload))));
+  const bytes = new Uint8Array(iv.length + ciphertext.length);
+  bytes.set(iv);
+  bytes.set(ciphertext, iv.length);
+  return JSON.stringify({ encrypt: Buffer.from(bytes).toString("base64") });
 }
 
 function messagePayload({
@@ -112,11 +125,53 @@ test("returns the exact challenge value after validating the URL verification to
   assert.deepEqual(await response.json(), { challenge: "Challenge-With Exact Case" });
 });
 
+test("accepts an encrypted URL verification handshake without signature headers", async () => {
+  const worker = createWorker({ fetchImpl: async () => { throw new Error("unexpected fetch"); } });
+  const env = makeEnv();
+  env.FEISHU_ENCRYPT_KEY = "encrypt-test-key";
+  const request = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: await encryptedEnvelope({
+      type: "url_verification",
+      token: "verify-token",
+      challenge: "Encrypted-Challenge",
+    }, env.FEISHU_ENCRYPT_KEY),
+  });
+
+  const response = await worker.fetch(request, env, {});
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { challenge: "Encrypted-Challenge" });
+
+  const invalidTokenRequest = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: await encryptedEnvelope({
+      type: "url_verification",
+      token: "wrong-token",
+      challenge: "Must-Not-Be-Echoed",
+    }, env.FEISHU_ENCRYPT_KEY),
+  });
+  const invalidTokenResponse = await worker.fetch(invalidTokenRequest, env, {});
+  assert.equal(invalidTokenResponse.status, 401);
+});
+
 test("rejects a callback with the wrong verification token", async () => {
   const worker = createWorker({ fetchImpl: async () => { throw new Error("unexpected fetch"); } });
   const response = await send(worker, messagePayload({ token: "wrong-token" }), makeEnv());
 
   assert.equal(response.status, 401);
+});
+
+test("rejects an unsigned plaintext message when an Encrypt Key is configured", async () => {
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ calls }) });
+  const env = makeEnv();
+  env.FEISHU_ENCRYPT_KEY = "encrypt-test-key";
+  const response = await send(worker, messagePayload(), env);
+
+  assert.equal(response.status, 401);
+  assert.equal(calls.length, 0);
 });
 
 test("routes progress, URL, health, and unsupported commands to safe text replies", async () => {
@@ -139,6 +194,30 @@ test("routes progress, URL, health, and unsupported commands to safe text replie
     assert.equal(replies[0].msg_type, "text");
     assert.equal(calls.some(({ url }) => /\/api\/(generate|upload)(?:\?|$)/.test(url)), false);
   }
+});
+
+test("bounds a slow health command below Feishu's callback deadline", async () => {
+  const worker = createWorker({
+    callbackBudgetMs: 100,
+    fetchImpl: async (url) => {
+      if (url.endsWith("/auth/v3/tenant_access_token/internal")) {
+        return Response.json({ code: 0, tenant_access_token: "tenant-test-token", expire: 7200 });
+      }
+      if (url === "https://dreamutopia-clone.pages.dev/api/health") {
+        return new Promise((resolve) => setTimeout(() => resolve(Response.json({ ok: true })), 300));
+      }
+      if (url.includes("/im/v1/messages/") && url.endsWith("/reply")) {
+        return Response.json({ code: 0, data: { message_id: "om_reply" } });
+      }
+      throw new Error("Unexpected outbound request");
+    },
+  });
+  const startedAt = performance.now();
+  const response = await send(worker, messagePayload({ text: "健康" }), makeEnv());
+  const elapsedMs = performance.now() - startedAt;
+
+  assert.equal(response.status, 503);
+  assert.ok(elapsedMs < 250, `callback took ${elapsedMs}ms`);
 });
 
 test("replies to a group message only when the mention matches the bot open_id", async () => {

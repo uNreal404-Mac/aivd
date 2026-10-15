@@ -65,13 +65,68 @@ test("decodes a plaintext callback without rewriting its JSON envelope", async (
   assert.deepEqual(await decodeFeishuRequest({ rawBody, headers: new Headers(), encryptKey: "" }), payload);
 });
 
-test("verifies the raw-body signature before decrypting an encrypted callback", async () => {
+test("accepts a validly signed encrypted event delivery", async () => {
   const encryptKey = "encrypt-test-key";
-  const payload = { type: "url_verification", token: "verify-token", challenge: "challenge-value" };
+  const payload = eventPayload();
   const rawBody = encoder.encode(JSON.stringify({ encrypt: base64(await encryptedBody(payload, encryptKey)) }));
   const headers = await larkHeaders(rawBody, encryptKey);
 
   assert.deepEqual(await decodeFeishuRequest({ rawBody, headers, encryptKey }), payload);
+});
+
+test("decrypts an encrypted URL verification handshake without signature headers", async () => {
+  const encryptKey = "encrypt-test-key";
+  const payload = { type: "url_verification", token: "verify-token", challenge: "challenge-value" };
+  const rawBody = encoder.encode(JSON.stringify({ encrypt: base64(await encryptedBody(payload, encryptKey)) }));
+
+  assert.deepEqual(await decodeFeishuRequest({ rawBody, headers: new Headers(), encryptKey }), payload);
+});
+
+test("still rejects an encrypted event with missing signature headers", async () => {
+  const encryptKey = "encrypt-test-key";
+  const payload = eventPayload();
+  const rawBody = encoder.encode(JSON.stringify({ encrypt: base64(await encryptedBody(payload, encryptKey)) }));
+
+  await assert.rejects(
+    () => decodeFeishuRequest({ rawBody, headers: new Headers(), encryptKey }),
+    /signature/i,
+  );
+});
+
+test("rejects an encrypted event with a mismatched signature", async () => {
+  const encryptKey = "encrypt-test-key";
+  const payload = eventPayload();
+  const rawBody = encoder.encode(JSON.stringify({ encrypt: base64(await encryptedBody(payload, encryptKey)) }));
+  const headers = await larkHeaders(rawBody, encryptKey);
+  headers.set("X-Lark-Signature", "0".repeat(64));
+
+  await assert.rejects(
+    () => decodeFeishuRequest({ rawBody, headers, encryptKey }),
+    /signature/i,
+  );
+});
+
+test("requires a valid signature on plaintext events when an Encrypt Key is configured", async () => {
+  const rawBody = encoder.encode(JSON.stringify(eventPayload()));
+  await assert.rejects(
+    () => decodeFeishuRequest({ rawBody, headers: new Headers(), encryptKey: "encrypt-test-key" }),
+    /signature/i,
+  );
+});
+
+test("accepts a plaintext event with a valid signature when an Encrypt Key is configured", async () => {
+  const encryptKey = "encrypt-test-key";
+  const rawBody = encoder.encode(JSON.stringify(eventPayload()));
+  const headers = await larkHeaders(rawBody, encryptKey);
+
+  assert.deepEqual(await decodeFeishuRequest({ rawBody, headers, encryptKey }), eventPayload());
+});
+
+test("allows a plaintext URL verification handshake without signature headers", async () => {
+  const payload = { type: "url_verification", token: "verify-token", challenge: "plain-challenge" };
+  const rawBody = encoder.encode(JSON.stringify(payload));
+
+  assert.deepEqual(await decodeFeishuRequest({ rawBody, headers: new Headers(), encryptKey: "encrypt-test-key" }), payload);
 });
 
 test("rejects encrypted callbacks without all signature headers", async () => {

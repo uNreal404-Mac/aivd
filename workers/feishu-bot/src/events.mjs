@@ -26,12 +26,16 @@ export async function decodeFeishuRequest({ rawBody, headers, encryptKey }) {
   }
   const body = rawBody instanceof Uint8Array ? rawBody : new Uint8Array(rawBody);
   const outerPayload = parseJson(body);
-  if (typeof outerPayload?.encrypt !== "string") return outerPayload;
-  if (typeof encryptKey !== "string" || encryptKey.length === 0) {
+  const isEncrypted = typeof outerPayload?.encrypt === "string";
+  const hasEncryptKey = typeof encryptKey === "string" && encryptKey.length > 0;
+  if (isEncrypted && !hasEncryptKey) {
     const error = new Error("Encrypted callback is not configured");
     error.status = 401;
     throw error;
   }
+  if (!hasEncryptKey) return outerPayload;
+
+  if (!isEncrypted && outerPayload?.type === "url_verification") return outerPayload;
 
   const timestamp = headerValue(headers, "X-Lark-Request-Timestamp");
   const nonce = headerValue(headers, "X-Lark-Request-Nonce");
@@ -43,15 +47,29 @@ export async function decodeFeishuRequest({ rawBody, headers, encryptKey }) {
     signature,
     encryptKey,
   });
-  if (!validSignature) {
-    const error = new Error("Invalid Feishu request signature");
-    error.status = 401;
-    throw error;
+
+  if (!isEncrypted) {
+    if (!validSignature) {
+      const error = new Error("Invalid Feishu request signature");
+      error.status = 401;
+      throw error;
+    }
+    return outerPayload;
   }
 
   try {
-    return parseJson(await decryptLarkPayload(outerPayload.encrypt, encryptKey));
+    const decrypted = parseJson(await decryptLarkPayload(outerPayload.encrypt, encryptKey));
+    // Feishu's encrypted URL-verification handshake can omit the signature headers.
+    // The caller still validates its top-level Verification Token before echoing the challenge.
+    if (decrypted?.type === "url_verification") return decrypted;
+    if (!validSignature) {
+      const error = new Error("Invalid Feishu request signature");
+      error.status = 401;
+      throw error;
+    }
+    return decrypted;
   } catch (cause) {
+    if (cause?.status === 401) throw cause;
     const error = new Error("Unable to decode encrypted Feishu callback", { cause });
     error.status = 400;
     throw error;
