@@ -1,20 +1,21 @@
 import type { Env } from "../libs/utils";
+import { isPartnersPath, rewritePartnersHtmlResponse } from "../libs/partners";
 import { isWorkspacePath, rewriteWorkspaceHtmlResponse } from "../libs/workspaceSeo";
 
 /**
- * Pages Function middleware — HTML only, via HTMLRewriter on the real asset.
+ * Pages Function middleware — HTML only.
+ * /partners is always noindex (+ X-Robots-Tag).
  * /workspace with no query is indexable.
  * /workspace?tab=… (any params) is noindex, canonical still /workspace.
  * These paths must be listed in out/_routes.json include, or Pages serves the
  * static HTML and this file never runs (that is why #32 did not take effect).
- * Does not rewrite /api/* or other pages (/business 301 lives in functions/business.ts).
+ * Do not add overlapping splat rules (/partners/* next to /partners/, or
+ * /examples plus /examples/*). Does not rewrite /api/* or /business.
  */
-export const onRequest: PagesFunction<Env> = async (context) => {
-  const url = new URL(context.request.url);
-  if (!isWorkspacePath(url.pathname)) {
-    return context.next();
-  }
-
+async function rewriteHtml(
+  context: EventContext<Env, string, unknown>,
+  rewrite: (response: Response) => Promise<Response>
+): Promise<Response> {
   const res = await context.next();
   const method = context.request.method;
   if (method !== "GET" && method !== "HEAD") return res;
@@ -23,7 +24,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   if (ct && !ct.includes("text/html")) return res;
 
   try {
-    const rewritten = await rewriteWorkspaceHtmlResponse(res, context.request.url);
+    const rewritten = await rewrite(res);
     if (method === "HEAD") {
       return new Response(null, { status: 200, headers: rewritten.headers });
     }
@@ -31,4 +32,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   } catch {
     return res;
   }
+}
+
+export const onRequest: PagesFunction<Env> = async (context) => {
+  const url = new URL(context.request.url);
+  if (isPartnersPath(url.pathname)) {
+    return rewriteHtml(context, (res) => rewritePartnersHtmlResponse(res));
+  }
+  if (!isWorkspacePath(url.pathname)) {
+    return context.next();
+  }
+  return rewriteHtml(context, (res) => rewriteWorkspaceHtmlResponse(res, context.request.url));
 };

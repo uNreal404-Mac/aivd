@@ -482,6 +482,88 @@ else ok.push("scripts/test-business.mjs exists");
 if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
 else ok.push("feishu bot worker left in place");
 
+if (!exists("out/partners.html")) fail.push("missing out/partners.html");
+else ok.push("out/partners.html exists");
+if (!exists("libs/partners.ts")) fail.push("missing libs/partners.ts status + noindex helpers");
+else ok.push("libs/partners.ts exists");
+if (exists("out/partners.html")) {
+  mustContain("out/partners.html", '<meta name="robots" content="noindex">', "/partners static HTML is noindex");
+  mustContain("out/partners.html", 'href="/workspace?demo=1"', "/partners has demo entry");
+  mustContain("out/partners.html", "演示样片", "/partners mentions 演示样片 label");
+  mustContain("out/partners.html", "选定域名并换牌子", "step 1 rendered");
+  mustContain("out/partners.html", "开通美元收款", "step 2 rendered");
+  mustContain("out/partners.html", "批准生成预算并打开生成", "step 3 rendered");
+  mustContain("out/partners.html", "老三", "remaining steps owned by 老三");
+  mustContain("out/partners.html", "即将上线", "open-PR features marked 即将上线");
+  mustContain("out/partners.html", "DU.BRAND_NAME", "/partners reads the central brand constant");
+  mustNotContain("out/partners.html", "/api/generate", "partners page does not call generate");
+  mustNotContain("out/partners.html", "/api/upload", "partners page does not call upload");
+  mustNotContain("out/partners.html", "clone", "partners copy has no clone");
+  mustNotContain("out/partners.html", "暂未开放", "partners copy has no 暂未开放");
+}
+if (exists("libs/partners.ts")) {
+  mustContain("libs/partners.ts", 'status: "live"', "status config marks live features");
+  mustContain("libs/partners.ts", 'status: "soon"', "status config marks upcoming features");
+  mustContain("libs/partners.ts", 'status: "pending"', "status config marks pending steps");
+  mustContain("libs/partners.ts", "x-robots-tag", "partners helper sets X-Robots-Tag");
+  mustContain("libs/partners.ts", "isPartnersPath", "partners path helper");
+}
+mustContain("functions/_middleware.ts", "isPartnersPath", "middleware applies partners noindex");
+mustContain("functions/_middleware.ts", "rewritePartnersHtmlResponse", "middleware rewrites /partners HTML");
+mustContain("out/_routes.json", '"/partners"', "Functions include /partners so middleware runs");
+mustContain("out/_routes.json", '"/partners/"', "Functions include /partners/ alias");
+mustContain("out/_routes.json", '"/partners.html"', "Functions include /partners.html alias");
+mustNotContain("out/_routes.json", '"/partners/*"', "no /partners/* splat (would overlap /partners/)");
+mustContain("out/_routes.json", '"/workspace"', "partners change keeps /workspace include");
+mustContain("out/_routes.json", '"/workspace.html"', "partners change keeps /workspace.html include");
+mustNotContain("out/sitemap.xml", "/partners", "sitemap omits /partners");
+mustNotContain("libs/site.ts", '"/partners"', "PUBLIC_PATHS omits /partners");
+mustNotContain("out/robots.txt", "Disallow: /partners", "robots.txt must not publicize /partners");
+mustNotContain("functions/robots.txt.ts", "Disallow: /partners", "function robots must not publicize /partners");
+{
+  const partnersSrc =
+    (exists("out/partners.html") ? read("out/partners.html") : "") +
+    (exists("libs/partners.ts") ? `\n${read("libs/partners.ts")}` : "");
+  const forbidden = [
+    "miko.video",
+    "popovid.com",
+    "Miko",
+    "Popovid",
+    "Stripe",
+    "KIE",
+    "sk_live",
+    "sk_test",
+    "whsec_",
+  ];
+  for (const needle of forbidden) {
+    if (partnersSrc.includes(needle)) fail.push(`partners page/config must not contain ${JSON.stringify(needle)}`);
+    else ok.push(`partners page/config omits ${JSON.stringify(needle)}`);
+  }
+  if (/\$\d/.test(partnersSrc)) fail.push("partners page/config must not show dollar amounts");
+  else ok.push("partners page/config omits dollar amounts");
+}
+{
+  const publicHtml = [
+    "out/index.html",
+    "out/workspace.html",
+    "out/pricing.html",
+    "out/auth.html",
+    "out/privacy.html",
+    "out/terms.html",
+    "out/image-to-video.html",
+    "out/photo-to-video.html",
+    "out/free-ai-video.html",
+    "out/reset.html",
+    "out/demo.html",
+  ];
+  for (const rel of publicHtml) {
+    mustNotContain(rel, 'href="/partners"', `${rel} public chrome has no /partners link`);
+  }
+  mustNotContain("out/assets/js/i18n.js", "/partners", "i18n has no /partners nav entry");
+}
+if (!exists("scripts/test-partners.mjs")) fail.push("missing scripts/test-partners.mjs");
+else ok.push("scripts/test-partners.mjs exists");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
@@ -606,4 +688,21 @@ process.stderr.write(demoUnit.stderr || "");
 if (demoUnit.status !== 0) {
   console.log("FAIL scripts/test-demo-mode.mjs");
   process.exit(demoUnit.status || 1);
+}
+
+const partnersUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-partners.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(partnersUnit.stdout || "");
+process.stderr.write(partnersUnit.stderr || "");
+if (partnersUnit.status !== 0) {
+  console.log("FAIL scripts/test-partners.mjs");
+  process.exit(partnersUnit.status || 1);
 }
