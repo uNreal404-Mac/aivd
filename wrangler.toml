@@ -26,8 +26,8 @@ bucket_name = "dreamutopia-media"
 #   D1: npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql
 #   RESEND_API_KEY + MAIL_FROM                 (password reset + welcome email)
 #
-# GENERATION_ENABLED: only the exact string "true" opens /api/generate and /api/upload.
-# Unset / false / anything else → 503 暂未开放 (no KIE call, no credit deduct).
+# GENERATION_ENABLED: only the exact string "true" opens /api/generate, /api/upload, and /api/upload-ticket.
+# Unset / false / anything else → 503 暂未开放 (no KIE call, no credit deduct, no R2 write).
 
 [vars]
 GENERATION_ENABLED = "false"

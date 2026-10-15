@@ -88,6 +88,29 @@ mustContain("out/index.html", "gallery-empty", "gallery empty placeholder");
 mustContain("out/index.html", "gen-sticky", "sticky mobile Generate");
 mustContain("out/workspace.html", "gen-sticky", "workspace sticky Generate");
 mustContain("out/workspace.html", "preview-skeleton", "generate preview skeleton");
+mustContain("out/workspace.html", 'id="wsH1"', "workspace H1 id");
+mustContain("out/workspace.html", "Create AI Videos from Images", "workspace H1 copy");
+mustContain("out/workspace.html", 'id="composerDock"', "single-screen composer dock");
+mustContain("out/workspace.html", 'id="audioRow"', "audio chip selector");
+mustContain("out/workspace.html", 'id="durationRow"', "duration chip selector");
+mustContain("out/workspace.html", 'id="aspectRow"', "aspect chip selector");
+mustContain("out/workspace.html", 'id="lastUploadArea"', "end-frame card");
+mustContain("out/workspace.html", "Start frame", "start-frame card label");
+mustContain("out/workspace.html", "End frame", "end-frame card label");
+mustContain("out/workspace.html", "function generationIsClosed", "Generate stays closed when flag is off");
+mustContain("out/workspace.html", "function pickAudio", "audio chip maps to existing Pro model");
+mustContain("out/workspace.html", "lastFrameOn", "last-frame payload still Medium/Pro only");
+mustNotContain("out/workspace.html", 'href="/business"', "workspace Generate does not fall back to /business");
+mustNotContain("out/workspace.html", "/api/media?", "server HTML has no user-work media URLs");
+mustNotContain("out/workspace.html", 'name="robots"', "static /workspace HTML has no robots noindex");
+mustContain("out/index.html", 'property="og:title" content="AI Image & Video Generator | DreamUtopia"', "home og:title drops Free");
+mustContain("out/index.html", 'name="twitter:title" content="AI Image & Video Generator | DreamUtopia"', "home twitter:title drops Free");
+mustContain("out/assets/js/seo.js", 'meta("property", "og:title", title, true)', "seo.js keeps authored og:title");
+mustContain("libs/workspaceSeo.ts", "applyWorkspaceHtmlSeo", "workspace HTML SEO helper");
+mustContain("functions/_middleware.ts", "applyWorkspaceHtmlSeo", "Pages middleware rewrites /workspace HTML");
+mustContain("functions/_middleware.ts", "x-robots-tag", "parameterized workspace sends X-Robots-Tag");
+mustContain("functions/api/upload-ticket.ts", "isGenerationEnabled", "upload-ticket honors GENERATION_ENABLED");
+mustContain("functions/api/upload-ticket.ts", "generationDisabledResponse", "upload-ticket returns 503 when closed");
 mustContain("out/pricing.html", "支付即将开放", "honest payments-coming-soon note");
 mustContain("out/pricing.html", 'id="checkoutNote"', "pricing top checkout banner");
 mustContain("out/pricing.html", 'class="checkout-note show"', "coming-soon banner visible before JS");
@@ -99,7 +122,7 @@ const CANON = "https://dreamutopia-clone.pages.dev";
 const PUBLIC_PAGES = [
   { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
   { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
-  { rel: "out/workspace.html", path: "/workspace", title: "Workspace — DreamUtopia" },
+  { rel: "out/workspace.html", path: "/workspace", title: "AI Video Generator – Turn Photos into Videos | DreamUtopia" },
   { rel: "out/auth.html", path: "/auth", title: "Sign in — DreamUtopia" },
   { rel: "out/privacy.html", path: "/privacy", title: "Privacy Policy — DreamUtopia" },
   { rel: "out/terms.html", path: "/terms", title: "Terms of Service — DreamUtopia" },
@@ -272,7 +295,20 @@ mustContain("libs/generation.ts", "查看样片", "closed samples CTA label");
 mustContain("libs/generation.ts", "企业定制询价", "closed quote CTA label");
 mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST honors GENERATION_ENABLED");
 mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
-mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload POST honors GENERATION_ENABLED");
+mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload honors GENERATION_ENABLED");
+{
+  const src = read("functions/api/upload.ts");
+  const getStart = src.indexOf("export const onRequestGet");
+  const postStart = src.indexOf("export const onRequestPost");
+  const getFn = getStart >= 0 && postStart > getStart ? src.slice(getStart, postStart) : "";
+  const postFn = postStart >= 0 ? src.slice(postStart) : "";
+  if (!getFn.includes("isGenerationEnabled") || !getFn.includes("generationDisabledResponse")) {
+    fail.push("GET /api/upload must return 503 when generation is off");
+  } else ok.push("GET /api/upload checks GENERATION_ENABLED before probing");
+  if (!postFn.includes("isGenerationEnabled") || !postFn.includes("generationDisabledResponse")) {
+    fail.push("POST /api/upload must return 503 when generation is off");
+  } else ok.push("POST /api/upload checks GENERATION_ENABLED before R2/KIE");
+}
 mustContain("functions/api/health.ts", "generationEnabled", "health exposes generationEnabled");
 mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "Pages var defaults generation off");
 mustContain("out/assets/js/du.js", "applyGenerationCtas", "shared CTA switch helper");
@@ -373,4 +409,21 @@ process.stderr.write(genUnit.stderr || "");
 if (genUnit.status !== 0) {
   console.log("FAIL scripts/test-generation-gate.mjs");
   process.exit(genUnit.status || 1);
+}
+
+const wsSeoUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-workspace-seo.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(wsSeoUnit.stdout || "");
+process.stderr.write(wsSeoUnit.stderr || "");
+if (wsSeoUnit.status !== 0) {
+  console.log("FAIL scripts/test-workspace-seo.mjs");
+  process.exit(wsSeoUnit.status || 1);
 }

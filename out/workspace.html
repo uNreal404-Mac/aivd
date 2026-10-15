@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workspace — DreamUtopia</title>
-<meta name="description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<title>AI Video Generator – Turn Photos into Videos | DreamUtopia</title>
+<meta name="description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <link rel="canonical" href="https://dreamutopia-clone.pages.dev/workspace">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DreamUtopia">
-<meta property="og:title" content="Workspace — DreamUtopia">
-<meta property="og:description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<meta property="og:title" content="AI Video Generator – Turn Photos into Videos | DreamUtopia">
+<meta property="og:description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <meta property="og:url" content="https://dreamutopia-clone.pages.dev/workspace">
 <meta property="og:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Workspace — DreamUtopia">
-<meta name="twitter:description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<meta name="twitter:title" content="AI Video Generator – Turn Photos into Videos | DreamUtopia">
+<meta name="twitter:description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <meta name="twitter:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","name":"Workspace — DreamUtopia","description":"Create AI videos from your images. Pick a model, describe the motion, generate in seconds.","url":"https://dreamutopia-clone.pages.dev/workspace","isPartOf":{"@id":"https://dreamutopia-clone.pages.dev/#website"}}
+{"@context":"https://schema.org","@type":"WebPage","name":"AI Video Generator – Turn Photos into Videos | DreamUtopia","description":"Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.","url":"https://dreamutopia-clone.pages.dev/workspace","isPartOf":{"@id":"https://dreamutopia-clone.pages.dev/#website"}}
 </script>
 <meta name="theme-color" content="#0d0d12">
 <meta name="mobile-web-app-capable" content="yes">
@@ -115,26 +115,29 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .mode-switch button.active{background:#7c3aed;color:#fff;box-shadow:0 6px 16px rgba(124,58,237,.3)}
 .mode-switch svg{width:16px;height:16px}
 
-/* Generator card */
-.gen-wrap{max-width:820px;margin:0 auto}
-.gen-card{background:rgba(255,255,255,.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:24px;margin-bottom:20px}
-.gen-card h2{font-size:22px;font-weight:700;margin-bottom:18px}
-.upload-area{border:2px dashed rgba(255,255,255,.2);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:rgba(0,0,0,.12);min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:420px;margin:0 auto 18px;position:relative}
-.upload-area:hover{border-color:rgba(168,85,247,.5);background:rgba(0,0,0,.2)}
-.upload-area .icon{width:40px;height:40px;margin-bottom:10px;color:rgba(255,255,255,.5)}
-.upload-area .p1{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
+/* Single-screen generator (DreamUtopia dock — prompt + chips + Generate always on screen) */
+.ws-h1{font-size:28px;font-weight:800;letter-spacing:-.6px;text-align:center;margin:0 0 16px;line-height:1.2}
+.gen-wrap{max-width:880px;margin:0 auto}
+.gen-card{background:rgba(255,255,255,.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:20px;margin-bottom:20px}
+.gen-card h2{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text2);text-align:center}
+.frame-row,.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:none;margin:0 0 14px}
+.frame-row.one,.upload-grid:not(.two){grid-template-columns:1fr;max-width:420px;margin-left:auto;margin-right:auto}
+.upload-area{border:2px dashed rgba(255,255,255,.2);border-radius:16px;padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:rgba(0,0,0,.18);min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:none;margin:0;position:relative}
+.upload-area:hover{border-color:rgba(168,85,247,.5);background:rgba(0,0,0,.28)}
+.upload-area .frame-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.upload-area .icon{width:36px;height:36px;margin-bottom:8px;color:rgba(255,255,255,.5)}
+.upload-area .p1{font-size:14px;font-weight:600;color:rgba(255,255,255,.78)}
 .upload-area .p2{font-size:12px;color:rgba(255,255,255,.45);margin-top:4px}
-.upload-area.has-img{border-style:solid;border-color:rgba(34,197,94,.45);padding:12px}
-.upload-area.has-img img{max-height:220px;width:auto;margin:0 auto;border-radius:10px}
+.upload-area.has-img{border-style:solid;border-color:rgba(168,85,247,.55);padding:12px}
+.upload-area.has-img img{max-height:200px;width:auto;margin:0 auto;border-radius:10px}
 .upload-area .remove-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:14px;display:none}
 .upload-area.has-img .remove-btn{display:flex;align-items:center;justify-content:center}
 .upload-area.drag{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.08)}
-.upload-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:420px;margin:0 auto 10px}
-.upload-grid.two{grid-template-columns:1fr 1fr;max-width:820px}
-.upload-grid .upload-area{max-width:none;margin:0;min-height:180px}
-.opt-row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px;justify-content:center}
+.upload-grid .upload-area{max-width:none;margin:0;min-height:200px}
+.opt-row,.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin:0;align-items:center}
 .opt-chip{border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.6)}
 .opt-chip.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.15);color:#fff}
+.opt-chip .c{font-size:10px;font-weight:500;opacity:.75;margin-left:4px}
 .last-slot{display:none}
 .last-slot.show{display:flex;flex-direction:column}
 .blend-row{display:none;gap:8px;flex-wrap:wrap;max-width:420px;margin:0 auto 14px;justify-content:center}
@@ -142,11 +145,11 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .blend-thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.15)}
 .check-row{display:none;align-items:center;justify-content:center;gap:8px;margin:0 0 14px;font-size:13px;color:var(--text2)}
 .check-row.show{display:flex}
-.mode-note{display:none;max-width:820px;margin:0 auto 16px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.08);color:var(--text2);font-size:13.5px;line-height:1.5;text-align:center}
+.mode-note{display:none;max-width:880px;margin:0 auto 16px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.08);color:var(--text2);font-size:13.5px;line-height:1.5;text-align:center}
 .mode-note.show{display:block}
 .mode-note b{color:var(--orange)}
-.url-hint{max-width:420px;margin:-6px auto 10px;font-size:12px;color:rgba(255,255,255,.45);text-align:center;line-height:1.4}
-.url-input{width:100%;max-width:420px;margin:0 auto 18px;display:block;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit}
+.url-hint{max-width:640px;margin:0 auto 8px;font-size:12px;color:rgba(255,255,255,.45);text-align:center;line-height:1.4}
+.url-input{width:100%;max-width:640px;margin:0 auto 10px;display:block;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit}
 .url-input:focus{outline:none;border-color:rgba(168,85,247,.5);box-shadow:0 0 0 1px rgba(168,85,247,.35)}
 .url-input::placeholder{color:rgba(255,255,255,.3)}
 .url-input.last-slot{display:none}
@@ -177,27 +180,33 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-item .h-actions button,.history-item .h-actions a{border:1px solid var(--border);padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--primary2)}
 
 .label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.label-row label{font-size:14px;font-weight:600;color:rgba(255,255,255,.8)}
+.label-row label{font-size:13px;font-weight:600;color:rgba(255,255,255,.8)}
 .label-row .meta{font-size:12px;color:rgba(255,255,255,.45)}
-.prompt-input{width:100%;min-height:96px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:var(--text);font-size:14px;font-family:inherit;resize:none;transition:border-color .2s}
+.prompt-input{width:100%;min-height:56px;max-height:88px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;resize:none;transition:border-color .2s}
 .prompt-input:focus{outline:none;border-color:rgba(168,85,247,.5);box-shadow:0 0 0 1px rgba(168,85,247,.35)}
 .prompt-input::placeholder{color:rgba(255,255,255,.3)}
-.char-row{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.45);margin-top:8px;margin-bottom:14px}
+.char-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.45);margin-top:6px;margin-bottom:10px}
 
-.model-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.model-opt{border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.18);border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.chip-groups{display:flex;flex-wrap:wrap;gap:8px 14px;flex:1;min-width:0;align-items:center}
+.model-row{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.model-opt{border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);border-radius:999px;padding:7px 14px;text-align:center;cursor:pointer;transition:all .2s}
 .model-opt:hover{border-color:rgba(255,255,255,.22)}
-.model-opt.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.12)}
-.model-opt .n{font-size:13px;font-weight:700}
-.model-opt .c{font-size:11px;color:var(--text3);margin-top:3px}
-.model-opt .t{font-size:10px;color:var(--primary2);font-weight:600;margin-top:3px}
+.model-opt.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.15)}
+.model-opt .n{font-size:12.5px;font-weight:700;display:inline}
+.model-opt .c{font-size:11px;color:var(--text3);margin-top:0;display:inline;margin-left:4px}
+.model-opt .t{display:none}
 
-.gen-btn{width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(107,114,128,.4);color:rgba(255,255,255,.45);cursor:not-allowed;transition:opacity .2s,background .2s}
+.composer{position:fixed;left:0;right:0;bottom:0;z-index:45;margin:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(13,13,18,.96);border-top:1px solid var(--border);backdrop-filter:blur(16px);box-sizing:border-box}
+.composer-inner{max-width:880px;margin:0 auto}
+.composer-bar{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.gen-sticky{flex:0 0 auto;min-width:168px}
+.gen-btn{width:100%;padding:12px 18px;border-radius:12px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(107,114,128,.4);color:rgba(255,255,255,.45);cursor:not-allowed;transition:opacity .2s,background .2s}
 .gen-btn.ready{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(168,85,247,.25)}
 .gen-btn.ready:hover{opacity:.92}
-.gen-btn:disabled:not(.ready){cursor:not-allowed}
-.gen-foot{margin-top:12px;text-align:center;font-size:12px;color:rgba(255,255,255,.45)}
+.gen-btn:disabled,.gen-btn:disabled.ready{cursor:not-allowed;opacity:.7;box-shadow:none}
+.gen-foot{margin-top:8px;text-align:center;font-size:12px;color:rgba(255,255,255,.45)}
 .gen-foot a{color:var(--primary2);text-decoration:underline}
+#createView{padding-bottom:220px}
 .gen-status{margin-top:16px;display:none;text-align:center;padding:18px;border-radius:12px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08)}
 .gen-status.show{display:block}
 .gen-status .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
@@ -248,33 +257,19 @@ footer{margin-top:auto;background:var(--bg2);border-top:1px solid var(--border);
 .footer-col ul li a{font-size:13px;color:var(--text2);transition:color .2s}
 .footer-col ul li a:hover{color:var(--text)}
 
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:30px}.model-row{grid-template-columns:1fr}}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:30px}.ws-h1{font-size:24px}}
 @media(max-width:600px){
 nav{display:none}
 .footer-grid{grid-template-columns:1fr}
 .tabs-primary{width:100%}
 .tabs-primary button{flex:1}
-.gen-card{padding:18px 16px 8px}
+.gen-card{padding:16px 14px}
 .welcome{padding:18px}
-.upload-grid.two{grid-template-columns:1fr}
-.gen-sticky{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  width:100%;
-  max-width:none;
-  z-index:45;
-  margin:0;
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
-  background:rgba(13,13,18,.96);
-  border-top:1px solid var(--border);
-  backdrop-filter:blur(14px);
-  box-sizing:border-box;
-}
+.frame-row,.upload-grid,.upload-grid.two{grid-template-columns:1fr;max-width:none}
+.gen-sticky{width:100%;min-width:0;flex:1 1 100%}
 .gen-sticky .gen-btn{width:100%;margin:0}
-.gen-sticky .gen-foot{margin-top:8px}
-#createView{padding-bottom:120px}
+#createView{padding-bottom:260px}
+.composer{padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
 }
 </style>
 </head>
@@ -410,88 +405,86 @@ Image
 </button>
 </div>
 
+<h1 class="ws-h1" id="wsH1" data-i18n="ws.h1">Create AI Videos from Images</h1>
 <div class="gen-wrap">
 <div class="gen-card">
 <h2 id="genTitle">AI Video Generator</h2>
 
-<div class="upload-grid" id="uploadGrid">
+<div class="frame-row upload-grid two" id="uploadGrid">
 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" style="display:none" onchange="handleFile(this)">
+<div class="frame-kicker" data-i18n="ws.frame.start">Start frame</div>
 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-<div class="p1" id="uploadLabel">Upload Start Image</div>
+<div class="p1" id="uploadLabel">Upload a still</div>
 <div class="p2" id="uploadHint" data-i18n="ws.upload.hint">JPG, PNG, WebP, GIF, or TIFF · up to 20 MB</div>
 <button type="button" class="remove-btn" id="removeImgBtn" onclick="event.stopPropagation(); clearUpload()" aria-label="Remove image">✕</button>
 </div>
-<div class="upload-area last-slot" id="lastUploadArea" onclick="document.getElementById('lastFileInput').click()">
+<div class="upload-area last-slot show" id="lastUploadArea" onclick="document.getElementById('lastFileInput').click()">
 <input type="file" id="lastFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" style="display:none" onchange="handleLastFile(this)">
+<div class="frame-kicker" data-i18n="ws.frame.end">End frame</div>
 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-<div class="p1">Upload Last Frame</div>
-<div class="p2">Medium &amp; Pro · optional</div>
+<div class="p1" data-i18n="ws.frame.end.label">Optional last still</div>
+<div class="p2" data-i18n="ws.frame.end.hint">Used on Medium &amp; Pro</div>
 <button type="button" class="remove-btn" onclick="event.stopPropagation(); clearLastUpload()" aria-label="Remove last frame">✕</button>
 </div>
 </div>
 <p class="url-hint" id="urlHint">Start image optional — skip it for text-to-video. Or paste a public https URL.</p>
 <input class="url-input" type="url" id="imageUrlInput" placeholder="https://example.com/start-frame.png" autocomplete="off">
-<input class="url-input last-slot" type="url" id="lastImageUrlInput" placeholder="https://example.com/last-frame.png" autocomplete="off" style="margin-top:-8px">
+<input class="url-input last-slot show" type="url" id="lastImageUrlInput" placeholder="https://example.com/last-frame.png" autocomplete="off">
 <div class="blend-row" id="blendRow">
 <button type="button" class="opt-chip" id="addBlendBtn" onclick="document.getElementById('blendInput').click()">+ Add blend images</button>
 <input type="file" id="blendInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" multiple style="display:none" onchange="handleBlendFiles(this)">
 </div>
 <label class="check-row" id="res4kRow"><input type="checkbox" id="res4k"> 4K output (Pro · 2 credits)</label>
 <p class="mode-note" id="modeNote" role="status"></p>
+</div>
 
+<div class="composer" id="composerDock">
+<div class="composer-inner">
 <div class="label-row">
 <label id="promptLabel" for="promptInput">Describe Your Video</label>
+<span class="meta"><span id="charCount">0</span>/8000</span>
 </div>
 <textarea class="prompt-input" id="promptInput" maxlength="8000" placeholder="A futuristic city with flying cars..." oninput="onPromptInput()"></textarea>
-<div class="char-row">
-<span>Required</span>
-<span><span id="charCount">0</span>/8000</span>
-</div>
 
-<div class="model-row" id="videoModels">
-<button type="button" class="model-opt active" data-model="lite" onclick="pickModel('lite')">
-<div class="n">Lite</div>
-<div class="c">3 credits</div>
-</button>
-<button type="button" class="model-opt" data-model="medium" onclick="pickModel('medium')">
-<div class="n">Medium</div>
-<div class="c">5 credits</div>
-</button>
-<button type="button" class="model-opt" data-model="pro" onclick="pickModel('pro')">
-<div class="n">Pro</div>
-<div class="c">16 credits</div>
-<div class="t">with Sound</div>
-</button>
+<div class="composer-bar">
+<div class="chip-groups">
+<div class="chip-row model-row" id="videoModels" role="group" aria-label="Model">
+<button type="button" class="opt-chip model-opt active" data-model="lite" onclick="pickModel('lite')"><span class="n">Lite</span><span class="c">3</span></button>
+<button type="button" class="opt-chip model-opt" data-model="medium" onclick="pickModel('medium')"><span class="n">Medium</span><span class="c">5</span></button>
+<button type="button" class="opt-chip model-opt" data-model="pro" onclick="pickModel('pro')"><span class="n">Pro</span><span class="c">16</span></button>
 </div>
-<div class="model-row" id="imageModels" style="display:none">
-<button type="button" class="model-opt active" data-model="lite" onclick="pickModel('lite')">
-<div class="n">Lite</div>
-<div class="c">1 credit · 1K</div>
-</button>
-<button type="button" class="model-opt" data-model="pro" onclick="pickModel('pro')">
-<div class="n">Pro</div>
-<div class="c">2 credits · 2K / 4K</div>
-</button>
+<div class="chip-row model-row" id="imageModels" style="display:none" role="group" aria-label="Image model">
+<button type="button" class="opt-chip model-opt active" data-model="lite" onclick="pickModel('lite')"><span class="n">Lite</span><span class="c">1 · 1K</span></button>
+<button type="button" class="opt-chip model-opt" data-model="pro" onclick="pickModel('pro')"><span class="n">Pro</span><span class="c">2 · 2K/4K</span></button>
 </div>
-<div class="opt-row" id="durationRow">
+<div class="chip-row opt-row" id="durationRow" role="group" aria-label="Duration">
 <button type="button" class="opt-chip active" data-dur="5" onclick="pickDuration(5)">5s</button>
 <button type="button" class="opt-chip" data-dur="10" onclick="pickDuration(10)">10s</button>
 </div>
-<div class="opt-row" id="aspectRow" style="display:none">
+<div class="chip-row opt-row" id="aspectRow" role="group" aria-label="Aspect">
 <button type="button" class="opt-chip active" data-ar="16:9" onclick="pickAspect('16:9')">16:9</button>
 <button type="button" class="opt-chip" data-ar="9:16" onclick="pickAspect('9:16')">9:16</button>
 <button type="button" class="opt-chip" data-ar="1:1" onclick="pickAspect('1:1')">1:1</button>
 </div>
-
+<div class="chip-row opt-row" id="audioRow" role="group" aria-label="Audio">
+<button type="button" class="opt-chip active" data-audio="off" onclick="pickAudio(false)" data-i18n="ws.chip.silent">Silent</button>
+<button type="button" class="opt-chip" data-audio="on" onclick="pickAudio(true)" data-i18n="ws.chip.audio">Audio</button>
+</div>
+</div>
 <div class="gen-sticky" id="genSticky">
 <button class="gen-btn" id="genBtn" disabled onclick="generate()">
 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 <span id="genBtnLabel">Generate Free Trial</span>
 </button>
+</div>
+</div>
 <p class="gen-foot" id="genFoot">2 free Lite videos. <a href="/auth?mode=signup&next=/workspace" id="genFootSignup">Sign up</a> for 10 credits.</p>
 <p class="gen-foot" data-gen-closed-note hidden>暂未开放</p>
 </div>
+</div>
+
+<div class="gen-card" style="margin-top:16px">
 
 <div class="gen-status" id="genStatus">
 <div class="spinner" id="genSpinner"></div>
@@ -940,25 +933,43 @@ function switchPrimaryTab(tab) {
   document.getElementById("tabCreate").classList.toggle("active", create);
   document.getElementById("tabHistory").classList.toggle("active", !create);
   document.getElementById("createView").style.display = create ? "" : "none";
+  const dock = document.getElementById("composerDock");
+  if (dock) dock.hidden = !create;
   document.getElementById("historyView").classList.toggle("show", !create);
   if (!create) loadHistory();
   else setHistoryEmptyVisible(false);
 }
 
+function syncAudioChip() {
+  const on = currentMode === "video" && currentModel === "pro";
+  document.querySelectorAll("#audioRow .opt-chip").forEach((el) => {
+    el.classList.toggle("active", el.dataset.audio === (on ? "on" : "off"));
+  });
+}
+
+function pickAudio(on) {
+  if (currentMode !== "video") return;
+  if (on) pickModel("pro");
+  else if (currentModel === "pro") pickModel("medium");
+  else syncAudioChip();
+}
+
 function syncVideoOptions() {
-  const lastOn = currentMode === "video" && (currentModel === "medium" || currentModel === "pro");
+  const lastOn = currentMode === "video";
   document.querySelectorAll(".last-slot").forEach((el) => el.classList.toggle("show", lastOn));
   const grid = document.getElementById("uploadGrid");
   if (grid) grid.classList.toggle("two", lastOn);
   const dur = document.getElementById("durationRow");
   if (dur) dur.style.display = currentMode === "video" ? "flex" : "none";
-  const hasStart = !!(uploadedImage || (document.getElementById("imageUrlInput") && document.getElementById("imageUrlInput").value.trim()));
   const aspect = document.getElementById("aspectRow");
-  if (aspect) aspect.style.display = currentMode === "video" && !hasStart ? "flex" : "none";
+  if (aspect) aspect.style.display = currentMode === "video" ? "flex" : "none";
+  const audio = document.getElementById("audioRow");
+  if (audio) audio.style.display = currentMode === "video" ? "flex" : "none";
   const blend = document.getElementById("blendRow");
   if (blend) blend.classList.toggle("show", currentMode === "image");
   const resRow = document.getElementById("res4kRow");
   if (resRow) resRow.classList.toggle("show", currentMode === "image" && currentModel === "pro");
+  syncAudioChip();
 }
 
 function switchMode(mode) {
@@ -966,13 +977,13 @@ function switchMode(mode) {
   document.getElementById("modeVideo").classList.toggle("active", currentMode === "video");
   document.getElementById("modeImage").classList.toggle("active", currentMode === "image");
   document.getElementById("genTitle").textContent = currentMode === "video" ? DU.t("gen.videoTitle", "AI Video Generator") : DU.t("gen.imageTitle", "AI Image Generator");
-  document.getElementById("uploadLabel").textContent = currentMode === "video" ? "Upload Start Image" : "Reference image (optional)";
-  document.getElementById("promptLabel").textContent = currentMode === "video" ? "Describe Your Video" : "Describe Your Image";
+  document.getElementById("uploadLabel").textContent = currentMode === "video" ? DU.t("ws.frame.start.upload", "Upload a still") : DU.t("gen.uploadImage", "Reference image (optional)");
+  document.getElementById("promptLabel").textContent = currentMode === "video" ? DU.t("gen.prompt", "Describe Your Video") : DU.t("ws.prompt.image", "Describe Your Image");
   document.getElementById("promptInput").placeholder = currentMode === "video"
-    ? "A futuristic city with flying cars..."
-    : "A cinematic portrait with soft lighting...";
-  document.getElementById("videoModels").style.display = currentMode === "video" ? "grid" : "none";
-  document.getElementById("imageModels").style.display = currentMode === "image" ? "grid" : "none";
+    ? DU.t("gen.placeholder", "A futuristic city with flying cars...")
+    : DU.t("ws.prompt.image.ph", "A cinematic portrait with soft lighting...");
+  document.getElementById("videoModels").style.display = currentMode === "video" ? "flex" : "none";
+  document.getElementById("imageModels").style.display = currentMode === "image" ? "flex" : "none";
   const hint = document.getElementById("urlHint");
   const note = document.getElementById("modeNote");
   if (currentMode === "image") {
@@ -1001,7 +1012,7 @@ function pickModel(v) {
   currentModel = v;
   const row = document.getElementById(currentMode === "image" ? "imageModels" : "videoModels");
   if (!row) return;
-  row.querySelectorAll(".model-opt").forEach((el) => {
+  row.querySelectorAll("[data-model]").forEach((el) => {
     el.classList.toggle("active", el.dataset.model === v);
   });
   syncVideoOptions();
@@ -1021,9 +1032,17 @@ function pickAspect(v) {
   });
 }
 
+function generationIsClosed() {
+  return (window.DU && DU.generationEnabled === false) || generateReady === false;
+}
+
 function onPromptInput() {
   const ta = document.getElementById("promptInput");
   document.getElementById("charCount").textContent = ta.value.length;
+  if (generationIsClosed()) {
+    resetGenBtn();
+    return;
+  }
   const btn = document.getElementById("genBtn");
   if (ta.value.trim().length > 0) {
     btn.classList.add("ready");
@@ -1217,7 +1236,8 @@ async function generate() {
       }
     }
 
-    if (lastImage && !lastImageUrlStored) {
+    const lastFrameOn = currentMode === "video" && (currentModel === "medium" || currentModel === "pro");
+    if (lastFrameOn && lastImage && !lastImageUrlStored) {
       statusText.textContent = "Uploading last frame…";
       const up = await uploadImageFile(lastImage);
       lastImageUrlStored = up.imageUrl || "";
@@ -1243,7 +1263,7 @@ async function generate() {
       idempotencyKey: DU.newIdempotencyKey(),
     };
     if (imageUrl) payload.imageUrl = imageUrl;
-    if (lastUrl && currentMode === "video") payload.lastImageUrl = lastUrl;
+    if (lastUrl && lastFrameOn) payload.lastImageUrl = lastUrl;
     if (uploadedMediaKey) payload.mediaKey = uploadedMediaKey;
     if (extraUrls.length) payload.imageUrls = extraUrls;
     if (currentMode === "image") {
@@ -1292,7 +1312,7 @@ async function generate() {
 
 function resetGenBtn() {
   const btn = document.getElementById("genBtn");
-  if (window.DU && DU.generationEnabled === false) {
+  if (generationIsClosed()) {
     btn.disabled = true;
     btn.classList.remove("ready");
     document.getElementById("genBtnLabel").textContent = DU.t("gen.closed", "暂未开放");

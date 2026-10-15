@@ -10,6 +10,7 @@ import {
 } from "../libs/generation.ts";
 import { onRequestPost as generatePost } from "../functions/api/generate.ts";
 import { onRequestGet as uploadGet, onRequestPost as uploadPost } from "../functions/api/upload.ts";
+import { onRequest as uploadTicket } from "../functions/api/upload-ticket.ts";
 import { onRequestGet as healthGet } from "../functions/api/health.ts";
 
 const fail = [];
@@ -118,11 +119,33 @@ try {
   }
 
   {
+    fetchCalls.length = 0;
+    const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
+    assert(cap.status === 503 && cap.body.code === GENERATION_DISABLED_CODE, "GET /api/upload off is 503 generation_disabled");
+    assert(cap.body.message === GENERATION_DISABLED_MESSAGE, "closed GET /api/upload message is 暂未开放");
+    const ticketGet = await jsonOf(
+      await uploadTicket(
+        pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload-ticket?key=demo"))
+      )
+    );
+    assert(ticketGet.status === 503 && ticketGet.body.code === GENERATION_DISABLED_CODE, "GET /api/upload-ticket off is 503 generation_disabled");
+    assert(ticketGet.body.message === GENERATION_DISABLED_MESSAGE, "closed upload-ticket message is 暂未开放");
+    const ticketPost = await jsonOf(
+      await uploadTicket(
+        pagesCtx(
+          {},
+          new Request("https://dreamutopia-clone.pages.dev/api/upload-ticket", { method: "POST", body: "x" })
+        )
+      )
+    );
+    assert(ticketPost.status === 503 && ticketPost.body.code === GENERATION_DISABLED_CODE, "POST /api/upload-ticket off is 503 generation_disabled");
+    assert(fetchCalls.length === 0, "closed upload-ticket never calls KIE");
+  }
+
+  {
     const health = await jsonOf(await healthGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/health"))));
     assert(health.status === 200 && health.body.generationEnabled === false, "health defaults generationEnabled false");
     assert(health.body.generateReady === false, "health generateReady is false while generation is off");
-    const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
-    assert(cap.body.generationEnabled === false, "GET /api/upload reports generationEnabled false");
   }
 
   {
