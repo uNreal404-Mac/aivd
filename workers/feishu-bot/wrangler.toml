@@ -25,3 +25,6 @@ workers_dev = true
 [[kv_namespaces]]
 binding = "BOT_KV"
 id = "00000000000000000000000000000000"
+
+[observability]
+enabled = true

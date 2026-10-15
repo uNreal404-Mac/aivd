@@ -7,6 +7,7 @@ import { sanitizeRequestText } from "./privacy.mjs";
 import { formatPlainNotes, stripTrackerTokens } from "./site-progress.mjs";
 
 export const LLM_CAP_MESSAGE = "今天的对话次数已经用完，请明天再试。也可以回复「进度」「网址」或「健康」。";
+export function llmUnavailableMessage(code) { return `模型暂时不可用（${code}）`; }
 export const DEFAULT_LLM_DAILY_LIMIT = 200;
 export const DEFAULT_LLM_HISTORY_TURNS = 6;
 export const DEFAULT_LLM_TIMEOUT_MS = 9000;
@@ -150,11 +151,30 @@ async function completeChat({ llm, messages, fetchImpl, timeoutMs }) {
       signal: controller.signal,
       redirect: "error",
     });
-    if (!response.ok) throw new Error("LLM HTTP error");
+    if (!response.ok) {
+      let detail = "";
+      try { detail = await response.text(); } catch { detail = ""; }
+      detail = String(detail || "").split(llm.apiKey).join("[redacted]").slice(0, 200);
+      const err = new Error(`LLM HTTP ${response.status}: ${detail}`);
+      err.status = response.status;
+      err.body = detail;
+      throw err;
+    }
     const payload = await response.json();
     const content = payload?.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || !content.trim()) throw new Error("LLM empty");
+    if (typeof content !== "string" || !content.trim()) {
+      const err = new Error("LLM empty");
+      err.code = "empty";
+      throw err;
+    }
     return content;
+  } catch (error) {
+    if (controller.signal.aborted || error.name === "AbortError" || error.name === "TimeoutError") {
+      const err = new Error("LLM timeout");
+      err.code = "timeout";
+      throw err;
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -177,6 +197,14 @@ async function loadSiteContext({ kv, env, fetchImpl, now, config, timeoutMs }) {
     notes: formatPlainNotes(comments, { limit: config.progress?.commentLimit || 5 }),
     health: typeof health === "string" ? health : "",
   };
+}
+
+export function llmErrorReason(error) {
+  if (error?.code === "timeout" || error?.name === "AbortError" || error?.name === "TimeoutError") return "timeout";
+  if (error?.code === "empty") return "empty";
+  const status = Number(error?.status);
+  if (Number.isInteger(status) && status > 0) return `http_${status}`;
+  return "error";
 }
 
 export async function replyWithOptionalLlm({
@@ -230,14 +258,21 @@ export async function replyWithOptionalLlm({
       timeoutMs: llm.timeoutMs,
     });
     const reply = filterLlmOutput(raw);
-    if (!reply) return HELP_MESSAGE;
+    if (!reply) {
+      const err = new Error("LLM empty");
+      err.code = "empty";
+      throw err;
+    }
 
     await saveHistory(kv, hash, [...history, { role: "user", content: user }, { role: "assistant", content: reply }], {
       limit: llm.historyTurns,
       ttlSeconds: llm.historyTtlSeconds,
     });
     return reply;
-  } catch {
-    return HELP_MESSAGE;
+  } catch (error) {
+    const code = llmErrorReason(error);
+    const summary = String(error?.message || "").split(llm.apiKey).join("[redacted]").slice(0, 240);
+    console.error(`[feishu-bot] llm_failed reason=${code} ${summary}`);
+    return llmUnavailableMessage(code);
   }
 }

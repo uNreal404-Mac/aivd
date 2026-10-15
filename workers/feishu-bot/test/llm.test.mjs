@@ -15,6 +15,7 @@ import {
   hashChatId,
   historyKvKey,
   llmDayKey,
+  llmUnavailableMessage,
   replyWithOptionalLlm,
   resolveLlmConfig,
 } from "../src/llm.mjs";
@@ -260,7 +261,7 @@ test("daily cap replies politely without calling the model", async () => {
   assert.match(signOutboundText(text), /三儿/);
 });
 
-test("LLM HTTP errors and timeouts fall back to the rule help text and still count toward the daily cap", async () => {
+test("LLM HTTP errors and timeouts reply with a reason code and still count toward the daily cap", async () => {
   const now = () => Date.parse("2026-10-15T10:00:00Z");
   const hash = await hashChatId("oc_partner");
   const day = llmDayKey(now());
@@ -274,7 +275,7 @@ test("LLM HTTP errors and timeouts fall back to the rule help text and still cou
     fetchImpl: githubAndLlmFetch({ failLlm: true }),
     now,
   });
-  assert.equal(failed, HELP_MESSAGE);
+  assert.equal(failed, llmUnavailableMessage("http_500"));
   assert.equal(await kvFail.get(dailyKvKey(hash, day)), "1");
 
   const kvTimeout = fakeKv();
@@ -286,7 +287,7 @@ test("LLM HTTP errors and timeouts fall back to the rule help text and still cou
     fetchImpl: githubAndLlmFetch({ delayMs: MIN_LLM_TIMEOUT_MS + 400 }),
     now,
   });
-  assert.equal(timedOut, HELP_MESSAGE);
+  assert.equal(timedOut, llmUnavailableMessage("timeout"));
   assert.equal(await kvTimeout.get(dailyKvKey(hash, day)), "1");
 });
 
@@ -304,4 +305,131 @@ test("LLM path never calls generate, upload, or KIE", async () => {
   });
   assert.equal(urls.some((url) => /\/api\/(generate|upload)(?:\?|$)/.test(url)), false);
   assert.equal(urls.some((url) => /kie\.ai/i.test(url)), false);
+});
+
+function errorFetch(llmHandler) {
+  return async (url, init = {}) => {
+    const href = String(url);
+    if (href.includes("/chat/completions")) {
+      return llmHandler(init);
+    }
+    if (href.includes("/comments")) {
+      return Response.json([]);
+    }
+    if (href.includes("/pulls")) {
+      return Response.json([]);
+    }
+    if (href.includes("api.github.com")) {
+      return Response.json({ number: 20, title: "t", body: "" });
+    }
+    if (href.endsWith("/api/health")) {
+      return Response.json({ ok: true });
+    }
+    throw new Error(`unexpected ${href}`);
+  };
+}
+
+async function runWithCapturedErrors(fn) {
+  const logs = [];
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    logs.push(args.map(String).join(" "));
+  };
+
+  try {
+    const result = await fn();
+    return { result, logs };
+  } finally {
+    console.error = originalConsoleError;
+  }
+}
+
+test("LLM 401 replies with http_401 reason code and logs it without the key", async () => {
+  const llmHandler = async (init) => {
+    return new Response(`invalid key ${LLM_KEY} ` + "x".repeat(500), { status: 401 });
+  };
+
+  const { result, logs } = await runWithCapturedErrors(() => {
+    return replyWithOptionalLlm({
+      kv: fakeKv(),
+      env: llmEnv(),
+      chatId: "oc_partner",
+      userText: "在吗",
+      fetchImpl: errorFetch(llmHandler)
+    });
+  });
+
+  assert.equal(result, llmUnavailableMessage("http_401"));
+  assert.match(logs.join("\n"), /reason=http_401/);
+  assert.doesNotMatch(logs.join("\n"), new RegExp(LLM_KEY));
+  assert.equal(result.includes(LLM_KEY), false);
+  assert.ok(logs.every(line => line.length < 600));
+  assert.match(signOutboundText(result), /三儿/);
+});
+
+test("LLM 429 replies with http_429", async () => {
+  const llmHandler = async (init) => {
+    return new Response("rate limited", { status: 429 });
+  };
+
+  const { result, logs } = await runWithCapturedErrors(() => {
+    return replyWithOptionalLlm({
+      kv: fakeKv(),
+      env: llmEnv(),
+      chatId: "oc_partner",
+      userText: "在吗",
+      fetchImpl: errorFetch(llmHandler)
+    });
+  });
+
+  assert.equal(result, llmUnavailableMessage("http_429"));
+  assert.match(logs.join("\n"), /reason=http_429/);
+  assert.doesNotMatch(logs.join("\n"), new RegExp(LLM_KEY));
+  assert.equal(result.includes(LLM_KEY), false);
+});
+
+test("LLM timeout replies with timeout", async () => {
+  const llmHandler = async (init) => {
+    return new Promise((resolve, reject) => {
+      init.signal?.addEventListener("abort", () => {
+        reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+      }, { once: true });
+    });
+  };
+
+  const { result, logs } = await runWithCapturedErrors(() => {
+    return replyWithOptionalLlm({
+      kv: fakeKv(),
+      env: llmEnv({ LLM_TIMEOUT_MS: String(MIN_LLM_TIMEOUT_MS) }),
+      chatId: "oc_partner",
+      userText: "在吗",
+      fetchImpl: errorFetch(llmHandler)
+    });
+  });
+
+  assert.equal(result, llmUnavailableMessage("timeout"));
+  assert.match(logs.join("\n"), /reason=timeout/);
+  assert.doesNotMatch(logs.join("\n"), new RegExp(LLM_KEY));
+  assert.equal(result.includes(LLM_KEY), false);
+});
+
+test("LLM empty completion replies with empty", async () => {
+  const llmHandler = async (init) => {
+    return Response.json({ choices: [{ message: { content: "   " } }] });
+  };
+
+  const { result, logs } = await runWithCapturedErrors(() => {
+    return replyWithOptionalLlm({
+      kv: fakeKv(),
+      env: llmEnv(),
+      chatId: "oc_partner",
+      userText: "在吗",
+      fetchImpl: errorFetch(llmHandler)
+    });
+  });
+
+  assert.equal(result, llmUnavailableMessage("empty"));
+  assert.match(logs.join("\n"), /reason=empty/);
+  assert.doesNotMatch(logs.join("\n"), new RegExp(LLM_KEY));
+  assert.equal(result.includes(LLM_KEY), false);
 });
