@@ -5,7 +5,7 @@ import { applyWorkspaceHtmlSeo, isWorkspacePath } from "../libs/workspaceSeo";
  * Pages Function middleware — HTML only.
  * /workspace with no query is indexable.
  * /workspace?tab=… (any params) is noindex, canonical still /workspace.
- * Does not touch /api/*, /business, or other static pages.
+ * Does not rewrite /api/* or other pages (/business 301 lives in functions/business.ts).
  */
 export const onRequest: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);

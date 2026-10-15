@@ -354,7 +354,7 @@ nav{display:none}
 <div class="free-tag"><span class="star">☆</span> <span data-i18n="hero.free">2 FREE generations for everyone — no login needed</span></div>
 <p class="credits-note" data-i18n-html="hero.credits">Sign up to get <b>10 free credits</b> — unlock more advanced models with full controls</p>
 <div class="hero-cta">
-<a href="/business" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="hero.cta" data-open-label="Start Creating Free →" data-i18n="cta.samples">查看样片</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="hero.cta" data-open-label="Start Creating Free →" data-i18n="hero.cta">Start Creating Free →</a>
 <a href="#get-started" class="btn-outline-lg" data-i18n="hero.how">See how it works</a>
 </div>
 
@@ -382,7 +382,7 @@ nav{display:none}
 <textarea class="prompt-input" id="homePrompt" maxlength="8000" data-i18n-placeholder="gen.placeholder" placeholder="A futuristic city with flying cars..." oninput="updateGen(this)"></textarea>
 
 <div class="gen-sticky" id="homeGenSticky">
-<button class="gen-btn" id="genBtn" data-gen-cta="samples" data-open-i18n="gen.btn" data-open-label="Generate Free Trial" data-i18n="cta.samples">查看样片</button>
+<button class="gen-btn" id="genBtn" data-gen-cta="samples" data-open-i18n="gen.btn" data-open-label="Generate Free Trial" data-i18n="gen.btn">Generate Free Trial</button>
 <p class="gen-foot" id="homeFoot" data-i18n-html="gen.foot">Free trial. <a href="/auth?mode=signup&amp;next=/workspace">Sign up</a> for more.</p>
 <p class="gen-foot" data-gen-closed-note>暂未开放</p>
 </div>
@@ -460,7 +460,7 @@ nav{display:none}
 </ul>
 </div>
 <div class="compare-actions">
-<a href="/business" class="btn-primary-lg" data-gen-cta="quote" data-open-href="/auth?mode=register" data-open-i18n="compare.claim" data-open-label="Claim 10 Free Credits" data-i18n="cta.quote">企业定制询价</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="compare.claim" data-open-label="Claim 10 Free Credits" data-i18n="compare.claim">Claim 10 Free Credits</a>
 <a href="/auth?mode=login" class="btn-outline-lg" data-i18n="compare.login">Already have an account? Log in</a>
 </div>
 </div>
@@ -493,7 +493,7 @@ nav{display:none}
 <li data-i18n="why.l4">Your content stays private — encrypted transfers and full ownership</li>
 </ul>
 <div class="why-actions">
-<a href="/business" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="why.cta" data-open-label="Open Image‑to‑Video App" data-i18n="cta.samples">查看样片</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="why.cta" data-open-label="Open Image‑to‑Video App" data-i18n="why.cta">Open Image‑to‑Video App</a>
 <a href="#get-started" class="btn-outline-lg" data-i18n="hero.how">See how it works</a>
 </div>
 </div>
@@ -515,7 +515,7 @@ nav{display:none}
 <li><span class="num">2</span><span class="text" data-i18n="steps.2">Describe the motion: camera movement, action, mood, and style</span></li>
 <li><span class="num">3</span><span class="text" data-i18n="steps.3">Pick an AI model, hit Generate — your video is ready in seconds</span></li>
 </ol>
-<a href="/business" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="steps.cta" data-open-label="Start Free Now" data-i18n="cta.samples">查看样片</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="steps.cta" data-open-label="Start Free Now" data-i18n="steps.cta">Start Free Now</a>
 </div>
 <div class="steps-imgs">
 <div class="img-tile"><img src="/assets/images/feature-ai-models.webp" alt="Multiple AI models powering video generation" width="800" height="800" loading="lazy"></div>
@@ -530,7 +530,7 @@ nav{display:none}
 <div class="credits-cta">
 <h3 data-i18n="credits.h">Get 10 free credits — try advanced models</h3>
 <p data-i18n="credits.p">Create a free account and instantly receive 10 credits — enough to try our advanced models with full creative controls. The free 2 trials only show the entry-level model; newcomer credits unlock the rest. Credit packs are on Pricing. 支付开通后可用 / Available when payments open. First purchase adds 31 bonus credits.</p>
-<a href="/business" class="btn-primary-lg" data-gen-cta="quote" data-open-href="/auth?mode=register" data-open-i18n="compare.claim" data-open-label="Claim 10 Free Credits" data-i18n="cta.quote">企业定制询价</a>
+<a href="/workspace" class="btn-primary-lg" data-gen-cta="samples" data-open-href="/workspace" data-open-i18n="compare.claim" data-open-label="Claim 10 Free Credits" data-i18n="compare.claim">Claim 10 Free Credits</a>
 <div class="login-link" data-i18n-html="credits.need">Need more? <a href="/pricing">View credit packs</a> · Already have an account? <a href="/auth?mode=login">Log in</a></div>
 </div>
 </section>
@@ -598,6 +598,7 @@ nav{display:none}
 <li><a href="/photo-to-video">Photo to Video AI</a></li>
 <li><a href="/image-to-video">Image to Video AI</a></li>
 <li><a href="/workspace">Workspace</a></li>
+<li><a href="/workspace" data-i18n="nav.workspace">Workspace</a></li>
 <li><a href="/#gallery">Gallery</a></li>
 </ul>
 </div>
@@ -767,7 +768,7 @@ if (homeUpload && homeFileInput) {
 
 async function homeGenerate() {
   if (window.DU && DU.generationEnabled === false) {
-    location.href = "/business";
+    location.href = "/workspace";
     return;
   }
   if (homeBusy) return;
@@ -840,7 +841,7 @@ async function homeGenerate() {
 document.getElementById("genBtn").addEventListener("click", function (e) {
   if (window.DU && (DU.generationEnabled === false || this.getAttribute("data-closed-nav") === "1")) {
     e.preventDefault();
-    location.href = "/business";
+    location.href = "/workspace";
     return;
   }
   homeGenerate();

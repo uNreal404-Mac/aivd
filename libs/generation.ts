@@ -4,7 +4,7 @@ import { structuredError } from "./utils";
 export const GENERATION_ENABLED_VAR = "GENERATION_ENABLED";
 export const GENERATION_DISABLED_CODE = "generation_disabled";
 export const GENERATION_DISABLED_MESSAGE = "暂未开放";
-export const BUSINESS_PATH = "/business";
+export const WORKSPACE_PATH = "/workspace";
 
 export function isGenerationEnabled(env: { GENERATION_ENABLED?: string }): boolean {
   return env.GENERATION_ENABLED === "true";
@@ -25,18 +25,11 @@ export function generationDisabledResponse(
 
 export type ClosedCtaKind = "samples" | "quote";
 
-export const CLOSED_CTA = {
-  samples: { href: BUSINESS_PATH, label: "查看样片" },
-  quote: { href: BUSINESS_PATH, label: "企业定制询价" },
-} as const;
-
-/** Marketing CTA when the generation kill switch is off vs on. */
+/** Marketing CTAs always enter the generator. Kind is ignored (quote branch removed). */
 export function generationCta(
   enabled: boolean,
-  kind: ClosedCtaKind,
+  _kind: ClosedCtaKind,
   open: { href: string; label: string }
 ): { href: string; label: string; closed: boolean } {
-  if (enabled) return { href: open.href, label: open.label, closed: false };
-  const closed = kind === "quote" ? CLOSED_CTA.quote : CLOSED_CTA.samples;
-  return { href: closed.href, label: closed.label, closed: true };
+  return { href: open.href || WORKSPACE_PATH, label: open.label, closed: !enabled };
 }
