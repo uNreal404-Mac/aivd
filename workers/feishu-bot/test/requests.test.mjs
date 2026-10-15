@@ -127,6 +127,28 @@ test("redacts landline 0755-1234567 with a 4-digit area code", () => {
   assertRedacted("0755-1234567");
 });
 
+test("redacts 5千刀 including the trailing 刀", () => {
+  const out = sanitizeRequestText("预算 5千刀");
+  assert.doesNotMatch(out, /5千刀/);
+  assert.doesNotMatch(out, /刀/);
+  assert.match(out, /已脱敏-金额/);
+});
+
+test("does not treat 2万次播放 as money", () => {
+  const out = sanitizeRequestText("目标 2万次播放");
+  assert.match(out, /2万次播放/);
+  assert.doesNotMatch(out, /已脱敏-金额/);
+});
+
+test("leaves 1080p, 9:16, 30秒 and dates alone", () => {
+  const out = sanitizeRequestText("规格 1080p、9:16、30秒，日期 2026-10-15");
+  assert.match(out, /1080p/);
+  assert.match(out, /9:16/);
+  assert.match(out, /30秒/);
+  assert.match(out, /2026-10-15/);
+  assert.doesNotMatch(out, /已脱敏/);
+});
+
 test("需求 replies warn that the issue is public and keep the signature", async () => {
   const text = await handleFeishuRequest({
     kv: fakeKv(),
