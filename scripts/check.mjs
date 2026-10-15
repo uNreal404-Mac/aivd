@@ -106,7 +106,6 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
-  { rel: "out/business.html", path: "/business", title: "AI 短视频代做｜企业定制 1080p 商品视频，单条 ¥299 起" },
 ];
 {
   const titles = new Set();
@@ -267,10 +266,10 @@ else ok.push("scripts/test-p1.mjs exists");
 
 mustContain("libs/generation.ts", 'env.GENERATION_ENABLED === "true"', "only exact true opens generation");
 mustContain("libs/generation.ts", "暂未开放", "closed generate message is 暂未开放");
-mustContain("libs/generation.ts", "BUSINESS_PATH", "closed marketing CTAs go to /business");
-mustContain("libs/generation.ts", '"/business"', "business path is /business");
-mustContain("libs/generation.ts", "查看样片", "closed samples CTA label");
-mustContain("libs/generation.ts", "企业定制询价", "closed quote CTA label");
+mustContain("libs/generation.ts", "WORKSPACE_PATH", "marketing CTAs go to /workspace");
+mustContain("libs/generation.ts", '"/workspace"', "workspace path is /workspace");
+mustNotContain("libs/generation.ts", '"/business"', "generation lib has no /business CTA");
+mustNotContain("libs/generation.ts", "企业定制询价", "generation lib has no quote CTA");
 mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST honors GENERATION_ENABLED");
 mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
 mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload POST honors GENERATION_ENABLED");
@@ -283,14 +282,25 @@ mustContain(
 );
 mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "Pages var defaults generation off");
 mustContain("out/assets/js/du.js", "applyGenerationCtas", "shared CTA switch helper");
+mustNotContain("out/assets/js/du.js", "/business", "du.js has no /business");
+mustNotContain("out/assets/js/du.js", 'kind === "quote"', "quote CTA branch removed from du.js");
+mustNotContain("out/assets/js/i18n.js", "nav.business", "i18n has no nav.business");
+mustNotContain("out/assets/js/i18n.js", "cta.quote", "i18n has no cta.quote");
 mustContain("out/assets/js/i18n.js", "cta.samples", "查看样片 i18n");
-mustContain("out/assets/js/i18n.js", "cta.quote", "企业定制询价 i18n");
 mustContain("out/assets/js/i18n.js", "gen.closed", "暂未开放 i18n");
 mustContain("out/index.html", 'data-gen-cta="samples"', "home generate CTAs are switchable");
-mustContain("out/index.html", 'href="/business"', "home closed CTAs link to /business");
-mustContain("out/image-to-video.html", 'data-gen-cta="samples"', "image-to-video CTA is switchable");
-mustContain("out/photo-to-video.html", 'data-gen-cta="samples"', "photo-to-video CTA is switchable");
-mustContain("out/free-ai-video.html", 'data-gen-cta="samples"', "free-ai-video CTA is switchable");
+mustContain("out/index.html", 'href="/workspace"', "home CTAs link to /workspace");
+mustNotContain("out/index.html", 'href="/business"', "home has no /business links");
+mustNotContain("out/index.html", 'location.href = "/business"', "home generate does not send users to /business");
+mustContain("out/index.html", 'location.href = "/workspace"', "closed home generate goes to /workspace");
+mustNotContain("out/workspace.html", 'href="/business"', "workspace footer has no /business");
+mustContain("out/image-to-video.html", 'href="/workspace"', "image-to-video CTA goes to /workspace");
+mustNotContain("out/image-to-video.html", 'href="/business"', "image-to-video has no /business");
+mustContain("out/photo-to-video.html", 'href="/workspace"', "photo-to-video CTA goes to /workspace");
+mustNotContain("out/photo-to-video.html", 'href="/business"', "photo-to-video has no /business");
+mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA goes to /workspace");
+mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
+mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
 {
   const metas = [
@@ -324,34 +334,22 @@ mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未�
 if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test-generation-gate.mjs");
 else ok.push("scripts/test-generation-gate.mjs exists");
 
-mustContain("out/business.html", "<h1 data-i18n=\"biz.h1\">企业 AI 短视频定制</h1>", "business H1 is 企业 AI 短视频定制");
-mustContain("out/business.html", 'localStorage.setItem("du_lang", "zh")', "business defaults to zh when no saved lang");
-mustContain("out/business.html", "人工交付，先报价", "business human-delivery badge");
-mustContain("out/business.html", "免费查看行业样片，先报价再制作", "business sample copy");
-mustContain("out/business.html", "24 小时内报价", "business 24h quote");
-mustContain("out/business.html", "我们会在 24 小时内联系您报价", "business success copy");
-mustContain("out/business.html", "单条 ¥299 起", "business single starting price");
-mustContain("out/business.html", "30 条月包 ¥2980 起", "business monthly pack starting price");
-mustContain("out/business.html", "参考价，最终以报价为准", "business reference-price note");
-mustContain("out/business.html", "0_out_f7d00e65d3c1a45d.mp4", "reuses existing 1080p sample A");
-mustContain("out/business.html", "0_out_68e31a44b7b1d011.mp4", "reuses existing 1080p sample B");
-mustContain("out/business.html", "0_out_980c5a0e163959b6.mp4", "reuses existing 1080p sample C");
-mustContain("out/business.html", 'name="website"', "business honeypot field");
-mustNotContain("out/business.html", "免费样片", "do not call samples 免费样片");
-mustNotContain("out/business.html", "¥799", "no single-clip upper price");
-mustNotContain("out/business.html", "¥4980", "no monthly-pack upper price");
-mustNotContain("out/business.html", "/api/checkout", "business has no checkout");
-mustNotContain("out/business.html", "Stripe", "business has no Stripe");
-mustNotContain("out/business.html", "立即支付", "business has no pay CTA");
-mustContain("out/assets/js/i18n.js", "biz.form.ok", "business i18n");
-mustContain("migrations/007_business_inquiries.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "D1 business_inquiries migration");
-mustContain("migrations/007_business_inquiries.sql", "created_at", "business_inquiries has created_at");
-mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "fresh schema includes business_inquiries");
-mustContain("functions/api/business.ts", "validateBusinessInquiry", "business API validates");
-mustContain("functions/api/business.ts", "insertBusinessInquiry", "business API writes D1");
-mustContain("libs/site.ts", '"/business"', "PUBLIC_PATHS includes /business");
+mustContain("out/_redirects", "/business /workspace 301", "legacy /business 301s to /workspace");
+mustContain("out/_redirects", "/business.html /workspace 301", "legacy /business.html 301s to /workspace");
+mustContain("out/_routes.json", '"/business"', "Pages Functions include /business so the 301 function runs");
+mustContain("functions/business.ts", "301", "/business function returns 301");
+mustContain("functions/business.ts", "/workspace", "/business redirects to /workspace");
+if (exists("out/business.html")) fail.push("out/business.html must be removed so /business cannot serve the quote page");
+else ok.push("out/business.html removed");
+mustContain("functions/api/business.ts", "410", "POST/GET /api/business is 410");
+mustNotContain("functions/api/business.ts", "insertBusinessInquiry", "business API no longer writes inquiries");
+mustNotContain("libs/site.ts", '"/business"', "PUBLIC_PATHS omits /business");
+mustContain("migrations/007_business_inquiries.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "D1 business_inquiries migration kept");
+mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "fresh schema still includes business_inquiries");
 if (!exists("scripts/test-business.mjs")) fail.push("missing scripts/test-business.mjs");
 else ok.push("scripts/test-business.mjs exists");
+if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
+else ok.push("feishu bot worker left in place");
 
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
