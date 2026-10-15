@@ -9,7 +9,7 @@
 | 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
 | 需求： / 需求: | 仅白名单群可建单：群 `chat_id` 必须在 `config.allowedChatIds` 或环境变量 `ALLOWED_CHAT_IDS` 中。未设置或为空时 **失败关闭**。通过后在本仓库创建带 `feishu-request` 标签的 GitHub issue（正文已脱敏，不含提出人 / `open_id` / `chat_id`），并在原消息线程回复链接。映射只写 KV。issue 关闭后通过 GitHub webhook 回帖 |
 
-所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。
+所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
 
 其他内容返回帮助说明。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 

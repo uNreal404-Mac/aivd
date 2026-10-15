@@ -8,7 +8,16 @@ import {
   handleFeishuRequest,
   handleGithubWebhook,
   parseRequestBody,
+  PUBLIC_ISSUE_NOTICE,
+  sanitizeRequestText,
 } from "../src/requests.mjs";
+import { DEFAULT_SIGNATURE } from "../src/config.mjs";
+
+function assertRedacted(sample, label = sample) {
+  const out = sanitizeRequestText(`请看 ${sample} 再评估`);
+  assert.doesNotMatch(out, new RegExp(sample.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${label} must be redacted`);
+  assert.match(out, /已脱敏/, `${label} must use a redaction marker`);
+}
 
 function fakeKv(seed = {}) {
   const values = new Map(Object.entries(seed));
@@ -72,6 +81,66 @@ test("redacts phones, emails, and money amounts before writing the public issue"
   assert.doesNotMatch(content.title, /13812345678|user@example\.com|5000元|\$99\.50|¥1,200/);
   assert.doesNotMatch(content.body, /13812345678|user@example\.com|5000元|\$99\.50|¥1,200/);
   assert.match(content.body, /已脱敏/);
+});
+
+test("redacts money written as 5000 美元", () => {
+  assertRedacted("5000 美元");
+});
+
+test("redacts money written as 2万", () => {
+  assertRedacted("2万");
+});
+
+test("redacts money written as 3.5万", () => {
+  assertRedacted("3.5万");
+});
+
+test("redacts money written as 5k", () => {
+  assertRedacted("5k");
+});
+
+test("redacts money written as 500USD", () => {
+  assertRedacted("500USD");
+});
+
+test("redacts Chinese-numeral money 两万块", () => {
+  assertRedacted("两万块");
+});
+
+test("redacts Chinese-numeral money 三千元", () => {
+  assertRedacted("三千元");
+});
+
+test("redacts Chinese-numeral money 十万", () => {
+  assertRedacted("十万");
+});
+
+test("redacts landline 021-12345678 with a dash", () => {
+  assertRedacted("021-12345678");
+});
+
+test("redacts landline 02112345678 without a dash", () => {
+  assertRedacted("02112345678");
+});
+
+test("redacts landline 0755-1234567 with a 4-digit area code", () => {
+  assertRedacted("0755-1234567");
+});
+
+test("需求 replies warn that the issue is public and keep the signature", async () => {
+  const text = await handleFeishuRequest({
+    kv: fakeKv(),
+    env: { GITHUB_TOKEN: "ghs_test_token", ALLOWED_CHAT_IDS: "oc_chat" },
+    selected: { messageId: "om_notice", text: "需求：落地页要加中文" },
+    context: { chatId: "oc_chat", senderOpenId: "ou_user", senderName: "老王" },
+    fetchImpl: async () => Response.json({
+      number: 21,
+      html_url: "https://github.com/CharlesHarry7/dreamutopia-clone/issues/21",
+      title: "飞书需求：落地页要加中文",
+    }, { status: 201 }),
+  });
+  assert.match(text, new RegExp(PUBLIC_ISSUE_NOTICE));
+  assert.match(text, new RegExp(DEFAULT_SIGNATURE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 });
 
 test("rejects 需求 from unknown group chats and fail-closes when the allowlist is empty", async () => {
