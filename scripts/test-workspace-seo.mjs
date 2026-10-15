@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   WORKSPACE_CANONICAL,
+  WORKSPACE_FUNCTION_ROUTES,
   WORKSPACE_H1,
   WORKSPACE_TITLE,
   WORKSPACE_DESCRIPTION,
@@ -53,6 +54,7 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?tab=history"), "?tab=history is parameterized");
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?mode=image"), "?mode=image is parameterized");
   assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?pack=starter"), "any query is parameterized");
+  assert(workspaceRequestIsParameterized("https://dreamutopia-clone.pages.dev/workspace?demo=1"), "?demo=1 is parameterized so middleware noindexes it");
 }
 
 {
@@ -93,6 +95,14 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
 }
 
 {
+  const demoSeo = applyWorkspaceHtmlSeo(staticHtml, "https://dreamutopia-clone.pages.dev/workspace?demo=1");
+  assert(demoSeo.noindex === true, "?demo=1 is noindex");
+  assert(/<meta name="robots" content="noindex">/i.test(demoSeo.html), "?demo=1 HTML has robots noindex");
+  assert(demoSeo.headers["x-robots-tag"] === "noindex", "?demo=1 sends X-Robots-Tag: noindex");
+  assert(demoSeo.html.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), "?demo=1 canonical still points at /workspace");
+}
+
+{
   const dirty = staticHtml.replace(
     '<video id="genResultVideo" controls playsinline></video>',
     '<video id="genResultVideo" src="/api/media?key=44_out_secret.mp4" controls playsinline></video>'
@@ -122,6 +132,47 @@ function pagesCtx(request, nextHtml, nextStatus = 200) {
   assert(/<meta name="robots" content="noindex">/i.test(body), "middleware injects robots noindex for query URLs");
   assert(res.headers.get("x-robots-tag") === "noindex", "middleware sets X-Robots-Tag for query URLs");
   assert(body.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), "middleware query URL canonical is /workspace");
+}
+
+{
+  const aliases = ["/workspace", "/workspace/", "/workspace.html"];
+  for (const pathname of aliases) {
+    const bare = new Request(`https://dreamutopia-clone.pages.dev${pathname}`);
+    const bareRes = await workspaceMw(pagesCtx(bare, staticHtml));
+    const bareHtml = await bareRes.text();
+    assert(bareRes.status === 200, `middleware GET ${pathname} is 200`);
+    assert(!/name=["']robots["'][^>]*noindex/i.test(bareHtml), `bare ${pathname} HTML is indexable`);
+    assert(!bareRes.headers.get("x-robots-tag"), `bare ${pathname} has no X-Robots-Tag`);
+    assert(bareHtml.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), `bare ${pathname} canonical is /workspace`);
+
+    const hist = new Request(`https://dreamutopia-clone.pages.dev${pathname}?tab=history`);
+    const histRes = await workspaceMw(pagesCtx(hist, staticHtml));
+    const histHtml = await histRes.text();
+    assert(histRes.status === 200, `middleware GET ${pathname}?tab=history is 200`);
+    assert(/<meta name="robots" content="noindex">/i.test(histHtml), `${pathname}?tab=history HTML has robots noindex`);
+    assert(histRes.headers.get("x-robots-tag") === "noindex", `${pathname}?tab=history sends X-Robots-Tag: noindex`);
+    assert(histHtml.includes(`rel="canonical" href="${WORKSPACE_CANONICAL}"`), `${pathname}?tab=history canonical is /workspace`);
+    assert(!histHtml.includes("?tab=history"), `${pathname}?tab=history canonical does not keep the query`);
+  }
+
+  const headReq = new Request("https://dreamutopia-clone.pages.dev/workspace.html?tab=history", { method: "HEAD" });
+  const headRes = await workspaceMw(pagesCtx(headReq, staticHtml));
+  assert(headRes.status === 200, "middleware HEAD /workspace.html?tab=history is 200");
+  assert(headRes.headers.get("x-robots-tag") === "noindex", "HEAD alias still sends X-Robots-Tag: noindex");
+  assert((await headRes.text()) === "", "HEAD alias has an empty body");
+}
+
+{
+  const routes = JSON.parse(fs.readFileSync(path.join(root, "out/_routes.json"), "utf8"));
+  const include = Array.isArray(routes.include) ? routes.include : [];
+  for (const route of WORKSPACE_FUNCTION_ROUTES) {
+    assert(include.includes(route), `_routes.json include has ${route} so Functions middleware runs`);
+  }
+  const mw = fs.readFileSync(path.join(root, "functions/_middleware.ts"), "utf8");
+  const seo = fs.readFileSync(path.join(root, "libs/workspaceSeo.ts"), "utf8");
+  assert(mw.includes("rewriteWorkspaceHtmlResponse"), "middleware uses HTMLRewriter rewrite helper");
+  assert(seo.includes("HTMLRewriter"), "workspace SEO rewrite uses HTMLRewriter on Pages");
+  assert(seo.includes("x-robots-tag"), "rewrite helper sets X-Robots-Tag");
 }
 
 {

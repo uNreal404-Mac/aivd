@@ -60,6 +60,121 @@ export type WorkspaceHtmlSeo = {
   headers: Record<string, string>;
 };
 
+/** Paths that must be in out/_routes.json include so Functions middleware actually runs. */
+export const WORKSPACE_FUNCTION_ROUTES = ["/workspace", "/workspace/", "/workspace.html"] as const;
+
+type HtmlRewriterElement = {
+  getAttribute(name: string): string | null;
+  setAttribute(name: string, value: string): void;
+  removeAttribute(name: string): void;
+  remove(): void;
+  onEndTag(handler: (end: { before: (content: string, opts: { html: boolean }) => void }) => void): void;
+};
+
+type HtmlRewriterLike = {
+  on(selector: string, handlers: { element?: (el: HtmlRewriterElement) => void }): HtmlRewriterLike;
+  transform(response: Response): Response;
+};
+
+function htmlRewriterCtor(): (new () => HtmlRewriterLike) | null {
+  const ctor = (globalThis as { HTMLRewriter?: new () => HtmlRewriterLike }).HTMLRewriter;
+  return typeof ctor === "function" ? ctor : null;
+}
+
+export function workspaceSeoFlags(requestUrl: string): { noindex: boolean; headers: Record<string, string> } {
+  const noindex = workspaceRequestIsParameterized(requestUrl);
+  const headers: Record<string, string> = {
+    "content-type": "text/html; charset=utf-8",
+  };
+  if (noindex) headers["x-robots-tag"] = ROBOTS_NOINDEX;
+  return { noindex, headers };
+}
+
+function applySeoHeaders(headers: Headers, noindex: boolean): void {
+  headers.set("content-type", "text/html; charset=utf-8");
+  if (noindex) headers.set("x-robots-tag", ROBOTS_NOINDEX);
+  else headers.delete("x-robots-tag");
+}
+
+function rewriteWithHtmlRewriter(response: Response, noindex: boolean): Response {
+  const Rewriter = htmlRewriterCtor();
+  if (!Rewriter) throw new Error("HTMLRewriter is not available");
+
+  const robotsSeen = { value: false };
+  const canonicalSeen = { value: false };
+  const ogUrlSeen = { value: false };
+
+  return new Rewriter()
+    .on("meta", {
+      element(el) {
+        const name = (el.getAttribute("name") || "").toLowerCase();
+        const property = (el.getAttribute("property") || "").toLowerCase();
+        if (name === "robots") {
+          robotsSeen.value = true;
+          if (noindex) el.setAttribute("content", ROBOTS_NOINDEX);
+          else el.remove();
+        }
+        if (property === "og:url") {
+          ogUrlSeen.value = true;
+          el.setAttribute("content", WORKSPACE_CANONICAL);
+        }
+      },
+    })
+    .on("link", {
+      element(el) {
+        if ((el.getAttribute("rel") || "").toLowerCase() !== "canonical") return;
+        canonicalSeen.value = true;
+        el.setAttribute("href", WORKSPACE_CANONICAL);
+      },
+    })
+    .on("*", {
+      element(el) {
+        for (const attr of ["src", "href"]) {
+          const value = el.getAttribute(attr);
+          if (value && /\/api\/media/i.test(value)) el.removeAttribute(attr);
+        }
+      },
+    })
+    .on("head", {
+      element(el) {
+        el.onEndTag((end) => {
+          if (noindex && !robotsSeen.value) {
+            end.before(`<meta name="robots" content="${ROBOTS_NOINDEX}">`, { html: true });
+          }
+          if (!canonicalSeen.value) {
+            end.before(`<link rel="canonical" href="${WORKSPACE_CANONICAL}">`, { html: true });
+          }
+          if (!ogUrlSeen.value) {
+            end.before(`<meta property="og:url" content="${WORKSPACE_CANONICAL}">`, { html: true });
+          }
+        });
+      },
+    })
+    .transform(response);
+}
+
+/**
+ * Pages-runtime rewrite. Uses HTMLRewriter on workerd; Node unit tests fall back
+ * to the string helper so they still cover meta + X-Robots-Tag.
+ */
+export async function rewriteWorkspaceHtmlResponse(response: Response, requestUrl: string): Promise<Response> {
+  const { noindex } = workspaceSeoFlags(requestUrl);
+  const headers = new Headers(response.headers);
+  applySeoHeaders(headers, noindex);
+  const status = response.status;
+
+  if (htmlRewriterCtor()) {
+    return rewriteWithHtmlRewriter(new Response(response.body, { status, headers }), noindex);
+  }
+
+  const html = await response.text();
+  const applied = applyWorkspaceHtmlSeo(html, requestUrl);
+  const out = new Headers(headers);
+  for (const [key, value] of Object.entries(applied.headers)) out.set(key, value);
+  if (!applied.noindex) out.delete("x-robots-tag");
+  return new Response(applied.html, { status, headers: out });
+}
+
 /**
  * Server-side HTML policy for /workspace:
  * - no query → indexable, canonical is /workspace, no robots noindex
@@ -67,7 +182,7 @@ export type WorkspaceHtmlSeo = {
  * - never emit user work /api/media URLs
  */
 export function applyWorkspaceHtmlSeo(html: string, requestUrl: string): WorkspaceHtmlSeo {
-  const noindex = workspaceRequestIsParameterized(requestUrl);
+  const { noindex, headers } = workspaceSeoFlags(requestUrl);
   let out = stripUserWorkUrls(html);
   out = upsertLinkRel(out, "canonical", WORKSPACE_CANONICAL);
   out = upsertMetaProperty(out, "og:url", WORKSPACE_CANONICAL);
@@ -76,9 +191,5 @@ export function applyWorkspaceHtmlSeo(html: string, requestUrl: string): Workspa
   } else {
     out = removeMetaName(out, "robots");
   }
-  const headers: Record<string, string> = {
-    "content-type": "text/html; charset=utf-8",
-  };
-  if (noindex) headers["x-robots-tag"] = ROBOTS_NOINDEX;
   return { html: out, noindex, canonical: WORKSPACE_CANONICAL, headers };
 }

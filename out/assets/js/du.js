@@ -5,6 +5,8 @@
   const TOKEN_KEY = "dreamutopia_token";
   const CREDITS_KEY = "dreamutopia_credits";
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+  // Must match libs/site.ts BRAND_NAME (canonical). Rebrand = change site.ts, then this mirror.
+  const BRAND_NAME = "DreamUtopia";
 
   try {
     const ref = new URLSearchParams(location.search).get("ref");
@@ -114,10 +116,16 @@
         el.setAttribute("data-closed-nav", next.closed ? "1" : "0");
       }
     }
+    const demoOn = global.DU_DEMO && typeof global.DU_DEMO.isDemoMode === "function" && global.DU_DEMO.isDemoMode();
     const closedNotes = document.querySelectorAll("[data-gen-closed-note]");
     for (let j = 0; j < closedNotes.length; j++) {
-      closedNotes[j].hidden = !!enabled;
-      if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+      if (demoOn) {
+        closedNotes[j].hidden = true;
+        closedNotes[j].textContent = t("demo.foot", "Sample walkthrough. Nothing is billed.");
+      } else {
+        closedNotes[j].hidden = !!enabled;
+        if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+      }
     }
   }
 
@@ -443,7 +451,7 @@
 
   async function downloadResult(url, filename) {
     if (!url) return;
-    const name = filename || "dreamutopia-result";
+      const name = filename || (BRAND_NAME + "-result");
     try {
       const res = await fetch(url, { credentials: "same-origin" });
       if (!res.ok) throw new Error("download failed");
@@ -480,6 +488,7 @@
   global.DU = {
     TOKEN_KEY: TOKEN_KEY,
     CREDITS_KEY: CREDITS_KEY,
+    BRAND_NAME: BRAND_NAME,
     MAX_UPLOAD_BYTES: MAX_UPLOAD_BYTES,
     PAYMENTS_ENABLED: PAYMENTS_ENABLED,
     get generationEnabled() {

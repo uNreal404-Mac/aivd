@@ -129,8 +129,12 @@ mustContain("out/index.html", 'property="og:title" content="AI Image & Video Gen
 mustContain("out/index.html", 'name="twitter:title" content="AI Image & Video Generator | DreamUtopia"', "home twitter:title drops Free");
 mustContain("out/assets/js/seo.js", 'meta("property", "og:title", title, true)', "seo.js keeps authored og:title");
 mustContain("libs/workspaceSeo.ts", "applyWorkspaceHtmlSeo", "workspace HTML SEO helper");
-mustContain("functions/_middleware.ts", "applyWorkspaceHtmlSeo", "Pages middleware rewrites /workspace HTML");
-mustContain("functions/_middleware.ts", "x-robots-tag", "parameterized workspace sends X-Robots-Tag");
+mustContain("libs/workspaceSeo.ts", "HTMLRewriter", "workspace SEO uses HTMLRewriter on Pages");
+mustContain("libs/workspaceSeo.ts", "rewriteWorkspaceHtmlResponse", "workspace SEO response rewriter");
+mustContain("functions/_middleware.ts", "rewriteWorkspaceHtmlResponse", "Pages middleware rewrites /workspace HTML");
+mustContain("out/_routes.json", '"/workspace"', "Functions include /workspace so SEO middleware runs");
+mustContain("out/_routes.json", '"/workspace.html"', "Functions include /workspace.html alias");
+mustContain("out/_routes.json", '"/workspace/"', "Functions include /workspace/ alias");
 mustContain("functions/api/upload-ticket.ts", "isGenerationEnabled", "upload-ticket honors GENERATION_ENABLED");
 mustContain("functions/api/upload-ticket.ts", "generationDisabledResponse", "upload-ticket returns 503 when closed");
 mustContain("out/pricing.html", "支付即将开放", "honest payments-coming-soon note");
@@ -289,6 +293,30 @@ mustContain("out/pricing.html", "500 credits", "premium credits unchanged");
 mustContain("out/workspace.html", 'id="historyEmpty" hidden', "history empty starts hidden (not enabled while parent is display:none)");
 mustContain("out/workspace.html", "function setHistoryEmptyVisible", "empty state only enabled on History tab");
 mustContain("out/workspace.html", "function historyTabActive", "empty visibility gated on History tab");
+mustContain("out/workspace.html", 'class="history-grid"', "History canvas is a grid/waterfall");
+mustContain("out/workspace.html", 'id="historyFilter"', "History has a simple kind filter");
+mustContain("out/workspace.html", 'data-filter="video"', "History can filter videos");
+mustContain("out/workspace.html", 'data-filter="image"', "History can filter images");
+mustContain("out/workspace.html", 'id="historyDetail"', "History detail modal");
+mustContain("out/workspace.html", 'id="historyDetailPrompt"', "detail shows prompt");
+mustContain("out/workspace.html", 'id="historyDetailModel"', "detail shows model");
+mustContain("out/workspace.html", 'id="historyDetailDuration"', "detail shows duration");
+mustContain("out/workspace.html", 'id="historyDetailAspect"', "detail shows aspect");
+mustContain("out/workspace.html", 'id="historyDetailResolution"', "detail shows resolution");
+mustContain("out/workspace.html", 'id="historyDetailCredits"', "detail shows credits used");
+mustContain("out/workspace.html", 'id="historyDetailCreated"', "detail shows created time");
+mustContain("out/workspace.html", "function refillFromGeneration", "regenerate fills left-rail params");
+mustContain("out/workspace.html", "function copyHistoryPrompt", "copy prompt from own work");
+mustContain("out/workspace.html", "bindHistoryHoverPreview", "video hover preview");
+mustContain("out/workspace.html", "filterOwnWorks", "own-work filter helper");
+mustContain("out/workspace.html", 'api("/history")', "works load from /api/history");
+mustContain("out/workspace.html", 'api("/generations")', "works fall back to /api/generations");
+mustContain("out/workspace.html", "DU.downloadResult", "gallery download reuses DU.downloadResult");
+mustNotContain("out/workspace.html", "Featured Creators", "History is not a community feed");
+mustContain("out/assets/js/i18n.js", '"ws.history.regen": "Regenerate"', "regenerate English copy");
+mustContain("out/assets/js/i18n.js", '"ws.history.copy": "Copy prompt"', "copy prompt English copy");
+mustContain("libs/historyGallery.ts", "filterOwnWorks", "history gallery helpers for mock tests");
+mustContain("libs/historyGallery.ts", "creditCostForItem", "credit display derived client-side");
 
 mustContain("libs/account.ts", "export async function mergeGuestJobs", "guest jobs migrate on register/login");
 mustContain("functions/api/auth/register.ts", "mergeGuestJobs", "register copies this guest cookie's jobs");
@@ -421,6 +449,56 @@ mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA go
 mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
 mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
+mustContain("out/assets/js/du.js", `const BRAND_NAME = "${BRAND}"`, "du.js BRAND_NAME matches libs/site.ts");
+mustContain("out/assets/js/du.js", "BRAND_NAME: BRAND_NAME", "DU exports BRAND_NAME");
+{
+  const duBrand = (read("out/assets/js/du.js").match(/const BRAND_NAME = "([^"]+)"/) || [])[1] || "";
+  if (!BRAND || duBrand !== BRAND) fail.push(`frontend DU.BRAND_NAME ${JSON.stringify(duBrand)} must equal libs/site.ts ${JSON.stringify(BRAND)}`);
+  else ok.push("DU.BRAND_NAME and libs/site.ts BRAND_NAME are the same source value");
+}
+mustContain("out/assets/js/demo.js", "演示样片 / Demo sample", "demo badge copy");
+mustContain("out/assets/js/demo.js", "function runGenerate", "demo generate helper");
+mustContain("out/workspace.html", 'src="/assets/js/demo.js"', "workspace loads demo.js");
+mustContain("out/workspace.html", 'id="demoSampleBadge"', "workspace result badge");
+mustContain("out/workspace.html", "Try demo", "visible Try demo entry");
+mustContain("out/workspace.html", "function generateDemoFlow", "demo generate does not use live generate");
+mustContain("out/workspace.html", "demoActive()", "workspace branches on demo mode");
+mustContain("out/index.html", 'href="/workspace?demo=1"', "home has Try demo entry");
+mustContain("out/robots.txt", "Disallow: /demo", "robots disallows /demo");
+mustContain("functions/robots.txt.ts", "Disallow: /demo", "function robots disallows /demo");
+mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not turn generation on");
+{
+  const demoSrc = read("out/assets/js/demo.js");
+  const flowStart = read("out/workspace.html").indexOf("async function generateDemoFlow()");
+  const flowEnd = read("out/workspace.html").indexOf("async function generate()");
+  const flow = flowStart >= 0 && flowEnd > flowStart ? read("out/workspace.html").slice(flowStart, flowEnd) : "";
+  if (flow.includes("/api/generate") || flow.includes("/api/upload") || flow.includes("upload-ticket")) {
+    fail.push("generateDemoFlow must not mention /api/generate, /api/upload, or upload-ticket");
+  } else ok.push("generateDemoFlow has no generate/upload API URLs");
+  const genStart = read("out/workspace.html").indexOf("async function generate()");
+  const genEnd = read("out/workspace.html").indexOf("function resetGenBtn()");
+  const gen = genStart >= 0 && genEnd > genStart ? read("out/workspace.html").slice(genStart, genEnd) : "";
+  const demoAt = gen.indexOf("demoActive()");
+  const closedAt = gen.indexOf("generationIsClosed");
+  if (demoAt < 0 || closedAt < 0 || demoAt > closedAt) {
+    fail.push("generate() must take the demo path before the 暂未开放 closed gate");
+  } else ok.push("generate() demo path runs before closed 暂未开放 gate");
+  const copyRe = /"(demo\.[^"]+)":\s*"([^"]*)"/g;
+  let m;
+  let i18nCopy = 0;
+  const i18nSrc = read("out/assets/js/i18n.js");
+  while ((m = copyRe.exec(i18nSrc))) {
+    i18nCopy += 1;
+    const val = m[2];
+    if (/clone/i.test(val) || val.includes("暂未开放")) {
+      fail.push(`demo i18n ${m[1]} must not contain clone or 暂未开放`);
+    }
+  }
+  if (i18nCopy < 8) fail.push("expected demo.* i18n keys");
+  else ok.push("demo i18n keys omit clone and 暂未开放");
+  if (!demoSrc.includes("TODO:")) fail.push("demo sample list must mark TODO placeholders");
+  else ok.push("demo sample list has TODO placeholders");
+}
 {
   const metas = [
     ["out/index.html", "Start free — no account needed", "home"],
@@ -560,6 +638,40 @@ process.stderr.write(wsSeoUnit.stderr || "");
 if (wsSeoUnit.status !== 0) {
   console.log("FAIL scripts/test-workspace-seo.mjs");
   process.exit(wsSeoUnit.status || 1);
+}
+
+const histGalleryUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-history-gallery.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(histGalleryUnit.stdout || "");
+process.stderr.write(histGalleryUnit.stderr || "");
+if (histGalleryUnit.status !== 0) {
+  console.log("FAIL scripts/test-history-gallery.mjs");
+  process.exit(histGalleryUnit.status || 1);
+}
+
+const demoUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-demo-mode.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(demoUnit.stdout || "");
+process.stderr.write(demoUnit.stderr || "");
+if (demoUnit.status !== 0) {
+  console.log("FAIL scripts/test-demo-mode.mjs");
+  process.exit(demoUnit.status || 1);
 }
 
 const examplesUnit = spawnSync(
