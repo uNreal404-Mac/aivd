@@ -311,10 +311,10 @@ else ok.push("scripts/test-p1.mjs exists");
 
 mustContain("libs/generation.ts", 'env.GENERATION_ENABLED === "true"', "only exact true opens generation");
 mustContain("libs/generation.ts", "暂未开放", "closed generate message is 暂未开放");
-mustContain("libs/generation.ts", "BUSINESS_PATH", "closed marketing CTAs go to /business");
-mustContain("libs/generation.ts", '"/business"', "business path is /business");
-mustContain("libs/generation.ts", "查看样片", "closed samples CTA label");
-mustContain("libs/generation.ts", "企业定制询价", "closed quote CTA label");
+mustContain("libs/generation.ts", "WORKSPACE_PATH", "marketing CTAs go to /workspace");
+mustContain("libs/generation.ts", '"/workspace"', "workspace path is /workspace");
+mustNotContain("libs/generation.ts", '"/business"', "generation lib has no /business CTA");
+mustNotContain("libs/generation.ts", "企业定制询价", "generation lib has no quote CTA");
 mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST honors GENERATION_ENABLED");
 mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
 mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload honors GENERATION_ENABLED");
@@ -332,16 +332,33 @@ mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload honors GEN
   } else ok.push("POST /api/upload checks GENERATION_ENABLED before R2/KIE");
 }
 mustContain("functions/api/health.ts", "generationEnabled", "health exposes generationEnabled");
+mustContain("functions/api/health.ts", "guestTrials: generationEnabled", "health guestTrials follows generation kill switch");
+mustContain(
+  "functions/api/health.ts",
+  "Generation disabled (GENERATION_ENABLED off) — demo only, no free tries",
+  "health message when generation is off"
+);
 mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "Pages var defaults generation off");
 mustContain("out/assets/js/du.js", "applyGenerationCtas", "shared CTA switch helper");
+mustNotContain("out/assets/js/du.js", "/business", "du.js has no /business");
+mustNotContain("out/assets/js/du.js", 'kind === "quote"', "quote CTA branch removed from du.js");
+mustNotContain("out/assets/js/i18n.js", "nav.business", "i18n has no nav.business");
+mustNotContain("out/assets/js/i18n.js", "cta.quote", "i18n has no cta.quote");
 mustContain("out/assets/js/i18n.js", "cta.samples", "查看样片 i18n");
-mustContain("out/assets/js/i18n.js", "cta.quote", "企业定制询价 i18n");
 mustContain("out/assets/js/i18n.js", "gen.closed", "暂未开放 i18n");
 mustContain("out/index.html", 'data-gen-cta="samples"', "home generate CTAs are switchable");
-mustContain("out/index.html", 'href="/business"', "home closed CTAs link to /business");
-mustContain("out/image-to-video.html", 'data-gen-cta="samples"', "image-to-video CTA is switchable");
-mustContain("out/photo-to-video.html", 'data-gen-cta="samples"', "photo-to-video CTA is switchable");
-mustContain("out/free-ai-video.html", 'data-gen-cta="samples"', "free-ai-video CTA is switchable");
+mustContain("out/index.html", 'href="/workspace"', "home CTAs link to /workspace");
+mustNotContain("out/index.html", 'href="/business"', "home has no /business links");
+mustNotContain("out/index.html", 'location.href = "/business"', "home generate does not send users to /business");
+mustContain("out/index.html", 'location.href = "/workspace"', "closed home generate goes to /workspace");
+mustNotContain("out/workspace.html", 'href="/business"', "workspace footer has no /business");
+mustContain("out/image-to-video.html", 'href="/workspace"', "image-to-video CTA goes to /workspace");
+mustNotContain("out/image-to-video.html", 'href="/business"', "image-to-video has no /business");
+mustContain("out/photo-to-video.html", 'href="/workspace"', "photo-to-video CTA goes to /workspace");
+mustNotContain("out/photo-to-video.html", 'href="/business"', "photo-to-video has no /business");
+mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA goes to /workspace");
+mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
+mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
 {
   const metas = [
@@ -374,6 +391,23 @@ mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未�
 }
 if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test-generation-gate.mjs");
 else ok.push("scripts/test-generation-gate.mjs exists");
+
+mustContain("out/_redirects", "/business /workspace 301", "legacy /business 301s to /workspace");
+mustContain("out/_redirects", "/business.html /workspace 301", "legacy /business.html 301s to /workspace");
+mustContain("out/_routes.json", '"/business"', "Pages Functions include /business so the 301 function runs");
+mustContain("functions/business.ts", "301", "/business function returns 301");
+mustContain("functions/business.ts", "/workspace", "/business redirects to /workspace");
+if (exists("out/business.html")) fail.push("out/business.html must be removed so /business cannot serve the quote page");
+else ok.push("out/business.html removed");
+mustContain("functions/api/business.ts", "410", "POST/GET /api/business is 410");
+mustNotContain("functions/api/business.ts", "insertBusinessInquiry", "business API no longer writes inquiries");
+mustNotContain("libs/site.ts", '"/business"', "PUBLIC_PATHS omits /business");
+mustContain("migrations/007_business_inquiries.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "D1 business_inquiries migration kept");
+mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS business_inquiries", "fresh schema still includes business_inquiries");
+if (!exists("scripts/test-business.mjs")) fail.push("missing scripts/test-business.mjs");
+else ok.push("scripts/test-business.mjs exists");
+if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
+else ok.push("feishu bot worker left in place");
 
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
@@ -431,6 +465,23 @@ process.stderr.write(genUnit.stderr || "");
 if (genUnit.status !== 0) {
   console.log("FAIL scripts/test-generation-gate.mjs");
   process.exit(genUnit.status || 1);
+}
+
+const bizUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-business.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(bizUnit.stdout || "");
+process.stderr.write(bizUnit.stderr || "");
+if (bizUnit.status !== 0) {
+  console.log("FAIL scripts/test-business.mjs");
+  process.exit(bizUnit.status || 1);
 }
 
 const wsSeoUnit = spawnSync(

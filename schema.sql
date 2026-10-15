@@ -68,3 +68,17 @@ CREATE INDEX IF NOT EXISTS idx_gallery_created ON gallery(created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_gallery_generation ON gallery(generation_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_events_refund_gen ON credit_events(reason)
   WHERE reason LIKE 'refund:gen:%';
+
+CREATE TABLE IF NOT EXISTS business_inquiries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company TEXT NOT NULL,
+  contact TEXT NOT NULL,
+  industry TEXT,
+  need_type TEXT,
+  quantity TEXT,
+  budget TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_business_inquiries_created ON business_inquiries(created_at DESC);
