@@ -211,8 +211,18 @@ mustContain("functions/sitemap.xml.ts", "exampleDetailPaths", "function sitemap 
 mustContain("out/index.html", 'href="/examples"', "home links to /examples");
 mustContain("out/workspace.html", 'href="/examples"', "workspace links to /examples");
 mustNotContain("out/examples.html", "href=\"/business\"", "examples list has no /business");
-mustContain("out/_routes.json", '"/examples"', "Pages Functions include /examples");
 mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examples/* so slug routes run");
+{
+  const routes = JSON.parse(read("out/_routes.json"));
+  const include = routes.include || [];
+  const hasExact = include.includes("/examples") || include.includes("/examples/");
+  const hasSplat = include.includes("/examples/*");
+  if (hasExact && hasSplat) {
+    fail.push("wrangler rejects overlapping /examples and /examples/* — keep splat only; list is static HTML");
+  } else ok.push("examples routes do not overlap a splat with an exact /examples rule");
+  if (!hasSplat) fail.push("include must contain /examples/* so /examples/{slug} Functions run");
+  else ok.push("/examples/* is on the Functions whitelist");
+}
 {
   const listDesc = (read("out/examples.html").match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
   if (/free|instant/i.test(listDesc)) fail.push("examples list description must not contain free/instant");

@@ -6,8 +6,6 @@
     "/sitemap.xml",
     "/business",
     "/business/",
-    "/examples",
-    "/examples/",
     "/examples/*"
   ],
   "exclude": []
