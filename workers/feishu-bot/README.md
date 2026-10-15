@@ -1,6 +1,6 @@
 # 飞书项目机器人 Worker
 
-这是独立的 Cloudflare Worker，与仓库根目录的 Pages 配置分开部署。机器人只响应私聊文本和群聊中明确 @ 它的文本，支持「进度」「网址」「健康」三个命令；其他内容返回帮助说明。进度文案可在 `src/commands.mjs` 的 `PROGRESS_MESSAGE` 常量中维护。
+这是独立的 Cloudflare Worker，与仓库根目录的 Pages 配置分开部署。机器人只响应私聊文本和群聊中明确 @ 它的文本，支持「进度」「网址」「健康」三个命令；其他内容返回帮助说明。进度文案可在 `src/commands.mjs` 的 `PROGRESS_MESSAGE` 常量中维护。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
 机器人不会调用生成、上传或付费 AI 服务。健康命令只请求固定的 `https://dreamutopia-clone.pages.dev/api/health`，并返回 HTTP 状态及选定的布尔状态字段。
 

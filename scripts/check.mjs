@@ -548,6 +548,21 @@ else ok.push("scripts/test-business.mjs exists");
 if (!exists("workers/feishu-bot/wrangler.toml")) fail.push("feishu bot worker must stay in the repo");
 else ok.push("feishu bot worker left in place");
 
+if (!exists("scripts/feishu-notify.mjs")) fail.push("missing scripts/feishu-notify.mjs");
+else ok.push("scripts/feishu-notify.mjs exists");
+if (!exists("scripts/test-feishu-notify.mjs")) fail.push("missing scripts/test-feishu-notify.mjs");
+else ok.push("scripts/test-feishu-notify.mjs exists");
+if (!exists(".github/workflows/feishu-notify.yml")) fail.push("missing .github/workflows/feishu-notify.yml");
+else ok.push(".github/workflows/feishu-notify.yml exists");
+mustContain(".github/workflows/feishu-notify.yml", "secrets.FEISHU_WEBHOOK_URL", "workflow reads webhook URL from Actions secret");
+mustContain(".github/workflows/feishu-notify.yml", "secrets.FEISHU_WEBHOOK_SECRET", "workflow reads optional signing secret");
+mustContain(".github/workflows/feishu-notify.yml", "scripts/feishu-notify.mjs deploy", "workflow posts deploy cards via the shared script");
+mustContain("scripts/feishu-notify.mjs", "FEISHU_WEBHOOK_URL", "notify script reads webhook from env");
+mustContain("scripts/feishu-notify.mjs", "createHmac", "notify script supports Feishu HMAC-SHA256 sign");
+mustContain("README.md", "FEISHU_WEBHOOK_URL", "root README documents webhook secret name");
+mustContain("README.md", "FEISHU_WEBHOOK_SECRET", "root README documents optional signing secret");
+mustNotContain("scripts/feishu-notify.mjs", "open.feishu.cn/open-apis/bot/v2/hook/", "notify script has no hardcoded webhook URL");
+
 if (fail.length) {
   for (const f of fail) console.log("FAIL", f);
   process.exit(1);
@@ -689,4 +704,30 @@ process.stderr.write(examplesUnit.stderr || "");
 if (examplesUnit.status !== 0) {
   console.log("FAIL scripts/test-examples.mjs");
   process.exit(examplesUnit.status || 1);
+}
+
+const feishuNotifyUnit = spawnSync(process.execPath, [path.join(root, "scripts/test-feishu-notify.mjs")], {
+  encoding: "utf8",
+  cwd: root,
+});
+process.stdout.write(feishuNotifyUnit.stdout || "");
+process.stderr.write(feishuNotifyUnit.stderr || "");
+if (feishuNotifyUnit.status !== 0) {
+  console.log("FAIL scripts/test-feishu-notify.mjs");
+  process.exit(feishuNotifyUnit.status || 1);
+}
+
+const feishuBotTests = fs
+  .readdirSync(path.join(root, "workers/feishu-bot/test"))
+  .filter((name) => name.endsWith(".test.mjs"))
+  .map((name) => path.join(root, "workers/feishu-bot/test", name));
+const feishuBotUnit = spawnSync(process.execPath, ["--test", ...feishuBotTests], {
+  encoding: "utf8",
+  cwd: path.join(root, "workers/feishu-bot"),
+});
+process.stdout.write(feishuBotUnit.stdout || "");
+process.stderr.write(feishuBotUnit.stderr || "");
+if (feishuBotUnit.status !== 0) {
+  console.log("FAIL workers/feishu-bot tests");
+  process.exit(feishuBotUnit.status || 1);
 }
