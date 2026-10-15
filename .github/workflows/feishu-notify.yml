@@ -1,0 +1,26 @@
+# Outbound Feishu custom-bot notification when main is updated in production.
+# Missing FEISHU_WEBHOOK_URL skips the job step with success (does not fail CI).
+name: Feishu notify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  deploy:
+    name: Notify Feishu of production deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Post deploy card
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+        run: node scripts/feishu-notify.mjs deploy
