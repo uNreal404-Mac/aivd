@@ -8,10 +8,11 @@ import {
   generationCta,
   isGenerationEnabled,
 } from "../libs/generation.ts";
-import { onRequestPost as generatePost } from "../functions/api/generate.ts";
+import { onRequestPost as generatePost, onRequestGet as generateGet } from "../functions/api/generate.ts";
 import { onRequestGet as uploadGet, onRequestPost as uploadPost } from "../functions/api/upload.ts";
 import { onRequest as uploadTicket } from "../functions/api/upload-ticket.ts";
 import { onRequestGet as healthGet } from "../functions/api/health.ts";
+import { onRequestGet as creditsGet } from "../functions/api/credits.ts";
 
 const fail = [];
 const ok = [];
@@ -173,6 +174,24 @@ try {
       openHealth.body.message === "D1 + KV + KIE + R2 ready — 2 free Lite I2V tries, then sign in",
       "health ready message only when generation is on"
     );
+  }
+
+  {
+    fetchCalls.length = 0;
+    const offEnvs = [{}, { GENERATION_ENABLED: "false" }, { GENERATION_ENABLED: "TRUE" }];
+    for (const extra of offEnvs) {
+      const env = { ...extra, KIE_API_KEY: "must-not-use", SESSIONS: mockKv() };
+      const got = await jsonOf(
+        await generateGet(pagesCtx(env, new Request("https://dreamutopia-clone.pages.dev/api/generate")))
+      );
+      assert(got.body.generateReady !== true, `GET /api/generate off (${JSON.stringify(extra.GENERATION_ENABLED)}) does not claim generateReady true`);
+      assert(got.body.guestRemaining === 0, `GET /api/generate off (${JSON.stringify(extra.GENERATION_ENABLED)}) guestRemaining is 0`);
+      const cred = await jsonOf(
+        await creditsGet(pagesCtx(env, new Request("https://dreamutopia-clone.pages.dev/api/credits")))
+      );
+      assert(cred.body.guestRemaining === 0, `GET /api/credits off (${JSON.stringify(extra.GENERATION_ENABLED)}) guestRemaining is 0`);
+    }
+    assert(fetchCalls.length === 0, "closed GET /api/generate and /api/credits never call KIE");
   }
 
   {

@@ -8,6 +8,7 @@ import {
   loadGuest,
   clientIp,
 } from "../../libs/guest";
+import { isGenerationEnabled } from "../../libs/generation";
 import type { Env } from "../../libs/utils";
 
 export const onRequestOptions = (): Response => preflight();
@@ -34,7 +35,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       ok: true,
       guest: true,
       credits: 0,
-      guestRemaining: quota.remaining,
+      guestRemaining: isGenerationEnabled(env) ? quota.remaining : 0,
       guestLimit: GUEST_LIMIT,
     },
     200,
