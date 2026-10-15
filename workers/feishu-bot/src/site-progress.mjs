@@ -98,7 +98,6 @@ function collapseEmptyFragments(value) {
   text = text.replace(/(?:^|[\s（(【，,、:：。．.])(?:详见|参见|见)\s*[。．.]+/g, (match) => (
     /^[\s（(【，,、:：。．.]/.test(match) ? match[0] : ""
   ));
-  text = text.replace(/(?:详见|参见|见)\s*[。．.]+/g, "");
   // Leftover shells after stripping "合并 PR #21 与 #16" → "合并 与"
   text = text.replace(/合并\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");
   text = text.replace(/\s+(?:与|和|及)\s*(?=[。．.，,、:：]|$)/g, "");
