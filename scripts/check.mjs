@@ -190,6 +190,46 @@ mustContain("out/auth.html", 'credentials: "same-origin"', "auth fetch sends Htt
 mustContain("out/workspace.html", 'id="guestPersistNotice"', "workspace guest persist notice");
 mustContain("out/assets/js/i18n.js", "ws.guest.persist", "guest persist notice i18n");
 mustContain("out/assets/js/i18n.js", "Your creations are saved only in this browser until you sign up.", "guest persist English copy");
+mustContain("libs/stripe.ts", "metadata[user_id]", "checkout metadata.user_id");
+mustContain("libs/stripe.ts", "metadata[pack]", "checkout metadata.pack");
+mustContain("libs/stripe.ts", "metadata[credits]", "checkout metadata.credits");
+mustContain("libs/stripe.ts", "metadata[site]", "checkout metadata.site");
+mustContain("libs/stripe.ts", 'PAYMENT_SITE', "site slug imported for Stripe metadata");
+mustContain("libs/site.ts", 'export const PAYMENT_SITE = "dreamutopia"', "PAYMENT_SITE is dreamutopia");
+mustContain("libs/stripe.ts", "/workspace?checkout=success", "success_url is /workspace");
+mustContain("libs/stripe.ts", "/workspace?checkout=cancel", "cancel_url is /workspace");
+mustContain("libs/stripe.ts", 'params.set("mode", "payment")', "Checkout Session mode=payment");
+mustContain("libs/stripe.ts", "price_data", "inline price_data (no pre-created price IDs)");
+mustContain("libs/stripe.ts", "hmacSha256Hex", "webhook HMAC-SHA256 via Web Crypto");
+mustContain("libs/stripe.ts", "toleranceSec", "Stripe timestamp tolerance");
+mustContain("libs/stripe.ts", "payment_status", "grant requires payment_status");
+mustContain("libs/stripe.ts", 'reason: "other_site"', "foreign-site Stripe events ignored");
+mustContain("functions/api/checkout.ts", "env.STRIPE_SECRET_KEY", "checkout reads STRIPE_SECRET_KEY from env");
+mustContain("functions/api/webhooks/stripe.ts", "env.STRIPE_WEBHOOK_SECRET", "webhook reads STRIPE_WEBHOOK_SECRET from env");
+mustContain("functions/api/webhooks/stripe.ts", "checkoutGrantDecision", "webhook uses site/payment filters");
+mustContain("functions/api/stripe/webhook.ts", 'from "../webhooks/stripe"', "POST /api/stripe/webhook alias");
+mustContain("libs/account.ts", "INSERT INTO stripe_sessions", "idempotent grant records stripe session id");
+mustContain("migrations/005_stripe_sessions.sql", "CREATE TABLE IF NOT EXISTS stripe_sessions", "D1 stripe_sessions migration");
+mustContain("migrations/005_stripe_sessions.sql", "session_id TEXT PRIMARY KEY", "stripe_sessions unique session id");
+mustContain("migrations/005_stripe_sessions.sql", "npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql", "migration command documented");
+mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS stripe_sessions", "fresh schema includes stripe_sessions");
+mustContain("out/pricing.html", 'fetch("/api/checkout"', "pricing Select calls /api/checkout");
+mustContain("out/pricing.html", 'method: "POST"', "logged-in Select POSTs checkout");
+mustContain("out/pricing.html", "packAuthHref", "guests register first with pack param");
+mustContain("out/pricing.html", "/auth?mode=register&pack=", "guest Select keeps pack query");
+mustNotContain("libs/stripe.ts", "console.log", "stripe lib never logs (keys)");
+mustNotContain("functions/api/checkout.ts", "console.log", "checkout never logs");
+mustNotContain("functions/api/webhooks/stripe.ts", "console.log", "webhook never logs");
+mustNotContain("libs/stripe.ts", "sk_live", "no hardcoded live Stripe secret");
+mustNotContain("libs/stripe.ts", "sk_test", "no hardcoded test Stripe secret");
+mustNotContain("libs/stripe.ts", "whsec_", "no hardcoded webhook secret");
+mustNotContain("functions/api/checkout.ts", "sk_live", "checkout has no hardcoded Stripe key");
+mustNotContain("functions/api/webhooks/stripe.ts", "whsec_", "webhook has no hardcoded signing secret");
+if (!exists("scripts/test-stripe.mjs")) fail.push("missing scripts/test-stripe.mjs");
+else ok.push("scripts/test-stripe.mjs exists");
+if (!exists("migrations/005_stripe_sessions.sql")) fail.push("missing migrations/005_stripe_sessions.sql");
+else ok.push("migrations/005_stripe_sessions.sql exists");
+
 mustContain("libs/kie.ts", "nano-banana-2-lite", "image-lite uses official KIE lite model");
 mustContain("libs/kie.ts", "export function buildImageTaskSpec", "image payload is unit-testable");
 mustContain("libs/kie.ts", "export function mapKieTaskOutcome", "KIE state mapping is unit-testable");
@@ -223,4 +263,21 @@ process.stderr.write(unit.stderr || "");
 if (unit.status !== 0) {
   console.log("FAIL scripts/test-p1.mjs");
   process.exit(unit.status || 1);
+}
+
+const stripeUnit = spawnSync(
+  process.execPath,
+  [
+    "--experimental-strip-types",
+    "--import",
+    path.join(root, "scripts/register-ts-bare.mjs"),
+    path.join(root, "scripts/test-stripe.mjs"),
+  ],
+  { encoding: "utf8", cwd: root }
+);
+process.stdout.write(stripeUnit.stdout || "");
+process.stderr.write(stripeUnit.stderr || "");
+if (stripeUnit.status !== 0) {
+  console.log("FAIL scripts/test-stripe.mjs");
+  process.exit(stripeUnit.status || 1);
 }

@@ -1,9 +1,12 @@
 /** Stripe Checkout + webhook verify via fetch (no Node SDK). */
 
 import { PACKS, type CreditPack } from "./packs";
+import { PAYMENT_SITE } from "./site";
 import { safeEqual } from "./password";
 
 const STRIPE_API = "https://api.stripe.com/v1/checkout/sessions";
+
+export { PAYMENT_SITE };
 
 export function hasStripe(env: { STRIPE_SECRET_KEY?: string }): boolean {
   return typeof env.STRIPE_SECRET_KEY === "string" && env.STRIPE_SECRET_KEY.trim().length > 0;
@@ -50,26 +53,27 @@ export async function verifyStripeSignature(
   return v1.some((sig) => sig.length === expected.length && safeEqual(sig, expected));
 }
 
-export async function createCheckoutSession(opts: {
-  secretKey: string;
+export function buildCheckoutSessionParams(opts: {
   origin: string;
   userId: number;
   email: string;
   pack: CreditPack;
   customerId?: string | null;
-}): Promise<{ ok: true; url: string; id: string } | { ok: false; status: number; message: string }> {
+}): URLSearchParams {
   const params = new URLSearchParams();
   params.set("mode", "payment");
   params.set("success_url", `${opts.origin}/workspace?checkout=success`);
-  params.set("cancel_url", `${opts.origin}/pricing?checkout=cancel`);
+  params.set("cancel_url", `${opts.origin}/workspace?checkout=cancel`);
   params.set("client_reference_id", String(opts.userId));
   if (opts.customerId) {
     params.set("customer", opts.customerId);
   } else {
     params.set("customer_email", opts.email);
   }
-  params.set("metadata[userId]", String(opts.userId));
+  params.set("metadata[user_id]", String(opts.userId));
   params.set("metadata[pack]", opts.pack.id);
+  params.set("metadata[credits]", String(opts.pack.credits));
+  params.set("metadata[site]", PAYMENT_SITE);
   params.set("line_items[0][quantity]", "1");
   params.set("line_items[0][price_data][currency]", "usd");
   params.set("line_items[0][price_data][unit_amount]", String(opts.pack.usdCents));
@@ -78,6 +82,18 @@ export async function createCheckoutSession(opts: {
     "line_items[0][price_data][product_data][description]",
     `${opts.pack.credits} credits`
   );
+  return params;
+}
+
+export async function createCheckoutSession(opts: {
+  secretKey: string;
+  origin: string;
+  userId: number;
+  email: string;
+  pack: CreditPack;
+  customerId?: string | null;
+}): Promise<{ ok: true; url: string; id: string } | { ok: false; status: number; message: string }> {
+  const params = buildCheckoutSessionParams(opts);
 
   let res: Response;
   try {
@@ -111,4 +127,50 @@ export async function createCheckoutSession(opts: {
 export function packFromMetadata(pack: unknown): CreditPack | null {
   if (typeof pack !== "string") return null;
   return PACKS[pack as keyof typeof PACKS] || null;
+}
+
+export type StripeCheckoutObject = {
+  id?: string;
+  payment_status?: string;
+  customer?: string;
+  client_reference_id?: string;
+  metadata?: {
+    user_id?: string;
+    userId?: string;
+    pack?: string;
+    credits?: string;
+    site?: string;
+  };
+};
+
+export type StripeEvent = {
+  type?: string;
+  data?: { object?: StripeCheckoutObject };
+};
+
+export type CheckoutGrantDecision =
+  | { action: "ignore"; reason: string }
+  | { action: "grant"; userId: number; pack: CreditPack; sessionId: string; customerId: string };
+
+/** Decide whether a verified Stripe event should grant DreamUtopia credits. */
+export function checkoutGrantDecision(event: StripeEvent): CheckoutGrantDecision {
+  if (event.type !== "checkout.session.completed") {
+    return { action: "ignore", reason: event.type || "unknown" };
+  }
+  const session = event.data?.object;
+  if (!session) return { action: "ignore", reason: "missing_session" };
+  if (session.metadata?.site !== PAYMENT_SITE) {
+    return { action: "ignore", reason: "other_site" };
+  }
+  if (session.payment_status !== "paid") {
+    return { action: "ignore", reason: "unpaid" };
+  }
+  const sessionId = session.id;
+  const userId = Number(session.metadata?.user_id || session.metadata?.userId || session.client_reference_id || 0);
+  const pack = packFromMetadata(session.metadata?.pack);
+  const customerId = typeof session.customer === "string" ? session.customer : "";
+  if (!sessionId || !userId || !pack) {
+    return { action: "ignore", reason: "missing_metadata" };
+  }
+  return { action: "grant", userId, pack, sessionId, customerId };
 }

@@ -127,21 +127,35 @@ export function isSchemaError(err: unknown): boolean {
   return /no such (column|table)|schema_migration/i.test(msg);
 }
 
+async function alreadyGranted(
+  db: D1Database,
+  stripeSessionId: string,
+  userId: number
+): Promise<{ credits: number; firstPurchase: boolean; referralAward: number } | null> {
+  const recorded = await db
+    .prepare("SELECT session_id FROM stripe_sessions WHERE session_id = ?")
+    .bind(stripeSessionId)
+    .first();
+  const legacy = recorded
+    ? recorded
+    : await db
+        .prepare("SELECT id FROM credit_events WHERE stripe_session_id = ?")
+        .bind(stripeSessionId)
+        .first();
+  if (!legacy && !recorded) return null;
+  const row = await db
+    .prepare("SELECT credits FROM users WHERE id = ?")
+    .bind(userId)
+    .first<{ credits: number }>();
+  return { credits: row ? Number(row.credits) : 0, firstPurchase: false, referralAward: 0 };
+}
+
 export async function applyPaidPack(
   db: D1Database,
   opts: { userId: number; pack: CreditPack; stripeSessionId: string }
 ): Promise<{ credits: number; firstPurchase: boolean; referralAward: number }> {
-  const existing = await db
-    .prepare("SELECT id FROM credit_events WHERE stripe_session_id = ?")
-    .bind(opts.stripeSessionId)
-    .first();
-  if (existing) {
-    const row = await db
-      .prepare("SELECT credits FROM users WHERE id = ?")
-      .bind(opts.userId)
-      .first<{ credits: number }>();
-    return { credits: row ? Number(row.credits) : 0, firstPurchase: false, referralAward: 0 };
-  }
+  const existing = await alreadyGranted(db, opts.stripeSessionId, opts.userId);
+  if (existing) return existing;
 
   const user = await db
     .prepare("SELECT id, credits, first_purchase_at, referred_by FROM users WHERE id = ?")
@@ -165,6 +179,11 @@ export async function applyPaidPack(
   }
 
   const statements = [
+    db
+      .prepare(
+        "INSERT INTO stripe_sessions (session_id, user_id, pack, credits) VALUES (?, ?, ?, ?)"
+      )
+      .bind(opts.stripeSessionId, opts.userId, opts.pack.id, opts.pack.credits),
     db
       .prepare(
         firstPurchase
@@ -205,6 +224,8 @@ export async function applyPaidPack(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (/UNIQUE constraint failed/i.test(msg)) {
+      const replay = await alreadyGranted(db, opts.stripeSessionId, opts.userId);
+      if (replay) return replay;
       const row = await db
         .prepare("SELECT credits FROM users WHERE id = ?")
         .bind(opts.userId)
