@@ -121,6 +121,33 @@ try {
     const health = await jsonOf(await healthGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/health"))));
     assert(health.status === 200 && health.body.generationEnabled === false, "health defaults generationEnabled false");
     assert(health.body.generateReady === false, "health generateReady is false while generation is off");
+    assert(health.body.guestTrials === false, "health guestTrials follows generationEnabled (off)");
+    const closedAuth = await jsonOf(
+      await healthGet(
+        pagesCtx(
+          { DB: {}, SESSIONS: mockKv(), KIE_API_KEY: "must-not-use" },
+          new Request("https://dreamutopia-clone.pages.dev/api/health")
+        )
+      )
+    );
+    assert(
+      closedAuth.body.message === "Generation disabled (GENERATION_ENABLED off) — demo only, no free tries",
+      "health message when generation is off (auth ready)"
+    );
+    assert(closedAuth.body.guestTrials === false, "closed health guestTrials is false even with KIE present");
+    const openHealth = await jsonOf(
+      await healthGet(
+        pagesCtx(
+          { GENERATION_ENABLED: "true", DB: {}, SESSIONS: mockKv(), KIE_API_KEY: "must-not-use", MEDIA: {} },
+          new Request("https://dreamutopia-clone.pages.dev/api/health")
+        )
+      )
+    );
+    assert(openHealth.body.generationEnabled === true && openHealth.body.guestTrials === true, "health guestTrials true when generation is on");
+    assert(
+      openHealth.body.message === "D1 + KV + KIE + R2 ready — 2 free Lite I2V tries, then sign in",
+      "health ready message only when generation is on"
+    );
     const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
     assert(cap.body.generationEnabled === false, "GET /api/upload reports generationEnabled false");
   }
