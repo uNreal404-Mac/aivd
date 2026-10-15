@@ -8,7 +8,8 @@
     "/business/",
     "/workspace",
     "/workspace/",
-    "/workspace.html"
+    "/workspace.html",
+    "/examples/*"
   ],
   "exclude": []
 }
