@@ -137,7 +137,7 @@ test("DeepSeek rewrite is opt-in and only runs with existing LLM configuration",
   const { calls, fetchImpl } = makeFetch({
     sha: "4".repeat(40),
     sent,
-    llmReplies: ["AI 视频项目进度：参考项目的镜头控制说明更清楚了。"],
+    llmReplies: ["视频站有新改动：镜头控制说明更清楚了。"],
   });
   const env = makeEnv(kv, {
     CRON_LLM_REWRITE: "true",

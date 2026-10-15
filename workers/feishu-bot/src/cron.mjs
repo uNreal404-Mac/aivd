@@ -53,20 +53,20 @@ function commitCategory(commitMessage) {
     return "视频功能或模型相关内容有更新";
   }
   if (/(?:readme|docs?|guide|example|说明|文档|示例)/u.test(message)) {
-    return "参考资料和说明有更新";
+    return "视频站文档和说明有更新";
   }
   if (/(?:test|ci|build|deploy|release|workflow|测试|部署|发布)/u.test(message)) {
     return "自动化测试或部署相关内容有更新";
   }
-  return "参考项目代码有更新，正在继续查看具体影响";
+  return "视频站有新改动，正在整理具体变化";
 }
 
 export function buildCronProgressMessage({ commitMessage = "" } = {}) {
   const category = stripTrackerTokens(sanitizeRequestText(commitCategory(commitMessage)));
   return [
-    "AI 视频项目进度：参考项目有新的公开更新。",
+    "视频站有新改动：公开仓库刚更新。",
     `${category}。`,
-    "这条信息只代表参考项目有代码变化，DreamUtopia 当前站点仍按现有计划推进。",
+    "以上是视频站仓库的新进展摘要。",
   ].join("\n");
 }
 
