@@ -274,6 +274,12 @@ mustContain("functions/api/generate.ts", "isGenerationEnabled", "generate POST h
 mustContain("functions/api/generate.ts", "generationDisabledResponse", "generate POST returns 503 when closed");
 mustContain("functions/api/upload.ts", "isGenerationEnabled", "upload POST honors GENERATION_ENABLED");
 mustContain("functions/api/health.ts", "generationEnabled", "health exposes generationEnabled");
+mustContain("functions/api/health.ts", "guestTrials: generationEnabled", "health guestTrials follows generation kill switch");
+mustContain(
+  "functions/api/health.ts",
+  "Generation disabled (GENERATION_ENABLED off) — demo only, no free tries",
+  "health message when generation is off"
+);
 mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "Pages var defaults generation off");
 mustContain("out/assets/js/du.js", "applyGenerationCtas", "shared CTA switch helper");
 mustContain("out/assets/js/i18n.js", "cta.samples", "查看样片 i18n");
