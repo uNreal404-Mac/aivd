@@ -140,7 +140,10 @@ npx wrangler d1 execute dreamutopia-db --remote --file=migrations/001_generation
 npx wrangler d1 execute dreamutopia-db --remote --file=migrations/002_gallery_unique.sql
 npx wrangler d1 execute dreamutopia-db --remote --file=migrations/003_referrals_credits.sql
 npx wrangler d1 execute dreamutopia-db --remote --file=migrations/004_template_hardening.sql
+npx wrangler d1 execute dreamutopia-db --remote --file=migrations/007_business_inquiries.sql
 ```
+
+`POST /api/business` writes a quote request to `business_inquiries` (company, contact, industry, need type, quantity, budget, notes). No payment. Mock tests only — do not apply this migration from a test run.
 
 ## 2. Paste IDs into `wrangler.toml`
 
