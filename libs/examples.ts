@@ -1,9 +1,9 @@
-import { CANONICAL_ORIGIN } from "./site";
+import { BRAND_NAME, CANONICAL_ORIGIN } from "./site";
 
 /** Documented Lite image-to-video class for the published 1080p clips. Upstream name is not in the repo. */
-export const EXAMPLE_MODEL = "DreamUtopia Lite";
+export const EXAMPLE_MODEL = `${BRAND_NAME} Lite`;
 
-export const EXAMPLE_LIST_TITLE = "AI Video Examples – Image to Video Samples | DreamUtopia";
+export const EXAMPLE_LIST_TITLE = `AI Video Examples – Image to Video Samples | ${BRAND_NAME}`;
 export const EXAMPLE_LIST_DESCRIPTION =
   "Browse HD AI videos made from photos, with the prompt and model behind each clip. Get ideas for your next video.";
 export const EXAMPLE_LIST_H1 = "AI Video Examples";
@@ -46,7 +46,7 @@ export const EXAMPLES: readonly Example[] = [
     uploadDate: "2026-10-14",
     group: "portrait",
     lookNotes: "A slow walk along a red carpet, cameras in the background, fabric and lights shifting with the step.",
-    body: "This red-carpet still is one of the start-image looks kept in the DreamUtopia sample library. The clip beside it is an existing 5-second 1080p Lite image-to-video file already on the site — the original prompt was not saved with that file, so the notes below describe the look, not a recovered prompt. Use Workspace if you want to try a similar evening-gown walk from your own photo.",
+    body: `This red-carpet still is one of the start-image looks kept in the ${BRAND_NAME} sample library. The clip beside it is an existing 5-second 1080p Lite image-to-video file already on the site — the original prompt was not saved with that file, so the notes below describe the look, not a recovered prompt. Use Workspace if you want to try a similar evening-gown walk from your own photo.`,
   },
   {
     slug: "poolside-portrait",
@@ -216,11 +216,11 @@ export function relatedExamples(slug: string, count = 4): Example[] {
 }
 
 export function examplePageTitle(ex: Example): string {
-  return `${ex.subject} AI Video – ${ex.style} from a Photo | DreamUtopia`;
+  return `${ex.subject} AI Video – ${ex.style} from a Photo | ${BRAND_NAME}`;
 }
 
 export function examplePageDescription(ex: Example): string {
-  return `See how this ${ex.subjectLower} photo became a ${ex.durationSec}s ${ex.resolution} AI video with ${ex.model}. Prompt included. Try a similar style in DreamUtopia.`;
+  return `See how this ${ex.subjectLower} photo became a ${ex.durationSec}s ${ex.resolution} AI video with ${ex.model}. Prompt included. Try a similar style in ${BRAND_NAME}.`;
 }
 
 export function examplePageH1(ex: Example): string {
@@ -231,7 +231,20 @@ export function exampleCanonical(path: string): string {
   return `${CANONICAL_ORIGIN}${path}`;
 }
 
-export function videoObjectJsonLd(ex: Example): Record<string, string> {
+function brandOrganization() {
+  return { "@type": "Organization", "name": BRAND_NAME };
+}
+
+function exampleListPart(ex: Example) {
+  return {
+    "@type": "VideoObject",
+    name: examplePageH1(ex),
+    url: exampleCanonical(`/examples/${ex.slug}`),
+    thumbnailUrl: `${CANONICAL_ORIGIN}${ex.poster}`,
+  };
+}
+
+export function videoObjectJsonLd(ex: Example): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -241,6 +254,7 @@ export function videoObjectJsonLd(ex: Example): Record<string, string> {
     uploadDate: ex.uploadDate,
     duration: `PT${ex.durationSec}S`,
     contentUrl: `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`,
+    publisher: brandOrganization(),
   };
 }
 
@@ -271,7 +285,7 @@ function pageChrome(opts: {
 <meta name="description" content="${esc(opts.description)}">
 <link rel="canonical" href="${esc(canonical)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="DreamUtopia">
+<meta property="og:site_name" content="${esc(BRAND_NAME)}">
 <meta property="og:title" content="${esc(opts.title)}">
 <meta property="og:description" content="${esc(opts.description)}">
 <meta property="og:url" content="${esc(canonical)}">
@@ -325,7 +339,7 @@ footer{border-top:1px solid var(--border);padding:24px 20px;text-align:center;co
 </head>
 <body>
 <header>
-<a href="/" class="logo"><img src="/assets/images/logo.webp" alt="" width="28" height="28"> DreamUtopia AI</a>
+<a href="/" class="logo"><img src="/assets/images/logo.webp" alt="" width="28" height="28"> ${esc(BRAND_NAME)} AI</a>
 <nav>
 <a href="/">Home</a>
 <a href="/examples">Examples</a>
@@ -334,7 +348,7 @@ footer{border-top:1px solid var(--border);padding:24px 20px;text-align:center;co
 </nav>
 </header>
 ${opts.body}
-<footer>© 2026 DreamUtopia AI · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/examples">Examples</a></footer>
+<footer>© 2026 ${esc(BRAND_NAME)} AI · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/examples">Examples</a></footer>
 </body>
 </html>
 `;
@@ -360,12 +374,8 @@ export function renderListHtml(): string {
     description: EXAMPLE_LIST_DESCRIPTION,
     url: exampleCanonical("/examples"),
     isPartOf: { "@id": `${CANONICAL_ORIGIN}/#website` },
-    hasPart: EXAMPLES.map((ex) => ({
-      "@type": "VideoObject",
-      name: examplePageH1(ex),
-      url: exampleCanonical(`/examples/${ex.slug}`),
-      thumbnailUrl: `${CANONICAL_ORIGIN}${ex.poster}`,
-    })),
+    publisher: brandOrganization(),
+    hasPart: EXAMPLES.map(exampleListPart),
   };
   const body = `<main>
 <h1>${esc(EXAMPLE_LIST_H1)}</h1>

@@ -1,3 +1,10 @@
+/**
+ * Public product name. Placeholder until rebrand (Miko / Popovid).
+ * /examples titles, OG, JSON-LD, and copy read this. Older marketing pages
+ * still hardcode the name — a rebrand is this constant plus a sweep of those files.
+ */
+export const BRAND_NAME = "DreamUtopia";
+
 /** Production origin used for canonical URLs, sitemap, and robots. */
 export const CANONICAL_ORIGIN = "https://dreamutopia-clone.pages.dev";
 

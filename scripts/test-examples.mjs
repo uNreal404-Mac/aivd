@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CANONICAL_ORIGIN } from "../libs/site.ts";
+import { BRAND_NAME, CANONICAL_ORIGIN } from "../libs/site.ts";
 import {
   EXAMPLES,
   EXAMPLE_LIST_DESCRIPTION,
@@ -55,6 +55,13 @@ const KNOWN_CLIPS = [
 ];
 
 {
+  const src = read("libs/examples.ts");
+  assert(src.includes("BRAND_NAME"), "examples renderer imports BRAND_NAME");
+  assert(!src.includes("DreamUtopia"), "examples.ts does not hardcode the brand string");
+  assert(read("libs/site.ts").includes('export const BRAND_NAME = "'), "BRAND_NAME lives in libs/site.ts");
+}
+
+{
   assert(EXAMPLES.length >= 3, "catalog has at least 3 samples");
   const slugs = EXAMPLES.map((e) => e.slug);
   assert(slugs.every((s) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s)), "slugs are lowercase hyphenated English");
@@ -66,13 +73,13 @@ const KNOWN_CLIPS = [
     assert(ex.resolution === "1080p", `${ex.slug} resolution is the measured 1080p`);
     assert(ex.prompt == null, `${ex.slug} does not invent an original prompt`);
     assert(!/kling|seedance|higgsfield/i.test(ex.model), `${ex.slug} does not invent an upstream model name`);
-    assert(ex.model === "DreamUtopia Lite", `${ex.slug} model is the documented Lite job class`);
+    assert(ex.model === `${BRAND_NAME} Lite`, `${ex.slug} model is the documented Lite job class`);
   }
   assert(!EXAMPLES.some((e) => e.mediaKey === "44_out_26d311aa3bacb00a.mp4"), "skips the non-1080p QA clip");
 }
 
 {
-  assert(EXAMPLE_LIST_TITLE === "AI Video Examples – Image to Video Samples | DreamUtopia", "list title is the specified English string");
+  assert(EXAMPLE_LIST_TITLE === `AI Video Examples – Image to Video Samples | ${BRAND_NAME}`, "list title is the specified English string");
   assert(
     EXAMPLE_LIST_DESCRIPTION ===
       "Browse HD AI videos made from photos, with the prompt and model behind each clip. Get ideas for your next video.",
@@ -86,10 +93,10 @@ const KNOWN_CLIPS = [
     const title = examplePageTitle(ex);
     const desc = examplePageDescription(ex);
     const h1 = examplePageH1(ex);
-    assert(title === `${ex.subject} AI Video – ${ex.style} from a Photo | DreamUtopia`, `${ex.slug} title follows the specified pattern`);
+    assert(title === `${ex.subject} AI Video – ${ex.style} from a Photo | ${BRAND_NAME}`, `${ex.slug} title follows the specified pattern`);
     assert(
       desc ===
-        `See how this ${ex.subjectLower} photo became a ${ex.durationSec}s ${ex.resolution} AI video with ${ex.model}. Prompt included. Try a similar style in DreamUtopia.`,
+        `See how this ${ex.subjectLower} photo became a ${ex.durationSec}s ${ex.resolution} AI video with ${ex.model}. Prompt included. Try a similar style in ${BRAND_NAME}.`,
       `${ex.slug} description follows the specified pattern`
     );
     assert(h1 === `${ex.subject} AI Video`, `${ex.slug} H1 is {Subject} AI Video`);
@@ -124,6 +131,7 @@ const KNOWN_CLIPS = [
     assert(obj.uploadDate, `${ex.slug} VideoObject.uploadDate`);
     assert(obj.duration === "PT5S", `${ex.slug} VideoObject.duration is PT5S`);
     assert(obj.contentUrl === `${CANONICAL_ORIGIN}/api/media?key=${ex.mediaKey}`, `${ex.slug} VideoObject.contentUrl`);
+    assert(obj.publisher && obj.publisher.name === BRAND_NAME, `${ex.slug} VideoObject.publisher is BRAND_NAME`);
   }
 }
 
@@ -139,6 +147,8 @@ const KNOWN_CLIPS = [
   }
   assert(html.includes('href="/workspace"'), "list links to /workspace");
   assert(!html.includes('href="/business"'), "list has no /business");
+  assert(html.includes(`property="og:site_name" content="${BRAND_NAME}"`), "list OG site_name uses BRAND_NAME");
+  assert(html.includes(`"name":"${BRAND_NAME}"`) || html.includes(`"name": "${BRAND_NAME}"`), "list JSON-LD publisher uses BRAND_NAME");
 }
 
 {
@@ -158,6 +168,7 @@ const KNOWN_CLIPS = [
     for (const r of related) {
       assert(html.includes(`href="/examples/${r.slug}"`), `${ex.slug} links to related ${r.slug}`);
     }
+    assert(html.includes(`property="og:site_name" content="${BRAND_NAME}"`), `${ex.slug} OG site_name uses BRAND_NAME`);
     assert(/href="\/workspace"/.test(html), `${ex.slug} has a Workspace button`);
     assert(!html.includes('href="/business"'), `${ex.slug} has no /business`);
     const desc = (html.match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";

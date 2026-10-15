@@ -141,6 +141,11 @@ mustContain("out/assets/js/i18n.js", "gallery.empty", "gallery empty i18n");
 mustContain("out/assets/js/i18n.js", "price.soon", "payments coming soon i18n");
 
 const CANON = "https://dreamutopia-clone.pages.dev";
+const BRAND = (read("libs/site.ts").match(/export const BRAND_NAME = "([^"]+)"/) || [])[1] || "";
+if (!BRAND) fail.push("libs/site.ts must export BRAND_NAME");
+else ok.push(`BRAND_NAME is ${JSON.stringify(BRAND)}`);
+mustContain("libs/examples.ts", "BRAND_NAME", "examples pages read BRAND_NAME");
+mustNotContain("libs/examples.ts", "DreamUtopia", "examples.ts does not hardcode DreamUtopia");
 const PUBLIC_PAGES = [
   { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
   { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
@@ -151,7 +156,7 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
-  { rel: "out/examples.html", path: "/examples", title: "AI Video Examples – Image to Video Samples | DreamUtopia" },
+  { rel: "out/examples.html", path: "/examples", title: `AI Video Examples – Image to Video Samples | ${BRAND}` },
 ];
 {
   const titles = new Set();
@@ -239,9 +244,13 @@ mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examp
       const title = (src.match(/<title>([^<]+)<\/title>/) || [])[1] || "";
       const desc = (src.match(/<meta name="description" content="([^"]+)"/) || [])[1] || "";
       const h1 = (src.match(/<h1>([^<]+)<\/h1>/) || [])[1] || "";
-      if (!/ AI Video – .+ from a Photo \| DreamUtopia$/.test(title)) fail.push(`${rel}: title must follow {Subject} AI Video – {Style} from a Photo | DreamUtopia`);
+      const titleRe = new RegExp(` AI Video – .+ from a Photo \\| ${BRAND.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+      const descRe = new RegExp(
+        `^See how this .+ photo became a 5s 1080p AI video with .+\\. Prompt included\\. Try a similar style in ${BRAND.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.$`
+      );
+      if (!titleRe.test(title)) fail.push(`${rel}: title must follow {Subject} AI Video – {Style} from a Photo | ${BRAND}`);
       else ok.push(`${rel}: title pattern`);
-      if (!/^See how this .+ photo became a 5s 1080p AI video with .+\. Prompt included\. Try a similar style in DreamUtopia\.$/.test(desc)) {
+      if (!descRe.test(desc)) {
         fail.push(`${rel}: description must follow the specified template`);
       } else ok.push(`${rel}: description template`);
       if (!/ AI Video$/.test(h1)) fail.push(`${rel}: H1 must be {Subject} AI Video`);
