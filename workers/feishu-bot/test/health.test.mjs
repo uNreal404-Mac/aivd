@@ -27,7 +27,7 @@ test("summarizes HTTP status and selected readiness booleans", async () => {
 
   assert.equal(request.url, "https://dreamutopia-clone.pages.dev/api/health");
   assert.equal(request.init.method, "GET");
-  assert.equal(request.init.redirect, "error");
+  assert.equal(request.init.redirect, "manual");
   assert.match(summary, /HTTP 200/);
   assert.match(summary, /ok=true/);
   assert.match(summary, /authReady=true/);
@@ -97,6 +97,6 @@ test("does not follow redirects when calling the fixed health endpoint", async (
     },
   });
 
-  assert.equal(redirectMode, "error");
+  assert.equal(redirectMode, "manual");
   assert.match(summary, /HTTP 302/);
 });

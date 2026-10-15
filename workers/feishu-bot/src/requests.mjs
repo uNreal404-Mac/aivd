@@ -1,8 +1,10 @@
 import { HELP_MESSAGE } from "./commands.mjs";
-import { botConfig, isAllowedRequestChat, signOutboundText } from "./config.mjs";
+import { botConfig, isAllowedRequestChat, signOutboundText, resolveAllowedChatIds } from "./config.mjs";
 import { getTenantAccessToken, replyToMessage, replyUuid, sendTextToChat } from "./feishu-api.mjs";
-import { createIssue, verifyGitHubSignature } from "./github.mjs";
+import { createIssue, verifyGitHubSignature, getIssue } from "./github.mjs";
 import { sanitizeRequestText } from "./privacy.mjs";
+import { completeChat, resolveLlmConfig } from "./llm.mjs";
+import { formatAnnouncement, pendingItemsWithEta, summarizeHighlights } from "./announce.mjs";
 
 export { sanitizeRequestText };
 
@@ -169,6 +171,33 @@ async function notifyIssueClosed({ kv, env, fetchImpl, now, issue }) {
   return true;
 }
 
+async function announceToAllowedChats({ kv, env, fetchImpl, now, key, header, title, body, link }) {
+  const chatIds = resolveAllowedChatIds({ env });
+  if (!chatIds.length) return 0;
+  const llm = resolveLlmConfig(env);
+  const [highlights, pending] = await Promise.all([
+    summarizeHighlights({ llm, completeChat, title, body, fetchImpl }),
+    getIssue({ fetchImpl, token: env?.GITHUB_TOKEN })
+      .then((issue) => pendingItemsWithEta(issue.body))
+      .catch(() => []),
+  ]);
+  const text = signOutboundText(formatAnnouncement({ header, highlights, pending, link }));
+  const token = await getTenantAccessToken({
+    kv,
+    appId: env.FEISHU_APP_ID,
+    appSecret: env.FEISHU_APP_SECRET,
+    fetchImpl,
+    now,
+  });
+  let sent = 0;
+  for (const chatId of chatIds) {
+    const uuid = await replyUuid(`announce:${key}:${chatId}`);
+    await sendTextToChat({ token, chatId, text, fetchImpl, uuid });
+    sent += 1;
+  }
+  return sent;
+}
+
 export async function handleGithubWebhook({
   rawBody,
   headers,
@@ -187,7 +216,7 @@ export async function handleGithubWebhook({
   const eventName = headerValue(headers, "X-GitHub-Event") || "";
   const deliveryId = headerValue(headers, "X-GitHub-Delivery") || "";
   if (eventName === "ping") return { status: 200, body: "pong" };
-  if (eventName !== "issues") return { status: 200, body: "ok" };
+  if (!["issues", "pull_request", "release"].includes(eventName)) return { status: 200, body: "ok" };
 
   if (deliveryId && await kv.get(`${DELIVERY_PREFIX}${deliveryId}`)) {
     return { status: 200, body: "ok" };
@@ -200,8 +229,36 @@ export async function handleGithubWebhook({
     statusError("Invalid GitHub webhook payload", 400);
   }
 
-  if (payload?.action === "closed" && Number.isFinite(payload?.issue?.number)) {
+  if (eventName === "issues" && payload?.action === "closed" && Number.isFinite(payload?.issue?.number)) {
     await notifyIssueClosed({ kv, env, fetchImpl, now, issue: payload.issue });
+  } else if (eventName === "pull_request") {
+    const pr = payload?.pull_request;
+    if (payload?.action === "closed" && pr?.merged === true && pr?.base?.ref === "main" && Number.isFinite(pr?.number)) {
+      const title = typeof pr.title === "string" ? pr.title : `PR #${pr.number}`;
+      const author = typeof pr?.user?.login === "string" && pr.user.login ? pr.user.login : "unknown";
+      await announceToAllowedChats({
+        kv, env, fetchImpl, now,
+        key: `pr:${pr.number}`,
+        header: `仓库更新：PR #${pr.number}「${title}」已合并到 main（作者：${author}）`,
+        title,
+        body: typeof pr.body === "string" ? pr.body : "",
+        link: typeof pr.html_url === "string" ? pr.html_url : "",
+      });
+    }
+  } else if (eventName === "release") {
+    const release = payload?.release;
+    if (payload?.action === "published" && release) {
+      const tag = typeof release.tag_name === "string" ? release.tag_name : "";
+      const name = typeof release.name === "string" && release.name ? release.name : tag;
+      await announceToAllowedChats({
+        kv, env, fetchImpl, now,
+        key: `release:${tag}`,
+        header: `仓库发布：${name}（标签：${tag}）`,
+        title: name,
+        body: typeof release.body === "string" ? release.body : "",
+        link: typeof release.html_url === "string" ? release.html_url : "",
+      });
+    }
   }
 
   if (deliveryId) {

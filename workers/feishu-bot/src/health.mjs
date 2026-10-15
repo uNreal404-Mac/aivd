@@ -22,7 +22,7 @@ export async function fetchHealthSummary({ fetchImpl = fetch, timeoutMs = DEFAUL
   try {
     const response = await fetchImpl(HEALTH_URL, {
       method: "GET",
-      redirect: "error",
+      redirect: "manual",
       signal: controller.signal,
     });
     if (!response.ok) return `健康检查失败：HTTP ${response.status}。`;

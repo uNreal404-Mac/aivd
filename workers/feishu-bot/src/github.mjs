@@ -89,7 +89,7 @@ export async function listIssueComments({
   const response = await fetchImpl(url, {
     method: "GET",
     headers: githubHeaders(token),
-    redirect: "error",
+    redirect: "manual",
   });
   const payload = await readGithubJson(response, "GitHub comments");
   if (!Array.isArray(payload)) throw new Error("GitHub comments response was invalid");
@@ -107,7 +107,7 @@ export async function getIssue({
   const response = await fetchImpl(url, {
     method: "GET",
     headers: githubHeaders(token),
-    redirect: "error",
+    redirect: "manual",
   });
   const payload = await readGithubJson(response, "GitHub issue");
   if (!payload || typeof payload !== "object") throw new Error("GitHub issue response was invalid");
@@ -131,7 +131,7 @@ export async function listPulls({
   const response = await fetchImpl(url, {
     method: "GET",
     headers: githubHeaders(token),
-    redirect: "error",
+    redirect: "manual",
   });
   const payload = await readGithubJson(response, "GitHub pulls");
   if (!Array.isArray(payload)) throw new Error("GitHub pulls response was invalid");

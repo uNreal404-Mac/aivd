@@ -130,7 +130,7 @@ async function saveHistory(kv, hash, messages, { limit, ttlSeconds }) {
   });
 }
 
-async function completeChat({ llm, messages, fetchImpl, timeoutMs }) {
+export async function completeChat({ llm, messages, fetchImpl, timeoutMs }) {
   const url = chatCompletionsUrl(llm.baseUrl);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -148,7 +148,7 @@ async function completeChat({ llm, messages, fetchImpl, timeoutMs }) {
         max_tokens: 400,
       }),
       signal: controller.signal,
-      redirect: "error",
+      redirect: "manual",
     });
     if (!response.ok) throw new Error("LLM HTTP error");
     const payload = await response.json();
