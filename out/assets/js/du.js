@@ -419,10 +419,15 @@
     return api("/gallery", { method: "POST", body: JSON.stringify({ generationId: generationId }) });
   }
 
+  // Flip to true to let pricing Select POST /api/checkout and open Stripe.
+  // Backend /api/checkout is unchanged; this only gates visitor-facing CTAs.
+  const PAYMENTS_ENABLED = false;
+
   global.DU = {
     TOKEN_KEY: TOKEN_KEY,
     CREDITS_KEY: CREDITS_KEY,
     MAX_UPLOAD_BYTES: MAX_UPLOAD_BYTES,
+    PAYMENTS_ENABLED: PAYMENTS_ENABLED,
     getToken: getToken,
     t: t,
     api: api,

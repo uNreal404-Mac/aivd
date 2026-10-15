@@ -89,6 +89,8 @@ mustContain("out/index.html", "gen-sticky", "sticky mobile Generate");
 mustContain("out/workspace.html", "gen-sticky", "workspace sticky Generate");
 mustContain("out/workspace.html", "preview-skeleton", "generate preview skeleton");
 mustContain("out/pricing.html", "支付即将开放", "honest payments-coming-soon note");
+mustContain("out/pricing.html", 'id="checkoutNote"', "pricing top checkout banner");
+mustContain("out/pricing.html", 'class="checkout-note show"', "coming-soon banner visible before JS");
 mustNotContain("out/pricing.html", "Stripe is not configured yet", "no operator Stripe copy for visitors");
 mustContain("out/assets/js/i18n.js", "gallery.empty", "gallery empty i18n");
 mustContain("out/assets/js/i18n.js", "price.soon", "payments coming soon i18n");
@@ -213,10 +215,31 @@ mustContain("migrations/005_stripe_sessions.sql", "CREATE TABLE IF NOT EXISTS st
 mustContain("migrations/005_stripe_sessions.sql", "session_id TEXT PRIMARY KEY", "stripe_sessions unique session id");
 mustContain("migrations/005_stripe_sessions.sql", "npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql", "migration command documented");
 mustContain("schema.sql", "CREATE TABLE IF NOT EXISTS stripe_sessions", "fresh schema includes stripe_sessions");
-mustContain("out/pricing.html", 'fetch("/api/checkout"', "pricing Select calls /api/checkout");
-mustContain("out/pricing.html", 'method: "POST"', "logged-in Select POSTs checkout");
+mustContain("out/assets/js/du.js", "const PAYMENTS_ENABLED = false", "PAYMENTS_ENABLED defaults off");
+mustContain("out/assets/js/du.js", "PAYMENTS_ENABLED: PAYMENTS_ENABLED", "shared payments flag exported on DU");
+mustContain("out/pricing.html", "DU.PAYMENTS_ENABLED", "pricing gates Stripe CTAs on PAYMENTS_ENABLED");
+mustContain("out/pricing.html", "applyComingSoon", "pricing defaults to 支付即将开放 path");
+mustContain("out/pricing.html", 'fetch("/api/checkout"', "live path can still POST /api/checkout when flag is on");
+mustContain("out/pricing.html", 'method: "POST"', "live path POSTs checkout when payments are enabled");
 mustContain("out/pricing.html", "packAuthHref", "guests register first with pack param");
 mustContain("out/pricing.html", "/auth?mode=register&pack=", "guest Select keeps pack query");
+mustContain("out/workspace.html", "DU.PAYMENTS_ENABLED", "workspace Buy with Stripe honors payments flag");
+mustContain("out/auth.html", 'setAttribute("content", document.title)', "auth og:title tracks document.title");
+{
+  const src = read("out/pricing.html");
+  const start = src.indexOf("(async function init()");
+  const end = src.indexOf("})();", start);
+  const init = start >= 0 && end > start ? src.slice(start, end) : "";
+  const flagAt = init.indexOf("PAYMENTS_ENABLED");
+  const probeAt = init.indexOf("checkoutAvailable");
+  const soonAt = init.indexOf("applyComingSoon");
+  if (flagAt < 0 || soonAt < 0) {
+    fail.push("pricing init must check PAYMENTS_ENABLED and apply coming-soon copy");
+  } else ok.push("pricing init checks PAYMENTS_ENABLED and applyComingSoon");
+  if (probeAt >= 0 && flagAt > probeAt) {
+    fail.push("pricing must honor PAYMENTS_ENABLED before probing /api/checkout");
+  } else ok.push("pricing does not probe /api/checkout while payments are off");
+}
 mustNotContain("libs/stripe.ts", "console.log", "stripe lib never logs (keys)");
 mustNotContain("functions/api/checkout.ts", "console.log", "checkout never logs");
 mustNotContain("functions/api/webhooks/stripe.ts", "console.log", "webhook never logs");

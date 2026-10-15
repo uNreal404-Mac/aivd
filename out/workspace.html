@@ -766,12 +766,19 @@ function showPackBanner() {
   if (!banner || !selectedPack) return;
   banner.hidden = false;
   banner.classList.add("show");
+  const paymentsOn = !!(window.DU && DU.PAYMENTS_ENABLED);
   document.getElementById("packBannerTitle").textContent = selectedPack.name + " selected";
   document.getElementById("packBannerText").innerHTML = token
-    ? selectedPack.price + " · " + selectedPack.credits + " credits. First purchase also adds <b>31 bonus credits</b> (5 Lite + 1 Pro). If Stripe is configured, use Buy with Stripe — otherwise keep creating with your current credits."
+    ? (paymentsOn
+        ? selectedPack.price + " · " + selectedPack.credits + " credits. First purchase also adds <b>31 bonus credits</b> (5 Lite + 1 Pro). If Stripe is configured, use Buy with Stripe — otherwise keep creating with your current credits."
+        : selectedPack.price + " · " + selectedPack.credits + " credits. 支付即将开放 / Payments coming soon — this does not charge a card. First paid pack will add <b>31 bonus credits</b> (5 Lite + 1 Pro).")
     : selectedPack.price + " · " + selectedPack.credits + " credits. <a href=\"" + authHref("register") + "\">Sign up</a> or <a href=\"" + authHref("login") + "\">log in</a> to continue with this pack.";
   if (buyBtn) {
-    buyBtn.hidden = !token;
+    buyBtn.hidden = !token || !paymentsOn;
+    if (!paymentsOn) {
+      buyBtn.onclick = null;
+      return;
+    }
     buyBtn.onclick = async function () {
       if (!token) return goAuth("login");
       buyBtn.disabled = true;
