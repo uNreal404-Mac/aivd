@@ -7,7 +7,9 @@
 | 进度 | 读取本仓库 GitHub issue `#20` 最近几条评论，用规则模板整理成简体中文摘要（台北时间），写入 KV 短缓存 |
 | 网址 | 返回演示站 `https://dreamutopia-clone.pages.dev` |
 | 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
-| 需求： / 需求: | 群里 @ 机器人后，在本仓库创建带 `feishu-request` 标签的 GitHub issue，并在原消息线程回复链接。issue 关闭后通过 GitHub webhook 回帖 |
+| 需求： / 需求: | 仅白名单群可建单：群 `chat_id` 必须在 `config.allowedChatIds` 或环境变量 `ALLOWED_CHAT_IDS` 中。未设置或为空时 **失败关闭**。通过后在本仓库创建带 `feishu-request` 标签的 GitHub issue（正文已脱敏，不含提出人 / `open_id` / `chat_id`），并在原消息线程回复链接。映射只写 KV。issue 关闭后通过 GitHub webhook 回帖 |
+
+所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。
 
 其他内容返回帮助说明。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
@@ -33,8 +35,9 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `FEISHU_ENCRYPT_KEY` | 可选 | 飞书事件 Encrypt Key。当前飞书侧加密已关闭，**不要设置**。以后若开启加密，再 `wrangler secret put` 同一把密钥 |
 | `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度可读公开评论 API；没有 token 时进度仍走公开接口。创建/关单回帖需要写权限 |
 | `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
+| `ALLOWED_CHAT_IDS` | **需求** 必须（合入后由运营填写） | 允许提交需求的飞书群 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时拒绝所有需求建单。这不是 secret，不要把真实群 id 以外的密钥写进仓库 |
 
-不要把上述值写进 `wrangler.toml`、`.dev.vars`、仓库文件、命令参数或 pull request。
+不要把飞书 / GitHub secrets 写进 `wrangler.toml`、`.dev.vars`、仓库文件、命令参数或 pull request。`ALLOWED_CHAT_IDS` 可以放在 Worker `[vars]` 或 `config.mjs`。
 
 ## 本地测试和开发
 
@@ -90,7 +93,7 @@ npx wrangler dev
    https://feishu-bot.<account-subdomain>.workers.dev/github/webhook
    ```
 
-## 飞书开放平台配置（老三）
+## 飞书开放平台配置（三儿）
 
 在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本。当前加密已关闭，保持关闭即可。
 
@@ -102,9 +105,10 @@ npx wrangler dev
    - `im:message.group_at_msg`
    - `im:message:send_as_bot`
    - 如果飞书权限面板把私聊接收权限单独列出，再申请 `im:message.p2p_msg`
-5. 将应用版本提交发布，确认机器人对测试用户可见，并已加入要收集需求的群聊。群里只有 @ 到此应用本人才会回复；群里的 `需求：` 也必须 @ 机器人。私聊可以直接发送 `需求：`。
+5. 将应用版本提交发布，确认机器人对测试用户可见，并已加入要收集需求的群聊。群里只有 @ 到此应用本人才会回复；群里的 `需求：` 也必须 @ 机器人。
+6. **合入后必须设置合作方群 id**：把该群的 `chat_id` 写入 `ALLOWED_CHAT_IDS` 或 `config.allowedChatIds`。未设置时需求命令失败关闭，不会创建公开 issue。
 
-## GitHub 配置（老三）
+## GitHub 配置（三儿）
 
 1. 在本仓库创建标签 `feishu-request`（Issues → Labels）。没有该标签时，Worker 会退化为不带标签建 issue。
 2. 创建 **fine-grained personal access token**：
@@ -120,4 +124,4 @@ npx wrangler dev
    - Which events：Let me select individual events → 勾选 **Issues**（关闭 issue 时会收到 `issues` + `action=closed`）
    - Active：勾选
 
-Worker 用 KV 记录 issue 号与飞书 `chat_id` / `message_id` 的对应关系，并用 GitHub `X-GitHub-Delivery` 以及飞书 `event_id` / `message_id` 做去重。同一用户 60 秒内重复提交 `需求：` 会被限流。Workers KV 最终一致，不承诺并发下严格 exactly-once。
+Worker 用 KV 记录 issue 号与飞书 `chat_id` / `message_id` / 提出人的对应关系（**不写入公开 issue 标题或正文**）。公开 issue 会脱敏手机号、邮箱和金额。用 GitHub `X-GitHub-Delivery` 以及飞书 `event_id` / `message_id` 做去重。同一用户 60 秒内重复提交 `需求：` 会被限流。Workers KV 最终一致，不承诺并发下严格 exactly-once。

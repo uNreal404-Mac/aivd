@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { dedupeKeys } from "../src/dedupe.mjs";
 import { HELP_MESSAGE, PROGRESS_MESSAGE } from "../src/commands.mjs";
+import { signOutboundText } from "../src/config.mjs";
 import { hmacSha256Hex } from "../src/github.mjs";
 import { createWorker } from "../src/worker.mjs";
 
@@ -112,10 +113,12 @@ function makeGithubFetch({
     }
     if (String(url).includes("api.github.com") && /\/issues$/.test(String(url)) && init.method === "POST") {
       calls.push({ url, init });
+      const posted = JSON.parse(init.body);
       const created = {
         number: 21,
         html_url: "https://github.com/CharlesHarry7/dreamutopia-clone/issues/21",
-        title: JSON.parse(init.body).title,
+        title: posted.title,
+        body: posted.body,
       };
       issues.push(created);
       return Response.json(created, { status: 201 });
@@ -208,10 +211,10 @@ test("rejects an unsigned plaintext message when an Encrypt Key is configured", 
 
 test("routes progress, URL, health, and unsupported commands to safe text replies", async () => {
   const cases = [
-    ["及时汇报项目进度", PROGRESS_MESSAGE],
-    ["网址", "https://dreamutopia-clone.pages.dev"],
+    ["及时汇报项目进度", signOutboundText(PROGRESS_MESSAGE)],
+    ["网址", signOutboundText("https://dreamutopia-clone.pages.dev")],
     ["健康", "健康检查：HTTP 200；ok=true；authReady=false"],
-    ["做个视频", HELP_MESSAGE],
+    ["做个视频", signOutboundText(HELP_MESSAGE)],
   ];
 
   for (const [text, expected] of cases) {
@@ -317,7 +320,7 @@ test("replies to a group message only when the mention matches the bot open_id",
   assert.equal((await send(worker, personMention, env)).status, 200);
   assert.equal(replies.length, 0);
   assert.equal((await send(worker, botMention, env)).status, 200);
-  assert.equal(JSON.parse(replies[0].content).text, "https://dreamutopia-clone.pages.dev");
+  assert.equal(JSON.parse(replies[0].content).text, signOutboundText("https://dreamutopia-clone.pages.dev"));
 });
 
 test("deduplicates a repeated event and a repeated message with another event_id", async () => {
@@ -395,6 +398,7 @@ test("creates a GitHub issue from a group 需求 mention and replies with the li
   const worker = createWorker({ fetchImpl: makeGithubFetch({ replies, issues }) });
   const env = makeEnv();
   env.GITHUB_TOKEN = "ghs_test_token";
+  env.ALLOWED_CHAT_IDS = "oc_chat";
   const payload = messagePayload({
     chatType: "group",
     text: "@_bot_1 需求：落地页要加中文",
@@ -406,8 +410,30 @@ test("creates a GitHub issue from a group 需求 mention and replies with the li
   assert.equal((await send(worker, payload, env)).status, 200);
   assert.equal(issues.length, 1);
   assert.match(issues[0].title, /落地页要加中文/);
+  assert.doesNotMatch(issues[0].title, /老王|ou_user|oc_chat/);
+  assert.doesNotMatch(issues[0].body, /老王|ou_user|oc_chat/);
   assert.match(JSON.parse(replies[0].content).text, /issues\/21/);
   assert.equal(await env.BOT_KV.get("feishu:request-issue:om_request"), "21");
+});
+
+test("rejects 需求 from a group that is not on the allowlist", async () => {
+  const replies = [];
+  const issues = [];
+  const worker = createWorker({ fetchImpl: makeGithubFetch({ replies, issues }) });
+  const env = makeEnv();
+  env.GITHUB_TOKEN = "ghs_test_token";
+  const payload = messagePayload({
+    chatType: "group",
+    chatId: "oc_unknown",
+    text: "@_bot_1 需求：不该建单",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    messageId: "om_denied",
+    eventId: "evt-denied",
+  });
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(issues.length, 0);
+  assert.match(JSON.parse(replies[0].content).text, /未授权/);
 });
 
 test("posts a close notice through the GitHub webhook and ignores a duplicate delivery", async () => {

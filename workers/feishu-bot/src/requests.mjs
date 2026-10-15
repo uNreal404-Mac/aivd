@@ -1,5 +1,5 @@
 import { HELP_MESSAGE } from "./commands.mjs";
-import { botConfig } from "./config.mjs";
+import { botConfig, isAllowedRequestChat, signOutboundText } from "./config.mjs";
 import { getTenantAccessToken, replyToMessage, replyUuid, sendTextToChat } from "./feishu-api.mjs";
 import { createIssue, verifyGitHubSignature } from "./github.mjs";
 
@@ -32,27 +32,35 @@ export function parseRequestBody(text) {
   return match[1].trim();
 }
 
-export function buildIssueContent({ requester, chatId, messageId, body }) {
-  const who = requester?.name || requester?.openId || "未知用户";
-  const titleSource = String(body || "").split(/\n/, 1)[0].trim() || "未填写具体内容";
+export function sanitizeRequestText(text) {
+  let value = String(text ?? "");
+  value = value.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[已脱敏-邮箱]");
+  value = value.replace(/(?:\+?86[-\s]*)?1[3-9]\d(?:[-\s]?\d){8}\b/g, "[已脱敏-电话]");
+  value = value.replace(/(?:[¥￥$€£]|RMB|CNY|USD)\s*[\d,]+(?:\.\d{1,2})?/gi, "[已脱敏-金额]");
+  value = value.replace(/[\d,]+(?:\.\d{1,2})?\s*(?:万元|块钱|人民币|元|块)/g, "[已脱敏-金额]");
+  return value;
+}
+
+export function buildIssueContent({ body } = {}) {
+  const sanitized = sanitizeRequestText(body).trim();
+  const titleSource = sanitized.split(/\n/, 1)[0].trim() || "未填写具体内容";
   const title = `飞书需求：${titleSource}`.slice(0, 70);
   const markdown = [
-    "## 来源",
-    `- 提出人：${who}`,
-    `- 飞书会话：${chatId || "未知"}`,
-    `- 消息 ID：${messageId || "未知"}`,
-    "",
     "## 需求",
-    body || "（未填写具体内容）",
+    sanitized || "（未填写具体内容）",
     "",
     "---",
-    "此 issue 由飞书机器人自动创建。关闭后会通知原飞书会话。",
+    "此 issue 由飞书机器人自动创建。关闭后会通知原飞书会话。提出人与会话映射只保存在 Workers KV，不写入公开 issue。",
   ].join("\n");
   return {
     title,
     body: markdown,
     labels: [botConfig.github.requestLabel],
   };
+}
+
+function signedReply(text, config = botConfig) {
+  return signOutboundText(text, config);
 }
 
 export async function handleFeishuRequest({
@@ -64,8 +72,11 @@ export async function handleFeishuRequest({
   config = botConfig,
 } = {}) {
   const body = parseRequestBody(selected?.text ?? "");
-  if (body === null) return HELP_MESSAGE;
-  if (!body) return "请在「需求：」后面写具体内容，例如「需求：落地页要加中文」。";
+  if (body === null) return signedReply(HELP_MESSAGE, config);
+  if (!body) return signedReply("请在「需求：」后面写具体内容，例如「需求：落地页要加中文」。", config);
+  if (!isAllowedRequestChat({ chatId: context?.chatId, config, env })) {
+    return signedReply("当前会话未授权提交需求，请联系项目负责人。", config);
+  }
 
   const messageId = selected.messageId;
   const existingNumber = await kv.get(`${REQUEST_ISSUE_PREFIX}${messageId}`);
@@ -80,23 +91,18 @@ export async function handleFeishuRequest({
         // Keep the constructed URL when a mapping blob is malformed.
       }
     }
-    return `已登记过该需求：${htmlUrl}`;
+    return signedReply(`已登记过该需求：${htmlUrl}`, config);
   }
 
   const senderKey = context?.senderOpenId || context?.chatId || "unknown";
   const rateKey = `rl:request:${senderKey}`;
-  if (await kv.get(rateKey)) return "提交太频繁，请稍后再试。";
+  if (await kv.get(rateKey)) return signedReply("提交太频繁，请稍后再试。", config);
 
   if (typeof env?.GITHUB_TOKEN !== "string" || !env.GITHUB_TOKEN) {
-    return "GitHub 尚未配置，无法创建需求工单。请联系项目负责人。";
+    return signedReply("GitHub 尚未配置，无法创建需求工单。请联系项目负责人。", config);
   }
 
-  const content = buildIssueContent({
-    requester: { name: context?.senderName, openId: context?.senderOpenId },
-    chatId: context?.chatId,
-    messageId,
-    body,
-  });
+  const content = buildIssueContent({ body });
   const created = await createIssue({
     token: env.GITHUB_TOKEN,
     title: content.title,
@@ -114,7 +120,7 @@ export async function handleFeishuRequest({
   await kv.put(`${ISSUE_MAP_PREFIX}${created.number}`, JSON.stringify(mapping));
   await kv.put(`${REQUEST_ISSUE_PREFIX}${messageId}`, String(created.number), { expirationTtl: 604800 });
   await kv.put(rateKey, "1", { expirationTtl: Math.max(60, config.request.rateLimitSeconds) });
-  return `已帮你登记需求：${created.html_url}`;
+  return signedReply(`已帮你登记需求：${created.html_url}`, config);
 }
 
 async function notifyIssueClosed({ kv, env, fetchImpl, now, issue }) {
@@ -136,7 +142,7 @@ async function notifyIssueClosed({ kv, env, fetchImpl, now, issue }) {
     ? issue.html_url
     : (mapping.htmlUrl || issueUrl(issue.number));
   const title = typeof issue.title === "string" && issue.title ? issue.title : `GitHub #${issue.number}`;
-  const text = `你提交的需求已完成：GitHub #${issue.number}「${title}」已关闭。\n${htmlUrl}`;
+  const text = signOutboundText(`你提交的需求已完成：GitHub #${issue.number}「${title}」已关闭。\n${htmlUrl}`);
   const uuid = await replyUuid(`closed:${issue.number}:${closedAt}`);
   const token = await getTenantAccessToken({
     kv,

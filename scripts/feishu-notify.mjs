@@ -13,6 +13,7 @@ import { createHmac } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { DEFAULT_SIGNATURE } from "../workers/feishu-bot/src/config.mjs";
 
 export const SITE_URL = "https://dreamutopia-clone.pages.dev";
 export const WEBHOOK_URL_ENV = "FEISHU_WEBHOOK_URL";
@@ -159,6 +160,13 @@ function mdLink(label, url) {
   return `[${label}](${url})`;
 }
 
+function signatureNote(signature = DEFAULT_SIGNATURE) {
+  return {
+    tag: "note",
+    elements: [{ tag: "plain_text", content: signature }],
+  };
+}
+
 export function buildDeployCard(ctx) {
   const lines = [];
   if (ctx.pr != null && ctx.title) lines.push(`**PR #${ctx.pr}** ${ctx.title}`);
@@ -196,7 +204,7 @@ export function buildDeployCard(ctx) {
         template: "green",
         title: { tag: "plain_text", content: "生产环境已更新" },
       },
-      elements,
+      elements: [...elements, signatureNote()],
     },
   };
 }
@@ -238,7 +246,7 @@ export function buildAcceptanceCard(ctx) {
         template: passed ? "green" : "red",
         title: { tag: "plain_text", content: `验收结果：${result}` },
       },
-      elements,
+      elements: [...elements, signatureNote()],
     },
   };
 }

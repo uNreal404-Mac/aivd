@@ -140,6 +140,8 @@ function jsonResponse(body, status = 200) {
   check(md.includes("PR #27") && md.includes("feat: 企业定制询价页"), "deploy card has PR number and title");
   check(md.includes("7edc5db"), "deploy card has short sha");
   check(md.includes(SITE_URL) && md.includes("/pull/27"), "deploy card has site and PR links");
+  check(JSON.stringify(card).includes("Grok Bot · AI视频项目专属机器人 三儿"), "deploy card footer signs as 三儿");
+  check(!JSON.stringify(card).includes("老三"), "deploy card omits 老三");
 }
 
 {
@@ -148,6 +150,8 @@ function jsonResponse(body, status = 200) {
   check(pass.card.header.title.content === "验收结果：通过" && pass.card.header.template === "green", "acceptance pass header");
   check(failCard.card.header.title.content === "验收结果：未通过" && failCard.card.header.template === "red", "acceptance fail header");
   check(pass.card.elements[0].text.content.includes("健康检查通过"), "acceptance includes summary");
+  check(JSON.stringify(pass).includes("Grok Bot · AI视频项目专属机器人 三儿"), "acceptance card footer signs as 三儿");
+  check(!JSON.stringify(failCard).includes("老三"), "acceptance card omits 老三");
 }
 
 {

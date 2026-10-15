@@ -49,7 +49,7 @@ test("parses 需求 with a fullwidth or halfwidth colon and ignores other text",
   assert.equal(parseRequestBody("进度"), null);
 });
 
-test("builds an issue title and body that name the requester and chat", () => {
+test("builds a public issue without requester name, open_id, or chat_id", () => {
   const content = buildIssueContent({
     requester: { name: "老王", openId: "ou_user" },
     chatId: "oc_chat",
@@ -57,21 +57,48 @@ test("builds an issue title and body that name the requester and chat", () => {
     body: "落地页要加中文",
   });
   assert.equal(content.title, "飞书需求：落地页要加中文");
-  assert.match(content.body, /老王/);
-  assert.match(content.body, /oc_chat/);
-  assert.match(content.body, /om_msg/);
   assert.match(content.body, /落地页要加中文/);
+  assert.doesNotMatch(content.title, /老王|ou_user|oc_chat/);
+  assert.doesNotMatch(content.body, /老王|ou_user|oc_chat/);
   assert.deepEqual(content.labels, ["feishu-request"]);
 });
 
-test("falls back to open_id when the display name is missing", () => {
+test("redacts phones, emails, and money amounts before writing the public issue", () => {
   const content = buildIssueContent({
-    requester: { name: "", openId: "ou_user" },
+    requester: { name: "老王", openId: "ou_user" },
     chatId: "oc_chat",
-    messageId: "om_msg",
-    body: "需要报价",
+    body: "联系 13812345678 / user@example.com，预算 5000元 或 $99.50 / ¥1,200。",
   });
-  assert.match(content.body, /ou_user/);
+  assert.doesNotMatch(content.title, /13812345678|user@example\.com|5000元|\$99\.50|¥1,200/);
+  assert.doesNotMatch(content.body, /13812345678|user@example\.com|5000元|\$99\.50|¥1,200/);
+  assert.match(content.body, /已脱敏/);
+});
+
+test("rejects 需求 from unknown group chats and fail-closes when the allowlist is empty", async () => {
+  let githubCalls = 0;
+  const fetchImpl = async () => {
+    githubCalls += 1;
+    throw new Error("unknown chats must not create issues");
+  };
+  const denied = await handleFeishuRequest({
+    kv: fakeKv(),
+    env: { GITHUB_TOKEN: "ghs_test_token" },
+    selected: { messageId: "om_denied", chatType: "group", text: "需求：落地页要加中文" },
+    context: { chatId: "oc_unknown", senderOpenId: "ou_user", senderName: "老王" },
+    fetchImpl,
+  });
+  assert.equal(githubCalls, 0);
+  assert.match(denied, /未授权|不允许|不接受/);
+
+  const emptyAllowlist = await handleFeishuRequest({
+    kv: fakeKv(),
+    env: { GITHUB_TOKEN: "ghs_test_token", ALLOWED_CHAT_IDS: "" },
+    selected: { messageId: "om_empty", chatType: "group", text: "需求：落地页要加中文" },
+    context: { chatId: "oc_chat", senderOpenId: "ou_user", senderName: "老王" },
+    fetchImpl,
+  });
+  assert.equal(githubCalls, 0);
+  assert.match(emptyAllowlist, /未授权|不允许|不接受/);
 });
 
 test("creates a GitHub issue, stores the chat mapping, and returns the issue link", async () => {
@@ -79,7 +106,7 @@ test("creates a GitHub issue, stores the chat mapping, and returns the issue lin
   const githubPosts = [];
   const text = await handleFeishuRequest({
     kv,
-    env: { GITHUB_TOKEN: "ghs_test_token" },
+    env: { GITHUB_TOKEN: "ghs_test_token", ALLOWED_CHAT_IDS: "oc_chat" },
     selected: { messageId: "om_1", text: "需求：落地页要加中文" },
     context: { chatId: "oc_chat", senderOpenId: "ou_user", senderName: "老王" },
     fetchImpl: async (url, init) => {
@@ -94,9 +121,13 @@ test("creates a GitHub issue, stores the chat mapping, and returns the issue lin
 
   assert.match(text, /https:\/\/github.com\/CharlesHarry7\/dreamutopia-clone\/issues\/21/);
   assert.equal(githubPosts.length, 1);
+  const created = JSON.parse(githubPosts[0].init.body);
+  assert.doesNotMatch(created.title, /老王|ou_user|oc_chat/);
+  assert.doesNotMatch(created.body, /老王|ou_user|oc_chat/);
   const mapping = JSON.parse(await kv.get(`${ISSUE_MAP_PREFIX}21`));
   assert.equal(mapping.chatId, "oc_chat");
   assert.equal(mapping.messageId, "om_1");
+  assert.equal(mapping.requester, "老王");
   assert.equal(await kv.get(`${REQUEST_ISSUE_PREFIX}om_1`), "21");
 });
 
@@ -112,7 +143,7 @@ test("does not create a second issue when the same Feishu message is retried", a
   let githubCalls = 0;
   const text = await handleFeishuRequest({
     kv,
-    env: { GITHUB_TOKEN: "ghs_test_token" },
+    env: { GITHUB_TOKEN: "ghs_test_token", ALLOWED_CHAT_IDS: "oc_chat" },
     selected: { messageId: "om_1", text: "需求：落地页要加中文" },
     context: { chatId: "oc_chat", senderOpenId: "ou_user", senderName: "老王" },
     fetchImpl: async () => {
@@ -129,7 +160,7 @@ test("rate-limits repeated 需求 from the same sender", async () => {
   let githubCalls = 0;
   const text = await handleFeishuRequest({
     kv,
-    env: { GITHUB_TOKEN: "ghs_test_token" },
+    env: { GITHUB_TOKEN: "ghs_test_token", ALLOWED_CHAT_IDS: "oc_chat" },
     selected: { messageId: "om_2", text: "需求：再提一个" },
     context: { chatId: "oc_chat", senderOpenId: "ou_user", senderName: "老王" },
     fetchImpl: async () => {

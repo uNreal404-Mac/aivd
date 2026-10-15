@@ -553,9 +553,16 @@ if (!exists("workers/feishu-bot/TEMPLATE.md")) fail.push("feishu bot must docume
 else ok.push("feishu bot has TEMPLATE.md");
 mustContain("workers/feishu-bot/src/config.mjs", "github-issue-comments", "progress command is config-driven");
 mustContain("workers/feishu-bot/src/config.mjs", "github-create-issue", "request command is config-driven");
+mustContain("workers/feishu-bot/src/config.mjs", "Grok Bot · AI视频项目专属机器人 三儿", "shared Feishu signature default");
+mustContain("workers/feishu-bot/src/config.mjs", "allowedChatIds", "需求 allowlist lives in config");
+mustContain("workers/feishu-bot/src/config.mjs", "signOutboundText", "copied role bots override one signature helper");
 mustContain("workers/feishu-bot/README.md", "GITHUB_TOKEN", "bot README names GITHUB_TOKEN");
 mustContain("workers/feishu-bot/README.md", "GITHUB_WEBHOOK_SECRET", "bot README names GITHUB_WEBHOOK_SECRET");
+mustContain("workers/feishu-bot/README.md", "ALLOWED_CHAT_IDS", "bot README tells operator to set partner group id");
 mustContain("workers/feishu-bot/README.md", "im:message:send_as_bot", "bot README lists send_as_bot");
+mustContain("workers/feishu-bot/TEMPLATE.md", "signature", "TEMPLATE documents overridable signature");
+mustContain("workers/feishu-bot/TEMPLATE.md", "allowedChatIds", "TEMPLATE documents 需求 allowlist");
+mustContain("scripts/feishu-notify.mjs", "Grok Bot · AI视频项目专属机器人 三儿", "notify cards share the bot signature");
 mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
 {
   const botSrcDir = path.join(root, "workers/feishu-bot/src");
@@ -565,8 +572,10 @@ mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not
     mustNotContain(rel, "/api/upload", `${rel} must not call /api/upload`);
     mustNotContain(rel, "GENERATION_ENABLED", `${rel} must not touch GENERATION_ENABLED`);
     mustNotContain(rel, "kie.ai", `${rel} must not call KIE`);
+    mustNotContain(rel, "老三", `${rel} outbound/source copy must not contain 老三`);
   }
 }
+mustNotContain("scripts/feishu-notify.mjs", "老三", "notify script outbound copy omits 老三");
 
 if (!exists("scripts/feishu-notify.mjs")) fail.push("missing scripts/feishu-notify.mjs");
 else ok.push("scripts/feishu-notify.mjs exists");
