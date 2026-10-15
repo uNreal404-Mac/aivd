@@ -2,7 +2,7 @@
  * GENERATION_ENABLED kill switch — mocks only. Never calls real KIE.
  */
 import {
-  BUSINESS_PATH,
+  WORKSPACE_PATH,
   GENERATION_DISABLED_CODE,
   GENERATION_DISABLED_MESSAGE,
   generationCta,
@@ -10,6 +10,7 @@ import {
 } from "../libs/generation.ts";
 import { onRequestPost as generatePost } from "../functions/api/generate.ts";
 import { onRequestGet as uploadGet, onRequestPost as uploadPost } from "../functions/api/upload.ts";
+import { onRequest as uploadTicket } from "../functions/api/upload-ticket.ts";
 import { onRequestGet as healthGet } from "../functions/api/health.ts";
 
 const fail = [];
@@ -76,13 +77,13 @@ try {
 
   {
     const samples = generationCta(false, "samples", { href: "/workspace", label: "Start Creating Free →" });
-    assert(samples.href === BUSINESS_PATH && samples.label === "查看样片" && samples.closed, "closed samples CTA → /business 查看样片");
-    const quote = generationCta(false, "quote", { href: "/auth?mode=register", label: "Claim 10 Free Credits" });
-    assert(quote.href === BUSINESS_PATH && quote.label === "企业定制询价" && quote.closed, "closed quote CTA → /business 企业定制询价");
+    assert(samples.href === WORKSPACE_PATH && samples.label === "Start Creating Free →" && samples.closed, "closed samples CTA → /workspace");
+    const quote = generationCta(false, "quote", { href: "/workspace", label: "Claim 10 Free Credits" });
+    assert(quote.href === WORKSPACE_PATH && quote.label === "Claim 10 Free Credits" && quote.closed, "closed quote CTA → /workspace (no /business)");
     const open = generationCta(true, "samples", { href: "/workspace", label: "Start Creating Free →" });
-    assert(open.href === "/workspace" && open.label === "Start Creating Free →" && !open.closed, "enabled CTA restores original");
-    const openQuote = generationCta(true, "quote", { href: "/auth?mode=register", label: "Claim 10 Free Credits" });
-    assert(openQuote.href === "/auth?mode=register" && openQuote.label === "Claim 10 Free Credits", "enabled quote CTA restores original");
+    assert(open.href === "/workspace" && open.label === "Start Creating Free →" && !open.closed, "enabled CTA stays on /workspace");
+    const openQuote = generationCta(true, "quote", { href: "/workspace", label: "Claim 10 Free Credits" });
+    assert(openQuote.href === "/workspace" && openQuote.label === "Claim 10 Free Credits", "enabled quote CTA goes to /workspace");
   }
 
   {
@@ -118,6 +119,30 @@ try {
   }
 
   {
+    fetchCalls.length = 0;
+    const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
+    assert(cap.status === 503 && cap.body.code === GENERATION_DISABLED_CODE, "GET /api/upload off is 503 generation_disabled");
+    assert(cap.body.message === GENERATION_DISABLED_MESSAGE, "closed GET /api/upload message is 暂未开放");
+    const ticketGet = await jsonOf(
+      await uploadTicket(
+        pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload-ticket?key=demo"))
+      )
+    );
+    assert(ticketGet.status === 503 && ticketGet.body.code === GENERATION_DISABLED_CODE, "GET /api/upload-ticket off is 503 generation_disabled");
+    assert(ticketGet.body.message === GENERATION_DISABLED_MESSAGE, "closed upload-ticket message is 暂未开放");
+    const ticketPost = await jsonOf(
+      await uploadTicket(
+        pagesCtx(
+          {},
+          new Request("https://dreamutopia-clone.pages.dev/api/upload-ticket", { method: "POST", body: "x" })
+        )
+      )
+    );
+    assert(ticketPost.status === 503 && ticketPost.body.code === GENERATION_DISABLED_CODE, "POST /api/upload-ticket off is 503 generation_disabled");
+    assert(fetchCalls.length === 0, "closed upload-ticket never calls KIE");
+  }
+
+  {
     const health = await jsonOf(await healthGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/health"))));
     assert(health.status === 200 && health.body.generationEnabled === false, "health defaults generationEnabled false");
     assert(health.body.generateReady === false, "health generateReady is false while generation is off");
@@ -148,8 +173,6 @@ try {
       openHealth.body.message === "D1 + KV + KIE + R2 ready — 2 free Lite I2V tries, then sign in",
       "health ready message only when generation is on"
     );
-    const cap = await jsonOf(await uploadGet(pagesCtx({}, new Request("https://dreamutopia-clone.pages.dev/api/upload"))));
-    assert(cap.body.generationEnabled === false, "GET /api/upload reports generationEnabled false");
   }
 
   {

@@ -1,10 +1,10 @@
-#!/usr/bin/env node
 /**
- * Mock D1 / KV checks for POST /api/business.
+ * /api/business is retired (410). Inquiry validation helpers stay unit-tested.
  * Does not call KIE, Stripe, or any remote database.
  */
-import { validateBusinessInquiry, SUCCESS_MESSAGE, FIELD_LIMITS } from "../libs/businessInquiry.ts";
-import { onRequestPost } from "../functions/api/business.ts";
+import { validateBusinessInquiry, FIELD_LIMITS } from "../libs/businessInquiry.ts";
+import { onRequestGet, onRequestPost } from "../functions/api/business.ts";
+import { onRequest as businessPage } from "../functions/business.ts";
 
 const fail = [];
 const ok = [];
@@ -33,28 +33,12 @@ function mockD1() {
   const rows = [];
   return {
     rows,
-    prepare(sql) {
+    prepare() {
       return {
-        bind(...args) {
+        bind() {
           return {
             async run() {
-              const q = sql.replace(/\s+/g, " ").trim();
-              if (/^INSERT INTO business_inquiries/.test(q)) {
-                const id = rows.length + 1;
-                rows.push({
-                  id,
-                  company: args[0],
-                  contact: args[1],
-                  industry: args[2],
-                  need_type: args[3],
-                  quantity: args[4],
-                  budget: args[5],
-                  notes: args[6],
-                  created_at: "2026-10-15T00:00:00.000Z",
-                });
-                return { success: true, meta: { last_row_id: id, changes: 1 } };
-              }
-              throw new Error("mock D1: unhandled SQL " + q.slice(0, 80));
+              throw new Error("retired /api/business must not write D1");
             },
           };
         },
@@ -117,58 +101,33 @@ async function postInquiry(env, body, headers = {}) {
   const env = { DB: db, SESSIONS: mockKv() };
   const res = await postInquiry(env, validBody());
   const data = await res.json();
-  assert(res.status === 200 && data.ok === true, "POST valid inquiry returns 200 ok");
-  assert(data.message === SUCCESS_MESSAGE, "success copy is 24-hour quote promise");
-  assert(data.message === "我们会在 24 小时内联系您报价", "success message is exact Chinese copy");
-  assert(db.rows.length === 1, "mock D1 received one insert");
-  assert(db.rows[0].company === "示例贸易", "stored company");
-  assert(db.rows[0].contact === "ops@example.com", "stored contact");
-  assert(db.rows[0].need_type === "商品展示", "stored need_type");
-  assert(db.rows[0].created_at, "row has created_at");
+  assert(res.status === 410 && (data.code === "gone" || data.error === "gone"), "POST /api/business is 410");
+  assert(db.rows.length === 0, "410 path does not write D1");
 }
 
 {
-  const db = mockD1();
-  const env = { DB: db, SESSIONS: mockKv() };
-  const res = await postInquiry(env, validBody({ website: "http://bots.test" }));
+  const res = await onRequestGet({
+    request: new Request("https://dreamutopia-clone.pages.dev/api/business"),
+    env: { DB: mockD1(), SESSIONS: mockKv() },
+  });
   const data = await res.json();
-  assert(res.status === 200 && data.ok === true, "honeypot still returns success");
-  assert(data.message === SUCCESS_MESSAGE, "honeypot uses the same success copy");
-  assert(db.rows.length === 0, "honeypot does not write D1");
-}
-
-{
-  const env = { DB: mockD1(), SESSIONS: mockKv() };
-  const res = await postInquiry(env, { company: "", contact: "a@b.com" });
-  const data = await res.json();
-  assert(res.status === 400 && data.code === "company_required", "missing company is 400");
-}
-
-{
-  const env = { DB: mockD1(), SESSIONS: mockKv() };
-  const res = await postInquiry(env, "not-json");
-  const data = await res.json();
-  assert(res.status === 400 && (data.error === "invalid json" || data.code === "invalid_json"), "invalid JSON is 400");
+  assert(res.status === 410 && (data.code === "gone" || data.error === "gone"), "GET /api/business is 410");
 }
 
 {
   const res = await postInquiry({}, validBody());
   const data = await res.json();
-  assert(res.status === 503, "missing DB binding is 503");
-  assert(String(data.error || data.message || "").includes("DB"), "503 mentions missing DB");
+  assert(res.status === 410, "missing DB binding still 410 (endpoint retired)");
+  assert(data.code === "gone" || data.error === "gone", "retired endpoint code is gone");
 }
 
 {
-  const db = mockD1();
-  const kv = mockKv();
-  const env = { DB: db, SESSIONS: kv };
-  let last;
-  for (let i = 0; i < 6; i++) {
-    last = await postInquiry(env, validBody({ company: `公司${i}` }), { "cf-connecting-ip": "203.0.113.9" });
-  }
-  const data = await last.json();
-  assert(last.status === 429 && data.code === "rate_limited", "6th inquiry from same IP is rate limited");
-  assert(db.rows.length === 5, "only first 5 inquiries are stored");
+  const res = await businessPage({
+    request: new Request("https://dreamutopia-clone.pages.dev/business"),
+    env: {},
+  });
+  assert(res.status === 301, "/business page is 301");
+  assert(res.headers.get("Location") === "/workspace", "/business Location is /workspace");
 }
 
 if (fail.length) {

@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workspace — DreamUtopia</title>
-<meta name="description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<title>AI Video Generator – Turn Photos into Videos | DreamUtopia</title>
+<meta name="description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <link rel="canonical" href="https://dreamutopia-clone.pages.dev/workspace">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="DreamUtopia">
-<meta property="og:title" content="Workspace — DreamUtopia">
-<meta property="og:description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<meta property="og:title" content="AI Video Generator – Turn Photos into Videos | DreamUtopia">
+<meta property="og:description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <meta property="og:url" content="https://dreamutopia-clone.pages.dev/workspace">
 <meta property="og:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Workspace — DreamUtopia">
-<meta name="twitter:description" content="Create AI videos from your images. Pick a model, describe the motion, generate in seconds.">
+<meta name="twitter:title" content="AI Video Generator – Turn Photos into Videos | DreamUtopia">
+<meta name="twitter:description" content="Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.">
 <meta name="twitter:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","name":"Workspace — DreamUtopia","description":"Create AI videos from your images. Pick a model, describe the motion, generate in seconds.","url":"https://dreamutopia-clone.pages.dev/workspace","isPartOf":{"@id":"https://dreamutopia-clone.pages.dev/#website"}}
+{"@context":"https://schema.org","@type":"WebPage","name":"AI Video Generator – Turn Photos into Videos | DreamUtopia","description":"Upload an image, pick a model and motion style, and generate an AI video in minutes. Preview and download your results in HD.","url":"https://dreamutopia-clone.pages.dev/workspace","isPartOf":{"@id":"https://dreamutopia-clone.pages.dev/#website"}}
 </script>
 <meta name="theme-color" content="#0d0d12">
 <meta name="mobile-web-app-capable" content="yes">
@@ -69,13 +69,22 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .btn-signup{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600}
 .lang-select{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--text);padding:7px 28px 7px 12px;border-radius:999px;font-size:12.5px;font-family:inherit;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8a8b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 
-/* Main workspace shell */
-.ws-main{flex:1;width:100%;max-width:1120px;margin:0 auto;padding:28px 20px 56px;position:relative}
+/* Main workspace shell — left params + right history */
+.ws-main{flex:1;width:100%;max-width:1280px;margin:0 auto;padding:16px 20px 24px;position:relative;display:flex;flex-direction:column;min-height:0}
 .ws-main::before{content:'';position:absolute;inset:-40px 10% auto;height:280px;background:radial-gradient(ellipse at center,rgba(168,85,247,.14),transparent 70%);pointer-events:none;z-index:0}
 .ws-main>*{position:relative;z-index:1}
+.ws-h1{font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0 0 12px;line-height:1.2;flex:0 0 auto}
+.ws-stage{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:stretch;flex:1;height:calc(100vh - 250px);max-height:calc(100vh - 250px);min-height:560px}
+.ws-panel{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;min-height:0;height:100%;overflow:hidden}
+.panel-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:2px}
+.ws-canvas{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:14px 16px 18px;min-height:0;overflow:auto;display:flex;flex-direction:column}
+.canvas-tabs{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.05);border-radius:10px;width:fit-content;margin-bottom:14px}
+.canvas-tabs button{padding:8px 16px;border-radius:8px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.55)}
+.canvas-tabs button:hover{color:#fff;background:rgba(255,255,255,.08)}
+.canvas-tabs button.active{background:#7c3aed;color:#fff}
 
 /* Welcome banner */
-.welcome{display:none;background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(236,72,153,.08));border:1px solid rgba(168,85,247,.28);border-radius:16px;padding:22px 24px;margin-bottom:22px;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.welcome{display:none;background:linear-gradient(135deg,rgba(168,85,247,.14),rgba(236,72,153,.08));border:1px solid rgba(168,85,247,.28);border-radius:16px;padding:12px 16px;margin-bottom:12px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex:0 0 auto}
 .welcome.show{display:flex}
 .welcome h2{font-size:18px;font-weight:700;margin-bottom:4px}
 .welcome p{font-size:13.5px;color:var(--text2);max-width:560px}
@@ -102,51 +111,58 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .invite-row input{flex:1;min-width:180px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit}
 .invite-row button{border:1px solid var(--border2);padding:10px 14px;border-radius:9px;font-size:13px;font-weight:600}
 
-/* Primary tabs: Create / My Creations */
-.tabs-primary{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.05);border-radius:10px;width:fit-content;margin-bottom:20px}
-.tabs-primary button{padding:9px 20px;border-radius:8px;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);transition:all .2s}
-.tabs-primary button:hover{color:#fff;background:rgba(255,255,255,.08)}
-.tabs-primary button.active{background:#7c3aed;color:#fff;box-shadow:0 8px 20px rgba(124,58,237,.35)}
-
-/* Mode switch Video / Image */
-.mode-switch{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.05);border-radius:10px;width:fit-content;margin:0 auto 18px}
-.mode-switch button{padding:7px 16px;border-radius:8px;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.55);display:inline-flex;align-items:center;gap:7px;transition:all .2s}
+/* Mode switch Video / Image — in the left panel */
+.mode-switch{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.05);border-radius:10px;width:100%}
+.mode-switch button{flex:1;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;color:rgba(255,255,255,.55);display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
 .mode-switch button:hover{color:#fff;background:rgba(255,255,255,.08)}
-.mode-switch button.active{background:#7c3aed;color:#fff;box-shadow:0 6px 16px rgba(124,58,237,.3)}
+.mode-switch button.active{background:#7c3aed;color:#fff}
 .mode-switch svg{width:16px;height:16px}
 
-/* Generator card */
-.gen-wrap{max-width:820px;margin:0 auto}
-.gen-card{background:rgba(255,255,255,.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:24px;margin-bottom:20px}
-.gen-card h2{font-size:22px;font-weight:700;margin-bottom:18px}
-.upload-area{border:2px dashed rgba(255,255,255,.2);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:rgba(0,0,0,.12);min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:420px;margin:0 auto 18px;position:relative}
-.upload-area:hover{border-color:rgba(168,85,247,.5);background:rgba(0,0,0,.2)}
-.upload-area .icon{width:40px;height:40px;margin-bottom:10px;color:rgba(255,255,255,.5)}
-.upload-area .p1{font-size:14px;font-weight:600;color:rgba(255,255,255,.7)}
-.upload-area .p2{font-size:12px;color:rgba(255,255,255,.45);margin-top:4px}
-.upload-area.has-img{border-style:solid;border-color:rgba(34,197,94,.45);padding:12px}
-.upload-area.has-img img{max-height:220px;width:auto;margin:0 auto;border-radius:10px}
-.upload-area .remove-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:14px;display:none}
+.preset-card{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:8px}
+.preset-card img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0}
+.preset-card .preset-copy{flex:1;min-width:0}
+.preset-card .kicker{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.preset-card .name{font-size:14px;font-weight:700;line-height:1.2}
+.preset-card .sub{font-size:11px;color:var(--text2)}
+.preset-card .change{border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--primary2);flex-shrink:0}
+
+.panel-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:2px 0 0}
+.prompt-dock{flex:0 0 auto}
+.chip-dock{flex:0 0 auto;display:flex;flex-direction:column;gap:8px;padding-top:4px}
+
+.gen-wrap{width:100%;margin:0}
+.gen-card{background:transparent;border:none;padding:0;margin:0}
+.gen-card h2{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
+.frame-row,.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:none;margin:0}
+.frame-row.one,.upload-grid:not(.two){grid-template-columns:1fr}
+.upload-area{border:2px dashed rgba(255,255,255,.2);border-radius:14px;padding:10px 8px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:rgba(0,0,0,.18);min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:none;margin:0;position:relative}
+.upload-area:hover{border-color:rgba(168,85,247,.5);background:rgba(0,0,0,.28)}
+.upload-area .frame-kicker{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.upload-area .icon{width:28px;height:28px;margin-bottom:6px;color:rgba(255,255,255,.5)}
+.upload-area .p1{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.78)}
+.upload-area .p2{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.upload-area.has-img{border-style:solid;border-color:rgba(168,85,247,.55);padding:8px}
+.upload-area.has-img img{max-height:110px;width:auto;margin:0 auto;border-radius:8px}
+.upload-area .remove-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:12px;display:none}
 .upload-area.has-img .remove-btn{display:flex;align-items:center;justify-content:center}
 .upload-area.drag{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.08)}
-.upload-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:420px;margin:0 auto 10px}
-.upload-grid.two{grid-template-columns:1fr 1fr;max-width:820px}
-.upload-grid .upload-area{max-width:none;margin:0;min-height:180px}
-.opt-row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px;justify-content:center}
+.upload-grid .upload-area{max-width:none;margin:0;min-height:88px}
+.opt-row,.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin:0;align-items:center}
 .opt-chip{border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.6)}
 .opt-chip.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.15);color:#fff}
+.opt-chip .c{font-size:10px;font-weight:500;opacity:.75;margin-left:4px}
 .last-slot{display:none}
 .last-slot.show{display:flex;flex-direction:column}
-.blend-row{display:none;gap:8px;flex-wrap:wrap;max-width:420px;margin:0 auto 14px;justify-content:center}
+.blend-row{display:none;gap:8px;flex-wrap:wrap;max-width:none;margin:0;justify-content:flex-start}
 .blend-row.show{display:flex}
 .blend-thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.15)}
 .check-row{display:none;align-items:center;justify-content:center;gap:8px;margin:0 0 14px;font-size:13px;color:var(--text2)}
 .check-row.show{display:flex}
-.mode-note{display:none;max-width:820px;margin:0 auto 16px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.08);color:var(--text2);font-size:13.5px;line-height:1.5;text-align:center}
+.mode-note{display:none;max-width:none;margin:0;padding:8px 10px;border-radius:10px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.08);color:var(--text2);font-size:12px;line-height:1.45;text-align:left}
 .mode-note.show{display:block}
 .mode-note b{color:var(--orange)}
-.url-hint{max-width:420px;margin:-6px auto 10px;font-size:12px;color:rgba(255,255,255,.45);text-align:center;line-height:1.4}
-.url-input{width:100%;max-width:420px;margin:0 auto 18px;display:block;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit}
+.url-hint{max-width:none;margin:0;font-size:11px;color:rgba(255,255,255,.45);text-align:left;line-height:1.35}
+.url-input{width:100%;max-width:none;margin:0;display:block;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit}
 .url-input:focus{outline:none;border-color:rgba(168,85,247,.5);box-shadow:0 0 0 1px rgba(168,85,247,.35)}
 .url-input::placeholder{color:rgba(255,255,255,.3)}
 .url-input.last-slot{display:none}
@@ -176,36 +192,43 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-item .h-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .history-item .h-actions button,.history-item .h-actions a{border:1px solid var(--border);padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--primary2)}
 
-.label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.label-row label{font-size:14px;font-weight:600;color:rgba(255,255,255,.8)}
-.label-row .meta{font-size:12px;color:rgba(255,255,255,.45)}
-.prompt-input{width:100%;min-height:96px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:var(--text);font-size:14px;font-family:inherit;resize:none;transition:border-color .2s}
+.label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.label-row label{font-size:13px;font-weight:600;color:rgba(255,255,255,.8)}
+.label-row .meta{font-size:12px;color:rgba(255,255,255,.45);flex-shrink:0}
+.prompt-input{width:100%;min-height:56px;max-height:96px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;color:var(--text);font-size:13.5px;font-family:inherit;resize:vertical;transition:border-color .2s}
 .prompt-input:focus{outline:none;border-color:rgba(168,85,247,.5);box-shadow:0 0 0 1px rgba(168,85,247,.35)}
 .prompt-input::placeholder{color:rgba(255,255,255,.3)}
-.char-row{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.45);margin-top:8px;margin-bottom:14px}
+.char-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.45);margin-top:6px;margin-bottom:10px}
 
-.model-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.model-opt{border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.18);border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.chip-groups{display:flex;flex-wrap:wrap;gap:8px 14px;flex:1;min-width:0;align-items:center}
+.model-row{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.model-opt{border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.18);border-radius:999px;padding:7px 14px;text-align:center;cursor:pointer;transition:all .2s}
 .model-opt:hover{border-color:rgba(255,255,255,.22)}
-.model-opt.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.12)}
-.model-opt .n{font-size:13px;font-weight:700}
-.model-opt .c{font-size:11px;color:var(--text3);margin-top:3px}
-.model-opt .t{font-size:10px;color:var(--primary2);font-weight:600;margin-top:3px}
+.model-opt.active{border-color:rgba(168,85,247,.7);background:rgba(168,85,247,.15)}
+.model-opt .n{font-size:12.5px;font-weight:700;display:inline}
+.model-opt .c{font-size:11px;color:var(--text3);margin-top:0;display:inline;margin-left:4px}
+.model-opt .t{display:none}
 
-.gen-btn{width:100%;padding:15px;border-radius:12px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(107,114,128,.4);color:rgba(255,255,255,.45);cursor:not-allowed;transition:opacity .2s,background .2s}
+.composer{margin-top:0;padding-top:0}
+.composer-inner{max-width:none;margin-top:0;width:100%;flex:0 0 auto}
+.composer-bar{display:flex;flex-direction:column;gap:8px}
+.gen-sticky{flex:0 0 auto;width:100%;min-width:0;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);background:rgba(13,13,18,.92)}
+.gen-btn{width:100%;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;background:rgba(107,114,128,.4);color:rgba(255,255,255,.45);cursor:not-allowed;transition:opacity .2s,background .2s}
 .gen-btn.ready{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(168,85,247,.25)}
 .gen-btn.ready:hover{opacity:.92}
-.gen-btn:disabled:not(.ready){cursor:not-allowed}
-.gen-foot{margin-top:12px;text-align:center;font-size:12px;color:rgba(255,255,255,.45)}
+.gen-btn:disabled,.gen-btn:disabled.ready{cursor:not-allowed;opacity:.7;box-shadow:none}
+.gen-cost{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.28);font-size:13px;font-weight:800}
+.gen-btn.ready .gen-cost{background:rgba(255,255,255,.2)}
+.gen-foot{margin-top:8px;text-align:center;font-size:12px;color:rgba(255,255,255,.45)}
 .gen-foot a{color:var(--primary2);text-decoration:underline}
+#createView{display:grid}
 .gen-status{margin-top:16px;display:none;text-align:center;padding:18px;border-radius:12px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.08)}
 .gen-status.show{display:block}
 .gen-status .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .gen-status .cap{font-size:13px;color:var(--text2)}
 
-/* Save CTA */
-.save-card{display:none;max-width:820px;margin:0 auto 8px;background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(236,72,153,.07));border:1px solid rgba(168,85,247,.25);border-radius:16px;padding:28px 24px;text-align:center}
+.save-card{display:none;max-width:none;margin:12px 0 0;background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(236,72,153,.07));border:1px solid rgba(168,85,247,.25);border-radius:16px;padding:16px 16px;text-align:center}
 .save-card.show{display:block}
 .save-card h3{font-size:20px;font-weight:700;margin-bottom:8px}
 .save-card p{font-size:14px;color:var(--text2);max-width:520px;margin:0 auto 18px;line-height:1.55}
@@ -213,16 +236,39 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .save-actions .btn-outline{border:1px solid var(--border2);padding:10px 20px;border-radius:9px;font-size:14px;font-weight:600}
 .save-actions .btn-primary{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:10px 20px;border-radius:9px;font-size:14px;font-weight:600}
 
-/* History panel */
-.history-panel{display:none;max-width:820px;margin:0 auto}
+.history-panel{display:none;max-width:none;margin:0;flex:1}
 .history-panel.show{display:block}
+.how-panel{display:none;flex:1}
+.how-panel.show{display:block}
+.how-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.how-step{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden}
+.how-step img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.how-step .pad{padding:12px 14px 16px}
+.how-step h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.how-step p{font-size:12.5px;color:var(--text2);line-height:1.45}
 [hidden]{display:none!important}
 .history-empty{text-align:center;padding:56px 20px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.2);border-radius:18px}
 .history-empty-icon{width:56px;height:56px;margin:0 auto 16px;border-radius:16px;background:rgba(168,85,247,.12);color:var(--primary2);display:flex;align-items:center;justify-content:center;font-size:22px}
 .history-empty h3{font-size:18px;font-weight:700;margin-bottom:8px}
 .history-empty p{font-size:14px;color:var(--text2);margin-bottom:18px}
 .history-empty .btn-primary{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:10px 20px;border-radius:9px;font-size:14px;font-weight:600}
-.history-list{display:grid;gap:12px}
+.history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.history-filters{display:flex;gap:6px;flex-wrap:wrap}
+.history-grid{column-count:2;column-gap:12px}
+.history-card{break-inside:avoid;margin:0 0 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;cursor:pointer;position:relative}
+.history-card:hover,.history-card:focus-visible{border-color:rgba(168,85,247,.55);outline:none}
+.history-card-media{position:relative;background:#111;min-height:120px}
+.history-card-media img,.history-card-media video{width:100%;height:auto;display:block;vertical-align:middle}
+.history-card-ph{min-height:160px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;background:rgba(255,255,255,.03)}
+.history-card-play{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none}
+.history-card-status{position:absolute;left:10px;top:10px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:capitalize}
+.history-card-status.done,.history-card-status.completed{background:rgba(34,197,94,.18);color:var(--green)}
+.history-card-status.processing,.history-card-status.pending{background:rgba(168,85,247,.2);color:var(--primary2)}
+.history-card-status.failed{background:rgba(239,68,68,.2);color:#ef4444}
+.history-card-cap{padding:10px 12px 12px}
+.history-card-prompt{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 0 8px}
+.history-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.history-card-actions button{border:1px solid var(--border);padding:5px 9px;border-radius:8px;font-size:11.5px;font-weight:600;color:var(--primary2)}
 .history-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 18px}
 .history-item .h-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;align-items:center}
 .history-item .h-meta{font-size:13px;font-weight:600}
@@ -231,6 +277,36 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-item .h-status.processing,.history-item .h-status.pending{background:rgba(168,85,247,.15);color:var(--primary2)}
 .history-item .h-status.failed{background:rgba(239,68,68,.15);color:#ef4444}
 .history-item .h-prompt{font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px}
+.hist-modal[hidden]{display:none!important}
+.hist-modal-card{background:var(--card);border:1px solid var(--border);border-radius:18px;max-width:720px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.hist-modal-media{background:#000}
+.hist-modal-media video,.hist-modal-media img{width:100%;max-height:360px;object-fit:contain;display:block;margin:0 auto}
+.hist-modal-body{padding:16px 18px 20px}
+.hist-modal-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.hist-modal-top h3{font-size:16px;font-weight:700}
+.hist-modal-x{width:32px;height:32px;border-radius:8px;color:var(--text2);font-size:18px}
+.hist-modal-x:hover{background:rgba(255,255,255,.06);color:#fff}
+.hist-dl{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;margin:0 0 14px;font-size:13px}
+.hist-dl dt{color:var(--text3);font-weight:600}
+.hist-dl dd{margin:0;color:var(--text);word-break:break-word}
+.hist-modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hist-modal-actions button{border:1px solid var(--border2);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600}
+.hist-modal-actions button.primary{background:linear-gradient(135deg,var(--primary),var(--accent));border:none;color:#fff}
+.demo-banner{display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:12px 16px;border-radius:12px;border:1px solid rgba(251,146,60,.55);background:linear-gradient(135deg,rgba(251,146,60,.16),rgba(168,85,247,.12))}
+.demo-banner.show{display:flex}
+.demo-banner p{font-size:13.5px;color:var(--text);margin:0;font-weight:600}
+.demo-banner .demo-exit{font-size:12.5px;color:var(--primary2);font-weight:600}
+.btn-demo{border:1px solid rgba(251,146,60,.7);background:rgba(251,146,60,.12);color:#fff;padding:8px 16px;border-radius:9px;font-size:13px;font-weight:700}
+.btn-demo:hover{border-color:var(--orange)}
+.demo-sample-badge{display:inline-flex;align-items:center;justify-content:center;margin:10px auto 0;padding:6px 12px;border-radius:999px;background:linear-gradient(135deg,#fb923c,#a855f7);color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em;box-shadow:0 8px 20px rgba(251,146,60,.35)}
+.gen-result .demo-sample-badge{display:none}
+.gen-result.show .demo-sample-badge[data-on="1"],.gen-result.show #demoSampleBadge:not([hidden]){display:inline-flex}
+.history-card-media .demo-sample-badge,.hist-modal-media .demo-sample-badge{position:absolute;left:10px;bottom:10px;top:auto;margin:0;z-index:2;font-size:11px;padding:5px 10px}
+.hist-modal-media{position:relative}
+body.demo-mode .pwa-install{display:none!important}
+@media(min-width:1100px){.history-grid{column-count:3}}
+@media(max-width:600px){.history-grid{column-count:1}}
 
 .toast{position:fixed;top:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-size:13px;z-index:100;display:none;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .toast.show{display:block;animation:fadeIn .3s}
@@ -238,7 +314,7 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 
 /* Footer — shared chrome */
-footer{margin-top:auto;background:var(--bg2);border-top:1px solid var(--border);padding:56px 20px 28px}
+footer{margin-top:auto;background:var(--bg2);border-top:1px solid var(--border);padding:32px 20px 20px;flex-shrink:0}
 .footer-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:40px}
 .footer-brand .logo{margin-bottom:14px}
 .footer-brand .copy{font-size:13px;color:var(--text3);line-height:1.5}
@@ -248,33 +324,21 @@ footer{margin-top:auto;background:var(--bg2);border-top:1px solid var(--border);
 .footer-col ul li a{font-size:13px;color:var(--text2);transition:color .2s}
 .footer-col ul li a:hover{color:var(--text)}
 
-@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:30px}.model-row{grid-template-columns:1fr}}
+@media(max-width:960px){
+.ws-stage{grid-template-columns:1fr;flex:none;height:auto;max-height:none;min-height:0}
+.ws-panel{max-height:none;height:auto;overflow:visible}
+.panel-scroll{overflow:visible;flex:none}
+.how-steps{grid-template-columns:1fr}
+.pwa-install{bottom:88px}
+}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:30px}.ws-h1{font-size:20px}}
 @media(max-width:600px){
 nav{display:none}
 .footer-grid{grid-template-columns:1fr}
-.tabs-primary{width:100%}
-.tabs-primary button{flex:1}
-.gen-card{padding:18px 16px 8px}
 .welcome{padding:18px}
-.upload-grid.two{grid-template-columns:1fr}
-.gen-sticky{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  width:100%;
-  max-width:none;
-  z-index:45;
-  margin:0;
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
-  background:rgba(13,13,18,.96);
-  border-top:1px solid var(--border);
-  backdrop-filter:blur(14px);
-  box-sizing:border-box;
-}
+.frame-row,.upload-grid,.upload-grid.two{grid-template-columns:1fr;max-width:none}
+.gen-sticky{position:sticky;bottom:0;z-index:40;background:rgba(13,13,18,.96);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
 .gen-sticky .gen-btn{width:100%;margin:0}
-.gen-sticky .gen-foot{margin-top:8px}
-#createView{padding-bottom:120px}
 }
 </style>
 </head>
@@ -303,6 +367,7 @@ nav{display:none}
 <div class="nav-menu">
 <a href="/#features" data-i18n="nav.models">AI Models</a>
 <a href="/#gallery" data-i18n="nav.gallery">Gallery</a>
+<a href="/examples" data-i18n="nav.examples">Examples</a>
 <a href="/#get-started" data-i18n="nav.how">How it works</a>
 <a href="/workspace" data-i18n="nav.workspace">Workspace</a>
 </div>
@@ -310,6 +375,7 @@ nav{display:none}
 </nav>
 <div class="header-right">
 <span class="credits-pill" id="creditsPill" hidden>⚡ <span id="creditsBadge" class="loading"></span> credits <a href="/pricing" id="buyCreditsLink" hidden>+ Buy Credits</a></span>
+<a href="/workspace?demo=1" class="btn-demo" id="tryDemoLink" data-demo-enter data-i18n="demo.try">Try demo</a>
 <a href="/auth?mode=login" class="btn-login" id="loginBtn" data-i18n="hdr.login">Log In</a>
 <a href="/auth?mode=register" class="btn-signup" id="signupBtn" data-i18n="hdr.signup">Sign Up</a>
 <script>
@@ -360,12 +426,18 @@ nav{display:none}
 <section class="welcome" id="welcomeBanner">
 <div>
 <h2 data-i18n="ws.welcome.h">Welcome to DreamUtopia Workspace</h2>
-<p data-i18n="ws.welcome.p">2 free Lite videos on this device — no account. Sign up for 10 credits and every model.</p>
+<p data-i18n="ws.welcome.p">Browse the generator without an account. Generate asks you to sign in.</p>
 </div>
 <div class="welcome-actions">
+<a href="/workspace?demo=1" class="btn-demo" id="welcomeDemo" data-demo-enter data-i18n="demo.try">Try demo</a>
 <a href="/auth?mode=login" class="btn-outline" id="welcomeLogin" data-i18n="hdr.login">Log In</a>
 <a href="/auth?mode=register" class="btn-primary" id="welcomeSignup" data-i18n="hdr.signup">Sign Up Free</a>
 </div>
+</section>
+
+<section class="demo-banner" id="demoBanner" hidden>
+<p data-i18n="demo.banner">Demo mode — sample clips only. Uploads stay in this browser.</p>
+<a href="/workspace?demo=0" class="demo-exit" data-i18n="demo.exit">Exit demo</a>
 </section>
 
 <section class="guest-persist" id="guestPersistNotice" hidden>
@@ -391,108 +463,127 @@ nav{display:none}
 </div>
 </section>
 
-<!-- Create / My Creations -->
-<div class="tabs-primary" role="tablist">
-<button type="button" class="active" id="tabCreate" onclick="switchPrimaryTab('create')" data-i18n="ws.tab.create">Create</button>
-<button type="button" id="tabHistory" onclick="switchPrimaryTab('history')" data-i18n="ws.tab.history">My Creations</button>
-</div>
+<h1 class="ws-h1" id="wsH1" data-i18n="ws.h1">Create AI Videos from Images</h1>
+<div class="ws-stage" id="createView">
 
-<!-- CREATE VIEW -->
-<section id="createView">
+<aside class="ws-panel composer" id="composerDock">
+<div class="panel-scroll">
 <div class="mode-switch" role="tablist" aria-label="Generation mode">
 <button type="button" class="active" id="modeVideo" onclick="switchMode('video')">
 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-Video
+<span data-i18n="ws.mode.video">Video</span>
 </button>
 <button type="button" id="modeImage" onclick="switchMode('image')">
 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-Image
+<span data-i18n="ws.mode.image">Image</span>
 </button>
+</div>
+
+<div class="preset-card" id="presetCard">
+<img id="presetThumb" src="/assets/images/g1.webp" alt="" width="56" height="56">
+<div class="preset-copy">
+<div class="kicker" data-i18n="ws.preset.kicker">Look</div>
+<div class="name" id="presetName">General</div>
+<div class="sub" id="presetSub">Image to video</div>
+</div>
+<button type="button" class="change" id="presetChange" onclick="cyclePreset()" data-i18n="ws.preset.change">Change</button>
 </div>
 
 <div class="gen-wrap">
 <div class="gen-card">
 <h2 id="genTitle">AI Video Generator</h2>
-
-<div class="upload-grid" id="uploadGrid">
+<div class="frame-row upload-grid two" id="uploadGrid">
 <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" style="display:none" onchange="handleFile(this)">
+<div class="frame-kicker" data-i18n="ws.frame.start">Start frame</div>
 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-<div class="p1" id="uploadLabel">Upload Start Image</div>
+<div class="p1" id="uploadLabel">Upload a still</div>
 <div class="p2" id="uploadHint" data-i18n="ws.upload.hint">JPG, PNG, WebP, GIF, or TIFF · up to 20 MB</div>
 <button type="button" class="remove-btn" id="removeImgBtn" onclick="event.stopPropagation(); clearUpload()" aria-label="Remove image">✕</button>
 </div>
-<div class="upload-area last-slot" id="lastUploadArea" onclick="document.getElementById('lastFileInput').click()">
+<div class="upload-area last-slot show" id="lastUploadArea" onclick="document.getElementById('lastFileInput').click()">
 <input type="file" id="lastFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" style="display:none" onchange="handleLastFile(this)">
+<div class="frame-kicker" data-i18n="ws.frame.end">End frame</div>
 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-<div class="p1">Upload Last Frame</div>
-<div class="p2">Medium &amp; Pro · optional</div>
+<div class="p1" data-i18n="ws.frame.end.label">Optional last still</div>
+<div class="p2" data-i18n="ws.frame.end.hint">Used on Medium &amp; Pro</div>
 <button type="button" class="remove-btn" onclick="event.stopPropagation(); clearLastUpload()" aria-label="Remove last frame">✕</button>
 </div>
 </div>
 <p class="url-hint" id="urlHint">Start image optional — skip it for text-to-video. Or paste a public https URL.</p>
 <input class="url-input" type="url" id="imageUrlInput" placeholder="https://example.com/start-frame.png" autocomplete="off">
-<input class="url-input last-slot" type="url" id="lastImageUrlInput" placeholder="https://example.com/last-frame.png" autocomplete="off" style="margin-top:-8px">
+<input class="url-input last-slot show" type="url" id="lastImageUrlInput" placeholder="https://example.com/last-frame.png" autocomplete="off">
 <div class="blend-row" id="blendRow">
 <button type="button" class="opt-chip" id="addBlendBtn" onclick="document.getElementById('blendInput').click()">+ Add blend images</button>
 <input type="file" id="blendInput" accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,.tif,.tiff" multiple style="display:none" onchange="handleBlendFiles(this)">
 </div>
 <label class="check-row" id="res4kRow"><input type="checkbox" id="res4k"> 4K output (Pro · 2 credits)</label>
 <p class="mode-note" id="modeNote" role="status"></p>
+</div>
+</div>
+</div>
 
+<div class="prompt-dock">
 <div class="label-row">
 <label id="promptLabel" for="promptInput">Describe Your Video</label>
+<span class="meta"><span id="charCount">0</span>/8000</span>
 </div>
 <textarea class="prompt-input" id="promptInput" maxlength="8000" placeholder="A futuristic city with flying cars..." oninput="onPromptInput()"></textarea>
-<div class="char-row">
-<span>Required</span>
-<span><span id="charCount">0</span>/8000</span>
 </div>
 
-<div class="model-row" id="videoModels">
-<button type="button" class="model-opt active" data-model="lite" onclick="pickModel('lite')">
-<div class="n">Lite</div>
-<div class="c">3 credits</div>
-</button>
-<button type="button" class="model-opt" data-model="medium" onclick="pickModel('medium')">
-<div class="n">Medium</div>
-<div class="c">5 credits</div>
-</button>
-<button type="button" class="model-opt" data-model="pro" onclick="pickModel('pro')">
-<div class="n">Pro</div>
-<div class="c">16 credits</div>
-<div class="t">with Sound</div>
-</button>
+<div class="chip-dock">
+<div class="panel-label" data-i18n="ws.panel.model">Model</div>
+<div class="chip-row model-row" id="videoModels" role="group" aria-label="Model">
+<button type="button" class="opt-chip model-opt active" data-model="lite" onclick="pickModel('lite')"><span class="n">Lite</span></button>
+<button type="button" class="opt-chip model-opt" data-model="medium" onclick="pickModel('medium')"><span class="n">Medium</span></button>
+<button type="button" class="opt-chip model-opt" data-model="pro" onclick="pickModel('pro')"><span class="n">Pro</span></button>
 </div>
-<div class="model-row" id="imageModels" style="display:none">
-<button type="button" class="model-opt active" data-model="lite" onclick="pickModel('lite')">
-<div class="n">Lite</div>
-<div class="c">1 credit · 1K</div>
-</button>
-<button type="button" class="model-opt" data-model="pro" onclick="pickModel('pro')">
-<div class="n">Pro</div>
-<div class="c">2 credits · 2K / 4K</div>
-</button>
+<div class="chip-row model-row" id="imageModels" style="display:none" role="group" aria-label="Image model">
+<button type="button" class="opt-chip model-opt active" data-model="lite" onclick="pickModel('lite')"><span class="n">Lite</span></button>
+<button type="button" class="opt-chip model-opt" data-model="pro" onclick="pickModel('pro')"><span class="n">Pro</span></button>
 </div>
-<div class="opt-row" id="durationRow">
+<div class="chip-row opt-row" id="durationRow" role="group" aria-label="Duration">
 <button type="button" class="opt-chip active" data-dur="5" onclick="pickDuration(5)">5s</button>
 <button type="button" class="opt-chip" data-dur="10" onclick="pickDuration(10)">10s</button>
 </div>
-<div class="opt-row" id="aspectRow" style="display:none">
+<div class="chip-row opt-row" id="aspectRow" role="group" aria-label="Aspect">
 <button type="button" class="opt-chip active" data-ar="16:9" onclick="pickAspect('16:9')">16:9</button>
 <button type="button" class="opt-chip" data-ar="9:16" onclick="pickAspect('9:16')">9:16</button>
 <button type="button" class="opt-chip" data-ar="1:1" onclick="pickAspect('1:1')">1:1</button>
 </div>
-
-<div class="gen-sticky" id="genSticky">
-<button class="gen-btn" id="genBtn" disabled onclick="generate()">
-<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-<span id="genBtnLabel">Generate Free Trial</span>
-</button>
-<p class="gen-foot" id="genFoot">2 free Lite videos. <a href="/auth?mode=signup&next=/workspace" id="genFootSignup">Sign up</a> for 10 credits.</p>
-<p class="gen-foot" data-gen-closed-note hidden>暂未开放</p>
+<div class="chip-row opt-row" id="resolutionRow" role="group" aria-label="Resolution">
+<button type="button" class="opt-chip video-res" data-vres="720p" onclick="pickVideoRes('720p')">720p</button>
+<button type="button" class="opt-chip video-res active" data-vres="1080p" onclick="pickVideoRes('1080p')">1080p</button>
+<button type="button" class="opt-chip image-res active" data-ires="1K" onclick="pickImageRes('1K')" style="display:none">1K</button>
+<button type="button" class="opt-chip image-res" data-ires="2K" onclick="pickImageRes('2K')" style="display:none">2K</button>
+<button type="button" class="opt-chip image-res" data-ires="4K" onclick="pickImageRes('4K')" style="display:none">4K</button>
+</div>
+<div class="chip-row opt-row" id="audioRow" role="group" aria-label="Audio">
+<button type="button" class="opt-chip active" data-audio="off" onclick="pickAudio(false)" data-i18n="ws.chip.silent">Silent</button>
+<button type="button" class="opt-chip" data-audio="on" onclick="pickAudio(true)" data-i18n="ws.chip.audio">Audio</button>
+</div>
 </div>
 
+<div class="composer-inner">
+<div class="gen-sticky" id="genSticky">
+<button class="gen-btn" id="genBtn" disabled onclick="generate()">
+<span id="genBtnLabel">Generate</span>
+<span class="gen-cost" id="genCostWrap">⚡ <span id="genCost">3</span></span>
+</button>
+<p class="gen-foot" id="genFoot">Sign in when you are ready to generate.</p>
+<p class="gen-foot" data-gen-closed-note hidden>暂未开放</p>
+</div>
+</div>
+</aside>
+
+<section class="ws-canvas">
+<div class="canvas-tabs" role="tablist">
+<button type="button" class="active" id="tabHistory" onclick="switchPrimaryTab('history')" data-i18n="ws.tab.history">History</button>
+<button type="button" id="tabHow" onclick="switchPrimaryTab('how')" data-i18n="ws.tab.how">How it works</button>
+<button type="button" id="tabCreate" onclick="switchPrimaryTab('create')" hidden data-i18n="ws.tab.create">Create</button>
+</div>
+
+<div class="history-panel show" id="historyView">
 <div class="gen-status" id="genStatus">
 <div class="spinner" id="genSpinner"></div>
 <div class="cap" id="genStatusText">Generating…</div>
@@ -503,15 +594,55 @@ Image
 <div class="gen-result" id="genResult">
 <video id="genResultVideo" controls playsinline></video>
 <img id="genResultImage" class="preview-out" alt="Generated image" hidden>
+<div class="demo-sample-badge" id="demoSampleBadge" hidden>演示样片 / Demo sample</div>
 <div class="result-actions">
 <a id="genResultLink" href="#" target="_blank" rel="noopener" data-i18n="ws.result.open">Open result URL</a>
 <button type="button" id="genDownload" data-i18n="gen.download">Download</button>
 <button type="button" class="primary" id="genShare" hidden data-i18n="ws.result.share">Share to gallery</button>
 </div>
 </div>
+<div class="history-toolbar" id="historyToolbar" hidden>
+<div class="history-filters" id="historyFilter" role="group" aria-label="Filter your creations">
+<button type="button" class="opt-chip active" data-filter="all" onclick="setHistoryFilter('all')" data-i18n="ws.history.filter.all">All</button>
+<button type="button" class="opt-chip" data-filter="video" onclick="setHistoryFilter('video')" data-i18n="ws.history.filter.video">Video</button>
+<button type="button" class="opt-chip" data-filter="image" onclick="setHistoryFilter('image')" data-i18n="ws.history.filter.image">Image</button>
+</div>
+</div>
+<div class="history-empty" id="historyEmpty" hidden>
+<div class="history-empty-icon" aria-hidden="true">✦</div>
+<h3 id="historyEmptyTitle" data-i18n="ws.history.empty.h">No creations yet</h3>
+<p id="historyEmptyDesc" data-i18n="ws.history.empty.p">Start creating to see your work here.</p>
+<button class="btn-primary" id="historyEmptyCta" onclick="document.getElementById('promptInput').focus()" data-i18n="ws.history.start">Start Creating</button>
+</div>
+<div class="history-grid" id="historyList" hidden></div>
 </div>
 
-<!-- Want to save -->
+<div class="how-panel" id="howView">
+<div class="how-steps">
+<article class="how-step">
+<img src="/assets/images/feature-image-to-video.webp" alt="Upload a still from your library" width="640" height="400">
+<div class="pad">
+<h3 data-i18n="ws.how.1.h">Add an image</h3>
+<p data-i18n="ws.how.1.p">Drop a photo into the start-frame card — or skip it and describe the shot in the prompt.</p>
+</div>
+</article>
+<article class="how-step">
+<img src="/assets/images/feature-cinematic.webp" alt="Pick a DreamUtopia look" width="640" height="400">
+<div class="pad">
+<h3 data-i18n="ws.how.2.h">Pick a look</h3>
+<p data-i18n="ws.how.2.p">Choose General, Cinematic, or Vertical. Set model, length, frame, and resolution chips.</p>
+</div>
+</article>
+<article class="how-step">
+<img src="/assets/images/g5.webp" alt="Preview your generated clip" width="640" height="400">
+<div class="pad">
+<h3 data-i18n="ws.how.3.h">Get the clip</h3>
+<p data-i18n="ws.how.3.p">Generate, then preview and download from History on the right.</p>
+</div>
+</article>
+</div>
+</div>
+
 <section class="save-card" id="saveCard">
 <h3 data-i18n="ws.save.h">Want to save your creations?</h3>
 <p data-i18n="ws.save.p">Sign up to keep your generations, unlock every model, and earn free credits.</p>
@@ -520,21 +651,44 @@ Image
 <a href="/auth?mode=register" class="btn-primary" id="saveSignup" data-i18n="hdr.signup">Sign Up Free</a>
 </div>
 </section>
-</div>
 </section>
 
-<!-- HISTORY VIEW -->
-<section class="history-panel" id="historyView">
-<div class="history-empty" id="historyEmpty" hidden>
-<div class="history-empty-icon" aria-hidden="true">✦</div>
-<h3 id="historyEmptyTitle" data-i18n="ws.history.empty.h">No creations yet</h3>
-<p id="historyEmptyDesc" data-i18n="ws.history.empty.p">Start creating to see your work here.</p>
-<button class="btn-primary" id="historyEmptyCta" onclick="switchPrimaryTab('create')" data-i18n="ws.history.start">Start Creating</button>
 </div>
-<div class="history-list" id="historyList" hidden></div>
-</section>
 
 </main>
+
+<div class="hist-modal" id="historyDetail" hidden role="dialog" aria-modal="true" aria-labelledby="historyDetailTitle">
+<div class="hist-modal-card">
+<div class="hist-modal-media" id="historyDetailMedia"></div>
+<div class="hist-modal-body">
+<div class="hist-modal-top">
+<h3 id="historyDetailTitle" data-i18n="ws.history.detail.title">Creation details</h3>
+<button type="button" class="hist-modal-x" id="historyDetailClose" onclick="closeHistoryDetail()" aria-label="Close">✕</button>
+</div>
+<dl class="hist-dl">
+<dt data-i18n="ws.history.detail.prompt">Prompt</dt>
+<dd id="historyDetailPrompt"></dd>
+<dt data-i18n="ws.history.detail.model">Model</dt>
+<dd id="historyDetailModel"></dd>
+<dt data-i18n="ws.history.detail.duration">Duration</dt>
+<dd id="historyDetailDuration"></dd>
+<dt data-i18n="ws.history.detail.aspect">Aspect</dt>
+<dd id="historyDetailAspect"></dd>
+<dt data-i18n="ws.history.detail.resolution">Resolution</dt>
+<dd id="historyDetailResolution"></dd>
+<dt data-i18n="ws.history.detail.credits">Credits used</dt>
+<dd id="historyDetailCredits"></dd>
+<dt data-i18n="ws.history.detail.created">Created</dt>
+<dd id="historyDetailCreated"></dd>
+</dl>
+<div class="hist-modal-actions">
+<button type="button" class="primary" id="historyDetailDownload" data-i18n="gen.download">Download</button>
+<button type="button" id="historyDetailRegen" data-i18n="ws.history.regen">Regenerate</button>
+<button type="button" id="historyDetailCopy" data-i18n="ws.history.copy">Copy prompt</button>
+</div>
+</div>
+</div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -553,8 +707,8 @@ Image
 <li><a href="/free-ai-video">Free AI Video Generator</a></li>
 <li><a href="/photo-to-video">Photo to Video AI</a></li>
 <li><a href="/image-to-video">Image to Video AI</a></li>
-<li><a href="/workspace">Workspace</a></li>
-<li><a href="/business" data-i18n="nav.business">企业定制</a></li>
+<li><a href="/workspace" data-i18n="nav.workspace">Workspace</a></li>
+<li><a href="/examples" data-i18n="nav.examples">Examples</a></li>
 <li><a href="/#gallery">Gallery</a></li>
 </ul>
 </div>
@@ -589,6 +743,7 @@ Image
 </div>
 
 <script src="/assets/js/du.js"></script>
+<script src="/assets/js/demo.js"></script>
 <script src="/assets/js/i18n.js"></script>
 <script src="/assets/js/pwa.js"></script>
 <script src="/assets/js/seo.js"></script>
@@ -619,10 +774,21 @@ let currentModel = "lite";
 let currentMode = "video";
 let durationSec = 5;
 let aspectRatio = "16:9";
+let imageResolution = "1K";
+let videoRes = "1080p";
+let presetIndex = 0;
+const LOOKS = [
+  { id: "general", name: "General", sub: "Image to video", img: "/assets/images/g1.webp", aspect: "16:9" },
+  { id: "cinematic", name: "Cinematic", sub: "Camera move", img: "/assets/images/feature-cinematic.webp", aspect: "16:9" },
+  { id: "vertical", name: "Vertical", sub: "9:16 frame", img: "/assets/images/g3.webp", aspect: "9:16" },
+];
 let userCredits = null;
 let guestRemaining = 2;
 let lastGenerationId = null;
 let lastResultUrl = "";
+let historyItems = [];
+let historyKindFilter = "all";
+let historyDetailItem = null;
 
 function readCachedCredits() {
   const raw = localStorage.getItem(CREDITS_KEY);
@@ -686,7 +852,23 @@ async function fetchAuthMe(retriesLeft) {
   }
 }
 
-function showResult(url, kind, generationId) {
+function demoActive() {
+  return !!(window.DU_DEMO && DU_DEMO.isDemoMode());
+}
+
+function brandFile(id) {
+  const name = (window.DU && DU.BRAND_NAME) || "DreamUtopia";
+  return name.replace(/\s+/g, "-").toLowerCase() + "-" + (id || "result");
+}
+
+function setDemoResultBadge(on) {
+  const el = document.getElementById("demoSampleBadge");
+  if (!el) return;
+  el.hidden = !on;
+  if (on) el.textContent = (window.DU_DEMO && DU_DEMO.BADGE_LABEL) || "演示样片 / Demo sample";
+}
+
+function showResult(url, kind, generationId, meta) {
   const box = document.getElementById("genResult");
   const video = document.getElementById("genResultVideo");
   const image = document.getElementById("genResultImage");
@@ -698,6 +880,7 @@ function showResult(url, kind, generationId) {
   const skel = document.getElementById("genSkel");
   if (url && skel) { skel.hidden = true; skel.classList.remove("show"); }
   if (!url) {
+    setDemoResultBadge(false);
     box.classList.remove("show");
     video.removeAttribute("src");
     video.load();
@@ -721,13 +904,14 @@ function showResult(url, kind, generationId) {
     video.src = url;
   }
   link.href = url;
+  setDemoResultBadge(!!(meta && meta.demo) || demoActive());
   if (download) {
     download.onclick = function () {
-      DU.downloadResult(url, "dreamutopia-" + (lastGenerationId || "result"));
+      DU.downloadResult(url, brandFile(lastGenerationId || "result"));
     };
   }
   if (share) {
-    const numeric = lastGenerationId && String(lastGenerationId).indexOf("g_") !== 0 && token;
+    const numeric = lastGenerationId && String(lastGenerationId).indexOf("g_") !== 0 && token && !demoActive();
     share.hidden = !numeric;
     share.disabled = false;
     share.textContent = DU.t("ws.result.share", "Share to gallery");
@@ -883,11 +1067,12 @@ function updateAuthUI(credits) {
     }
     buy.hidden = false;
     welcome.classList.remove("show");
-    save.classList.remove("show");
+    if (save) save.classList.remove("show");
     const persist = document.getElementById("guestPersistNotice");
     if (persist) { persist.hidden = true; persist.classList.remove("show"); }
     foot.innerHTML = 'Credits never expire. <a href="/pricing">Buy more credits</a>';
     btnLabel.textContent = DU.t("ws.gen.go", "Generate");
+    updateGenCost();
     const loginBtn = document.getElementById("loginBtn");
     loginBtn.textContent = DU.t("hdr.logout", "Log Out");
     loginBtn.href = "#";
@@ -909,14 +1094,12 @@ function updateAuthUI(credits) {
     buy.hidden = true;
     writeCachedCredits(null);
     welcome.classList.add("show");
-    save.classList.add("show");
+    if (save) save.classList.remove("show");
     const persist = document.getElementById("guestPersistNotice");
-    if (persist) { persist.hidden = false; persist.classList.add("show"); }
-    const left = guestRemaining == null ? 2 : guestRemaining;
-    foot.innerHTML = left > 0
-      ? left + ' free Lite video' + (left === 1 ? '' : 's') + ' left. <a href="' + authHref("register") + '" id="genFootSignup">Sign up</a> for 10 credits.'
-      : 'Free tries used. <a href="' + authHref("register") + '" id="genFootSignup">Sign up</a> for 10 credits.';
-    btnLabel.textContent = DU.t("ws.gen.trial", "Generate Free Trial");
+    if (persist) { persist.hidden = true; persist.classList.remove("show"); }
+    foot.innerHTML = DU.t("ws.gen.browse", "Browse freely. Generate asks you to sign in.");
+    btnLabel.textContent = DU.t("ws.gen.go", "Generate");
+    updateGenCost();
     bindAuthTriggers();
   }
   if (!token) showInviteCard(null);
@@ -937,29 +1120,57 @@ function setHistoryEmptyVisible(show) {
 }
 
 function switchPrimaryTab(tab) {
-  const create = tab === "create";
-  document.getElementById("tabCreate").classList.toggle("active", create);
-  document.getElementById("tabHistory").classList.toggle("active", !create);
-  document.getElementById("createView").style.display = create ? "" : "none";
-  document.getElementById("historyView").classList.toggle("show", !create);
-  if (!create) loadHistory();
+  const hist = tab === "history";
+  const how = tab === "how" || tab === "create";
+  document.getElementById("tabHistory").classList.toggle("active", hist);
+  document.getElementById("tabHow").classList.toggle("active", how);
+  document.getElementById("tabCreate").classList.toggle("active", how);
+  const dock = document.getElementById("composerDock");
+  if (dock) dock.hidden = false;
+  document.getElementById("historyView").classList.toggle("show", hist);
+  const howView = document.getElementById("howView");
+  if (howView) howView.classList.toggle("show", how);
+  if (hist) loadHistory();
   else setHistoryEmptyVisible(false);
 }
 
+function syncAudioChip() {
+  const on = currentMode === "video" && currentModel === "pro";
+  document.querySelectorAll("#audioRow .opt-chip").forEach((el) => {
+    el.classList.toggle("active", el.dataset.audio === (on ? "on" : "off"));
+  });
+}
+
+function pickAudio(on) {
+  if (currentMode !== "video") return;
+  if (on) pickModel("pro");
+  else if (currentModel === "pro") pickModel("medium");
+  else syncAudioChip();
+}
+
 function syncVideoOptions() {
-  const lastOn = currentMode === "video" && (currentModel === "medium" || currentModel === "pro");
+  const lastOn = currentMode === "video";
   document.querySelectorAll(".last-slot").forEach((el) => el.classList.toggle("show", lastOn));
   const grid = document.getElementById("uploadGrid");
   if (grid) grid.classList.toggle("two", lastOn);
   const dur = document.getElementById("durationRow");
   if (dur) dur.style.display = currentMode === "video" ? "flex" : "none";
-  const hasStart = !!(uploadedImage || (document.getElementById("imageUrlInput") && document.getElementById("imageUrlInput").value.trim()));
   const aspect = document.getElementById("aspectRow");
-  if (aspect) aspect.style.display = currentMode === "video" && !hasStart ? "flex" : "none";
+  if (aspect) aspect.style.display = currentMode === "video" ? "flex" : "none";
+  const audio = document.getElementById("audioRow");
+  if (audio) audio.style.display = currentMode === "video" ? "flex" : "none";
   const blend = document.getElementById("blendRow");
   if (blend) blend.classList.toggle("show", currentMode === "image");
-  const resRow = document.getElementById("res4kRow");
-  if (resRow) resRow.classList.toggle("show", currentMode === "image" && currentModel === "pro");
+  const res4k = document.getElementById("res4kRow");
+  if (res4k) res4k.classList.remove("show");
+  document.querySelectorAll("#resolutionRow .video-res").forEach((el) => {
+    el.style.display = currentMode === "video" ? "" : "none";
+  });
+  document.querySelectorAll("#resolutionRow .image-res").forEach((el) => {
+    el.style.display = currentMode === "image" ? "" : "none";
+  });
+  syncAudioChip();
+  updateGenCost();
 }
 
 function switchMode(mode) {
@@ -967,13 +1178,13 @@ function switchMode(mode) {
   document.getElementById("modeVideo").classList.toggle("active", currentMode === "video");
   document.getElementById("modeImage").classList.toggle("active", currentMode === "image");
   document.getElementById("genTitle").textContent = currentMode === "video" ? DU.t("gen.videoTitle", "AI Video Generator") : DU.t("gen.imageTitle", "AI Image Generator");
-  document.getElementById("uploadLabel").textContent = currentMode === "video" ? "Upload Start Image" : "Reference image (optional)";
-  document.getElementById("promptLabel").textContent = currentMode === "video" ? "Describe Your Video" : "Describe Your Image";
+  document.getElementById("uploadLabel").textContent = currentMode === "video" ? DU.t("ws.frame.start.upload", "Upload a still") : DU.t("gen.uploadImage", "Reference image (optional)");
+  document.getElementById("promptLabel").textContent = currentMode === "video" ? DU.t("gen.prompt", "Describe Your Video") : DU.t("ws.prompt.image", "Describe Your Image");
   document.getElementById("promptInput").placeholder = currentMode === "video"
-    ? "A futuristic city with flying cars..."
-    : "A cinematic portrait with soft lighting...";
-  document.getElementById("videoModels").style.display = currentMode === "video" ? "grid" : "none";
-  document.getElementById("imageModels").style.display = currentMode === "image" ? "grid" : "none";
+    ? DU.t("gen.placeholder", "A futuristic city with flying cars...")
+    : DU.t("ws.prompt.image.ph", "A cinematic portrait with soft lighting...");
+  document.getElementById("videoModels").style.display = currentMode === "video" ? "flex" : "none";
+  document.getElementById("imageModels").style.display = currentMode === "image" ? "flex" : "none";
   const hint = document.getElementById("urlHint");
   const note = document.getElementById("modeNote");
   if (currentMode === "image") {
@@ -988,9 +1199,7 @@ function switchMode(mode) {
     }
     pickModel(currentModel);
     if (hint) {
-      hint.innerHTML = token
-        ? "Start image optional — skip it for <b>text-to-video</b>. Medium/Pro can add a last frame."
-        : "Free trial needs a start image (Lite image-to-video). Sign up for text-to-video.";
+      hint.innerHTML = "Start image optional — skip it for <b>text-to-video</b>. Medium/Pro can add a last frame.";
     }
     note.classList.remove("show");
     note.textContent = "";
@@ -1002,9 +1211,10 @@ function pickModel(v) {
   currentModel = v;
   const row = document.getElementById(currentMode === "image" ? "imageModels" : "videoModels");
   if (!row) return;
-  row.querySelectorAll(".model-opt").forEach((el) => {
+  row.querySelectorAll("[data-model]").forEach((el) => {
     el.classList.toggle("active", el.dataset.model === v);
   });
+  if (currentMode === "image") pickImageRes(currentModel === "pro" ? (imageResolution === "1K" ? "2K" : imageResolution) : "1K");
   syncVideoOptions();
 }
 
@@ -1015,6 +1225,66 @@ function pickDuration(n) {
   });
 }
 
+function pickVideoRes(v) {
+  videoRes = v === "720p" ? "720p" : "1080p";
+  document.querySelectorAll("#resolutionRow .video-res").forEach((el) => {
+    el.classList.toggle("active", el.dataset.vres === videoRes);
+  });
+}
+
+function pickImageRes(v) {
+  if (currentModel !== "pro" && v !== "1K") {
+    imageResolution = "1K";
+  } else if (v === "4K" && currentModel === "pro") {
+    imageResolution = "4K";
+  } else if (v === "2K" && currentModel === "pro") {
+    imageResolution = "2K";
+  } else {
+    imageResolution = "1K";
+  }
+  const box = document.getElementById("res4k");
+  if (box) box.checked = imageResolution === "4K";
+  document.querySelectorAll("#resolutionRow .image-res").forEach((el) => {
+    el.classList.toggle("active", el.dataset.ires === imageResolution);
+  });
+}
+
+function cyclePreset() {
+  presetIndex = (presetIndex + 1) % LOOKS.length;
+  const look = LOOKS[presetIndex];
+  const thumb = document.getElementById("presetThumb");
+  const name = document.getElementById("presetName");
+  const sub = document.getElementById("presetSub");
+  if (thumb) thumb.src = look.img;
+  if (name) name.textContent = look.name;
+  if (sub) sub.textContent = look.sub;
+  if (look.aspect) pickAspect(look.aspect);
+}
+
+function currentCost() {
+  if (currentMode === "image") return currentModel === "pro" ? 2 : 1;
+  if (currentModel === "pro") return 16;
+  if (currentModel === "medium") return 5;
+  return 3;
+}
+
+function updateGenCost() {
+  const wrap = document.getElementById("genCostWrap");
+  const el = document.getElementById("genCost");
+  if (!wrap || !el) return;
+  if (demoActive()) {
+    wrap.hidden = false;
+    el.textContent = String(currentCost());
+    return;
+  }
+  if (generationIsClosed()) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  el.textContent = String(currentCost());
+}
+
 function pickAspect(v) {
   aspectRatio = v === "9:16" || v === "1:1" ? v : "16:9";
   document.querySelectorAll("#aspectRow .opt-chip").forEach((el) => {
@@ -1022,17 +1292,14 @@ function pickAspect(v) {
   });
 }
 
+function generationIsClosed() {
+  return (window.DU && DU.generationEnabled === false) || generateReady === false;
+}
+
 function onPromptInput() {
   const ta = document.getElementById("promptInput");
   document.getElementById("charCount").textContent = ta.value.length;
-  const btn = document.getElementById("genBtn");
-  if (ta.value.trim().length > 0) {
-    btn.classList.add("ready");
-    btn.disabled = false;
-  } else {
-    btn.classList.remove("ready");
-    btn.disabled = true;
-  }
+  resetGenBtn();
 }
 
 function previewOnArea(area, file) {
@@ -1164,10 +1431,70 @@ async function uploadImageFile(file) {
   return DU.uploadImage(file);
 }
 
+function localPreviewSrc(areaId) {
+  const img = document.querySelector("#" + areaId + " img.preview");
+  return (img && img.src) || "";
+}
+
+async function generateDemoFlow() {
+  const prompt = document.getElementById("promptInput").value.trim();
+  if (!prompt) return toast("Please enter a prompt.", true);
+  const btn = document.getElementById("genBtn");
+  const status = document.getElementById("genStatus");
+  const statusText = document.getElementById("genStatusText");
+  const spinner = document.getElementById("genSpinner");
+  btn.disabled = true;
+  btn.classList.remove("ready");
+  document.getElementById("genBtnLabel").textContent = "Generating...";
+  status.classList.add("show");
+  spinner.style.display = "";
+  showResult(null);
+  const skel = document.getElementById("genSkel");
+  if (skel) { skel.hidden = false; skel.classList.add("show"); }
+  statusText.textContent = DU.progressLabel("waiting");
+  try {
+    const item = await DU_DEMO.runGenerate({
+      kind: currentMode,
+      model: currentModel,
+      prompt: prompt,
+      durationSec: durationSec,
+      localImageUrl: localPreviewSrc("uploadArea"),
+      localLastImageUrl: localPreviewSrc("lastUploadArea"),
+      onProgress: function (st) {
+        statusText.textContent = DU.progressLabel(st);
+      },
+    });
+    spinner.style.display = "none";
+    if (skel) { skel.hidden = true; skel.classList.remove("show"); }
+    statusText.innerHTML = `<span style="color:var(--green)">Done</span> · ${escapeHtml(item.kind)} · ${escapeHtml(currentModel)}`;
+    showResult(item.resultUrl, item.kind, item.id, { demo: true });
+    toast(item.kind === "image" ? "Image ready" : "Video ready");
+    loadHistory();
+  } catch (e) {
+    spinner.style.display = "none";
+    if (skel) { skel.hidden = true; skel.classList.remove("show"); }
+    statusText.textContent = (e && e.message) || "Demo failed";
+    toast(statusText.textContent, true);
+  }
+  resetGenBtn();
+}
+
 async function generate() {
-  if (window.DU && DU.generationEnabled === false) {
+  if (demoActive()) {
+    return generateDemoFlow();
+  }
+  if (generationIsClosed() || (window.DU && DU.generationEnabled === false)) {
     toast(DU.t("gen.closed", "暂未开放"), true);
     return;
+  }
+  if (!token) {
+    return DU.alertDialog({
+      title: DU.t("dialog.signup.h", "Create a free account to continue"),
+      body: DU.t("ws.gen.login", "You can browse the generator without an account. Sign in to run a job — nothing is charged until generation is open."),
+      primaryHref: authHref("register"),
+      primaryLabel: DU.t("dialog.signup.cta", "Create a free account"),
+      secondaryLabel: DU.t("dialog.dismiss", "Dismiss"),
+    });
   }
   const prompt = document.getElementById("promptInput").value.trim();
   if (!prompt) return toast("Please enter a prompt.", true);
@@ -1175,16 +1502,6 @@ async function generate() {
   let imageUrl = document.getElementById("imageUrlInput").value.trim();
   let lastUrl = (document.getElementById("lastImageUrlInput") || {}).value || "";
   lastUrl = String(lastUrl).trim();
-
-  if (!token && currentMode === "video" && currentModel !== "lite") {
-    return DU.showGateDialog(currentModel);
-  }
-  if (!token && currentMode === "image") {
-    return DU.showGateDialog("image");
-  }
-  if (!token && currentMode === "video" && !uploadedImage && !imageUrl) {
-    return toast(DU.t("err.image_required", "Free trial needs a start image. Upload a file or paste a public https URL."), true);
-  }
 
   const btn = document.getElementById("genBtn");
   const status = document.getElementById("genStatus");
@@ -1218,7 +1535,8 @@ async function generate() {
       }
     }
 
-    if (lastImage && !lastImageUrlStored) {
+    const lastFrameOn = currentMode === "video" && (currentModel === "medium" || currentModel === "pro");
+    if (lastFrameOn && lastImage && !lastImageUrlStored) {
       statusText.textContent = "Uploading last frame…";
       const up = await uploadImageFile(lastImage);
       lastImageUrlStored = up.imageUrl || "";
@@ -1244,12 +1562,11 @@ async function generate() {
       idempotencyKey: DU.newIdempotencyKey(),
     };
     if (imageUrl) payload.imageUrl = imageUrl;
-    if (lastUrl && currentMode === "video") payload.lastImageUrl = lastUrl;
+    if (lastUrl && lastFrameOn) payload.lastImageUrl = lastUrl;
     if (uploadedMediaKey) payload.mediaKey = uploadedMediaKey;
     if (extraUrls.length) payload.imageUrls = extraUrls;
     if (currentMode === "image") {
-      const want4k = document.getElementById("res4k") && document.getElementById("res4k").checked;
-      payload.resolution = want4k && currentModel === "pro" ? "4K" : currentModel === "pro" ? "2K" : "1K";
+      payload.resolution = currentModel === "pro" ? (imageResolution === "4K" ? "4K" : "2K") : "1K";
     }
     const data = await api("/generate", {
       method: "POST",
@@ -1293,112 +1610,397 @@ async function generate() {
 
 function resetGenBtn() {
   const btn = document.getElementById("genBtn");
-  if (window.DU && DU.generationEnabled === false) {
+  const foot = document.getElementById("genFoot");
+  if (demoActive()) {
+    const hasPrompt = document.getElementById("promptInput").value.trim().length > 0;
+    btn.disabled = !hasPrompt;
+    btn.classList.toggle("ready", hasPrompt);
+    document.getElementById("genBtnLabel").textContent = DU.t("ws.gen.go", "Generate");
+    if (foot) {
+      foot.hidden = false;
+      foot.textContent = DU.t("demo.foot", "Sample walkthrough. Nothing is billed.");
+    }
+    const wrap = document.getElementById("genCostWrap");
+    if (wrap) wrap.hidden = false;
+    const cost = document.getElementById("genCost");
+    if (cost) cost.textContent = String(currentCost());
+    return;
+  }
+  if (generationIsClosed()) {
     btn.disabled = true;
     btn.classList.remove("ready");
     document.getElementById("genBtnLabel").textContent = DU.t("gen.closed", "暂未开放");
+    if (foot) foot.hidden = true;
+    updateGenCost();
     return;
   }
-  const hasPrompt = document.getElementById("promptInput").value.trim().length > 0;
-  btn.disabled = !hasPrompt;
-  btn.classList.toggle("ready", hasPrompt);
-  document.getElementById("genBtnLabel").textContent = token ? DU.t("ws.gen.go", "Generate") : DU.t("ws.gen.trial", "Generate Free Trial");
+  btn.disabled = false;
+  btn.classList.add("ready");
+  document.getElementById("genBtnLabel").textContent = DU.t("ws.gen.go", "Generate");
+  if (foot) foot.hidden = false;
+  updateGenCost();
+}
+
+function itemKind(g) {
+  if (g && (g.kind === "image" || g.kind === "video")) return g.kind;
+  if (g && g.storedModel && String(g.storedModel).indexOf("image-") === 0) return "image";
+  return g && String(g.model).indexOf("image") === 0 ? "image" : "video";
+}
+
+function itemModel(g) {
+  if (g && g.model) return String(g.model);
+  if (g && g.storedModel && String(g.storedModel).indexOf("image-") === 0) return String(g.storedModel).slice(6) || "lite";
+  return "lite";
+}
+
+function creditCostForItem(g) {
+  const kind = itemKind(g);
+  const model = itemModel(g);
+  if (kind === "image") return model === "pro" ? 2 : 1;
+  if (model === "pro") return 16;
+  if (model === "medium") return 5;
+  return 3;
+}
+
+function displayDuration(g) {
+  if (itemKind(g) === "image") return "—";
+  const n = Number(g && g.duration_sec);
+  return Number.isFinite(n) && n > 0 ? n + "s" : "—";
+}
+
+function displayAspect(g) {
+  return "—";
+}
+
+function displayResolution(g) {
+  if (itemKind(g) !== "image") return "—";
+  return itemModel(g) === "pro" ? "2K" : "1K";
+}
+
+function resultUrlOf(g) {
+  return String((g && (g.result_url || g.resultUrl)) || "");
+}
+
+function filterOwnWorks(items, filter) {
+  const list = Array.isArray(items) ? items : [];
+  if (filter === "all") return list.slice();
+  return list.filter((g) => itemKind(g) === filter);
+}
+
+function formatHistoryCreated(raw) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return String(raw);
+  try {
+    return d.toLocaleString();
+  } catch (e) {
+    return d.toISOString();
+  }
+}
+
+function setHistoryFilter(filter) {
+  historyKindFilter = filter === "video" || filter === "image" ? filter : "all";
+  document.querySelectorAll("#historyFilter [data-filter]").forEach((el) => {
+    el.classList.toggle("active", el.dataset.filter === historyKindFilter);
+  });
+  renderHistoryGrid();
 }
 
 function refreshHistoryEmpty() {
   const title = document.getElementById("historyEmptyTitle");
   const desc = document.getElementById("historyEmptyDesc");
   const cta = document.getElementById("historyEmptyCta");
-  if (token) {
-    title.textContent = DU.t("ws.history.empty.h", "No creations yet");
-    desc.textContent = DU.t("ws.history.empty.p", "Start creating to see your work here.");
+  const filtered = filterOwnWorks(historyItems, historyKindFilter);
+  if (historyItems.length && !filtered.length) {
+    if (historyKindFilter === "video") {
+      title.textContent = DU.t("ws.history.filter.empty.video.h", "No videos yet");
+      desc.textContent = DU.t("ws.history.filter.empty.video.p", "Your images stay under Image. Generate a video to fill this view.");
+    } else {
+      title.textContent = DU.t("ws.history.filter.empty.image.h", "No images yet");
+      desc.textContent = DU.t("ws.history.filter.empty.image.p", "Your videos stay under Video. Generate an image to fill this view.");
+    }
     cta.textContent = DU.t("ws.history.start", "Start Creating");
-    cta.onclick = () => switchPrimaryTab("create");
+    cta.onclick = () => document.getElementById("promptInput").focus();
+    return;
+  }
+  title.textContent = DU.t("ws.history.empty.h", "No creations yet");
+  desc.textContent = DU.t("ws.history.empty.p", "Start creating to see your work here.");
+  cta.textContent = DU.t("ws.history.start", "Start Creating");
+  cta.onclick = () => document.getElementById("promptInput").focus();
+}
+
+function previewOnAreaSrc(area, src) {
+  if (!area || !src) return;
+  area.classList.add("has-img");
+  let img = area.querySelector("img.preview");
+  if (!img) {
+    img = document.createElement("img");
+    img.className = "preview";
+    img.alt = "upload preview";
+    area.appendChild(img);
+  }
+  img.src = src;
+  const icon = area.querySelector(".icon");
+  const p1 = area.querySelector(".p1");
+  const p2 = area.querySelector(".p2");
+  if (icon) icon.style.display = "none";
+  if (p1) p1.style.display = "none";
+  if (p2) p2.style.display = "none";
+}
+
+function refillFromGeneration(g) {
+  if (!g) return;
+  const kind = itemKind(g);
+  switchMode(kind);
+  pickModel(itemModel(g));
+  if (kind === "video") pickDuration(Number(g.duration_sec) === 10 ? 10 : 5);
+  const ta = document.getElementById("promptInput");
+  if (ta) {
+    ta.value = String(g.prompt || "").slice(0, 8000);
+    onPromptInput();
+  }
+  const startUrl = String(g.input_image_url || "");
+  const lastUrl = String(g.last_image_url || "");
+  if (startUrl) {
+    uploadedImage = null;
+    uploadedImageUrl = startUrl;
+    uploadedMediaKey = "";
+    const startInput = document.getElementById("imageUrlInput");
+    if (startInput) startInput.value = startUrl;
+    previewOnAreaSrc(document.getElementById("uploadArea"), startUrl);
+  }
+  if (lastUrl) {
+    lastImage = null;
+    lastImageUrlStored = lastUrl;
+    const lastInput = document.getElementById("lastImageUrlInput");
+    if (lastInput) lastInput.value = lastUrl;
+    previewOnAreaSrc(document.getElementById("lastUploadArea"), lastUrl);
+  }
+  closeHistoryDetail();
+  if (ta) ta.focus();
+  toast(DU.t("ws.history.refilled", "Parameters filled — adjust and generate when ready."));
+}
+
+async function copyHistoryPrompt(text) {
+  const value = String(text || "");
+  if (!value) return toast(DU.t("ws.history.copy.empty", "No prompt to copy"), true);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    toast(DU.t("ws.history.copied", "Prompt copied"));
+  } catch (e) {
+    toast(DU.t("ws.history.copy.fail", "Could not copy prompt"), true);
+  }
+}
+
+function bindHistoryHoverPreview(list) {
+  if (!list || list.dataset.hoverBound) return;
+  list.dataset.hoverBound = "1";
+  list.addEventListener("pointerenter", function (e) {
+    const card = e.target.closest(".history-card");
+    if (!card || !list.contains(card)) return;
+    const vid = card.querySelector("video[data-preview]");
+    if (!vid) return;
+    vid.muted = true;
+    const play = vid.play();
+    if (play && play.catch) play.catch(function () {});
+  }, true);
+  list.addEventListener("pointerleave", function (e) {
+    const card = e.target.closest(".history-card");
+    if (!card || !list.contains(card)) return;
+    const related = e.relatedTarget;
+    if (related && card.contains(related)) return;
+    const vid = card.querySelector("video[data-preview]");
+    if (!vid) return;
+    vid.pause();
+    try { vid.currentTime = 0; } catch (err) {}
+  }, true);
+}
+
+function openHistoryDetail(g) {
+  historyDetailItem = g || null;
+  const modal = document.getElementById("historyDetail");
+  if (!modal || !g) return;
+  const kind = itemKind(g);
+  const url = resultUrlOf(g);
+  const media = document.getElementById("historyDetailMedia");
+  media.innerHTML = "";
+  if (url && kind === "image") {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.src = url;
+    media.appendChild(img);
+  } else if (url) {
+    const vid = document.createElement("video");
+    vid.controls = true;
+    vid.playsInline = true;
+    vid.src = url;
+    media.appendChild(vid);
   } else {
-    title.textContent = DU.t("ws.history.guest.h", "No creations yet");
-    desc.textContent = DU.t("ws.history.guest.p", "Guest tries stay on this browser until you sign up. They are not saved to an account.");
-    cta.textContent = DU.t("ws.history.start", "Start Creating");
-    cta.onclick = () => switchPrimaryTab("create");
+    media.innerHTML = `<div class="history-card-ph">${escapeHtml(String(g.status || "processing"))}</div>`;
+  }
+  if (g.demo || demoActive()) {
+    media.insertAdjacentHTML("beforeend", window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>');
+  }
+  document.getElementById("historyDetailPrompt").textContent = g.prompt || "—";
+  document.getElementById("historyDetailModel").textContent = itemModel(g);
+  document.getElementById("historyDetailDuration").textContent = displayDuration(g);
+  document.getElementById("historyDetailAspect").textContent = displayAspect(g);
+  document.getElementById("historyDetailResolution").textContent = displayResolution(g);
+  document.getElementById("historyDetailCredits").textContent = String(creditCostForItem(g));
+  document.getElementById("historyDetailCreated").textContent = formatHistoryCreated(g.created_at);
+  const dl = document.getElementById("historyDetailDownload");
+  dl.hidden = !url;
+  dl.onclick = function () {
+    DU.downloadResult(url, brandFile(g.id));
+  };
+  document.getElementById("historyDetailRegen").onclick = function () {
+    refillFromGeneration(g);
+    if (demoActive()) generate();
+  };
+  document.getElementById("historyDetailCopy").onclick = function () {
+    copyHistoryPrompt(g.prompt);
+  };
+  modal.hidden = false;
+}
+
+function closeHistoryDetail() {
+  const modal = document.getElementById("historyDetail");
+  if (modal) modal.hidden = true;
+  const media = document.getElementById("historyDetailMedia");
+  if (media) {
+    media.querySelectorAll("video").forEach((vid) => {
+      vid.pause();
+      vid.removeAttribute("src");
+      if (vid.load) vid.load();
+    });
+    media.innerHTML = "";
+  }
+  historyDetailItem = null;
+}
+
+function historyCardHtml(g) {
+  const url = resultUrlOf(g);
+  const kind = itemKind(g);
+  const status = String(g.status || "");
+  const play = url && kind === "video" ? `<span class="history-card-play" aria-hidden="true">▶</span>` : "";
+  const demoBadge = (g.demo || demoActive())
+    ? (window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>')
+    : "";
+  const media = !url
+    ? `<div class="history-card-ph">${escapeHtml(status || "…")}</div>`
+    : kind === "image"
+      ? `<img src="${escapeHtml(url)}" alt="">`
+      : `<video src="${escapeHtml(url)}" muted loop playsinline preload="metadata" data-preview></video>${play}`;
+  const actions = url
+    ? `<div class="history-card-actions">
+        <button type="button" data-act="download" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
+        <button type="button" data-act="regen" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.regen", "Regenerate"))}</button>
+        <button type="button" data-act="copy" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.copy", "Copy prompt"))}</button>
+      </div>`
+    : `<div class="history-card-actions">
+        <button type="button" data-act="regen" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.regen", "Regenerate"))}</button>
+        <button type="button" data-act="copy" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.history.copy", "Copy prompt"))}</button>
+      </div>`;
+  return `<article class="history-card" data-id="${escapeHtml(String(g.id))}" data-kind="${escapeHtml(kind)}" tabindex="0" role="button">
+    <div class="history-card-media">
+      ${media}
+      ${demoBadge}
+      <span class="history-card-status ${escapeHtml(status)}">${escapeHtml(status || "saved")}</span>
+    </div>
+    <div class="history-card-cap">
+      <p class="history-card-prompt">${escapeHtml(g.prompt || "")}</p>
+      ${actions}
+    </div>
+  </article>`;
+}
+
+function renderHistoryGrid() {
+  const list = document.getElementById("historyList");
+  const toolbar = document.getElementById("historyToolbar");
+  const filtered = filterOwnWorks(historyItems, historyKindFilter);
+  if (toolbar) toolbar.hidden = !historyItems.length;
+  if (!historyItems.length || !filtered.length) {
+    setHistoryEmptyVisible(true);
+    if (list) list.hidden = true;
+    refreshHistoryEmpty();
+    return;
+  }
+  setHistoryEmptyVisible(false);
+  refreshHistoryEmpty();
+  if (!list) return;
+  list.hidden = false;
+  list.innerHTML = filtered.map(historyCardHtml).join("");
+  bindHistoryHoverPreview(list);
+  if (!list.dataset.bound) {
+    list.dataset.bound = "1";
+    list.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-act]");
+      const card = e.target.closest(".history-card");
+      if (btn) {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        const g = historyItems.find((row) => String(row.id) === String(id));
+        if (!g) return;
+        const act = btn.getAttribute("data-act");
+        if (act === "download") DU.downloadResult(resultUrlOf(g), brandFile(g.id));
+        else if (act === "regen") {
+          refillFromGeneration(g);
+          if (demoActive()) generate();
+        }
+        else if (act === "copy") copyHistoryPrompt(g.prompt);
+        return;
+      }
+      if (card) {
+        const g = historyItems.find((row) => String(row.id) === String(card.getAttribute("data-id")));
+        if (g) openHistoryDetail(g);
+      }
+    });
+    list.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".history-card");
+      if (!card || e.target.closest("[data-act]")) return;
+      e.preventDefault();
+      const g = historyItems.find((row) => String(row.id) === String(card.getAttribute("data-id")));
+      if (g) openHistoryDetail(g);
+    });
   }
 }
 
 async function loadHistory() {
   const list = document.getElementById("historyList");
+  if (demoActive()) {
+    historyItems = DU_DEMO.loadHistory();
+    renderHistoryGrid();
+    return;
+  }
   try {
     let data;
     try {
       data = await api("/history");
     } catch (histErr) {
-      data = await api("/generate");
+      data = await api("/generations");
     }
     if (data.guestRemaining !== undefined && !token) {
       guestRemaining = data.guestRemaining;
       updateAuthUI();
     }
-    const gens = data.generations || [];
-    if (!gens.length) {
-      setHistoryEmptyVisible(true);
-      list.hidden = true;
-      refreshHistoryEmpty();
-      return;
-    }
-    setHistoryEmptyVisible(false);
-    list.hidden = false;
-    list.innerHTML = gens.map((g) => {
-      const url = g.result_url || g.resultUrl || "";
-      const kind = g.kind || (String(g.model).indexOf("image") === 0 ? "image" : "video");
-      const guestTag = g.guest ? " · guest" : "";
-      const meta = kind === "image"
-        ? `#${g.id} · image · ${escapeHtml(String(g.model))}${guestTag}`
-        : `#${g.id} · ${escapeHtml(String(g.model))} · ${g.duration_sec || "—"}s${guestTag}`;
-      const link = url
-        ? `<div class="h-actions">
-            <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(DU.t("gen.open", "Open result"))}</a>
-            <button type="button" data-act="download" data-url="${escapeHtml(url)}" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
-            ${g.guest ? "" : `<button type="button" data-act="share" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("ws.result.share", "Share to gallery"))}</button>`}
-          </div>`
-        : "";
-      const preview = !url
-        ? ""
-        : kind === "image"
-          ? `<img src="${escapeHtml(url)}" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-top:8px">`
-          : `<video src="${escapeHtml(url)}" muted playsinline preload="metadata" style="width:100%;max-height:180px;border-radius:8px;margin-top:8px;background:#000"></video>`;
-      return `
-      <div class="history-item">
-        <div class="h-top">
-          <span class="h-meta">${meta}</span>
-          <span class="h-status ${escapeHtml(String(g.status))}">${escapeHtml(String(g.status))}</span>
-        </div>
-        <div class="h-prompt">${escapeHtml(g.prompt || "")}</div>
-        ${preview}
-        ${link}
-      </div>`;
-    }).join("");
-    if (!list.dataset.bound) {
-      list.dataset.bound = "1";
-      list.addEventListener("click", async function (e) {
-        const btn = e.target.closest("[data-act]");
-        if (!btn) return;
-        const id = btn.getAttribute("data-id");
-        const url = btn.getAttribute("data-url");
-        if (btn.getAttribute("data-act") === "download") {
-          DU.downloadResult(url, "dreamutopia-" + id);
-        } else if (btn.getAttribute("data-act") === "share") {
-          btn.disabled = true;
-          try {
-            const res = await DU.publishGallery(Number(id));
-            btn.textContent = DU.t("ws.result.shared", "In gallery");
-            toast(res.already ? DU.t("ws.result.shared", "In gallery") : "Shared");
-          } catch (err) {
-            btn.disabled = false;
-            toast(err.message || "Could not share", true);
-          }
-        }
-      });
-    }
+    historyItems = data.generations || [];
+    renderHistoryGrid();
   } catch (e) {
+    historyItems = [];
+    if (list) list.hidden = true;
+    const toolbar = document.getElementById("historyToolbar");
+    if (toolbar) toolbar.hidden = true;
     setHistoryEmptyVisible(true);
-    list.hidden = true;
     refreshHistoryEmpty();
   }
 }
@@ -1417,37 +2019,42 @@ function escapeHtml(s) {
   if (token) userCredits = readCachedCredits();
   updateAuthUI();
   showPackBanner();
-  try {
-    const cap = await fetch("/api/upload").then((r) => r.json());
-    uploadReady = !!(cap && cap.mediaBound);
-  } catch (e) {
-    uploadReady = false;
-  }
-  try {
-    const health = await fetch("/api/health").then((r) => r.json());
-    const enabled = !!(health && health.generationEnabled === true);
-    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(enabled);
-    if (!enabled || (health && health.generateReady === false)) {
-      generateReady = false;
-      const welcomeP = document.querySelector("#welcomeBanner p");
-      if (welcomeP && !token) {
-        welcomeP.textContent = enabled
-          ? "Generation isn’t available on this preview yet. You can still sign up — free trials will work when the provider is configured."
-          : ((window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放");
-      }
-      const foot = document.getElementById("genFoot");
-      if (foot) {
-        foot.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
-      }
-      resetGenBtn();
-    }
-  } catch (e) {
-    if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(false);
+  const inDemo = demoActive();
+  if (inDemo && window.DU_DEMO) {
+    DU_DEMO.installNetworkGuard();
+    DU_DEMO.keepDemoQuery();
     generateReady = false;
+    if (window.DU) DU.generationEnabled = false;
+    DU_DEMO.applyChrome();
     resetGenBtn();
   }
+  if (!inDemo) {
+    try {
+      const cap = await fetch("/api/upload").then((r) => r.json());
+      uploadReady = !!(cap && cap.mediaBound);
+    } catch (e) {
+      uploadReady = false;
+    }
+    try {
+      const health = await fetch("/api/health").then((r) => r.json());
+      const enabled = !!(health && health.generationEnabled === true);
+      if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(enabled);
+      if (!enabled || (health && health.generateReady === false)) {
+        generateReady = false;
+        const welcomeP = document.querySelector("#welcomeBanner p");
+        if (welcomeP && !token && !enabled) {
+          welcomeP.textContent = (window.DU && DU.t("gen.closed", "暂未开放")) || "暂未开放";
+        }
+      }
+      resetGenBtn();
+    } catch (e) {
+      if (window.DU && DU.applyGenerationCtas) DU.applyGenerationCtas(false);
+      generateReady = false;
+      resetGenBtn();
+    }
+  }
   const hint = document.getElementById("urlHint");
-  if (hint && !uploadReady) {
+  if (hint && !uploadReady && !inDemo) {
     hint.innerHTML = 'File upload isn’t bound yet — paste a <strong style="color:rgba(255,255,255,.7);font-weight:600">public https image URL</strong> that KIE can fetch.';
   }
   const params = new URLSearchParams(location.search);
@@ -1470,7 +2077,9 @@ function escapeHtml(s) {
   }
   const urlInput = document.getElementById("imageUrlInput");
   if (urlInput) urlInput.addEventListener("input", syncVideoOptions);
-  if (token) {
+  if (inDemo) {
+    loadHistory();
+  } else if (token) {
     try {
       // Only a real unauthorized response may wipe the session. Transient
       // network/timeout/5xx failures keep token + cached credits + logged-in UI.
@@ -1498,10 +2107,20 @@ function escapeHtml(s) {
   }
   const wantHistory = params.get("tab") === "history" || location.hash === "#history";
   if (wantHistory) switchPrimaryTab("history");
+  const detail = document.getElementById("historyDetail");
+  if (detail) {
+    detail.addEventListener("click", function (e) {
+      if (e.target === detail) closeHistoryDetail();
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeHistoryDetail();
+  });
 })();
 
 document.addEventListener("du:i18n", function () {
   updateAuthUI();
+  if (demoActive() && window.DU_DEMO) DU_DEMO.applyChrome();
   resetGenBtn();
   const title = document.getElementById("genTitle");
   if (title) title.textContent = currentMode === "video" ? DU.t("gen.videoTitle", "AI Video Generator") : DU.t("gen.imageTitle", "AI Image Generator");

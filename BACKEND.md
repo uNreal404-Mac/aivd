@@ -143,7 +143,7 @@ npx wrangler d1 execute dreamutopia-db --remote --file=migrations/004_template_h
 npx wrangler d1 execute dreamutopia-db --remote --file=migrations/007_business_inquiries.sql
 ```
 
-`POST /api/business` writes a quote request to `business_inquiries` (company, contact, industry, need type, quantity, budget, notes). No payment. Mock tests only — do not apply this migration from a test run.
+`POST /api/business` is retired and returns **410**. The `business_inquiries` table may still exist from migration 007; new inquiries are not accepted. Mock tests only — do not apply this migration from a test run. `/business` 301-redirects to `/workspace`.
 
 ## 2. Paste IDs into `wrangler.toml`
 

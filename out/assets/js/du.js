@@ -5,6 +5,8 @@
   const TOKEN_KEY = "dreamutopia_token";
   const CREDITS_KEY = "dreamutopia_credits";
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+  // Must match libs/site.ts BRAND_NAME (canonical). Rebrand = change site.ts, then this mirror.
+  const BRAND_NAME = "DreamUtopia";
 
   try {
     const ref = new URLSearchParams(location.search).get("ref");
@@ -85,12 +87,11 @@
     return code;
   }
 
-  function generationCta(enabled, kind, open) {
-    if (enabled) return { href: open.href, label: open.label, closed: false };
+  function generationCta(enabled, open) {
     return {
-      href: "/business",
-      label: kind === "quote" ? t("cta.quote", "企业定制询价") : t("cta.samples", "查看样片"),
-      closed: true,
+      href: open.href || "/workspace",
+      label: open.label,
+      closed: !enabled,
     };
   }
 
@@ -99,11 +100,10 @@
     const nodes = document.querySelectorAll("[data-gen-cta]");
     for (let i = 0; i < nodes.length; i++) {
       const el = nodes[i];
-      const kind = el.getAttribute("data-gen-cta") === "quote" ? "quote" : "samples";
-      const openHref = el.getAttribute("data-open-href") || "";
+      const openHref = el.getAttribute("data-open-href") || "/workspace";
       const openKey = el.getAttribute("data-open-i18n") || "";
       const openLabel = el.getAttribute("data-open-label") || "";
-      const next = generationCta(enabled, kind, {
+      const next = generationCta(enabled, {
         href: openHref,
         label: openKey ? t(openKey, openLabel || openKey) : openLabel,
       });
@@ -116,10 +116,16 @@
         el.setAttribute("data-closed-nav", next.closed ? "1" : "0");
       }
     }
+    const demoOn = global.DU_DEMO && typeof global.DU_DEMO.isDemoMode === "function" && global.DU_DEMO.isDemoMode();
     const closedNotes = document.querySelectorAll("[data-gen-closed-note]");
     for (let j = 0; j < closedNotes.length; j++) {
-      closedNotes[j].hidden = !!enabled;
-      if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+      if (demoOn) {
+        closedNotes[j].hidden = true;
+        closedNotes[j].textContent = t("demo.foot", "Sample walkthrough. Nothing is billed.");
+      } else {
+        closedNotes[j].hidden = !!enabled;
+        if (!enabled) closedNotes[j].textContent = t("gen.closed", "暂未开放");
+      }
     }
   }
 
@@ -445,7 +451,7 @@
 
   async function downloadResult(url, filename) {
     if (!url) return;
-    const name = filename || "dreamutopia-result";
+      const name = filename || (BRAND_NAME + "-result");
     try {
       const res = await fetch(url, { credentials: "same-origin" });
       if (!res.ok) throw new Error("download failed");
@@ -482,6 +488,7 @@
   global.DU = {
     TOKEN_KEY: TOKEN_KEY,
     CREDITS_KEY: CREDITS_KEY,
+    BRAND_NAME: BRAND_NAME,
     MAX_UPLOAD_BYTES: MAX_UPLOAD_BYTES,
     PAYMENTS_ENABLED: PAYMENTS_ENABLED,
     get generationEnabled() {
