@@ -77,7 +77,9 @@ const demoSrc = fs.readFileSync(path.join(root, "out/assets/js/demo.js"), "utf8"
     assert(calls.length === 0, "runGenerate makes zero fetch calls");
     assert(!calls.some((u) => /\/api\/generate|\/api\/upload/.test(u)), "runGenerate never hits /api/generate or /api/upload");
     assert(item && item.demo === true && item.resultUrl, "runGenerate returns a demo sample");
-    assert(item.resultUrl.indexOf("/assets/demo/") === 0 || item.resultUrl.indexOf("/assets/images/") === 0, "sample src is a static asset");
+    assert(item.resultUrl.indexOf("/assets/demo/") === 0, "sample src is a static demo clip");
+    assert(String(item.title || "").trim().length > 0, "demo result has a plain title");
+    assert(!/TODO/i.test(item.title), "demo result title is not a placeholder");
     assert(demo.badgeHtml().includes("演示样片 / Demo sample"), "badge HTML renders 演示样片 / Demo sample");
     assert(item.status === "done", "demo result status is done");
   } finally {
@@ -86,14 +88,16 @@ const demoSrc = fs.readFileSync(path.join(root, "out/assets/js/demo.js"), "utf8"
 }
 
 {
+  assert(demo.samplesFor("image").length === 0, "untitled image stills are hidden");
   const image = await demo.runGenerate({
     kind: "image",
     prompt: "product still",
     persist: false,
     wait: () => Promise.resolve(),
   });
-  assert(image.kind === "image", "image demo returns an image sample");
-  assert(/\.(webp|png|jpe?g)(\?|$)/i.test(image.resultUrl), "image sample is an existing still");
+  assert(image.kind === "video", "image demo falls back to a titled clip we generated");
+  assert(String(image.title || "").trim().length > 0, "image-mode demo still has a plain title");
+  assert(image.resultUrl.indexOf("/assets/demo/") === 0 && image.resultUrl.endsWith(".mp4"), "image-mode demo uses our published clip");
 }
 
 {
@@ -125,7 +129,11 @@ const demoSrc = fs.readFileSync(path.join(root, "out/assets/js/demo.js"), "utf8"
     for (const needle of banned) {
       assert(!lower.includes(needle.toLowerCase()), `demo visible copy omits ${JSON.stringify(needle)}: ${JSON.stringify(row)}`);
     }
+    assert(!/TODO/i.test(String(row)), `rendered demo copy omits TODO: ${JSON.stringify(row)}`);
   }
+  assert(copy.some((row) => /Product motion/i.test(String(row))), "visible copy includes Product motion");
+  assert(copy.some((row) => /Scene camera move/i.test(String(row))), "visible copy includes Scene camera move");
+  assert(copy.some((row) => /Brand mood/i.test(String(row))), "visible copy includes Brand mood");
   const demoI18n = [];
   const re = /"demo\.[^"]+":\s*"([^"]*)"/g;
   let m;
@@ -169,10 +177,24 @@ const demoSrc = fs.readFileSync(path.join(root, "out/assets/js/demo.js"), "utf8"
 
 {
   assert(!demoSrc.includes("kie.ai"), "demo.js has no KIE host");
-  assert(demoSrc.includes("TODO:"), "sample list marks TODO placeholders for real 1080p clips");
-  assert(fs.existsSync(path.join(root, "out/assets/demo/sample-general.mp4")), "general sample mp4 exists");
-  assert(fs.existsSync(path.join(root, "out/assets/demo/sample-cinematic.mp4")), "cinematic sample mp4 exists");
-  assert(fs.existsSync(path.join(root, "out/assets/demo/sample-vertical.mp4")), "vertical sample mp4 exists");
+  assert(!/TODO/i.test(demoSrc), "demo.js has no TODO comments or copy");
+  assert(!/TODO/i.test(du), "du.js has no TODO");
+  assert(!/TODO/i.test(workspace), "workspace HTML/JS has no TODO");
+  const keys = [
+    "0_out_f7d00e65d3c1a45d.mp4",
+    "0_out_68e31a44b7b1d011.mp4",
+    "0_out_980c5a0e163959b6.mp4",
+  ];
+  for (const key of keys) {
+    assert(fs.existsSync(path.join(root, "out/assets/demo", key)), `published clip ${key} is a static demo asset`);
+  }
+  assert(!fs.existsSync(path.join(root, "out/assets/demo/sample-general.mp4")), "Ken Burns placeholder general clip removed");
+  assert(!fs.existsSync(path.join(root, "out/assets/demo/sample-cinematic.mp4")), "Ken Burns placeholder cinematic clip removed");
+  assert(!fs.existsSync(path.join(root, "out/assets/demo/sample-vertical.mp4")), "Ken Burns placeholder vertical clip removed");
+  for (const row of demo.DEMO_SAMPLES) {
+    assert(String(row.title || "").trim().length > 0, `sample ${row.id} has a plain title`);
+    assert(String(row.src || "").indexOf("/assets/demo/") === 0, `sample ${row.id} is our clip`);
+  }
 }
 
 {

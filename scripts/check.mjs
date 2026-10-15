@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fail = [];
@@ -271,6 +272,59 @@ mustContain("out/_routes.json", '"/examples/*"', "Pages Functions include /examp
     }
   }
 }
+{
+  function jsonLdBlocks(html) {
+    const blocks = [];
+    const re = /<script type="application\/ld\+json">\s*([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = re.exec(html))) {
+      try {
+        blocks.push(JSON.parse(m[1]));
+      } catch (e) {
+        fail.push("JSON-LD did not parse");
+      }
+    }
+    return blocks;
+  }
+  function collectVideoObjects(node, acc = []) {
+    if (!node || typeof node !== "object") return acc;
+    if (Array.isArray(node)) {
+      for (const item of node) collectVideoObjects(item, acc);
+      return acc;
+    }
+    const type = node["@type"];
+    const isVideo = type === "VideoObject" || (Array.isArray(type) && type.includes("VideoObject"));
+    if (isVideo) acc.push(node);
+    for (const value of Object.values(node)) collectVideoObjects(value, acc);
+    return acc;
+  }
+  function assertVideoObject(obj, label) {
+    const required = ["contentUrl", "thumbnailUrl", "uploadDate", "name", "description", "duration"];
+    for (const key of required) {
+      if (!obj[key]) fail.push(`${label}: VideoObject missing ${key}`);
+      else ok.push(`${label}: VideoObject has ${key}`);
+    }
+    const url = String(obj.contentUrl || "");
+    if (!url) fail.push(`${label}: contentUrl is missing`);
+    else if (!/^https:\/\//i.test(url)) fail.push(`${label}: contentUrl must be absolute, got ${JSON.stringify(url)}`);
+    else if (!/\.mp4(\?|$)/i.test(url) || !/0_out_[a-f0-9]+\.mp4/i.test(url)) {
+      fail.push(`${label}: contentUrl must be an absolute URL to our own mp4`);
+    } else ok.push(`${label}: contentUrl is present and absolute`);
+  }
+  const listVideos = collectVideoObjects(jsonLdBlocks(read("out/examples.html")));
+  if (listVideos.length < 3) fail.push("examples list JSON-LD must include VideoObject entries");
+  else ok.push(`examples list JSON-LD has ${listVideos.length} VideoObject entries`);
+  listVideos.forEach((obj, i) => assertVideoObject(obj, `examples list VideoObject[${i}]`));
+  if (exists("out/examples")) {
+    const files = fs.readdirSync(path.join(root, "out/examples")).filter((f) => f.endsWith(".html"));
+    for (const file of files) {
+      const rel = `out/examples/${file}`;
+      const videos = collectVideoObjects(jsonLdBlocks(read(rel)));
+      if (!videos.length) fail.push(`${rel}: no VideoObject in JSON-LD`);
+      videos.forEach((obj, i) => assertVideoObject(obj, `${rel} VideoObject[${i}]`));
+    }
+  }
+}
 mustContain("out/robots.txt", `Sitemap: ${CANON}/sitemap.xml`, "robots points at production sitemap");
 mustContain("out/robots.txt", "Disallow: /api/", "robots disallows API");
 mustContain("functions/robots.txt.ts", "CANONICAL_ORIGIN", "function robots uses canonical origin");
@@ -496,8 +550,61 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
   }
   if (i18nCopy < 8) fail.push("expected demo.* i18n keys");
   else ok.push("demo i18n keys omit clone and 暂未开放");
-  if (!demoSrc.includes("TODO:")) fail.push("demo sample list must mark TODO placeholders");
-  else ok.push("demo sample list has TODO placeholders");
+
+  const require = createRequire(import.meta.url);
+  const demoMod = require("../out/assets/js/demo.js");
+  const renderedCopy = []
+    .concat(demoMod.visibleCopy())
+    .concat(
+      (demoMod.DEMO_SAMPLES || []).map(function (row) {
+        return row && row.title;
+      })
+    );
+  const todoInCopy = renderedCopy.some(function (row) {
+    return /TODO/i.test(String(row || ""));
+  });
+  if (todoInCopy) fail.push("rendered demo copy contains TODO");
+  else ok.push("rendered demo copy contains no TODO");
+
+  const samples = demoMod.DEMO_SAMPLES || [];
+  const requiredKeys = [
+    "0_out_f7d00e65d3c1a45d.mp4",
+    "0_out_68e31a44b7b1d011.mp4",
+    "0_out_980c5a0e163959b6.mp4",
+  ];
+  if (samples.length !== 3) fail.push("demo ships exactly three titled clips");
+  else ok.push("demo ships three titled clips");
+  for (const key of requiredKeys) {
+    const row = samples.find((s) => s && String(s.src || "").endsWith(key));
+    if (!row) fail.push(`demo sample list missing published clip ${key}`);
+    else if (!String(row.title || "").trim()) fail.push(`demo sample ${key} is missing a plain title`);
+    else ok.push(`demo sample ${key} has title ${JSON.stringify(row.title)}`);
+    if (!exists("out/assets/demo/" + key)) fail.push(`missing static demo asset out/assets/demo/${key}`);
+    else ok.push(`static demo asset present: ${key}`);
+  }
+  for (const row of samples) {
+    const title = String((row && row.title) || "").trim();
+    const src = String((row && row.src) || "");
+    if (!title) fail.push(`demo sample ${row && row.id} has no title and must be hidden`);
+    if (!src.startsWith("/assets/demo/") || !src.endsWith(".mp4")) {
+      fail.push(`demo sample ${row && row.id} must be our published clip under /assets/demo/`);
+    }
+  }
+
+  const shippedJs = [
+    "out/assets/js/demo.js",
+    "out/assets/js/du.js",
+    "out/workspace.html",
+  ];
+  for (const rel of shippedJs) {
+    const src = rel === "out/assets/js/demo.js" ? demoSrc : read(rel);
+    if (/TODO/i.test(src)) fail.push(`${rel} shipped copy contains TODO`);
+    else ok.push(`${rel} contains no TODO`);
+  }
+  for (const rel of ["out/workspace.html", "out/demo.html", "out/index.html"]) {
+    if (/TODO/i.test(read(rel))) fail.push(`${rel} rendered HTML contains TODO`);
+    else ok.push(`${rel} rendered HTML contains no TODO`);
+  }
 }
 {
   const metas = [

@@ -266,7 +266,10 @@ nav>a:hover,nav>a.active,.nav-drop>summary:hover{color:var(--text);background:rg
 .history-card-status.processing,.history-card-status.pending{background:rgba(168,85,247,.2);color:var(--primary2)}
 .history-card-status.failed{background:rgba(239,68,68,.2);color:#ef4444}
 .history-card-cap{padding:10px 12px 12px}
+.history-card-title{font-size:13px;font-weight:700;margin:0 0 4px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .history-card-prompt{font-size:12.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 0 8px}
+.demo-result-title{display:none;margin:10px 0 0;text-align:center;font-size:14px;font-weight:700;color:var(--text)}
+.gen-result.show .demo-result-title:not([hidden]){display:block}
 .history-card-actions{display:flex;gap:6px;flex-wrap:wrap}
 .history-card-actions button{border:1px solid var(--border);padding:5px 9px;border-radius:8px;font-size:11.5px;font-weight:600;color:var(--primary2)}
 .history-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 18px}
@@ -595,6 +598,7 @@ nav{display:none}
 <video id="genResultVideo" controls playsinline></video>
 <img id="genResultImage" class="preview-out" alt="Generated image" hidden>
 <div class="demo-sample-badge" id="demoSampleBadge" hidden>演示样片 / Demo sample</div>
+<p class="demo-result-title" id="demoResultTitle" hidden></p>
 <div class="result-actions">
 <a id="genResultLink" href="#" target="_blank" rel="noopener" data-i18n="ws.result.open">Open result URL</a>
 <button type="button" id="genDownload" data-i18n="gen.download">Download</button>
@@ -861,11 +865,18 @@ function brandFile(id) {
   return name.replace(/\s+/g, "-").toLowerCase() + "-" + (id || "result");
 }
 
-function setDemoResultBadge(on) {
+function setDemoResultBadge(on, title) {
   const el = document.getElementById("demoSampleBadge");
-  if (!el) return;
-  el.hidden = !on;
-  if (on) el.textContent = (window.DU_DEMO && DU_DEMO.BADGE_LABEL) || "演示样片 / Demo sample";
+  if (el) {
+    el.hidden = !on;
+    if (on) el.textContent = (window.DU_DEMO && DU_DEMO.BADGE_LABEL) || "演示样片 / Demo sample";
+  }
+  const heading = document.getElementById("demoResultTitle");
+  if (heading) {
+    const label = on ? String(title || "").trim() : "";
+    heading.textContent = label;
+    heading.hidden = !label;
+  }
 }
 
 function showResult(url, kind, generationId, meta) {
@@ -904,7 +915,7 @@ function showResult(url, kind, generationId, meta) {
     video.src = url;
   }
   link.href = url;
-  setDemoResultBadge(!!(meta && meta.demo) || demoActive());
+  setDemoResultBadge(!!(meta && meta.demo) || demoActive(), meta && meta.title);
   if (download) {
     download.onclick = function () {
       DU.downloadResult(url, brandFile(lastGenerationId || "result"));
@@ -1466,8 +1477,14 @@ async function generateDemoFlow() {
     });
     spinner.style.display = "none";
     if (skel) { skel.hidden = true; skel.classList.remove("show"); }
-    statusText.innerHTML = `<span style="color:var(--green)">Done</span> · ${escapeHtml(item.kind)} · ${escapeHtml(currentModel)}`;
-    showResult(item.resultUrl, item.kind, item.id, { demo: true });
+    if (!item || !String(item.title || "").trim()) {
+      statusText.textContent = "Demo sample unavailable";
+      toast("Demo sample unavailable", true);
+      resetGenBtn();
+      return;
+    }
+    statusText.innerHTML = `<span style="color:var(--green)">Done</span> · ${escapeHtml(item.title)} · ${escapeHtml(currentModel)}`;
+    showResult(item.resultUrl, item.kind, item.id, { demo: true, title: item.title });
     toast(item.kind === "image" ? "Image ready" : "Video ready");
     loadHistory();
   } catch (e) {
@@ -1681,8 +1698,13 @@ function resultUrlOf(g) {
   return String((g && (g.result_url || g.resultUrl)) || "");
 }
 
+function demoTitleOk(g) {
+  if (!g || !g.demo) return true;
+  return !!String(g.title || "").trim();
+}
+
 function filterOwnWorks(items, filter) {
-  const list = Array.isArray(items) ? items : [];
+  const list = (Array.isArray(items) ? items : []).filter(demoTitleOk);
   if (filter === "all") return list.slice();
   return list.filter((g) => itemKind(g) === filter);
 }
@@ -1850,6 +1872,8 @@ function openHistoryDetail(g) {
   if (g.demo || demoActive()) {
     media.insertAdjacentHTML("beforeend", window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>');
   }
+  const detailTitle = document.getElementById("historyDetailTitle");
+  if (detailTitle) detailTitle.textContent = String(g.title || "").trim() || DU.t("ws.history.detail.title", "Creation details");
   document.getElementById("historyDetailPrompt").textContent = g.prompt || "—";
   document.getElementById("historyDetailModel").textContent = itemModel(g);
   document.getElementById("historyDetailDuration").textContent = displayDuration(g);
@@ -1895,11 +1919,12 @@ function historyCardHtml(g) {
   const demoBadge = (g.demo || demoActive())
     ? (window.DU_DEMO ? DU_DEMO.badgeHtml() : '<span class="demo-sample-badge">演示样片 / Demo sample</span>')
     : "";
+  const heading = String(g.title || "").trim();
   const media = !url
     ? `<div class="history-card-ph">${escapeHtml(status || "…")}</div>`
     : kind === "image"
-      ? `<img src="${escapeHtml(url)}" alt="">`
-      : `<video src="${escapeHtml(url)}" muted loop playsinline preload="metadata" data-preview></video>${play}`;
+      ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(heading)}">`
+      : `<video src="${escapeHtml(url)}"${g.poster ? ` poster="${escapeHtml(g.poster)}"` : ""} muted loop playsinline preload="metadata" data-preview></video>${play}`;
   const actions = url
     ? `<div class="history-card-actions">
         <button type="button" data-act="download" data-id="${escapeHtml(String(g.id))}">${escapeHtml(DU.t("gen.download", "Download"))}</button>
@@ -1917,6 +1942,7 @@ function historyCardHtml(g) {
       <span class="history-card-status ${escapeHtml(status)}">${escapeHtml(status || "saved")}</span>
     </div>
     <div class="history-card-cap">
+      ${heading ? `<p class="history-card-title">${escapeHtml(heading)}</p>` : ""}
       <p class="history-card-prompt">${escapeHtml(g.prompt || "")}</p>
       ${actions}
     </div>

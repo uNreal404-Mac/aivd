@@ -9,50 +9,33 @@
   var BLOCKED_API = ["/api/generate", "/api/upload", "/api/upload-ticket"];
 
   /**
-   * Sample clips for the partner walkthrough.
-   * Video src files were generated from existing workspace Look stills
-   * (g1.webp, feature-cinematic.webp, g3.webp). They are placeholders —
-   * replace with real 1080p product clips when those land in out/assets/demo/.
-   *
-   * TODO: out/assets/demo/sample-general.mp4 ← replace with a 1080p product clip
-   * TODO: out/assets/demo/sample-cinematic.mp4 ← replace with a 1080p product clip
-   * TODO: out/assets/demo/sample-vertical.mp4 ← replace with a 1080p 9:16 clip
+   * Partner walkthrough clips — our published 1080p outputs from /examples.
+   * Rows without a plain title are omitted from the UI.
    */
   var DEMO_SAMPLES = [
     {
-      id: "look-general",
+      id: "product-motion",
       kind: "video",
-      poster: "/assets/images/g1.webp",
-      src: "/assets/demo/sample-general.mp4",
+      title: "Product motion",
+      poster: "/assets/demo/0_out_f7d00e65d3c1a45d.jpg",
+      src: "/assets/demo/0_out_f7d00e65d3c1a45d.mp4",
       look: "General",
     },
     {
-      id: "look-cinematic",
+      id: "camera-move",
       kind: "video",
-      poster: "/assets/images/feature-cinematic.webp",
-      src: "/assets/demo/sample-cinematic.mp4",
+      title: "Scene camera move",
+      poster: "/assets/demo/0_out_68e31a44b7b1d011.jpg",
+      src: "/assets/demo/0_out_68e31a44b7b1d011.mp4",
       look: "Cinematic",
     },
     {
-      id: "look-vertical",
+      id: "brand-mood",
       kind: "video",
-      poster: "/assets/images/g3.webp",
-      src: "/assets/demo/sample-vertical.mp4",
+      title: "Brand mood",
+      poster: "/assets/demo/0_out_980c5a0e163959b6.jpg",
+      src: "/assets/demo/0_out_980c5a0e163959b6.mp4",
       look: "Vertical",
-    },
-    {
-      id: "still-g1",
-      kind: "image",
-      poster: "/assets/images/g1.webp",
-      src: "/assets/images/g1.webp",
-      look: "General",
-    },
-    {
-      id: "still-g5",
-      kind: "image",
-      poster: "/assets/images/g5.webp",
-      src: "/assets/images/g5.webp",
-      look: "Cinematic",
     },
   ];
 
@@ -134,16 +117,29 @@
     return blockedUrl(p);
   }
 
+  function sampleTitle(row) {
+    if (!row || row.title == null) return "";
+    return String(row.title).trim();
+  }
+
+  function isShippedSample(row) {
+    var title = sampleTitle(row);
+    if (!title) return false;
+    if (!row.src || String(row.src).indexOf("/assets/demo/") !== 0) return false;
+    return true;
+  }
+
   function samplesFor(kind) {
     var want = kind === "image" ? "image" : "video";
     return DEMO_SAMPLES.filter(function (row) {
-      return row.kind === want;
+      return isShippedSample(row) && row.kind === want;
     });
   }
 
   function pickSample(kind) {
     var list = samplesFor(kind);
-    if (!list.length) list = DEMO_SAMPLES;
+    if (!list.length) list = samplesFor("video");
+    if (!list.length) return null;
     var key = kind === "image" ? "image" : "video";
     var i = sampleCursor[key] % list.length;
     sampleCursor[key] = i + 1;
@@ -203,6 +199,10 @@
     var onProgress = typeof opts.onProgress === "function" ? opts.onProgress : function () {};
     var kind = opts.kind === "image" ? "image" : "video";
     var sample = pickSample(kind);
+    if (!sample) {
+      return Promise.reject(new Error("No titled demo clip is available"));
+    }
+    kind = sample.kind === "image" ? "image" : "video";
     var steps = [
       { status: "waiting", ms: 700 },
       { status: "generating", ms: 1400 },
@@ -214,12 +214,14 @@
         var item = {
           id: "demo_" + Date.now().toString(36) + "_" + Math.floor(Math.random() * 1e4).toString(36),
           kind: sample.kind,
+          title: sampleTitle(sample),
           model: opts.model || "lite",
           prompt: String(opts.prompt || ""),
           status: "done",
           duration_sec: kind === "video" ? (Number(opts.durationSec) === 10 ? 10 : 5) : null,
           resultUrl: sample.src,
           result_url: sample.src,
+          poster: sample.poster || "",
           input_image_url: opts.localImageUrl || "",
           last_image_url: opts.localLastImageUrl || "",
           created_at: new Date().toISOString(),
@@ -246,6 +248,7 @@
 
   function visibleCopy() {
     var name = brandName();
+    var titles = DEMO_SAMPLES.filter(isShippedSample).map(sampleTitle);
     return [
       t("demo.try", "Try demo"),
       t("demo.banner", "Demo mode — sample clips only. Uploads stay in this browser."),
@@ -254,7 +257,7 @@
       t("demo.in", "You are in demo"),
       BADGE_LABEL,
       name,
-    ];
+    ].concat(titles);
   }
 
   function keepDemoQuery(loc) {
@@ -335,6 +338,13 @@
     }
     var hint = doc.getElementById("urlHint");
     if (hint) hint.textContent = t("demo.upload", "The image stays in this browser. It is never sent to the server.");
+    var imageMode = doc.getElementById("modeImage");
+    if (imageMode && !samplesFor("image").length) {
+      imageMode.hidden = true;
+      if (typeof root.switchMode === "function") root.switchMode("video");
+    }
+    var imageFilter = doc.querySelector('#historyFilter [data-filter="image"]');
+    if (imageFilter && !samplesFor("image").length) imageFilter.hidden = true;
   }
 
   var api = {
