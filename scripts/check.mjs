@@ -129,8 +129,12 @@ mustContain("out/index.html", 'property="og:title" content="AI Image & Video Gen
 mustContain("out/index.html", 'name="twitter:title" content="AI Image & Video Generator | DreamUtopia"', "home twitter:title drops Free");
 mustContain("out/assets/js/seo.js", 'meta("property", "og:title", title, true)', "seo.js keeps authored og:title");
 mustContain("libs/workspaceSeo.ts", "applyWorkspaceHtmlSeo", "workspace HTML SEO helper");
-mustContain("functions/_middleware.ts", "applyWorkspaceHtmlSeo", "Pages middleware rewrites /workspace HTML");
-mustContain("functions/_middleware.ts", "x-robots-tag", "parameterized workspace sends X-Robots-Tag");
+mustContain("libs/workspaceSeo.ts", "HTMLRewriter", "workspace SEO uses HTMLRewriter on Pages");
+mustContain("libs/workspaceSeo.ts", "rewriteWorkspaceHtmlResponse", "workspace SEO response rewriter");
+mustContain("functions/_middleware.ts", "rewriteWorkspaceHtmlResponse", "Pages middleware rewrites /workspace HTML");
+mustContain("out/_routes.json", '"/workspace"', "Functions include /workspace so SEO middleware runs");
+mustContain("out/_routes.json", '"/workspace.html"', "Functions include /workspace.html alias");
+mustContain("out/_routes.json", '"/workspace/"', "Functions include /workspace/ alias");
 mustContain("functions/api/upload-ticket.ts", "isGenerationEnabled", "upload-ticket honors GENERATION_ENABLED");
 mustContain("functions/api/upload-ticket.ts", "generationDisabledResponse", "upload-ticket returns 503 when closed");
 mustContain("out/pricing.html", "支付即将开放", "honest payments-coming-soon note");
