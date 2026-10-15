@@ -562,7 +562,8 @@ mustContain("workers/feishu-bot/README.md", "ALLOWED_CHAT_IDS", "bot README tell
 mustContain("workers/feishu-bot/README.md", "im:message:send_as_bot", "bot README lists send_as_bot");
 mustContain("workers/feishu-bot/TEMPLATE.md", "signature", "TEMPLATE documents overridable signature");
 mustContain("workers/feishu-bot/TEMPLATE.md", "allowedChatIds", "TEMPLATE documents 需求 allowlist");
-mustContain("scripts/feishu-notify.mjs", "Grok Bot · AI视频项目专属机器人 三儿", "notify cards share the bot signature");
+mustContain("scripts/feishu-notify.mjs", "DEFAULT_SIGNATURE", "notify cards share the bot signature");
+mustContain("scripts/feishu-notify.mjs", "workers/feishu-bot/src/config.mjs", "notify script imports the shared signature");
 mustNotContain("workers/feishu-bot/wrangler.toml", "crons", "feishu bot must not add Cron Triggers");
 {
   const botSrcDir = path.join(root, "workers/feishu-bot/src");
