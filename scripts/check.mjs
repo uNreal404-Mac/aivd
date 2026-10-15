@@ -528,6 +528,26 @@ mustContain("wrangler.toml", 'GENERATION_ENABLED = "false"', "demo work does not
     fail.push("onRequestPost must return 503 before handleGeneratePost when generation is off");
   } else ok.push("onRequestPost checks GENERATION_ENABLED before handleGeneratePost");
 }
+{
+  const src = read("functions/api/generate.ts");
+  const getStart = src.indexOf("async function handleGenerateGet");
+  const guestStart = src.indexOf("async function handleGuestGet");
+  const getFn = getStart >= 0 && guestStart > getStart ? src.slice(getStart, guestStart) : "";
+  const guestFn = guestStart >= 0 ? src.slice(guestStart) : "";
+  if (!getFn.includes("isGenerationEnabled")) {
+    fail.push("GET /api/generate must honor GENERATION_ENABLED the same way /api/health does");
+  } else ok.push("GET /api/generate handleGenerateGet honors GENERATION_ENABLED");
+  if (!guestFn.includes("isGenerationEnabled")) {
+    fail.push("GET /api/generate guest status must honor GENERATION_ENABLED");
+  } else ok.push("GET /api/generate guest status honors GENERATION_ENABLED");
+  if (getFn.includes("generateReady: hasKieKey(env)") || getFn.includes("generateReady: true") || guestFn.includes("generateReady: hasKieKey(env)")) {
+    fail.push('GET /api/generate must not claim generateReady true when GENERATION_ENABLED is "false"');
+  } else ok.push('GET /api/generate does not claim generateReady true when GENERATION_ENABLED is "false"');
+  if (guestFn.includes("guestRemaining: quota.remaining") || guestFn.includes("guestRemaining: q2.remaining")) {
+    fail.push("GET /api/generate must report guestRemaining 0 when generation is off");
+  } else ok.push("GET /api/generate guestRemaining follows GENERATION_ENABLED");
+}
+mustContain("functions/api/credits.ts", "isGenerationEnabled", "GET /api/credits honors GENERATION_ENABLED");
 if (!exists("scripts/test-generation-gate.mjs")) fail.push("missing scripts/test-generation-gate.mjs");
 else ok.push("scripts/test-generation-gate.mjs exists");
 
