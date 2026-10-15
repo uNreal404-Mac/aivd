@@ -9,7 +9,7 @@ export const botConfig = {
   signature: DEFAULT_SIGNATURE,
   siteUrl: "https://dreamutopia-clone.pages.dev",
   healthUrl: "https://dreamutopia-clone.pages.dev/api/health",
-  // Fail-closed for 需求: empty means no group may create public issues.
+  // Fail-closed for 需求 and optional LLM chat: empty means no chat may use those.
   // Operator must set the partner Feishu group chat_id after merge (config or ALLOWED_CHAT_IDS).
   allowedChatIds: [],
   github: {
@@ -27,6 +27,12 @@ export const botConfig = {
   },
   request: {
     rateLimitSeconds: 60,
+  },
+  llm: {
+    historyTurns: 6,
+    historyTtlSeconds: 86400,
+    dailyLimit: 200,
+    timeoutMs: 1200,
   },
   commands: [
     {

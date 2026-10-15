@@ -10,6 +10,7 @@ import {
   describeUserVisibleChange,
   describeUserVisibleChanges,
   extractPendingRaw,
+  formatPlainNotes,
   formatWebsiteProgress,
   hasTrackerTokens,
   pageFromPath,
@@ -156,6 +157,16 @@ test("buildProgressFromGithub uses merged PR titles and checklist, never tracker
   assert.match(text, /还没做/);
   assert.match(text, /定价方案还没定/);
   assertClean(text);
+});
+
+test("renders latest comments as 白话 notes without PR numbers or SHAs", () => {
+  const notes = formatPlainNotes([
+    { body: "PR #21 已合并（6f3fe2a），案例页换成我们自己的样片。" },
+    { body: "定价方案待确认。" },
+  ]);
+  assert.match(notes, /案例页换成我们自己的样片/);
+  assert.match(notes, /定价方案待确认/);
+  assertClean(notes);
 });
 
 test("static fallback copy is partner-facing and tracker-free", () => {

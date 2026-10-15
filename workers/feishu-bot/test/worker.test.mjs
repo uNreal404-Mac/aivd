@@ -413,6 +413,58 @@ test("replies to 进度 with a website-progress summary and no PR/SHA trackers",
   assert.equal((replyText.match(/详情/g) || []).length, 1);
 });
 
+test("optional LLM is off by default so freeform text still gets the rule help reply", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  assert.equal((await send(worker, messagePayload({ text: "做个视频", messageId: "om_help_default" }), makeEnv())).status, 200);
+  assert.equal(JSON.parse(replies[0].content).text, signOutboundText(HELP_MESSAGE));
+  assert.equal(calls.some(({ url }) => String(url).includes("/chat/completions")), false);
+});
+
+test("allowlisted freeform @/p2p text uses mocked LLM and keeps known commands off the model", async () => {
+  const replies = [];
+  const llmBodies = [];
+  const githubFetch = makeGithubFetch({ replies });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url).includes("/chat/completions")) {
+        llmBodies.push(JSON.parse(init.body));
+        return Response.json({
+          choices: [{ message: { role: "assistant", content: "案例页已经换了样片。见 PR #34 和 1c5dd76。" } }],
+        });
+      }
+      return githubFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.LLM_BASE_URL = "https://llm.test/v1";
+  env.LLM_MODEL = "test-model";
+  env.LLM_API_KEY = "llm-test-key";
+  env.ALLOWED_CHAT_IDS = "oc_chat";
+
+  assert.equal((await send(worker, messagePayload({
+    text: "案例页现在怎样",
+    messageId: "om_llm",
+    eventId: "evt-llm",
+  }), env)).status, 200);
+  const llmReply = JSON.parse(replies[0].content).text;
+  assert.match(llmReply, /案例页已经换了样片/);
+  assert.doesNotMatch(llmReply, /#\d+/);
+  assert.doesNotMatch(llmReply, /1c5dd76/);
+  assert.match(llmReply, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.equal(llmBodies.length, 1);
+  assert.match(llmBodies[0].messages[0].content, /网站进度|服务状态|健康/);
+
+  assert.equal((await send(worker, messagePayload({
+    text: "网址",
+    messageId: "om_url_llm",
+    eventId: "evt-url-llm",
+  }), env)).status, 200);
+  assert.equal(JSON.parse(replies[1].content).text, signOutboundText("https://dreamutopia-clone.pages.dev"));
+  assert.equal(llmBodies.length, 1);
+});
+
 test("creates a GitHub issue from a group 需求 mention and replies with the link", async () => {
   const replies = [];
   const issues = [];

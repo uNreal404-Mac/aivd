@@ -1,10 +1,11 @@
-import { parseCommand, HELP_MESSAGE } from "./commands.mjs";
+import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
 import { decodeFeishuRequest, messageContext, selectMessageEvent, validateVerificationToken } from "./events.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
+import { replyWithOptionalLlm } from "./llm.mjs";
 import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
 
 const SITE_URL = botConfig.siteUrl;
@@ -161,7 +162,14 @@ async function commandReply({
   if (command === "request") {
     return handleFeishuRequest({ kv, env, selected, context, fetchImpl });
   }
-  return HELP_MESSAGE;
+  return replyWithOptionalLlm({
+    kv,
+    env,
+    chatId: context?.chatId,
+    userText: selected?.text,
+    fetchImpl,
+    now,
+  });
 }
 
 async function handleGithubRequest(request, env, { fetchImpl, now, monotonicNow }) {

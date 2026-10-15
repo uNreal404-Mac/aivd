@@ -8,7 +8,7 @@ export const PENDING_HEADING = "还没做";
 export const PUBLIC_SITE_URL = "https://dreamutopia-clone.pages.dev";
 
 export const ISSUE_REF_PATTERN = /#\d+/;
-export const SHA_PATTERN = /\b[0-9a-f]{7,40}\b/i;
+export const SHA_PATTERN = /\b(?=[0-9a-f]{7,40}\b)[0-9a-f]*[a-f][0-9a-f]*\b/i;
 export const BRANCH_PATTERN = /\b(?:cursor|codex|origin)\/[A-Za-z0-9._/-]+/;
 
 export const DEFAULT_PENDING_ITEMS = [
@@ -94,7 +94,7 @@ export function stripTrackerTokens(text) {
   value = value.replace(/\bPR\s*#?\s*\d+\b/gi, "");
   value = value.replace(/[（(]\s*#\d+\s*[）)]/g, "");
   value = value.replace(/#\d+/g, "");
-  value = value.replace(/\b[0-9a-f]{7,40}\b/gi, "");
+  value = value.replace(/\b(?=[0-9a-f]{7,40}\b)[0-9a-f]*[a-f][0-9a-f]*\b/gi, "");
   value = value.replace(/\b(?:cursor|codex|origin)\/[A-Za-z0-9._/-]+/g, "");
   value = value.replace(/[（(]\s*[）)]/g, "");
   value = value.replace(/[，、]{2,}/g, "、");
@@ -253,7 +253,7 @@ export function formatWebsiteProgress({
     .map((line) => (line.trim() ? stripTrackerTokens(line) : line))
     .join("\n")
     .replace(/#\d+/g, "")
-    .replace(/\b[0-9a-f]{7,40}\b/gi, "");
+    .replace(/\b(?=[0-9a-f]{7,40}\b)[0-9a-f]*[a-f][0-9a-f]*\b/gi, "");
 }
 
 export function buildProgressFromGithub({
@@ -277,6 +277,16 @@ export function buildProgressFromGithub({
     pendingItems: pendingItemsFromGithub({ issueBody, openPulls }),
     detailUrl,
   });
+}
+
+export function formatPlainNotes(entries, { limit = 5 } = {}) {
+  const items = (Array.isArray(entries) ? entries : [])
+    .map((entry) => (typeof entry === "string" ? entry : entry?.body))
+    .map((text) => sanitizeLine(text))
+    .filter(Boolean)
+    .slice(-Math.max(1, limit))
+    .map((line) => (line.length > 80 ? `${line.slice(0, 77)}…` : line));
+  return items.map((line) => `• ${line}`).join("\n");
 }
 
 export const STATIC_PROGRESS_MESSAGE = formatWebsiteProgress({

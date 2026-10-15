@@ -8,12 +8,13 @@
 | 网址 | 返回演示站 `https://dreamutopia-clone.pages.dev` |
 | 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
 | 需求： / 需求: | 仅白名单群可建单：群 `chat_id` 必须在 `config.allowedChatIds` 或环境变量 `ALLOWED_CHAT_IDS` 中。未设置或为空时 **失败关闭**。通过后在本仓库创建带 `feishu-request` 标签的 GitHub issue（正文已脱敏，不含提出人 / `open_id` / `chat_id`），并在原消息线程回复链接。映射只写 KV。issue 关闭后通过 GitHub webhook 回帖 |
+| 其他 @ / 私聊文本 | **默认关闭**。仅当同时配置 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 且会话在白名单内时，才把未识别文本发给 OpenAI 兼容 chat；否则仍返回帮助说明 |
 
 所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
 
-其他内容返回帮助说明。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
+未配置可选 LLM 时，其他内容返回帮助说明。「进度 / 网址 / 健康 / 需求」始终走规则，不经过模型。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
-机器人不会调用生成、上传、KIE 或任何付费 LLM。进度摘要不用模型，只用文件路径 / 标题 / 标签上的固定中文规则；正文会去掉 `#数字` 和提交哈希。
+机器人不会调用生成、上传或 KIE。进度摘要不用模型。可选 LLM **默认关闭**；缺任一配置项时不发网络请求。开启后仍只允许白名单会话，出站会去掉 `#数字` / 提交哈希并做隐私脱敏，再署名为三儿。
 
 未配置 `FEISHU_ENCRYPT_KEY` 时，按飞书未启用事件加密处理明文回调。以后若重新打开加密，再设置该 secret，Worker 会恢复签名校验与解密。
 
@@ -22,7 +23,7 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 ## 费用边界
 
 - 账号必须使用 Cloudflare Workers Free。部署前在 Cloudflare 账单／Workers 计划设置中确认当前账号没有启用 Workers Paid；不确定时先不要部署。
-- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费绑定、自定义域名、AI 服务或定时任务。issue 关闭通知用免费的 GitHub webhook，不用 Cron。
+- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费 Cloudflare 绑定、自定义域名、Workers AI 或定时任务。issue 关闭通知用免费的 GitHub webhook，不用 Cron。可选 LLM 走你自己的 OpenAI 兼容接口，**默认不调用**；启用后的模型费用由该接口的运营方承担，本仓库不代为开通。
 - Free 计划有每日请求和 KV 用量上限（含 KV 每日约 1000 次写入）；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
 
 ## 密钥（只放 Wrangler / Actions，不要写入代码、日志或 PR 正文）
@@ -35,7 +36,11 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `FEISHU_ENCRYPT_KEY` | 可选 | 飞书事件 Encrypt Key。当前飞书侧加密已关闭，**不要设置**。以后若开启加密，再 `wrangler secret put` 同一把密钥 |
 | `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度读公开 issue 正文与 pulls（不用模型）；没有 token 时仍走公开接口。创建/关单回帖需要写权限 |
 | `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
-| `ALLOWED_CHAT_IDS` | **需求** 必须（合入后由运营填写） | 允许提交需求的飞书群 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时拒绝所有需求建单。这不是 secret，不要把真实群 id 以外的密钥写进仓库 |
+| `ALLOWED_CHAT_IDS` | **需求** 与可选 LLM 必须（合入后由运营填写） | 允许提交需求、以及（若已配置 LLM）自由对话的飞书 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时 **失败关闭**。这不是 secret |
+| `LLM_BASE_URL` | 可选 LLM 必须（与下面两项同时有才开启） | Worker `[vars]` 示例：`https://api.openai.com/v1`（或其他 OpenAI 兼容 host）。**不要**把该值写进源码当运行时默认；缺省则 LLM 关闭 |
+| `LLM_MODEL` | 可选 LLM 必须 | Worker `[vars]` 示例：`gpt-4o-mini`。**不要**把模型名写进源码当运行时默认 |
+| `LLM_API_KEY` | 可选 LLM 必须 | **仅 Cloudflare Worker Secret**（`wrangler secret put LLM_API_KEY`）。运行时从 `env.LLM_API_KEY` 读取。禁止写入代码、测试、注释、日志或 PR |
+| `LLM_DAILY_LIMIT` | 可选 | Worker `[vars]`。每个会话每天最多模型调用次数，默认 `200`。达到上限后礼貌回复并退回规则命令 |
 
 不要把飞书 / GitHub secrets 写进 `wrangler.toml`、`.dev.vars`、仓库文件、命令参数或 pull request。`ALLOWED_CHAT_IDS` 可以放在 Worker `[vars]` 或 `config.mjs`。
 
@@ -79,6 +84,23 @@ npx wrangler dev
    ```
 
    不要运行 `FEISHU_ENCRYPT_KEY`，除非飞书开放平台重新启用了事件加密。
+
+   可选 LLM **默认不要开**。若要开启，在 `wrangler.toml` 增加 `[vars]`（示例，按需改 host/模型）：
+
+   ```toml
+   [vars]
+   LLM_BASE_URL = "https://api.openai.com/v1"
+   LLM_MODEL = "gpt-4o-mini"
+   LLM_DAILY_LIMIT = "200"
+   ```
+
+   确认 `ALLOWED_CHAT_IDS` 已包含允许对话的 `chat_id`，再单独运行（只在 Wrangler 提示中粘贴密钥，不要写进文件或命令参数）：
+
+   ```bash
+   npx wrangler secret put LLM_API_KEY
+   ```
+
+   缺 `LLM_BASE_URL`、`LLM_MODEL` 或 `LLM_API_KEY` 任一项时 Worker 不会对模型发请求。
 
 4. 发布 Worker：
 

@@ -5,8 +5,17 @@
 #   GITHUB_TOKEN                fine-grained, this repo, Issues read/write
 #   GITHUB_WEBHOOK_SECRET       HMAC secret for POST /github/webhook
 # Public var (not a secret): ALLOWED_CHAT_IDS = comma-separated Feishu group chat_ids
-# allowed to create 需求 issues. Fail-closed when unset/empty. Set the partner
-# group id after merge in [vars] or src/config.mjs allowedChatIds.
+# allowed to create 需求 issues and (if enabled) optional LLM chat. Fail-closed
+# when unset/empty. Set the partner group id after merge in [vars] or
+# src/config.mjs allowedChatIds.
+# Optional LLM chat is OFF unless ALL of LLM_BASE_URL, LLM_MODEL, and
+# LLM_API_KEY are set. Example vars (keep commented to leave LLM off):
+#   [vars]
+#   LLM_BASE_URL = "https://api.openai.com/v1"
+#   LLM_MODEL = "gpt-4o-mini"
+#   LLM_DAILY_LIMIT = "200"
+# Put the key only via: wrangler secret put LLM_API_KEY
+# Never commit an API key value.
 name = "feishu-bot"
 main = "src/worker.mjs"
 compatibility_date = "2026-10-15"
