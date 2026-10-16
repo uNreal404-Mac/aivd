@@ -9,6 +9,7 @@ import {
   MAX_PROMPT_LENGTH,
   aspectRatiosFor,
   canSubmit,
+  canUploadImage,
   durationsFor,
   i2vCopy,
   newIdempotencyKey,
@@ -67,6 +68,10 @@ export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
   }
 
   async function handleFile(file: File) {
+    if (!canUploadImage(generationEnabled)) {
+      return;
+    }
+
     const validationError = validateImageFile(
       {
         type: file.type,
@@ -196,6 +201,7 @@ export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
             id="i2v-image-input"
             type="file"
             accept={ALLOWED_TYPES.join(",")}
+            disabled={!generationEnabled}
             aria-labelledby="i2v-image-label"
             aria-describedby="i2v-image-help i2v-image-error"
             onChange={handleInputChange}

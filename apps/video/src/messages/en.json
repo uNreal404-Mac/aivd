@@ -30,7 +30,7 @@
     "badge": "Powered by Seedance 1.5 Pro & Seedance 1.0",
     "title": "Transform Your Ideas Into Stunning Videos",
     "subtitle": "with AI",
-    "description": "Create professional AI-generated videos in minutes. From text to video, image to video, or enhance existing footage.",
+    "description": "Create AI-generated videos from text or images.",
     "startCreating": "Start Creating Free",
     "viewExamples": "View Examples",
     "features": {
@@ -121,7 +121,7 @@
     },
     "fast": {
       "title": "Lightning Fast",
-      "description": "Generate professional videos in just 2-5 minutes"
+      "description": "Generate videos from a prompt or an image"
     },
     "secure": {
       "title": "Secure & Private",
@@ -144,7 +144,7 @@
     "badge": "Simple Process",
     "title": "How It Works",
     "subtitle": "Create your video in 4 simple steps",
-    "description": "Get started in minutes with our intuitive video creation workflow",
+    "description": "Get started with an intuitive video creation workflow",
     "bottomHint": "No credit card required • {credits} free credits to start",
     "cta": "Start Creating Now",
     "steps": {
@@ -199,7 +199,7 @@
     "contact": "Still have questions? Contact us at",
     "general": {
       "question": "What is DreamUtopia?",
-      "answer": "DreamUtopia is a cutting-edge AI video generation platform that allows you to transform text and images into high-quality videos in minutes. Powered by Seedance 1.5 Pro and the Seedance 1.0 models, it enables creators to bring their visions to life without expensive equipment."
+      "answer": "DreamUtopia is a cutting-edge AI video generation platform that allows you to transform text and images into high-quality videos. Powered by Seedance 1.5 Pro and the Seedance 1.0 models, it enables creators to bring their visions to life without expensive equipment."
     },
     "commercial": {
       "question": "Can I use the videos for commercial purposes?",
@@ -391,7 +391,7 @@
       "body": "Thank you for joining DreamUtopia! We're thrilled to have you on board.",
       "features": "With DreamUtopia, you can:",
       "featuresList": {
-        "generate": "Generate stunning AI videos in minutes",
+        "generate": "Generate AI videos from text or images",
         "models": "Use Seedance 1.5 Pro and the Seedance 1.0 models",
         "share": "Download and share your creations anywhere"
       },
@@ -430,7 +430,7 @@
       "body": "Thank you for joining DreamUtopia! We're thrilled to have you on board.",
       "features": "With DreamUtopia, you can:",
       "featuresList": {
-        "generate": "Generate stunning AI videos in minutes",
+        "generate": "Generate AI videos from text or images",
         "models": "Use Seedance 1.5 Pro and the Seedance 1.0 models",
         "share": "Download and share your creations anywhere"
       },

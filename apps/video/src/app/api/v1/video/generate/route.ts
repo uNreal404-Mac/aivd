@@ -22,7 +22,7 @@ const generateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.VIDEO_GENERATION_ENABLED === "false") {
+    if (process.env.VIDEO_GENERATION_ENABLED !== "true") {
       return apiError(
         "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
         503,
