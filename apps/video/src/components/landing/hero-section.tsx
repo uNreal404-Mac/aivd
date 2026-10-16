@@ -176,9 +176,13 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
       const normalizedMode = normalizeGeneratorMode(data.mode);
       const hasImages = (data.images && data.images.length > 0) || (data.imageUrls && data.imageUrls.length > 0);
       const resolvedImageUrls = hasImages ? await resolveImageUrls(data) : undefined;
+      const idempotencyKey = crypto.randomUUID();
       const response = await fetch("/api/v1/video/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify({
           prompt: data.prompt,
           model: data.model,

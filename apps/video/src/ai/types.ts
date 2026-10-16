@@ -2,6 +2,24 @@
 
 export type ProviderType = "evolink" | "kie" | "apimart";
 
+/**
+ * Thrown when the provider DEFINITELY did not create a task
+ * (e.g. HTTP 4xx validation/auth/quota response).
+ *
+ * Anything else thrown by createTask (timeouts, network errors, 5xx,
+ * parse errors) is an UNKNOWN result: the provider may have accepted
+ * (and may charge for) the task.
+ */
+export class ProviderRejectedError extends Error {
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ProviderRejectedError";
+    this.status = status;
+  }
+}
+
 // Unified video generation parameters
 export interface VideoGenerationParams {
   model?: string;

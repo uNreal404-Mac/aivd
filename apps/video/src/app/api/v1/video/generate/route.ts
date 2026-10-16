@@ -17,6 +17,7 @@ const generateSchema = z.object({
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
+  idempotencyKey: z.string().max(200).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request);
     const body = await request.json();
     const data = generateSchema.parse(body);
+
+    const headerKey = request.headers.get("Idempotency-Key");
+    const idempotencyKey = headerKey
+      ? headerKey.slice(0, 200)
+      : data.idempotencyKey;
 
     const result = await videoService.generate({
       userId: user.id,
@@ -37,6 +43,7 @@ export async function POST(request: NextRequest) {
       mode: data.mode,
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
+      idempotencyKey,
     });
 
     return apiSuccess(result);

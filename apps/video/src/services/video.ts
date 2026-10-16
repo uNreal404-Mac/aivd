@@ -1,9 +1,14 @@
 import { VideoStatus, db, videos } from "@/db";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getStorage } from "@/lib/storage";
 import { getModelConfig, calculateModelCredits } from "../config/credits";
-import { getProvider, type ProviderType, type VideoTaskResponse } from "../ai";
+import {
+  getProvider,
+  ProviderRejectedError,
+  type ProviderType,
+  type VideoTaskResponse,
+} from "../ai";
 import {
   isModelModeSupported,
   isModelSupported,
@@ -27,6 +32,7 @@ export interface GenerateVideoParams {
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;
+  idempotencyKey?: string;
 }
 
 export interface VideoGenerationResult {
@@ -36,6 +42,13 @@ export interface VideoGenerationResult {
   status: string;
   estimatedTime?: number;
   creditsUsed: number;
+}
+
+const SUBMIT_SAVE_MAX_ATTEMPTS = 3;
+const SUBMIT_SAVE_RETRY_DELAY_MS = 200;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class VideoService {
@@ -150,37 +163,131 @@ export class VideoService {
       );
     }
 
+    const idempotencyKey = params.idempotencyKey;
+
+    // Idempotency: if a key is provided, look up an existing non-deleted
+    // video for the same user with the same key. If found, return its
+    // result without calling the provider or freezing credits again.
+    if (idempotencyKey) {
+      const existing = await this.findByIdempotencyKey(
+        params.userId,
+        idempotencyKey
+      );
+      if (existing) {
+        return {
+          videoUuid: existing.uuid,
+          taskId: existing.externalTaskId ?? "",
+          provider: existing.provider as ProviderType,
+          status: existing.status,
+          creditsUsed: existing.creditsUsed,
+        };
+      }
+    }
+
     const videoUuid = `vid_${nanoid(21)}`;
 
-    const [videoResult] = await db
-      .insert(videos)
-      .values({
-        uuid: videoUuid,
-        userId: params.userId,
-        prompt: params.prompt,
-        model: params.model,
-        parameters: {
-          duration: params.duration,
-          aspectRatio: params.aspectRatio,
-          quality: params.quality,
-          outputNumber,
-          mode: resolvedMode,
-          imageUrl: params.imageUrl,
-          imageUrls: params.imageUrls,
-          generateAudio: params.generateAudio,
-        },
-        status: VideoStatus.PENDING,
-        startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
-        creditsUsed: creditsRequired,
-        duration: effectiveDuration,
-        aspectRatio: params.aspectRatio || null,
-        provider: actualProvider,
-        updatedAt: new Date(),
-      })
-      .returning({ uuid: videos.uuid, id: videos.id });
+    const parameters: Record<string, unknown> = {
+      duration: params.duration,
+      aspectRatio: params.aspectRatio,
+      quality: params.quality,
+      outputNumber,
+      mode: resolvedMode,
+      imageUrl: params.imageUrl,
+      imageUrls: params.imageUrls,
+      generateAudio: params.generateAudio,
+    };
+    if (idempotencyKey) {
+      parameters.idempotencyKey = idempotencyKey;
+    }
+
+    // Insert the video row. When an idempotency key is provided, take an
+    // advisory lock keyed on (userId, key) so concurrent double submits
+    // serialize: the second caller will see the first caller's row.
+    let videoResult: { uuid: string; id: number } | undefined;
+    if (idempotencyKey) {
+      videoResult = await db.transaction(async (trx) => {
+        await trx.execute(
+          sql`select pg_advisory_xact_lock(hashtext(${`${params.userId}:${idempotencyKey}`}))`
+        );
+
+        const [existing] = await trx
+          .select()
+          .from(videos)
+          .where(
+            and(
+              eq(videos.userId, params.userId),
+              eq(videos.isDeleted, false),
+              sql`${videos.parameters}->>'idempotencyKey' = ${idempotencyKey}`
+            )
+          )
+          .limit(1);
+
+        if (existing) {
+          return { uuid: existing.uuid, id: existing.id };
+        }
+
+        const [inserted] = await trx
+          .insert(videos)
+          .values({
+            uuid: videoUuid,
+            userId: params.userId,
+            prompt: params.prompt,
+            model: params.model,
+            parameters,
+            status: VideoStatus.PENDING,
+            startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
+            creditsUsed: creditsRequired,
+            duration: effectiveDuration,
+            aspectRatio: params.aspectRatio || null,
+            provider: actualProvider,
+            updatedAt: new Date(),
+          })
+          .returning({ uuid: videos.uuid, id: videos.id });
+
+        return inserted;
+      });
+    } else {
+      const [inserted] = await db
+        .insert(videos)
+        .values({
+          uuid: videoUuid,
+          userId: params.userId,
+          prompt: params.prompt,
+          model: params.model,
+          parameters,
+          status: VideoStatus.PENDING,
+          startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
+          creditsUsed: creditsRequired,
+          duration: effectiveDuration,
+          aspectRatio: params.aspectRatio || null,
+          provider: actualProvider,
+          updatedAt: new Date(),
+        })
+        .returning({ uuid: videos.uuid, id: videos.id });
+      videoResult = inserted;
+    }
 
     if (!videoResult) {
       throw new Error("Failed to create video record");
+    }
+
+    // If the idempotency lookup inside the transaction found an existing
+    // row, return its result without freezing or calling the provider.
+    if (videoResult.uuid !== videoUuid) {
+      const [existing] = await db
+        .select()
+        .from(videos)
+        .where(eq(videos.uuid, videoResult.uuid))
+        .limit(1);
+      if (existing) {
+        return {
+          videoUuid: existing.uuid,
+          taskId: existing.externalTaskId ?? "",
+          provider: existing.provider as ProviderType,
+          status: existing.status,
+          creditsUsed: existing.creditsUsed,
+        };
+      }
     }
 
     let freezeResult: { success: boolean; holdId: number };
@@ -234,8 +341,10 @@ export class VideoService {
       )
       : undefined;
 
+    // Call the provider. Split definite rejections from unknown outcomes.
+    let providerResult: VideoTaskResponse;
     try {
-      const result = await provider.createTask({
+      providerResult = await provider.createTask({
         model: params.model,
         prompt: params.prompt,
         duration: effectiveDuration,  // ✅ 使用计算后的时长
@@ -248,38 +357,120 @@ export class VideoService {
         generateAudio: params.generateAudio,
         callbackUrl,
       });
-
-      await db
-        .update(videos)
-        .set({
-          status: VideoStatus.GENERATING,
-          externalTaskId: result.taskId,
-          provider: actualProvider,
-          updatedAt: new Date(),
-        })
-        .where(eq(videos.uuid, videoResult.uuid));
-
-      return {
-        videoUuid: videoResult.uuid,
-        taskId: result.taskId,
-        provider: actualProvider,
-        status: "GENERATING",
-        estimatedTime: result.estimatedTime,
-        creditsUsed: creditsRequired,
-      };
     } catch (error) {
-      await creditService.release(videoResult.uuid);
+      if (error instanceof ProviderRejectedError) {
+        // Definite failure: the provider did not create a task.
+        await creditService.release(videoResult.uuid);
 
-      await db
-        .update(videos)
-        .set({
-          status: VideoStatus.FAILED,
-          errorMessage: String(error),
-          updatedAt: new Date(),
-        })
-        .where(eq(videos.uuid, videoResult.uuid));
-      throw error;
+        await db
+          .update(videos)
+          .set({
+            status: VideoStatus.FAILED,
+            errorMessage: String(error),
+            updatedAt: new Date(),
+          })
+          .where(eq(videos.uuid, videoResult.uuid));
+        throw error;
+      }
+
+      // Unknown outcome: the provider may have accepted (and may charge
+      // for) the task. Do NOT release credits, do NOT mark FAILED, do NOT
+      // retry createTask. Record the uncertainty for reconciliation.
+      const message = error instanceof Error ? error.message : String(error);
+      try {
+        await db
+          .update(videos)
+          .set({
+            errorMessage: `SUBMIT_UNKNOWN: ${message}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(videos.uuid, videoResult.uuid));
+      } catch (updateError) {
+        console.error(
+          `Failed to record SUBMIT_UNKNOWN for video ${videoResult.uuid}:`,
+          updateError
+        );
+      }
+
+      throw new ApiError(
+        "Video submission result unknown; it will be reconciled",
+        202,
+        { code: "SUBMIT_RESULT_UNKNOWN", videoUuid: videoResult.uuid }
+      );
     }
+
+    // Persist externalTaskId/status with retries. If all attempts fail,
+    // do NOT release credits or mark FAILED: the task may still complete
+    // via callback (callbacks carry videoUuid and handleCallback accepts a
+    // row with null externalTaskId).
+    let saved = false;
+    let lastSaveError: unknown;
+    for (let attempt = 1; attempt <= SUBMIT_SAVE_MAX_ATTEMPTS; attempt++) {
+      try {
+        await db
+          .update(videos)
+          .set({
+            status: VideoStatus.GENERATING,
+            externalTaskId: providerResult.taskId,
+            provider: actualProvider,
+            updatedAt: new Date(),
+          })
+          .where(eq(videos.uuid, videoResult.uuid));
+        saved = true;
+        break;
+      } catch (error) {
+        lastSaveError = error;
+        if (attempt < SUBMIT_SAVE_MAX_ATTEMPTS) {
+          await delay(SUBMIT_SAVE_RETRY_DELAY_MS * attempt);
+        }
+      }
+    }
+
+    if (!saved) {
+      console.error(
+        `Video submitted but local save failed; needs reconciliation. videoUuid=${videoResult.uuid} taskId=${providerResult.taskId}`,
+        lastSaveError
+      );
+      throw new ApiError(
+        "Video submitted but local save failed; it will be reconciled",
+        202,
+        {
+          code: "SUBMIT_RESULT_UNKNOWN",
+          videoUuid: videoResult.uuid,
+          taskId: providerResult.taskId,
+        }
+      );
+    }
+
+    return {
+      videoUuid: videoResult.uuid,
+      taskId: providerResult.taskId,
+      provider: actualProvider,
+      status: "GENERATING",
+      estimatedTime: providerResult.estimatedTime,
+      creditsUsed: creditsRequired,
+    };
+  }
+
+  /**
+   * Look up an existing non-deleted video by idempotency key.
+   */
+  private async findByIdempotencyKey(
+    userId: string,
+    idempotencyKey: string
+  ) {
+    const [existing] = await db
+      .select()
+      .from(videos)
+      .where(
+        and(
+          eq(videos.userId, userId),
+          eq(videos.isDeleted, false),
+          sql`${videos.parameters}->>'idempotencyKey' = ${idempotencyKey}`
+        )
+      )
+      .limit(1);
+    return existing ?? null;
   }
 
   /**
@@ -407,7 +598,7 @@ export class VideoService {
   }
 
   /**
-   * Try to complete generation (transaction + optimistic lock)
+   * Try to complete generation (transaction + row lock)
    */
   async tryCompleteGeneration(
     videoUuid: string,
@@ -418,7 +609,8 @@ export class VideoService {
         .select()
         .from(videos)
         .where(eq(videos.uuid, videoUuid))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!video) {
         throw new Error("Video not found");
@@ -481,7 +673,7 @@ export class VideoService {
   }
 
   /**
-   * Try to mark as failed (transaction + optimistic lock)
+   * Try to mark as failed (transaction + row lock)
    */
   private async tryFailGeneration(
     videoUuid: string,
@@ -492,7 +684,8 @@ export class VideoService {
         .select()
         .from(videos)
         .where(eq(videos.uuid, videoUuid))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!video) {
         throw new Error("Video not found");

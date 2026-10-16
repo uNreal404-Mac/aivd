@@ -146,7 +146,7 @@ function getErrorCode(err: unknown): string | undefined {
 
 describe("videoService.generate / creditService integration", () => {
   beforeEach(() => {
-    delete process.env.DEFAULT_AI_PROVIDER;
+    process.env.DEFAULT_AI_PROVIDER = undefined;
     failState.failExternalTaskIdWrite = false;
     fakeProvider.createTask.mockReset();
     fakeProvider.getTaskStatus.mockReset();

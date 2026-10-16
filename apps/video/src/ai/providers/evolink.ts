@@ -3,6 +3,7 @@ import type {
   VideoGenerationParams,
   VideoTaskResponse,
 } from "../types";
+import { ProviderRejectedError } from "../types";
 import {
   getProviderModelId,
   transformParamsForProvider,
@@ -51,6 +52,11 @@ export class EvolinkProvider implements AIVideoProvider {
       } catch {
         // If parsing fails, use status text
         errorMessage = response.statusText || errorMessage;
+      }
+      // 4xx (except 408 Request Timeout) means the provider definitely
+      // rejected the request and did not create a task.
+      if (response.status >= 400 && response.status < 500 && response.status !== 408) {
+        throw new ProviderRejectedError(errorMessage, response.status);
       }
       throw new Error(errorMessage);
     }

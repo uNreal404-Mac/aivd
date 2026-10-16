@@ -107,9 +107,13 @@ export async function transformSubmitData(
 export async function generateVideo(
   request: VideoGenerateRequest
 ): Promise<{ videoUuid: string; status: string; creditsUsed: number }> {
+  const idempotencyKey = crypto.randomUUID();
   const res = await fetch("/api/v1/video/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
     body: JSON.stringify(request),
   });
 

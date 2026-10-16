@@ -443,9 +443,10 @@ export function ToolPageLayout({
         ? await uploadImage(data.imageFile)
         : data.imageUrl;
       const imageUrls = imageUrl ? [imageUrl] : undefined;
+      const idempotencyKey = crypto.randomUUID();
       const response = await fetch("/api/v1/video/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
         body: JSON.stringify({
           prompt: data.prompt,
           model: data.model,
