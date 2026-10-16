@@ -89,30 +89,29 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "expiry",
     question: "Do my credits expire?",
     answer:
-      "Credits included with a subscription stay valid for the length of the plan, while credits bought as a one-time pack remain available for the purchase window shown at checkout, so you always know how long your balance lasts.",
+      "Subscription credits are valid for the plan period; one-time pack credits are valid for the period shown at checkout.",
   },
   {
     id: "switching",
     question: "Can I switch between monthly and yearly billing?",
-    answer:
-      "Yes. You can move from monthly to yearly at any time and the yearly rate is applied from the next billing cycle. Moving from yearly back to monthly takes effect when the current yearly term ends, so you keep everything you already paid for.",
+    answer: "You can choose monthly or yearly billing when you subscribe.",
   },
   {
     id: "refunds",
     question: "What happens if a generation fails?",
     answer:
-      "Credits for a failed render are returned to your balance automatically, so an unsuccessful generation never costs you anything.",
+      "If a generation fails, the credits reserved for it are released back to your balance automatically.",
   },
   {
     id: "payment",
     question: "Which payment methods do you accept?",
     answer:
-      "All payments are processed securely by Stripe. We accept major debit and credit cards, and your card details never touch our servers. Invoices and receipts are available from your billing settings after every purchase.",
+      "Payments are processed securely by Stripe, which accepts major credit and debit cards. Stripe sends a receipt to your email after each purchase.",
   },
   {
     id: "cancel",
     question: "Can I cancel my subscription anytime?",
     answer:
-      "You can cancel at any time from the billing page with a single click. Your plan stays active until the end of the period you already paid for, and you are never charged again after that. No cancellation fees, no phone calls.",
+      "You can cancel a subscription at any time. Your plan stays active until the end of the period you already paid for, and it will not renew after that.",
   },
 ];

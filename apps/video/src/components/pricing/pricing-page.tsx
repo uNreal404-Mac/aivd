@@ -20,9 +20,6 @@ export interface PricingPageProps {
   packs: CreditPackageConfig[];
 }
 
-/** Parallel generation slots granted by plan rank (cheapest first). */
-const PARALLEL_GENERATIONS = [1, 2, 4];
-
 /** Formats a cent amount as a USD string, e.g. 2900 -> "$29". */
 function formatUsd(cents: number): string {
   const dollars = cents / 100;
@@ -78,9 +75,8 @@ export function PricingPage({
         <header className="pr-hero">
           <h1 className="pr-hero__title">Plans &amp; pricing</h1>
           <p className="pr-hero__sub">
-            Choose how much you want to create. Every plan unlocks the full
-            DreamUtopia model roster, fast rendering and credits that work
-            across text-to-video and image-to-video.
+            Choose how much you want to create. Every plan includes credits
+            that work across text-to-video and image-to-video.
           </p>
         </header>
 
@@ -270,27 +266,10 @@ export function PricingPage({
                   ))}
                 </tr>
                 <tr>
-                  <th scope="row">Parallel generations</th>
-                  {plans.map((plan, index) => (
-                    <td key={plan.id}>
-                      {PARALLEL_GENERATIONS[index] ??
-                        PARALLEL_GENERATIONS[PARALLEL_GENERATIONS.length - 1]}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
                   <th scope="row">Commercial use</th>
                   {plans.map((plan) => (
                     <td key={plan.id}>
-                      <span className="pr-table__yes">✓</span>
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row">Priority queue</th>
-                  {plans.map((plan, index) => (
-                    <td key={plan.id}>
-                      {index === plans.length - 1 ? (
+                      {(plan.features ?? []).includes("commercial_use") ? (
                         <span className="pr-table__yes">✓</span>
                       ) : (
                         <span className="pr-table__no">—</span>
