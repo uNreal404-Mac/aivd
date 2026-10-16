@@ -51,7 +51,7 @@ export type ModeIconType = "text" | "image" | "reference" | "frames";
  *   name: "Seedance 1.5 Pro",
  *   icon: "S",
  *   badge: "New",
- *   color: "#ec4899",
+ *   color: "var(--du-accent)",
  *   description: "Text/Image/Frames to video with audio",
  *   maxDuration: "12 sec",
  *   creditCost: 16,
@@ -224,7 +224,7 @@ export interface VideoModel {
  *   name: "FLUX 1.1 Pro",
  *   icon: "F",
  *   badge: "Hot",
- *   color: "#6366f1",
+ *   color: "var(--du-accent)",
  *   description: "Professional-grade image generation",
  *   creditCost: 4,
  * };

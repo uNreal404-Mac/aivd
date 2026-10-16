@@ -5,9 +5,9 @@
  *
  * Tool page generator panel with dark theme design
  * Design inspired by https://pollo.ai
- * - Dark theme (#1A1A1A background)
+ * - Dark theme (--du-bg background)
  * - Uppercase labels for sections
- * - Purple accent color (#6D28D9)
+ * - Accent color (--du-accent)
  * - Dashed border upload area
  */
 
@@ -124,7 +124,7 @@ export function GeneratorPanel({
 
   const getModelColor = (modelId: string) => {
     const meta = modelMetadata.get(modelId);
-    return meta?.color ?? "#71717a";
+    return meta?.color ?? "var(--du-text-muted)";
   };
 
   const renderModelIcon = (modelId: string, name: string, size: "sm" | "md" = "sm") => {
@@ -145,7 +145,7 @@ export function GeneratorPanel({
     return (
       <span
         className={cn(sizeClass, "rounded flex items-center justify-center font-bold")}
-        style={{ backgroundColor: color, color: "#fff" }}
+        style={{ backgroundColor: color, color: "var(--du-on-accent)" }}
       >
         {typeof icon === "string" ? icon : name.charAt(0).toUpperCase()}
       </span>
@@ -310,24 +310,24 @@ export function GeneratorPanel({
                 <DropdownMenuTrigger asChild disabled={isLoading}>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm text-white"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--du-surface-2)] hover:bg-[var(--du-surface-2)]/80 transition-colors text-sm text-[var(--du-text)]"
                   >
                     {renderModelIcon(currentModel.id, currentModel.name, "sm")}
                     <span>{currentModel.name}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[var(--du-text-muted)]" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-zinc-900 border-zinc-800 w-80 max-h-[400px] overflow-y-scroll custom-scrollbar">
-                  <DropdownMenuLabel className="text-zinc-400 text-xs">
+                <DropdownMenuContent className="bg-[var(--du-surface)] border-[var(--du-border)] w-80 max-h-[400px] overflow-y-scroll custom-scrollbar">
+                  <DropdownMenuLabel className="text-[var(--du-text-muted)] text-xs">
                     Video Models
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  <DropdownMenuSeparator className="bg-[var(--du-border)]" />
                   {availableModels.map((model) => (
                     <DropdownMenuItem
                       key={model.id}
                       data-model-id={model.id}
                       onClick={() => setSelectedModel(model.id)}
-                      className="text-white hover:bg-zinc-800 flex flex-col items-start py-3"
+                      className="text-[var(--du-text)] hover:bg-[var(--du-surface-2)] flex flex-col items-start py-3"
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
@@ -335,13 +335,13 @@ export function GeneratorPanel({
                           <span className="font-medium">{model.name}</span>
                         </div>
                         {selectedModel === model.id && (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-[var(--du-success)]" />
                         )}
                       </div>
                       {model.description && (
-                        <div className="text-xs text-zinc-500 mt-1 ml-8">{model.description}</div>
+                        <div className="text-xs text-[var(--du-text-muted)] mt-1 ml-8">{model.description}</div>
                       )}
-                      <div className="text-xs text-zinc-400 mt-1 ml-8 flex items-center gap-2">
+                      <div className="text-xs text-[var(--du-text-muted)] mt-1 ml-8 flex items-center gap-2">
                         {model.maxDuration && (
                           <>
                             <span className="flex items-center gap-1">
@@ -384,7 +384,7 @@ export function GeneratorPanel({
                   {toolType === "reference-to-video" ? "REFERENCE IMAGE" : "IMAGE SOURCE"}
                 </SectionLabel>
                 {imageFile || imageUrl ? (
-                  <div className="relative group h-32 rounded-lg overflow-hidden border-2 border-zinc-700">
+                  <div className="relative group h-32 rounded-lg overflow-hidden border-2 border-[var(--du-border-strong)]">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -520,12 +520,12 @@ export function GeneratorPanel({
         </div>
 
         {/* Bottom Section - Credits + Generate Button */}
-        <div className="px-1 pt-3 pb-1 space-y-3 shrink-0 sticky bottom-0 bg-[#131517]">
+        <div className="px-1 pt-3 pb-1 space-y-3 shrink-0 sticky bottom-0 bg-[var(--du-bg)]">
           {/* Credits Display */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Credits:</span>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--du-warning)]" />
               <span className="text-foreground font-medium">{estimatedCredits} Credits</span>
             </div>
           </div>
@@ -536,10 +536,10 @@ export function GeneratorPanel({
             onClick={handleSubmit}
             disabled={!canSubmit}
             className={cn(
-              "w-full h-14 flex items-center justify-center gap-2 px-4 rounded-[12px] text-base font-semibold transition-all shadow-[inset_0_-3px_0_rgba(0,0,0,0.15)]",
+              "w-full h-14 flex items-center justify-center gap-2 px-4 rounded-[12px] text-base font-semibold transition-all shadow-[inset_0_-3px_0_var(--du-glass-shadow)]",
               canSubmit
-                ? "bg-[#D1FE17] hover:bg-[#D1FE17]/90 text-[#1A1A1A]"
-                : "bg-white/10 text-white/40 cursor-not-allowed"
+                ? "bg-[var(--du-accent)] hover:bg-[var(--du-accent-hover)] text-[var(--du-on-accent)]"
+                : "bg-[var(--du-glass-bg)] text-[var(--du-text-dim)] cursor-not-allowed"
             )}
           >
             {isLoading ? (

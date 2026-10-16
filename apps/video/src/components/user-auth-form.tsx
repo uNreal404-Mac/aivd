@@ -93,7 +93,7 @@ export function UserAuthForm({
               {...register("email")}
             />
             {errors?.email && (
-              <p className="px-1 text-xs text-red-600">
+              <p className="px-1 text-xs text-[var(--du-danger)]">
                 {errors.email.message}
               </p>
             )}

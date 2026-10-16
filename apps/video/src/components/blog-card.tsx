@@ -11,8 +11,8 @@ export function XBlogArticle() {
           />
         }
       >
-        <div className="group relative h-full overflow-hidden rounded-2xl border border-zinc-100 bg-white transition duration-200 hover:shadow-xl">
-          <div className="aspect-w-16 aspect-h-10 xl:aspect-w-16 xl:aspect-h-10 relative w-full overflow-hidden rounded-tl-lg rounded-tr-lg bg-gray-100">
+        <div className="group relative h-full overflow-hidden rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] transition duration-200 hover:shadow-xl">
+          <div className="aspect-w-16 aspect-h-10 xl:aspect-w-16 xl:aspect-h-10 relative w-full overflow-hidden rounded-tl-lg rounded-tr-lg bg-[var(--du-surface-2)]">
             <img
               src={blogContent.image}
               alt="thumbnail"
@@ -20,15 +20,15 @@ export function XBlogArticle() {
             />
           </div>
           <div className=" p-4">
-            <h2 className="my-4 text-lg font-bold text-zinc-700">
+            <h2 className="my-4 text-lg font-bold text-[var(--du-text-dim)]">
               {blogContent.title}
             </h2>
-            <h2 className="my-4 text-sm font-normal text-zinc-500">
+            <h2 className="my-4 text-sm font-normal text-[var(--du-text-muted)]">
               {blogContent.description}
             </h2>
             <div className="mt-10 flex flex-row items-center justify-between">
-              <span className="text-sm text-gray-500">{blogContent.date}</span>
-              <div className="relative z-10 block rounded-xl bg-black px-6 py-2 text-xs font-bold text-white">
+              <span className="text-sm text-[var(--du-text-muted)]">{blogContent.date}</span>
+              <div className="relative z-10 block rounded-xl bg-[var(--du-accent)] px-6 py-2 text-xs font-bold text-[var(--du-on-accent)]">
                 Read More
               </div>
             </div>
@@ -65,7 +65,7 @@ const TitleComponent = ({
       height="20"
       width="20"
       alt="thumbnail"
-      className="rounded-full border-2 border-white"
+      className="rounded-full border-2 border-[var(--du-border)]"
     />
     <p>{title}</p>
   </div>

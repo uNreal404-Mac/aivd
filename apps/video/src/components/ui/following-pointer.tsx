@@ -71,13 +71,13 @@ export const FollowPointer = ({
   title?: string | React.ReactNode;
 }) => {
   const colors = [
-    "var(--sky-500)",
-    "var(--neutral-500)",
-    "var(--teal-500)",
-    "var(--green-500)",
-    "var(--blue-500)",
-    "var(--red-500)",
-    "var(--yellow-500)",
+    "var(--du-accent)",
+    "var(--du-surface-2)",
+    "var(--du-accent-2)",
+    "var(--du-success)",
+    "var(--du-accent-text)",
+    "var(--du-danger)",
+    "var(--du-warning)",
   ];
   return (
     <motion.div
@@ -105,7 +105,7 @@ export const FollowPointer = ({
         fill="currentColor"
         strokeWidth="1"
         viewBox="0 0 16 16"
-        className="h-6 w-6 -translate-x-[12px] -translate-y-[10px] -rotate-[70deg] transform stroke-sky-600 text-sky-500"
+        className="h-6 w-6 -translate-x-[12px] -translate-y-[10px] -rotate-[70deg] transform stroke-[var(--du-accent)] text-[var(--du-accent)]"
         height="1em"
         width="1em"
         xmlns="http://www.w3.org/2000/svg"
@@ -129,7 +129,7 @@ export const FollowPointer = ({
           opacity: 0,
         }}
         className={
-          "min-w-max whitespace-nowrap rounded-full bg-neutral-200 px-2 py-2 text-xs text-white"
+          "min-w-max whitespace-nowrap rounded-full bg-[var(--du-surface-2)] px-2 py-2 text-xs text-[var(--du-on-accent)]"
         }
       >
         {title || `William Shakespeare`}

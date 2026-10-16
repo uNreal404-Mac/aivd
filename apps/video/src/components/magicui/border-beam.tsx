@@ -18,8 +18,8 @@ export function BorderBeam({
   duration = 15,
   anchor = 90,
   borderWidth = 1.5,
-  colorFrom = "#ffaa40",
-  colorTo = "#9c40ff",
+  colorFrom = "var(--du-accent)",
+  colorTo = "var(--du-accent-2)",
   delay = 0,
   ...props
 }: BorderBeamProps) {

@@ -28,27 +28,27 @@ interface VideoCardProps {
 const statusConfig = {
   PENDING: {
     label: "Pending",
-    color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    color: "bg-[var(--du-warning)]/20 text-[var(--du-warning)] border-[var(--du-warning)]/30",
     icon: Clock,
   },
   GENERATING: {
     label: "Generating",
-    color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    color: "bg-[var(--du-accent)]/20 text-[var(--du-accent-text)] border-[var(--du-accent)]/30",
     icon: Sparkles,
   },
   UPLOADING: {
     label: "Uploading",
-    color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    color: "bg-[var(--du-accent-2)]/20 text-[var(--du-accent-text)] border-[var(--du-accent-2)]/30",
     icon: Zap,
   },
   COMPLETED: {
     label: "Completed",
-    color: "bg-green-500/20 text-green-400 border-green-500/30",
+    color: "bg-[var(--du-success)]/20 text-[var(--du-success)] border-[var(--du-success)]/30",
     icon: Sparkles,
   },
   FAILED: {
     label: "Failed",
-    color: "bg-red-500/20 text-red-400 border-red-500/30",
+    color: "bg-[var(--du-danger)]/20 text-[var(--du-danger)] border-[var(--du-danger)]/30",
     icon: null,
   },
 };
@@ -80,7 +80,7 @@ function VideoThumbnail({ video }: { video: Video }) {
 
   return (
     <div
-      className="relative aspect-video bg-zinc-900 overflow-hidden rounded-t-xl group/thumbnail"
+      className="relative aspect-video bg-[var(--du-surface)] overflow-hidden rounded-t-xl group/thumbnail"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -101,9 +101,9 @@ function VideoThumbnail({ video }: { video: Video }) {
           className="w-full h-full object-cover opacity-80"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+        <div className="w-full h-full flex items-center justify-center bg-[var(--du-surface)]/50">
           <div className="flex flex-col items-center gap-2">
-            {StatusIcon && <StatusIcon className="w-8 h-8 text-zinc-600" />}
+            {StatusIcon && <StatusIcon className="w-8 h-8 text-[var(--du-text-dim)]" />}
             <span className={cn("text-sm font-medium", config.color)}>
               {config.label}
             </span>
@@ -114,7 +114,7 @@ function VideoThumbnail({ video }: { video: Video }) {
       {/* Overlay Gradient */}
       <div
         className={cn(
-          "absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300",
+          "absolute inset-0 bg-gradient-to-t from-[var(--du-bg)]/80 via-[var(--du-bg)]/20 to-transparent transition-opacity duration-300",
           showOverlay || video.status !== "COMPLETED" ? "opacity-100" : "opacity-0"
         )}
       />
@@ -138,13 +138,13 @@ function VideoThumbnail({ video }: { video: Video }) {
       {(video.duration || video.resolution) && video.status === "COMPLETED" && (
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
           {video.duration && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm text-xs text-white">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--du-glass-overlay-scrim)] backdrop-blur-sm text-xs text-[var(--du-text)]">
               <Clock className="w-3 h-3" />
               {video.duration}
             </span>
           )}
           {video.resolution && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm text-xs text-white">
+            <span className="inline-flex items-center px-2 py-0.5 rounded bg-[var(--du-glass-overlay-scrim)] backdrop-blur-sm text-xs text-[var(--du-text)]">
               {video.resolution}
             </span>
           )}
@@ -159,8 +159,8 @@ function VideoThumbnail({ video }: { video: Video }) {
             showOverlay ? "opacity-100" : "opacity-0"
           )}
         >
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 group-hover/thumbnail:scale-110 transition-transform">
-            <Play className="w-6 h-6 text-white ml-1" />
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[var(--du-glass-bg)] backdrop-blur-sm border border-[var(--du-glass-border)] group-hover/thumbnail:scale-110 transition-transform">
+            <Play className="w-6 h-6 text-[var(--du-text)] ml-1" />
           </div>
         </div>
       )}
@@ -179,7 +179,7 @@ function VideoActions({ video, onDelete }: { video: Video; onDelete?: () => void
         rel="noopener noreferrer"
         className={cn(
           "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-          "bg-zinc-800 hover:bg-zinc-700 text-white"
+          "bg-[var(--du-surface-2)] hover:bg-[var(--du-surface)] text-[var(--du-text)]"
         )}
       >
         <Play className="w-4 h-4" />
@@ -190,7 +190,7 @@ function VideoActions({ video, onDelete }: { video: Video; onDelete?: () => void
         download
         className={cn(
           "flex items-center justify-center w-10 h-10 rounded-xl transition-all",
-          "bg-zinc-800 hover:bg-zinc-700 text-white"
+          "bg-[var(--du-surface-2)] hover:bg-[var(--du-surface)] text-[var(--du-text)]"
         )}
         title="Download"
       >
@@ -202,7 +202,7 @@ function VideoActions({ video, onDelete }: { video: Video; onDelete?: () => void
           onClick={onDelete}
           className={cn(
             "flex items-center justify-center w-10 h-10 rounded-xl transition-all",
-            "bg-red-500/10 hover:bg-red-500/20 text-red-400"
+            "bg-[var(--du-danger)]/10 hover:bg-[var(--du-danger)]/20 text-[var(--du-danger)]"
           )}
           title="Delete"
         >
@@ -218,13 +218,13 @@ export function VideoCard({ video, onDelete, showActions = true }: VideoCardProp
 
   return (
     <BlurFade inView>
-      <Card className="group overflow-hidden border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-colors duration-300">
+      <Card className="group overflow-hidden border-[var(--du-border)] bg-[var(--du-surface)]/50 hover:bg-[var(--du-surface)]/80 transition-colors duration-300">
         <VideoThumbnail video={video} />
 
         <CardContent className="p-4 space-y-4">
           {/* Prompt */}
           <p
-            className="text-sm text-zinc-300 line-clamp-2 leading-relaxed"
+            className="text-sm text-[var(--du-text-muted)] line-clamp-2 leading-relaxed"
             title={video.prompt}
           >
             {video.prompt}
@@ -233,11 +233,11 @@ export function VideoCard({ video, onDelete, showActions = true }: VideoCardProp
           {/* Meta Info */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-3">
-              <span className="text-zinc-500">{video.model}</span>
-              <span className="text-zinc-600">•</span>
-              <span className="text-zinc-500">{createdAt}</span>
+              <span className="text-[var(--du-text-muted)]">{video.model}</span>
+              <span className="text-[var(--du-text-dim)]">•</span>
+              <span className="text-[var(--du-text-muted)]">{createdAt}</span>
             </div>
-            <span className="flex items-center gap-1 text-zinc-400">
+            <span className="flex items-center gap-1 text-[var(--du-text-muted)]">
               <Sparkles className="w-3 h-3" />
               {video.credits_used}
             </span>

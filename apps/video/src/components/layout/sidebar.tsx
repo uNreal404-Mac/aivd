@@ -108,7 +108,11 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
             type="button"
           >
             <ShineBorder
-              shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+              shineColor={[
+                "var(--du-accent)",
+                "var(--du-accent-2)",
+                "var(--du-warning)",
+              ]}
               borderWidth={1}
             />
             <div className="relative bg-gradient-to-br from-primary/15 via-background to-primary/5 p-3 rounded-xl">
@@ -180,7 +184,11 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
               type="button"
             >
               <ShineBorder
-                shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+                shineColor={[
+                  "var(--du-accent)",
+                  "var(--du-accent-2)",
+                  "var(--du-warning)",
+                ]}
                 borderWidth={1}
               />
               <div className="relative bg-gradient-to-br from-primary/15 via-background to-primary/5 p-3 rounded-xl">

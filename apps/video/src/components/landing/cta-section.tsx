@@ -22,10 +22,10 @@ import { NEW_USER_GIFT } from "@/config/pricing-user";
 
 // 优势列表
 const benefits = [
-  { icon: Check, labelKey: "benefits.free", color: "text-green-500" },
-  { icon: Check, labelKey: "benefits.noCard", color: "text-green-500" },
-  { icon: Check, labelKey: "benefits.cancel", color: "text-green-500" },
-  { icon: Check, labelKey: "benefits.support", color: "text-green-500" },
+  { icon: Check, labelKey: "benefits.free", color: "text-[var(--du-success)]" },
+  { icon: Check, labelKey: "benefits.noCard", color: "text-[var(--du-success)]" },
+  { icon: Check, labelKey: "benefits.cancel", color: "text-[var(--du-success)]" },
+  { icon: Check, labelKey: "benefits.support", color: "text-[var(--du-success)]" },
 ];
 
 export function CTASection() {
@@ -36,7 +36,7 @@ export function CTASection() {
       {/* 背景装饰 */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-background" />
-        <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, oklch(from var(--primary) l c h / 0.05), oklch(from var(--primary) l c calc(h + 30) / 0.05))" }} />
+        <div className="absolute inset-0 bg-[image:var(--du-gradient)] opacity-[0.05]" />
       </div>
 
       <div className="container mx-auto px-4">
@@ -47,7 +47,7 @@ export function CTASection() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="relative rounded-3xl border border-border bg-card dark:bg-black/40 backdrop-blur-xl overflow-hidden shadow-2xl"
+              className="relative rounded-3xl border border-border bg-card dark:bg-[var(--du-glass-bg-strong)] backdrop-blur-xl overflow-hidden shadow-2xl"
             >
               {/* 边框光效 */}
               <BorderBeam
@@ -55,12 +55,12 @@ export function CTASection() {
                 duration={12}
                 anchor={90}
                 borderWidth={2}
-                colorFrom="oklch(from var(--primary) l c h)"
-                colorTo="oklch(from var(--primary) l c calc(h + 40))"
+                colorFrom="var(--du-accent)"
+                colorTo="var(--du-accent-2)"
               />
 
               {/* 顶部渐变装饰 */}
-              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundImage: "linear-gradient(to right, oklch(from var(--primary) l c h), oklch(from var(--primary) l c calc(h + 40)))" }} />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[image:var(--du-gradient)]" />
 
               <div className="grid md:grid-cols-2 gap-8 p-8 md:p-12">
                 {/* 左侧: 内容 */}
@@ -115,11 +115,11 @@ export function CTASection() {
                   <div className="flex flex-wrap gap-4 pt-4">
                     <LocaleLink href="/#generator">
                       <ShimmerButton
-                        shimmerColor="#ffffff"
+                        shimmerColor="var(--du-on-accent)"
                         shimmerSize="0.05em"
                         shimmerDuration="3s"
                         borderRadius="100px"
-                        background="oklch(from var(--primary) l c h)"
+                        background="var(--du-accent)"
                         className="px-8 py-3 text-base font-medium shadow-lg shadow-primary/25"
                       >
                         {t("getStarted")}
@@ -145,7 +145,7 @@ export function CTASection() {
                     <div className="text-sm">
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <Star key={i} className="h-4 w-4 fill-[var(--du-warning)] text-[var(--du-warning)]" />
                         ))}
                       </div>
                       <p className="text-muted-foreground">
@@ -164,11 +164,11 @@ export function CTASection() {
                   className="relative"
                 >
                   {/* 装饰性光晕 */}
-                  <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full blur-3xl -z-10" style={{ background: "oklch(from var(--primary) l c h / 0.3)" }} />
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl -z-10" style={{ background: "oklch(from var(--primary) l c calc(h + 30) / 0.2)" }} />
+                  <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full blur-3xl -z-10 bg-[var(--du-accent)]/30" />
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl -z-10 bg-[var(--du-accent-2)]/20" />
 
                   {/* 视频预览卡片 */}
-                  <div className="relative rounded-2xl border border-border dark:border-white/10 bg-muted dark:bg-black/30 backdrop-blur-sm overflow-hidden">
+                  <div className="relative rounded-2xl border border-border dark:border-[var(--du-glass-border)] bg-muted dark:bg-[var(--du-glass-bg)] backdrop-blur-sm overflow-hidden">
                     {/* 静态图片预览 (Video preview replaced with image for audit) */}
                     <div className="aspect-video bg-muted/80 flex items-center justify-center overflow-hidden">
                       <motion.img
@@ -187,7 +187,7 @@ export function CTASection() {
                         <span className="font-medium text-primary">100%</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full w-full" style={{ backgroundImage: "linear-gradient(to right, oklch(from var(--primary) l c h), oklch(from var(--primary) l c calc(h + 40)))" }} />
+                        <div className="h-full w-full bg-[image:var(--du-gradient)]" />
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
                         {t("readyIn")} 2-5 {t("minutes")}

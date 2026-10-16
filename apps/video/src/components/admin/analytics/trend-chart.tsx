@@ -55,11 +55,11 @@ export function TrendChart({ data }: TrendChartProps) {
             <XAxis
               dataKey="displayDate"
               className="text-xs"
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fill: "var(--du-text-muted)" }}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fill: "var(--du-text-muted)" }}
               className="text-xs"
             />
             <Tooltip
@@ -71,8 +71,8 @@ export function TrendChart({ data }: TrendChartProps) {
               }}
               labelFormatter={(label) => `日期: ${label}`}
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--du-bg-elev)",
+                border: "1px solid var(--du-border)",
                 borderRadius: "6px",
               }}
             />
@@ -84,18 +84,18 @@ export function TrendChart({ data }: TrendChartProps) {
             <Line
               type="monotone"
               dataKey="firstVideoConversionRate"
-              stroke="#8b5cf6"
+              stroke="var(--du-accent)"
               strokeWidth={2}
-              dot={{ fill: "#8b5cf6", strokeWidth: 2, r: 3 }}
+              dot={{ fill: "var(--du-accent)", strokeWidth: 2, r: 3 }}
               activeDot={{ r: 5 }}
               name="firstVideoConversionRate"
             />
             <Line
               type="monotone"
               dataKey="firstVideoSuccessRate"
-              stroke="#10b981"
+              stroke="var(--du-success)"
               strokeWidth={2}
-              dot={{ fill: "#10b981", strokeWidth: 2, r: 3 }}
+              dot={{ fill: "var(--du-success)", strokeWidth: 2, r: 3 }}
               activeDot={{ r: 5 }}
               name="firstVideoSuccessRate"
             />
@@ -106,7 +106,7 @@ export function TrendChart({ data }: TrendChartProps) {
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">平均首视频转化率</p>
-            <p className="text-2xl font-bold text-purple-600">
+            <p className="text-2xl font-bold text-[var(--du-accent)]">
               {data.length > 0
                 ? (
                     data.reduce((sum, item) => sum + item.firstVideoConversionRate, 0) / data.length
@@ -117,7 +117,7 @@ export function TrendChart({ data }: TrendChartProps) {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">平均首个视频成功率</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-[var(--du-success)]">
               {data.length > 0
                 ? (
                     data.reduce((sum, item) => sum + item.firstVideoSuccessRate, 0) / data.length

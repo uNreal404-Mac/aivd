@@ -20,9 +20,9 @@ interface FunnelChartProps {
 }
 
 const FUNNEL_DATA = [
-  { name: "注册用户", value: 0, color: "#8b5cf6" },
-  { name: "生成首个视频", value: 0, color: "#a78bfa" },
-  { name: "首个视频成功", value: 0, color: "#c4b5fd" },
+  { name: "注册用户", value: 0, color: "var(--du-accent)" },
+  { name: "生成首个视频", value: 0, color: "var(--du-accent-2)" },
+  { name: "首个视频成功", value: 0, color: "var(--du-accent-soft)" },
 ];
 
 export function FunnelChart({ data }: FunnelChartProps) {
@@ -68,7 +68,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
                       y={centerY}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="white"
+                      fill="var(--du-on-accent)"
                       fontSize={14}
                       fontWeight={600}
                     >
@@ -81,8 +81,8 @@ export function FunnelChart({ data }: FunnelChartProps) {
             <Tooltip
               formatter={(value) => [Number(value).toLocaleString(), ""]}
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--du-bg-elev)",
+                border: "1px solid var(--du-border)",
                 borderRadius: "6px",
               }}
             />

@@ -14,11 +14,11 @@ export function VideoStatusCard({
   error,
 }: VideoStatusCardProps) {
   const statusConfig = {
-    PENDING: { label: "Pending", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-    GENERATING: { label: "Generating", color: "text-blue-500", bg: "bg-blue-500/10" },
-    UPLOADING: { label: "Uploading", color: "text-purple-500", bg: "bg-purple-500/10" },
-    COMPLETED: { label: "Completed", color: "text-green-500", bg: "bg-green-500/10" },
-    FAILED: { label: "Failed", color: "text-red-500", bg: "bg-red-500/10" },
+    PENDING: { label: "Pending", color: "text-[var(--du-warning)]", bg: "bg-[var(--du-warning)]/10" },
+    GENERATING: { label: "Generating", color: "text-[var(--du-accent)]", bg: "bg-[var(--du-accent)]/10" },
+    UPLOADING: { label: "Uploading", color: "text-[var(--du-accent-2)]", bg: "bg-[var(--du-accent-2)]/10" },
+    COMPLETED: { label: "Completed", color: "text-[var(--du-success)]", bg: "bg-[var(--du-success)]/10" },
+    FAILED: { label: "Failed", color: "text-[var(--du-danger)]", bg: "bg-[var(--du-danger)]/10" },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
@@ -47,9 +47,9 @@ export function VideoStatusCard({
               <div
                 className={cn(
                   "h-full rounded-full animate-pulse",
-                  status === "PENDING" && "w-1/4 bg-yellow-500",
-                  status === "GENERATING" && "w-1/2 bg-blue-500",
-                  status === "UPLOADING" && "w-3/4 bg-purple-500"
+                  status === "PENDING" && "w-1/4 bg-[var(--du-warning)]",
+                  status === "GENERATING" && "w-1/2 bg-[var(--du-accent)]",
+                  status === "UPLOADING" && "w-3/4 bg-[var(--du-accent-2)]"
                 )}
               />
             </div>
@@ -63,8 +63,8 @@ export function VideoStatusCard({
 
         {/* Error Message */}
         {status === "FAILED" && error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-sm text-red-500">{error}</p>
+          <div className="p-4 bg-[var(--du-danger)]/10 border border-[var(--du-danger)]/20 rounded-lg">
+            <p className="text-sm text-[var(--du-danger)]">{error}</p>
           </div>
         )}
 
@@ -74,7 +74,7 @@ export function VideoStatusCard({
             <video
               src={videoUrl}
               controls
-              className="w-full rounded-lg bg-black"
+              className="w-full rounded-lg bg-[var(--du-bg)]"
               autoPlay
               loop
             />

@@ -18,28 +18,28 @@ let notifications = [
     time: "15m ago",
 
     icon: "💸",
-    color: "#00C9A7",
+    color: "var(--du-success)",
   },
   {
     name: "User signed up",
     description: "Auth, simple and clean",
     time: "10m ago",
     icon: "👤",
-    color: "#FFB800",
+    color: "var(--du-warning)",
   },
   {
     name: "New Emails",
     description: "Create beautiful emails",
     time: "5m ago",
     icon: "💬",
-    color: "#FF3D71",
+    color: "var(--du-danger)",
   },
   {
     name: "Easy Deploy",
     description: "Deploy your app with ease",
     time: "2m ago",
     icon: "🗞️",
-    color: "#1E86FF",
+    color: "var(--du-accent)",
   },
 ];
 
@@ -53,9 +53,9 @@ const Notification = ({ name, description, icon, color, time }: Item) => {
         // animation styles
         "transition-all duration-200 ease-in-out hover:scale-[103%]",
         // light styles
-        "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+        "bg-[var(--du-surface)] [box-shadow:var(--du-glass-shadow)]",
         // dark styles
-        "transform-gpu dark:bg-transparent dark:backdrop-blur-md dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
+        "transform-gpu dark:bg-transparent dark:backdrop-blur-md dark:[border:1px_solid_var(--du-glass-border)] dark:[box-shadow:0_-20px_80px_-20px_var(--du-glass-shadow)_inset]",
       )}
     >
       <div className="flex flex-row items-center gap-3">
@@ -68,12 +68,12 @@ const Notification = ({ name, description, icon, color, time }: Item) => {
           <span className="text-lg">{icon}</span>
         </div>
         <div className="flex flex-col overflow-hidden">
-          <figcaption className="flex flex-row items-center whitespace-pre text-lg font-medium dark:text-white ">
+          <figcaption className="flex flex-row items-center whitespace-pre text-lg font-medium dark:text-[var(--du-text)] ">
             <span className="text-sm sm:text-lg">{name}</span>
             <span className="mx-1">·</span>
-            <span className="text-xs text-gray-500">{time}</span>
+            <span className="text-xs text-[var(--du-text-muted)]">{time}</span>
           </figcaption>
-          <p className="text-sm font-normal dark:text-white/60">
+          <p className="text-sm font-normal dark:text-[var(--du-text)]/60">
             {description}
           </p>
         </div>
@@ -84,7 +84,7 @@ const Notification = ({ name, description, icon, color, time }: Item) => {
 
 export function FeaturesCard() {
   return (
-    <div className="relative flex max-h-[435px] min-h-[435px] flex-col overflow-hidden rounded-2xl border bg-background p-6 shadow-lg dark:border-[#443c3c]">
+    <div className="relative flex max-h-[435px] min-h-[435px] flex-col overflow-hidden rounded-2xl border bg-background p-6 shadow-lg dark:border-[var(--du-border)]">
       <AnimatedList>
         {notifications.map((item, idx) => (
           <Notification {...item} key={idx} />

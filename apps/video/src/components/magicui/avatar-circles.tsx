@@ -28,7 +28,7 @@ export const AvatarCircles = ({
         >
           <img
             key={index}
-            className="h-10 w-10 rounded-full border-2 border-white dark:border-gray-800"
+            className="h-10 w-10 rounded-full border-2 border-[var(--du-border)] dark:border-[var(--du-border-strong)]"
             src={url.imageUrl}
             width={40}
             height={40}
@@ -38,7 +38,7 @@ export const AvatarCircles = ({
       ))}
       {(numPeople ?? 0) > 0 && (
         <a
-          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-black text-center text-xs font-medium text-white hover:bg-gray-600 dark:border-gray-800 dark:bg-white dark:text-black"
+          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--du-border)] bg-[var(--du-bg)] text-center text-xs font-medium text-[var(--du-text)] hover:bg-[var(--du-surface-2)] dark:border-[var(--du-border-strong)] dark:bg-[var(--du-text)] dark:text-[var(--du-bg)]"
           href=""
         >
           +{numPeople}

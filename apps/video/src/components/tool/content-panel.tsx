@@ -59,9 +59,9 @@ export function ContentPanel({ lang = "en" }: ContentPanelProps) {
                 alt={video.title}
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                  <Play className="h-5 w-5 text-white fill-white" />
+              <div className="absolute inset-0 bg-[var(--du-glass-overlay-scrim)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-[var(--du-glass-bg)] backdrop-blur flex items-center justify-center">
+                  <Play className="h-5 w-5 text-[var(--du-text)] fill-[var(--du-text)]" />
                 </div>
               </div>
             </div>
@@ -91,7 +91,7 @@ export function ContentPanel({ lang = "en" }: ContentPanelProps) {
           </p>
           <Link
             href={`/${lang}/login`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg font-medium hover:from-pink-600 hover:to-purple-600 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[var(--du-accent)] to-[var(--du-accent-2)] text-[var(--du-on-accent)] rounded-lg font-medium hover:from-[var(--du-accent-hover)] hover:to-[var(--du-accent-2)] transition-all"
           >
             Login to Get Started
             <ArrowRight className="h-4 w-4" />
