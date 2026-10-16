@@ -482,7 +482,8 @@
       },
       "empty": {
         "title": "No creations yet",
-        "description": "Your generated videos will appear here"
+        "description": "Your generated videos will appear here",
+        "cta": "Start creating"
       },
       "deleteConfirm": {
         "title": "Delete video?",

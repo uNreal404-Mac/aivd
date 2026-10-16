@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/components/ui";
 import type { VideoFilterOptions, VideoStatus } from "@/lib/types/dashboard";
 
 interface CreationFilterProps {
@@ -43,30 +44,39 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
   const t = useTranslations("dashboard.myCreations.filter");
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       {/* Status Filter */}
-      <Select
-        value={filter.status || "all"}
-        onValueChange={(value) => onFilterChange({ status: value as VideoStatus | "all" })}
-      >
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder={t("allStatus")} />
-        </SelectTrigger>
-        <SelectContent>
-          {statusOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+      <div className="flex items-center gap-1 rounded-xl bg-[#1c1d20] p-1">
+        {statusOptions.map((option) => {
+          const isActive = (filter.status || "all") === option.value;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() =>
+                onFilterChange({ status: option.value as VideoStatus | "all" })
+              }
+              className={cn(
+                "h-8 rounded-lg px-3 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-[#26272b] text-[#f7f7f8]"
+                  : "text-[#9a9ba0] hover:text-[#f7f7f8]"
+              )}
+            >
               {t(option.value as any)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Model Filter */}
       <Select
         value={filter.model || "all"}
         onValueChange={(value) => onFilterChange({ model: value as string | "all" })}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="h-10 w-[140px] rounded-xl border-0 bg-[#1c1d20] text-sm text-[#f7f7f8] hover:bg-[#26272b]">
           <SelectValue placeholder={t("allModels")} />
         </SelectTrigger>
         <SelectContent>
@@ -83,7 +93,7 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
         value={filter.sortBy || "newest"}
         onValueChange={(value) => onFilterChange({ sortBy: value as "newest" | "oldest" })}
       >
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="h-10 w-[120px] rounded-xl border-0 bg-[#1c1d20] text-sm text-[#f7f7f8] hover:bg-[#26272b]">
           <SelectValue placeholder={t("newest")} />
         </SelectTrigger>
         <SelectContent>

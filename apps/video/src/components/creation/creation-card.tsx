@@ -129,7 +129,7 @@ export function CreationCard({
     <>
       <div
         className={cn(
-          "group relative overflow-hidden rounded-lg border border-border bg-card transition-all hover:shadow-lg cursor-pointer",
+          "group relative cursor-pointer overflow-hidden rounded-xl bg-[#1c1d20] ring-1 ring-white/[0.06] transition hover:ring-white/[0.14]",
           isDeleting && "opacity-50 pointer-events-none"
         )}
         onClick={() => onClick(video.uuid)}
@@ -137,7 +137,7 @@ export function CreationCard({
         onMouseLeave={handlePreviewStop}
       >
         {/* Thumbnail / Preview */}
-        <div className="aspect-[4/3] w-full overflow-hidden bg-muted relative">
+        <div className="relative aspect-video w-full overflow-hidden bg-[#0f1113]">
           {isCompleted && video.videoUrl ? (
             <video
               ref={videoRef}
@@ -147,17 +147,17 @@ export function CreationCard({
               loop
               playsInline
               preload="metadata"
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           ) : video.thumbnailUrl ? (
             <img
               src={video.thumbnailUrl}
               alt={video.prompt}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-cover"
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center">
-              <StatusIcon className="h-12 w-12 text-muted-foreground" />
+              <StatusIcon className="h-12 w-12 text-[#9a9ba0]" />
               {isFailed && video.errorMessage && (
                 <p className="text-[11px] text-destructive line-clamp-3">
                   {(() => {
@@ -173,18 +173,35 @@ export function CreationCard({
             </div>
           )}
 
+          {/* Bottom gradient overlay */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+
           {/* Overlay for completed videos */}
           {isCompleted && (
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Play className="h-5 w-5 text-primary-foreground fill-primary-foreground" />
-              </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button
+                type="button"
+                aria-label={t("actions.play")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClick(video.uuid);
+                }}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Play className="ml-0.5 h-4 w-4 text-white fill-white" />
+              </button>
             </div>
           )}
 
           {/* Status badge */}
           <div className="absolute top-2 left-2">
-            <Badge className={config.labelColor} variant="outline">
+            <Badge
+              className={cn(
+                config.labelColor,
+                "rounded-md border-0 bg-black/60 text-[11px] text-white backdrop-blur"
+              )}
+              variant="outline"
+            >
               {statusLabel}
             </Badge>
           </div>
@@ -192,20 +209,37 @@ export function CreationCard({
           {/* Duration badge (completed only) */}
           {isCompleted && video.duration > 0 && (
             <div className="absolute bottom-2 right-2">
-              <Badge variant="secondary" className="bg-black/70 text-white border-0">
+              <Badge
+                variant="secondary"
+                className="rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white"
+              >
                 {Math.floor(video.duration)}s
               </Badge>
             </div>
           )}
 
           {/* Action menu */}
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 flex gap-1.5">
+            {isCompleted && video.videoUrl && (
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label={t("actions.download")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+                className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0"
+                  className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -230,20 +264,20 @@ export function CreationCard({
         </div>
 
         {/* Card info */}
-        <div className="p-2 space-y-1.5">
+        <div className="px-2.5 py-2 space-y-1">
           {/* Model & Aspect Ratio */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[11px] text-[#9a9ba0]">
             <span className="font-medium capitalize">{video.model}</span>
             <span>{video.aspectRatio}</span>
           </div>
 
           {/* Prompt */}
-          <div className="text-xs text-foreground/90 line-clamp-2">
+          <div className="text-xs text-[#f7f7f8] line-clamp-1">
             {video.prompt}
           </div>
 
           {/* Date */}
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] text-[#9a9ba0]">
             {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
           </div>
 

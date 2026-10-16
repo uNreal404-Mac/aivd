@@ -91,56 +91,60 @@ export function MyCreationsPage({ locale }: MyCreationsPageProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {videos.length} {videos.length === 1 ? "creation" : "creations"}
-          </p>
+    <div className="min-h-[calc(100vh-4rem)] bg-[#0f1113] p-2 text-[#f7f7f8] sm:p-3">
+      <div className="flex min-h-[calc(100vh-5.5rem)] flex-col rounded-2xl border border-white/[0.06] bg-[#131416]">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-white/[0.06] bg-[#131416]/95 px-4 py-3 backdrop-blur">
+          <div className="flex items-center">
+            <h1 className="text-base font-semibold">{t("title")}</h1>
+            <span className="ml-2 rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-[#9a9ba0]">
+              {videos.length}
+            </span>
+          </div>
+
+          {/* Filter */}
+          <CreationFilter filter={filter} onFilterChange={handleFilterChange} />
         </div>
 
-        {/* Filter */}
-        <CreationFilter filter={filter} onFilterChange={handleFilterChange} />
-      </div>
+        {/* Body */}
+        <div className="flex flex-1 flex-col p-3">
+          {isLoading ? (
+            <CreationSkeleton />
+          ) : videos.length === 0 ? (
+            <CreationEmpty />
+          ) : (
+            <>
+              <CreationGrid>
+                {videos.map((video) => (
+                  <CreationCard
+                    key={video.uuid}
+                    video={video}
+                    onClick={handleVideoClick}
+                    onDelete={deleteVideo}
+                    isDeleting={isDeleting}
+                  />
+                ))}
+              </CreationGrid>
 
-      {/* Content */}
-      {isLoading ? (
-        <CreationSkeleton />
-      ) : videos.length === 0 ? (
-        <CreationEmpty />
-      ) : (
-        <>
-          <CreationGrid>
-            {videos.map((video) => (
-              <CreationCard
-                key={video.uuid}
-                video={video}
-                onClick={handleVideoClick}
-                onDelete={deleteVideo}
-                isDeleting={isDeleting}
-              />
-            ))}
-          </CreationGrid>
-
-          {/* Infinite scroll sentinel */}
-          {hasMore && (
-            <div ref={observerTarget} className="py-4 text-center text-sm text-muted-foreground">
-              {isFetchingNextPage ? "Loading..." : ""}
-            </div>
+              {/* Infinite scroll sentinel */}
+              {hasMore && (
+                <div ref={observerTarget} className="py-4 text-center text-sm text-[#9a9ba0]">
+                  {isFetchingNextPage ? "Loading..." : ""}
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
 
-      {/* Video Detail Dialog */}
-      <VideoDetailDialog
-        video={selectedVideo}
-        open={!!selectedVideo}
-        onClose={handleCloseDialog}
-        onDelete={deleteVideo}
-        isDeleting={isDeleting}
-      />
+        {/* Video Detail Dialog */}
+        <VideoDetailDialog
+          video={selectedVideo}
+          open={!!selectedVideo}
+          onClose={handleCloseDialog}
+          onDelete={deleteVideo}
+          isDeleting={isDeleting}
+        />
+      </div>
     </div>
   );
 }

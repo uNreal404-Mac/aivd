@@ -482,7 +482,8 @@
       },
       "empty": {
         "title": "暂无创作",
-        "description": "您生成的视频将显示在这里"
+        "description": "您生成的视频将显示在这里",
+        "cta": "开始创作"
       },
       "deleteConfirm": {
         "title": "删除视频？",

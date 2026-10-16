@@ -5,8 +5,7 @@
 // ============================================
 
 import { useTranslations } from "next-intl";
-import { Film } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Film, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/components/ui";
 
@@ -20,25 +19,26 @@ export function CreationEmpty({ className }: CreationEmptyProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center py-16 px-4",
+        "flex flex-1 flex-col items-center justify-center px-4 py-24 text-center",
         className
       )}
     >
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-        <Film className="h-10 w-10 text-muted-foreground" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-[#1c1d20]">
+        <Film className="h-6 w-6 text-[#9a9ba0]" />
       </div>
 
-      <h3 className="mt-4 text-lg font-semibold">{t("title")}</h3>
-      <p className="mt-2 text-center text-sm text-muted-foreground max-w-sm">
+      <h3 className="mt-5 text-lg font-semibold text-[#f7f7f8]">{t("title")}</h3>
+      <p className="mt-1.5 max-w-sm text-sm text-[#9a9ba0]">
         {t("description")}
       </p>
 
-      {/* Optional CTA button */}
-      {/* <Link href="/image-to-video">
-        <Button className="mt-4">
-          Start Creating
-        </Button>
-      </Link> */}
+      <Link
+        href="/text-to-video"
+        className="mt-6 inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-medium text-black hover:bg-white/90"
+      >
+        <Sparkles className="h-4 w-4" />
+        {t("cta")}
+      </Link>
     </div>
   );
 }

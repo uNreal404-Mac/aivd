@@ -12,19 +12,20 @@ interface CreationGridProps {
 }
 
 /**
- * Responsive grid for video cards
- * - Mobile: 1 column
- * - Tablet: 2 columns
- * - Desktop: 3-4 columns based on screen width
+ * Dense gallery grid for video cards
+ * - Mobile: 2 columns
+ * - Tablet: 3 columns
+ * - Desktop: 4 columns
+ * - Wide desktop: 5 columns
  */
 export function CreationGrid({ children, className }: CreationGridProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-1 gap-4",
-        "sm:grid-cols-2",
-        "lg:grid-cols-3",
-        "xl:grid-cols-4",
+        "grid grid-cols-2 gap-2",
+        "sm:grid-cols-3",
+        "lg:grid-cols-4",
+        "2xl:grid-cols-5",
         className
       )}
     >
