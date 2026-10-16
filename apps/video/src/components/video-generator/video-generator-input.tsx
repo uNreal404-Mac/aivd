@@ -522,7 +522,7 @@ export function VideoGeneratorInput({
 
   // Helper to get model color (defaults to a neutral color)
   const getModelColor = (model: VideoModel | ImageModel) => {
-    return model.color ?? "#71717a";
+    return model.color ?? "var(--du-text-muted)";
   };
 
   // Render model icon (supports both URL and single character)
@@ -544,7 +544,7 @@ export function VideoGeneratorInput({
     return (
       <span
         className={cn(sizeClass, "rounded flex items-center justify-center font-bold")}
-        style={{ backgroundColor: color, color: "#fff" }}
+        style={{ backgroundColor: color, color: "var(--du-on-accent)" }}
       >
         {icon}
       </span>
@@ -863,7 +863,7 @@ export function VideoGeneratorInput({
       />
 
       {/* Main Input Card */}
-      <div className="relative rounded-2xl bg-card overflow-hidden border border-transparent dark:border-white/10">
+      <div className="relative rounded-2xl bg-card overflow-hidden border border-transparent dark:border-[var(--du-glass-border)]">
         <BorderBeam duration={8} size={100} colorFrom="oklch(from var(--primary) l c h)" colorTo="oklch(from var(--primary) l c h / 0.2)" />
         {/* Input Area */}
         <div className="p-4 min-h-[140px] flex flex-col">
@@ -897,7 +897,7 @@ export function VideoGeneratorInput({
                               <button
                                 type="button"
                                 onClick={() => setPreviewImage(image.preview)}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute inset-0 flex items-center justify-center bg-[var(--du-glass-overlay-scrim)] opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <ZoomIn className="w-4 h-4 text-foreground" />
                               </button>
@@ -944,7 +944,7 @@ export function VideoGeneratorInput({
                           <button
                             type="button"
                             onClick={() => setPreviewImage(getImageForSlot("default")!.preview)}
-                            className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute inset-0 flex items-center justify-center bg-[var(--du-glass-overlay-scrim)] opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <ZoomIn className="w-4 h-4 text-foreground" />
                           </button>
@@ -979,7 +979,7 @@ export function VideoGeneratorInput({
                 disabled={disabled || isLoading}
                 className={cn(
                   "w-full h-full min-h-[60px] max-h-[200px] bg-transparent placeholder:text-muted-foreground resize-none focus:outline-none text-sm leading-relaxed",
-                  promptError ? "text-red-400" : "text-foreground",
+                  promptError ? "text-[var(--du-danger)]" : "text-foreground",
                   (disabled || isLoading) && "opacity-50 cursor-not-allowed"
                 )}
                 rows={3}
@@ -989,7 +989,7 @@ export function VideoGeneratorInput({
                 <div
                   className={cn(
                     "text-xs mt-1 text-right",
-                    promptError ? "text-red-400" : "text-muted-foreground"
+                    promptError ? "text-[var(--du-danger)]" : "text-muted-foreground"
                   )}
                 >
                   {prompt.length}/{maxPromptLength}
@@ -997,7 +997,7 @@ export function VideoGeneratorInput({
                 </div>
               )}
               {imageError && (
-                <div className="text-xs mt-1 text-right text-red-400">{imageError}</div>
+                <div className="text-xs mt-1 text-right text-[var(--du-danger)]">{imageError}</div>
               )}
             </div>
           </div>
@@ -1014,13 +1014,13 @@ export function VideoGeneratorInput({
                     <button type="button" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary hover:bg-accent transition-colors text-sm">
                       {generationType === "video" ? (
                         <>
-                          <Video className="w-4 h-4 text-red-500" />
-                          <span className="text-red-500 font-medium">{texts.aiVideo}</span>
+                          <Video className="w-4 h-4 text-[var(--du-danger)]" />
+                          <span className="text-[var(--du-danger)] font-medium">{texts.aiVideo}</span>
                         </>
                       ) : (
                         <>
-                          <ImageIcon className="w-4 h-4 text-blue-500" />
-                          <span className="text-blue-500 font-medium">{texts.aiImage}</span>
+                          <ImageIcon className="w-4 h-4 text-[var(--du-accent)]" />
+                          <span className="text-[var(--du-accent)] font-medium">{texts.aiImage}</span>
                         </>
                       )}
                       <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1031,20 +1031,20 @@ export function VideoGeneratorInput({
                       onClick={() => handleGenerationTypeChange("video")}
                       className="text-foreground hover:bg-accent"
                     >
-                      <Video className="w-4 h-4 mr-2 text-red-500" />
+                      <Video className="w-4 h-4 mr-2 text-[var(--du-danger)]" />
                       {texts.aiVideo}
                       {generationType === "video" && (
-                        <Check className="w-4 h-4 ml-auto text-green-500" />
+                        <Check className="w-4 h-4 ml-auto text-[var(--du-success)]" />
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleGenerationTypeChange("image")}
                       className="text-foreground hover:bg-accent"
                     >
-                      <ImageIcon className="w-4 h-4 mr-2 text-blue-500" />
+                      <ImageIcon className="w-4 h-4 mr-2 text-[var(--du-accent)]" />
                       {texts.aiImage}
                       {generationType === "image" && (
-                        <Check className="w-4 h-4 ml-auto text-green-500" />
+                        <Check className="w-4 h-4 ml-auto text-[var(--du-success)]" />
                       )}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1071,7 +1071,7 @@ export function VideoGeneratorInput({
                         <span className="mr-2">{getModeIcon(mode.icon)}</span>
                         {mode.name}
                         {currentMode.id === mode.id && (
-                          <Check className="w-4 h-4 ml-auto text-green-500" />
+                          <Check className="w-4 h-4 ml-auto text-[var(--du-success)]" />
                         )}
                       </DropdownMenuItem>
                     ))}
@@ -1087,7 +1087,7 @@ export function VideoGeneratorInput({
                       {renderModelIcon(currentModel, "sm")}
                       <span>{currentModel.name}</span>
                       {currentModel.isPro && (
-                        <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
+                        <span className="text-[10px] px-1 py-0.5 rounded bg-[var(--du-warning)]/20 text-[var(--du-warning)]">PRO</span>
                       )}
                       <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -1110,7 +1110,7 @@ export function VideoGeneratorInput({
                             <span className="font-medium">{model.name}</span>
                           </div>
                           {currentModel.id === model.id && (
-                            <Check className="w-4 h-4 text-green-500" />
+                            <Check className="w-4 h-4 text-[var(--du-success)]" />
                           )}
                         </div>
                         {model.description && (
@@ -1139,7 +1139,7 @@ export function VideoGeneratorInput({
                 <Dialog open={isStyleDialogOpen} onOpenChange={setIsStyleDialogOpen}>
                   <DialogTrigger asChild>
                     <button type="button" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary hover:bg-accent transition-colors text-sm text-foreground">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <Sparkles className="w-4 h-4 text-[var(--du-accent-2)]" />
                       <span>{selectedStyle.name}</span>
                       <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -1161,7 +1161,7 @@ export function VideoGeneratorInput({
                           className={cn(
                             "p-3 rounded-xl border-2 transition-all text-center",
                             selectedStyle.id === style.id
-                              ? "border-purple-500 bg-purple-500/10"
+                              ? "border-[var(--du-accent-2)] bg-[var(--du-accent-2)]/10"
                               : "border-border hover:border-muted-foreground bg-secondary/50"
                           )}
                         >
@@ -1343,7 +1343,7 @@ export function VideoGeneratorInput({
                             <span className="flex items-center justify-center gap-1">
                               {option.value}
                               {option.isPro && !isPro && (
-                                <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
+                                <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--du-warning)]/20 text-[var(--du-warning)]">PRO</span>
                               )}
                             </span>
                           </button>
@@ -1370,12 +1370,12 @@ export function VideoGeneratorInput({
                           onClick={() => setGenerateAudio(!generateAudio)}
                           className={cn(
                             "relative w-11 h-6 rounded-full transition-colors",
-                            generateAudio ? "bg-red-500" : "bg-muted"
+                            generateAudio ? "bg-[var(--du-danger)]" : "bg-muted"
                           )}
                         >
                           <span
                             className={cn(
-                              "absolute top-1 w-4 h-4 rounded-full bg-white transition-transform",
+                              "absolute top-1 w-4 h-4 rounded-full bg-[var(--du-on-accent)] transition-transform",
                               generateAudio ? "left-6" : "left-1"
                             )}
                           />

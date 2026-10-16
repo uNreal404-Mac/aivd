@@ -1,21 +1,21 @@
 :root {
-  --du-bg: #07060F;
-  --du-bg-elev: #0E0C1D;
-  --du-surface: #13112A;
-  --du-surface-2: #1A1736;
-  --du-border: rgba(139, 92, 246, 0.18);
-  --du-border-strong: rgba(139, 92, 246, 0.45);
-  --du-text: #F5F3FF;
-  --du-text-muted: #A5A1C2;
-  --du-text-dim: #6E6A8E;
-  --du-accent: #8B5CF6;
-  --du-accent-hover: #7C3AED;
-  --du-accent-soft: rgba(139, 92, 246, 0.14);
-  --du-accent-text: #A78BFA;
-  --du-accent-2: #C084FC;
-  --du-gradient: linear-gradient(90deg, #8B5CF6 0%, #C084FC 100%);
-  --du-glow: 0 0 32px rgba(139, 92, 246, 0.45);
-  --du-on-accent: #FFFFFF;
+  --du-bg: #000000;
+  --du-bg-elev: #0B0C10;
+  --du-surface: #1F2833;
+  --du-surface-2: #263340;
+  --du-border: rgba(102, 252, 241, 0.18);
+  --du-border-strong: rgba(102, 252, 241, 0.45);
+  --du-text: #F5F7F7;
+  --du-text-muted: #C5C6C7;
+  --du-text-dim: #8A9BA3;
+  --du-accent: #66FCF1;
+  --du-accent-hover: #45A29E;
+  --du-accent-soft: rgba(102, 252, 241, 0.14);
+  --du-accent-text: #66FCF1;
+  --du-accent-2: #45A29E;
+  --du-gradient: linear-gradient(90deg, #66FCF1 0%, #45A29E 100%);
+  --du-glow: 0 0 32px rgba(102, 252, 241, 0.45);
+  --du-on-accent: #0B0C10;
   --du-success: #34D399;
   --du-danger: #F87171;
   --du-warning: #f59e0b;
@@ -38,9 +38,9 @@
   --du-glass-radius-card: 20px;
   --du-glass-radius-btn: 12px;
   --du-glass-radius-round: 9999px;
-  --du-glass-fallback-bg: rgba(26, 23, 54, 0.92);
+  --du-glass-fallback-bg: rgba(31, 40, 51, 0.92);
   --du-glass-text: #FFFFFF;
-  --du-glass-overlay-scrim: rgba(7, 6, 15, 0.55);
+  --du-glass-overlay-scrim: rgba(0, 0, 0, 0.55);
 }
 
 .du-glass {

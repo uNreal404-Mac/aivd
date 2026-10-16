@@ -123,7 +123,7 @@ export const TweetHeader = ({ tweet }: { tweet: EnrichedTweet }) => (
           {truncate(tweet.user.name, 20)}
           {tweet.user.verified ||
             (tweet.user.is_blue_verified && (
-              <Verified className="ml-1 inline size-4 text-blue-500" />
+              <Verified className="ml-1 inline size-4 text-[var(--du-accent)]" />
             ))}
         </a>
         <div className="flex items-center space-x-1">
@@ -131,7 +131,7 @@ export const TweetHeader = ({ tweet }: { tweet: EnrichedTweet }) => (
             href={tweet.user.url}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-gray-500 transition-all duration-75"
+            className="text-sm text-[var(--du-text-muted)] transition-all duration-75"
           >
             @{truncate(tweet.user.screen_name, 16)}
           </a>
@@ -140,7 +140,7 @@ export const TweetHeader = ({ tweet }: { tweet: EnrichedTweet }) => (
     </div>
     <a href={tweet.url} target="_blank" rel="noreferrer">
       <span className="sr-only">Link to tweet</span>
-      <Twitter className="size-5 items-start text-[#3BA9EE] transition-all ease-in-out hover:scale-105" />
+      <Twitter className="size-5 items-start text-[var(--du-accent)] transition-all ease-in-out hover:scale-105" />
     </a>
   </div>
 );
@@ -159,7 +159,7 @@ export const TweetBody = ({ tweet }: { tweet: EnrichedTweet }) => (
               href={entity.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-normal text-gray-500"
+              className="text-sm font-normal text-[var(--du-text-muted)]"
             >
               <span>{entity.text}</span>
             </a>

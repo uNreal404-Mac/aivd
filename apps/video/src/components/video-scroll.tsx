@@ -11,7 +11,7 @@ export function VideoScroll({ dict } : { dict: Record<string, string> | undefine
     <div className="flex flex-col overflow-hidden">
       <ContainerScroll
         titleComponent={
-          <h1 className="text-4xl font-semibold text-black dark:text-white">
+          <h1 className="text-4xl font-semibold text-[var(--du-text)]">
             {dict?.first_text}
             <br />
             <span className="text-4xl md:text-6xl font-bold mt-1 leading-none">

@@ -27,7 +27,7 @@ const steps = [
     icon: Type,
     titleKey: "steps.prompt.title",
     descKey: "steps.prompt.description",
-    gradient: { from: "#9E7AFF", to: "#C084FC" },
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
     stat: { value: 30, suffix: "s", labelKey: "steps.prompt.stat" },
   },
   {
@@ -35,7 +35,7 @@ const steps = [
     icon: Upload,
     titleKey: "steps.upload.title",
     descKey: "steps.upload.description",
-    gradient: { from: "#6366F1", to: "#818CF8" },
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
     stat: { value: 20, suffix: "+", labelKey: "steps.upload.stat" },
   },
   {
@@ -43,7 +43,7 @@ const steps = [
     icon: Video,
     titleKey: "steps.generate.title",
     descKey: "steps.generate.description",
-    gradient: { from: "#EC4899", to: "#F472B6" },
+    gradient: { from: "var(--du-accent-2)", to: "var(--du-accent)" },
     stat: { value: 2, suffix: "min", labelKey: "steps.generate.stat" },
   },
   {
@@ -51,7 +51,7 @@ const steps = [
     icon: Download,
     titleKey: "steps.download.title",
     descKey: "steps.download.description",
-    gradient: { from: "#F59E0B", to: "#FBBF24" },
+    gradient: { from: "var(--du-warning)", to: "var(--du-warning)" },
     stat: { value: 1080, suffix: "p", labelKey: "steps.download.stat" },
   },
 ];
@@ -128,7 +128,7 @@ export function HowItWorks() {
                 >
                   {/* MagicCard 包裹 */}
                   <MagicCard
-                    className="h-full rounded-2xl border border-border bg-card dark:bg-black/40 backdrop-blur-xl"
+                    className="h-full rounded-2xl border border-border bg-card dark:bg-[var(--du-glass-bg)] backdrop-blur-xl"
                     gradientFrom={step.gradient.from}
                     gradientTo={step.gradient.to}
                     gradientSize={200}
@@ -138,7 +138,7 @@ export function HowItWorks() {
                       {/* 步骤编号 + 图标 */}
                       <div className="flex items-center gap-3 mb-5">
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[var(--du-on-accent)] shrink-0"
                           style={{
                             background: `linear-gradient(135deg, ${step.gradient.from}, ${step.gradient.to})`,
                           }}
@@ -150,7 +150,7 @@ export function HowItWorks() {
                           transition={{ duration: 0.4 }}
                           className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md"
                           style={{
-                            background: `linear-gradient(135deg, ${step.gradient.from}20, ${step.gradient.to}20)`,
+                            background: `color-mix(in oklab, ${step.gradient.from} 12%, transparent)`,
                           }}
                         >
                           <Icon className="h-6 w-6" style={{ color: step.gradient.from }} />
@@ -199,12 +199,12 @@ export function HowItWorks() {
           >
             <LocaleLink href="/#generator">
               <ShimmerButton
-                shimmerColor="#ffffff"
+                shimmerColor="var(--du-on-accent)"
                 shimmerSize="0.05em"
                 shimmerDuration="3s"
                 borderRadius="100px"
-                background="oklch(from var(--primary) l c h)"
-                className="px-8 py-3 text-base font-medium shadow-lg shadow-primary/25"
+                background="var(--du-gradient)"
+                className="px-8 py-3 text-base font-medium shadow-lg shadow-[var(--du-glow)]"
               >
                 {t("cta")}
                 <ArrowRight className="ml-2 h-5 w-5" />

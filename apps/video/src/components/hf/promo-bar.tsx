@@ -33,7 +33,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
         type="button"
         aria-label="Dismiss"
         onClick={() => setVisible(false)}
-        className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-white/10"
+        className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-[var(--du-glass-bg-strong)]"
       >
         <X className="h-4 w-4" />
       </button>

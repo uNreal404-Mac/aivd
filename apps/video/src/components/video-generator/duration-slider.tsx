@@ -37,7 +37,7 @@ export function DurationSlider({
 
   if (normalizedOptions.length <= 1) {
     return (
-      <div className={cn("rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white", className)}>
+      <div className={cn("rounded-lg bg-[var(--du-surface-2)] px-3 py-2 text-sm text-[var(--du-text)]", className)}>
         {currentValue}
       </div>
     );
@@ -58,9 +58,9 @@ export function DurationSlider({
         disabled={disabled}
         className="w-full"
       />
-      <div className="flex items-center justify-between text-xs text-zinc-400">
+      <div className="flex items-center justify-between text-xs text-[var(--du-text-muted)]">
         <span>{minValue}</span>
-        <span className="rounded-md bg-zinc-800 px-2 py-0.5 text-white">{currentValue}</span>
+        <span className="rounded-md bg-[var(--du-surface-2)] px-2 py-0.5 text-[var(--du-text)]">{currentValue}</span>
         <span>{maxValue}</span>
       </div>
     </div>
