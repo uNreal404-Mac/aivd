@@ -44,4 +44,7 @@ export const env = createEnv({
     ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     IS_DEBUG: process.env.IS_DEBUG,
   },
+  // Build-time only: cf:build sets SKIP_ENV_VALIDATION=1 so secrets are not needed to compile; the worker validates at runtime.
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  emptyStringAsUndefined: true,
 });

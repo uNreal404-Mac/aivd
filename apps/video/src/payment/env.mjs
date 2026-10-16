@@ -30,7 +30,9 @@ export const env = createEnv({
     NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID:
       process.env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PRICE_ID,
   },
+  // Build-time only: cf:build sets SKIP_ENV_VALIDATION=1 so secrets are not needed to compile; the worker validates at runtime.
   skipValidation:
     !!process.env.SKIP_ENV_VALIDATION ||
     process.env.npm_lifecycle_event === "lint",
+  emptyStringAsUndefined: true,
 });

@@ -25,7 +25,8 @@
       "src/components/ui/*.tsx",
       "src/components/magicui/**",
       "src/components/animate-ui/**",
-      "src/types/index.d.ts"
+      "src/types/index.d.ts",
+      "src/styles/globals.css"
     ]
   },
   "formatter": {
