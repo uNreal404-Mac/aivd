@@ -211,7 +211,7 @@ describe("site config", () => {
 
 describe("layout", () => {
   it("does not use the vercel analytics packages", () => {
-    const source = readSource("src/app/layout.tsx");
+    const source = readSource("src/app/[locale]/layout.tsx");
 
     expect(source).not.toContain("@vercel/analytics");
     expect(source).not.toContain("@vercel/speed-insights");

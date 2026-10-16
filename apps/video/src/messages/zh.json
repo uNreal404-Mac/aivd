@@ -198,7 +198,16 @@
     "copyright": "© {year} DreamUtopia. 保留所有权利。",
     "privacy": "隐私政策",
     "terms": "服务条款",
-    "cookie": "Cookie 政策"
+    "cookie": "Cookie 政策",
+    "tagline": "用 AI 把你的创意变成精彩视频。",
+    "imageToVideo": "图片生视频",
+    "textToVideo": "文字生视频",
+    "referenceToVideo": "参考生视频",
+    "pricing": "价格",
+    "refund": "退款政策",
+    "contact": "联系我们",
+    "madeWith": "用",
+    "byTeam": "由 DreamUtopia 团队打造"
   },
   "Credits": {
     "title": "积分",
@@ -755,7 +764,10 @@
       "cta": "领取免费积分 →",
       "alt": "从背后被照亮的星球地平线"
     },
-    "like": "喜欢"
+    "like": "喜欢",
+    "viewAll": "查看全部 →",
+    "learnMore": "了解更多 →",
+    "tryIt": "试一试 →"
   },
   "HfNav": {
     "items": {

@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readSource = (relativePath: string) =>
   readFileSync(path.join(root, relativePath), "utf8");
 
-const layoutSource = readSource("src/app/layout.tsx");
+const layoutSource = readSource("src/app/[locale]/layout.tsx");
 const globalsCss = readSource("src/styles/globals.css");
 
 describe("font loading", () => {

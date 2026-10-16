@@ -1,3 +1,5 @@
+import { setRequestLocale } from "next-intl/server";
+
 import { getCurrentUser } from "@/lib/auth";
 
 import { ModalProvider } from "@/components/modal-provider";
@@ -13,6 +15,7 @@ export default async function MarketingLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const user = await getCurrentUser();
 
   return (

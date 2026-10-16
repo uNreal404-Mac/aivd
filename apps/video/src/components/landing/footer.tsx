@@ -15,10 +15,10 @@ export function LandingFooter() {
     {
       title: t('product'),
       links: [
-        { title: "Image to Video", href: "/image-to-video" },
-        { title: "Text to Video", href: "/text-to-video" },
-        { title: "Reference to Video", href: "/reference-to-video" },
-        { title: "Pricing", href: "/pricing" },
+        { title: t('imageToVideo'), href: "/image-to-video" },
+        { title: t('textToVideo'), href: "/text-to-video" },
+        { title: t('referenceToVideo'), href: "/reference-to-video" },
+        { title: t('pricing'), href: "/pricing" },
       ],
     },
     // {
@@ -35,8 +35,8 @@ export function LandingFooter() {
       links: [
         { title: t('privacy'), href: "/privacy" },
         { title: t('terms'), href: "/terms" },
-        { title: locale === "zh" ? "退款政策" : "Refund Policy", href: "/refund-policy" },
-        { title: locale === "zh" ? "联系我们" : "Contact", href: "/contact" },
+        { title: t('refund'), href: "/refund-policy" },
+        { title: t('contact'), href: "/contact" },
         // { title: t('cookie'), href: "/cookies" },
       ],
     },
@@ -57,7 +57,7 @@ export function LandingFooter() {
               🎬 DreamUtopia
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
-              Transform your ideas into stunning videos with AI.
+              {t('tagline')}
             </p>
           </div>
 
@@ -89,9 +89,9 @@ export function LandingFooter() {
             {t('copyright', { year: currentYear })}
           </p>
           <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
-            Made with
+            {t('madeWith')}
             <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            by DreamUtopia Team
+            {t('byTeam')}
           </p>
         </div>
       </div>
