@@ -18,12 +18,9 @@ import {
   tryHref,
 } from "@/lib/model-seo";
 
-/** The four landing pages and the backend model id each one points at. */
+/** The landing pages and the backend model id each one points at. */
 const EXPECTED_MODEL_IDS: Record<string, string> = {
   "seedance-1-5-pro": "seedance-1.5-pro",
-  "wan-2-6": "wan2.6",
-  "veo-3-1": "veo-3.1",
-  "sora-2": "sora-2",
 };
 
 /** Matches a Simplified Chinese character (CJK Unified Ideograph). */
@@ -71,8 +68,8 @@ function collectCopyStrings(copy: (typeof MODEL_PAGE_COPY)["en"]): string[] {
 }
 
 describe("model SEO data", () => {
-  it("exposes exactly the four documented slugs and backend ids", () => {
-    expect(MODEL_SLUGS).toHaveLength(4);
+  it("exposes exactly the documented slugs and backend ids", () => {
+    expect(MODEL_SLUGS).toHaveLength(1);
     expect([...MODEL_SLUGS].sort()).toEqual(
       Object.keys(EXPECTED_MODEL_IDS).sort()
     );
