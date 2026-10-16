@@ -80,7 +80,7 @@ const BLOCKED_WORD_PATTERN = /(改|加|删|换|调整|功能|价格|定价|收�
 const INTENT_PATTERNS = [
   ["progress", /^(?:进度|进展|做到哪了|做到哪一步了|到哪了|进度如何|现在进度|progress|status)(?:呢|吗)?$/u],
   ["url", /^(?:网址|链接|预览|预览地址|预览站|网站地址|地址是什么|url|link|preview)(?:是什么|呢|吗)?$/u],
-  ["version", /^(?:版本|最新版本|部署了吗|修好了吗|修复了吗|上线了吗|version|deployed)(?:呢|吗)?$/u],
+  ["version", /^(?:版本|最新版本|部署了吗|上线了吗|version|deployed)(?:呢|吗)?$/u],
   ["ping", /^(?:在吗|在不在|收到吗|收到了吗|你在吗|你出哪去了|你去哪了|收到没|hello|hi|ping)(?:呢|吗)?$/u],
 ];
 

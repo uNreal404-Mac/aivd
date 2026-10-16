@@ -161,23 +161,13 @@ function hasMentionEvidence(message) {
   return typeof message?.content === "string" && AT_TAG_PATTERN.test(message.content);
 }
 
-async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, now, forwardOk, autoAnswer = null }) {
-  if (payload?.event?.sender?.sender_type !== "user") return;
-  if (!hasMentionEvidence(payload?.event?.message)) return;
+async function sendForwardAck({ selected, token, senderType, mentionOpenId, mentionsMe, kv, fetchImpl, forwardOk, autoAnswer = null }) {
+  if (senderType !== "user") return;
+  // The caller resolves `mentionsMe` once, so an @ of another user never reaches here.
+  if (!mentionsMe) return;
 
   const marker = ackKey(selected.messageId);
   if (await kv.get(marker)) return;
-
-  const token = await getTenantAccessToken({
-    kv,
-    appId: env.FEISHU_APP_ID,
-    appSecret: env.FEISHU_APP_SECRET,
-    fetchImpl,
-    now,
-  });
-  const botOpenId = await getBotOpenId({ kv, token, fetchImpl, now, env });
-  if (typeof context?.senderOpenId === "string" && context.senderOpenId && context.senderOpenId === botOpenId) return;
-  if (!mentionsBot(payload?.event?.message, botOpenId)) return;
 
   await kv.put(marker, "1", { expirationTtl: ACK_TTL_SECONDS });
   if (typeof autoAnswer === "string" && autoAnswer) {
@@ -187,7 +177,7 @@ async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, 
       token,
       messageId: selected.messageId,
       text: autoAnswer,
-      mentionOpenId: context?.senderOpenId,
+      mentionOpenId,
       fetchImpl,
     });
     return;
@@ -347,16 +337,44 @@ export function createWorker({
 
           const context = messageContext(payload);
           const mentioned = hasMentionEvidence(message);
+
+          // Only a mention of the bot itself earns a reaction, an auto answer or an ack;
+          // an @ of another user must stay a plain, silent forward. The identity lookup is
+          // resolved once here and reused by every downstream step.
+          let mentionsMe = false;
+          if (mentioned) {
+            try {
+              if (!token) {
+                token = await getTenantAccessToken({
+                  kv,
+                  appId: env.FEISHU_APP_ID,
+                  appSecret: env.FEISHU_APP_SECRET,
+                  fetchImpl: workFetch,
+                  now,
+                });
+              }
+              const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now, env });
+              mentionsMe = context.senderOpenId !== botOpenId && mentionsBot(message, botOpenId);
+            } catch (error) {
+              // A failed identity lookup must never block the forward; it only means we
+              // cannot prove the bot was mentioned.
+              console.log(`[feishu-mention] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
+              mentionsMe = false;
+            }
+          }
+
           let senderName = context.senderName;
           if (!senderName && context.senderOpenId) {
             try {
-              token = await getTenantAccessToken({
-                kv,
-                appId: env.FEISHU_APP_ID,
-                appSecret: env.FEISHU_APP_SECRET,
-                fetchImpl: workFetch,
-                now,
-              });
+              if (!token) {
+                token = await getTenantAccessToken({
+                  kv,
+                  appId: env.FEISHU_APP_ID,
+                  appSecret: env.FEISHU_APP_SECRET,
+                  fetchImpl: workFetch,
+                  now,
+                });
+              }
               senderName = await getUserName({
                 kv,
                 token,
@@ -370,17 +388,8 @@ export function createWorker({
 
           // The asker sees a reaction as soon as the bot picks the message up; it is best
           // effort and never blocks the forward or the acknowledgement.
-          if (mentioned) {
+          if (mentionsMe) {
             try {
-              if (!token) {
-                token = await getTenantAccessToken({
-                  kv,
-                  appId: env.FEISHU_APP_ID,
-                  appSecret: env.FEISHU_APP_SECRET,
-                  fetchImpl: workFetch,
-                  now,
-                });
-              }
               await addReaction({ token, messageId: forwarded.messageId, fetchImpl: workFetch });
             } catch (error) {
               console.log(`[feishu-reaction] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
@@ -389,34 +398,22 @@ export function createWorker({
 
           let autoAnswer = null;
           let autoAck = null;
-          if (mentioned) {
+          if (mentionsMe) {
             try {
-              if (!token) {
-                token = await getTenantAccessToken({
-                  kv,
-                  appId: env.FEISHU_APP_ID,
-                  appSecret: env.FEISHU_APP_SECRET,
-                  fetchImpl: workFetch,
-                  now,
-                });
-              }
-              const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now, env });
-              if (context.senderOpenId !== botOpenId && mentionsBot(message, botOpenId)) {
-                const resolved = await resolveAutoAnswer({
-                  env,
-                  kv,
-                  forwarded,
-                  fetchImpl: workFetch,
-                  now,
-                });
-                if (typeof resolved?.answer === "string" && resolved.answer) {
-                  // A real answer is both mirrored in the email and posted to the asker.
-                  autoAnswer = resolved.answer;
-                  autoAck = resolved.answer;
-                } else if (typeof resolved?.ackText === "string" && resolved.ackText) {
-                  // The unsure case only acknowledges, so the email stays a normal forward.
-                  autoAck = resolved.ackText;
-                }
+              const resolved = await resolveAutoAnswer({
+                env,
+                kv,
+                forwarded,
+                fetchImpl: workFetch,
+                now,
+              });
+              if (typeof resolved?.answer === "string" && resolved.answer) {
+                // A real answer is both mirrored in the email and posted to the asker.
+                autoAnswer = resolved.answer;
+                autoAck = resolved.answer;
+              } else if (typeof resolved?.ackText === "string" && resolved.ackText) {
+                // The unsure case only acknowledges, so the email stays a normal forward.
+                autoAck = resolved.ackText;
               }
             } catch (error) {
               // A failed auto answer must never block the forward or the fixed ack.
@@ -457,13 +454,13 @@ export function createWorker({
           // acked with 200 first (ctx.waitUntil), so a failed forward is NOT redelivered
           // by Feishu; we only avoid marking it processed. A non-deferred call returns 503.
           const ackWork = sendForwardAck({
-            payload,
             selected: forwarded,
-            context: { ...context, senderName: senderName || "" },
+            token,
+            senderType: payload?.event?.sender?.sender_type,
+            mentionOpenId: context?.senderOpenId,
+            mentionsMe,
             kv,
-            env,
             fetchImpl: workFetch,
-            now,
             forwardOk: result.ok,
             autoAnswer: autoAck,
           }).catch((error) => {

@@ -699,6 +699,33 @@ test("forwards a forward-chat message without a mention and never looks up the b
   assert.equal(await env.BOT_KV.get(ackKey("om_nomention")), null);
 });
 
+test("never reacts, auto-answers or acknowledges a forward-chat message that only mentions another user", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const reactions = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls, reactions }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({
+      text: "随便聊聊",
+      mentions: [{ key: "@_user_2", id: { open_id: "ou_other" } }],
+      messageId: "om_other",
+      eventId: "evt_other",
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 随便聊聊"));
+  assert.equal(reactions.length, 0);
+  assert.equal(replies.length, 0);
+  assert.equal(await env.BOT_KV.get(ackKey("om_other")), null);
+});
+
 test("acknowledges a successful forward even when the model call would fail", async () => {
   const replies = [];
   const forwardCalls = [];

@@ -62,6 +62,12 @@ test("classifies clear single-intent questions in Chinese and English", () => {
   }
 });
 
+test("routes fixed-and-repaired questions to a human instead of the version intent", () => {
+  assert.equal(classifyQuestion("修好了吗"), null);
+  assert.equal(classifyQuestion("修复了吗"), null);
+  assert.equal(classifyQuestion("版本"), "version");
+});
+
 test("returns null for vague, compound, or oversized questions", () => {
   const cases = [
     "进度怎么样，顺便把价格改一下",
