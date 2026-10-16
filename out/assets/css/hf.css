@@ -138,6 +138,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   background: var(--accent);
 }
 
+.lang-select {
+  height: 36px;
+  padding: 0 28px 0 12px;
+  border-radius: var(--radius-btn);
+  border: 0;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
 /* ---------- Buttons ---------- */
 .btn-login, .btn-signup, .btn-lime {
   height: 36px;

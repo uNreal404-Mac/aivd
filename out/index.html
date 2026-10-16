@@ -64,6 +64,12 @@
     <a href="/pricing">Pricing</a>
   </nav>
   <div class="hf-nav__right">
+    <select class="lang-select" aria-label="Language">
+      <option value="en">EN</option>
+      <option value="zh">中文</option>
+      <option value="ja">日本語</option>
+      <option value="es">Español</option>
+    </select>
     <a class="btn-login" href="/auth">Login</a>
     <a class="btn-signup" href="/auth?mode=signup">Sign up</a>
     <button class="hf-nav__menu" id="hfNavMenu" type="button" aria-controls="hfNavLinks" aria-expanded="false" aria-label="Open menu">☰</button>
@@ -278,5 +284,6 @@
 document.querySelectorAll('[data-gen-cta="samples"]').forEach(b=>b.addEventListener('click',e=>{const t=document.querySelector('.hf-prompt textarea');if(!t||!t.value.trim()){e.preventDefault();location.href = "/workspace";}}));
 </script>
 
+<script src="/assets/js/i18n.js" defer></script>
 </body>
 </html>

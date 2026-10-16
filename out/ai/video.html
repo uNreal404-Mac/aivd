@@ -30,6 +30,12 @@
   </nav>
   <div class="hf-nav__right">
     <a class="credit-chip" href="/pricing">0 credits</a>
+    <select class="lang-select" aria-label="Language">
+      <option value="en">EN</option>
+      <option value="zh">中文</option>
+      <option value="ja">日本語</option>
+      <option value="es">Español</option>
+    </select>
     <a class="btn-login" href="/auth">Login</a>
     <button class="hf-nav__menu" aria-label="Menu">☰</button>
   </div>
@@ -82,7 +88,7 @@
 
     <button class="gen-submit" id="gen" type="button">Generate</button>
 
-    <p class="notice" id="notice" hidden style="margin-top:12px">Public generation is not open yet — <a href="/pricing">see pricing</a></p>
+    <p class="notice" id="notice" hidden style="margin-top:12px">Coming soon</p>
   </aside>
 
   <section class="gen-result">
@@ -97,15 +103,15 @@
 
     <div class="gen-result__grid" id="grid">
       <figure style="margin:0">
-        <img src="/assets/demo/0_out_68e31a44b7b1d011.jpg" alt="AI video sample" loading="lazy">
+        <img src="/assets/images/g4.webp" alt="AI video sample" loading="lazy">
         <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="/assets/demo/0_out_980c5a0e163959b6.jpg" alt="AI video sample" loading="lazy">
+        <img src="/assets/images/g7.webp" alt="AI video sample" loading="lazy">
         <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="/assets/demo/0_out_f7d00e65d3c1a45d.jpg" alt="AI video sample" loading="lazy">
+        <img src="/assets/images/b1.webp" alt="AI video sample" loading="lazy">
         <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
       </figure>
       <figure style="margin:0">
@@ -125,8 +131,8 @@
     <p class="notice" style="margin-top:16px">
       The DreamUtopia free AI video generator turns a single image or a written prompt into a
       short cinematic clip. Pick a model, choose your duration and aspect ratio, and describe the
-      motion you want — camera moves, mood, lighting and style. Generations normally finish in
-      under two minutes and you keep full ownership of everything you create.
+      motion you want — camera moves, mood, lighting and style. You keep full ownership of
+      everything you create.
     </p>
   </section>
 </main>
@@ -166,9 +172,12 @@
   });
 
   document.getElementById('gen').addEventListener('click', function () {
-    document.getElementById('notice').hidden = false;
+    var notice = document.getElementById('notice');
+    notice.textContent = 'Coming soon';
+    notice.hidden = false;
   });
 })();
 </script>
+<script src="/assets/js/i18n.js" defer></script>
 </body>
 </html>
