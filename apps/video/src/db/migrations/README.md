@@ -13,6 +13,7 @@ Apply the files **manually, in numeric order**, against your database:
 
 ```bash
 psql "$DATABASE_URL" -f src/db/migrations/0001_credit_packages_order_no_unique.sql
+psql "$DATABASE_URL" -f src/db/migrations/0002_referrals.sql
 ```
 
 If you use a different client, run the file's contents the same way — each file
@@ -26,6 +27,7 @@ them is safe.
 | File | Purpose |
 | --- | --- |
 | `0001_credit_packages_order_no_unique.sql` | Dedupes non-null `credit_packages.order_no` values (keeping the earliest row per `order_no`, renaming the rest to `order_no \|\| '_dup_' \|\| id`), then creates the unique index `credit_packages_order_no_unique` on `credit_packages (order_no)`. |
+| `0002_referrals.sql` | Creates `referral_codes` (per-user invite code, unique) and `referrals` (unique `invitee_user_id` / `invitee_email_norm`), plus the index `referrals_inviter_user_id_idx` on `referrals (inviter_user_id)`. |
 
 ## Baseline before using drizzle-kit generate
 

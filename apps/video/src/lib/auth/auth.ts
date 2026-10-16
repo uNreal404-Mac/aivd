@@ -9,6 +9,7 @@ import {
   CreditTransType,
   creditService,
 } from "@/services/credit";
+import { referralService } from "@/services/referral";
 import {
   getProductById,
   getProductExpiryDays,
@@ -320,6 +321,16 @@ export const auth = betterAuth({
           await creditService.grantNewUserCredits(newSession.user.id);
         } catch (error) {
           console.error("[Auth] Failed to grant new user credits:", error);
+          // 不抛出错误，避免影响用户登录
+        }
+
+        try {
+          await referralService.attachFromCookieHeader(
+            newSession.user.id,
+            ctx.headers?.get("cookie")
+          );
+        } catch (error) {
+          console.error("[Auth] Failed to attach referral:", error);
           // 不抛出错误，避免影响用户登录
         }
       }

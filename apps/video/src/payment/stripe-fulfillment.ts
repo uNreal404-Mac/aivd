@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { getProductById, getProductExpiryDays } from "@/config/credits";
 import { creditPackages, db } from "@/db";
 import { CreditTransType, creditService } from "@/services/credit";
+import { referralService } from "@/services/referral";
 
 import type { GrantCreditsOnce } from "@/payment/stripe-webhook";
 
@@ -77,6 +78,14 @@ export const grantCreditsOnce: GrantCreditsOnce = async ({
 
       return "granted" as const;
     });
+
+    if (result === "granted") {
+      try {
+        await referralService.rewardOnFirstPayment(userId);
+      } catch (error) {
+        console.error("[Referral] Failed to reward referral:", error);
+      }
+    }
 
     return result;
   } catch (error) {

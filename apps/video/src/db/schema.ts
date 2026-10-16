@@ -376,3 +376,30 @@ export const VideoStatus = {
   FAILED: "FAILED",
 } as const;
 export type VideoStatus = (typeof VideoStatus)[keyof typeof VideoStatus];
+
+export const referralCodes = pgTable("referral_codes", {
+  userId: text("user_id").primaryKey(),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: serial("id").primaryKey(),
+    inviterUserId: text("inviter_user_id").notNull(),
+    inviteeUserId: text("invitee_user_id").notNull().unique(),
+    inviteeEmailNorm: text("invitee_email_norm").notNull().unique(),
+    status: text("status").default("PENDING").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    rewardedAt: timestamp("rewarded_at"),
+  },
+  (table) => ({
+    inviterUserIdIdx: index("referrals_inviter_user_id_idx").on(
+      table.inviterUserId
+    ),
+  })
+);
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type Referral = typeof referrals.$inferSelect;
