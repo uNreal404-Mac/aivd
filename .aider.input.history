@@ -1,3 +1,0 @@
-
-# 2026-10-16 19:48:10.871730
-+Two fixes. (a) apps/video/src/services/video.ts around line 727: emitVideoEvent expects videoUrl string|undefined; pass `signedUrl ?? undefined`. (b) apps/video/tests/video-generate.test.ts: the vi.mock("@/lib/storage") factory must also export isStorageConfigured: vi.fn(() => true), isStorageKey: (v: string) => Boolean(v) && !/^https?:\/\//.test(v), signMediaRef: vi.fn((v: string | null | undefined) => (v ? `https://signed.test/${v}` : null)), and getStorage should also return getSignedUrl: vi.fn((k: string) => `https://signed.test/${k}`). Change nothing else.
