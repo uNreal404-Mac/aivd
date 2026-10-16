@@ -16,7 +16,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
   }
 
   return (
-    <div className="relative flex h-[45px] items-center justify-center bg-[#D1FE17] px-4 text-[#131517]">
+    <div className="relative flex h-[45px] items-center justify-center bg-[image:var(--du-gradient)] px-4 text-[var(--du-on-accent)]">
       <div className="flex items-center gap-3 text-sm">
         <span className="hidden sm:inline">
           New here? Get starter credits when you create an account
@@ -24,7 +24,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
         <span className="sm:hidden">Get starter credits on sign up</span>
         <Link
           href={`/${lang}/pricing`}
-          className="inline-flex h-7 items-center rounded-md bg-white px-2 text-xs font-medium text-[#131517]"
+          className="inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
         >
           See plans
         </Link>
@@ -33,7 +33,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
         type="button"
         aria-label="Dismiss"
         onClick={() => setVisible(false)}
-        className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[#131517] hover:bg-black/10"
+        className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-white/10"
       >
         <X className="h-4 w-4" />
       </button>

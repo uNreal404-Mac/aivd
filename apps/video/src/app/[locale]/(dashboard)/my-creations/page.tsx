@@ -1,4 +1,5 @@
-import { MyCreationsPage } from "@/components/creation/my-creations-page";
+import { CreationsLibrary } from "@/components/creation/creations-library";
+import "@/styles/creations-tokens.css";
 
 interface PageProps {
   params: Promise<{
@@ -8,5 +9,5 @@ interface PageProps {
 
 export default async function MyCreationsRoute({ params }: PageProps) {
   const { locale } = await params;
-  return <MyCreationsPage locale={locale} />;
+  return <CreationsLibrary locale={locale} />;
 }

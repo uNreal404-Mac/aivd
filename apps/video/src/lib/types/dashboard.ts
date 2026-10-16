@@ -18,6 +18,12 @@ export interface Video {
   parameters: Record<string, unknown>;
   creditsUsed: number;
   errorMessage: string | null;
+  /** Gallery visibility. Older API responses may omit it (treat as "private"). */
+  visibility?: "private" | "public" | null;
+  /** Set only while the video is published to the gallery. */
+  publishedAt?: Date | null;
+  /** The source image of the original generation, when there was one. */
+  startImageUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
