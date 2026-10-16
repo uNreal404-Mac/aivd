@@ -52,7 +52,7 @@ export function LandingFooter() {
           <div className="col-span-2 md:col-span-1">
             <LocaleLink
               href="/"
-              className="flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
+              className="du-tap-inline flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
             >
               🎬 DreamUtopia
             </LocaleLink>
@@ -72,7 +72,7 @@ export function LandingFooter() {
                   <li key={link.title}>
                     <LocaleLink
                       href={link.href}
-                      className="text-sm text-[var(--du-text-muted)] hover:text-[var(--du-accent-text)] transition-colors"
+                      className="du-tap-inline text-sm text-[var(--du-text-muted)] hover:text-[var(--du-accent-text)] transition-colors"
                     >
                       {link.title}
                     </LocaleLink>

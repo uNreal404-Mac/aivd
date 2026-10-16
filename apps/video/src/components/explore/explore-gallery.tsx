@@ -75,7 +75,7 @@ function ExploreCard({ item, lang }: { item: ExploreItem; lang: string }) {
         </div>
         <Link
           href={buildUsePromptHref(lang, item)}
-          className="ex-glass-btn shrink-0 rounded-full px-3 py-1 text-[12px] font-medium"
+          className="ex-glass-btn du-tap-inline shrink-0 rounded-full px-3 py-1 text-[12px] font-medium"
         >
           {copy.use}
         </Link>
@@ -110,8 +110,8 @@ export function ExploreGallery({ lang }: ExploreGalleryProps) {
               onClick={() => setCategory(value)}
               className={
                 isActive
-                  ? "rounded-[var(--ex-radius-chip)] bg-[var(--ex-accent)] px-4 py-1.5 text-sm font-medium text-[var(--ex-on-accent)]"
-                  : "ex-glass-btn rounded-[var(--ex-radius-chip)] px-4 py-1.5 text-sm font-medium"
+                  ? "du-tap rounded-[var(--ex-radius-chip)] bg-[var(--ex-accent)] px-4 py-1.5 text-sm font-medium text-[var(--ex-on-accent)]"
+                  : "du-tap ex-glass-btn rounded-[var(--ex-radius-chip)] px-4 py-1.5 text-sm font-medium"
               }
             >
               {label}

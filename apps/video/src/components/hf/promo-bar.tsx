@@ -24,7 +24,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
         <span className="sm:hidden">Get starter credits on sign up</span>
         <Link
           href={`/${lang}/pricing`}
-          className="inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
+          className="du-tap-inline inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
         >
           See plans
         </Link>
@@ -33,7 +33,7 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
         type="button"
         aria-label="Dismiss"
         onClick={() => setVisible(false)}
-        className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-white/10"
+        className="du-tap absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-white/10"
       >
         <X className="h-4 w-4" />
       </button>

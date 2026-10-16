@@ -348,6 +348,12 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.pr-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
 .pr-table {
   width: 100%;
   min-width: 640px;

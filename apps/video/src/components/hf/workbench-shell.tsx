@@ -95,7 +95,7 @@ export function HfWorkbenchShell({
               <Link
                 key={tab.key}
                 href={`/${lang}/${tab.slug}`}
-                className={`-mb-px border-b-2 pb-2 text-[14px] font-medium transition-colors ${
+                className={`du-tap-inline -mb-px border-b-2 pb-2 text-[14px] font-medium transition-colors ${
                   isActive
                     ? "border-white text-white"
                     : "border-transparent text-white/50 hover:text-white/80"
@@ -140,7 +140,7 @@ export function HfWorkbenchShell({
                 key={key}
                 type="button"
                 onClick={() => setRightTab(key)}
-                className={`flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors ${
+                className={`du-tap flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors ${
                   isActive
                     ? "bg-white/10 text-white"
                     : "text-white/50 hover:text-white/80"
@@ -182,7 +182,7 @@ export function HfWorkbenchShell({
                       key={item}
                       type="button"
                       onClick={() => setFilter(item)}
-                      className={`h-8 rounded-full px-3 text-[14px] font-medium transition-colors ${
+                      className={`du-tap h-8 rounded-full px-3 text-[14px] font-medium transition-colors ${
                         isActive
                           ? "bg-white text-[var(--du-surface)]"
                           : "text-white/60 hover:text-white/80"

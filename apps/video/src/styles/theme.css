@@ -41,6 +41,9 @@
   --du-glass-fallback-bg: rgba(26, 23, 54, 0.92);
   --du-glass-text: #FFFFFF;
   --du-glass-overlay-scrim: rgba(7, 6, 15, 0.55);
+
+  /* Minimum tap target size (mobile accessibility) */
+  --du-tap-min: 44px;
 }
 
 .du-glass {

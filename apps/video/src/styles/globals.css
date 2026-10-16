@@ -592,3 +592,21 @@ html body[data-scroll-locked] {
 .container {
   @apply max-sm:px-4;
 }
+
+/* ============================================
+ * 移动端最小点击区域 (375px)
+ * ============================================
+ * 仅在 <768px 生效，桌面端保持原有外观。
+ */
+@media (max-width: 767px) {
+  .du-tap {
+    min-height: var(--du-tap-min);
+    min-width: var(--du-tap-min);
+  }
+
+  .du-tap-inline {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--du-tap-min);
+  }
+}

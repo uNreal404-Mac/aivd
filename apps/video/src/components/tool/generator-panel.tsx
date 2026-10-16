@@ -310,7 +310,7 @@ export function GeneratorPanel({
                 <DropdownMenuTrigger asChild disabled={isLoading}>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm text-white"
+                    className="du-tap flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm text-white"
                   >
                     {renderModelIcon(currentModel.id, currentModel.name, "sm")}
                     <span>{currentModel.name}</span>
@@ -477,7 +477,7 @@ export function GeneratorPanel({
                         onClick={() => setDuration(d)}
                         disabled={isLoading}
                         className={cn(
-                          "h-10 rounded-lg text-sm font-medium transition-all",
+                          "du-tap h-10 rounded-lg text-sm font-medium transition-all",
                           duration === d
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
@@ -501,7 +501,7 @@ export function GeneratorPanel({
                         onClick={() => setQuality(q)}
                         disabled={isLoading}
                         className={cn(
-                          "h-10 rounded-lg text-sm font-medium transition-all capitalize",
+                          "du-tap h-10 rounded-lg text-sm font-medium transition-all capitalize",
                           quality === q
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted/40 text-muted-foreground hover:bg-muted/60"

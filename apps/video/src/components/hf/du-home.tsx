@@ -66,7 +66,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
 
 function ctaClasses(variant: CtaVariant): string {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-colors";
+    "du-tap-inline inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-colors";
   if (variant === "primary") {
     return `${base} h-12 px-6 bg-[var(--du-accent)] text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)]`;
   }
@@ -160,7 +160,7 @@ export function DuHome({ lang }: { lang: string }) {
                 <Link
                   key={chip.label}
                   href={localizedHref(lang, chip.href)}
-                  className="du-glass-btn inline-flex h-9 items-center gap-2 px-3 text-[13px]"
+                  className="du-glass-btn du-tap-inline inline-flex h-9 items-center gap-2 px-3 text-[13px]"
                 >
                   <Icon name={chip.icon} className="h-4 w-4" />
                   {chip.label}
@@ -223,7 +223,7 @@ export function DuHome({ lang }: { lang: string }) {
           action={
             <Link
               href="#"
-              className="text-sm text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-accent)]"
+              className="du-tap-inline text-sm text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-accent)]"
             >
               View all →
             </Link>
@@ -240,8 +240,8 @@ export function DuHome({ lang }: { lang: string }) {
                 onClick={() => setActive(filter)}
                 className={
                   isActive
-                    ? "h-9 rounded-lg bg-[var(--du-accent)] px-4 text-sm font-medium text-[var(--du-on-accent)]"
-                    : "du-glass-btn h-9 px-4 text-sm"
+                    ? "du-tap-inline h-9 rounded-lg bg-[var(--du-accent)] px-4 text-sm font-medium text-[var(--du-on-accent)]"
+                    : "du-glass-btn du-tap-inline h-9 px-4 text-sm"
                 }
               >
                 {filter}
@@ -306,7 +306,7 @@ export function DuHome({ lang }: { lang: string }) {
               <div className="mt-4 flex justify-end">
                 <Link
                   href={localizedHref(lang, model.href)}
-                  className="du-glass-btn inline-flex h-9 items-center px-3 text-xs"
+                  className="du-glass-btn du-tap-inline inline-flex h-9 items-center px-3 text-xs"
                 >
                   Learn more →
                 </Link>
@@ -337,7 +337,7 @@ export function DuHome({ lang }: { lang: string }) {
               </span>
               <Link
                 href={localizedHref(lang, effect.href)}
-                className="du-glass-btn du-glass-on-media absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
+                className="du-glass-btn du-glass-on-media du-tap-inline absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
               >
                 Try it →
               </Link>

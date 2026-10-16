@@ -240,7 +240,8 @@ export function PricingPage({
           <h2 className="pr-section__title">{copy.compareTitle}</h2>
           <p className="pr-section__sub">{copy.compareSubtitle}</p>
           <div className="pr-table-wrap">
-            <table className="pr-table">
+            <div className="pr-table-scroll">
+              <table className="pr-table">
               <thead>
                 <tr>
                   <th scope="col">{copy.tableFeature}</th>
@@ -292,8 +293,9 @@ export function PricingPage({
                     </td>
                   ))}
                 </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
