@@ -3,18 +3,10 @@ import { videoService } from "@/services/video";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
-import { IMAGE_REF_PATTERN } from "@/lib/storage";
+import { isAllowedImageInput } from "@/lib/image-url-allowlist";
+import { imageRefSchema } from "@/lib/image-ref-schema";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
-
-const imageRefSchema = z
-  .string()
-  .min(1)
-  .max(500)
-  .refine(
-    (value) => /^https?:\/\//.test(value) || IMAGE_REF_PATTERN.test(value),
-    "Invalid image reference",
-  );
 
 const generateSchema = z.object({
   prompt: z.string().min(1).max(5000),
@@ -43,6 +35,20 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request);
     const body = await request.json();
     const data = generateSchema.parse(body);
+
+    const imageUrls = [
+      ...(data.imageUrl ? [data.imageUrl] : []),
+      ...(data.imageUrls ?? []),
+    ];
+    if (
+      imageUrls.some(
+        (imageUrl) => !isAllowedImageInput(imageUrl, { userId: user.id }),
+      )
+    ) {
+      return apiError("Image URL host is not allowed.", 400, {
+        code: "IMAGE_URL_NOT_ALLOWED",
+      });
+    }
 
     const headerKey = request.headers.get("Idempotency-Key");
     const idempotencyKey = headerKey

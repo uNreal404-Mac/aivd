@@ -16,10 +16,12 @@ import {
   RESULT_FILTERS,
   RIGHT_TABS,
   STUDIO_MODELS,
+  UNAVAILABLE_LABEL,
   canGenerate,
   defaultSettings,
   estimateCredits,
   selectModel,
+  submitGeneration,
 } from "@/lib/ai-video-studio";
 import type { StudioSettings } from "@/lib/ai-video-studio";
 
@@ -62,7 +64,9 @@ const HOW_IT_WORKS = [
 
 type ResultItem = {
   id: string;
-  status: "queued";
+  status: "queued" | "failed";
+  videoUuid?: string | null;
+  message?: string;
 };
 
 function chipClass(active: boolean, disabled = false): string {
@@ -70,8 +74,8 @@ function chipClass(active: boolean, disabled = false): string {
     "rounded-[var(--hfv-radius-chip)] border px-3 py-1.5 text-xs transition-colors",
     active
       ? "border-[var(--hfv-chip-active-bg)] bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-      : "border-[var(--hfv-border)] bg-[var(--hfv-chip-bg)] text-[var(--hfv-muted)]",
-    disabled ? "cursor-not-allowed opacity-40" : "hover:opacity-80",
+      : "border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] text-[var(--hfv-text)]",
+    disabled ? "cursor-not-allowed opacity-60" : "hover:opacity-80",
   ].join(" ");
 }
 
@@ -104,6 +108,7 @@ export function AiVideoStudio({
   const [fileName, setFileName] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [results, setResults] = useState<ResultItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[0]);
   const [activeFilter, setActiveFilter] = useState<string>(RESULT_FILTERS[0]);
 
@@ -130,8 +135,8 @@ export function AiVideoStudio({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pickerOpen]);
 
-  function handleGenerate() {
-    if (promptEmpty) {
+  async function handleGenerate() {
+    if (promptEmpty || submitting) {
       return;
     }
 
@@ -142,12 +147,36 @@ export function AiVideoStudio({
       return;
     }
 
+    setSubmitting(true);
     setNotice(null);
-    setResults((previous) => [
-      { id: `clip-${previous.length + 1}`, status: "queued" },
-      ...previous,
-    ]);
-    setActiveTab(RIGHT_TABS[0]);
+
+    const idempotencyKey =
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : String(Date.now());
+
+    try {
+      const result = await submitGeneration(settings, idempotencyKey);
+
+      if (!result.ok) {
+        setNotice(result.message);
+        return;
+      }
+
+      setResults((previous) => [
+        {
+          id: result.videoUuid ?? result.taskId ?? `clip-${previous.length + 1}`,
+          status: "queued",
+          videoUuid: result.videoUuid,
+        },
+        ...previous,
+      ]);
+      setNotice(null);
+      setActiveTab(RIGHT_TABS[0]);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -297,21 +326,26 @@ export function AiVideoStudio({
             <div className="flex flex-col gap-1">
               {STUDIO_MODELS.map((option) => {
                 const selected = option.id === settings.modelId;
+                const unavailable = !option.available;
 
                 return (
                   <button
                     key={option.id}
                     type="button"
                     aria-pressed={selected}
+                    aria-disabled={unavailable}
+                    disabled={unavailable}
                     onClick={() => {
                       setSettings((previous) => selectModel(previous, option.id));
                       setPickerOpen(false);
                     }}
                     className={[
                       "flex items-start gap-2 rounded-[var(--hfv-radius-chip)] px-2.5 py-2 text-left transition-colors",
-                      selected
-                        ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-                        : "text-[var(--hfv-text)] hover:bg-[var(--hfv-panel-3)]",
+                      unavailable
+                        ? "cursor-not-allowed opacity-50"
+                        : selected
+                          ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
+                          : "text-[var(--hfv-text)] hover:bg-[var(--hfv-panel-3)]",
                     ].join(" ")}
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -319,7 +353,11 @@ export function AiVideoStudio({
                         <span className="text-sm font-semibold">
                           {option.name}
                         </span>
-                        {option.badge ? (
+                        {unavailable ? (
+                          <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
+                            {UNAVAILABLE_LABEL}
+                          </span>
+                        ) : option.badge ? (
                           <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-accent)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-accent-text)]">
                             {option.badge}
                           </span>
@@ -434,14 +472,16 @@ export function AiVideoStudio({
 
         <button
           type="button"
-          disabled={promptEmpty}
+          disabled={promptEmpty || submitting}
           onClick={handleGenerate}
           className={[
             "flex h-12 w-full items-center justify-between rounded-[var(--hfv-radius-btn)] bg-[var(--hfv-accent)] px-4 text-[var(--hfv-accent-text)]",
-            promptEmpty ? "cursor-not-allowed opacity-50" : "",
+            promptEmpty || submitting ? "cursor-not-allowed opacity-50" : "",
           ].join(" ")}
         >
-          <span className="font-semibold">Generate</span>
+          <span className="font-semibold">
+            {submitting ? "Submitting…" : "Generate"}
+          </span>
           <span className="flex items-center gap-1.5 text-xs font-semibold">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
             {credits} credits

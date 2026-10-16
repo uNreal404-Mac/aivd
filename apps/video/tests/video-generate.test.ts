@@ -97,6 +97,7 @@ import { videoService, type GenerateVideoParams } from "@/services/video";
 import { creditService } from "@/services/credit";
 import { ApiError } from "@/lib/api/error";
 import { getModelConfig, calculateModelCredits } from "@/config/credits";
+import { getStorage } from "@/lib/storage";
 import {
   countHoldsForUser,
   countTransactions,
@@ -455,5 +456,96 @@ describe("videoService.generate / creditService integration", () => {
       balanceBeforeSecondRelease.availableCredits
     );
     expect(balanceAfterSecondRelease.frozenCredits).toBe(0);
+  });
+
+  it("signs an uploads key before calling the provider", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+
+    // The storage module is mocked for the rest of the suite; pull in the real
+    // module so we can exercise actual SigV4 presigning, then point the mocked
+    // `getStorage` at it for the duration of this test.
+    const realStorage = await vi.importActual<typeof import("@/lib/storage")>(
+      "@/lib/storage"
+    );
+    const mockedGetStorage = vi.mocked(getStorage);
+    const originalGetStorage = mockedGetStorage.getMockImplementation();
+
+    const previousEnv = {
+      STORAGE_ENDPOINT: process.env.STORAGE_ENDPOINT,
+      STORAGE_ACCESS_KEY: process.env.STORAGE_ACCESS_KEY,
+      STORAGE_SECRET_KEY: process.env.STORAGE_SECRET_KEY,
+      STORAGE_BUCKET: process.env.STORAGE_BUCKET,
+    };
+
+    try {
+      process.env.STORAGE_ENDPOINT = "https://acc.r2.cloudflarestorage.com";
+      process.env.STORAGE_ACCESS_KEY = "AK";
+      process.env.STORAGE_SECRET_KEY = "SK";
+      process.env.STORAGE_BUCKET = "b";
+
+      realStorage.resetStorageForTests();
+      mockedGetStorage.mockImplementation(() => realStorage.getStorage());
+
+      fakeProvider.createTask.mockResolvedValueOnce({
+        taskId: "ext_signed_image",
+        provider: "evolink",
+        status: "pending",
+      });
+
+      const rawKey = `uploads/${userId}/input.png`;
+      await videoService.generate({ ...baseParams(userId), imageUrl: rawKey });
+
+      expect(fakeProvider.createTask).toHaveBeenCalledTimes(1);
+
+      const sentParams = fakeProvider.createTask.mock.calls[0][0] as {
+        imageUrl?: string;
+        imageUrls?: string[];
+      };
+      const signed = sentParams.imageUrl ?? sentParams.imageUrls?.[0];
+
+      expect(typeof signed).toBe("string");
+      expect(signed).not.toBe(rawKey);
+      expect(
+        signed?.startsWith("https://acc.r2.cloudflarestorage.com/b/uploads/")
+      ).toBe(true);
+      expect(signed?.includes("X-Amz-Signature=")).toBe(true);
+      expect(signed?.includes("X-Amz-Expires=")).toBe(true);
+    } finally {
+      for (const [key, value] of Object.entries(previousEnv)) {
+        if (value === undefined) {
+          Reflect.deleteProperty(process.env, key);
+        } else {
+          process.env[key] = value;
+        }
+      }
+
+      realStorage.resetStorageForTests();
+
+      if (originalGetStorage) {
+        mockedGetStorage.mockImplementation(originalGetStorage);
+      }
+    }
+  });
+
+  it("rejects another user's uploads key without calling the provider", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+
+    const otherUserId = uniqueUserId("other");
+
+    let caught: unknown;
+    try {
+      await videoService.generate({
+        ...baseParams(userId),
+        imageUrl: `uploads/${otherUserId}/input.png`,
+      });
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeDefined();
+    expect(getErrorCode(caught)).toBe("INVALID_IMAGE_REF");
+    expect(fakeProvider.createTask).not.toHaveBeenCalled();
   });
 });
