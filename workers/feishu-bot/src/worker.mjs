@@ -434,8 +434,8 @@ export function createWorker({
               payload: buildWebhookPayload({ selected: forwarded, context: forwardContext, mentionedBot: true }),
               fetchImpl: workFetch,
               ...(sleep ? { sleep } : {}),
-            }).catch((error) => {
-              console.log(`[feishu-webhook] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
+            }).catch(() => {
+              console.log(`[grok-webhook] message_id=${forwarded.messageId} status=error`);
             })
             : null;
 

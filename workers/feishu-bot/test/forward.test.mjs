@@ -1162,6 +1162,46 @@ test("a failed webhook mirror never affects the email or the acknowledgement", a
   assert.equal(logs.some((line) => line.includes("super-secret-key")), false);
 });
 
+test("a throwing webhook mirror logs only status=error, never the exception", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => { logs.push(args.join(" ")); };
+  try {
+    const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+    const worker = createWorker({
+      fetchImpl: async (url, init = {}) => {
+        if (String(url) === "https://hooks.test/grok") return new Response("", { status: 502 });
+        return baseFetch(url, init);
+      },
+      sleep: async () => { throw new Error("boom-secret-detail"); },
+    });
+    const env = makeEnv();
+    env.RESEND_API_KEY = RESEND_KEY;
+    env.GROK_WEBHOOK_URL = "https://hooks.test/grok";
+    env.GROK_WEBHOOK_KEY = "super-secret-key";
+
+    const response = await send(
+      worker,
+      messagePayload({ text: "随便聊聊", messageId: "om_webthrow", eventId: "evt_webthrow" }),
+      env,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(forwardCalls.length, 1);
+    assert.equal(replies.length, 1);
+    assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.equal(logs.some((line) => line.includes("[grok-webhook] message_id=om_webthrow status=error")), true);
+  assert.equal(logs.some((line) => line.includes("boom-secret-detail")), false);
+  assert.equal(logs.some((line) => line.includes("super-secret-key")), false);
+  assert.equal(logs.some((line) => line.includes("[feishu-webhook]")), false);
+});
+
 test("auto-answers a @bot mention through the LLM when the switch is on", async () => {
   const replies = [];
   const forwardCalls = [];
