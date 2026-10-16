@@ -1,5 +1,6 @@
+import { buildPushBroadcast, buildReleaseBroadcast, broadcastToChats } from "./broadcast.mjs";
 import { HELP_MESSAGE } from "./commands.mjs";
-import { botConfig, isAllowedRequestChat, signOutboundText } from "./config.mjs";
+import { botConfig, isAllowedRequestChat, isBroadcastRepo, signOutboundText } from "./config.mjs";
 import { getTenantAccessToken, replyToMessage, replyUuid, sendTextToChat } from "./feishu-api.mjs";
 import { createIssue, verifyGitHubSignature } from "./github.mjs";
 import { sanitizeRequestText } from "./privacy.mjs";
@@ -12,6 +13,8 @@ export const PUBLIC_ISSUE_NOTICE = "将公开到 GitHub，请勿写客户名、�
 const DELIVERY_PREFIX = "github:delivery:";
 const CLOSED_PREFIX = "github:closed-notified:";
 const decoder = new TextDecoder("utf-8", { fatal: true });
+const WEBHOOK_EVENTS = new Set(["issues", "push", "release"]);
+const BROADCAST_EVENTS = new Set(["push", "release"]);
 
 function headerValue(headers, name) {
   if (headers && typeof headers.get === "function") return headers.get(name);
@@ -187,11 +190,15 @@ export async function handleGithubWebhook({
   const eventName = headerValue(headers, "X-GitHub-Event") || "";
   const deliveryId = headerValue(headers, "X-GitHub-Delivery") || "";
   if (eventName === "ping") return { status: 200, body: "pong" };
-  if (eventName !== "issues") return { status: 200, body: "ok" };
+  if (!WEBHOOK_EVENTS.has(eventName)) return { status: 200, body: "ok" };
 
   if (deliveryId && await kv.get(`${DELIVERY_PREFIX}${deliveryId}`)) {
     return { status: 200, body: "ok" };
   }
+
+  const recordDelivery = async () => {
+    if (deliveryId) await kv.put(`${DELIVERY_PREFIX}${deliveryId}`, "1", { expirationTtl: 604800 });
+  };
 
   let payload;
   try {
@@ -200,12 +207,34 @@ export async function handleGithubWebhook({
     statusError("Invalid GitHub webhook payload", 400);
   }
 
+  const fullName = payload?.repository?.full_name;
+
+  if (BROADCAST_EVENTS.has(eventName)) {
+    if (!isBroadcastRepo(fullName)) {
+      await recordDelivery();
+      return { status: 200, body: "ignored" };
+    }
+    const message = eventName === "push"
+      ? buildPushBroadcast(payload)
+      : buildReleaseBroadcast(payload);
+    if (!message) {
+      await recordDelivery();
+      return { status: 200, body: "ignored" };
+    }
+    await broadcastToChats({ kv, env, fetchImpl, now, message });
+    await recordDelivery();
+    return { status: 200, body: "ok" };
+  }
+
+  if (typeof fullName === "string" && !isBroadcastRepo(fullName)) {
+    await recordDelivery();
+    return { status: 200, body: "ignored" };
+  }
+
   if (payload?.action === "closed" && Number.isFinite(payload?.issue?.number)) {
     await notifyIssueClosed({ kv, env, fetchImpl, now, issue: payload.issue });
   }
 
-  if (deliveryId) {
-    await kv.put(`${DELIVERY_PREFIX}${deliveryId}`, "1", { expirationTtl: 604800 });
-  }
+  await recordDelivery();
   return { status: 200, body: "ok" };
 }

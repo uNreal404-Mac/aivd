@@ -16,6 +16,7 @@ export const botConfig = {
     apiBase: "https://api.github.com",
     owner: "CharlesHarry7",
     repo: "dreamutopia-clone",
+    broadcastRepos: ["CharlesHarry7/dreamutopia-clone", "CharlesHarry7/higgsfield-1"],
     progressIssueNumber: 20,
     requestLabel: "feishu-request",
     userAgent: "dreamutopia-feishu-bot",
@@ -88,6 +89,27 @@ export function resolveAllowedChatIds({ config = botConfig, env = {} } = {}) {
     ? config.allowedChatIds.map((id) => String(id).trim()).filter(Boolean)
     : [];
   return [...new Set([...fromConfig, ...fromEnv])];
+}
+
+function normalizeRepoName(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+export function resolveBroadcastRepos(config = botConfig) {
+  const configured = Array.isArray(config?.github?.broadcastRepos) ? config.github.broadcastRepos : [];
+  const owner = config?.github?.owner;
+  const repo = config?.github?.repo;
+  const fallback = typeof owner === "string" && owner && typeof repo === "string" && repo
+    ? [`${owner}/${repo}`]
+    : [];
+  const names = [...configured, ...fallback].map(normalizeRepoName).filter(Boolean);
+  return [...new Set(names)];
+}
+
+export function isBroadcastRepo(fullName, config = botConfig) {
+  const target = normalizeRepoName(fullName);
+  if (!target) return false;
+  return resolveBroadcastRepos(config).includes(target);
 }
 
 export function isAllowedRequestChat({ chatId, config = botConfig, env = {} } = {}) {
