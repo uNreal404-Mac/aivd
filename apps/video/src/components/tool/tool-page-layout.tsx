@@ -34,6 +34,7 @@ import { HfWorkbenchShell } from "@/components/hf/workbench-shell";
 import { toast } from "sonner";
 
 const TOOL_PREFILL_KEY = "videofly_tool_prefill";
+const TOOL_PREFILL_NOTICE_KEY = "videofly_tool_prefill_notice";
 
 // ============================================================================
 // Types
@@ -93,6 +94,7 @@ export function ToolPageLayout({
   const NOTIFICATION_ASKED_KEY = "videofly_notification_asked";
   const tNotify = useTranslations("Notifications");
   const tTool = useTranslations("ToolPage");
+  const tGallery = useTranslations("Gallery");
 
   // 状态
   const [user, setUser] = useState<any>(null);
@@ -109,6 +111,12 @@ export function ToolPageLayout({
     quality?: string;
     imageUrl?: string;
   } | null>(null);
+  const [prefillNotice, setPrefillNotice] = useState<{
+    modelUnavailable?: boolean;
+    originalModel?: string;
+    needsOwnImage?: boolean;
+  } | null>(null);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
 
   const addGeneratingId = useCallback((videoId: string) => {
     setGeneratingIds((prev) => (prev.includes(videoId) ? prev : [videoId, ...prev]));
@@ -272,6 +280,24 @@ export function ToolPageLayout({
       sessionStorage.removeItem(TOOL_PREFILL_KEY);
     } catch (error) {
       console.warn("Failed to read tool prefill data:", error);
+    }
+  }, []);
+
+  // 读取一次“使用模板”提示（读取后立即移除，避免重复展示）
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem(TOOL_PREFILL_NOTICE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      setPrefillNotice({
+        modelUnavailable: Boolean(parsed?.modelUnavailable),
+        originalModel: parsed?.originalModel,
+        needsOwnImage: Boolean(parsed?.needsOwnImage),
+      });
+      sessionStorage.removeItem(TOOL_PREFILL_NOTICE_KEY);
+    } catch (error) {
+      console.warn("Failed to read tool prefill notice:", error);
     }
   }, []);
 
@@ -617,27 +643,68 @@ export function ToolPageLayout({
   void setActiveTab;
   void tTool;
 
+  const showPrefillNotice =
+    Boolean(prefillNotice) &&
+    !noticeDismissed &&
+    Boolean(prefillNotice?.modelUnavailable || prefillNotice?.needsOwnImage);
+
+  const prefillNoticeNode = showPrefillNotice ? (
+    <div className="mb-3 flex items-start gap-2 rounded-[12px] border border-[var(--du-border-strong)] bg-[var(--du-accent-soft)] px-3 py-2">
+      <div className="flex-1">
+        {prefillNotice?.modelUnavailable ? (
+          <p className="text-[12px] leading-relaxed text-[var(--du-text)]">
+            {tGallery("notices.modelUnavailable", {
+              model: prefillNotice.originalModel ?? "",
+            })}
+          </p>
+        ) : null}
+        {prefillNotice?.needsOwnImage ? (
+          <p className="text-[12px] leading-relaxed text-[var(--du-text)]">
+            {tGallery("notices.needsOwnImage")}
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={() => setNoticeDismissed(true)}
+        className="shrink-0 text-[12px] font-medium text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-text)]"
+      >
+        {tGallery("publishDialog.close")}
+      </button>
+    </div>
+  ) : null;
+
+  const generatorNode = (
+    <>
+      {prefillNoticeNode}
+      <GeneratorPanel
+        toolType={
+          toolRoute as
+            | "image-to-video"
+            | "text-to-video"
+            | "reference-to-video"
+        }
+        isLoading={isSubmitting}
+        onSubmit={handleSubmit}
+        availableModelIds={config.generator.models.available}
+        defaultModelId={config.generator.models.default}
+        initialPrompt={prefillData?.prompt}
+        initialModelId={prefillData?.model}
+        initialDuration={prefillData?.duration}
+        initialAspectRatio={prefillData?.aspectRatio}
+        initialQuality={prefillData?.quality}
+        initialImageUrl={prefillData?.imageUrl}
+      />
+    </>
+  );
+
   // Unauthenticated Layout: Scrollable, Tool Area + Landing Page
   if (!user) {
     return (
       <>
         <div className="flex flex-1 min-w-0 flex-col lg:overflow-y-auto">
           <HfWorkbenchShell
-            generator={
-              <GeneratorPanel
-                toolType={toolRoute as "image-to-video" | "text-to-video" | "reference-to-video"}
-                isLoading={isSubmitting}
-                onSubmit={handleSubmit}
-                availableModelIds={config.generator.models.available}
-                defaultModelId={config.generator.models.default}
-                initialPrompt={prefillData?.prompt}
-                initialModelId={prefillData?.model}
-                initialDuration={prefillData?.duration}
-                initialAspectRatio={prefillData?.aspectRatio}
-                initialQuality={prefillData?.quality}
-                initialImageUrl={prefillData?.imageUrl}
-              />
-            }
+            generator={generatorNode}
             history={
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <h3 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
@@ -667,21 +734,7 @@ export function ToolPageLayout({
     <>
       <div className="flex flex-1 min-w-0 flex-col">
         <HfWorkbenchShell
-          generator={
-            <GeneratorPanel
-              toolType={toolRoute as "image-to-video" | "text-to-video" | "reference-to-video"}
-              isLoading={isSubmitting}
-              onSubmit={handleSubmit}
-              availableModelIds={config.generator.models.available}
-              defaultModelId={config.generator.models.default}
-              initialPrompt={prefillData?.prompt}
-              initialModelId={prefillData?.model}
-              initialDuration={prefillData?.duration}
-              initialAspectRatio={prefillData?.aspectRatio}
-              initialQuality={prefillData?.quality}
-              initialImageUrl={prefillData?.imageUrl}
-            />
-          }
+          generator={generatorNode}
           history={
             <VideoHistoryPanel
               historyItems={historyItems}

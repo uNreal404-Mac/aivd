@@ -26,6 +26,7 @@ them is safe.
 | File | Purpose |
 | --- | --- |
 | `0001_credit_packages_order_no_unique.sql` | Dedupes non-null `credit_packages.order_no` values (keeping the earliest row per `order_no`, renaming the rest to `order_no \|\| '_dup_' \|\| id`), then creates the unique index `credit_packages_order_no_unique` on `credit_packages (order_no)`. |
+| `0003_gallery.sql` | Adds gallery columns to `videos` (`visibility`, `published_at`, `gallery_title`, `gallery_description`, `public_prompt`, `prompt_protected`, `assets_reusable`), adds `user.isSuperAccount`, and creates the `videos_visibility_published_idx` index on `videos (visibility, published_at)`. |
 
 ## Baseline before using drizzle-kit generate
 

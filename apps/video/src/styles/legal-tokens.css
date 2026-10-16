@@ -1,0 +1,12 @@
+:root {
+  --lg-bg: var(--du-bg);
+  --lg-surface: var(--du-surface);
+  --lg-border: var(--du-border);
+  --lg-text: var(--du-text);
+  --lg-muted: var(--du-text-muted);
+  --lg-accent: var(--du-accent-text);
+  --lg-heading-size: 28px;
+  --lg-body-size: 15px;
+  --lg-max-width: 760px;
+  --lg-radius: 16px;
+}

@@ -22,8 +22,14 @@
   "observability": {
     "enabled": true
   },
+  // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY and CALLBACK_HMAC_SECRET are secrets.
+  // Set them with `wrangler secret put <NAME>` — never commit them to this file.
   "vars": {
     "NEXT_PUBLIC_NOINDEX": "true",
-    "VIDEO_GENERATION_ENABLED": "false"
+    "VIDEO_GENERATION_ENABLED": "false",
+    "AI_CALLBACK_URL": "https://dreamutopia-video.pages.dev/api/v1/video/callback",
+    "STORAGE_ENDPOINT": "https://3d16103f94443a1948212feedf4ddcc1.r2.cloudflarestorage.com",
+    "STORAGE_REGION": "auto",
+    "STORAGE_BUCKET": "dreamutopia-video-media"
   }
 }
