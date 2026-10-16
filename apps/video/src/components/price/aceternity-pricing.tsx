@@ -231,9 +231,9 @@ export function AceternityPricing({
               Email{" "}
               <a
                 className="font-medium text-primary hover:underline"
-                href="mailto:support@videofly.app"
+                href="mailto:support@dreamutopia-clone.pages.dev"
               >
-                support@videofly.app
+                support@dreamutopia-clone.pages.dev
               </a>{" "}
               {dictPrice.contact}
               <br />
@@ -260,6 +260,7 @@ interface TabButtonProps {
 function TabButton({ active, children, onClick, showBadge }: TabButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "relative rounded-md px-6 py-2.5 text-sm font-medium transition-all duration-200",

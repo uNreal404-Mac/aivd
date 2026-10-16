@@ -13,7 +13,7 @@ if (PROXY_URL) {
   try {
     // Note: In Next.js server context, undici might not be directly importable
     // We'll use a dynamic require/import approach
-    let undici;
+    let undici: unknown;
 
     // Try CommonJS require first (for server-side compatibility)
     try {
@@ -24,9 +24,18 @@ if (PROXY_URL) {
       console.log(`ℹ️  [Proxy] Undici not available as package, using built-in fetch`);
     }
 
-    if (undici) {
-      const proxyAgent = new undici.ProxyAgent(PROXY_URL);
-      undici.setGlobalDispatcher(proxyAgent);
+    if (
+      undici &&
+      typeof undici === "object" &&
+      "ProxyAgent" in undici &&
+      "setGlobalDispatcher" in undici
+    ) {
+      const { ProxyAgent, setGlobalDispatcher } = undici as {
+        ProxyAgent: new (url: string) => unknown;
+        setGlobalDispatcher: (dispatcher: unknown) => void;
+      };
+      const proxyAgent = new ProxyAgent(PROXY_URL);
+      setGlobalDispatcher(proxyAgent);
       console.log(`📡 [Proxy] Global proxy configured: ${PROXY_URL}`);
     }
   } catch (error) {

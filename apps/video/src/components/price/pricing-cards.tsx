@@ -28,7 +28,7 @@ export function PricingCards({
   const isYearlyDefault = true;
   const [isYearly, setIsYearly] = useState<boolean>(isYearlyDefault);
   const signInModal = useSigninModal();
-  const pricingData = priceDataMap[locale] || priceDataMap['en'];
+  const pricingData = priceDataMap[locale] || priceDataMap.en;
   const toggleBilling = () => {
     setIsYearly(!isYearly);
   };
@@ -133,9 +133,9 @@ export function PricingCards({
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@videofly.app"
+            href="mailto:support@dreamutopia-clone.pages.dev"
           >
-            support@videofly.app
+            support@dreamutopia-clone.pages.dev
           </a>{" "}
           {t('contact')}
           <br />

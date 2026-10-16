@@ -142,10 +142,10 @@ export function FAQSection() {
               <p className="text-muted-foreground">
                 {t("contact")}
                 <a
-                  href="mailto:support@videofly.app"
+                  href="mailto:support@dreamutopia-clone.pages.dev"
                   className="text-primary hover:underline mx-1"
                 >
-                  support@videofly.app
+                  support@dreamutopia-clone.pages.dev
                 </a>
               </p>
             </motion.div>

@@ -268,9 +268,9 @@ export function CreemPricing({
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@videofly.app"
+            href="mailto:support@dreamutopia-clone.pages.dev"
           >
-            support@videofly.app
+            support@dreamutopia-clone.pages.dev
           </a>{" "}
           {dictPrice.contact}
           <br />

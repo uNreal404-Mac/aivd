@@ -36,7 +36,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const offset = (page - 1) * limit;
 
   // 获取用户总数（带搜索）
-  let totalUsersResult;
+  let totalUsersResult: { count: number }[];
   if (search) {
     totalUsersResult = await db
       .select({ count: count() })
@@ -49,7 +49,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const totalPages = Math.ceil(totalUsers / limit);
 
   // 获取用户列表
-  let usersList;
+  let usersList: (typeof users.$inferSelect)[];
   if (search) {
     usersList = await db
       .select()
