@@ -22,145 +22,157 @@ import type { SeoLandingContent } from "./seo-landing";
 
 const EN_ANIMATE_IMAGE_AI: SeoLandingContent = {
   path: "/animate-image-ai",
-  title: "Animate an Image — Bring a Still Photo to Life",
+  title: "Make Your Photo Move — Bring Old Photos to Life",
   description:
-    "Animate a photo with an AI workflow. Describe the subtle motion you want for a portrait, landscape or illustration, then open the generator.",
-  h1: "Animate an Image",
+    "Bring old family photos, portraits and illustrations to life with subtle motion — a smile, a blink, hair in the wind or a slow camera push.",
+  h1: "Make Your Photo Move",
   heroSub:
-    "Start from one still picture and describe the small movements that bring it to life.",
-  promptPlaceholder: "Describe how the still should move…",
+    "Start from a single photograph and describe the small movements that make it feel alive.",
+  promptPlaceholder: "Describe how the photo should move…",
   ctaLabel: "Open the generator",
-  whatTitle: "What does it mean to animate an image?",
+  whatTitle: "What does it mean to make a photo move?",
   whatBody: [
-    "Animating a still means keeping the picture you already have and adding movement inside it. The framing, subject and light stay familiar — only the motion is new.",
-    "That suits portraits, landscapes and illustrations where you want a gentle change: drifting light, a slight turn, a slow push in. The image stays recognisable instead of turning into another scene.",
+    "Making a photo move keeps the picture you already have and adds movement inside it. The framing, the subject and the light stay as they were — only the motion is new.",
+    "That suits old family photos, portraits and illustrations where you want a gentle change: a smile forming, a blink, hair lifted by the wind, a slow camera push. The picture stays recognisable instead of turning into another scene.",
   ],
   stepsTitle: "How it works",
   steps: [
     {
-      title: "Pick the still",
-      body: "Choose one clear image — a portrait, a landscape or a finished illustration. A readable subject gives the motion something to hold on to.",
+      title: "Pick the photo",
+      body: "Choose one clear picture — an old family photo, a portrait or a finished illustration. A readable subject gives the motion something to hold on to.",
     },
     {
-      title: "Describe small movements",
-      body: "Name the change you want: drifting light, a slight head turn, a slow push in. Subtle wording usually reads better than large movements.",
+      title: "Describe the small movements",
+      body: "Name the change you want: a smile, a blink, hair in the wind, a slow push in. Gentle wording usually reads better than large movements.",
     },
     {
       title: "Generate and refine",
-      body: "Open the generator, run the prompt, then adjust the wording until the motion sits naturally inside the still.",
+      body: "Open the generator, run the prompt, then adjust the wording until the motion sits naturally inside the photograph.",
     },
   ],
   compareTitle: "Models you can choose",
   compareRows: [
     {
       model: "Seedance 1.5 Pro",
-      bestFor: "Gentle, believable motion for portraits, landscapes and illustration",
-      input: "Image, text",
+      bestFor: "Gentle, believable motion for old photos, portraits and illustrations",
+      input: "Photo, text",
     },
     {
       model: "Seedance 1.0 Pro Fast",
-      bestFor: "Straightforward motion from a single still",
-      input: "Image, text",
+      bestFor: "Straightforward motion from a single photo",
+      input: "Photo, text",
     },
     {
       model: "Seedance 1.0 Pro Quality",
-      bestFor: "Highest-detail Seedance 1.0 look for a still image",
-      input: "Image, text",
+      bestFor: "The most detailed Seedance 1.0 look for a photo",
+      input: "Photo, text",
     },
   ],
   faqTitle: "Frequently asked questions",
   faq: [
     {
-      q: "Which images can I animate?",
-      a: "Portraits, landscapes, illustrations and other stills with a readable subject and a simple background.",
+      q: "Which photos can I make move?",
+      a: "Old family photos, portraits, illustrations and other stills with a readable subject and a simple background.",
     },
     {
       q: "How much motion should I ask for?",
       a: "Subtle motion is usually the most believable, and small movements keep the original picture recognisable.",
     },
     {
-      q: "Can I animate an illustration rather than a photograph?",
-      a: "Yes. Illustrations work well, and a clear drawing style gives the model consistent cues.",
+      q: "Will it restore or colorize my old photo?",
+      a: "No. It adds motion to the photo exactly as it is — the original picture, its tone and its character stay as they were.",
     },
     {
-      q: "Do I still need to write a prompt?",
-      a: "Yes. The image sets the starting point and your description of the motion decides what changes.",
+      q: "What is the difference from the Image to Video tool?",
+      a: "This page is about bringing a single photo to life with gentle motion, such as a smile or a slow push in. The Image to Video tool is the general workflow for turning any image into a clip.",
     },
     {
       q: "Can I choose the shape of the clip?",
       a: "Yes. Vertical, widescreen and square ratios are available, and you pick one in the generator.",
     },
   ],
+  related: [
+    {
+      label: "Need the general Image to Video tool? Open Image to Video",
+      path: "/image-to-video",
+    },
+  ],
 };
 
 const ZH_ANIMATE_IMAGE_AI: SeoLandingContent = {
   path: "/animate-image-ai",
-  title: "让图片动起来 — 让静态照片活起来",
+  title: "让照片动起来 — 让老照片、人像和插画活过来",
   description:
-    "用 AI 让静态照片动起来：描述人像、风景或插画中你想要的细微运动，然后打开生成器开始创作。",
-  h1: "让图片动起来",
-  heroSub: "从一张静态图片出发，描述让它活起来的细微动作。",
-  promptPlaceholder: "描述这张静态图片应该如何运动…",
+    "让老照片、家人合影、人像和插画获得细微的运动——一个微笑、一次眨眼、风吹动头发，或者镜头缓慢推近。",
+  h1: "让照片动起来",
+  heroSub: "从一张照片出发，描述让它活起来的细微动作。",
+  promptPlaceholder: "描述这张照片应该如何运动…",
   ctaLabel: "打开生成器",
-  whatTitle: "让图片动起来是什么意思？",
+  whatTitle: "让照片动起来是什么意思？",
   whatBody: [
-    "让静态图片动起来，是在保留原有画面的基础上加入运动。构图、主体和光线保持熟悉，只有运动是新的。",
-    "这适合人像、风景和插画：你想要的是光线流动、轻微转身、缓慢推近这样的细微变化，让原图保持可辨识，而不是变成另一个场景。",
+    "让照片动起来，是在保留原有画面的基础上加入运动。构图、主体和光线保持原样，只有运动是新的。",
+    "这适合老照片、人像和插画：你想要的是微笑浮现、眨眼、头发被风吹动、镜头缓慢推近这样的细微变化，让照片保持可辨识，而不是变成另一个场景。",
   ],
   stepsTitle: "它是怎样工作的",
   steps: [
     {
-      title: "挑选静态图片",
-      body: "选择一张主体清晰的图片：人像、风景或完成的插画。主体越明确，运动越有依托。",
+      title: "挑选照片",
+      body: "选择一张主体清晰的照片：老照片、人像或完成的插画。主体越明确，运动越有依托。",
     },
     {
       title: "描述细微的运动",
-      body: "写出你想要的变化：光线流动、轻微转头、缓慢推近。细微的措辞通常比大幅运动更自然。",
+      body: "写出你想要的变化：微笑、眨眼、头发被风吹动、缓慢推近。细微的措辞通常比大幅运动更自然。",
     },
     {
       title: "生成并微调",
-      body: "打开生成器运行提示词，再调整措辞，直到运动自然地融入画面。",
+      body: "打开生成器运行提示词，再调整措辞，直到运动自然地融入照片。",
     },
   ],
   compareTitle: "可以选择的模型",
   compareRows: [
     {
       model: "Seedance 1.5 Pro",
-      bestFor: "人像、风景与插画的细微自然运动",
-      input: "图片、文字",
+      bestFor: "老照片、人像与插画的细微自然运动",
+      input: "照片、文字",
     },
     {
       model: "Seedance 1.0 Pro Fast",
-      bestFor: "从单张静态图出发的简洁运动",
-      input: "图片、文字",
+      bestFor: "从单张照片出发的简洁运动",
+      input: "照片、文字",
     },
     {
       model: "Seedance 1.0 Pro Quality",
-      bestFor: "Seedance 1.0 系列中细节最丰富的静态图效果",
-      input: "图片、文字",
+      bestFor: "Seedance 1.0 系列中细节最丰富的照片效果",
+      input: "照片、文字",
     },
   ],
   faqTitle: "常见问题",
   faq: [
     {
-      q: "可以给哪些图片加上运动？",
-      a: "人像、风景、插画等主体清晰、背景简洁的静态画面都可以。",
+      q: "可以给哪些照片加上运动？",
+      a: "老照片、人像、插画等主体清晰、背景简洁的静态画面都可以。",
     },
     {
       q: "运动幅度应该写多大？",
-      a: "细微运动通常最自然，小幅度变化也能让原图保持可辨识。",
+      a: "细微运动通常最自然，小幅度变化也能让照片保持可辨识。",
     },
     {
-      q: "插画也能动起来吗？",
-      a: "可以。插画同样适用，清晰的绘画风格能给模型稳定的参考。",
+      q: "会修复或上色我的老照片吗？",
+      a: "不会。这里做的是在照片原样基础上加入运动，原有画面、色调和质感都保持不变。",
     },
     {
-      q: "只放图片、不写提示词可以吗？",
-      a: "需要写。图片决定起点，你对运动的描述决定画面如何变化。",
+      q: "和「图片生成视频」工具有什么区别？",
+      a: "这一页关注的是让单张照片以细微运动活起来，比如一个微笑或缓慢推近；「图片生成视频」工具则是把任意图片转成视频片段的通用流程。",
     },
     {
       q: "可以自己选择画面比例吗？",
       a: "可以。生成器里提供竖版、宽银幕和方形等比例，可以自行选择。",
+    },
+  ],
+  related: [
+    {
+      label: "需要通用的图片生成视频工具？前往「图片生成视频」",
+      path: "/image-to-video",
     },
   ],
 };

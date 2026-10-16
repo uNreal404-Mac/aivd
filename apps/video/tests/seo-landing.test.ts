@@ -326,6 +326,68 @@ describe("seo landing content", () => {
   });
 });
 
+describe("animate-image-ai and image-to-video keyword split", () => {
+  const ANIMATE = "animate-image-ai" as const;
+  const TOOL = "image-to-video" as const;
+
+  it("links the two pages to each other in both locales", () => {
+    for (const locale of LOCALES) {
+      const animate = seoLandingFor(ANIMATE, locale);
+      const tool = seoLandingFor(TOOL, locale);
+
+      expect(animate.related?.map((link) => link.path), `animate/${locale}`).toEqual(
+        ["/image-to-video"],
+      );
+      expect(tool.related?.map((link) => link.path), `tool/${locale}`).toEqual([
+        "/animate-image-ai",
+      ]);
+
+      for (const link of [...(animate.related ?? []), ...(tool.related ?? [])]) {
+        expect(link.label.trim(), `${locale} related label`).not.toBe("");
+        expect(link.path.startsWith("/"), `${locale} related path`).toBe(true);
+      }
+    }
+  });
+
+  it("keeps the two English pages on separate main keywords", () => {
+    const animate = seoLandingFor(ANIMATE, "en");
+    const tool = seoLandingFor(TOOL, "en");
+
+    expect(`${animate.title} ${animate.h1}`).not.toMatch(
+      /image to video|animate an image/i,
+    );
+    expect(`${tool.title} ${tool.h1}`).not.toMatch(/photo move|animate/i);
+  });
+
+  it("keeps the two Chinese pages on separate main keywords", () => {
+    const animate = seoLandingFor(ANIMATE, "zh");
+    const tool = seoLandingFor(TOOL, "zh");
+
+    expect(`${animate.title} ${animate.h1}`).not.toContain("图片生成视频");
+    expect(`${tool.title} ${tool.h1}`).not.toContain("动起来");
+  });
+
+  it("never claims restoration, colorization or upscaling", () => {
+    const banned = /restor|coloriz|upscal|修复|上色/i;
+
+    for (const locale of LOCALES) {
+      const content = seoLandingFor(ANIMATE, locale);
+      const label = `animate-image-ai/${locale}`;
+      const disclaimer = content.faq.find((item) => banned.test(item.q));
+
+      // The words may only appear inside the honest disclaimer question.
+      expect(disclaimer, `${label} disclaimer`).toBeDefined();
+      for (const text of copyStrings(content)) {
+        if (text === disclaimer?.q) continue;
+        expect(text, `${label} ${text}`).not.toMatch(banned);
+      }
+      expect(disclaimer?.a ?? "", `${label} disclaimer answer`).toMatch(
+        /^(No|不会)/,
+      );
+    }
+  });
+});
+
 describe("seo landing structured data", () => {
   it("builds a FAQPage with one question per faq entry", () => {
     const content = seoLandingFor("ai-video-generator", "en");

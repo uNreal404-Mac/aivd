@@ -117,6 +117,21 @@ export function SeoLanding({
         </div>
       </div>
 
+      {content.related?.length ? (
+        <nav
+          aria-label={locale === "zh" ? "相关页面" : "Related pages"}
+          className="seo-related"
+        >
+          <ul>
+            {content.related.map((link) => (
+              <li key={link.path}>
+                <a href={`/${locale}${link.path}`}>{link.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static JSON-LD */}
       <script
         type="application/ld+json"

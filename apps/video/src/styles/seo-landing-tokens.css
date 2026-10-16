@@ -256,3 +256,30 @@
   background: var(--seo-accent-soft);
   border-radius: var(--seo-radius-card);
 }
+
+.seo-related ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seo-related a {
+  color: var(--seo-accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid var(--seo-border-strong);
+}
+
+.seo-related a:hover {
+  color: var(--seo-accent-2);
+}
+
+.seo-related a:focus-visible {
+  outline: 2px solid var(--seo-accent-2);
+  outline-offset: 2px;
+  border-radius: var(--seo-radius-btn);
+}

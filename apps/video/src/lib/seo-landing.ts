@@ -96,6 +96,11 @@ export interface SeoLandingFaqItem {
   a: string;
 }
 
+export interface SeoLandingRelatedLink {
+  label: string;
+  path: string;
+}
+
 export interface SeoLandingContent {
   path: string;
   title: string;
@@ -112,6 +117,7 @@ export interface SeoLandingContent {
   compareRows: SeoLandingCompareRow[];
   faqTitle: string;
   faq: SeoLandingFaqItem[];
+  related?: SeoLandingRelatedLink[];
 }
 
 export interface FaqJsonLd {
@@ -300,7 +306,7 @@ const EN_TEXT_TO_VIDEO: SeoLandingContent = {
 
 const EN_IMAGE_TO_VIDEO: SeoLandingContent = {
   path: "/image-to-video",
-  title: "Image to Video — Animate a Still Picture",
+  title: "Image to Video Tool — Turn Any Image Into a Clip",
   description:
     "Give a still image motion with an image to video workflow. Learn how a picture becomes a clip, then open the generator to begin.",
   h1: "Image to Video",
@@ -351,6 +357,12 @@ const EN_IMAGE_TO_VIDEO: SeoLandingContent = {
     {
       q: "Can I generate from text alone?",
       a: "Yes. Text to video starts from a written prompt with no image needed.",
+    },
+  ],
+  related: [
+    {
+      label: "Want an old photo or portrait to move? See Make Your Photo Move",
+      path: "/animate-image-ai",
     },
   ],
 };
@@ -473,7 +485,7 @@ const ZH_TEXT_TO_VIDEO: SeoLandingContent = {
 
 const ZH_IMAGE_TO_VIDEO: SeoLandingContent = {
   path: "/image-to-video",
-  title: "图片生成视频 — 让静态图片动起来",
+  title: "图片生成视频工具 — 把任意图片转成视频片段",
   description:
     "用图片生成视频给静态画面加上运动：了解一张图片如何变成视频片段，再打开生成器开始创作。",
   h1: "图片生成视频",
@@ -523,6 +535,12 @@ const ZH_IMAGE_TO_VIDEO: SeoLandingContent = {
     {
       q: "只用文字也能生成吗？",
       a: "可以。文字生成视频直接从写好的提示词出发，不需要图片。",
+    },
+  ],
+  related: [
+    {
+      label: "想让老照片或人像动起来？看看「让照片动起来」",
+      path: "/animate-image-ai",
     },
   ],
 };
