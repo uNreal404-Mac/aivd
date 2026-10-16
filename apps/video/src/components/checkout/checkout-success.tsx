@@ -8,6 +8,7 @@ import {
   isValidSessionId,
   shouldKeepPolling,
   type CheckoutStatus,
+  type SubscriptionInfo,
 } from "@/lib/checkout-status";
 
 export type CheckoutSuccessProps = {
@@ -17,7 +18,7 @@ export type CheckoutSuccessProps = {
 
 type View =
   | { kind: "pending" }
-  | { kind: "paid"; credits: number }
+  | { kind: "paid"; credits: number; subscription: SubscriptionInfo | null }
   | { kind: "timeout" }
   | { kind: "error" };
 
@@ -27,6 +28,7 @@ type Copy = {
   pending: string;
   paidTitle: string;
   creditsAdded: string;
+  subscriptionActive: string;
   startCreating: string;
   myCreations: string;
   timeout: string;
@@ -42,6 +44,7 @@ const COPY: Record<"en" | "zh", Copy> = {
     pending: "Confirming your payment…",
     paidTitle: "Payment received",
     creditsAdded: "{credits} credits added to your account",
+    subscriptionActive: "Subscription active until {date}",
     startCreating: "Start creating",
     myCreations: "My creations",
     timeout:
@@ -56,6 +59,7 @@ const COPY: Record<"en" | "zh", Copy> = {
     pending: "正在确认你的付款…",
     paidTitle: "支付成功",
     creditsAdded: "已向你的账户添加 {credits} 积分",
+    subscriptionActive: "订阅已生效，有效期至 {date}",
     startCreating: "开始创作",
     myCreations: "我的作品",
     timeout:
@@ -160,6 +164,31 @@ const STYLES = `
   }
 `;
 
+/** Parse the optional subscription payload; any malformed shape becomes null. */
+function parseSubscription(
+  payload: Record<string, unknown>
+): SubscriptionInfo | null {
+  const raw = payload.subscription;
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const sub = raw as Record<string, unknown>;
+  if (typeof sub.active !== "boolean") {
+    return null;
+  }
+  return {
+    active: sub.active,
+    currentPeriodEnd:
+      typeof sub.currentPeriodEnd === "string" ? sub.currentPeriodEnd : null,
+  };
+}
+
+/** Deterministic (locale-independent) yyyy-mm-dd rendering of an ISO date. */
+function formatSubscriptionDate(iso: string): string {
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? iso : parsed.toISOString().slice(0, 10);
+}
+
 /** Tolerates either the raw status object or an `{ data: ... }` envelope. */
 function parseStatus(body: unknown): CheckoutStatus | null {
   if (!body || typeof body !== "object") {
@@ -172,10 +201,17 @@ function parseStatus(body: unknown): CheckoutStatus | null {
       : root;
 
   if (payload.status === "pending") {
-    return { status: "pending" };
+    return {
+      status: "pending",
+      subscription: parseSubscription(payload) ?? undefined,
+    };
   }
   if (payload.status === "paid" && typeof payload.credits === "number") {
-    return { status: "paid", credits: payload.credits };
+    return {
+      status: "paid",
+      credits: payload.credits,
+      subscription: parseSubscription(payload) ?? undefined,
+    };
   }
   return null;
 }
@@ -222,7 +258,11 @@ export default function CheckoutSuccess({
           return;
         }
         if (status.status === "paid") {
-          setView({ kind: "paid", credits: status.credits });
+          setView({
+            kind: "paid",
+            credits: status.credits,
+            subscription: status.subscription ?? null,
+          });
           return;
         }
 
@@ -271,6 +311,14 @@ export default function CheckoutSuccess({
         <p className="co-text">
           {copy.creditsAdded.replace("{credits}", String(view.credits))}
         </p>
+        {view.subscription?.active && view.subscription.currentPeriodEnd ? (
+          <p className="co-text">
+            {copy.subscriptionActive.replace(
+              "{date}",
+              formatSubscriptionDate(view.subscription.currentPeriodEnd)
+            )}
+          </p>
+        ) : null}
         <div className="co-actions">
           <Link className="co-btn" href={`/${lang}/ai/video`}>
             {copy.startCreating}

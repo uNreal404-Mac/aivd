@@ -2,13 +2,14 @@ import { NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { creditPackages } from "@/db/schema";
+import { creditPackages, customers } from "@/db/schema";
 import { requireAuth } from "@/lib/api/auth";
 import { apiError, apiSuccess, handleApiError } from "@/lib/api/response";
 import {
   isValidSessionId,
   orderNoForSession,
   toCheckoutStatus,
+  toSubscriptionInfo,
 } from "@/lib/checkout-status";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,19 @@ export async function GET(request: NextRequest) {
       )
       .limit(1);
 
-    return apiSuccess(toCheckoutStatus(rows[0]));
+    const customerRows = await db
+      .select({
+        stripeSubscriptionId: customers.stripeSubscriptionId,
+        stripeCurrentPeriodEnd: customers.stripeCurrentPeriodEnd,
+      })
+      .from(customers)
+      .where(eq(customers.authUserId, user.id))
+      .limit(1);
+
+    return apiSuccess({
+      ...toCheckoutStatus(rows[0]),
+      subscription: toSubscriptionInfo(customerRows[0], new Date()),
+    });
   } catch (error) {
     return handleApiError(error);
   }

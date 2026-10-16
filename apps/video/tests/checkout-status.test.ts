@@ -11,6 +11,7 @@ import {
   orderNoForSession,
   shouldKeepPolling,
   toCheckoutStatus,
+  toSubscriptionInfo,
 } from "@/lib/checkout-status";
 
 const read = (relativePath: string) =>
@@ -63,6 +64,93 @@ describe("toCheckoutStatus", () => {
   });
 });
 
+describe("toSubscriptionInfo", () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+
+  it("returns inactive with null date when the row is missing", () => {
+    expect(toSubscriptionInfo(undefined, now)).toEqual({
+      active: false,
+      currentPeriodEnd: null,
+    });
+    expect(toSubscriptionInfo(null, now)).toEqual({
+      active: false,
+      currentPeriodEnd: null,
+    });
+  });
+
+  it("returns inactive when there is no subscription id", () => {
+    expect(
+      toSubscriptionInfo(
+        {
+          stripeSubscriptionId: null,
+          stripeCurrentPeriodEnd: new Date("2027-01-01T00:00:00.000Z"),
+        },
+        now
+      )
+    ).toEqual({
+      active: false,
+      currentPeriodEnd: "2027-01-01T00:00:00.000Z",
+    });
+    expect(
+      toSubscriptionInfo(
+        { stripeSubscriptionId: "", stripeCurrentPeriodEnd: null },
+        now
+      )
+    ).toEqual({ active: false, currentPeriodEnd: null });
+  });
+
+  it("returns inactive when the period end is in the past", () => {
+    expect(
+      toSubscriptionInfo(
+        {
+          stripeSubscriptionId: "sub_123",
+          stripeCurrentPeriodEnd: new Date("2025-12-31T23:59:59.000Z"),
+        },
+        now
+      )
+    ).toEqual({
+      active: false,
+      currentPeriodEnd: "2025-12-31T23:59:59.000Z",
+    });
+  });
+
+  it("returns active when the id exists and the period end is in the future", () => {
+    expect(
+      toSubscriptionInfo(
+        {
+          stripeSubscriptionId: "sub_123",
+          stripeCurrentPeriodEnd: new Date("2027-01-01T00:00:00.000Z"),
+        },
+        now
+      )
+    ).toEqual({
+      active: true,
+      currentPeriodEnd: "2027-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("treats an equal period end as inactive and ignores invalid dates", () => {
+    expect(
+      toSubscriptionInfo(
+        {
+          stripeSubscriptionId: "sub_123",
+          stripeCurrentPeriodEnd: new Date(now.getTime()),
+        },
+        now
+      ).active
+    ).toBe(false);
+    expect(
+      toSubscriptionInfo(
+        {
+          stripeSubscriptionId: "sub_123",
+          stripeCurrentPeriodEnd: new Date("nonsense"),
+        },
+        now
+      )
+    ).toEqual({ active: false, currentPeriodEnd: null });
+  });
+});
+
 describe("shouldKeepPolling", () => {
   it("exposes the expected polling constants", () => {
     expect(POLL_INTERVAL_MS).toBe(2000);
@@ -99,6 +187,7 @@ describe("checkout status route", () => {
       join("src", "app", "api", "v1", "checkout", "status", "route.ts")
     );
     expect(source).not.toContain(".insert(");
+    expect(source).not.toContain("stripe.checkout");
     expect(source).not.toContain(".update(");
     expect(source).not.toContain(".delete(");
   });

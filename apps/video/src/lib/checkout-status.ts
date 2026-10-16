@@ -23,9 +23,22 @@ export function orderNoForSession(sessionId: string): string {
   return `stripe_${sessionId}`;
 }
 
+/**
+ * Subscription state derived from stored records. `active` is only true when
+ * we have a subscription id whose stored period end is still in the future.
+ */
+export type SubscriptionInfo = {
+  active: boolean;
+  currentPeriodEnd: string | null;
+};
+
 export type CheckoutStatus =
-  | { status: "paid"; credits: number }
-  | { status: "pending" };
+  | {
+      status: "paid";
+      credits: number;
+      subscription?: SubscriptionInfo;
+    }
+  | { status: "pending"; subscription?: SubscriptionInfo };
 
 /**
  * Map a credit row (if any) to the client-facing status.
@@ -38,6 +51,37 @@ export function toCheckoutStatus(
     return { status: "paid", credits: row.initialCredits };
   }
   return { status: "pending" };
+}
+
+/**
+ * Map a customer row (if any) to the client-facing subscription status.
+ * Pure: `active` requires both a non-empty id and a valid period end that is
+ * strictly after `now`. `currentPeriodEnd` is an ISO string or null.
+ */
+export function toSubscriptionInfo(
+  row:
+    | {
+        stripeSubscriptionId: string | null;
+        stripeCurrentPeriodEnd: Date | null;
+      }
+    | undefined
+    | null,
+  now: Date
+): SubscriptionInfo {
+  const id = row?.stripeSubscriptionId ?? null;
+  const rawPeriodEnd = row?.stripeCurrentPeriodEnd ?? null;
+  const periodEnd =
+    rawPeriodEnd instanceof Date && !Number.isNaN(rawPeriodEnd.getTime())
+      ? rawPeriodEnd
+      : null;
+
+  const hasId = typeof id === "string" && id.length > 0;
+  const active = hasId && periodEnd !== null && periodEnd.getTime() > now.getTime();
+
+  return {
+    active,
+    currentPeriodEnd: periodEnd ? periodEnd.toISOString() : null,
+  };
 }
 
 export const POLL_INTERVAL_MS = 2000;
