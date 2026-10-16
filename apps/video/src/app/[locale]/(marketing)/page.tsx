@@ -1,6 +1,5 @@
 import { FAQSection } from "@/components/landing/faq-section";
-import { HfExploreHome } from "@/components/hf/explore-home";
-import { HfHomeSections } from "@/components/hf/home-sections";
+import { DuHome } from "@/components/hf/du-home";
 
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
@@ -66,8 +65,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
   return (
     <>
-      <HfExploreHome lang={locale} />
-      <HfHomeSections lang={locale} />
+      <DuHome lang={locale} />
       <FAQSection />
     </>
   );
