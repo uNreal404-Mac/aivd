@@ -455,6 +455,25 @@
   "dashboard": {
     "myCreations": {
       "title": "My Creations",
+      "tabs": {
+        "all": "All",
+        "queued": "Queued",
+        "generating": "Generating",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "view": {
+        "grid": "Grid",
+        "list": "List"
+      },
+      "tag": {
+        "queued": "Queued",
+        "generating": "Generating",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "loadMore": "Load more",
+      "close": "Close",
       "filter": {
         "allStatus": "All Status",
         "all": "All",
@@ -490,7 +509,8 @@
       "empty": {
         "title": "No creations yet",
         "description": "Your generated videos will appear here",
-        "cta": "Start creating"
+        "cta": "Start creating",
+        "ctaStart": "Start Creating"
       },
       "deleteConfirm": {
         "title": "Delete video?",

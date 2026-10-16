@@ -455,6 +455,25 @@
   "dashboard": {
     "myCreations": {
       "title": "我的创作",
+      "tabs": {
+        "all": "全部",
+        "queued": "排队中",
+        "generating": "生成中",
+        "done": "已完成",
+        "failed": "失败"
+      },
+      "view": {
+        "grid": "网格",
+        "list": "列表"
+      },
+      "tag": {
+        "queued": "排队中",
+        "generating": "生成中",
+        "done": "已完成",
+        "failed": "失败"
+      },
+      "loadMore": "加载更多",
+      "close": "关闭",
       "filter": {
         "allStatus": "全部状态",
         "all": "全部",
@@ -490,7 +509,8 @@
       "empty": {
         "title": "暂无创作",
         "description": "您生成的视频将显示在这里",
-        "cta": "开始创作"
+        "cta": "开始创作",
+        "ctaStart": "开始创作"
       },
       "deleteConfirm": {
         "title": "删除视频？",
