@@ -18,7 +18,6 @@ const LEGACY_ALLOWLIST: string[] = [
   "src/components/hf/explore-home.tsx",
   "src/components/landing/cta-section.tsx",
   "src/components/landing/features-section.tsx",
-  "src/components/landing/header.tsx",
   "src/components/landing/how-it-works-section.tsx",
   "src/components/landing/pricing-section.tsx",
   "src/components/landing/showcase-section.tsx",

@@ -79,7 +79,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           aria-disabled="true"
           className={cn(
             "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[var(--du-text-dim)] opacity-60",
-            mobile ? "px-3 py-2" : "hidden px-2 text-[14px] 2xl:flex"
+            mobile ? "min-h-11 px-3 py-2" : "hidden px-2 text-[14px] xl:flex"
           )}
         >
           {content}
@@ -97,7 +97,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           active
             ? "text-[var(--du-accent-text)]"
             : "text-[var(--du-text)] hover:text-[var(--du-accent-text)]",
-          mobile ? "px-3 py-2 text-sm" : "px-2 text-[14px]"
+          mobile ? "min-h-11 px-3 py-2 text-sm" : "px-2 text-[14px]"
         )}
       >
         {content}
@@ -110,7 +110,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       <div className="flex h-full items-center justify-between px-4">
         {/* Left: logo + desktop nav */}
         <div className="flex min-w-0 flex-1 items-center gap-4">
-          <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
+          <Link
+            href={`/${lang}`}
+            className="flex min-h-11 min-w-11 shrink-0 items-center gap-2 lg:min-h-0 lg:min-w-0"
+          >
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
@@ -128,7 +131,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           <Link
             href={`/${lang}/pricing`}
             aria-label="Pricing"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:hidden"
           >
             <Gem className="h-4 w-4" />
           </Link>
@@ -143,7 +146,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {user ? (
             <Link
               href={`/${lang}/my-creations`}
-              className="flex h-9 shrink-0 items-center rounded-[10px] px-1"
+              className="flex h-11 min-w-11 shrink-0 items-center rounded-[10px] px-1 lg:h-9 lg:min-w-0"
               aria-label="My creations"
             >
               <UserAvatar
@@ -170,7 +173,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:hidden"
+                className="flex h-11 min-w-11 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:hidden"
               >
                 Sign up
               </button>
@@ -182,7 +185,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] lg:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -197,7 +200,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link
               href={`/${lang}/pricing`}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--du-text)] hover:text-[var(--du-accent-text)]"
+              className="flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--du-text)] hover:text-[var(--du-accent-text)]"
             >
               <Gem className="h-4 w-4" />
               Pricing
@@ -209,7 +212,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                   setMenuOpen(false);
                   signInModal.onOpen();
                 }}
-                className="mt-1 mx-3 flex h-9 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
+                className="mt-1 mx-3 flex h-11 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
               >
                 Sign up
               </button>
