@@ -11,8 +11,6 @@ import { readAttributionCookie } from "@/lib/attribution";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
-
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import {
   getLocalizedOnetimePackages,
@@ -27,6 +25,7 @@ interface DarkPricingProps {
   userId?: string;
   dictPrice: Record<string, string>;
   dictCredits: CreditsDictionary;
+  paymentsEnabled?: boolean;
 }
 
 type PricingTab = "onetime" | "monthly" | "yearly";
@@ -57,6 +56,7 @@ export function DarkPricing({
   userId,
   dictPrice,
   dictCredits,
+  paymentsEnabled = false,
 }: DarkPricingProps) {
   const t = useTranslations("PricingCards");
   const [activeTab, setActiveTab] = useState<PricingTab>("monthly");
@@ -113,7 +113,7 @@ export function DarkPricing({
   }, [monthlyProducts, yearlyProducts]);
 
   const handleCheckout = (product: LocalizedPackage) => {
-    if (!PAYMENTS_ENABLED) return;
+    if (!paymentsEnabled) return;
     if (!userId) {
       signInModal.onOpen();
       return;
@@ -271,6 +271,7 @@ export function DarkPricing({
                 onCheckout={handleCheckout}
                 onPortal={handlePortal}
                 signInModal={signInModal}
+                paymentsEnabled={paymentsEnabled}
               />
             );
           })}
@@ -346,6 +347,7 @@ interface PricingCardProps {
   onPortal: () => void;
   signInModal: { onOpen: () => void };
   isRestricted?: boolean;
+  paymentsEnabled?: boolean;
 }
 
 function PricingCard({
@@ -362,6 +364,7 @@ function PricingCard({
   onPortal,
   signInModal,
   isRestricted = false,
+  paymentsEnabled = false,
 }: PricingCardProps) {
   const t = useTranslations("PricingCards");
 
@@ -447,7 +450,7 @@ function PricingCard({
                 <span className="mt-4 block w-full">
                   <button
                     type="button"
-                    disabled={isPending || isRestricted || !PAYMENTS_ENABLED}
+                    disabled={isPending || isRestricted || !paymentsEnabled}
                     onClick={() => onCheckout(product)}
                     className={cn(cardButtonClass, "mt-0")}
                   >
@@ -456,8 +459,8 @@ function PricingCard({
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Processing...
                       </>
-                    ) : !PAYMENTS_ENABLED ? (
-                      "Payments coming soon"
+                    ) : !paymentsEnabled ? (
+                      t("coming_soon")
                     ) : isRestricted ? (
                       "Subscribers Only"
                     ) : product.billingPeriod ? (
@@ -476,6 +479,14 @@ function PricingCard({
             </Tooltip>
           </TooltipProvider>
         )
+      ) : !paymentsEnabled ? (
+        <button
+          type="button"
+          disabled
+          className={cardButtonClass}
+        >
+          {t("coming_soon")}
+        </button>
       ) : (
         <button
           type="button"

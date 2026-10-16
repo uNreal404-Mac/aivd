@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { DarkPricing } from "@/components/price/dark-pricing";
 import { PricingCards } from "@/components/price/pricing-cards";
 import { billingProvider } from "@/config/billing-provider";
+import { isPaymentsConfigured } from "@/lib/payments";
 import { getUserPlans } from "@/services/billing";
 import type { CreditsDictionary } from "@/hooks/use-credit-packages";
 import type { UserSubscriptionPlan } from "@/types";
@@ -18,6 +19,7 @@ export async function PricingSection({
   const user = await getCurrentUser();
   let subscriptionPlan: UserSubscriptionPlan | undefined;
   const isCreem = billingProvider === "creem";
+  const paymentsEnabled = isPaymentsConfigured();
 
   if (user && !isCreem) {
     subscriptionPlan = await getUserPlans(user.id);
@@ -46,6 +48,7 @@ export async function PricingSection({
             userId={user?.id}
             dictPrice={dictPrice}
             dictCredits={dictCredits}
+            paymentsEnabled={paymentsEnabled}
           />
         ) : (
           <PricingCards
