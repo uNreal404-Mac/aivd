@@ -137,14 +137,14 @@ export function DuHome({ lang }: { lang: string }) {
       <section className="relative overflow-hidden pt-16 pb-12">
         <span className="pointer-events-none absolute -top-24 right-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,var(--du-accent-soft),transparent_70%)]" />
         <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 lg:grid-cols-[55fr_45fr] lg:items-center">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--du-text-dim)]">
               {HERO.eyebrow}
             </p>
-            <h1 className="mt-4 text-5xl font-bold leading-[1] text-[var(--du-text)] sm:text-[64px]">
+            <h1 className="mt-4 text-5xl font-bold leading-[1.1] text-[var(--du-text)] sm:text-[64px]">
               {HERO.titleLead}
               <br />
-              <span className="bg-[image:var(--du-gradient)] bg-clip-text text-transparent">
+              <span className="inline-block bg-[image:var(--du-gradient)] bg-clip-text pb-2 text-transparent">
                 {HERO.titleAccent}
               </span>
             </h1>

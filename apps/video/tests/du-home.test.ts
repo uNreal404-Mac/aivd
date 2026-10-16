@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import * as duHome from "../src/lib/du-home";
+import { SUPPORT_EMAIL } from "@/config/site";
 import {
   CATEGORY_CARDS,
   CATEGORY_FILTERS,
@@ -100,5 +101,12 @@ describe("du-home styling", () => {
     const tsx = readSource("src/components/hf/du-home.tsx");
 
     expect(tsx).not.toMatch(/#[0-9a-fA-F]{6}\b/);
+  });
+});
+
+describe("site config", () => {
+  it("uses the bot inbox as the support address", () => {
+    expect(SUPPORT_EMAIL).toBe("tuapi@mail.grokbot.com");
+    expect(SUPPORT_EMAIL).not.toContain("example.com");
   });
 });

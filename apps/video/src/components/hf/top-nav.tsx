@@ -79,7 +79,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           aria-disabled="true"
           className={cn(
             "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[var(--du-text-dim)] opacity-60",
-            mobile ? "px-3 py-2" : "hidden px-2 text-[14px] xl:flex"
+            mobile ? "px-3 py-2" : "hidden px-2 text-[14px] 2xl:flex"
           )}
         >
           {content}
@@ -109,7 +109,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     <header className="sticky top-0 z-40 h-[52px] border-b border-[var(--du-border)] bg-[var(--du-bg)]">
       <div className="flex h-full items-center justify-between px-4">
         {/* Left: logo + desktop nav */}
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
@@ -118,7 +118,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden min-w-0 items-center gap-1 overflow-hidden lg:flex">
             {NAV_ITEMS.map((item) => renderItem(item))}
           </nav>
         </div>
