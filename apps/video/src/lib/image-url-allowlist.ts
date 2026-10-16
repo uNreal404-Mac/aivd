@@ -5,7 +5,7 @@ export const MEDIA_BUCKET = "dreamutopia-video-media";
 
 /**
  * R2 account hosts are always <32 hex account id>.r2.cloudflarestorage.com.
- * Anything else (custom domains, *.r2.dev, lookalikes) is not our bucket.
+ * Anything else (custom domains, public bucket hosts, lookalikes) is not our bucket.
  */
 const OWN_BUCKET_HOST_PATTERN =
   /^[a-f0-9]{32}\.r2\.cloudflarestorage\.com$/;

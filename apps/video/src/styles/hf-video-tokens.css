@@ -20,10 +20,11 @@
   --hfv-text: #f7f7f8;
   --hfv-muted: #898a8b;
   --hfv-faint: rgba(247, 247, 248, 0.5);
-  --hfv-accent: #d1fe17;
-  --hfv-accent-text: #1a1a1a;
-  --hfv-accent-soft: rgba(209, 254, 23, 0.12);
+  --hfv-accent: #8b5cf6;
+  --hfv-accent-text: #ffffff;
+  --hfv-accent-soft: rgba(139, 92, 246, 0.14);
   --hfv-chip: rgba(255, 255, 255, 0.1);
+  --hfv-chip-bg: rgba(255, 255, 255, 0.1);
   --hfv-chip-active-bg: #f7f7f8;
   --hfv-chip-active-text: #0f1113;
   --hfv-danger: #f0544a;
