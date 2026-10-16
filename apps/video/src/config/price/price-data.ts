@@ -79,13 +79,11 @@ function generatePriceData() {
         zh: [
           "每月 280 积分（约 28 个视频）",
           "高清视频生成（720P/1080P）",
-          "快速生成通道",
           "商业使用权",
         ],
         en: [
           "280 credits/month (~28 videos)",
           "HD video generation (720P/1080P)",
-          "Fast generation",
           "Commercial license",
         ],
       },
@@ -103,13 +101,11 @@ function generatePriceData() {
         zh: [
           "每月 960 积分（约 96 个视频）",
           "高清视频生成（720P/1080P）",
-          "快速生成通道",
           "商业使用权",
         ],
         en: [
           "960 credits/month (~96 videos)",
           "HD video generation (720P/1080P)",
-          "Fast generation",
           "Commercial license",
         ],
       },
@@ -127,13 +123,11 @@ function generatePriceData() {
         zh: [
           "每月 2,850 积分（约 285 个视频）",
           "高清视频生成（720P/1080P）",
-          "快速生成通道",
           "商业使用权",
         ],
         en: [
           "2,850 credits/month (~285 videos)",
           "HD video generation (720P/1080P)",
-          "Fast generation",
           "Commercial license",
         ],
       },

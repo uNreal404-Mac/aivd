@@ -67,7 +67,7 @@ const FEATURED: FeaturedCard[] = [
 const TOOLS: ToolCard[] = [
   {
     title: 'Text to Video',
-    description: 'Describe a scene and render it in seconds.',
+    description: 'Describe a scene and turn it into a video clip.',
     href: '/text-to-video',
     tag: 'Video',
     chip: 'TOP',
