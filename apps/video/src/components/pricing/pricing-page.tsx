@@ -7,9 +7,10 @@ import type { CreditPackageConfig } from "@/config/credits";
 import {
   costPer100Credits,
   displayPlanName,
-  FAQ_ITEMS,
+  faqItemsFor,
   monthlyEquivalentCents,
   plansForPeriod,
+  pricingCopy,
   type BillingPeriod,
 } from "@/components/pricing/pricing-data";
 import { startStripeCheckout } from "@/lib/stripe-checkout-client";
@@ -18,6 +19,7 @@ export interface PricingPageProps {
   paymentsEnabled: boolean;
   subscriptions: CreditPackageConfig[];
   packs: CreditPackageConfig[];
+  locale: string;
 }
 
 /** Formats a cent amount as a USD string, e.g. 2900 -> "$29". */
@@ -30,11 +32,22 @@ function formatCredits(credits: number): string {
   return credits.toLocaleString("en-US");
 }
 
+/** Replaces `{name}` placeholders in a copy template. */
+function fill(template: string, values: Record<string, string>): string {
+  return template.replace(
+    /\{(\w+)\}/g,
+    (match, key: string) => values[key] ?? match
+  );
+}
+
 export function PricingPage({
   paymentsEnabled,
   subscriptions,
   packs,
+  locale,
 }: PricingPageProps) {
+  const copy = pricingCopy(locale);
+  const faq = faqItemsFor(locale);
   const [period, setPeriod] = useState<BillingPeriod>("month");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
@@ -56,16 +69,16 @@ export function PricingPage({
 
     if (!result.ok) {
       setErrorId(productId);
-      setErrorMessage(result.error);
+      setErrorMessage(result.error || copy.errorFallback);
     }
 
     setPendingId(null);
   }
 
   function buttonLabel(productId: string): string {
-    if (!paymentsEnabled) return "Coming soon";
-    if (pendingId === productId) return "Redirecting…";
-    return "Get started";
+    if (!paymentsEnabled) return copy.comingSoon;
+    if (pendingId === productId) return copy.redirecting;
+    return copy.getStarted;
   }
 
   return (
@@ -73,16 +86,13 @@ export function PricingPage({
       <div className="pr-shell">
         {/* ---------- hero ---------- */}
         <header className="pr-hero">
-          <h1 className="pr-hero__title">Plans &amp; pricing</h1>
-          <p className="pr-hero__sub">
-            Choose how much you want to create. Every plan includes credits
-            that work across text-to-video and image-to-video.
-          </p>
+          <h1 className="pr-hero__title">{copy.heroTitle}</h1>
+          <p className="pr-hero__sub">{copy.heroSubtitle}</p>
         </header>
 
         {/* ---------- billing toggle ---------- */}
         <div className="pr-toggle-wrap">
-          <fieldset className="pr-toggle" aria-label="Billing period">
+          <fieldset className="pr-toggle" aria-label={copy.billingPeriodLabel}>
             <button
               type="button"
               className={`pr-toggle__btn${
@@ -91,7 +101,7 @@ export function PricingPage({
               aria-pressed={period === "month"}
               onClick={() => setPeriod("month")}
             >
-              Monthly
+              {copy.monthly}
             </button>
             <button
               type="button"
@@ -101,10 +111,10 @@ export function PricingPage({
               aria-pressed={period === "year"}
               onClick={() => setPeriod("year")}
             >
-              Yearly
+              {copy.yearly}
             </button>
           </fieldset>
-          <span className="pr-toggle__badge">Save ~17%</span>
+          <span className="pr-toggle__badge">{copy.saveBadge}</span>
         </div>
 
         {/* ---------- plan cards ---------- */}
@@ -121,7 +131,7 @@ export function PricingPage({
                 className={`pr-card${isPopular ? " pr-card--popular" : ""}`}
               >
                 {isPopular ? (
-                  <span className="pr-card__ribbon">Most popular</span>
+                  <span className="pr-card__ribbon">{copy.mostPopular}</span>
                 ) : null}
 
                 <h2 className="pr-card__name">{displayPlanName(plan.name)}</h2>
@@ -130,17 +140,21 @@ export function PricingPage({
                   <span className="pr-price__amount">
                     {formatUsd(monthlyEquivalentCents(plan))}
                   </span>
-                  <span className="pr-price__period">/ month</span>
+                  <span className="pr-price__period">{copy.perMonth}</span>
                 </div>
                 <span className="pr-price__note">
                   {isYearly
-                    ? `Billed ${formatUsd(plan.price.amount)} yearly`
-                    : "Billed monthly"}
+                    ? fill(copy.billedYearly, {
+                        amount: formatUsd(plan.price.amount),
+                      })
+                    : copy.billedMonthly}
                 </span>
 
                 <p className="pr-card__credits">
-                  {formatCredits(plan.credits)} credits{" "}
-                  {isYearly ? "per year" : "per month"}
+                  {fill(
+                    isYearly ? copy.creditsPerYear : copy.creditsPerMonth,
+                    { credits: formatCredits(plan.credits) }
+                  )}
                 </p>
 
                 {features.length > 0 ? (
@@ -172,11 +186,8 @@ export function PricingPage({
 
         {/* ---------- credit packs ---------- */}
         <section className="pr-section">
-          <h2 className="pr-section__title">Credit packs</h2>
-          <p className="pr-section__sub">
-            Prefer to top up without a subscription? Buy credits once and spend
-            them whenever inspiration strikes.
-          </p>
+          <h2 className="pr-section__title">{copy.creditPacksTitle}</h2>
+          <p className="pr-section__sub">{copy.creditPacksSubtitle}</p>
           <div className="pr-packs">
             {packs.map((pack) => {
               const features = pack.features ?? [];
@@ -185,11 +196,15 @@ export function PricingPage({
               return (
                 <article key={pack.id} className="pr-pack">
                   <span className="pr-pack__credits">
-                    {formatCredits(pack.credits)} credits
+                    {fill(copy.packCredits, {
+                      credits: formatCredits(pack.credits),
+                    })}
                   </span>
                   <span className="pr-pack__meta">
-                    {formatUsd(pack.price.amount)} ·{" "}
-                    {formatUsd(costPer100Credits(pack))} per 100 credits
+                    {fill(copy.packMeta, {
+                      price: formatUsd(pack.price.amount),
+                      per100: formatUsd(costPer100Credits(pack)),
+                    })}
                   </span>
 
                   {features.length > 0 ? (
@@ -222,15 +237,13 @@ export function PricingPage({
 
         {/* ---------- comparison table ---------- */}
         <section className="pr-section">
-          <h2 className="pr-section__title">Compare plans</h2>
-          <p className="pr-section__sub">
-            Everything each tier includes, side by side.
-          </p>
+          <h2 className="pr-section__title">{copy.compareTitle}</h2>
+          <p className="pr-section__sub">{copy.compareSubtitle}</p>
           <div className="pr-table-wrap">
             <table className="pr-table">
               <thead>
                 <tr>
-                  <th scope="col">Feature</th>
+                  <th scope="col">{copy.tableFeature}</th>
                   {plans.map((plan) => (
                     <th scope="col" key={plan.id}>
                       {displayPlanName(plan.name)}
@@ -240,7 +253,7 @@ export function PricingPage({
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Monthly credits</th>
+                  <th scope="row">{copy.tableMonthlyCredits}</th>
                   {plans.map((plan) => (
                     <td key={plan.id}>
                       {formatCredits(
@@ -252,21 +265,23 @@ export function PricingPage({
                   ))}
                 </tr>
                 <tr>
-                  <th scope="row">Price</th>
+                  <th scope="row">{copy.tablePrice}</th>
                   {plans.map((plan) => (
                     <td key={plan.id}>
-                      {formatUsd(monthlyEquivalentCents(plan))} / month
+                      {fill(copy.tablePricePerMonth, {
+                        price: formatUsd(monthlyEquivalentCents(plan)),
+                      })}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <th scope="row">Cost per 100 credits</th>
+                  <th scope="row">{copy.tableCostPer100}</th>
                   {plans.map((plan) => (
                     <td key={plan.id}>{formatUsd(costPer100Credits(plan))}</td>
                   ))}
                 </tr>
                 <tr>
-                  <th scope="row">Commercial use</th>
+                  <th scope="row">{copy.tableCommercialUse}</th>
                   {plans.map((plan) => (
                     <td key={plan.id}>
                       {(plan.features ?? []).includes("commercial_use") ? (
@@ -284,12 +299,10 @@ export function PricingPage({
 
         {/* ---------- FAQ ---------- */}
         <section className="pr-section">
-          <h2 className="pr-section__title">Frequently asked questions</h2>
-          <p className="pr-section__sub">
-            Still deciding? These are the questions we hear most.
-          </p>
+          <h2 className="pr-section__title">{copy.faqTitle}</h2>
+          <p className="pr-section__sub">{copy.faqSubtitle}</p>
           <div className="pr-faq">
-            {FAQ_ITEMS.map((item) => (
+            {faq.map((item) => (
               <details key={item.id}>
                 <summary>{item.question}</summary>
                 <p>{item.answer}</p>

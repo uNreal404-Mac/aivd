@@ -45,9 +45,16 @@ export async function generateMetadata({
   };
 }
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}) {
+  const { locale } = await params;
+
   return (
     <PricingPageView
+      locale={locale}
       paymentsEnabled={isPaymentsConfigured()}
       subscriptions={getSubscriptionProducts()}
       packs={getOnetimeProducts()}
