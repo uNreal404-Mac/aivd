@@ -571,6 +571,8 @@
   "Gallery": {
     "title": "作品广场",
     "subtitle": "来自社区的公开作品",
+    "pageTitle": "社区作品",
+    "pageSubtitle": "创作者公开分享的视频，点开可查看提示词并一键用作模板。",
     "empty": "暂无公开作品 —— 成为第一个分享的人吧。",
     "loadMore": "加载更多",
     "useTemplate": "使用模板",

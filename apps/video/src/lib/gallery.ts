@@ -15,6 +15,49 @@ export const ANONYMOUS_AUTHOR = "Anonymous";
 /** Shown when a work has neither a title nor a prompt we may reuse. */
 export const UNTITLED_TITLE = "Untitled";
 
+/** Postgres codes raised when migration 0003_gallery.sql has not been applied. */
+const MISSING_SCHEMA_ERROR_CODES = ["42703", "42P01"] as const;
+/** Fallback for drivers that only surface a human-readable message. */
+const MISSING_SCHEMA_MESSAGE_PATTERN =
+  /column .* does not exist|relation .* does not exist/i;
+
+/**
+ * Whether an error means the gallery migration has not been applied yet.
+ * Drizzle wraps driver failures, so we walk up to three `cause` levels and
+ * accept either a Postgres code or the matching message.
+ */
+export function isMissingGallerySchemaError(error: unknown): boolean {
+  let current: unknown = error;
+
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (typeof current !== "object" || current === null) break;
+
+    const candidate = current as {
+      code?: unknown;
+      message?: unknown;
+      cause?: unknown;
+    };
+
+    if (
+      typeof candidate.code === "string" &&
+      (MISSING_SCHEMA_ERROR_CODES as readonly string[]).includes(candidate.code)
+    ) {
+      return true;
+    }
+
+    if (
+      typeof candidate.message === "string" &&
+      MISSING_SCHEMA_MESSAGE_PATTERN.test(candidate.message)
+    ) {
+      return true;
+    }
+
+    current = candidate.cause;
+  }
+
+  return false;
+}
+
 /**
  * Payload accepted by the publish endpoint. `title` is always required; every
  * other field is optional because a normal account may not set it at all.

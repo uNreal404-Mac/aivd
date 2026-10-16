@@ -7,6 +7,7 @@ import {
   GALLERY_TITLE_MAX,
   buildTemplate,
   canPublish,
+  isMissingGallerySchemaError,
   modelLabelFor,
   publishInputSchema,
   qualityFromResolution,
@@ -401,5 +402,42 @@ describe("modelLabelFor", () => {
     expect(modelLabelFor("kling-v1")).toBe("Kling V1");
     expect(modelLabelFor("veo-3")).toBe("Veo 3");
     expect(modelLabelFor("")).toBe("");
+  });
+});
+
+describe("isMissingGallerySchemaError", () => {
+  it("detects the missing-column and missing-relation Postgres codes", () => {
+    expect(isMissingGallerySchemaError({ code: "42703" })).toBe(true);
+    expect(isMissingGallerySchemaError({ code: "42P01" })).toBe(true);
+  });
+
+  it("walks nested causes up to three levels", () => {
+    const nested = {
+      message: "query failed",
+      cause: { cause: { code: "42P01" } },
+    };
+
+    expect(isMissingGallerySchemaError(nested)).toBe(true);
+  });
+
+  it("detects the message form", () => {
+    expect(
+      isMissingGallerySchemaError(
+        new Error('column "visibility" does not exist')
+      )
+    ).toBe(true);
+    expect(
+      isMissingGallerySchemaError(new Error('relation "videos" does not exist'))
+    ).toBe(true);
+  });
+
+  it("returns false for unrelated or non-object errors", () => {
+    expect(isMissingGallerySchemaError({ code: "23505" })).toBe(false);
+    expect(isMissingGallerySchemaError(new Error("connection refused"))).toBe(
+      false
+    );
+    expect(isMissingGallerySchemaError(null)).toBe(false);
+    expect(isMissingGallerySchemaError(undefined)).toBe(false);
+    expect(isMissingGallerySchemaError("boom")).toBe(false);
   });
 });

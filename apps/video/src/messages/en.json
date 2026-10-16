@@ -571,6 +571,8 @@
   "Gallery": {
     "title": "Gallery",
     "subtitle": "Public works from the community",
+    "pageTitle": "Community Gallery",
+    "pageSubtitle": "Videos shared by creators. Open one to see its prompt and use it as a template.",
     "empty": "No public works yet — be the first to share.",
     "loadMore": "Load more",
     "useTemplate": "Use Template",

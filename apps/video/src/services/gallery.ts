@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api/error";
 import {
   buildTemplate,
   canPublish,
+  isMissingGallerySchemaError,
   resolvePublishFields,
   toGalleryItem,
 } from "@/lib/gallery";
@@ -23,6 +24,24 @@ type PublishDenialCode = Extract<
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 24;
+
+const MISSING_SCHEMA_WARNING =
+  "[gallery] schema not migrated (0003_gallery.sql); returning empty list";
+
+/** Row shape returned by the public gallery join before signing. */
+type GalleryPageRow = {
+  video: typeof videos.$inferSelect;
+  authorName: string | null;
+};
+
+let warnedMissingSchema = false;
+
+/** Emit the missing-migration warning at most once per process. */
+function warnMissingGallerySchema(): void {
+  if (warnedMissingSchema) return;
+  warnedMissingSchema = true;
+  console.warn(MISSING_SCHEMA_WARNING);
+}
 
 /** Map a `canPublish` denial code onto the matching API error. */
 function publishError(code: PublishDenialCode): ApiError {
@@ -159,13 +178,22 @@ export class GalleryService {
       }
     }
 
-    const rows = await db
-      .select({ video: videos, authorName: users.name })
-      .from(videos)
-      .innerJoin(users, eq(users.id, videos.userId))
-      .where(and(...conditions))
-      .orderBy(desc(videos.publishedAt))
-      .limit(limit + 1);
+    let rows: GalleryPageRow[];
+    try {
+      rows = await db
+        .select({ video: videos, authorName: users.name })
+        .from(videos)
+        .innerJoin(users, eq(users.id, videos.userId))
+        .where(and(...conditions))
+        .orderBy(desc(videos.publishedAt))
+        .limit(limit + 1);
+    } catch (error) {
+      if (isMissingGallerySchemaError(error)) {
+        warnMissingGallerySchema();
+        return { items: [], nextCursor: null };
+      }
+      throw error;
+    }
 
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
@@ -187,35 +215,49 @@ export class GalleryService {
 
   /** Fetch a single public work, or throw 404 when it is not public. */
   async getPublic(uuid: string): Promise<GalleryItem> {
-    const [row] = await db
-      .select({ video: videos, authorName: users.name })
-      .from(videos)
-      .innerJoin(users, eq(users.id, videos.userId))
-      .where(
-        and(
-          eq(videos.uuid, uuid),
-          eq(videos.visibility, "public"),
-          eq(videos.isDeleted, false),
-          eq(videos.status, "COMPLETED")
+    try {
+      const [row] = await db
+        .select({ video: videos, authorName: users.name })
+        .from(videos)
+        .innerJoin(users, eq(users.id, videos.userId))
+        .where(
+          and(
+            eq(videos.uuid, uuid),
+            eq(videos.visibility, "public"),
+            eq(videos.isDeleted, false),
+            eq(videos.status, "COMPLETED")
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (!row) {
-      throw new ApiError("Gallery item not found", 404);
+      if (!row) {
+        throw new ApiError("Gallery item not found", 404);
+      }
+
+      return this.signItem(
+        toGalleryItem({ ...row.video, authorName: row.authorName })
+      );
+    } catch (error) {
+      if (isMissingGallerySchemaError(error)) {
+        throw new ApiError("Gallery item not found", 404);
+      }
+      throw error;
     }
-
-    return this.signItem(
-      toGalleryItem({ ...row.video, authorName: row.authorName })
-    );
   }
 
   /** Build the "Use Template" prefill payload for a public work. */
   async getTemplate(uuid: string): Promise<GalleryTemplate> {
-    const item = await this.getPublic(uuid);
-    const models = await getAvailableModels();
+    try {
+      const item = await this.getPublic(uuid);
+      const models = await getAvailableModels();
 
-    return buildTemplate(item, models.map(toModelId));
+      return buildTemplate(item, models.map(toModelId));
+    } catch (error) {
+      if (isMissingGallerySchemaError(error)) {
+        throw new ApiError("Gallery item not found", 404);
+      }
+      throw error;
+    }
   }
 
   /**
