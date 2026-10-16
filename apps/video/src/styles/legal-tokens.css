@@ -1,0 +1,12 @@
+:root {
+  --lg-bg: #07060f;
+  --lg-surface: #13112a;
+  --lg-border: rgba(139, 92, 246, 0.18);
+  --lg-text: #f5f3ff;
+  --lg-muted: #a5a1c2;
+  --lg-accent: #a78bfa;
+  --lg-heading-size: 28px;
+  --lg-body-size: 15px;
+  --lg-max-width: 760px;
+  --lg-radius: 16px;
+}
