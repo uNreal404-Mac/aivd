@@ -28,6 +28,8 @@ export async function forwardToGrok({
   fetchImpl,
   receivedAt,
   sleep = defaultSleep,
+  subjectPrefix = "",
+  extraLines = [],
 }) {
   if (selected?.chatType !== "group") return { ok: false, attempts: 0, status: null };
   if (context?.chatId !== GROK_FORWARD_CHAT_ID) return { ok: false, attempts: 0, status: null };
@@ -51,7 +53,7 @@ export async function forwardToGrok({
   const body = JSON.stringify({
     from: FORWARD_EMAIL_FROM,
     to: FORWARD_EMAIL_TO,
-    subject: `[feishu] ${context.senderName || context.senderOpenId || "unknown"} ${selected.messageId}`,
+    subject: `${subjectPrefix ? `${subjectPrefix} ` : ""}[feishu] ${context.senderName || context.senderOpenId || "unknown"} ${selected.messageId}`,
     text: [
       `sender_name: ${context.senderName ?? ""}`,
       `sender_open_id: ${context.senderOpenId ?? ""}`,
@@ -60,6 +62,7 @@ export async function forwardToGrok({
       `chat_id: ${context.chatId}`,
       `message_id: ${selected.messageId}`,
       `create_time: ${createTime}`,
+      ...(Array.isArray(extraLines) ? extraLines : []),
     ].join("\n"),
   });
 

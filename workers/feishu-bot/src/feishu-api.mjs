@@ -160,6 +160,78 @@ export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, u
   if (payload?.code !== 0) throw new Error("Feishu chat message was rejected");
 }
 
+// Only real user open ids can be mentioned; anything else falls back to a plain text reply.
+const MENTIONABLE_OPEN_ID_PATTERN = /^ou_[A-Za-z0-9_-]+$/;
+
+export async function replyPostToMessage({ token, messageId, text, mentionOpenId, fetchImpl = fetch, uuid }) {
+  if (typeof mentionOpenId !== "string" || !MENTIONABLE_OPEN_ID_PATTERN.test(mentionOpenId)) {
+    return replyToMessage({ token, messageId, text, fetchImpl, uuid });
+  }
+  if (typeof token !== "string" || !token || typeof text !== "string") {
+    throw new TypeError("A token and text reply are required");
+  }
+  const replyId = uuid ?? await replyUuid(messageId);
+  const content = {
+    zh_cn: {
+      title: "",
+      content: [[
+        { tag: "at", user_id: mentionOpenId },
+        { tag: "text", text: ` ${text}` },
+      ]],
+    },
+  };
+  const response = await fetchImpl(`${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reply`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      msg_type: "post",
+      content: JSON.stringify(content),
+      uuid: replyId,
+    }),
+  });
+  const payload = await jsonResponse(response);
+  if (payload?.code !== 0) throw new Error("Feishu post reply was rejected");
+}
+
+const REACTION_RETRY_EMOJI_TYPE = "Get";
+
+export async function addReaction({ token, messageId, emojiType = "OK", fetchImpl = fetch }) {
+  if (typeof token !== "string" || !token || typeof messageId !== "string" || !messageId) {
+    throw new TypeError("A token and message id are required");
+  }
+
+  const post = async (type) => {
+    const response = await fetchImpl(
+      `${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reactions`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ reaction_type: { emoji_type: type } }),
+      },
+    );
+    return jsonResponse(response);
+  };
+
+  // A reaction is a courtesy: failures are logged and never surface to the caller.
+  try {
+    let payload = await post(emojiType);
+    if (payload?.code !== 0) payload = await post(REACTION_RETRY_EMOJI_TYPE);
+    if (payload?.code !== 0) {
+      console.log(`[feishu-reaction] message_id=${messageId} failed code=${payload?.code ?? "unknown"}`);
+    }
+    return payload;
+  } catch (error) {
+    console.log(`[feishu-reaction] message_id=${messageId} failed error=${error?.message ?? error}`);
+    return null;
+  }
+}
+
 export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid, config = botConfig }) {
   if (typeof token !== "string" || !token || typeof text !== "string") {
     throw new TypeError("A token and text reply are required");
