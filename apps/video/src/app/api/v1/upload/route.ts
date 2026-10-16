@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { handleApiError, apiSuccess } from "@/lib/api/response";
-import { getStorage } from "@/lib/storage";
+import { getStorage, isStorageConfigured } from "@/lib/storage";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -17,6 +17,11 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+
+    if (!isStorageConfigured()) {
+      throw new ApiError("Storage not configured", 503);
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 

@@ -9,6 +9,87 @@ export interface StorageConfig {
   publicDomain?: string;
 }
 
+/**
+ * Environment variables required for storage to be usable.
+ * Access/secret keys must be provided via `wrangler secret put` in production.
+ */
+export const STORAGE_REQUIRED_VARS = [
+  "STORAGE_ENDPOINT",
+  "STORAGE_ACCESS_KEY",
+  "STORAGE_SECRET_KEY",
+  "STORAGE_BUCKET",
+] as const;
+
+export type StorageConfigResult =
+  | { ok: true; config: StorageConfig }
+  | { ok: false; missing: string[] };
+
+/** Trim a raw env value, treating empty/whitespace-only strings as unset. */
+function readEnv(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve storage configuration from an env-like record.
+ * Returns the missing variable NAMES (never their values) when incomplete.
+ */
+export function getStorageConfig(
+  env: Record<string, string | undefined> = process.env
+): StorageConfigResult {
+  const endpoint = readEnv(env.STORAGE_ENDPOINT);
+  const accessKeyId = readEnv(env.STORAGE_ACCESS_KEY);
+  const secretAccessKey = readEnv(env.STORAGE_SECRET_KEY);
+  const bucket = readEnv(env.STORAGE_BUCKET);
+
+  const missing: string[] = [];
+  if (!endpoint || !isHttpsUrl(endpoint)) missing.push("STORAGE_ENDPOINT");
+  if (!accessKeyId) missing.push("STORAGE_ACCESS_KEY");
+  if (!secretAccessKey) missing.push("STORAGE_SECRET_KEY");
+  if (!bucket) missing.push("STORAGE_BUCKET");
+
+  if (missing.length > 0) {
+    return { ok: false, missing };
+  }
+
+  return {
+    ok: true,
+    config: {
+      endpoint: endpoint as string,
+      region: readEnv(env.STORAGE_REGION) ?? "auto",
+      accessKeyId: accessKeyId as string,
+      secretAccessKey: secretAccessKey as string,
+      bucket: bucket as string,
+      publicDomain: readEnv(env.STORAGE_DOMAIN),
+    },
+  };
+}
+
+export function isStorageConfigured(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  return getStorageConfig(env).ok;
+}
+
+export class StorageNotConfiguredError extends Error {
+  constructor(public missing: string[]) {
+    super(
+      `Storage is not configured. Missing environment variables: ${missing.join(
+        ", "
+      )}`
+    );
+    this.name = "StorageNotConfiguredError";
+  }
+}
+
 export class Storage {
   private client: s3mini;
   private endpointWithBucket: string;
@@ -90,25 +171,18 @@ let storageInstance: Storage | null = null;
 
 export function getStorage(): Storage {
   if (!storageInstance) {
-    const endpoint = process.env.STORAGE_ENDPOINT;
-    const accessKeyId = process.env.STORAGE_ACCESS_KEY;
-    const secretAccessKey = process.env.STORAGE_SECRET_KEY;
-    const bucket = process.env.STORAGE_BUCKET;
+    const result = getStorageConfig();
 
-    if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
-      throw new Error(
-        "Storage configuration missing. Required: STORAGE_ENDPOINT, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, STORAGE_BUCKET"
-      );
+    if (!result.ok) {
+      throw new StorageNotConfiguredError(result.missing);
     }
 
-    storageInstance = new Storage({
-      endpoint,
-      region: process.env.STORAGE_REGION || "auto",
-      accessKeyId,
-      secretAccessKey,
-      bucket,
-      publicDomain: process.env.STORAGE_DOMAIN,
-    });
+    storageInstance = new Storage(result.config);
   }
   return storageInstance;
+}
+
+/** Test-only helper: clears the cached singleton. */
+export function resetStorageForTests(): void {
+  storageInstance = null;
 }
