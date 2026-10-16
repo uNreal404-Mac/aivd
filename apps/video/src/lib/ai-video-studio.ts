@@ -1,3 +1,5 @@
+import { PROMPT_MAX_LENGTH } from "@/lib/prompt-limits";
+
 export type StudioModel = {
   id: string;
   name: string;
@@ -83,7 +85,7 @@ export type StudioSettings = {
   preset?: string;
 };
 
-export const PROMPT_PARAM_MAX = 5000;
+export const PROMPT_PARAM_MAX = PROMPT_MAX_LENGTH;
 export const PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export function defaultSettings(model?: StudioModel): StudioSettings {

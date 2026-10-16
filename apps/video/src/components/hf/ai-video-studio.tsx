@@ -24,6 +24,7 @@ import {
   submitGeneration,
 } from "@/lib/ai-video-studio";
 import type { StudioSettings } from "@/lib/ai-video-studio";
+import { PROMPT_MAX_LENGTH } from "@/lib/prompt-limits";
 
 const MODES = ["Create", "Edit", "Motion"] as const;
 
@@ -32,8 +33,6 @@ const TAB_ICONS = {
   Library: Film,
   "How it works": BookOpen,
 } as const;
-
-const PROMPT_MAX_LENGTH = 1500;
 
 const LIBRARY_TILES = [
   "City at dusk",

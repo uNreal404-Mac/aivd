@@ -5,11 +5,12 @@ import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { imageRefSchema } from "@/lib/image-ref-schema";
+import { PROMPT_MAX_LENGTH } from "@/lib/prompt-limits";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
 const generateSchema = z.object({
-  prompt: z.string().min(1).max(5000),
+  prompt: z.string().min(1).max(PROMPT_MAX_LENGTH),
   model: z.string().min(1),
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),
