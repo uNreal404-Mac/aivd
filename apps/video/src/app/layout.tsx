@@ -1,8 +1,9 @@
-import { Inter as FontSans } from "next/font/google";
+import { Inter as FontSans, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
 import "@/styles/globals.css";
+import "@/styles/hf-theme.css";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -23,6 +24,12 @@ import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
+});
+
+const fontDisplay = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-display",
 });
 
 // Font files can be colocated inside of `pages`
@@ -124,13 +131,15 @@ export default async function RootLayout({
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable,
+          fontDisplay.variable,
           fontHeading.variable,
         )}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          forcedTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <NextIntlClientProvider messages={messages}>

@@ -281,9 +281,9 @@ export function GeneratorPanel({
   return (
     <div className="h-full flex flex-col">
       {/* Main Card - Pollo.ai Style */}
-      <div className="flex-1 flex flex-col rounded-xl bg-card border border-border overflow-hidden text-foreground">
+      <div className="flex-1 flex flex-col rounded-[16px] bg-transparent overflow-hidden text-foreground">
         {/* Header Bar */}
-        <div className="px-5 py-3 bg-muted/40 border-b border-border shrink-0">
+        <div className="px-1 pb-2 shrink-0">
           <h2 className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
             {getPageTitle()}
           </h2>
@@ -520,7 +520,7 @@ export function GeneratorPanel({
         </div>
 
         {/* Bottom Section - Credits + Generate Button */}
-        <div className="px-5 py-4 bg-muted/40 border-t border-border space-y-4 shrink-0">
+        <div className="px-1 pt-3 pb-1 space-y-3 shrink-0 sticky bottom-0 bg-[#131517]">
           {/* Credits Display */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Credits:</span>
@@ -536,10 +536,10 @@ export function GeneratorPanel({
             onClick={handleSubmit}
             disabled={!canSubmit}
             className={cn(
-              "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all",
+              "w-full h-14 flex items-center justify-center gap-2 px-4 rounded-[12px] text-base font-semibold transition-all shadow-[inset_0_-3px_0_rgba(0,0,0,0.15)]",
               canSubmit
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
+                ? "bg-[#D1FE17] hover:bg-[#D1FE17]/90 text-[#1A1A1A]"
+                : "bg-white/10 text-white/40 cursor-not-allowed"
             )}
           >
             {isLoading ? (

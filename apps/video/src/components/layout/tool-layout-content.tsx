@@ -1,8 +1,6 @@
 "use client";
 
-import { useMobileMenu } from "@/components/layout/mobile-menu-context";
-import { HeaderSimple } from "@/components/layout/header-simple";
-import { Sidebar } from "@/components/layout/sidebar";
+import { HfTopNav } from "@/components/hf/top-nav";
 
 interface ToolLayoutContentProps {
   children: React.ReactNode;
@@ -15,25 +13,19 @@ export function ToolLayoutContent({
   lang,
   user,
 }: ToolLayoutContentProps) {
-  const { mobileMenuOpen, setMobileMenuOpen } = useMobileMenu();
-
   return (
     <div className="min-h-screen bg-background">
-      <HeaderSimple
-        user={user}
+      <HfTopNav
+        user={
+          user
+            ? { name: user.name, email: user.email, image: user.image }
+            : null
+        }
         lang={lang}
-        mobileMenuOpen={mobileMenuOpen}
-        onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
       />
 
-      <div className="flex h-[calc(100vh-64px)]">
-        <Sidebar
-          lang={lang}
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-
-        <div className="flex flex-1 overflow-hidden">{children}</div>
+      <div className="flex lg:h-[calc(100svh-52px)]">
+        <div className="flex flex-1 min-w-0 lg:overflow-hidden">{children}</div>
       </div>
     </div>
   );

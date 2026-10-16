@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { requireAuth } from "@/lib/auth";
-import { HeaderSimple } from "@/components/layout/header-simple";
+import { HfTopNav } from "@/components/hf/top-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
 import { i18n } from "@/config/i18n-config";
@@ -32,7 +32,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderSimple
+      <HfTopNav
         user={{
           name: user.name,
           image: user.image,
@@ -41,7 +41,7 @@ export default async function DashboardLayout({
         lang={locale}
       />
 
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex h-[calc(100vh-52px)]">
         {/* Left Sidebar - Fixed 200px */}
         <Sidebar lang={locale} />
 

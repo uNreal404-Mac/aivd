@@ -1,16 +1,10 @@
-import { HeroSection } from "@/components/landing/hero-section";
-import { FeaturesSection } from "@/components/landing/features-section";
-// import { ShowcaseSection } from "@/components/landing/showcase-section";
-import { HowItWorks } from "@/components/landing/how-it-works-section";
-import { PricingSection } from "@/components/landing/pricing-section";
 import { FAQSection } from "@/components/landing/faq-section";
-import { CTASection } from "@/components/landing/cta-section";
+import { HfExploreHome } from "@/components/hf/explore-home";
 
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { i18n } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
-import { getConfiguredAIProvider } from "@/ai";
 
 interface HomePageProps {
   params: Promise<{
@@ -67,14 +61,11 @@ export async function generateMetadata({ params }: PageMetadataProps) {
 }
 
 export default async function HomePage({ params }: HomePageProps) {
+  const { locale } = await params;
+
   return (
     <>
-      <HeroSection currentProvider={getConfiguredAIProvider()} />
-      {/* <ShowcaseSection /> */}
-      <FeaturesSection />
-      <HowItWorks />
-      <PricingSection />
-      <CTASection />
+      <HfExploreHome lang={locale} />
       <FAQSection />
     </>
   );
