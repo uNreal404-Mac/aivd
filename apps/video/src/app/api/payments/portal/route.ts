@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { customers } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
+import { portalPreflight } from "@/lib/portal-guard";
 import {
   createStripeClient,
   getStripeSecretKey,
@@ -13,27 +14,30 @@ import {
 export const dynamic = "force-dynamic";
 
 export const POST = async (req: NextRequest) => {
-  if (!isPaymentsConfigured()) {
+  const user = await getCurrentUser();
+  const secretKey = getStripeSecretKey();
+
+  const preflight = portalPreflight({
+    authenticated: user !== null,
+    paymentsConfigured: isPaymentsConfigured(),
+    secretKey,
+  });
+
+  if (preflight) {
     return NextResponse.json(
-      { error: "payments_not_configured" },
-      { status: 503 }
+      { error: preflight.error },
+      { status: preflight.status }
     );
   }
 
-  const secretKey = getStripeSecretKey();
-  if (!secretKey || !secretKey.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "test_mode_only" }, { status: 503 });
-  }
-
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  // `portalPreflight` already returned 401/503 when these were missing.
+  const authUserId = user!.id;
+  const stripeKey = secretKey!;
 
   const rows = await db
     .select({ stripeCustomerId: customers.stripeCustomerId })
     .from(customers)
-    .where(eq(customers.authUserId, user.id))
+    .where(eq(customers.authUserId, authUserId))
     .limit(1);
 
   const stripeCustomerId = rows[0]?.stripeCustomerId;
@@ -43,7 +47,7 @@ export const POST = async (req: NextRequest) => {
 
   const origin = new URL(req.url).origin;
 
-  const session = await createStripeClient(secretKey).billingPortal.sessions.create(
+  const session = await createStripeClient(stripeKey).billingPortal.sessions.create(
     {
       customer: stripeCustomerId,
       return_url: `${origin}/account`,
