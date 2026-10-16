@@ -81,7 +81,7 @@ export const NEW_USER_GIFT = {
   /** 是否启用赠送 */
   enabled: true,
   /** 赠送积分数量 */
-  credits: 2,  // 1 个 Sora 2 视频
+  credits: 2,  // 新用户赠送积分
   /** 积分有效期（天）*/
   validDays: 30,
 };
@@ -123,7 +123,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     id: "prod_jsRIeZmqn3L9NN2fiFIn6", // 从 Creem 后台复制 Basic Monthly Product ID
     name: "Basic Plan",
     priceUsd: 9.9,
-    credits: 280, // ~28 Veo 3.1 视频 (60% 毛利率)
+    credits: 280, // Basic 套餐积分
     period: "month" as const,
     popular: false,
     enabled: true,
@@ -133,7 +133,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     id: "prod_3tlZPSRNHZSaNq21zX2Z16", // 从 Creem 后台复制 Pro Monthly Product ID
     name: "Pro Plan",
     priceUsd: 29.9,
-    credits: 960, // ~96 Veo 3.1 视频 (55% 毛利率，比 Basic 便宜 12%)
+    credits: 960, // Pro 套餐积分
     period: "month" as const,
     popular: true, // 推荐
     enabled: true,
@@ -143,7 +143,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     id: "prod_3tlZPSRNHZSaNq22zX2Z18", // 从 Creem 后台复制 Ultimate Monthly Product ID
     name: "Ultimate Plan",
     priceUsd: 79.9,
-    credits: 2850, // ~285 Veo 3.1 视频 (50% 毛利率，比 Basic 便宜 21%)
+    credits: 2850, // Ultimate 套餐积分
     period: "month" as const,
     popular: false,
     enabled: true,
@@ -239,13 +239,9 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
 /**
  * 视频生成模型积分配置
  *
- * 💡 定价说明（基于 Evolink 1:1 成本，向上取整）:
+ * 💡 定价说明（基于 APImart 1:1 成本，向上取整）:
  *
- * 1. **Veo 3.1 Fast Lite**: 固定 10 积分（基准价格）
- * 2. **Sora 2 Lite**: 10s=2积分, 15s=3积分 (无水印)
- * 3. **Wan 2.6**: 720p: 5s=25积分, 10s=50积分, 15s=75积分
- *              1080p × 1.67 倍
- * 4. **Seedance 1.5 Pro**: 按秒计费, 默认有音频
+ * **Seedance 1.5 Pro**: 按秒计费, 默认有音频
  *                          480p: 1.636 Credits/秒 → 2 积分/秒
  *                          720p: 3.557 Credits/秒 → 4 积分/秒
  *                          1080p: 7.932 Credits/秒 → 8 积分/秒
@@ -280,27 +276,6 @@ export const VIDEO_MODEL_PRICING: Record<string, VideoModelPricing> = {
     enabled: true,
   },
 
-  /** Veo 3.1 Fast Lite - Google (暂时隐藏) */
-  "veo-3.1": {
-    baseCredits: 10,
-    perSecond: 0,
-    enabled: false,
-  },
-
-  /** Sora 2 Lite - OpenAI (暂时隐藏) */
-  "sora-2": {
-    baseCredits: 2,
-    perSecond: 0,
-    enabled: false,
-  },
-
-  /** Wan 2.6 (暂时隐藏) */
-  "wan2.6": {
-    baseCredits: 25,
-    perSecond: 5,
-    qualityMultiplier: 1.67,
-    enabled: false,
-  },
 };
 
 // ============================================
