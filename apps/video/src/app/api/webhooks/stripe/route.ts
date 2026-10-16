@@ -1,27 +1,44 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { handleEvent, stripe, type Stripe } from "@/payment";
+import {
+  createStripeClient,
+  getStripeSecretKey,
+} from "@/payment/stripe-checkout";
+import { grantCreditsOnce } from "@/payment/stripe-fulfillment";
+import { handleStripeWebhook } from "@/payment/stripe-webhook";
 
-import { env } from "@/env.mjs";
+const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
 
-const handler = async (req: NextRequest) => {
-  const payload = await req.text();
-  const signature = req.headers.get("Stripe-Signature")!;
+export const dynamic = "force-dynamic";
+
+export const POST = async (req: NextRequest) => {
+  const secretKey = getStripeSecretKey();
+  const webhookSecret = process.env[STRIPE_WEBHOOK_SECRET_VAR]?.trim();
+
+  if (!secretKey || !webhookSecret) {
+    return NextResponse.json(
+      { error: "stripe_not_configured" },
+      { status: 503 }
+    );
+  }
+
   try {
-    const event = stripe.webhooks.constructEvent(
+    const payload = await req.text();
+    const signature = req.headers.get("stripe-signature");
+
+    const result = await handleStripeWebhook({
       payload,
       signature,
-      env.STRIPE_WEBHOOK_SECRET!,
-    ) as Stripe.DiscriminatedEvent;
-    await handleEvent(event);
+      webhookSecret,
+      stripe: createStripeClient(secretKey),
+      grantCreditsOnce,
+    });
 
-    console.log("✅ Handled Stripe Event", event.type);
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json(result.body, { status: result.status });
   } catch (error) {
+    // Never leak verification details; 500 so Stripe retries the delivery.
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.log(`❌ Error when handling Stripe Event: ${message}`);
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error(`❌ Stripe webhook failed: ${message}`);
+    return NextResponse.json({ error: "webhook_failed" }, { status: 500 });
   }
 };
-
-export { handler as GET, handler as POST };

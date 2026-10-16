@@ -125,29 +125,28 @@ export function CreemPricing({
 
     setLoadingProductId(product.id);
     startTransition(async () => {
-      const origin = window.location.origin;
-      // 支付成功后跳转到 credits 页面，同时将当前页面作为 returnTo 参数
-      const currentPath = window.location.pathname;
-      const returnTo = encodeURIComponent(currentPath);
-      const { data, error } = await creem.createCheckout({
-        productId: product.id,
-        successUrl: `${origin}/credits?payment=success&returnTo=${returnTo}`,
-        metadata: {
-          plan: product.id,
-        },
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ productId: product.id }),
       });
 
-      if (error) {
+      const data = (await res.json().catch(() => null)) as {
+        url?: string;
+        error?: string;
+      } | null;
+
+      if (!res.ok) {
         toast.error("Checkout error", {
-          description: error.message ?? "Failed to create checkout session.",
+          description: data?.error ?? "Failed to create checkout session.",
         });
         setLoadingProductId(null);
         return;
       }
 
-      if (!data || !("url" in data) || !data.url) {
+      if (!data?.url) {
         toast.error("Checkout error", {
-          description: "Missing checkout URL from Creem.",
+          description: "Missing checkout URL.",
         });
         setLoadingProductId(null);
         return;
