@@ -10,7 +10,6 @@ import { creem } from "@/lib/auth/client";
 import { readAttributionCookie } from "@/lib/attribution";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import * as Icons from "@/components/ui/icons";
 
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import {
@@ -93,6 +92,23 @@ export function DarkPricing({
     () => allSubscriptionProducts.filter((p) => p.billingPeriod === "year"),
     [allSubscriptionProducts]
   );
+
+  // 计算年付相对月付的最大节省比例（仅基于产品数据，不硬编码）
+  const yearlySavePct = useMemo(() => {
+    const pairs = Math.min(monthlyProducts.length, yearlyProducts.length);
+    let maxPct = 0;
+
+    for (let i = 0; i < pairs; i++) {
+      const monthlyAmount = monthlyProducts[i].price.amount * 12;
+      const yearlyAmount = yearlyProducts[i].price.amount;
+      if (monthlyAmount <= 0) continue;
+
+      const pct = Math.round((1 - yearlyAmount / monthlyAmount) * 100);
+      if (pct > maxPct) maxPct = pct;
+    }
+
+    return maxPct > 0 ? maxPct : 0;
+  }, [monthlyProducts, yearlyProducts]);
 
   const handleCheckout = (product: LocalizedPackage) => {
     if (!userId) {
@@ -182,10 +198,10 @@ export function DarkPricing({
   }, [currentProducts]);
 
   return (
-    <section className="flex flex-col items-center text-center py-6 md:py-6">
+    <section className="flex w-full flex-col text-left">
       {/* Tab 切换 */}
-      <div className="mb-6 mx-auto flex justify-center">
-        <div className="inline-flex rounded-lg bg-muted p-1">
+      <div className="mb-6 flex w-full flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.06] bg-[#1c1d20] p-1">
           <TabButton
             active={activeTab === "onetime"}
             onClick={() => setActiveTab("onetime")}
@@ -201,19 +217,28 @@ export function DarkPricing({
           <TabButton
             active={activeTab === "yearly"}
             onClick={() => setActiveTab("yearly")}
-            showBadge
           >
             {t("yearly")}
-            <span className="ml-1.5 rounded-md bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-              20% OFF
-            </span>
+            {yearlySavePct > 0 && (
+              <span className="ml-1.5 rounded bg-[#d1fe17] px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+                {t("save_percent", { percent: yearlySavePct })}
+              </span>
+            )}
           </TabButton>
         </div>
+        <p className="text-xs text-[#9a9ba0]">{t("billing_note")}</p>
       </div>
 
       {/* 价格卡片 */}
       {currentProducts.length > 0 ? (
-        <div className="mx-auto grid gap-5 bg-inherit py-5 md:grid-cols-[repeat(3,minmax(0,360px))] justify-center">
+        <div
+          className={cn(
+            "grid w-full gap-3",
+            activeTab === "onetime"
+              ? "sm:grid-cols-2 lg:grid-cols-3"
+              : "sm:grid-cols-2 lg:grid-cols-4"
+          )}
+        >
           {currentProducts.map((product, index) => {
             const isRecommended = product.popular === true;
             const isCurrent = activeProductId === product.id && hasAccess;
@@ -246,6 +271,23 @@ export function DarkPricing({
               />
             );
           })}
+          {activeTab !== "onetime" && (
+            <div className="relative flex flex-col rounded-2xl border border-white/[0.06] bg-[#16181b] p-4">
+              <p className="text-2xl font-black uppercase tracking-tight">
+                {t("business_title")}
+              </p>
+              <p className="mt-1 text-sm text-[#9a9ba0]">{t("business_desc")}</p>
+              <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
+                <p className="text-sm text-[#9a9ba0]">{t("business_note")}</p>
+              </div>
+              <div
+                aria-disabled="true"
+                className="mt-4 flex h-11 w-full cursor-not-allowed select-none items-center justify-center rounded-xl bg-white/[0.06] text-sm font-semibold text-[#9a9ba0]"
+              >
+                {t("coming_soon")}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="py-12 text-center text-muted-foreground">
@@ -264,20 +306,18 @@ interface TabButtonProps {
   active: boolean;
   children: React.ReactNode;
   onClick: () => void;
-  showBadge?: boolean;
 }
 
-function TabButton({ active, children, onClick, showBadge }: TabButtonProps) {
+function TabButton({ active, children, onClick }: TabButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "relative rounded-md px-6 py-2.5 text-sm font-semibold transition-all duration-200",
-        !showBadge && "pr-6",
+        "relative h-9 rounded-lg px-4 text-sm font-medium transition-colors",
         active
-          ? "bg-primary text-primary-foreground shadow-md scale-105"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          ? "bg-[#26272b] text-[#f7f7f8]"
+          : "text-[#9a9ba0] hover:text-[#f7f7f8]"
       )}
     >
       {children}
@@ -322,138 +362,143 @@ function PricingCard({
 }: PricingCardProps) {
   const t = useTranslations("PricingCards");
 
+  const cardButtonClass = cn(
+    "mt-4 h-11 w-full rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+    isRecommended
+      ? "bg-[#d1fe17] text-black hover:bg-[#d1fe17]/90"
+      : "bg-white text-black hover:bg-white/90"
+  );
+
   return (
     <div
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-xl border transition-all duration-200",
+        "relative flex flex-col rounded-2xl border p-4",
         isRecommended
-          ? "border-primary shadow-lg z-10 bg-secondary/5"
-          : "border-border bg-card hover:bg-muted/10"
+          ? "border-[#d1fe17]/40 bg-gradient-to-b from-[#d1fe17]/[0.12] via-[#16181b] to-[#16181b]"
+          : "border-white/[0.06] bg-[#16181b]"
       )}
     >
-      {isRecommended && (
-        <div className="absolute top-0 right-0 left-0 h-1 bg-primary" />
-      )}
-      <div className={cn(
-        "min-h-[150px] items-start space-y-4 p-6",
-        isRecommended ? "bg-secondary/40" : "bg-secondary/20"
-      )}>
-        <p className="font-urban flex text-sm font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center">
+        <p className="text-2xl font-black uppercase tracking-tight">
           {product.displayName}
         </p>
-
-        <div className="flex flex-row">
-          <div className="flex items-end gap-2">
-            <div className="flex text-left text-3xl font-semibold leading-6">
-              {formatPrice(product.price.amount)}
-            </div>
-            <div className="-mb-1 ml-2 text-left text-sm font-medium text-muted-foreground">
-              {product.billingPeriod ? (product.billingPeriod === "year" ? t("per_year") : t("per_month")) : ""}
-            </div>
-          </div>
-        </div>
-
-        {/* 显示积分数 */}
-        {product.credits && (
-          <div className="text-left text-sm text-muted-foreground">
-            {dictCredits.title || "Credits"}: {product.credits.toLocaleString()}
-          </div>
+        {isRecommended && (
+          <span className="ml-2 rounded bg-[#d1fe17] px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+            {t("popular")}
+          </span>
         )}
-
-        {product.displayDescription ? (
-          <div className="text-left text-sm text-muted-foreground">
-            {product.displayDescription}
-          </div>
-        ) : null}
       </div>
 
-      <div className="flex h-full flex-col justify-between gap-10 p-6">
-        <ul className="space-y-2 text-left text-sm font-medium leading-normal">
-          {features.map((feature, idx) => (
-            <li className="flex items-start" key={idx}>
-              {feature.included ? (
-                <Icons.Check className="mr-3 h-5 w-5 shrink-0 text-primary" />
-              ) : (
-                <Icons.Close className="mr-3 h-5 w-5 shrink-0 text-destructive" />
+      {product.displayDescription ? (
+        <p className="mt-1 text-sm text-[#9a9ba0]">
+          {product.displayDescription}
+        </p>
+      ) : null}
+
+      {/* 显示积分数 */}
+      {product.credits && (
+        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
+          <p className="text-sm font-semibold">
+            {product.credits.toLocaleString()} {dictCredits.title || "Credits"}
+          </p>
+          {product.billingPeriod === "year" && (
+            <p className="mt-0.5 text-xs text-[#9a9ba0]">
+              {t("credits_per_month", {
+                credits: Math.round(product.credits / 12).toLocaleString(),
+              })}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-end gap-1.5">
+        <span className="text-4xl font-bold leading-none">
+          {formatPrice(product.price.amount)}
+        </span>
+        <span className="text-sm font-medium text-[#9a9ba0]">
+          {product.billingPeriod ? (product.billingPeriod === "year" ? t("per_year") : t("per_month")) : ""}
+        </span>
+      </div>
+
+      {product.billingPeriod === "year" && (
+        <p className="mt-1 text-xs text-[#9a9ba0]">
+          {t("price_per_month", {
+            price: formatPrice(Math.round(product.price.amount / 12)),
+          })}
+        </p>
+      )}
+
+      {userId ? (
+        isCurrent ? (
+          <button
+            type="button"
+            onClick={onPortal}
+            className={cardButtonClass}
+          >
+            {dictPrice.manage_subscription}
+          </button>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="mt-4 block w-full">
+                  <button
+                    type="button"
+                    disabled={isPending || isRestricted}
+                    onClick={() => onCheckout(product)}
+                    className={cn(cardButtonClass, "mt-0")}
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : isRestricted ? (
+                      "Subscribers Only"
+                    ) : product.billingPeriod ? (
+                      dictPrice.upgrade
+                    ) : (
+                      buyCreditsLabel
+                    )}
+                  </button>
+                </span>
+              </TooltipTrigger>
+              {isRestricted && (
+                <TooltipContent>
+                  <p>This pack is only available to active subscribers.</p>
+                </TooltipContent>
               )}
-              <p className={cn(feature.included ? "text-foreground" : "text-muted-foreground")}>
+            </Tooltip>
+          </TooltipProvider>
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={signInModal.onOpen}
+          className={cardButtonClass}
+        >
+          {dictPrice.signup}
+        </button>
+      )}
+
+      <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#9a9ba0]">
+          {t("features")}
+        </p>
+        <ul>
+          {features.map((feature, idx) => (
+            <li className="flex items-start gap-2 py-1 text-sm" key={idx}>
+              {feature.included ? (
+                <IconCheck className="h-4 w-4 shrink-0 text-[#d1fe17]" />
+              ) : (
+                <IconX className="h-4 w-4 shrink-0 text-[#9a9ba0]/60" />
+              )}
+              <p className={cn(feature.included ? "text-[#f7f7f8]" : "text-[#9a9ba0]")}>
                 {feature.text}
               </p>
             </li>
           ))}
         </ul>
-
-        {userId ? (
-          isCurrent ? (
-            <button
-              type="button"
-              onClick={onPortal}
-              className={cn(
-                "w-full rounded-lg py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
-                "hover:opacity-90",
-                isRecommended
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground"
-              )}
-            >
-              {dictPrice.manage_subscription}
-            </button>
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="w-full">
-                    <button
-                      type="button"
-                      disabled={isPending || isRestricted}
-                      onClick={() => onCheckout(product)}
-                      className={cn(
-                        "w-full rounded-lg py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-2",
-                        "disabled:opacity-50 disabled:cursor-not-allowed",
-                        "hover:opacity-90",
-                        isRecommended
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground"
-                      )}
-                    >
-                      {isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : isRestricted ? (
-                        "Subscribers Only"
-                      ) : product.billingPeriod ? (
-                        dictPrice.upgrade
-                      ) : (
-                        buyCreditsLabel
-                      )}
-                    </button>
-                  </span>
-                </TooltipTrigger>
-                {isRestricted && (
-                  <TooltipContent>
-                    <p>This pack is only available to active subscribers.</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          )
-        ) : (
-          <button
-            type="button"
-            onClick={signInModal.onOpen}
-            className={cn(
-              "w-full rounded-lg py-2.5 text-sm font-semibold transition-colors",
-              "hover:opacity-90",
-              isRecommended
-                ? "bg-primary text-primary-foreground"
-                : "border border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground"
-            )}
-          >
-            {dictPrice.signup}
-          </button>
-        )}
       </div>
     </div>
   );

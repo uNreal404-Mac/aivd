@@ -310,7 +310,17 @@
     "contact": "for support.",
     "contact_2": "We're here to help.",
     "manage_subscription": "Manage Subscription",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "save_percent": "Save {percent}%",
+    "billing_note": "Prices in USD. Cancel anytime.",
+    "popular": "Popular",
+    "features": "What's included",
+    "credits_per_month": "≈ {credits} credits / month",
+    "price_per_month": "≈ {price} / month, billed yearly",
+    "business_title": "Business",
+    "business_desc": "Shared workspace and pooled credits for teams",
+    "business_note": "Not available yet",
+    "coming_soon": "Coming soon"
   },
   "PricingFaq": {
     "faq": "Frequently Asked Questions",

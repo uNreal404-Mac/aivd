@@ -30,13 +30,13 @@ export async function PricingSection({
   const Heading = headingLevel;
 
   return (
-    <section className="relative py-24 md:py-32 overflow-hidden">
-      <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <Heading className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+    <section className="relative overflow-hidden bg-[#0f1113] py-16 md:py-20 text-[#f7f7f8]">
+      <div className="mx-auto max-w-[1400px] px-3 sm:px-4">
+        <div className="mb-8 max-w-3xl text-left">
+          <Heading className="text-3xl md:text-5xl font-black uppercase tracking-tight">
             {t("pricing")}
           </Heading>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-2 text-base text-[#9a9ba0]">
             {t("slogan")}
           </p>
         </div>

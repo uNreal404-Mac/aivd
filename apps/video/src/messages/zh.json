@@ -310,7 +310,17 @@
     "contact": "获取支持。",
     "contact_2": "我们随时为您提供帮助。",
     "manage_subscription": "管理订阅",
-    "upgrade": "升级"
+    "upgrade": "升级",
+    "save_percent": "省 {percent}%",
+    "billing_note": "价格以美元计，可随时取消。",
+    "popular": "推荐",
+    "features": "包含内容",
+    "credits_per_month": "≈ 每月 {credits} 积分",
+    "price_per_month": "≈ 每月 {price}，按年付费",
+    "business_title": "团队版",
+    "business_desc": "团队共享工作区与积分池",
+    "business_note": "暂未开放",
+    "coming_soon": "即将推出"
   },
   "PricingFaq": {
     "faq": "常见问题",
