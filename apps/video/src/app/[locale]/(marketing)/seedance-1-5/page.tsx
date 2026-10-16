@@ -16,7 +16,7 @@ export async function generateMetadata({
   const alternates = buildAlternates(`/${pathSegment}`, locale);
 
   return {
-    title: "Seedance 1.5 - DreamUtopia",
+    title: "Seedance 1.5 AI Video Generator",
     description: "Professional AI video generation",
     alternates: {
       canonical: alternates.canonical,

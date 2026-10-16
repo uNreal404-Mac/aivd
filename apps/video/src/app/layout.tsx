@@ -15,8 +15,10 @@ import { QueryProvider } from "@/components/query-provider";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PlausibleAnalytics } from "@/components/plausible-provider";
+import { AttributionCapture } from "@/components/attribution-capture";
 import { i18n } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
+import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -76,6 +78,9 @@ export const metadata = {
     apple: "/apple-touch-icon.png",
   },
   metadataBase: new URL(siteConfig.url),
+  robots: isNoIndexEnvironment()
+    ? NOINDEX_ROBOTS
+    : { index: true, follow: true },
 };
 
 interface RootLayoutProps {
@@ -131,6 +136,7 @@ export default async function RootLayout({
           <NextIntlClientProvider messages={messages}>
             <QueryProvider>
               <PlausibleAnalytics />
+              <AttributionCapture />
               {children}
               <Analytics />
               <SpeedInsights />

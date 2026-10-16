@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { creem } from "@/lib/auth/client";
+import { readAttributionCookie } from "@/lib/attribution";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import * as Icons from "@/components/ui/icons";
@@ -117,6 +118,7 @@ export function DarkPricing({
         successUrl,
         metadata: {
           plan: product.id,
+          attribution: readAttributionCookie() ?? undefined,
         },
       });
 

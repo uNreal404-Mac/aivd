@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: ModelPageProps) {
   const info = modelInfo[pathSegment];
 
   return {
-    title: `${info?.name || "Model"} - DreamUtopia`,
+    title: `${info?.name || "Model"} AI Video Generator`,
     description: info?.description || "AI Video Generation Platform",
     alternates: {
       canonical: alternates.canonical,

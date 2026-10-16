@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { requireAuth } from "@/lib/auth";
@@ -5,6 +6,7 @@ import { HeaderSimple } from "@/components/layout/header-simple";
 import { Sidebar } from "@/components/layout/sidebar";
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
 import { i18n } from "@/config/i18n-config";
+import { NOINDEX_ROBOTS } from "@/lib/indexing";
 
 interface DashboardLayoutProps {
   children?: React.ReactNode;
@@ -12,6 +14,10 @@ interface DashboardLayoutProps {
     locale: string;
   }>;
 }
+
+export const metadata: Metadata = {
+  robots: NOINDEX_ROBOTS,
+};
 
 export function generateStaticParams() {
   return i18n.locales.map((locale) => ({ locale }));

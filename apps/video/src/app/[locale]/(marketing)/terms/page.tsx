@@ -1,10 +1,25 @@
 import { siteConfig } from "@/config/site";
 import type { Locale } from "@/config/i18n-config";
+import { buildAlternates } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-    title: "Terms of Service - DreamUtopia",
-    description: "Terms of Service for DreamUtopia",
-};
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+    const { locale } = await params;
+    const alternates = buildAlternates("/terms", locale);
+
+    return {
+        title: "Terms of Service",
+        description: "Terms of Service for DreamUtopia",
+        alternates: {
+            canonical: alternates.canonical,
+            languages: alternates.languages,
+        },
+    };
+}
 
 export default async function TermsPage({
     params,

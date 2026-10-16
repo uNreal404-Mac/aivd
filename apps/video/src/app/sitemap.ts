@@ -1,5 +1,7 @@
 import { MetadataRoute } from "next";
 import { i18n } from "@/config/i18n-config";
+import { siteConfig } from "@/config/site";
+import { isNoIndexEnvironment } from "@/lib/indexing";
 import { execSync } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
@@ -23,6 +25,27 @@ const getLastModified = (filePath: string): Date => {
   }
   return new Date();
 };
+
+// 需要从 sitemap 中排除的私有/重复路由段（精确匹配：路径等于该段或以该段开头）
+const SKIP_SEGMENTS = [
+  "dashboard",
+  "admin",
+  "auth",
+  "login",
+  "register",
+  "settings",
+  "my-creations",
+  "credits",
+  "privacy-policy",
+  "terms-of-service",
+];
+
+function isSkippedRoute(routePath: string): boolean {
+  const normalized = routePath.replace(/^\//, "");
+  return SKIP_SEGMENTS.some(
+    (segment) => normalized === segment || normalized.startsWith(`${segment}/`)
+  );
+}
 
 /**
  * 递归扫描目录，查找所有 page.tsx 文件
@@ -64,9 +87,8 @@ async function scanPages(
           .replace(/^\//, '')                     // 移除开头的斜杠
           || '/';                                 // 根路径
 
-        // 跳过 dashboard、admin 等不需要 SEO 的页面
-        const skipRoutes = ['dashboard', 'admin', 'auth', 'login', 'register', 'settings'];
-        if (skipRoutes.some(route => routePath.includes(route))) {
+        // 跳过私有/重复页面（精确段匹配，避免误伤 /privacy、/terms）
+        if (isSkippedRoute(routePath)) {
           continue;
         }
 
@@ -105,7 +127,11 @@ async function scanPages(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dreamutopia-clone.pages.dev";
+  if (isNoIndexEnvironment()) {
+    return [];
+  }
+
+  const baseUrl = siteConfig.url;
 
   // 自动扫描所有页面
   const appDir = join(process.cwd(), 'src', 'app', '[locale]');

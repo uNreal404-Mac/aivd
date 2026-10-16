@@ -8,7 +8,13 @@ import { getUserPlans } from "@/services/billing";
 import type { CreditsDictionary } from "@/hooks/use-credit-packages";
 import type { UserSubscriptionPlan } from "@/types";
 
-export async function PricingSection() {
+interface PricingSectionProps {
+  headingLevel?: "h1" | "h2";
+}
+
+export async function PricingSection({
+  headingLevel = "h2",
+}: PricingSectionProps) {
   const user = await getCurrentUser();
   let subscriptionPlan: UserSubscriptionPlan | undefined;
   const isCreem = billingProvider === "creem";
@@ -21,13 +27,15 @@ export async function PricingSection() {
   const dictPrice = (await getTranslations()).raw("PricingCards") as Record<string, string>;
   const dictCredits = (await getTranslations()).raw("Credits") as CreditsDictionary;
 
+  const Heading = headingLevel;
+
   return (
     <section className="relative py-24 md:py-32 overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+          <Heading className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
             {t("pricing")}
-          </h2>
+          </Heading>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {t("slogan")}
           </p>

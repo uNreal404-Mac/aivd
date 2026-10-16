@@ -1,10 +1,25 @@
 import { siteConfig } from "@/config/site";
 import type { Locale } from "@/config/i18n-config";
+import { buildAlternates } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-    title: "Privacy Policy - DreamUtopia",
-    description: "Privacy Policy for DreamUtopia",
-};
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+    const { locale } = await params;
+    const alternates = buildAlternates("/privacy", locale);
+
+    return {
+        title: "Privacy Policy",
+        description: "Privacy Policy for DreamUtopia",
+        alternates: {
+            canonical: alternates.canonical,
+            languages: alternates.languages,
+        },
+    };
+}
 
 export default async function PrivacyPage({
     params,

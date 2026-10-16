@@ -1,14 +1,21 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import { HeaderSimple } from "@/components/layout/header-simple";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { NOINDEX_ROBOTS } from "@/lib/indexing";
+
 interface AdminLayoutProps {
   children?: React.ReactNode;
   params: Promise<{
     locale: string;
   }>;
 }
+
+export const metadata: Metadata = {
+  robots: NOINDEX_ROBOTS,
+};
 
 export default async function AdminLayout({
   children,

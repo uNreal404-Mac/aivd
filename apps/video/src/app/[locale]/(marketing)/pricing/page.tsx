@@ -23,7 +23,7 @@ export async function generateMetadata({
 export default async function PricingPage() {
   return (
     <div className="flex w-full flex-col gap-0">
-      <PricingSection />
+      <PricingSection headingLevel="h1" />
       <FAQSection />
     </div>
   );

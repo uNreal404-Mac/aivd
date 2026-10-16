@@ -8,13 +8,17 @@ export async function generateMetadata({
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
-  const alternates = buildAlternates("/terms-of-service", locale);
+  const alternates = buildAlternates("/terms", locale);
 
   return {
     title: "Terms of Service",
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,
+    },
+    robots: {
+      index: false,
+      follow: true,
     },
   };
 }

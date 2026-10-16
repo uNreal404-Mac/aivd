@@ -16,7 +16,7 @@ export async function generateMetadata({
   const alternates = buildAlternates(`/${pathSegment}`, locale);
 
   return {
-    title: "Wan 2.6 - DreamUtopia",
+    title: "Wan 2.6 AI Video Generator",
     description: "Advanced video generation model",
     alternates: {
       canonical: alternates.canonical,
