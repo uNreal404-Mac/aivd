@@ -1,9 +1,11 @@
-import { getToolPageConfig, getToolPageConfigForProvider } from "@/config/tool-pages";
-import { ToolPageLayout } from "@/components/tool/tool-page-layout";
+import "@/styles/i2v-tokens.css";
+
+import { getToolPageConfig } from "@/config/tool-pages";
+import { I2VStudio } from "@/components/image-to-video/i2v-studio";
+import { isI2VGenerationEnabled } from "@/lib/image-to-video";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
-import { getConfiguredAIProvider } from "@/ai";
 
 interface ImageToVideoPageProps {
   params: Promise<{
@@ -44,17 +46,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function ImageToVideoPage({ params }: ImageToVideoPageProps) {
-  const config = getToolPageConfigForProvider(
-    "image-to-video",
-    getConfiguredAIProvider()
-  );
-  const { locale } = await params;
-  return (
-    <ToolPageLayout
-      config={config}
-      locale={locale}
-      toolRoute="image-to-video"
-    />
-  );
+export default function ImageToVideoPage() {
+  const generationEnabled = isI2VGenerationEnabled();
+
+  return <I2VStudio generationEnabled={generationEnabled} />;
 }
