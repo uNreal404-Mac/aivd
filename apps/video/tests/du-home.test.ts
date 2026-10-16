@@ -104,6 +104,64 @@ describe("du-home styling", () => {
   });
 });
 
+describe("du-glass styling", () => {
+  it("defines every --du-glass-* variable used by the glass styles", () => {
+    const css = readSource("src/styles/du-home-tokens.css");
+    const tsx = readSource("src/components/hf/du-home.tsx");
+
+    const used = new Set(
+      Array.from(
+        `${css}\n${tsx}`.matchAll(/var\((--du-glass-[a-zA-Z0-9-]+)\)/g),
+      ).map((match) => match[1]),
+    );
+
+    expect(used.size).toBeGreaterThan(0);
+    for (const variable of used) {
+      expect(css).toContain(`${variable}:`);
+    }
+  });
+
+  it("declares the full --du-glass-* token surface", () => {
+    const css = readSource("src/styles/du-home-tokens.css");
+
+    const tokens = [
+      "--du-glass-blur",
+      "--du-glass-saturate",
+      "--du-glass-bg",
+      "--du-glass-bg-hover",
+      "--du-glass-bg-strong",
+      "--du-glass-sheen",
+      "--du-glass-border",
+      "--du-glass-border-hover",
+      "--du-glass-highlight",
+      "--du-glass-shadow",
+      "--du-glass-radius-card",
+      "--du-glass-radius-btn",
+      "--du-glass-fallback-bg",
+      "--du-glass-text",
+      "--du-glass-overlay-scrim",
+    ];
+
+    for (const token of tokens) {
+      expect(css).toContain(`${token}:`);
+    }
+  });
+
+  it("provides a backdrop-filter fallback", () => {
+    const css = readSource("src/styles/du-home-tokens.css");
+
+    expect(css).toContain("@supports not");
+    expect(css).toContain("backdrop-filter");
+  });
+
+  it("uses the glass classes in the component", () => {
+    const tsx = readSource("src/components/hf/du-home.tsx");
+
+    expect(tsx).toContain("du-glass-btn");
+    expect(tsx).toContain("du-glass");
+  });
+});
+
 describe("site config", () => {
   it("uses the bot inbox as the support address", () => {
     expect(SUPPORT_EMAIL).toBe("tuapi@mail.grokbot.com");
