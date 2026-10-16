@@ -1,19 +1,19 @@
 :root {
-  --hfh-bg: #0f1113;
-  --hfh-panel: #131517;
-  --hfh-panel-2: #1c1e20;
-  --hfh-panel-3: #23262a;
-  --hfh-border: rgba(255, 255, 255, 0.06);
-  --hfh-border-hover: rgba(255, 255, 255, 0.16);
-  --hfh-text: #f7f7f8;
-  --hfh-muted: #898a8b;
-  --hfh-accent: #d1fe17;
-  --hfh-accent-text: #1a1a1a;
-  --hfh-accent-soft: rgba(209, 254, 23, 0.14);
-  --hfh-glow-a: rgba(209, 254, 23, 0.22);
-  --hfh-glow-b: rgba(120, 90, 255, 0.18);
-  --hfh-heading-fade: rgba(255, 255, 255, 0.5);
-  --hfh-overlay: rgba(0, 0, 0, 0.55);
+  --hfh-bg: var(--du-bg);
+  --hfh-panel: var(--du-surface);
+  --hfh-panel-2: var(--du-surface-2);
+  --hfh-panel-3: var(--du-surface-2);
+  --hfh-border: var(--du-border);
+  --hfh-border-hover: var(--du-border-strong);
+  --hfh-text: var(--du-text);
+  --hfh-muted: var(--du-text-muted);
+  --hfh-accent: var(--du-accent);
+  --hfh-accent-text: var(--du-on-accent);
+  --hfh-accent-soft: var(--du-accent-soft);
+  --hfh-glow-a: var(--du-accent-soft);
+  --hfh-glow-b: var(--du-accent-soft);
+  --hfh-heading-fade: var(--du-text-muted);
+  --hfh-overlay: var(--du-glass-overlay-scrim);
 }
 
 @keyframes hfh-marquee-scroll {

@@ -2,10 +2,10 @@ import { Inter as FontSans, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
+import "@/styles/theme.css";
 import "@/styles/globals.css";
 import "@/styles/hf-theme.css";
 import "@/styles/hf-home-tokens.css";
-import "@/styles/du-home-tokens.css";
 
 import { NextIntlClientProvider } from "next-intl";
 

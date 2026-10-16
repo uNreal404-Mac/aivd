@@ -121,7 +121,7 @@ describe("localizedHref", () => {
 
 describe("du-home styling", () => {
   it("defines every --du-* variable used by the component", () => {
-    const css = readSource("src/styles/du-home-tokens.css");
+    const css = readSource("src/styles/theme.css");
     const tsx = readSource("src/components/hf/du-home.tsx");
 
     const used = new Set(
@@ -145,7 +145,7 @@ describe("du-home styling", () => {
 
 describe("du-glass styling", () => {
   it("defines every --du-glass-* variable used by the glass styles", () => {
-    const css = readSource("src/styles/du-home-tokens.css");
+    const css = readSource("src/styles/theme.css");
     const tsx = readSource("src/components/hf/du-home.tsx");
 
     const used = new Set(
@@ -161,7 +161,7 @@ describe("du-glass styling", () => {
   });
 
   it("declares the full --du-glass-* token surface", () => {
-    const css = readSource("src/styles/du-home-tokens.css");
+    const css = readSource("src/styles/theme.css");
 
     const tokens = [
       "--du-glass-blur",
@@ -187,7 +187,7 @@ describe("du-glass styling", () => {
   });
 
   it("provides a backdrop-filter fallback", () => {
-    const css = readSource("src/styles/du-home-tokens.css");
+    const css = readSource("src/styles/theme.css");
 
     expect(css).toContain("@supports not");
     expect(css).toContain("backdrop-filter");
