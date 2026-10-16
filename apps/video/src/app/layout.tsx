@@ -44,7 +44,7 @@ export function generateStaticParams() {
   return i18n.locales.map((locale) => ({ locale }));
 }
 
-export const metadata = {
+const baseMetadata = {
   title: {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,
@@ -85,10 +85,16 @@ export const metadata = {
     apple: "/apple-touch-icon.png",
   },
   metadataBase: new URL(siteConfig.url),
-  robots: isNoIndexEnvironment()
-    ? NOINDEX_ROBOTS
-    : { index: true, follow: true },
 };
+
+export async function generateMetadata() {
+  return {
+    ...baseMetadata,
+    robots: isNoIndexEnvironment()
+      ? NOINDEX_ROBOTS
+      : { index: true, follow: true },
+  };
+}
 
 interface RootLayoutProps {
   children: React.ReactNode;

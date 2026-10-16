@@ -3,6 +3,9 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment } from "@/lib/indexing";
 
+// Evaluate per request so runtime env vars are respected.
+export const dynamic = "force-dynamic";
+
 const PRIVATE_PATHS = [
   "/api/",
   "/my-creations",

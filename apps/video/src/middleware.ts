@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { NextRequest, NextResponse } from "next/server";
+import { isNoIndexEnvironment } from "@/lib/indexing";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -14,6 +15,42 @@ const legacyRedirects: Record<string, string> = {
   "/dashboard/billing": "/credits",
   "/dashboard/settings": "/settings",
 };
+
+/**
+ * Private paths that should never be indexed by search engines,
+ * regardless of environment.
+ */
+const PRIVATE_PATH_SEGMENTS = [
+  "/my-creations",
+  "/credits",
+  "/settings",
+  "/admin",
+  "/login",
+  "/register",
+];
+
+/**
+ * Determine whether a pathname targets a private route, ignoring an
+ * optional leading locale prefix (e.g. /zh/settings -> /settings).
+ */
+function isPrivatePath(pathname: string): boolean {
+  let path = pathname;
+
+  for (const locale of routing.locales) {
+    if (path === `/${locale}` || path.startsWith(`/${locale}/`)) {
+      path = path.slice(locale.length + 1);
+      break;
+    }
+  }
+
+  if (path === "") {
+    path = "/";
+  }
+
+  return PRIVATE_PATH_SEGMENTS.some(
+    (segment) => path === segment || path.startsWith(`${segment}/`)
+  );
+}
 
 /**
  * Next-intl middleware with legacy dashboard redirects
@@ -66,6 +103,11 @@ export default function middleware(request: NextRequest) {
     "Strict-Transport-Security",
     "max-age=31536000; includeSubDomains"
   );
+
+  // Prevent indexing in no-index environments and on private routes
+  if (isNoIndexEnvironment() || isPrivatePath(pathname)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
   // Basic CSP to start with (adjust as needed for scripts/styles)
   // response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https:;")
 

@@ -4,9 +4,17 @@
  */
 
 export function isNoIndexEnvironment(): boolean {
+  // Read from a local reference with a dynamic key lookup so Next.js does not
+  // statically inline `process.env.NEXT_PUBLIC_*` values at build time. This
+  // keeps preview-deploy noindex detection working with runtime-only vars.
+  const env = process.env;
+  const read = (k: string) => env[k];
+
   return (
-    process.env.NEXT_PUBLIC_NOINDEX === "true" ||
-    process.env.VERCEL_ENV === "preview"
+    read("NEXT_PUBLIC_NOINDEX") === "true" ||
+    read("NOINDEX") === "true" ||
+    read("VERCEL_ENV") === "preview" ||
+    read("NEXT_PUBLIC_DEPLOY_ENV") === "preview"
   );
 }
 
