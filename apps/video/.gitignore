@@ -57,3 +57,6 @@ package-lock.json
 .open-next
 .wrangler
 .dev.vars
+
+# aider
+.aider*

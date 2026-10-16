@@ -567,5 +567,52 @@
     "copyLink": "Copy link",
     "removeFromHistory": "Remove from history",
     "generationFailed": "Generation Failed"
+  },
+  "Gallery": {
+    "title": "Gallery",
+    "subtitle": "Public works from the community",
+    "empty": "No public works yet — be the first to share.",
+    "loadMore": "Load more",
+    "useTemplate": "Use Template",
+    "protectedPromptBadge": "Protected Prompt",
+    "promptProtected": "Prompt protected by author",
+    "anonymous": "Anonymous",
+    "publicBadge": "Public",
+    "privateBadge": "Private",
+    "shareToGallery": "Share to Gallery",
+    "removeFromGallery": "Remove from Gallery",
+    "preparing": "Preparing…",
+    "downloadError": "Failed to download video",
+    "unpublishSuccess": "Removed from Gallery",
+    "unpublishError": "Failed to remove from Gallery. Please try again.",
+    "publishDialog": {
+      "title": "Share to Gallery",
+      "description": "Publish this video so anyone can watch it and reuse its prompt.",
+      "videoPreview": "Preview",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Give your work a title",
+      "descriptionLabel": "Description",
+      "descriptionOptional": "optional",
+      "descriptionPlaceholder": "Say a few words about this work",
+      "promptLabel": "Prompt",
+      "promptWillBePublic": "Your prompt will be public",
+      "originalPromptLabel": "Your original prompt",
+      "protectPrompt": "Protect prompt",
+      "protectPromptHint": "Hide your original prompt and share a different one instead.",
+      "publicPromptLabel": "Public prompt",
+      "publicPromptPlaceholder": "Leave empty to hide the prompt entirely",
+      "allowAssetReuse": "Allow others to reuse my input image",
+      "submit": "Publish",
+      "submitting": "Publishing…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "invalid": "Please check the title length and try again.",
+      "error": "Failed to publish. Please try again.",
+      "alreadyInGallery": "Already in Gallery"
+    },
+    "notices": {
+      "modelUnavailable": "The original model {model} is not available. Please choose an alternative model.",
+      "needsOwnImage": "Upload your own image — the author's source image is private."
+    }
   }
 }

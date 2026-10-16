@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { GallerySection } from "@/components/gallery/gallery-section";
 import {
   CATEGORY_CARDS,
   CATEGORY_FILTERS,
@@ -378,7 +379,10 @@ export function DuHome({ lang }: { lang: string }) {
         </div>
       </section>
 
-      {/* 6. Free credits banner */}
+      {/* 6. Gallery */}
+      <GallerySection />
+
+      {/* 7. Free credits banner */}
       <section className="mx-auto max-w-[1200px] px-6 pb-16">
         <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[var(--du-border-strong)]">
           <img

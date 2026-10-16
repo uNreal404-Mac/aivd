@@ -78,6 +78,7 @@ export function CreationCard({
   isDeleting,
 }: CreationCardProps) {
   const t = useTranslations("dashboard.myCreations");
+  const tg = useTranslations("Gallery");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -92,6 +93,8 @@ export function CreationCard({
     normalizedStatus === "uploading";
   const isFailed = normalizedStatus === "failed";
   const isCompleted = normalizedStatus === "completed";
+  /** Older rows may omit `visibility`; anything but "public" counts as private. */
+  const isPublic = video.visibility === "public";
 
   const handleDelete = async () => {
     setShowDeleteDialog(false);
@@ -193,8 +196,8 @@ export function CreationCard({
             </div>
           )}
 
-          {/* Status badge */}
-          <div className="absolute top-2 left-2">
+          {/* Status + gallery visibility badges */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5">
             <Badge
               className={cn(
                 config.labelColor,
@@ -204,6 +207,19 @@ export function CreationCard({
             >
               {statusLabel}
             </Badge>
+            {isCompleted && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "rounded-md backdrop-blur",
+                  isPublic
+                    ? "border-[var(--du-accent)] bg-[var(--du-bg-elev)] text-[var(--du-accent-text)]"
+                    : "border-[var(--du-border)] bg-[var(--du-bg-elev)] text-[var(--du-text-muted)]"
+                )}
+              >
+                {isPublic ? tg("publicBadge") : tg("privateBadge")}
+              </Badge>
+            )}
           </div>
 
           {/* Duration badge (completed only) */}

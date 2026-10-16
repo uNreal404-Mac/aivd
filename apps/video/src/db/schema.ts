@@ -79,6 +79,7 @@ export const users = pgTable("user", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   isAdmin: boolean("isAdmin").default(false).notNull(),
+  isSuperAccount: boolean("isSuperAccount").default(false).notNull(),
 });
 
 export const creemSubscriptions = pgTable(
@@ -325,11 +326,22 @@ export const videos = pgTable(
     completedAt: timestamp("completed_at"),
     generationTime: integer("generation_time"),
     isDeleted: boolean("is_deleted").default(false).notNull(),
+    visibility: text("visibility").default("private").notNull(),
+    publishedAt: timestamp("published_at"),
+    galleryTitle: text("gallery_title"),
+    galleryDescription: text("gallery_description"),
+    publicPrompt: text("public_prompt"),
+    promptProtected: boolean("prompt_protected").default(false).notNull(),
+    assetsReusable: boolean("assets_reusable").default(false).notNull(),
   },
   (table) => ({
     userIdx: index("videos_user_id_idx").on(table.userId),
     statusIdx: index("videos_status_idx").on(table.status),
     createdAtIdx: index("videos_created_at_idx").on(table.createdAt),
+    visibilityPublishedIdx: index("videos_visibility_published_idx").on(
+      table.visibility,
+      table.publishedAt
+    ),
   })
 );
 
