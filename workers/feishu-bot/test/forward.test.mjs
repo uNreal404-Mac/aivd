@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ACK_FAILURE_TEXT, ACK_SUCCESS_TEXT, ackKey } from "../src/ack.mjs";
+import { AUTO_PROGRESS_KEY, autoEventKey, autoLlmCountKey } from "../src/auto-answer.mjs";
 
 const SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 import { dedupeKeys } from "../src/dedupe.mjs";
@@ -113,7 +114,7 @@ function messagePayload({
   };
 }
 
-function makeRecordingFetch({ replies = [], calls = [], forwardCalls = [] } = {}) {
+function makeRecordingFetch({ replies = [], calls = [], forwardCalls = [], reactions = [] } = {}) {
   return async (url, init = {}) => {
     const href = String(url);
     calls.push({ url: href, init });
@@ -126,6 +127,10 @@ function makeRecordingFetch({ replies = [], calls = [], forwardCalls = [] } = {}
     }
     if (href.endsWith("/bot/v3/info")) {
       return Response.json({ code: 0, bot: { open_id: "ou_bot" } });
+    }
+    if (href.endsWith("/reactions")) {
+      reactions.push({ url: href, body: JSON.parse(init.body) });
+      return Response.json({ code: 0, data: { reaction_id: "reaction_1" } });
     }
     if (href.includes("/im/v1/messages/") && href.endsWith("/reply")) {
       replies.push(JSON.parse(init.body));
@@ -523,7 +528,7 @@ test("acks before the deferred email forward resolves when waitUntil is availabl
   assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
 });
 
-test("emails a 进度 command in the forwarding chat and then acknowledges it", async () => {
+test("emails a vague @bot message in the forwarding chat and then acknowledges it", async () => {
   const replies = [];
   const calls = [];
   const forwardCalls = [];
@@ -533,13 +538,13 @@ test("emails a 进度 command in the forwarding chat and then acknowledges it", 
 
   const response = await send(
     worker,
-    messagePayload({ text: "进度", messageId: "om_progress", eventId: "evt_progress" }),
+    messagePayload({ text: "帮我看下这个", messageId: "om_progress", eventId: "evt_progress" }),
     env,
   );
 
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 1);
-  assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 进度"));
+  assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 帮我看下这个"));
   assert.equal(replies.length, 1);
   assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
@@ -559,7 +564,7 @@ test("still acknowledges a forward-chat @bot mention when the email forward fail
   const worker = createWorker({ fetchImpl, sleep: async () => {} });
   const env = makeEnv();
   env.RESEND_API_KEY = RESEND_KEY;
-  const payload = messagePayload({ text: "进度", messageId: "om_pfail", eventId: "evt_pfail" });
+  const payload = messagePayload({ text: "帮我看下这个", messageId: "om_pfail", eventId: "evt_pfail" });
   const [eventKey, messageKey] = dedupeKeys("evt_pfail", "om_pfail");
 
   assert.equal((await send(worker, payload, env)).status, 503);
@@ -583,7 +588,7 @@ test("does not mark a forwarding-chat message processed when the Resend key is m
   const forwardCalls = [];
   const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls }) });
   const env = makeEnv();
-  const payload = messagePayload({ text: "进度", messageId: "om_pnokey", eventId: "evt_pnokey" });
+  const payload = messagePayload({ text: "帮我看下这个", messageId: "om_pnokey", eventId: "evt_pnokey" });
   const [eventKey, messageKey] = dedupeKeys("evt_pnokey", "om_pnokey");
 
   assert.equal((await send(worker, payload, env)).status, 503);
@@ -693,6 +698,33 @@ test("forwards a forward-chat message without a mention and never looks up the b
   assert.equal(replies.length, 0);
   assert.equal(calls.some(({ url }) => url.includes("/bot/v3/info")), false);
   assert.equal(await env.BOT_KV.get(ackKey("om_nomention")), null);
+});
+
+test("never reacts, auto-answers or acknowledges a forward-chat message that only mentions another user", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const reactions = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls, reactions }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({
+      text: "随便聊聊",
+      mentions: [{ key: "@_user_2", id: { open_id: "ou_other" } }],
+      messageId: "om_other",
+      eventId: "evt_other",
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 随便聊聊"));
+  assert.equal(reactions.length, 0);
+  assert.equal(replies.length, 0);
+  assert.equal(await env.BOT_KV.get(ackKey("om_other")), null);
 });
 
 test("acknowledges a successful forward even when the model call would fail", async () => {
@@ -809,4 +841,286 @@ test("never acknowledges a forward-chat mention sent by the bot itself", async (
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 0);
   assert.equal(await env.BOT_KV.get(ackKey("om_self")), null);
+});
+
+function llmWorkerEnv(overrides = {}) {
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.LLM_AUTO_ANSWER_ENABLED = "true";
+  env.LLM_BASE_URL = "https://llm.test/v1";
+  env.LLM_MODEL = "test-model";
+  env.LLM_API_KEY = "llm-test-key";
+  return Object.assign(env, overrides);
+}
+
+function createLlmWorker({ content = "", status = 200, llmCalls = [], replies = [], forwardCalls = [] } = {}) {
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  return createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url).includes("/chat/completions")) {
+        llmCalls.push({ url: String(url), init });
+        if (status !== 200) return new Response("", { status });
+        return Response.json({ choices: [{ message: { role: "assistant", content } }] });
+      }
+      return baseFetch(url, init);
+    },
+  });
+}
+
+test("reacts to and auto-answers a @bot 进度 mention in the forwarding chat", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const reactions = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls, reactions }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  await env.BOT_KV.put(AUTO_PROGRESS_KEY, "第 3 步：案例页替换");
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "进度", messageId: "om_auto", eventId: "evt_auto" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(reactions.length, 1);
+  assert.equal(reactions[0].url.endsWith("/im/v1/messages/om_auto/reactions"), true);
+  assert.deepEqual(reactions[0].body, { reaction_type: { emoji_type: "OK" } });
+
+  assert.equal(forwardCalls.length, 1);
+  const email = JSON.parse(forwardCalls[0].init.body);
+  assert.equal(email.subject.startsWith("[auto] "), true);
+  assert.ok(email.text.includes("auto_answer: 当前进度：第 3 步：案例页替换"));
+
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  const post = JSON.parse(replies[0].content);
+  assert.deepEqual(post.zh_cn.content[0][0], { tag: "at", user_id: "ou_user" });
+  assert.match(post.zh_cn.content[0][1].text, /当前进度：第 3 步：案例页替换/);
+
+  assert.equal(await env.BOT_KV.get(autoEventKey("evt_auto")), "1");
+  const eventWrite = env.BOT_KV.writes.find(({ key }) => key === autoEventKey("evt_auto"));
+  assert.deepEqual(eventWrite.options, { expirationTtl: 604800 });
+});
+
+test("skips a redelivered event id even when it arrives with a different message id", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const reactions = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls, reactions }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+
+  const first = messagePayload({ text: "随便聊聊", messageId: "om_dup_a", eventId: "evt_dup" });
+  const second = messagePayload({ text: "随便聊聊", messageId: "om_dup_b", eventId: "evt_dup" });
+
+  assert.equal((await send(worker, first, env)).status, 200);
+  assert.equal((await send(worker, second, env)).status, 200);
+
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 1);
+  assert.equal(reactions.length, 1);
+  assert.equal(await env.BOT_KV.get(autoEventKey("evt_dup")), "1");
+});
+
+test("mirrors every forwarded message to the Grok webhook in parallel with the email", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === "https://hooks.test/grok") {
+        webhookCalls.push({ url: String(url), init });
+        return Response.json({ ok: true });
+      }
+      return baseFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = "https://hooks.test/grok";
+  env.GROK_WEBHOOK_KEY = "super-secret-key";
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "随便聊聊", messageId: "om_webhook", eventId: "evt_webhook" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 1);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  assert.equal(webhookCalls.length, 1);
+  assert.equal(webhookCalls[0].init.method, "POST");
+  const headers = new Headers(webhookCalls[0].init.headers);
+  assert.equal(headers.get("authorization"), "Bearer super-secret-key");
+  assert.equal(headers.get("content-type"), "application/json");
+  assert.deepEqual(JSON.parse(webhookCalls[0].init.body), {
+    text: "随便聊聊",
+    sender_open_id: "ou_user",
+    sender_name: "老王",
+    message_id: "om_webhook",
+    chat_id: GROK_FORWARD_CHAT_ID,
+    mentioned_bot: true,
+  });
+});
+
+test("a failed webhook mirror never affects the email or the acknowledgement", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => { logs.push(args.join(" ")); };
+  try {
+    const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+    const worker = createWorker({
+      fetchImpl: async (url, init = {}) => {
+        if (String(url) === "https://hooks.test/grok") return new Response("", { status: 502 });
+        return baseFetch(url, init);
+      },
+    });
+    const env = makeEnv();
+    env.RESEND_API_KEY = RESEND_KEY;
+    env.GROK_WEBHOOK_URL = "https://hooks.test/grok";
+    env.GROK_WEBHOOK_KEY = "super-secret-key";
+
+    const response = await send(
+      worker,
+      messagePayload({ text: "随便聊聊", messageId: "om_webfail", eventId: "evt_webfail" }),
+      env,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(forwardCalls.length, 1);
+    assert.equal(replies.length, 1);
+    assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.equal(logs.some((line) => line.includes("[feishu-webhook]")), true);
+  assert.equal(logs.some((line) => line.includes("super-secret-key")), false);
+});
+
+test("auto-answers a @bot mention through the LLM when the switch is on", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const llmCalls = [];
+  const worker = createLlmWorker({ content: "  明天上线。  ", llmCalls, replies, forwardCalls });
+  const env = llmWorkerEnv();
+  await env.BOT_KV.put(AUTO_PROGRESS_KEY, "第 3 步：案例页替换");
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "什么时候上线", messageId: "om_llm", eventId: "evt_llm" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls[0].url, "https://llm.test/v1/chat/completions");
+  const request = JSON.parse(llmCalls[0].init.body);
+  assert.equal(request.model, "test-model");
+  assert.equal(request.max_tokens, 200);
+  assert.equal(request.temperature, 0);
+  assert.equal(request.stream, false);
+  assert.ok(request.messages[0].content.includes("NEEDS_DECISION"));
+  assert.ok(request.messages[0].content.includes("第 3 步：案例页替换"));
+  assert.ok(request.messages[1].content.includes("什么时候上线"));
+  assert.equal(await env.BOT_KV.get(autoLlmCountKey()), "1");
+
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  const post = JSON.parse(replies[0].content);
+  assert.deepEqual(post.zh_cn.content[0][0], { tag: "at", user_id: "ou_user" });
+  assert.match(post.zh_cn.content[0][1].text, /明天上线/);
+
+  const email = JSON.parse(forwardCalls[0].init.body);
+  assert.equal(email.subject.startsWith("[auto] "), true);
+  assert.ok(email.text.includes("auto_answer: 明天上线。"));
+});
+
+test("falls back to the plain acknowledgement when the LLM asks for a decision", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const worker = createLlmWorker({ content: "NEEDS_DECISION", replies, forwardCalls });
+  const env = llmWorkerEnv();
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "要不要加个功能", messageId: "om_decide", eventId: "evt_decide" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 1);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  const email = JSON.parse(forwardCalls[0].init.body);
+  assert.equal(email.subject.startsWith("[auto] "), false);
+  assert.equal(email.text.includes("auto_answer:"), false);
+});
+
+test("posts the unsure reply for the asker when the LLM is unsure", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const worker = createLlmWorker({ content: "UNSURE", replies, forwardCalls });
+  const env = llmWorkerEnv();
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "什么时候上线", messageId: "om_unsure", eventId: "evt_unsure" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  assert.match(JSON.parse(replies[0].content).zh_cn.content[0][1].text, /这个问题老三稍后回复你。/);
+  const email = JSON.parse(forwardCalls[0].init.body);
+  assert.equal(email.subject.startsWith("[auto] "), false);
+  assert.equal(email.text.includes("auto_answer:"), false);
+});
+
+test("falls back to the plain acknowledgement when the LLM request fails", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const worker = createLlmWorker({ status: 500, replies, forwardCalls });
+  const env = llmWorkerEnv();
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "什么时候上线", messageId: "om_llmfail", eventId: "evt_llmfail" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 1);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  const email = JSON.parse(forwardCalls[0].init.body);
+  assert.equal(email.subject.startsWith("[auto] "), false);
+  assert.equal(email.text.includes("auto_answer:"), false);
+});
+
+test("stops auto-answering once the daily LLM limit is reached", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const llmCalls = [];
+  const worker = createLlmWorker({ content: "明天上线。", llmCalls, replies, forwardCalls });
+  const env = llmWorkerEnv({ LLM_DAILY_LIMIT: "1" });
+  await env.BOT_KV.put(autoLlmCountKey(), "1");
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "什么时候上线", messageId: "om_limit", eventId: "evt_limit" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(llmCalls.length, 0);
+  assert.equal(replies.length, 1);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+  assert.equal(await env.BOT_KV.get(autoLlmCountKey()), "1");
 });
