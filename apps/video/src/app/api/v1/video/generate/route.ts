@@ -3,6 +3,7 @@ import { videoService } from "@/services/video";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
+import { isAllowedImageUrl } from "@/lib/image-url-allowlist";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request);
     const body = await request.json();
     const data = generateSchema.parse(body);
+
+    const imageUrls = [
+      ...(data.imageUrl ? [data.imageUrl] : []),
+      ...(data.imageUrls ?? []),
+    ];
+    if (imageUrls.some((imageUrl) => !isAllowedImageUrl(imageUrl))) {
+      return apiError("Image URL host is not allowed.", 400, {
+        code: "IMAGE_URL_NOT_ALLOWED",
+      });
+    }
 
     const headerKey = request.headers.get("Idempotency-Key");
     const idempotencyKey = headerKey

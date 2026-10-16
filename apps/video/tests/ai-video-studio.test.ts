@@ -1,12 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildGenerateRequest,
   canGenerate,
   defaultSettings,
   estimateCredits,
   selectModel,
   STUDIO_MODELS,
+  submitGeneration,
 } from "@/lib/ai-video-studio";
+
+function fakeResponse(status: number, payload: unknown): Response {
+  return {
+    status,
+    json: async () => payload,
+  } as unknown as Response;
+}
 
 describe("defaultSettings", () => {
   it("uses the first model when none is provided", () => {
@@ -131,5 +140,248 @@ describe("canGenerate", () => {
     const settings = { ...defaultSettings(STUDIO_MODELS[0]), prompt: "a cat" };
 
     expect(canGenerate(settings, true)).toEqual({ ok: true });
+  });
+});
+
+describe("buildGenerateRequest", () => {
+  it("maps every supported studio model id to its backend model id", () => {
+    const expected: Record<string, string> = {
+      "seedance-2": "seedance-1.5-pro",
+      "veo-3-1": "veo-3.1",
+      "wan-2-7": "wan2.6",
+      "sora-2": "sora-2",
+    };
+
+    for (const [modelId, backendId] of Object.entries(expected)) {
+      const result = buildGenerateRequest(
+        { ...defaultSettings(), modelId, prompt: "a cat" },
+        "key-1",
+      );
+
+      expect(result.ok).toBe(true);
+
+      if (result.ok) {
+        expect(result.body.model).toBe(backendId);
+      }
+    }
+  });
+
+  it("carries the settings and idempotency key into the body", () => {
+    const settings = {
+      ...defaultSettings(STUDIO_MODELS[0]),
+      prompt: "a cat",
+      duration: 8,
+      aspect: "9:16",
+      resolution: "1080p",
+    };
+
+    const result = buildGenerateRequest(settings, "key-1");
+
+    expect(result).toEqual({
+      ok: true,
+      body: {
+        prompt: "a cat",
+        model: "seedance-1.5-pro",
+        duration: 8,
+        aspectRatio: "9:16",
+        quality: "1080p",
+        generateAudio: settings.audio,
+        idempotencyKey: "key-1",
+      },
+    });
+  });
+
+  it("trims surrounding whitespace from the prompt", () => {
+    const result = buildGenerateRequest(
+      { ...defaultSettings(STUDIO_MODELS[0]), prompt: "  a cat  " },
+      "key-1",
+    );
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.body.prompt).toBe("a cat");
+    }
+  });
+
+  it("reports empty-prompt for a blank prompt", () => {
+    expect(
+      buildGenerateRequest(
+        { ...defaultSettings(STUDIO_MODELS[0]), prompt: "   " },
+        "key-1",
+      ),
+    ).toEqual({ ok: false, reason: "empty-prompt" });
+  });
+
+  it("reports unsupported-model when the backend has no mapping", () => {
+    expect(
+      buildGenerateRequest(
+        {
+          ...defaultSettings(STUDIO_MODELS[0]),
+          modelId: "kling-3",
+          prompt: "a cat",
+        },
+        "key-1",
+      ),
+    ).toEqual({ ok: false, reason: "unsupported-model" });
+  });
+
+  it("reports unsupported-model for an unknown model id", () => {
+    expect(
+      buildGenerateRequest(
+        {
+          ...defaultSettings(STUDIO_MODELS[0]),
+          modelId: "does-not-exist",
+          prompt: "a cat",
+        },
+        "key-1",
+      ),
+    ).toEqual({ ok: false, reason: "unsupported-model" });
+  });
+});
+
+describe("submitGeneration", () => {
+  const settings = {
+    ...defaultSettings(STUDIO_MODELS[0]),
+    prompt: "a cat",
+    duration: 8,
+    aspect: "9:16",
+    resolution: "1080p",
+  };
+
+  it("posts the request body, url, method and headers", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        fakeResponse(200, {
+          success: true,
+          data: { videoUuid: "vid-1", taskId: "task-1" },
+        }),
+      );
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith("/api/v1/video/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": "key-1",
+      },
+      body: JSON.stringify({
+        prompt: "a cat",
+        model: "seedance-1.5-pro",
+        duration: 8,
+        aspectRatio: "9:16",
+        quality: "1080p",
+        generateAudio: false,
+        idempotencyKey: "key-1",
+      }),
+    });
+    expect(result).toEqual({
+      ok: true,
+      videoUuid: "vid-1",
+      taskId: "task-1",
+    });
+  });
+
+  it("returns null ids when the success payload omits them", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(fakeResponse(200, { success: true, data: {} }));
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(result).toEqual({ ok: true, videoUuid: null, taskId: null });
+  });
+
+  it("maps a 401 response to a sign-in message", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        fakeResponse(401, { success: false, error: { message: "unauthorized" } }),
+      );
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(result).toEqual({
+      ok: false,
+      message: "Please sign in to generate.",
+    });
+  });
+
+  it("returns the server message and code for a disabled generation response", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      fakeResponse(503, {
+        success: false,
+        error: {
+          message: "Video generation is currently disabled.",
+          details: { code: "GENERATION_DISABLED" },
+        },
+      }),
+    );
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(result).toEqual({
+      ok: false,
+      message: "Video generation is currently disabled.",
+      code: "GENERATION_DISABLED",
+    });
+  });
+
+  it("falls back to a generic message when the error payload is missing", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(fakeResponse(500, { success: false }));
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(result).toEqual({
+      ok: false,
+      message: "Generation failed. Please try again.",
+    });
+  });
+
+  it("returns a network error message when fetch throws", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new Error("boom"));
+
+    const result = await submitGeneration(settings, "key-1", fetchImpl);
+
+    expect(result).toEqual({
+      ok: false,
+      message: "Network error. Please try again.",
+    });
+  });
+
+  it("does not call fetch when the prompt is empty", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const result = await submitGeneration(
+      { ...settings, prompt: "   " },
+      "key-1",
+      fetchImpl,
+    );
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, message: "Please enter a prompt." });
+  });
+
+  it("does not call fetch when the model is unsupported", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const result = await submitGeneration(
+      { ...settings, modelId: "kling-3" },
+      "key-1",
+      fetchImpl,
+    );
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      message: "This model is not available yet.",
+    });
   });
 });

@@ -142,3 +142,130 @@ export function canGenerate(
 
 export const RESULT_FILTERS = ["All", "Videos", "Favorites"] as const;
 export const RIGHT_TABS = ["History", "Library", "How it works"] as const;
+
+export const BACKEND_MODEL_IDS: Record<string, string | null> = {
+  "seedance-2": "seedance-1.5-pro",
+  "kling-3": null,
+  "veo-3-1": "veo-3.1",
+  "wan-2-7": "wan2.6",
+  "sora-2": "sora-2",
+};
+
+export type GenerateRequestBody = {
+  prompt: string;
+  model: string;
+  duration: number;
+  aspectRatio: string;
+  quality: string;
+  generateAudio: boolean;
+  idempotencyKey: string;
+};
+
+export type BuildGenerateRequestResult =
+  | { ok: true; body: GenerateRequestBody }
+  | { ok: false; reason: "empty-prompt" | "unsupported-model" };
+
+export function buildGenerateRequest(
+  settings: StudioSettings,
+  idempotencyKey: string,
+): BuildGenerateRequestResult {
+  const prompt = settings.prompt.trim();
+
+  if (prompt === "") {
+    return { ok: false, reason: "empty-prompt" };
+  }
+
+  const model = BACKEND_MODEL_IDS[settings.modelId];
+
+  if (!model) {
+    return { ok: false, reason: "unsupported-model" };
+  }
+
+  return {
+    ok: true,
+    body: {
+      prompt,
+      model,
+      duration: settings.duration,
+      aspectRatio: settings.aspect,
+      quality: settings.resolution,
+      generateAudio: settings.audio,
+      idempotencyKey,
+    },
+  };
+}
+
+type GenerateResponsePayload = {
+  success?: boolean;
+  data?: {
+    videoUuid?: string | null;
+    taskId?: string | null;
+  } | null;
+  error?: {
+    message?: string;
+    details?: { code?: string } | null;
+  } | null;
+};
+
+export type SubmitGenerationResult =
+  | { ok: true; videoUuid: string | null; taskId: string | null }
+  | { ok: false; message: string; code?: string };
+
+export async function submitGeneration(
+  settings: StudioSettings,
+  idempotencyKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<SubmitGenerationResult> {
+  const request = buildGenerateRequest(settings, idempotencyKey);
+
+  if (!request.ok) {
+    return {
+      ok: false,
+      message:
+        request.reason === "empty-prompt"
+          ? "Please enter a prompt."
+          : "This model is not available yet.",
+    };
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetchImpl("/api/v1/video/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify(request.body),
+    });
+  } catch {
+    return { ok: false, message: "Network error. Please try again." };
+  }
+
+  if (response.status === 401) {
+    return { ok: false, message: "Please sign in to generate." };
+  }
+
+  let payload: GenerateResponsePayload | null = null;
+
+  try {
+    payload = (await response.json()) as GenerateResponsePayload;
+  } catch {
+    payload = null;
+  }
+
+  if (payload?.success) {
+    return {
+      ok: true,
+      videoUuid: payload.data?.videoUuid ?? null,
+      taskId: payload.data?.taskId ?? null,
+    };
+  }
+
+  const message =
+    payload?.error?.message ?? "Generation failed. Please try again.";
+  const code = payload?.error?.details?.code;
+
+  return code ? { ok: false, message, code } : { ok: false, message };
+}
