@@ -250,13 +250,17 @@ test("emails a group mention instead of replying to Feishu", async () => {
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), false);
 });
 
-test("uses the normal reply path when email forwarding is not configured", async () => {
+test("uses the normal reply path for group messages outside the forwarding chat", async () => {
   const replies = [];
   const forwardCalls = [];
   const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls }) });
   const env = makeEnv();
 
-  const response = await send(worker, messagePayload({ text: "随便聊聊", messageId: "om_nofwd", eventId: "evt_nofwd" }), env);
+  const response = await send(
+    worker,
+    messagePayload({ text: "随便聊聊", messageId: "om_nofwd", eventId: "evt_nofwd", chatId: "oc_other_group" }),
+    env,
+  );
 
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 0);
@@ -320,5 +324,67 @@ test("acks before the deferred email forward resolves when waitUntil is availabl
   await Promise.all(waitUntilPromises);
 
   assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 0);
+});
+
+test("emails a 进度 command in the forwarding chat without replying to Feishu", async () => {
+  const replies = [];
+  const calls = [];
+  const forwardCalls = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, calls, forwardCalls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "进度", messageId: "om_progress", eventId: "evt_progress" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 进度"));
+  assert.equal(replies.length, 0);
+  assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), false);
+});
+
+test("marks a 进度 command in the forwarding chat processed after a Resend failure", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const fetchImpl = async (url, init = {}) => {
+    if (String(url) === RESEND_URL) {
+      forwardCalls.push({ url: String(url), init });
+      return new Response("", { status: 502 });
+    }
+    return baseFetch(url, init);
+  };
+  const worker = createWorker({ fetchImpl });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  const payload = messagePayload({ text: "进度", messageId: "om_pfail", eventId: "evt_pfail" });
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 0);
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 0);
+});
+
+test("marks a 进度 command in the forwarding chat processed when the Resend key is missing", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls }) });
+  const env = makeEnv();
+  const payload = messagePayload({ text: "进度", messageId: "om_pnokey", eventId: "evt_pnokey" });
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(forwardCalls.length, 0);
+  assert.equal(replies.length, 0);
+
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(forwardCalls.length, 0);
   assert.equal(replies.length, 0);
 });

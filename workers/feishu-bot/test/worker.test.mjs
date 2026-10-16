@@ -83,7 +83,7 @@ function makeFeishuFetch({ failReplyCount = 0, replies = [], calls = [] } = {}) 
     if (url.endsWith("/bot/v3/info")) {
       return Response.json({ code: 0, bot: { open_id: "ou_bot" } });
     }
-    if (url === "https://dreamutopia-clone.pages.dev/api/health") {
+    if (url === "https://dreamutopia-video.pages.dev/api/health") {
       return Response.json({ ok: true, authReady: false, generationEnabled: false });
     }
     if (url.includes("/im/v1/messages/") && url.endsWith("/reply")) {
@@ -235,7 +235,7 @@ test("rejects an unsigned plaintext message when an Encrypt Key is configured", 
 test("routes progress, URL, health, and unsupported commands to safe text replies", async () => {
   const cases = [
     ["及时汇报项目进度", signOutboundText(PROGRESS_MESSAGE)],
-    ["网址", signOutboundText("https://dreamutopia-clone.pages.dev")],
+    ["网址", signOutboundText("https://dreamutopia-video.pages.dev")],
     ["健康", "健康检查：HTTP 200；ok=true；authReady=false"],
     ["做个视频", signOutboundText(HELP_MESSAGE)],
   ];
@@ -261,7 +261,7 @@ test("bounds a slow health command below Feishu's callback deadline", async () =
       if (url.endsWith("/auth/v3/tenant_access_token/internal")) {
         return Response.json({ code: 0, tenant_access_token: "tenant-test-token", expire: 7200 });
       }
-      if (url === "https://dreamutopia-clone.pages.dev/api/health") {
+      if (url === "https://dreamutopia-video.pages.dev/api/health") {
         return new Promise((resolve) => setTimeout(() => resolve(Response.json({ ok: true })), 300));
       }
       if (url.includes("/im/v1/messages/") && url.endsWith("/reply")) {
@@ -343,7 +343,7 @@ test("replies to a group message only when the mention matches the bot open_id",
   assert.equal((await send(worker, personMention, env)).status, 200);
   assert.equal(replies.length, 0);
   assert.equal((await send(worker, botMention, env)).status, 200);
-  assert.equal(JSON.parse(replies[0].content).text, signOutboundText("https://dreamutopia-clone.pages.dev"));
+  assert.equal(JSON.parse(replies[0].content).text, signOutboundText("https://dreamutopia-video.pages.dev"));
 });
 
 test("deduplicates a repeated event and a repeated message with another event_id", async () => {
@@ -406,8 +406,8 @@ test("replies to 进度 with a website-progress summary and no PR/SHA trackers",
   assert.match(replyText, /网站进度/);
   assert.match(replyText, /案例页换成我们自己的样片/);
   assert.match(replyText, /还没做/);
-  assert.match(replyText, /Grok Bot · AI视频项目专属机器人 三儿/);
-  assert.doesNotMatch(replyText, /老三/);
+  assert.match(replyText, /Grok Bot · AI视频项目专属机器人 老三/);
+  assert.doesNotMatch(replyText, /三儿/);
   assert.doesNotMatch(replyText, /#\d+/);
   assert.doesNotMatch(replyText, /\b[0-9a-f]{7,40}\b/i);
   assert.equal((replyText.match(/详情/g) || []).length, 1);
@@ -452,7 +452,7 @@ test("allowlisted freeform @/p2p text uses mocked LLM and keeps known commands o
   assert.match(llmReply, /案例页已经换了样片/);
   assert.doesNotMatch(llmReply, /#\d+/);
   assert.doesNotMatch(llmReply, /1c5dd76/);
-  assert.match(llmReply, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.match(llmReply, /Grok Bot · AI视频项目专属机器人 老三/);
   assert.equal(llmBodies.length, 1);
   assert.match(llmBodies[0].messages[0].content, /网站进度|服务状态|健康/);
 
@@ -461,7 +461,7 @@ test("allowlisted freeform @/p2p text uses mocked LLM and keeps known commands o
     messageId: "om_url_llm",
     eventId: "evt-url-llm",
   }), env)).status, 200);
-  assert.equal(JSON.parse(replies[1].content).text, signOutboundText("https://dreamutopia-clone.pages.dev"));
+  assert.equal(JSON.parse(replies[1].content).text, signOutboundText("https://dreamutopia-video.pages.dev"));
   assert.equal(llmBodies.length, 1);
 });
 

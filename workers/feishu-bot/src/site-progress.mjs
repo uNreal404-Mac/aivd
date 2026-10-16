@@ -7,7 +7,7 @@ import { sanitizeRequestText } from "./privacy.mjs";
 
 export const PROGRESS_TITLE = "网站进度";
 export const PENDING_HEADING = "还没做";
-export const PUBLIC_SITE_URL = "https://dreamutopia-clone.pages.dev";
+export const PUBLIC_SITE_URL = "https://dreamutopia-video.pages.dev";
 
 export const ISSUE_REF_PATTERN = /#\d+/;
 export const SHA_PATTERN = /\b(?=[0-9a-f]{7,40}\b)[0-9a-f]*[a-f][0-9a-f]*\b/i;

@@ -2,7 +2,7 @@ import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
 import { decodeFeishuRequest, messageContext, selectMessageEvent, validateVerificationToken } from "./events.mjs";
-import { forwardToGrok } from "./forward.mjs";
+import { forwardToGrok, GROK_FORWARD_CHAT_ID } from "./forward.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
@@ -277,8 +277,11 @@ export function createWorker({
 
         const command = parseCommand(selected.text);
         const context = messageContext(payload);
-        const forwarded = await forwardToGrok({ env, kv, payload, selected, context, fetchImpl: workFetch });
-        if (forwarded && !["url", "health", "progress", "request"].includes(command)) {
+        await forwardToGrok({ env, kv, payload, selected, context, fetchImpl: workFetch });
+        // The forwarding chat is mirror-only: whatever the message says (commands included) and
+        // whatever Resend answers, it never gets a Feishu reply. It is always marked processed so
+        // Feishu retries do not send the email (or a reply) twice.
+        if (context?.chatId === GROK_FORWARD_CHAT_ID) {
           await markProcessed(kv, selected.eventId, selected.messageId);
           return;
         }

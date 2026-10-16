@@ -5,16 +5,18 @@
 | 命令 | 行为 |
 | --- | --- |
 | 进度 | 读取本仓库最近合并的改动、公开待办（主任务卡未完成项 / 未合并的网站 PR），用规则整理成「网站进度」摘要：用户能在站点上看到的变化 + 页面 + 「还没做」。不写 PR 号、提交 SHA 或分支名。写入 KV 短缓存 |
-| 网址 | 返回演示站 `https://dreamutopia-clone.pages.dev` |
+| 网址 | 返回演示站 `https://dreamutopia-video.pages.dev` |
 | 健康 | GET 固定地址 `/api/health`，返回 HTTP 状态和选定布尔字段 |
 | 需求： / 需求: | 仅白名单群可建单：群 `chat_id` 必须在 `config.allowedChatIds` 或环境变量 `ALLOWED_CHAT_IDS` 中。未设置或为空时 **失败关闭**。通过后在本仓库创建带 `feishu-request` 标签的 GitHub issue（正文已脱敏，不含提出人 / `open_id` / `chat_id`），并在原消息线程回复链接。映射只写 KV。issue 关闭后通过 GitHub webhook 回帖 |
 | 其他 @ / 私聊文本 | **默认关闭**。仅当同时配置 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY` 且会话在白名单内时，才把未识别文本发给 OpenAI 兼容 chat；否则仍返回帮助说明 |
 
-所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 三儿`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「老三」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
+所有飞书出站回复（进度 / 网址 / 健康 / 需求 / 关单 / 帮助）以及仓库根目录的部署/验收卡片，统一署名为 `Grok Bot · AI视频项目专属机器人 老三`（`botConfig.signature`，复制角色机器人时可覆盖）。用户可见出站文案不得出现「三儿」。需求回复还会提醒「将公开到 GitHub，请勿写客户名、联系方式和报价」。
+
+转发群 oc_ff147ab4f0cf2288fe99fda95e9e54ad 只转发、不回复任何内容（含进度/网址/健康/需求，不调模型）。
 
 未配置可选 LLM 时，其他内容返回帮助说明。「进度 / 网址 / 健康 / 需求」始终走规则，不经过模型。命令名称、数据源和格式化器在 `src/config.mjs` 配置，复制新角色机器人见 [TEMPLATE.md](TEMPLATE.md)。合入 `main` 或验收结果的**出站群通知**走群自定义机器人 webhook，见仓库根 README 的「飞书群通知」一节，不经过本 Worker。
 
-机器人不会调用生成、上传或 KIE。进度摘要不用模型。可选 LLM **默认关闭**；缺任一配置项时不发网络请求。开启后仍只允许白名单会话，出站会去掉 `#数字` / 提交哈希并做隐私脱敏，再署名为三儿。
+机器人不会调用生成、上传或 KIE。进度摘要不用模型。可选 LLM **默认关闭**；缺任一配置项时不发网络请求。开启后仍只允许白名单会话，出站会去掉 `#数字` / 提交哈希并做隐私脱敏，再署名为老三。
 
 未配置 `FEISHU_ENCRYPT_KEY` 时，按飞书未启用事件加密处理明文回调。以后若重新打开加密，再设置该 secret，Worker 会恢复签名校验与解密。
 
@@ -117,7 +119,7 @@ npx wrangler dev
    https://feishu-bot.<account-subdomain>.workers.dev/github/webhook
    ```
 
-## 飞书开放平台配置（三儿）
+## 飞书开放平台配置（老三）
 
 在飞书开放平台的自建应用中完成以下设置，并发布一个应用版本。当前加密已关闭，保持关闭即可。
 
@@ -132,7 +134,7 @@ npx wrangler dev
 5. 将应用版本提交发布，确认机器人对测试用户可见，并已加入要收集需求的群聊。群里只有 @ 到此应用本人才会回复；群里的 `需求：` 也必须 @ 机器人。
 6. **合入后必须设置合作方群 id**：把该群的 `chat_id` 写入 `ALLOWED_CHAT_IDS` 或 `config.allowedChatIds`。未设置时需求命令失败关闭，不会创建公开 issue。
 
-## GitHub 配置（三儿）
+## GitHub 配置（老三）
 
 1. 在本仓库创建标签 `feishu-request`（Issues → Labels）。没有该标签时，Worker 会退化为不带标签建 issue。
 2. 创建 **fine-grained personal access token**：

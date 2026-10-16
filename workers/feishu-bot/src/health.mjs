@@ -1,4 +1,4 @@
-export const HEALTH_URL = "https://dreamutopia-clone.pages.dev/api/health";
+export const HEALTH_URL = "https://dreamutopia-video.pages.dev/api/health";
 const DEFAULT_TIMEOUT_MS = 4000;
 const HEALTH_FIELDS = [
   "ok",

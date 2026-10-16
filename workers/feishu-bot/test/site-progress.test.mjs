@@ -120,11 +120,11 @@ test("redacts names, phones, and money from #20 open-item fallback in the progre
   const card = formatWebsiteProgress({
     doneItems: ["案例页换成我们自己的样片"],
     pendingItems: [raw],
-    detailUrl: "https://dreamutopia-clone.pages.dev",
+    detailUrl: "https://dreamutopia-video.pages.dev",
   });
   const fromGithub = buildProgressFromGithub({
     issueBody: `## 任务\n- [ ] ${raw}`,
-    detailUrl: "https://dreamutopia-clone.pages.dev",
+    detailUrl: "https://dreamutopia-video.pages.dev",
   });
   for (const text of [card, fromGithub]) {
     assert.match(text, /^网站进度/m);
@@ -178,7 +178,7 @@ test("renders 网站进度 with 还没做 and at most one 详情 link", () => {
   const text = formatWebsiteProgress({
     doneItems: ["案例页换成我们自己的样片", "见 PR #34 和 1c5dd76"],
     pendingItems: ["定价方案还没定", "还要看 #20"],
-    detailUrl: "https://dreamutopia-clone.pages.dev",
+    detailUrl: "https://dreamutopia-video.pages.dev",
   });
   assert.match(text, /^网站进度/m);
   assert.match(text, /案例页换成我们自己的样片/);
@@ -197,7 +197,7 @@ test("buildProgressFromGithub uses merged PR titles and checklist, never tracker
       { title: "feat(feishu-bot): 署名三儿 + 公开 issue 脱敏 (#41)", labels: [] },
     ],
     openPulls: [{ title: "Bind Feishu bot KV namespace" }],
-    detailUrl: "https://dreamutopia-clone.pages.dev",
+    detailUrl: "https://dreamutopia-video.pages.dev",
   });
   assert.match(text, /案例页换成我们自己的样片/);
   assert.doesNotMatch(text, /脱敏/);

@@ -89,7 +89,7 @@ function githubAndLlmFetch({
         body: "## 任务\n- [ ] 新定价方案\n## 卡点\n- 支付：Stripe",
       });
     }
-    if (href === "https://dreamutopia-clone.pages.dev/api/health") {
+    if (href === "https://dreamutopia-video.pages.dev/api/health") {
       return Response.json({ ok: true, authReady: true, generationEnabled: false });
     }
     throw new Error(`unexpected ${href}`);
@@ -131,8 +131,8 @@ test("post-filters model text: strip #\d+ and SHAs, redact privacy fields, drop 
   assert.match(filtered, /已脱敏-电话/);
   assert.doesNotMatch(filtered, /老三/);
   const signed = signOutboundText(filtered);
-  assert.match(signed, /Grok Bot · AI视频项目专属机器人 三儿/);
-  assert.doesNotMatch(signed, /老三/);
+  assert.match(signed, /专属机器人 老三/);
+  assert.doesNotMatch(signed, /三儿/);
 });
 
 test("system prompt includes 白话 progress, comments, health, and the no-invent rules", () => {
@@ -210,7 +210,8 @@ test("allowlisted freeform chat posts an OpenAI-compatible completion and filter
   assert.match(text, /已脱敏-邮箱/);
   assert.doesNotMatch(text, /\/api\/(generate|upload)/);
   const signed = signOutboundText(text);
-  assert.match(signed, /Grok Bot · AI视频项目专属机器人 三儿/);
+  assert.match(signed, /专属机器人 老三/);
+  assert.doesNotMatch(signed, /三儿/);
 });
 
 test("stores only redacted turns under a hashed chat id, keeping the last 6 messages", async () => {
@@ -257,7 +258,7 @@ test("daily cap replies politely without calling the model", async () => {
   });
   assert.equal(text, LLM_CAP_MESSAGE);
   assert.equal(llmCalls.length, 0);
-  assert.match(signOutboundText(text), /三儿/);
+  assert.match(signOutboundText(text), /老三/);
 });
 
 test("LLM HTTP errors and timeouts fall back to the rule help text and still count toward the daily cap", async () => {

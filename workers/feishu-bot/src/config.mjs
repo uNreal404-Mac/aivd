@@ -2,13 +2,13 @@
  * Copy-this-file configuration for a role bot.
  * New bots should duplicate `workers/feishu-bot/`, rename the Worker, and edit this object.
  */
-export const DEFAULT_SIGNATURE = "Grok Bot · AI视频项目专属机器人 三儿";
+export const DEFAULT_SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 
 export const botConfig = {
   name: "feishu-bot",
   signature: DEFAULT_SIGNATURE,
-  siteUrl: "https://dreamutopia-clone.pages.dev",
-  healthUrl: "https://dreamutopia-clone.pages.dev/api/health",
+  siteUrl: "https://dreamutopia-video.pages.dev",
+  healthUrl: "https://dreamutopia-video.pages.dev/api/health",
   // Fail-closed for 需求 and optional LLM chat: empty means no chat may use those.
   // Operator must set the partner Feishu group chat_id after merge (config or ALLOWED_CHAT_IDS).
   allowedChatIds: [],

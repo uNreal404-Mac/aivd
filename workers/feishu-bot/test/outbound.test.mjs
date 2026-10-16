@@ -10,7 +10,7 @@ import {
 } from "../src/requests.mjs";
 import { createWorker } from "../src/worker.mjs";
 
-const REQUIRED_SIGNATURE = "Grok Bot · AI视频项目专属机器人 三儿";
+const REQUIRED_SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 const encoder = new TextEncoder();
 
 function fakeKv(seed = {}) {
@@ -67,7 +67,7 @@ function collectFeishuFetch({ replies = [], comments = [] } = {}) {
     if (String(url).endsWith("/bot/v3/info")) {
       return Response.json({ code: 0, bot: { open_id: "ou_bot" } });
     }
-    if (String(url) === "https://dreamutopia-clone.pages.dev/api/health") {
+    if (String(url) === "https://dreamutopia-video.pages.dev/api/health") {
       return Response.json({ ok: true, authReady: true, generationEnabled: false });
     }
     if (String(url).includes("api.github.com") && String(url).includes("/comments")) {
@@ -111,7 +111,7 @@ function collectFeishuFetch({ replies = [], comments = [] } = {}) {
 function assertSignedOutbound(text, label) {
   assert.equal(typeof text, "string", `${label} should be text`);
   assert.ok(text.includes(REQUIRED_SIGNATURE), `${label} must include the exact signature`);
-  assert.doesNotMatch(text, /老三/, `${label} must not contain 老三`);
+  assert.doesNotMatch(text, /三儿/, `${label} must not contain 三儿`);
 }
 
 test("config default signature is the required Grok Bot line and can be overridden", () => {
@@ -121,10 +121,10 @@ test("config default signature is the required Grok Bot line and can be overridd
   assertSignedOutbound(signed, "default signed text");
   const custom = signOutboundText("项目进度摘要", { signature: "Role Bot · 复制实例" });
   assert.match(custom, /Role Bot · 复制实例/);
-  assert.doesNotMatch(custom, /老三/);
+  assert.doesNotMatch(custom, /三儿/);
 });
 
-test("every Feishu-facing outbound message includes the signature and excludes 老三", async () => {
+test("every Feishu-facing outbound message includes the signature and excludes 三儿", async () => {
   const outbound = [];
 
   const workerReplies = [];
@@ -222,14 +222,14 @@ test("every Feishu-facing outbound message includes the signature and excludes �
     sha: "08cca68",
     files: ["out/examples.html", "out/examples/rain-couple.html"],
     link: "https://github.com/CharlesHarry7/dreamutopia-clone/pull/39",
-    site: "https://dreamutopia-clone.pages.dev",
+    site: "https://dreamutopia-video.pages.dev",
     pendingItems: ["定价方案还没定", "正式域名还没定", "支付还没开通"],
   });
   const acceptance = buildAcceptanceCard({
     title: "主路径回归",
     status: "pass",
     summary: "健康检查通过",
-    link: "https://dreamutopia-clone.pages.dev/api/health",
+    link: "https://dreamutopia-video.pages.dev/api/health",
   });
   outbound.push(["deploy card", JSON.stringify(deploy)]);
   outbound.push(["acceptance card", JSON.stringify(acceptance)]);

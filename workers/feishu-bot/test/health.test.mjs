@@ -25,7 +25,7 @@ test("summarizes HTTP status and selected readiness booleans", async () => {
     },
   });
 
-  assert.equal(request.url, "https://dreamutopia-clone.pages.dev/api/health");
+  assert.equal(request.url, "https://dreamutopia-video.pages.dev/api/health");
   assert.equal(request.init.method, "GET");
   assert.equal(request.init.redirect, "error");
   assert.match(summary, /HTTP 200/);
