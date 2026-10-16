@@ -1,12 +1,14 @@
-import { getToolPageConfig, getToolPageConfigForProvider } from "@/config/tool-pages";
-import { ToolPageLayout } from "@/components/tool/tool-page-layout";
+import "@/styles/i2v-tokens.css";
+import "@/styles/seo-landing-tokens.css";
+
+import { getToolPageConfig } from "@/config/tool-pages";
+import { I2VStudio } from "@/components/image-to-video/i2v-studio";
 import { SeoLanding } from "@/components/seo/seo-landing";
+import { isI2VGenerationEnabled } from "@/lib/image-to-video";
+import { seoLandingFor } from "@/lib/seo-landing";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
-import { seoLandingFor } from "@/lib/seo-landing";
-import { getConfiguredAIProvider } from "@/ai";
-import "@/styles/seo-landing-tokens.css";
 
 interface ImageToVideoPageProps {
   params: Promise<{
@@ -48,19 +50,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function ImageToVideoPage({ params }: ImageToVideoPageProps) {
-  const config = getToolPageConfigForProvider(
-    "image-to-video",
-    getConfiguredAIProvider()
-  );
+export default async function ImageToVideoPage({
+  params,
+}: ImageToVideoPageProps) {
   const { locale } = await params;
+  const generationEnabled = isI2VGenerationEnabled();
+
   return (
     <>
-      <ToolPageLayout
-        config={config}
-        locale={locale}
-        toolRoute="image-to-video"
-      />
+      <I2VStudio generationEnabled={generationEnabled} locale={locale} />
       <SeoLanding
         slug="image-to-video"
         locale={locale}
