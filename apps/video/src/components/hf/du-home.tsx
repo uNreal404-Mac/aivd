@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   ArrowRight,
   CirclePlay,
@@ -21,9 +19,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { DuHomeCategories } from "@/components/hf/du-home-categories";
+
 import {
-  CATEGORY_CARDS,
-  CATEGORY_FILTERS,
   CATEGORY_HEADER,
   CREDITS_BANNER,
   EFFECT_CARDS,
@@ -115,13 +113,6 @@ function SectionHeading({
 }
 
 export function DuHome({ lang }: { lang: string }) {
-  const [active, setActive] = useState("All");
-
-  const visibleCategories =
-    active === "All" || active === "More"
-      ? CATEGORY_CARDS
-      : CATEGORY_CARDS.filter((card) => card.category === active);
-
   const largeCards = HERO_CARDS.filter((card) => card.size === "large");
   const smallCards = HERO_CARDS.filter((card) => card.size === "small");
 
@@ -180,7 +171,11 @@ export function DuHome({ lang }: { lang: string }) {
                   <img
                     src={card.image}
                     alt={card.alt}
-                    loading="lazy"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
+                    width={340}
+                    height={453}
                     className="h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
@@ -194,7 +189,7 @@ export function DuHome({ lang }: { lang: string }) {
               ))}
             </div>
             <div className="flex flex-col gap-3">
-              {smallCards.map((card) => (
+              {smallCards.map((card, index) => (
                 <div
                   key={card.caption}
                   className="relative aspect-[3/4] w-[110px] overflow-hidden rounded-2xl border border-[var(--du-border)] sm:w-[130px]"
@@ -202,7 +197,11 @@ export function DuHome({ lang }: { lang: string }) {
                   <img
                     src={card.image}
                     alt={card.alt}
-                    loading="lazy"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority={index === 0 ? "high" : undefined}
+                    width={130}
+                    height={173}
                     className="h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
@@ -229,52 +228,7 @@ export function DuHome({ lang }: { lang: string }) {
             </Link>
           }
         />
-        <div className="mt-8 flex flex-wrap gap-2">
-          {CATEGORY_FILTERS.map((filter) => {
-            const isActive = filter === active;
-            return (
-              <button
-                key={filter}
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => setActive(filter)}
-                className={
-                  isActive
-                    ? "h-9 rounded-lg bg-[var(--du-accent)] px-4 text-sm font-medium text-[var(--du-on-accent)]"
-                    : "du-glass-btn h-9 px-4 text-sm"
-                }
-              >
-                {filter}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {visibleCategories.map((card) => (
-            <div key={card.id} className="du-glass p-2">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[var(--du-border)]">
-                <img
-                  src={card.image}
-                  alt={card.alt}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-                <span className="du-glass-btn du-glass-round du-glass-on-media absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center">
-                  <Icon name="Play" className="h-3.5 w-3.5 text-[var(--du-on-accent)]" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <span className="text-sm text-[var(--du-text)]">{card.title}</span>
-                <span
-                  aria-label="Like"
-                  className="du-glass-btn du-glass-on-media inline-flex items-center px-2 py-1 text-xs"
-                >
-                  <Icon name="Heart" className="h-3 w-3" />
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DuHomeCategories />
       </section>
 
       {/* 3. Model cards */}
@@ -297,6 +251,7 @@ export function DuHome({ lang }: { lang: string }) {
                   src={model.image}
                   alt={model.alt}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -329,6 +284,7 @@ export function DuHome({ lang }: { lang: string }) {
                 src={effect.image}
                 alt={effect.alt}
                 loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
               />
               <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_60%)]" />
@@ -385,6 +341,7 @@ export function DuHome({ lang }: { lang: string }) {
             src={CREDITS_BANNER.image}
             alt={CREDITS_BANNER.alt}
             loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
           />
           <span className="absolute inset-0 bg-[linear-gradient(to_right,var(--du-bg),transparent_70%)]" />
