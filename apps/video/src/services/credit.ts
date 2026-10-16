@@ -39,6 +39,8 @@ interface PackageAllocation {
   credits: number;
 }
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export class CreditService {
   /**
    * 获取用户积分余额
@@ -344,22 +346,28 @@ export class CreditService {
 
   /**
    * 充值积分
+   *
+   * 可传入已有事务（trx），让调用方的检查与本次发放共享同一事务；
+   * 未传入时自行开启事务，行为与之前一致。
    */
-  async recharge(params: {
-    userId: string;
-    credits: number;
-    orderNo: string;
-    transType?: CreditTransType;
-    expiryDays?: number;
-    remark?: string;
-  }): Promise<{ packageId: number }> {
+  async recharge(
+    params: {
+      userId: string;
+      credits: number;
+      orderNo: string;
+      transType?: CreditTransType;
+      expiryDays?: number;
+      remark?: string;
+    },
+    trx?: Transaction
+  ): Promise<{ packageId: number }> {
     const transType = params.transType || CreditTransType.ORDER_PAY;
     const expiryDays =
       params.expiryDays ?? CREDITS_CONFIG.expiration.purchaseDays;
     const expiredAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
-    return db.transaction(async (trx) => {
-      const [pkgResult] = await trx
+    const run = async (tx: Transaction): Promise<{ packageId: number }> => {
+      const [pkgResult] = await tx
         .insert(creditPackages)
         .values({
           userId: params.userId,
@@ -378,8 +386,8 @@ export class CreditService {
         throw new Error("Failed to create credit package");
       }
 
-      const balance = await this.getBalanceInTx(trx, params.userId);
-      await trx.insert(creditTransactions).values({
+      const balance = await this.getBalanceInTx(tx, params.userId);
+      await tx.insert(creditTransactions).values({
         transNo: `TXN${Date.now()}${nanoid(6)}`,
         userId: params.userId,
         transType,
@@ -391,7 +399,13 @@ export class CreditService {
       });
 
       return { packageId: pkgResult.id };
-    });
+    };
+
+    if (trx) {
+      return run(trx);
+    }
+
+    return db.transaction(run);
   }
 
   /**

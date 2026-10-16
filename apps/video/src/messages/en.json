@@ -265,10 +265,6 @@
     "features": {
       "hd_videos": "HD video generation",
       "fast_generation": "Fast generation speed",
-      "no_watermark": "No watermark",
-      "commercial_use": "Commercial use license",
-      "priority_support": "Priority support",
-      "api_access": "API access",
       "custom_models": "Custom AI models"
     }
   },

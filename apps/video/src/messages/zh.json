@@ -265,10 +265,6 @@
     "features": {
       "hd_videos": "高清视频生成",
       "fast_generation": "快速生成",
-      "no_watermark": "无水印",
-      "commercial_use": "商业使用授权",
-      "priority_support": "优先支持",
-      "api_access": "API 访问",
       "custom_models": "自定义 AI 模型"
     }
   },

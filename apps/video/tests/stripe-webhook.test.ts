@@ -52,7 +52,12 @@ async function deliver(
 
 function checkoutSessionEvent(
   id: string,
-  opts: { paymentStatus?: string; livemode?: boolean } = {}
+  opts: {
+    paymentStatus?: string;
+    livemode?: boolean;
+    type?: string;
+    sessionId?: string;
+  } = {}
 ) {
   return {
     id,
@@ -62,10 +67,10 @@ function checkoutSessionEvent(
     livemode: opts.livemode ?? false,
     pending_webhooks: 1,
     request: { id: null, idempotency_key: null },
-    type: "checkout.session.completed",
+    type: opts.type ?? "checkout.session.completed",
     data: {
       object: {
-        id: "cs_test_123",
+        id: opts.sessionId ?? "cs_test_123",
         object: "checkout.session",
         payment_status: opts.paymentStatus ?? "paid",
         client_reference_id: "user_1",
@@ -202,5 +207,43 @@ describe("handleStripeWebhook", () => {
     expect(res.body.received).toBe(true);
     expect(res.body.ignored).toBe("subscription_create");
     expect(state.calls).toBe(0);
+  });
+
+  it("grants credits for checkout.session.async_payment_succeeded", async () => {
+    const { grantCreditsOnce, state } = createIdempotentGranter();
+    const event = checkoutSessionEvent("evt_async", {
+      type: "checkout.session.async_payment_succeeded",
+    });
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, result: "granted" });
+    expect(state.credits).toBe(100);
+  });
+
+  it("grants once when completed and async_payment_succeeded share a session", async () => {
+    const { grantCreditsOnce, state } = createIdempotentGranter();
+    const completed = checkoutSessionEvent("evt_completed");
+    const asyncPaid = checkoutSessionEvent("evt_async_same_session", {
+      type: "checkout.session.async_payment_succeeded",
+    });
+
+    const first = await deliver(
+      completed,
+      sign(JSON.stringify(completed)),
+      grantCreditsOnce
+    );
+    const second = await deliver(
+      asyncPaid,
+      sign(JSON.stringify(asyncPaid)),
+      grantCreditsOnce
+    );
+
+    expect(first.body).toEqual({ received: true, result: "granted" });
+    expect(second.body).toEqual({ received: true, result: "duplicate" });
+    expect(state.credits).toBe(100);
+    expect(state.granted).toBe(1);
   });
 });

@@ -120,8 +120,8 @@ function generatePriceData() {
     },
     ultimate: {
       description: {
-        zh: "适合团队和企业用户",
-        en: "For teams and enterprises",
+        zh: "适合高频创作者",
+        en: "For power creators and heavy usage",
       },
       benefits: {
         zh: [

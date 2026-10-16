@@ -247,6 +247,9 @@ export const creditPackages = pgTable(
       table.userId,
       table.expiredAt
     ),
+    orderNoUniqueIdx: uniqueIndex("credit_packages_order_no_unique").on(
+      table.orderNo
+    ),
   })
 );
 

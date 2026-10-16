@@ -27,11 +27,50 @@ export interface StripeWebhookResult {
 }
 
 /**
+ * Shared handling for `checkout.session.completed` and
+ * `checkout.session.async_payment_succeeded`.
+ *
+ * Idempotency is keyed by the checkout session id (not the event id) so a
+ * session that emits both event types only grants once.
+ */
+async function grantForCheckoutSession(
+  session: Stripe.Checkout.Session,
+  grantCreditsOnce: GrantCreditsOnce
+): Promise<StripeWebhookResult> {
+  if (session.payment_status !== "paid") {
+    return { status: 200, body: { received: true, ignored: "unpaid" } };
+  }
+
+  const userId =
+    session.metadata?.userId ?? session.client_reference_id ?? undefined;
+  const productId = session.metadata?.productId;
+
+  if (!userId || !productId) {
+    return {
+      status: 200,
+      body: { received: true, ignored: "missing_metadata" },
+    };
+  }
+
+  const result = await grantCreditsOnce({
+    orderNo: `stripe_${session.id}`,
+    userId,
+    productId,
+  });
+
+  return { status: 200, body: { received: true, result } };
+}
+
+/**
  * Pure, dependency-injected core for the Stripe webhook.
  *
  * TEST MODE ONLY: live mode events are acknowledged but never granted.
- * Idempotency is keyed by event id (`stripe_<event.id>`) because Stripe
- * retries deliveries with the same event id.
+ *
+ * Checkout-session events are keyed by session id (`stripe_<session.id>`) so
+ * that `checkout.session.completed` and
+ * `checkout.session.async_payment_succeeded` for the same session can never
+ * grant twice. Invoice events are keyed by event id (`stripe_<event.id>`)
+ * because Stripe retries deliveries with the same event id.
  */
 export async function handleStripeWebhook({
   payload,
@@ -64,31 +103,12 @@ export async function handleStripeWebhook({
   }
 
   switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-
-      if (session.payment_status !== "paid") {
-        return { status: 200, body: { received: true, ignored: "unpaid" } };
-      }
-
-      const userId =
-        session.metadata?.userId ?? session.client_reference_id ?? undefined;
-      const productId = session.metadata?.productId;
-
-      if (!userId || !productId) {
-        return {
-          status: 200,
-          body: { received: true, ignored: "missing_metadata" },
-        };
-      }
-
-      const result = await grantCreditsOnce({
-        orderNo: `stripe_${event.id}`,
-        userId,
-        productId,
-      });
-
-      return { status: 200, body: { received: true, result } };
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      return grantForCheckoutSession(
+        event.data.object as Stripe.Checkout.Session,
+        grantCreditsOnce
+      );
     }
 
     case "invoice.paid": {

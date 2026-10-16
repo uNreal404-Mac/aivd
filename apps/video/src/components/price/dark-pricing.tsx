@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { creem } from "@/lib/auth/client";
-import { readAttributionCookie } from "@/lib/attribution";
+import { startStripeCheckout } from "@/lib/stripe-checkout-client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -120,42 +120,11 @@ export function DarkPricing({
     }
 
     startTransition(async () => {
-      const origin = window.location.origin;
-      // 支付成功后跳转到 credits 页面
-      // 如果当前不在 pricing 页面（例如嵌入在其他页面的弹窗），则设置 returnTo 以便跳回
-      // 如果本来就在 pricing 页面，则不设置 returnTo，让用户停留在 credits 页面查看余额
-      const currentPath = window.location.pathname;
-      const isPricingPage = currentPath.includes("/pricing");
-      const returnTo = isPricingPage ? "" : encodeURIComponent(currentPath);
+      const result = await startStripeCheckout(product.id);
 
-      const successUrl = returnTo
-        ? `${origin}/credits?payment=success&returnTo=${returnTo}`
-        : `${origin}/credits?payment=success`;
-
-      const { data, error } = await creem.createCheckout({
-        productId: product.id,
-        successUrl,
-        metadata: {
-          plan: product.id,
-          attribution: readAttributionCookie() ?? undefined,
-        },
-      });
-
-      if (error) {
-        toast.error("Checkout error", {
-          description: error.message ?? "Failed to create checkout session.",
-        });
-        return;
+      if (!result.ok) {
+        toast.error("Checkout error", { description: result.error });
       }
-
-      if (!data || !("url" in data) || !data.url) {
-        toast.error("Checkout error", {
-          description: "Missing checkout URL from Creem.",
-        });
-        return;
-      }
-
-      window.location.href = data.url;
     });
   };
 

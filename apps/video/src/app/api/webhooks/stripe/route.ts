@@ -15,7 +15,12 @@ export const POST = async (req: NextRequest) => {
   const secretKey = getStripeSecretKey();
   const webhookSecret = process.env[STRIPE_WEBHOOK_SECRET_VAR]?.trim();
 
-  if (!secretKey || !webhookSecret) {
+  // Test mode only — refuse live keys outright.
+  if (!secretKey || !secretKey.startsWith("sk_test_")) {
+    return NextResponse.json({ error: "test_mode_only" }, { status: 503 });
+  }
+
+  if (!webhookSecret) {
     return NextResponse.json(
       { error: "stripe_not_configured" },
       { status: 503 }
