@@ -43,7 +43,7 @@ function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
         "shrink-0 rounded-md px-1.5 text-[10px] font-semibold",
         tone === "lime"
           ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
-          : "bg-white/10 text-[var(--du-text-dim)]"
+          : "bg-[var(--du-glass-bg-strong)] text-[var(--du-text-dim)]"
       )}
     >
       {label}
@@ -128,13 +128,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           <Link
             href={`/${lang}/pricing`}
             aria-label="Pricing"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[var(--du-text)] hover:bg-white/10 lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:hidden"
           >
             <Gem className="h-4 w-4" />
           </Link>
           <Link
             href={`/${lang}/pricing`}
-            className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-white/5 px-3 text-sm font-medium text-[var(--du-text)] hover:bg-white/10 lg:flex"
+            className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-[var(--du-glass-bg)] px-3 text-sm font-medium text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:flex"
           >
             <Gem className="h-4 w-4" />
             Pricing
@@ -182,7 +182,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[var(--du-text)] lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>

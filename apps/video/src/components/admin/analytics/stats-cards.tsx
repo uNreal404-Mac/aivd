@@ -61,7 +61,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         value={`${stats.firstVideoConversionRate}%`}
         description="生成首个视频的用户占比"
         icon={TrendingUp}
-        valueClassName="text-purple-600"
+        valueClassName="text-[var(--du-accent)]"
       />
 
       <StatCard
@@ -69,7 +69,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         value={`${stats.paymentConversionRate}%`}
         description="有付费记录的用户占比"
         icon={Billing}
-        valueClassName="text-green-600"
+        valueClassName="text-[var(--du-success)]"
       />
 
       <StatCard
@@ -77,8 +77,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
         value={`${stats.videoSuccessRate}%`}
         description="成功完成的视频占比"
         icon={CheckCircle}
-        iconClassName="text-green-600"
-        valueClassName="text-green-600"
+        iconClassName="text-[var(--du-success)]"
+        valueClassName="text-[var(--du-success)]"
       />
 
       <StatCard

@@ -60,7 +60,7 @@ const HOW_STEPS: { title: string; body: string }[] = [
 
 function DemoChip() {
   return (
-    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
+    <span className="rounded-[6px] bg-[var(--du-glass-bg-strong)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       Demo
     </span>
   );
@@ -68,7 +68,7 @@ function DemoChip() {
 
 function SoonChip() {
   return (
-    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
+    <span className="rounded-[6px] bg-[var(--du-glass-bg-strong)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       Soon
     </span>
   );
@@ -87,8 +87,8 @@ export function HfWorkbenchShell({
 
   return (
     <div className="flex h-auto flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row">
-      <aside className="flex w-full shrink-0 flex-col rounded-[20px] border border-white/5 bg-[var(--du-surface)] lg:w-[320px] lg:overflow-y-auto">
-        <div className="flex items-center gap-4 border-b border-white/5 px-3 pt-3">
+      <aside className="flex w-full shrink-0 flex-col rounded-[20px] border border-[var(--du-glass-border)] bg-[var(--du-surface)] lg:w-[320px] lg:overflow-y-auto">
+        <div className="flex items-center gap-4 border-b border-[var(--du-glass-border)] px-3 pt-3">
           {MODE_TABS.map((tab) => {
             const isActive = tab.key === activeMode;
             return (
@@ -97,8 +97,8 @@ export function HfWorkbenchShell({
                 href={`/${lang}/${tab.slug}`}
                 className={`-mb-px border-b-2 pb-2 text-[14px] font-medium transition-colors ${
                   isActive
-                    ? "border-white text-white"
-                    : "border-transparent text-white/50 hover:text-white/80"
+                    ? "border-[var(--du-text)] text-[var(--du-text)]"
+                    : "border-transparent text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
                 }`}
               >
                 {tab.label}
@@ -107,7 +107,7 @@ export function HfWorkbenchShell({
           })}
           <span
             aria-disabled="true"
-            className="-mb-px flex cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent pb-2 text-[14px] font-medium text-white/50 opacity-60"
+            className="-mb-px flex cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent pb-2 text-[14px] font-medium text-[var(--du-text-muted)] opacity-60"
           >
             Edit
             <SoonChip />
@@ -119,7 +119,7 @@ export function HfWorkbenchShell({
             <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-accent-text)]">
               DreamUtopia Video
             </span>
-            <span className="mt-1 text-[12px] text-white/70">
+            <span className="mt-1 text-[12px] text-[var(--du-text-muted)]">
               Pick a model below
             </span>
             <span className="absolute right-3 top-3">
@@ -131,7 +131,7 @@ export function HfWorkbenchShell({
         <div className="flex-1 p-3">{generator}</div>
       </aside>
 
-      <section className="min-w-0 flex-1 rounded-[20px] border border-white/5 bg-[var(--du-surface)] p-5 lg:overflow-y-auto">
+      <section className="min-w-0 flex-1 rounded-[20px] border border-[var(--du-glass-border)] bg-[var(--du-surface)] p-5 lg:overflow-y-auto">
         <div className="flex items-center gap-1">
           {RIGHT_TABS.map(({ key, label, Icon }) => {
             const isActive = key === rightTab;
@@ -142,8 +142,8 @@ export function HfWorkbenchShell({
                 onClick={() => setRightTab(key)}
                 className={`flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors ${
                   isActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/50 hover:text-white/80"
+                    ? "bg-[var(--du-glass-bg-strong)] text-[var(--du-text)]"
+                    : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -174,7 +174,7 @@ export function HfWorkbenchShell({
             </div>
 
             <div className="mt-6 flex justify-center">
-              <div className="flex items-center gap-1 rounded-full border border-white/10 p-1">
+              <div className="flex items-center gap-1 rounded-full border border-[var(--du-glass-border)] p-1">
                 {FILTERS.map((item) => {
                   const isActive = item === filter;
                   return (
@@ -184,8 +184,8 @@ export function HfWorkbenchShell({
                       onClick={() => setFilter(item)}
                       className={`h-8 rounded-full px-3 text-[14px] font-medium transition-colors ${
                         isActive
-                          ? "bg-white text-[var(--du-surface)]"
-                          : "text-white/60 hover:text-white/80"
+                          ? "bg-[var(--du-text)] text-[var(--du-surface)]"
+                          : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
                       }`}
                     >
                       {item}
@@ -204,8 +204,8 @@ export function HfWorkbenchShell({
                   <span className="absolute right-2 top-2">
                     <DemoChip />
                   </span>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                    <span className="text-[12px] text-white/80">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[var(--du-glass-overlay-scrim)] to-transparent p-3">
+                    <span className="text-[12px] text-[var(--du-text)]">
                       {tile.caption}
                     </span>
                   </div>

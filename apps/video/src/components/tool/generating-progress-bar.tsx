@@ -16,9 +16,9 @@ export function GeneratingProgressBar({
   return (
     <div className={cn("w-full", className)}>
       {/* 进度条容器 */}
-      <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+      <div className="h-1 w-full bg-[var(--du-surface-2)] rounded-full overflow-hidden">
         {/* 动画进度条 */}
-        <div className="h-full bg-purple-500 rounded-full animate-[loading_2s_ease-in-out_infinite]" />
+        <div className="h-full bg-[var(--du-accent)] rounded-full animate-[loading_2s_ease-in-out_infinite]" />
       </div>
 
       {/* CSS 动画定义 */}

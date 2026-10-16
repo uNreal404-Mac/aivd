@@ -108,7 +108,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? "bg-background/40 backdrop-blur-xl backdrop-saturate-150 border-b border-white/10 dark:border-white/5 shadow-[0_1px_6px_0_rgba(0,0,0,0.04)]"
+          ? "bg-background/40 backdrop-blur-xl backdrop-saturate-150 border-b border-[var(--du-glass-border)] shadow-[var(--du-glass-shadow)]"
           : "bg-transparent"
       )}
     >
@@ -274,7 +274,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
             {/* Credits Display */}
             {user && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/80 backdrop-blur-sm border border-border/50">
-                <Gem className="h-4 w-4 text-amber-500" />
+                <Gem className="h-4 w-4 text-[var(--du-warning)]" />
                 <CreditsDisplay />
               </div>
             )}
@@ -337,7 +337,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
             {/* Credits Display */}
             {user && (
               <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted border border-border">
-                <Gem className="h-3 w-3 text-amber-500" />
+                <Gem className="h-3 w-3 text-[var(--du-warning)]" />
                 <span className="text-xs font-medium">
                   <CreditsDisplay />
                 </span>

@@ -14,13 +14,13 @@ interface AvatarFallbackProps {
 
 // 预定义主题色数组
 const colors = [
-  "hsl(var(--primary))",          // 主题色
-  "hsl(280, 65%, 60%)",            // 紫色
-  "hsl(200, 65%, 55%)",            // 蓝色
-  "hsl(150, 65%, 45%)",            // 绿色
-  "hsl(30, 85%, 55%)",             // 橙色
-  "hsl(340, 75%, 55%)",            // 粉色
-  "hsl(180, 60%, 50%)",            // 青色
+  "var(--du-accent)",              // 主题色
+  "var(--du-accent-2)",            // 紫色
+  "var(--du-accent-text)",         // 蓝色
+  "var(--du-success)",             // 绿色
+  "var(--du-warning)",             // 橙色
+  "var(--du-danger)",              // 粉色
+  "var(--du-accent-hover)",        // 青色
 ];
 
 /**
@@ -52,7 +52,7 @@ export function AvatarFallback({ name, email, className }: AvatarFallbackProps) 
   return (
     <div
       className={cn(
-        "flex items-center justify-center rounded-full text-white font-semibold",
+        "flex items-center justify-center rounded-full text-[var(--du-on-accent)] font-semibold",
         "bg-gradient-to-br from-primary to-primary/80",
         className
       )}

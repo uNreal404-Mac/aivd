@@ -28,7 +28,7 @@ const features = [
     titleKey: "textToVideo.title",
     descKey: "textToVideo.description",
     stat: { value: 30, suffix: "s", labelKey: "textToVideo.stat" },
-    gradient: { from: "#9E7AFF", to: "#FE8BBB" },
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
     featured: true,
   },
   {
@@ -36,7 +36,7 @@ const features = [
     titleKey: "imageToVideo.title",
     descKey: "imageToVideo.description",
     stat: { value: 1080, suffix: "p", labelKey: "imageToVideo.stat" },
-    gradient: { from: "#6366F1", to: "#8B5CF6" },
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
     featured: false,
   },
   {
@@ -44,7 +44,7 @@ const features = [
     titleKey: "referenceGen.title",
     descKey: "referenceGen.description",
     stat: { value: 9, suffix: "+", labelKey: "referenceGen.stat" },
-    gradient: { from: "#06B6D4", to: "#22D3EE" },
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
     featured: false,
   },
 ];
@@ -56,27 +56,27 @@ const benefits = [
     titleKey: "fast.title",
     descKey: "fast.description",
     stat: { value: 2, suffix: "min" },
-    color: "text-yellow-500",
-    bgColor: "bg-yellow-500/10",
-    gradient: { from: "#F59E0B", to: "#F97316" },
+    color: "text-[var(--du-warning)]",
+    bgColor: "bg-[var(--du-warning)]/10",
+    gradient: { from: "var(--du-warning)", to: "var(--du-warning)" },
   },
   {
     icon: Shield,
     titleKey: "secure.title",
     descKey: "secure.description",
     stat: { value: 100, suffix: "%" },
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    gradient: { from: "#22C55E", to: "#10B981" },
+    color: "text-[var(--du-success)]",
+    bgColor: "bg-[var(--du-success)]/10",
+    gradient: { from: "var(--du-success)", to: "var(--du-success)" },
   },
   {
     icon: Clock,
     titleKey: "realtime.title",
     descKey: "realtime.description",
     stat: { value: 24, suffix: "/7" },
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-500/10",
-    gradient: { from: "#6366F1", to: "#818CF8" },
+    color: "text-[var(--du-accent)]",
+    bgColor: "bg-[var(--du-accent)]/10",
+    gradient: { from: "var(--du-accent)", to: "var(--du-accent-2)" },
   },
 ];
 
@@ -139,7 +139,7 @@ export function FeaturesSection() {
                   className="h-full"
                 >
                   <MagicCard
-                    className="h-full rounded-2xl border border-border bg-card dark:bg-black/40 backdrop-blur-xl"
+                    className="h-full rounded-2xl border border-border bg-card dark:bg-[var(--du-glass-bg-strong)] backdrop-blur-xl"
                     gradientFrom={feature.gradient.from}
                     gradientTo={feature.gradient.to}
                     gradientColor={feature.gradient.from}
@@ -158,7 +158,7 @@ export function FeaturesSection() {
                             background: `linear-gradient(135deg, ${feature.gradient.from}, ${feature.gradient.to})`,
                           }}
                         >
-                          <Icon className="h-7 w-7 text-white" />
+                          <Icon className="h-7 w-7 text-[var(--du-on-accent)]" />
                         </motion.div>
 
                         {feature.featured && (
@@ -215,7 +215,7 @@ export function FeaturesSection() {
                   className="h-full"
                 >
                   <MagicCard
-                    className="h-full rounded-2xl border border-border bg-card dark:bg-black/40 backdrop-blur-xl"
+                    className="h-full rounded-2xl border border-border bg-card dark:bg-[var(--du-glass-bg-strong)] backdrop-blur-xl"
                     gradientFrom={benefit.gradient.from}
                     gradientTo={benefit.gradient.to}
                     gradientColor={benefit.gradient.from}
@@ -268,11 +268,11 @@ export function FeaturesSection() {
           >
             <LocaleLink href="/#generator">
               <ShimmerButton
-                shimmerColor="#ffffff"
+                shimmerColor="var(--du-on-accent)"
                 shimmerSize="0.05em"
                 shimmerDuration="3s"
                 borderRadius="100px"
-                background="oklch(from var(--primary) l c h)"
+                background="var(--du-accent)"
                 className="px-8 py-3 text-base font-medium shadow-lg shadow-primary/25"
               >
                 {t("bottomCTA.button")}

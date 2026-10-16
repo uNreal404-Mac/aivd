@@ -88,10 +88,10 @@ export function ToolLandingPage({
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-4"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[var(--du-accent)]/10 to-[var(--du-accent-2)]/10 border border-[var(--du-accent)]/20 mb-4"
             >
-              <Sparkles className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+              <Sparkles className="h-4 w-4 text-[var(--du-accent)]" />
+              <span className="text-sm font-medium text-[var(--du-accent-text)]">
                 AI-Powered
               </span>
             </motion.div>
@@ -110,12 +110,12 @@ export function ToolLandingPage({
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link href={`/${locale}/login`}>
                 <ShimmerButton
-                  shimmerColor="#ffffff"
+                  shimmerColor="var(--du-on-accent)"
                   shimmerSize="0.05em"
                   shimmerDuration="3s"
                   borderRadius="100px"
-                  background="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
-                  className="px-8 py-3 text-base font-medium shadow-lg shadow-blue-500/25"
+                  background="linear-gradient(135deg, var(--du-accent) 0%, var(--du-accent-2) 100%)"
+                  className="px-8 py-3 text-base font-medium shadow-[var(--du-glow)]"
                 >
                   {landing.hero.ctaText}
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -156,14 +156,14 @@ export function ToolLandingPage({
                       alt={example.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-[var(--du-glass-overlay-scrim)]/0 group-hover:bg-[var(--du-glass-overlay-scrim)]/40 transition-colors duration-300 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-[var(--du-glass-bg-strong)] dark:bg-[var(--du-glass-overlay-scrim)] backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Play className="h-5 w-5 text-foreground fill-foreground ml-0.5" />
                       </div>
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                      <p className="text-white text-sm font-medium">{example.title}</p>
-                      <p className="text-white/70 text-xs truncate">{example.prompt}</p>
+                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[var(--du-glass-overlay-scrim)] to-transparent">
+                      <p className="text-[var(--du-text)] text-sm font-medium">{example.title}</p>
+                      <p className="text-[var(--du-text-muted)] text-xs truncate">{example.prompt}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -183,7 +183,7 @@ export function ToolLandingPage({
               className="bg-muted/30 rounded-xl p-6 space-y-4"
             >
               <h3 className="font-semibold flex items-center gap-2 text-lg">
-                <Sparkles className="h-5 w-5 text-purple-500" />
+                <Sparkles className="h-5 w-5 text-[var(--du-accent-2)]" />
                 Features
               </h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -196,7 +196,7 @@ export function ToolLandingPage({
                     transition={{ delay: 0.3 + index * 0.05 }}
                     className="flex items-start gap-2"
                   >
-                    <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <Check className="h-5 w-5 text-[var(--du-success)] shrink-0 mt-0.5" />
                     <span className="text-sm">{feature}</span>
                   </motion.li>
                 ))}
@@ -259,7 +259,7 @@ export function ToolLandingPage({
               {landing.stats.videosGenerated && (
                 <div className="text-center space-y-1">
                   <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-                    <Video className="h-5 w-5 text-blue-500" />
+                    <Video className="h-5 w-5 text-[var(--du-accent)]" />
                     {landing.stats.videosGenerated}
                   </div>
                   <div className="text-xs text-muted-foreground">Videos Generated</div>
@@ -268,7 +268,7 @@ export function ToolLandingPage({
               {landing.stats.usersCount && (
                 <div className="text-center space-y-1">
                   <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-                    <Users className="h-5 w-5 text-purple-500" />
+                    <Users className="h-5 w-5 text-[var(--du-accent-2)]" />
                     {landing.stats.usersCount}
                   </div>
                   <div className="text-xs text-muted-foreground">Happy Users</div>
@@ -276,7 +276,7 @@ export function ToolLandingPage({
               )}
               {landing.stats.avgRating && (
                 <div className="text-center space-y-1">
-                  <div className="text-2xl font-bold text-yellow-500">
+                  <div className="text-2xl font-bold text-[var(--du-warning)]">
                     {landing.stats.avgRating} ★
                   </div>
                   <div className="text-xs text-muted-foreground">Average Rating</div>
@@ -300,11 +300,11 @@ export function ToolLandingPage({
             </p>
             <Link href={`/${locale}/login`}>
               <ShimmerButton
-                shimmerColor="#ffffff"
+                shimmerColor="var(--du-on-accent)"
                 shimmerSize="0.05em"
                 shimmerDuration="3s"
                 borderRadius="100px"
-                background="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
+                background="linear-gradient(135deg, var(--du-accent) 0%, var(--du-accent-2) 100%)"
                 className="px-8 py-3 text-base font-medium"
               >
                 Get Started Free

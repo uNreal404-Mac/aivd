@@ -34,7 +34,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">自动重载</span>
-                <span className="text-green-600">✓ 支持</span>
+                <span className="text-[var(--du-success)]">✓ 支持</span>
               </div>
             </div>
             <Button asChild className="w-full">
@@ -68,7 +68,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">自动设置</span>
-                <span className="text-green-600">✓ 支持</span>
+                <span className="text-[var(--du-success)]">✓ 支持</span>
               </div>
             </div>
             <Button asChild variant="outline" className="w-full">
