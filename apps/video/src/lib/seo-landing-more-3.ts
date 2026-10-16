@@ -24,7 +24,7 @@ const EN_ANIMATE_IMAGE_AI: SeoLandingContent = {
   path: "/animate-image-ai",
   title: "Make Your Photo Move — Bring Old Photos to Life",
   description:
-    "Bring old family photos, portraits and illustrations to life with subtle motion — a smile, a blink, hair in the wind or a slow camera push.",
+    "Animate a photo with AI: bring old family photos, portraits and illustrations to life with subtle motion, like a smile, a blink or a slow camera push.",
   h1: "Make Your Photo Move",
   heroSub:
     "Start from a single photograph and describe the small movements that make it feel alive.",
