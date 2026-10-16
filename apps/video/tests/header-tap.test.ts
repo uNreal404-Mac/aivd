@@ -62,6 +62,11 @@ describe("mobile nav tap targets", () => {
     expect(classNameOf(toggle ?? "")).toContain("h-11 w-11");
   });
 
+  it("restores desktop height for always-visible elements", () => {
+    expect(source).toContain("lg:min-h-0 lg:min-w-0");
+    expect(source).toContain("px-1 lg:h-9 lg:min-w-0");
+  });
+
   it("removes the dead landing header", () => {
     expect(
       fs.existsSync(path.join(root, "src/components/landing/header.tsx"))

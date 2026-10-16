@@ -108,7 +108,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div className="flex items-center gap-4">
           <Link
             href={`/${lang}`}
-            className="flex min-h-11 min-w-11 shrink-0 items-center gap-2"
+            className="flex min-h-11 min-w-11 shrink-0 items-center gap-2 lg:min-h-0 lg:min-w-0"
           >
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
@@ -142,7 +142,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {user ? (
             <Link
               href={`/${lang}/my-creations`}
-              className="flex h-11 min-w-11 shrink-0 items-center rounded-[10px] px-1"
+              className="flex h-11 min-w-11 shrink-0 items-center rounded-[10px] px-1 lg:h-9 lg:min-w-0"
               aria-label="My creations"
             >
               <UserAvatar
