@@ -322,11 +322,14 @@ export function LandingHeader({ user }: { user?: User | null }) {
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="lg:hidden flex items-center justify-between h-16">
+        <div
+          className="lg:hidden flex items-center justify-between h-16"
+          data-testid="mobile-header"
+        >
           {/* Logo */}
           <LocaleLink
             href="/"
-            className="flex items-center gap-2 text-lg font-semibold"
+            className="flex items-center gap-2 text-lg font-semibold min-h-11 min-w-11"
           >
             <Image src="/logo.svg" alt="DreamUtopia" width={28} height={28} className="rounded-md" />
             DreamUtopia
@@ -347,7 +350,12 @@ export function LandingHeader({ user }: { user?: User | null }) {
             {/* Sheet Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open menu">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open menu"
+                  className="h-11 w-11 min-h-11 min-w-11 inline-flex items-center"
+                >
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -356,7 +364,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
                   <SheetTitle>
                     <LocaleLink
                       href="/"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 min-h-11 min-w-11"
                     >
                       <Image src="/logo.svg" alt="DreamUtopia" width={28} height={28} className="rounded-md" />
             DreamUtopia
@@ -389,7 +397,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
 
                     {/* Tools */}
                     <AccordionItem value="tools" className="border-b-0">
-                      <AccordionTrigger className="py-0 font-semibold hover:no-underline">
+                      <AccordionTrigger className="py-2 min-h-11 font-semibold hover:no-underline">
                         {t('Header.tools')}
                       </AccordionTrigger>
                       <AccordionContent className="mt-2">
@@ -399,7 +407,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
                             <LocaleLink
                               key={tool.id}
                               href={tool.href}
-                              className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
+                              className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors min-h-11 min-w-11"
                             >
                               {Icon && <Icon className="h-4 w-4" />}
                               <span className="text-sm">{tool.title}</span>
@@ -413,7 +421,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
                   {/* Pricing */}
                   <LocaleLink
                     href="/pricing"
-                    className="font-semibold p-2 hover:bg-accent rounded-md transition-colors"
+                    className="font-semibold p-2 hover:bg-accent rounded-md transition-colors min-h-11 min-w-11 inline-flex items-center"
                   >
                     {t('Header.pricing')}
                   </LocaleLink>
@@ -434,16 +442,16 @@ export function LandingHeader({ user }: { user?: User | null }) {
                     <Globe className="h-4 w-4" />
                     <button
                       type="button"
+                      className="text-sm hover:text-foreground transition-colors min-h-11 min-w-11 inline-flex items-center"
                       onClick={() => switchLocale("en")}
-                      className="text-sm hover:text-foreground transition-colors"
                     >
                       {locale === "zh" ? "English" : "英文"}
                     </button>
                     <span className="text-muted-foreground">/</span>
                     <button
                       type="button"
+                      className="text-sm hover:text-foreground transition-colors min-h-11 min-w-11 inline-flex items-center"
                       onClick={() => switchLocale("zh")}
-                      className="text-sm hover:text-foreground transition-colors"
                     >
                       {locale === "zh" ? "中文" : "中文"}
                     </button>
@@ -457,13 +465,13 @@ export function LandingHeader({ user }: { user?: User | null }) {
                         <button
                           type="button"
                           key={mode}
-                          onClick={() => setTheme(mode)}
                           className={cn(
-                            "text-sm px-2 py-1 rounded-md transition-colors",
+                            "min-h-11 min-w-11 inline-flex items-center text-sm px-2 py-1 rounded-md transition-colors",
                             theme === mode
                               ? "bg-accent text-accent-foreground font-medium"
                               : "hover:text-foreground text-muted-foreground"
                           )}
+                          onClick={() => setTheme(mode)}
                         >
                           {mode === "light" ? "Light" : mode === "dark" ? "Dark" : "System"}
                         </button>
@@ -478,32 +486,36 @@ export function LandingHeader({ user }: { user?: User | null }) {
                     <div className="flex flex-col gap-2">
                       <LocaleLink
                         href="/my-creations"
-                        className="p-2 hover:bg-accent rounded-md transition-colors"
+                        className="p-2 hover:bg-accent rounded-md transition-colors min-h-11 min-w-11 inline-flex items-center"
                       >
                         {t('Header.myCreations')}
                       </LocaleLink>
                       <LocaleLink
                         href="/credits"
-                        className="p-2 hover:bg-accent rounded-md transition-colors"
+                        className="p-2 hover:bg-accent rounded-md transition-colors min-h-11 min-w-11 inline-flex items-center"
                       >
                         {t('Header.credits')}
                       </LocaleLink>
                       <LocaleLink
                         href="/settings"
-                        className="p-2 hover:bg-accent rounded-md transition-colors"
+                        className="p-2 hover:bg-accent rounded-md transition-colors min-h-11 min-w-11 inline-flex items-center"
                       >
                         {t('Header.settings')}
                       </LocaleLink>
                       <button
                         type="button"
                         onClick={handleSignOut}
-                        className="p-2 text-left text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        className="p-2 text-left text-destructive hover:bg-destructive/10 rounded-md transition-colors min-h-11 min-w-11 inline-flex items-center"
                       >
                         {t('Common.logout')}
                       </button>
                     </div>
                   ) : (
-                    <Button variant="outline" onClick={signInModal.onOpen}>
+                    <Button
+                      variant="outline"
+                      onClick={signInModal.onOpen}
+                      className="min-h-11 min-w-11 inline-flex items-center"
+                    >
                       {t('Common.login')}
                     </Button>
                   )}
