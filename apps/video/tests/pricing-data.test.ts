@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   FAQ_ITEMS,
+  FAQ_ITEMS_ZH,
+  PRICING_COPY,
   asPricingProducts,
   costPer100Credits,
   displayPlanName,
+  faqItemsFor,
   monthlyEquivalentCents,
   plansForPeriod,
+  pricingCopy,
+  type PricingCopy,
   type PricingProduct,
 } from "../src/components/pricing/pricing-data";
 
@@ -127,5 +132,50 @@ describe("FAQ_ITEMS", () => {
       expect(item.answer.length).toBeGreaterThan(0);
     }
     expect(new Set(FAQ_ITEMS.map((item) => item.id)).size).toBe(6);
+  });
+});
+
+describe("pricingCopy", () => {
+  it("returns English for any non-zh locale", () => {
+    expect(pricingCopy("en")).toBe(PRICING_COPY.en);
+    expect(pricingCopy("fr")).toBe(PRICING_COPY.en);
+  });
+
+  it("returns Chinese for zh", () => {
+    expect(pricingCopy("zh")).toBe(PRICING_COPY.zh);
+  });
+
+  it("differs from English for the hero title and subtitle", () => {
+    expect(pricingCopy("zh").heroTitle).not.toBe(pricingCopy("en").heroTitle);
+    expect(pricingCopy("zh").heroSubtitle).not.toBe(
+      pricingCopy("en").heroSubtitle
+    );
+  });
+
+  it("translates every English key with a non-empty value", () => {
+    const keys = Object.keys(PRICING_COPY.en) as (keyof PricingCopy)[];
+    expect(keys.length).toBeGreaterThan(0);
+    expect(Object.keys(PRICING_COPY.zh).sort()).toEqual([...keys].sort());
+
+    for (const key of keys) {
+      expect(typeof PRICING_COPY.zh[key]).toBe("string");
+      expect(PRICING_COPY.zh[key].length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("faqItemsFor", () => {
+  it("has the same six ids in Chinese as in English", () => {
+    expect(faqItemsFor("zh").map((item) => item.id)).toEqual(
+      FAQ_ITEMS.map((item) => item.id)
+    );
+    expect(faqItemsFor("zh").map((item) => item.id)).toEqual(
+      FAQ_ITEMS_ZH.map((item) => item.id)
+    );
+  });
+
+  it("falls back to English for other locales", () => {
+    expect(faqItemsFor("en")).toBe(FAQ_ITEMS);
+    expect(faqItemsFor("fr")).toBe(FAQ_ITEMS);
   });
 });
