@@ -7,6 +7,7 @@ const TOKEN_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 const BOT_OPEN_ID_TTL_SECONDS = 24 * 60 * 60;
 const USER_NAME_TTL_SECONDS = 24 * 60 * 60;
 const encoder = new TextEncoder();
+const MENTION_OPEN_ID_PATTERN = /^ou_[A-Za-z0-9_-]+$/;
 
 function currentTime(now) {
   return typeof now === "function" ? now() : (typeof now === "number" ? now : Date.now());
@@ -137,11 +138,49 @@ export async function replyUuid(messageId) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, uuid, config = botConfig }) {
+function sanitizeMentionOpenIds(openIds) {
+  if (!Array.isArray(openIds)) return [];
+  const kept = [];
+  for (const openId of openIds) {
+    if (typeof openId === "string" && MENTION_OPEN_ID_PATTERN.test(openId) && !kept.includes(openId)) {
+      kept.push(openId);
+    }
+  }
+  return kept;
+}
+
+export function buildMentionPost({ text, mentionOpenIds } = {}) {
+  const openIds = sanitizeMentionOpenIds(mentionOpenIds);
+  if (openIds.length === 0) return null;
+  return {
+    zh_cn: {
+      title: "",
+      content: [[
+        ...openIds.map((openId) => ({ tag: "at", user_id: openId })),
+        { tag: "text", text: ` ${text}` },
+      ]],
+    },
+  };
+}
+
+export function mentionText(text, openIds) {
+  const prefix = sanitizeMentionOpenIds(openIds)
+    .map((openId) => `<at user_id="${openId}"></at> `)
+    .join("");
+  return `${prefix}${text}`;
+}
+
+function outboundBody({ text, config, post, uuid }) {
+  // A mention post carries its own at-tags and never has a signature appended.
+  if (post) return { msg_type: "post", content: JSON.stringify(post), uuid };
+  return { msg_type: "text", content: JSON.stringify({ text: signOutboundText(text, config) }), uuid };
+}
+
+export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, uuid, config = botConfig, mentionOpenIds }) {
   if (typeof token !== "string" || !token || typeof text !== "string" || typeof chatId !== "string" || !chatId) {
     throw new TypeError("A token, chat id, and text reply are required");
   }
-  const signed = signOutboundText(text, config);
+  const post = buildMentionPost({ text, mentionOpenIds });
   const replyId = uuid ?? await replyUuid(`chat:${chatId}`);
   const response = await fetchImpl(`${FEISHU_API}/im/v1/messages?receive_id_type=chat_id`, {
     method: "POST",
@@ -151,21 +190,33 @@ export async function sendTextToChat({ token, chatId, text, fetchImpl = fetch, u
     },
     body: JSON.stringify({
       receive_id: chatId,
-      msg_type: "text",
-      content: JSON.stringify({ text: signed }),
-      uuid: replyId,
+      ...outboundBody({ text, config, post, uuid: replyId }),
     }),
   });
   const payload = await jsonResponse(response);
   if (payload?.code !== 0) throw new Error("Feishu chat message was rejected");
 }
 
-export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid, config = botConfig }) {
+// Only real user open ids can be mentioned; anything else falls back to a plain text reply.
+const MENTIONABLE_OPEN_ID_PATTERN = /^ou_[A-Za-z0-9_-]+$/;
+
+export async function replyPostToMessage({ token, messageId, text, mentionOpenId, fetchImpl = fetch, uuid }) {
+  if (typeof mentionOpenId !== "string" || !MENTIONABLE_OPEN_ID_PATTERN.test(mentionOpenId)) {
+    return replyToMessage({ token, messageId, text, fetchImpl, uuid });
+  }
   if (typeof token !== "string" || !token || typeof text !== "string") {
     throw new TypeError("A token and text reply are required");
   }
-  const signed = signOutboundText(text, config);
   const replyId = uuid ?? await replyUuid(messageId);
+  const content = {
+    zh_cn: {
+      title: "",
+      content: [[
+        { tag: "at", user_id: mentionOpenId },
+        { tag: "text", text: ` ${text}` },
+      ]],
+    },
+  };
   const response = await fetchImpl(`${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reply`, {
     method: "POST",
     headers: {
@@ -173,10 +224,64 @@ export async function replyToMessage({ token, messageId, text, fetchImpl = fetch
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      msg_type: "text",
-      content: JSON.stringify({ text: signed }),
+      msg_type: "post",
+      content: JSON.stringify(content),
       uuid: replyId,
     }),
+  });
+  const payload = await jsonResponse(response);
+  if (payload?.code !== 0) throw new Error("Feishu post reply was rejected");
+}
+
+const REACTION_RETRY_EMOJI_TYPE = "Get";
+
+export async function addReaction({ token, messageId, emojiType = "OK", fetchImpl = fetch }) {
+  if (typeof token !== "string" || !token || typeof messageId !== "string" || !messageId) {
+    throw new TypeError("A token and message id are required");
+  }
+
+  const post = async (type) => {
+    const response = await fetchImpl(
+      `${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reactions`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ reaction_type: { emoji_type: type } }),
+      },
+    );
+    return jsonResponse(response);
+  };
+
+  // A reaction is a courtesy: failures are logged and never surface to the caller.
+  try {
+    let payload = await post(emojiType);
+    if (payload?.code !== 0) payload = await post(REACTION_RETRY_EMOJI_TYPE);
+    if (payload?.code !== 0) {
+      console.log(`[feishu-reaction] message_id=${messageId} failed code=${payload?.code ?? "unknown"}`);
+    }
+    return payload;
+  } catch (error) {
+    console.log(`[feishu-reaction] message_id=${messageId} failed error=${error?.message ?? error}`);
+    return null;
+  }
+}
+
+export async function replyToMessage({ token, messageId, text, fetchImpl = fetch, uuid, config = botConfig, mentionOpenIds }) {
+  if (typeof token !== "string" || !token || typeof text !== "string") {
+    throw new TypeError("A token and text reply are required");
+  }
+  const post = buildMentionPost({ text, mentionOpenIds });
+  const replyId = uuid ?? await replyUuid(messageId);
+  const response = await fetchImpl(`${FEISHU_API}/im/v1/messages/${encodeURIComponent(messageId)}/reply`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(outboundBody({ text, config, post, uuid: replyId })),
   });
   const payload = await jsonResponse(response);
   if (payload?.code !== 0) throw new Error("Feishu reply was rejected");

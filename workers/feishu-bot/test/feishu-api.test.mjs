@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { signOutboundText } from "../src/config.mjs";
-import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage, replyUuid } from "../src/feishu-api.mjs";
+import { buildMentionPost, getBotOpenId, getTenantAccessToken, getUserName, mentionText, replyToMessage, replyUuid } from "../src/feishu-api.mjs";
 
 function fakeKv(seed = {}) {
   const values = new Map(Object.entries(seed));
@@ -133,6 +133,88 @@ test("throws when the Feishu reply API rejects the request", async () => {
     text: "回复内容",
     fetchImpl: async () => jsonResponse({ code: 11223, msg: "no permission" }),
   }));
+});
+
+test("builds a Feishu post that mentions each valid open_id before the text", () => {
+  assert.deepEqual(buildMentionPost({ text: "收到，老三正在处理", mentionOpenIds: ["ou_user"] }), {
+    zh_cn: {
+      title: "",
+      content: [[
+        { tag: "at", user_id: "ou_user" },
+        { tag: "text", text: " 收到，老三正在处理" },
+      ]],
+    },
+  });
+});
+
+test("drops invalid mention ids and de-duplicates the survivors in order", () => {
+  const post = buildMentionPost({
+    text: "hi",
+    mentionOpenIds: ["ou_a", "ou_b", "not-an-open-id", "ou_a", null, "oc_chat"],
+  });
+
+  assert.deepEqual(post.zh_cn.content[0].slice(0, -1), [
+    { tag: "at", user_id: "ou_a" },
+    { tag: "at", user_id: "ou_b" },
+  ]);
+  assert.deepEqual(post.zh_cn.content[0].at(-1), { tag: "text", text: " hi" });
+});
+
+test("returns null from buildMentionPost when no mention id survives filtering", () => {
+  for (const mentionOpenIds of [undefined, [], ["not-an-open-id"], ["oc_chat"], "ou_user"]) {
+    assert.equal(buildMentionPost({ text: "hi", mentionOpenIds }), null);
+  }
+});
+
+test("builds the plain-text mention form for each valid open_id", () => {
+  assert.equal(mentionText("hi", ["ou_a", "ou_b"]), `<at user_id="ou_a"></at> <at user_id="ou_b"></at> hi`);
+  assert.equal(mentionText("hi", ["bad", "ou_a", "ou_a"]), `<at user_id="ou_a"></at> hi`);
+  assert.equal(mentionText("hi", []), "hi");
+});
+
+test("replies with a post mentioning the sender and appends no signature", async () => {
+  let request;
+  await replyToMessage({
+    token: "tenant-token",
+    messageId: "om_message",
+    text: "收到，老三正在处理",
+    mentionOpenIds: ["ou_user"],
+    fetchImpl: async (url, init) => {
+      request = { url, init };
+      return jsonResponse({ code: 0, data: { message_id: "om_reply" } });
+    },
+  });
+
+  const body = JSON.parse(request.init.body);
+  assert.equal(body.msg_type, "post");
+  assert.deepEqual(JSON.parse(body.content), {
+    zh_cn: {
+      title: "",
+      content: [[
+        { tag: "at", user_id: "ou_user" },
+        { tag: "text", text: " 收到，老三正在处理" },
+      ]],
+    },
+  });
+  assert.doesNotMatch(body.content, /Grok Bot/);
+});
+
+test("falls back to a signed text reply when no mention id is valid", async () => {
+  let request;
+  await replyToMessage({
+    token: "tenant-token",
+    messageId: "om_message",
+    text: "回复内容",
+    mentionOpenIds: ["not-an-open-id"],
+    fetchImpl: async (url, init) => {
+      request = { url, init };
+      return jsonResponse({ code: 0, data: { message_id: "om_reply" } });
+    },
+  });
+
+  const body = JSON.parse(request.init.body);
+  assert.equal(body.msg_type, "text");
+  assert.deepEqual(JSON.parse(body.content), { text: signOutboundText("回复内容") });
 });
 
 test("uses the configured bot open_id without touching KV or the bot API", async () => {

@@ -642,6 +642,65 @@ test("emails a forward-chat message with no mention and never looks up the bot o
   assert.equal(calls.some(({ url }) => String(url).includes("/bot/v3/info")), false);
 });
 
+test("auto-answers a clear forward-chat question with a mention post and an [auto] email", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "@_user_1 进度",
+    mentions: [{ key: "@_user_1", id: { open_id: "ou_bot" } }],
+    messageId: "om_auto_progress",
+    eventId: "evt_auto_progress",
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  const post = JSON.parse(replies[0].content);
+  assert.deepEqual(post.zh_cn.content[0][0], { tag: "at", user_id: "ou_user" });
+  assert.equal(post.zh_cn.content[0][1].tag, "text");
+  assert.match(post.zh_cn.content[0][1].text, /暂无进度记录，已转给老三。/);
+
+  const resend = calls.find(({ url }) => String(url) === RESEND_URL);
+  assert.ok(resend, "the message must still be emailed");
+  const body = JSON.parse(resend.init.body);
+  assert.match(body.subject, /^\[auto\] \[feishu\] /);
+  assert.match(body.text, /auto_answer: 暂无进度记录，已转给老三。/);
+});
+
+test("keeps the fixed ack and a non-[auto] email for a vague forward-chat question", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "@_user_1 进度怎么样，顺便把价格改一下",
+    mentions: [{ key: "@_user_1", id: { open_id: "ou_bot" } }],
+    messageId: "om_auto_vague",
+    eventId: "evt_auto_vague",
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  const post = JSON.parse(replies[0].content);
+  assert.deepEqual(post.zh_cn.content[0][0], { tag: "at", user_id: "ou_user" });
+  assert.match(post.zh_cn.content[0][1].text, /收到，老三正在处理/);
+
+  const body = JSON.parse(calls.find(({ url }) => String(url) === RESEND_URL).init.body);
+  assert.doesNotMatch(body.subject, /\[auto\]/);
+  assert.doesNotMatch(body.text, /auto_answer:/);
+});
+
 test("does not mark a forward-chat message processed when the email fails, so Feishu retries", async () => {
   const kv = fakeKv();
   const baseFetch = makeFeishuFetch({});
@@ -668,6 +727,69 @@ test("does not mark a forward-chat message processed when the email fails, so Fe
   assert.equal(response.status, 503);
   assert.equal(await kv.get(eventKey), null);
   assert.equal(await kv.get(messageKey), null);
+});
+
+test("acknowledges a forward-chat @bot mention with an at-tag post on forward success", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    senderOpenId: "ou_test1234abcd",
+    senderName: "测试用户",
+    messageId: "om_fwd_ack_ok",
+    eventId: "evt_fwd_ack_ok",
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(calls.some(({ url }) => String(url) === RESEND_URL), true);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  assert.deepEqual(JSON.parse(replies[0].content).zh_cn.content[0], [
+    { tag: "at", user_id: "ou_test1234abcd" },
+    { tag: "text", text: " 收到，老三正在处理" },
+  ]);
+  assert.doesNotMatch(replies[0].content, /Grok Bot/);
+});
+
+test("acknowledges a forward-chat @bot mention with the failure text when the email forward fails", async () => {
+  const replies = [];
+  const baseFetch = makeFeishuFetch({ replies });
+  const worker = createWorker({
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === RESEND_URL) return new Response("", { status: 502 });
+      return baseFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    senderOpenId: "ou_test1234abcd",
+    senderName: "测试用户",
+    messageId: "om_fwd_ack_fail",
+    eventId: "evt_fwd_ack_fail",
+  }), env);
+
+  assert.equal(response.status, 503);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  assert.deepEqual(JSON.parse(replies[0].content).zh_cn.content[0], [
+    { tag: "at", user_id: "ou_test1234abcd" },
+    { tag: "text", text: " 转发失败，请稍后重试" },
+  ]);
+  assert.doesNotMatch(replies[0].content, /Grok Bot/);
 });
 
 test("ignores duplicate event_id when ctx.waitUntil is used", async () => {

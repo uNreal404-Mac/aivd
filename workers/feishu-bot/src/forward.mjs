@@ -53,14 +53,14 @@ export function forwardRecipients(env) {
 }
 
 // Built once per forward so the cron retry can resend the exact same JSON body.
-export function buildForwardEmailBody({ env, payload, selected, context }) {
+export function buildForwardEmailBody({ env, payload, selected, context, subjectPrefix = "", extraLines = [] }) {
   const createTime = payload?.event?.message?.create_time ?? "";
   return {
     createTime,
     body: JSON.stringify({
       from: FORWARD_EMAIL_FROM,
       to: forwardRecipients(env),
-      subject: `[feishu] ${context.senderName || context.senderOpenId || "unknown"} ${selected.messageId}`,
+      subject: `${subjectPrefix ? `${subjectPrefix} ` : ""}[feishu] ${senderLabel(context)} (${context.senderOpenId || "unknown"}) ${selected.messageId}`,
       text: [
         `sender_name: ${context.senderName ?? ""}`,
         `sender_open_id: ${context.senderOpenId ?? ""}`,
@@ -69,9 +69,20 @@ export function buildForwardEmailBody({ env, payload, selected, context }) {
         `chat_id: ${context.chatId}`,
         `message_id: ${selected.messageId}`,
         `create_time: ${createTime}`,
+        ...(Array.isArray(extraLines) ? extraLines : []),
       ].join("\n"),
     }),
   };
+}
+
+export function senderLabel(context) {
+  // senderName is filled by the worker's getUserName contact lookup; when that lookup
+  // fails it is empty, so the label falls back to the first 8 characters of the open_id.
+  const name = typeof context?.senderName === "string" ? context.senderName.trim() : "";
+  if (name) return name;
+  const openId = typeof context?.senderOpenId === "string" ? context.senderOpenId : "";
+  if (openId) return openId.slice(0, 8);
+  return "unknown";
 }
 
 function defaultSleep(ms) {
@@ -87,6 +98,8 @@ export async function forwardToGrok({
   fetchImpl,
   receivedAt,
   sleep = defaultSleep,
+  subjectPrefix = "",
+  extraLines = [],
 }) {
   if (selected?.chatType !== "group") return { ok: false, attempts: 0, status: null };
   if (context?.chatId !== GROK_FORWARD_CHAT_ID) return { ok: false, attempts: 0, status: null };
@@ -106,7 +119,7 @@ export async function forwardToGrok({
   }
 
   const receivedAtMs = Number.isFinite(receivedAt) ? receivedAt : Date.now();
-  const { createTime, body } = buildForwardEmailBody({ env, payload, selected, context });
+  const { createTime, body } = buildForwardEmailBody({ env, payload, selected, context, subjectPrefix, extraLines });
 
   let attempts = 0;
   let status = null;
