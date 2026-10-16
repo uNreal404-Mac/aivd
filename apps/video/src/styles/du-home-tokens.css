@@ -34,6 +34,7 @@
   --du-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   --du-glass-radius-card: 20px;
   --du-glass-radius-btn: 12px;
+  --du-glass-radius-round: 9999px;
   --du-glass-fallback-bg: rgba(26, 23, 54, 0.92);
   --du-glass-text: #FFFFFF;
   --du-glass-overlay-scrim: rgba(7, 6, 15, 0.55);
@@ -70,6 +71,10 @@
 .du-glass-btn:focus-visible {
   outline: 2px solid var(--du-accent-text);
   outline-offset: 2px;
+}
+
+.du-glass-round {
+  border-radius: var(--du-glass-radius-round);
 }
 
 .du-glass-on-media {

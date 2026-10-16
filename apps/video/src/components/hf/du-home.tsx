@@ -32,7 +32,6 @@ import {
   HERO_CARDS,
   MODEL_CARDS,
   MODELS_HEADER,
-  STATS,
   STEPS,
   STEPS_HEADER,
   TOOL_CHIPS,
@@ -168,18 +167,6 @@ export function DuHome({ lang }: { lang: string }) {
                 </Link>
               ))}
             </div>
-            <div className="mt-8 grid max-w-[440px] grid-cols-3 divide-x divide-[var(--du-border)]">
-              {STATS.map((stat, index) => (
-                <div key={stat.label} className={index === 0 ? "pr-4" : "px-4"}>
-                  <div className="text-2xl font-bold text-[var(--du-text)]">
-                    {stat.value}
-                  </div>
-                  <div className="text-[13px] text-[var(--du-text-muted)]">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="relative flex items-center justify-center gap-4">
@@ -197,7 +184,7 @@ export function DuHome({ lang }: { lang: string }) {
                     className="h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
-                  <span className="du-glass-btn du-glass-on-media absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+                  <span className="du-glass-btn du-glass-round du-glass-on-media absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
                     <Icon name="Play" className="h-5 w-5 text-[var(--du-on-accent)]" />
                   </span>
                   <span className="absolute bottom-4 left-4 max-w-[200px] text-sm font-medium text-[var(--du-text)]">
@@ -272,7 +259,7 @@ export function DuHome({ lang }: { lang: string }) {
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
-                <span className="du-glass-btn du-glass-on-media absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center">
+                <span className="du-glass-btn du-glass-round du-glass-on-media absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center">
                   <Icon name="Play" className="h-3.5 w-3.5 text-[var(--du-on-accent)]" />
                 </span>
               </div>

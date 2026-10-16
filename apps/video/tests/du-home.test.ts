@@ -41,6 +41,28 @@ function collectHrefs(value: unknown, hrefs: string[] = []): string[] {
   return hrefs;
 }
 
+/** Collects every string value stored under an `image` key, at any depth. */
+function collectImages(value: unknown, images: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectImages(item, images);
+    }
+    return images;
+  }
+
+  if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "image" && typeof child === "string") {
+        images.push(child);
+      } else {
+        collectImages(child, images);
+      }
+    }
+  }
+
+  return images;
+}
+
 describe("du-home data", () => {
   it("exposes the expected number of items", () => {
     expect(CATEGORY_CARDS).toHaveLength(8);
@@ -58,6 +80,23 @@ describe("du-home data", () => {
 
   it("never mentions higgsfield", () => {
     expect(JSON.stringify(duHome).toLowerCase()).not.toContain("higgsfield");
+  });
+
+  it("ships local /home webp images that exist on disk", () => {
+    const images = collectImages(duHome);
+
+    expect(images.length).toBeGreaterThan(0);
+    for (const image of images) {
+      expect(image.startsWith("/home/")).toBe(true);
+      expect(image.endsWith(".webp")).toBe(true);
+      expect(
+        fs.existsSync(path.resolve(__dirname, "..", "public", image.slice(1))),
+      ).toBe(true);
+    }
+  });
+
+  it("does not reference picsum", () => {
+    expect(readSource("src/lib/du-home.ts")).not.toContain("picsum");
   });
 
   it("only uses allowed hrefs", () => {
@@ -166,5 +205,14 @@ describe("site config", () => {
   it("uses the bot inbox as the support address", () => {
     expect(SUPPORT_EMAIL).toBe("tuapi@mail.grokbot.com");
     expect(SUPPORT_EMAIL).not.toContain("example.com");
+  });
+});
+
+describe("layout", () => {
+  it("does not use the vercel analytics packages", () => {
+    const source = readSource("src/app/layout.tsx");
+
+    expect(source).not.toContain("@vercel/analytics");
+    expect(source).not.toContain("@vercel/speed-insights");
   });
 });

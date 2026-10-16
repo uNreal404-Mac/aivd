@@ -3,8 +3,7 @@
  * Locale-free hrefs only (see "Allowed hrefs"); prefix with localizedHref().
  */
 
-const img = (seed: string, w: number, h: number) =>
-  `https://picsum.photos/seed/${seed}/${w}/${h}`;
+const img = (seed: string) => `/home/${seed}.webp`;
 
 export type CtaVariant = "primary" | "outline" | "text";
 
@@ -28,11 +27,6 @@ export interface HeroCard {
   alt: string;
   caption: string;
   size: "large" | "small";
-}
-
-export interface Stat {
-  value: string;
-  label: string;
 }
 
 export interface CategoryCard {
@@ -99,19 +93,19 @@ export const HERO = {
 
 export const HERO_CARDS: HeroCard[] = [
   {
-    image: img("portrait-girl", 340, 453),
+    image: img("portrait-girl"),
     alt: "Portrait lit by violet studio light",
     caption: "Tomorrow starts with one idea.",
     size: "large",
   },
   {
-    image: img("neon-city", 260, 347),
+    image: img("neon-city"),
     alt: "Neon city street at night",
     caption: "New worlds waiting.",
     size: "small",
   },
   {
-    image: img("astronaut", 260, 347),
+    image: img("astronaut"),
     alt: "Astronaut drifting above a planet",
     caption: "Push past limits.",
     size: "small",
@@ -123,12 +117,6 @@ export const TOOL_CHIPS: Cta[] = [
   { label: "Image to Video", href: "/image-to-video", icon: "ImagePlus", variant: "outline" },
   { label: "Image Generation", href: "#", icon: "Image", variant: "outline" },
   { label: "More Tools", href: "#", icon: "LayoutGrid", variant: "outline" },
-];
-
-export const STATS: Stat[] = [
-  { value: "5M+", label: "Creators" },
-  { value: "12M+", label: "Clips made" },
-  { value: "99%", label: "Happy makers" },
 ];
 
 export const CATEGORY_HEADER: SectionHeader = {
@@ -151,14 +139,14 @@ export const CATEGORY_FILTERS: string[] = [
 ];
 
 export const CATEGORY_CARDS: CategoryCard[] = [
-  { id: "golden-hour", title: "Golden Hour", category: "Cinematic", likes: "1.2k", image: img("golden-hour", 640, 400), alt: "Golden hour light across a field" },
-  { id: "neon-streets", title: "Neon Streets", category: "Sci-Fi", likes: "980", image: img("neon-streets", 640, 400), alt: "Neon signs reflected on wet asphalt" },
-  { id: "liquid-light", title: "Liquid Light", category: "Stylize", likes: "874", image: img("liquid-light", 640, 400), alt: "Liquid light swirls in violet tones" },
-  { id: "coast-drive", title: "Coast Drive", category: "Cinematic", likes: "1.5k", image: img("coast-drive", 640, 400), alt: "Road along a coastal cliff" },
-  { id: "first-steps", title: "First Steps", category: "Anime", likes: "760", image: img("first-steps", 640, 400), alt: "Anime style figure walking at dawn" },
-  { id: "silver-muse", title: "Silver Muse", category: "Portrait", likes: "1.1k", image: img("silver-muse", 640, 400), alt: "Studio portrait in silver tones" },
-  { id: "glass-city", title: "Glass City", category: "Sci-Fi", likes: "643", image: img("glass-city", 640, 400), alt: "Glass towers under a violet sky" },
-  { id: "edge-of-space", title: "Edge of Space", category: "Fantasy", likes: "1.9k", image: img("edge-of-space", 640, 400), alt: "Lone figure at the edge of space" },
+  { id: "golden-hour", title: "Golden Hour", category: "Cinematic", likes: "1.2k", image: img("golden-hour"), alt: "Golden hour light across a field" },
+  { id: "neon-streets", title: "Neon Streets", category: "Sci-Fi", likes: "980", image: img("neon-streets"), alt: "Neon signs reflected on wet asphalt" },
+  { id: "liquid-light", title: "Liquid Light", category: "Stylize", likes: "874", image: img("liquid-light"), alt: "Liquid light swirls in violet tones" },
+  { id: "coast-drive", title: "Coast Drive", category: "Cinematic", likes: "1.5k", image: img("coast-drive"), alt: "Road along a coastal cliff" },
+  { id: "first-steps", title: "First Steps", category: "Anime", likes: "760", image: img("first-steps"), alt: "Anime style figure walking at dawn" },
+  { id: "silver-muse", title: "Silver Muse", category: "Portrait", likes: "1.1k", image: img("silver-muse"), alt: "Studio portrait in silver tones" },
+  { id: "glass-city", title: "Glass City", category: "Sci-Fi", likes: "643", image: img("glass-city"), alt: "Glass towers under a violet sky" },
+  { id: "edge-of-space", title: "Edge of Space", category: "Fantasy", likes: "1.9k", image: img("edge-of-space"), alt: "Lone figure at the edge of space" },
 ];
 
 export const MODELS_HEADER: SectionHeader = {
@@ -169,10 +157,10 @@ export const MODELS_HEADER: SectionHeader = {
 };
 
 export const MODEL_CARDS: ModelCard[] = [
-  { id: "video-lite", title: "Video Lite", icon: "Zap", description: "Fast everyday clips for quick ideas and drafts.", href: "/text-to-video", image: img("video-lite", 640, 400), alt: "Quick draft clip preview" },
-  { id: "video-pro", title: "Video Pro", icon: "Film", description: "Cinematic motion and detail for finished shots.", href: "/image-to-video", image: img("video-pro", 640, 400), alt: "Cinematic motion frame" },
-  { id: "image-studio", title: "Image Studio", icon: "Image", description: "Detailed stills from text or reference.", href: "/reference-to-video", image: img("image-studio", 640, 400), alt: "Detailed generated still" },
-  { id: "anime-style", title: "Anime & Style", icon: "Palette", description: "Bold styles and looks for standout frames.", href: "/text-to-video", image: img("anime-style", 640, 400), alt: "Stylized anime frame" },
+  { id: "video-lite", title: "Video Lite", icon: "Zap", description: "Fast everyday clips for quick ideas and drafts.", href: "/text-to-video", image: img("video-lite"), alt: "Quick draft clip preview" },
+  { id: "video-pro", title: "Video Pro", icon: "Film", description: "Cinematic motion and detail for finished shots.", href: "/image-to-video", image: img("video-pro"), alt: "Cinematic motion frame" },
+  { id: "image-studio", title: "Image Studio", icon: "Image", description: "Detailed stills from text or reference.", href: "/reference-to-video", image: img("image-studio"), alt: "Detailed generated still" },
+  { id: "anime-style", title: "Anime & Style", icon: "Palette", description: "Bold styles and looks for standout frames.", href: "/text-to-video", image: img("anime-style"), alt: "Stylized anime frame" },
 ];
 
 export const EFFECTS_HEADER: SectionHeader = {
@@ -183,12 +171,12 @@ export const EFFECTS_HEADER: SectionHeader = {
 };
 
 export const EFFECT_CARDS: EffectCard[] = [
-  { id: "float-away", title: "Float Away", image: img("float-away", 640, 360), alt: "Figure floating above the ground", href: "#" },
-  { id: "style-swap", title: "Style Swap", image: img("style-swap", 640, 360), alt: "Scene changing visual style", href: "#" },
-  { id: "fire-light", title: "Fire Light", image: img("fire-light", 640, 360), alt: "Warm fire light on a face", href: "#" },
-  { id: "world-grow", title: "World Grow", image: img("world-grow", 640, 360), alt: "Landscape growing outward", href: "#" },
-  { id: "orbit-360", title: "360 Orbit", image: img("orbit-360", 640, 360), alt: "Camera orbiting a subject", href: "#" },
-  { id: "slow-time", title: "Slow Time", image: img("slow-time", 640, 360), alt: "Slow motion water splash", href: "#" },
+  { id: "float-away", title: "Float Away", image: img("float-away"), alt: "Figure floating above the ground", href: "#" },
+  { id: "style-swap", title: "Style Swap", image: img("style-swap"), alt: "Scene changing visual style", href: "#" },
+  { id: "fire-light", title: "Fire Light", image: img("fire-light"), alt: "Warm fire light on a face", href: "#" },
+  { id: "world-grow", title: "World Grow", image: img("world-grow"), alt: "Landscape growing outward", href: "#" },
+  { id: "orbit-360", title: "360 Orbit", image: img("orbit-360"), alt: "Camera orbiting a subject", href: "#" },
+  { id: "slow-time", title: "Slow Time", image: img("slow-time"), alt: "Slow motion water splash", href: "#" },
 ];
 
 export const STEPS_HEADER: SectionHeader = {
@@ -209,7 +197,7 @@ export const CREDITS_BANNER = {
   accent: "free credits.",
   subtitle: "No card needed. Turn your next idea into something real.",
   cta: { label: "Get Free Credits →", href: "/pricing", icon: "ArrowRight", variant: "primary" } as Cta,
-  image: img("planet-horizon", 1600, 600),
+  image: img("planet-horizon"),
   alt: "Planet horizon lit from behind",
 };
 
