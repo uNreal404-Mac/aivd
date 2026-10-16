@@ -26,7 +26,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Explore", href: "" },
+  { label: "Explore", href: "/explore" },
   { label: "Video", href: "/text-to-video", badge: { label: "Top", tone: "lime" } },
   { label: "Image to Video", href: "/image-to-video" },
   { label: "Reference", href: "/reference-to-video", badge: { label: "New", tone: "lime" } },
