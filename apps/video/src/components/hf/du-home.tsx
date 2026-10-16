@@ -23,6 +23,12 @@ import {
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import {
+  GLASS_BUTTON,
+  GLASS_ON_MEDIA,
+  GLASS_ROUND,
+  glass,
+} from "@/components/ui/glass";
+import {
   CATEGORY_CARDS,
   CATEGORY_FILTERS,
   CATEGORY_HEADER,
@@ -72,7 +78,7 @@ function ctaClasses(variant: CtaVariant): string {
     return `${base} h-12 px-6 bg-[var(--du-accent)] text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)]`;
   }
   if (variant === "outline") {
-    return `${base} du-glass-btn h-12 px-6`;
+    return `${base} ${GLASS_BUTTON} h-12 px-6`;
   }
   return `${base} text-[var(--du-accent-text)] hover:text-[var(--du-accent)]`;
 }
@@ -161,7 +167,10 @@ export function DuHome({ lang }: { lang: string }) {
                 <Link
                   key={chip.label}
                   href={localizedHref(lang, chip.href)}
-                  className="du-glass-btn inline-flex h-9 items-center gap-2 px-3 text-[13px]"
+                  className={glass(
+                    "button",
+                    "inline-flex h-9 items-center gap-2 px-3 text-[13px]"
+                  )}
                 >
                   <Icon name={chip.icon} className="h-4 w-4" />
                   {chip.label}
@@ -185,7 +194,14 @@ export function DuHome({ lang }: { lang: string }) {
                     className="h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
-                  <span className="du-glass-btn du-glass-round du-glass-on-media absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+                  <span
+                    className={glass(
+                      "button",
+                      GLASS_ROUND,
+                      GLASS_ON_MEDIA,
+                      "absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
+                    )}
+                  >
                     <Icon name="Play" className="h-5 w-5 text-[var(--du-on-accent)]" />
                   </span>
                   <span className="absolute bottom-4 left-4 max-w-[200px] text-sm font-medium text-[var(--du-text)]">
@@ -207,7 +223,12 @@ export function DuHome({ lang }: { lang: string }) {
                     className="h-full w-full object-cover"
                   />
                   <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
-                  <span className="du-glass-btn du-glass-on-media absolute bottom-3 left-3 px-2 py-1 text-xs font-medium">
+                  <span
+                    className={glass(
+                      "media-button",
+                      "absolute bottom-3 left-3 px-2 py-1 text-xs font-medium"
+                    )}
+                  >
                     {card.caption}
                   </span>
                 </div>
@@ -242,7 +263,7 @@ export function DuHome({ lang }: { lang: string }) {
                 className={
                   isActive
                     ? "h-9 rounded-lg bg-[var(--du-accent)] px-4 text-sm font-medium text-[var(--du-on-accent)]"
-                    : "du-glass-btn h-9 px-4 text-sm"
+                    : glass("button", "h-9 px-4 text-sm")
                 }
               >
                 {filter}
@@ -252,7 +273,7 @@ export function DuHome({ lang }: { lang: string }) {
         </div>
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {visibleCategories.map((card) => (
-            <div key={card.id} className="du-glass p-2">
+            <div key={card.id} className={glass("card", "p-2")}>
               <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[var(--du-border)]">
                 <img
                   src={card.image}
@@ -260,7 +281,14 @@ export function DuHome({ lang }: { lang: string }) {
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
-                <span className="du-glass-btn du-glass-round du-glass-on-media absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center">
+                <span
+                  className={glass(
+                    "button",
+                    GLASS_ROUND,
+                    GLASS_ON_MEDIA,
+                    "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center"
+                  )}
+                >
                   <Icon name="Play" className="h-3.5 w-3.5 text-[var(--du-on-accent)]" />
                 </span>
               </div>
@@ -268,7 +296,10 @@ export function DuHome({ lang }: { lang: string }) {
                 <span className="text-sm text-[var(--du-text)]">{card.title}</span>
                 <span
                   aria-label="Like"
-                  className="du-glass-btn du-glass-on-media inline-flex items-center px-2 py-1 text-xs"
+                  className={glass(
+                    "media-button",
+                    "inline-flex items-center px-2 py-1 text-xs"
+                  )}
                 >
                   <Icon name="Heart" className="h-3 w-3" />
                 </span>
@@ -285,7 +316,7 @@ export function DuHome({ lang }: { lang: string }) {
           {MODEL_CARDS.map((model) => (
             <div
               key={model.id}
-              className="du-glass flex flex-col p-4"
+              className={glass("card", "flex flex-col p-4")}
             >
               <div className="flex items-center gap-2">
                 <Icon name={model.icon} className="h-5 w-5 text-[var(--du-accent-text)]" />
@@ -307,7 +338,7 @@ export function DuHome({ lang }: { lang: string }) {
               <div className="mt-4 flex justify-end">
                 <Link
                   href={localizedHref(lang, model.href)}
-                  className="du-glass-btn inline-flex h-9 items-center px-3 text-xs"
+                  className={glass("button", "inline-flex h-9 items-center px-3 text-xs")}
                 >
                   Learn more →
                 </Link>
@@ -338,7 +369,10 @@ export function DuHome({ lang }: { lang: string }) {
               </span>
               <Link
                 href={localizedHref(lang, effect.href)}
-                className="du-glass-btn du-glass-on-media absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
+                className={glass(
+                  "media-button",
+                  "absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
+                )}
               >
                 Try it →
               </Link>
@@ -353,7 +387,7 @@ export function DuHome({ lang }: { lang: string }) {
         <div className="mt-10 flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
           {STEPS.map((step, index) => (
             <Fragment key={step.number}>
-              <div className="du-glass flex flex-1 gap-4 p-5">
+              <div className={glass("card", "flex flex-1 gap-4 p-5")}>
                 <div className="flex items-center border-r border-[var(--du-border)] pr-4 text-[28px] font-bold text-[var(--du-text-dim)]">
                   {step.number}
                 </div>

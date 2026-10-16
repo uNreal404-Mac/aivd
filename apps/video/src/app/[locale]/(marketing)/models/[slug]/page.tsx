@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { GLASS_CARD } from "@/components/ui/glass";
 import { i18n, type Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
@@ -115,9 +116,6 @@ const buttonStyle: CSSProperties = {
 };
 
 const cardStyle: CSSProperties = {
-  background: "var(--ms-surface)",
-  border: "1px solid var(--ms-border)",
-  borderRadius: "var(--ms-radius)",
   padding: "24px",
 };
 
@@ -215,7 +213,7 @@ export default async function ModelSeoPage({ params }: ModelSeoPageProps) {
         <section style={sectionStyle}>
           <h2 style={h2Style}>{copy.faqHeading}</h2>
           {localized.faqs.map((faq) => (
-            <details key={faq.q} style={detailsStyle}>
+            <details className={GLASS_CARD} key={faq.q} style={detailsStyle}>
               <summary style={summaryStyle}>{faq.q}</summary>
               <p style={answerStyle}>{faq.a}</p>
             </details>

@@ -1,3 +1,4 @@
+import { glass } from "@/components/ui/glass";
 import {
   faqJsonLd,
   generatorHref,
@@ -39,7 +40,7 @@ export function SeoLanding({
         <p className="seo-hero-sub">{content.heroSub}</p>
         {showHeroEntry ? (
           <form
-            className="seo-entry"
+            className={glass("card", "seo-entry")}
             method="get"
             action={generatorHref(locale, slug)}
           >
@@ -70,7 +71,7 @@ export function SeoLanding({
         <h2 className="seo-section-title">{content.stepsTitle}</h2>
         <ol className="seo-steps">
           {content.steps.map((step, index) => (
-            <li className="seo-step" key={step.title}>
+            <li className={glass("card", "seo-step")} key={step.title}>
               <span className="seo-step-index" aria-hidden="true">
                 {index + 1}
               </span>
@@ -109,7 +110,10 @@ export function SeoLanding({
         <h2 className="seo-section-title">{content.faqTitle}</h2>
         <div className="seo-faq">
           {content.faq.map((item) => (
-            <details className="seo-faq-item" key={item.q}>
+            <details
+              className={glass("card", "seo-faq-item")}
+              key={item.q}
+            >
               <summary className="seo-faq-question">{item.q}</summary>
               <p className="seo-faq-answer">{item.a}</p>
             </details>
