@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ACK_FALLBACK_TEXT, ackKey } from "../src/ack.mjs";
 import { dedupeKeys } from "../src/dedupe.mjs";
-import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok } from "../src/forward.mjs";
+import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, FORWARD_PENDING_MARK, GROK_FORWARD_CHAT_ID, PENDING_TTL_SECONDS, forwardKey, forwardToGrok, pendingKey } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -169,6 +169,7 @@ test("emails the trimmed message through Resend with a bearer token and records 
   assert.equal(calls[0].init.method, "POST");
   assert.equal(new Headers(calls[0].init.headers).get("content-type"), "application/json");
   assert.equal(new Headers(calls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
+  assert.equal(new Headers(calls[0].init.headers).get("idempotency-key"), "feishu-forward-om_1");
   const body = JSON.parse(calls[0].init.body);
   assert.equal(body.from, FORWARD_EMAIL_FROM);
   assert.deepEqual(body.to, FORWARD_EMAIL_TO);
@@ -315,25 +316,83 @@ test("retries Resend with a 1s then 3s backoff and marks the message once a late
   assert.equal(await kv.get(forwardKey("om_1")), "1");
 });
 
-test("leaves the message unmarked when every Resend attempt fails", async () => {
+test("queues a pending retry record when every Resend attempt fails", async () => {
   const kv = fakeKv();
   const { sleep, delays } = recordingSleep();
   let attempts = 0;
   const result = await forwardToGrok({
     env: resendEnv(),
     kv,
-    payload: {},
+    payload: { event: { message: { create_time: "1700000000000" } } },
     selected: selectedMessage(),
     context: senderContext(),
     fetchImpl: async () => { attempts += 1; return new Response("", { status: 502 }); },
     sleep,
   });
 
-  assert.deepEqual(result, { ok: false, attempts: 3, status: 502 });
+  assert.deepEqual(result, { ok: false, attempts: 3, status: 502, queued: true });
   assert.equal(attempts, 3);
   assert.deepEqual(delays, [1000, 3000]);
+  assert.deepEqual(kv.deletes, []);
+
+  const pending = JSON.parse(await kv.get(pendingKey("om_1")));
+  assert.equal(pending.messageId, "om_1");
+  assert.equal(pending.attempts, 3);
+  assert.equal(pending.lastStatus, 502);
+  assert.equal(typeof pending.firstFailedAt, "number");
+  const body = JSON.parse(pending.body);
+  assert.equal(body.from, FORWARD_EMAIL_FROM);
+  assert.deepEqual(body.to, FORWARD_EMAIL_TO);
+  assert.equal(body.subject, "[feishu] 老王 om_1");
+  assert.ok(body.text.includes("text: 随便聊聊"));
+  assert.ok(body.text.includes("create_time: 1700000000000"));
+
+  assert.equal(kv.writes.at(-2).key, pendingKey("om_1"));
+  assert.deepEqual(kv.writes.at(-2).options, { expirationTtl: PENDING_TTL_SECONDS });
+  assert.deepEqual(kv.writes.at(-1), {
+    key: forwardKey("om_1"),
+    value: FORWARD_PENDING_MARK,
+    options: { expirationTtl: PENDING_TTL_SECONDS },
+  });
+  assert.equal(await kv.get(forwardKey("om_1")), FORWARD_PENDING_MARK);
+
+  // A redelivery of the same message is treated as claimed and sends nothing.
+  const sentBefore = attempts;
+  const redelivery = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage({ eventId: "evt-2" }),
+    context: senderContext(),
+    fetchImpl: async () => { attempts += 1; return Response.json({ ok: true }); },
+    sleep,
+  });
+
+  assert.deepEqual(redelivery, { ok: true, attempts: 0, status: null, skipped: true });
+  assert.equal(attempts, sentBefore);
+});
+
+test("clears the dedupe claim when the pending retry record cannot be written", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const putInKv = kv.put;
+  kv.put = async (key, value, options) => {
+    if (key.startsWith("feishu:resend:pending:")) throw new Error("kv write failed");
+    return putInKv.call(kv, key, value, options);
+  };
+
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage(),
+    context: senderContext(),
+    fetchImpl: async () => new Response("", { status: 502 }),
+    sleep,
+  });
+
+  assert.deepEqual(result, { ok: false, attempts: 3, status: 502, queued: false });
   assert.equal(await kv.get(forwardKey("om_1")), null);
-  assert.deepEqual(kv.writes.map(({ value }) => value), ["sending"]);
   assert.deepEqual(kv.deletes, [forwardKey("om_1")]);
 });
 
@@ -555,14 +614,16 @@ test("still acknowledges a forward-chat @bot mention when the email forward fail
   assert.equal(replies.length, 1);
   assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.equal(await env.BOT_KV.get(ackKey("om_pfail")), "1");
-  // The failed attempt clears its placeholder so a later redelivery can email again.
-  assert.equal(await env.BOT_KV.get(forwardKey("om_pfail")), null);
+  // The failure queues a pending record and marks the dedupe key, so a redelivery is
+  // treated as already claimed and the cron retry owns the resend.
+  assert.equal(await env.BOT_KV.get(forwardKey("om_pfail")), FORWARD_PENDING_MARK);
+  assert.ok(await env.BOT_KV.get(pendingKey("om_pfail")));
   assert.equal(await env.BOT_KV.get(eventKey), null);
   assert.equal(await env.BOT_KV.get(messageKey), null);
 
   const before = forwardCalls.length;
-  assert.equal((await send(worker, payload, env)).status, 503);
-  assert.ok(forwardCalls.length > before);
+  assert.equal((await send(worker, payload, env)).status, 200);
+  assert.equal(forwardCalls.length, before);
   assert.equal(replies.length, 1);
 });
 

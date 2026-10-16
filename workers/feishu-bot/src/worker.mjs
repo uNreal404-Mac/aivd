@@ -3,7 +3,7 @@ import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
 import { decodeFeishuRequest, mentionsBot, messageContext, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "./events.mjs";
-import { forwardToGrok, GROK_FORWARD_CHAT_ID } from "./forward.mjs";
+import { forwardToGrok, GROK_FORWARD_CHAT_ID, retryPendingForwards } from "./forward.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
@@ -419,4 +419,23 @@ export function createWorker({
 
 const worker = createWorker();
 export const fetch = worker.fetch;
-export default worker;
+
+export default {
+  fetch: worker.fetch,
+  async scheduled(event, env, ctx) {
+    // Cron runs outside the Feishu callback budget, so it uses the real fetch.
+    const work = (async () => {
+      try {
+        const result = await retryPendingForwards({ env, kv: env.BOT_KV, fetchImpl: globalThis.fetch });
+        console.log(
+          `[feishu-forward-cron] scanned=${result.scanned} sent=${result.sent}`
+          + ` failed=${result.failed} skipped=${result.skipped}`,
+        );
+      } catch (error) {
+        console.log(`[feishu-forward-cron] run failed error=${error?.message ?? error}`);
+      }
+    })();
+    if (typeof ctx?.waitUntil === "function") ctx.waitUntil(work);
+    await work;
+  },
+};

@@ -22,10 +22,24 @@
 
 Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外部请求和 KV 合计限制在 2.5 秒内；健康请求最多 700 毫秒。GitHub webhook 路径单独限 8 秒。外部依赖超过时限时返回可重试错误。
 
+## Resend 重试队列（Cron Trigger）
+
+转发群消息通过 Resend 发信。首次 3 次尝试（0s / 1s / 3s 退避）全部失败时不再丢弃消息：Worker 把 `{ messageId, body, attempts, firstFailedAt, lastStatus }` 写入 KV 待发队列（前缀 `feishu:resend:pending:`，TTL 7 天），并把该消息的去重键改成 `pending` 标记（同样 7 天），因此飞书重投不会再发一次。首次与重试请求都带 `Idempotency-Key: feishu-forward-<message_id>`，由 Resend 侧去重。写待发记录失败时退回旧行为（删除去重键）。`forwardToGrok()` 返回 `{ ok, attempts, status, queued }`。
+
+`wrangler.toml` 的 `[triggers] crons = ["* * * * *"]` 每分钟触发一次 `scheduled()`，调用 `retryPendingForwards()`（每次最多 `CRON_BATCH_LIMIT = 20` 条）：
+
+- 去重键已是 `1`（已发送）→ 删除待发记录，跳过。
+- 去重键是 `sending`（有请求在途）→ 跳过，保留待发记录。
+- 其他情况先占位 `sending`，再用原 JSON body 重发一次（超时 8 秒）。
+- 成功 → 去重键写 `1`（7 天），删除待发记录；失败 → 待发记录 `attempts + 1` 并更新 `lastStatus`，仍留在队列等下一分钟。
+- 返回 `{ scanned, sent, failed, skipped }`，每条记录打印一行 `[feishu-forward-cron] message_id=.. status=.. attempts=.. result=sent|failed|skipped`。
+
+未配置 `RESEND_API_KEY` 或 `BOT_KV` 时 `retryPendingForwards()` 直接返回全零，不发任何请求。
+
 ## 费用边界
 
 - 账号必须使用 Cloudflare Workers Free。部署前在 Cloudflare 账单／Workers 计划设置中确认当前账号没有启用 Workers Paid；不确定时先不要部署。
-- 本配置只使用 Workers Free、Workers KV 与 `workers.dev` 地址，不添加付费 Cloudflare 绑定、自定义域名、Workers AI 或定时任务。issue 关闭通知用免费的 GitHub webhook，不用 Cron。可选 LLM 走你自己的 OpenAI 兼容接口，**默认不调用**；启用后的模型费用由该接口的运营方承担，本仓库不代为开通。
+- 本配置只使用 Workers Free、Workers KV、Workers Cron Trigger 与 `workers.dev` 地址，不添加付费 Cloudflare 绑定、自定义域名或 Workers AI。Cron Trigger 只用于重试转发失败的邮件（每分钟最多一次、每次最多 `CRON_BATCH_LIMIT` 条），仍计入 Free 计划的每日请求与 KV 写入额度。issue 关闭通知用免费的 GitHub webhook，不用 Cron。可选 LLM 走你自己的 OpenAI 兼容接口，**默认不调用**；启用后的模型费用由该接口的运营方承担，本仓库不代为开通。
 - Free 计划有每日请求和 KV 用量上限（含 KV 每日约 1000 次写入）；超限可能导致请求失败。不要升级计划来恢复服务。请查看 [Cloudflare Workers 定价与免费额度](https://developers.cloudflare.com/workers/platform/pricing/) 的当前规则。
 
 ## 密钥（只放 Wrangler / Actions，不要写入代码、日志或 PR 正文）
