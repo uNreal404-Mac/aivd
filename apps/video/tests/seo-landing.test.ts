@@ -17,10 +17,12 @@ const LOCALES = ["en", "zh"] as const;
 
 const EXPECTED_MODELS = [
   "Seedance 1.5 Pro",
-  "Wan 2.6",
-  "Veo 3.1",
-  "Sora 2",
+  "Seedance 1.0 Pro Fast",
+  "Seedance 1.0 Pro Quality",
 ];
+
+/** Model names that are disabled in the pricing config and must not appear. */
+const DISABLED_MODEL_PATTERN = /Wan|Veo|Sora/;
 
 /** Path of the only new route this batch introduces, relative to apps/video. */
 const ROUTE_SEGMENTS = [
@@ -137,15 +139,31 @@ describe("seo landing content", () => {
     }
   });
 
-  it("compares the four real models with the real input modality", () => {
-    for (const { label, content } of CASES) {
-      expect(content.compareRows, `${label} rows`).toHaveLength(4);
+  it("compares the three enabled models with the real input modality", () => {
+    for (const { slug, locale, label, content } of CASES) {
+      if (slug === "ai-video-generator" || slug === "text-to-video" || slug === "image-to-video") {
+        expect(content.compareRows, `${label} rows`).toHaveLength(3);
+      }
       expect(content.compareRows.map((row) => row.model)).toEqual(
         EXPECTED_MODELS,
       );
       for (const row of content.compareRows) {
         expect(row.bestFor.trim(), `${label} bestFor`).not.toBe("");
         expect(row.input, `${label} input`).toBe("Text, image");
+      }
+    }
+  });
+
+  it("never mentions a disabled model in any copy", () => {
+    for (const slug of SEO_LANDING_SLUGS) {
+      for (const locale of LOCALES) {
+        const content = seoLandingFor(slug, locale);
+        const label = `${slug}/${locale}`;
+        for (const text of copyStrings(content)) {
+          expect(text, `${label} disabled model`).not.toMatch(
+            DISABLED_MODEL_PATTERN,
+          );
+        }
       }
     }
   });
