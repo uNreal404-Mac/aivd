@@ -253,9 +253,9 @@
         "name": "专业版",
         "description": "960 积分/月 - 适合专业人士"
       },
-      "team": {
+      "ultimate": {
         "name": "旗舰版",
-        "description": "2,850 积分/月 - 适合重度用户"
+        "description": "适合高频创作者"
       },
       "standard": {
         "name": "标准积分包",

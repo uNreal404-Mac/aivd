@@ -27,7 +27,7 @@ export const priceFaqDataMap: Record<string, FAQItem[]> = {
       id: "item-3",
       question: "Pro 计划包含哪些功能？",
       answer:
-        "Pro 计划每月提供 960 积分（约 96 个视频），每月 29.90 美元。年付 299 美元，提供 11,520 积分。Pro 计划包含无水印、优先支持和商业使用权，是最受欢迎的选择。",
+        "Pro 计划每月提供 960 积分（约 96 个视频），每月 29.90 美元。年付 299 美元，提供 11,520 积分。Pro 计划包含商业使用权，是最受欢迎的选择。",
     },
     {
       id: "item-4",
@@ -65,7 +65,7 @@ export const priceFaqDataMap: Record<string, FAQItem[]> = {
       id: "item-3",
       question: "What's included in the Pro plan?",
       answer:
-        "The Pro plan provides 960 credits per month (~96 videos) at $29.90/month. The yearly plan is $299 with 11,520 credits. The Pro plan includes watermark-free videos, priority support, and commercial license. It's our most popular choice.",
+        "The Pro plan provides 960 credits per month (~96 videos) at $29.90/month. The yearly plan is $299 with 11,520 credits. The Pro plan includes commercial license. It's our most popular choice.",
     },
     {
       id: "item-4",
@@ -103,7 +103,7 @@ export const priceFaqDataMap: Record<string, FAQItem[]> = {
       id: "item-3",
       question: "Pro プランには何が含まれていますか？",
       answer:
-        "Pro プランは月額 29.90 ドルで 960 クレジット（約 96 本の動画）。年額プランは 299 ドルで 11,520 クレジット。Pro プランにはウォーターマークなし、優先サポート、商用利用権が含まれ、最も人気のある選択肢です。",
+        "Pro プランは月額 29.90 ドルで 960 クレジット（約 96 本の動画）。年額プランは 299 ドルで 11,520 クレジット。Pro プランには商用利用権が含まれ、最も人気のある選択肢です。",
     },
     {
       id: "item-4",
@@ -141,7 +141,7 @@ export const priceFaqDataMap: Record<string, FAQItem[]> = {
       id: "item-3",
       question: "Pro 플랜에는 무엇이 포함되어 있나요?",
       answer:
-        "Pro 플랜은 월 $29.90에 월 960 크레딧(약 96개 비디오)을 제공합니다. 연간 플랜은 $299에 11,520 크레딧을 제공합니다. Pro 플랜에는 워터마크 제거, 우선 지원, 상업용 라이선스가 포함되어 있으며 가장 인기 있는 선택입니다.",
+        "Pro 플랜은 월 $29.90에 월 960 크레딧(약 96개 비디오)을 제공합니다. 연간 플랜은 $299에 11,520 크레딧을 제공합니다. Pro 플랜에는 상업용 라이선스가 포함되어 있으며 가장 인기 있는 선택입니다.",
     },
     {
       id: "item-4",

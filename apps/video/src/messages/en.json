@@ -253,9 +253,9 @@
         "name": "Pro Plan",
         "description": "Best for professionals"
       },
-      "team": {
-        "name": "Team Plan",
-        "description": "For teams and businesses"
+      "ultimate": {
+        "name": "Ultimate Plan",
+        "description": "For power creators and heavy usage"
       },
       "standard": {
         "name": "Standard Pack",

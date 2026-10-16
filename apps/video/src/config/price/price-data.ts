@@ -90,16 +90,8 @@ function generatePriceData() {
         ],
       },
       limitations: {
-        zh: [
-          "无水印功能",
-          "无优先支持",
-          "无 API 访问权限",
-        ],
-        en: [
-          "No watermark-free videos",
-          "No priority support",
-          "No API access",
-        ],
+        zh: [],
+        en: [],
       },
     },
     pro: {
@@ -112,22 +104,18 @@ function generatePriceData() {
           "每月 960 积分（约 96 个视频）",
           "高清视频生成（720P/1080P）",
           "快速生成通道",
-          "无水印",
           "商业使用权",
-          "优先客户支持",
         ],
         en: [
           "960 credits/month (~96 videos)",
           "HD video generation (720P/1080P)",
           "Fast generation",
-          "No watermark",
           "Commercial license",
-          "Priority support",
         ],
       },
       limitations: {
-        zh: ["无 API 访问权限"],
-        en: ["No API access"],
+        zh: [],
+        en: [],
       },
     },
     ultimate: {
@@ -140,19 +128,13 @@ function generatePriceData() {
           "每月 2,850 积分（约 285 个视频）",
           "高清视频生成（720P/1080P）",
           "快速生成通道",
-          "无水印",
           "商业使用权",
-          "优先客户支持",
-          "API 访问权限",
         ],
         en: [
           "2,850 credits/month (~285 videos)",
           "HD video generation (720P/1080P)",
           "Fast generation",
-          "No watermark",
           "Commercial license",
-          "Priority support",
-          "API access",
         ],
       },
       limitations: {

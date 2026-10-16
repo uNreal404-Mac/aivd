@@ -37,10 +37,10 @@ function getPackageKey(productId: string, productName: string): string {
   const nameToKeyMap: Record<string, string> = {
     "Basic Plan": "basic",
     "Pro Plan": "pro",
-    "Ultimate Plan": "team", // Use team for Ultimate
+    "Ultimate Plan": "ultimate",
     "Basic Plan (Yearly)": "basic",
     "Pro Plan (Yearly)": "pro",
-    "Ultimate Plan (Yearly)": "team",
+    "Ultimate Plan (Yearly)": "ultimate",
     "Starter Pack": "starter",
     "Standard Pack": "standard",
     "Pro Pack": "pro",
