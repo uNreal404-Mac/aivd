@@ -265,6 +265,7 @@
     "features": {
       "hd_videos": "HD video generation",
       "fast_generation": "Fast generation speed",
+      "commercial_use": "Commercial use license",
       "custom_models": "Custom AI models"
     }
   },
