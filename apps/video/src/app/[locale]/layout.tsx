@@ -43,6 +43,11 @@ const fontHeading = localFont({
   preload: false,
 });
 
+// The preview worker has no OpenNext incremental cache, so build-time SSG output cannot be served
+// and runtime re-renders of "static" pages fail (500). Before the [locale] layout move, the root
+// layout called getLocale() (request headers), which kept every route dynamic. Keep that behaviour.
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
