@@ -75,7 +75,13 @@ const downloadAndUpload = vi.fn(async ({ key }: { key: string }) => ({
 vi.mock("@/lib/storage", () => ({
   getStorage: vi.fn(() => ({
     downloadAndUpload,
+    getSignedUrl: vi.fn((k: string) => `https://signed.test/${k}`),
   })),
+  isStorageConfigured: vi.fn(() => true),
+  isStorageKey: (v: string) => Boolean(v) && !/^https?:\/\//.test(v),
+  signMediaRef: vi.fn((v: string | null | undefined) =>
+    v ? `https://signed.test/${v}` : null
+  ),
 }));
 
 vi.mock("@/lib/video-events", () => ({
