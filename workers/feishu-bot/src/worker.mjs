@@ -1,4 +1,4 @@
-import { ACK_FALLBACK_TEXT, ACK_TTL_SECONDS, ackKey } from "./ack.mjs";
+import { ACK_TTL_SECONDS, ackKey, ackTextFor } from "./ack.mjs";
 import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
@@ -151,7 +151,7 @@ function hasMentionEvidence(message) {
   return typeof message?.content === "string" && AT_TAG_PATTERN.test(message.content);
 }
 
-async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, now }) {
+async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, now, forwardOk }) {
   if (payload?.event?.sender?.sender_type !== "user") return;
   if (!hasMentionEvidence(payload?.event?.message)) return;
 
@@ -169,16 +169,14 @@ async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, 
   if (typeof context?.senderOpenId === "string" && context.senderOpenId && context.senderOpenId === botOpenId) return;
   if (!mentionsBot(payload?.event?.message, botOpenId)) return;
 
-  // The same fixed confirmation goes out whether or not the forward succeeded, and
-  // it is never derived from the user message or from model output.
-  const text = ACK_FALLBACK_TEXT;
+  const text = ackTextFor(forwardOk);
   await kv.put(marker, "1", { expirationTtl: ACK_TTL_SECONDS });
   await replyToMessage({
     token,
     messageId: selected.messageId,
     text,
-    // Passing the fixed text as the signature keeps signOutboundText from appending a
-    // second signature block, so the reply equals ACK_FALLBACK_TEXT exactly once.
+    // Passing the text as the signature keeps signOutboundText from appending a
+    // second signature block to the fixed acknowledgement.
     config: { ...botConfig, signature: text },
     fetchImpl,
   });
@@ -345,6 +343,7 @@ export function createWorker({
             env,
             fetchImpl: workFetch,
             now,
+            forwardOk: result.ok,
           }).catch((error) => {
             console.log(`[feishu-ack] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
           });
