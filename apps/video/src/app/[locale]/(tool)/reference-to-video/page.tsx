@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getToolPageConfig, getToolPageConfigForProvider } from "@/config/tool-pages";
 import { ToolPageLayout } from "@/components/tool/tool-page-layout";
 import type { Locale } from "@/config/i18n-config";
@@ -56,11 +57,13 @@ export default async function ReferenceToVideoPage({ params }: ReferenceToVideoP
   const { locale } = await params;
   return (
     <>
-      <ToolPageLayout
-        config={config}
-        locale={locale}
-        toolRoute="reference-to-video"
-      />
+      <Suspense fallback={null}>
+        <ToolPageLayout
+          config={config}
+          locale={locale}
+          toolRoute="reference-to-video"
+        />
+      </Suspense>
       <SeoLanding
         slug="reference-to-video"
         locale={locale}

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { analyticsService, TimeRange } from "@/lib/admin/analytics";
 import { AnalyticsHeader } from "@/components/admin/analytics/analytics-header";
 import { StatsCards } from "@/components/admin/analytics/stats-cards";
@@ -19,7 +20,9 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
 
   return (
     <div className="space-y-6">
-      <AnalyticsHeader />
+      <Suspense fallback={null}>
+        <AnalyticsHeader />
+      </Suspense>
 
       {/* Stats Cards */}
       <StatsCards stats={analyticsData.stats} />

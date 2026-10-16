@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getToolPageConfig, getToolPageConfigForProvider } from "@/config/tool-pages";
 import { ToolPageLayout } from "@/components/tool/tool-page-layout";
 import { SeoLanding } from "@/components/seo/seo-landing";
@@ -56,11 +57,13 @@ export default async function TextToVideoPage({ params }: TextToVideoPageProps) 
   const { locale } = await params;
   return (
     <>
-      <ToolPageLayout
-        config={config}
-        locale={locale}
-        toolRoute="text-to-video"
-      />
+      <Suspense fallback={null}>
+        <ToolPageLayout
+          config={config}
+          locale={locale}
+          toolRoute="text-to-video"
+        />
+      </Suspense>
       <SeoLanding
         slug="text-to-video"
         locale={locale}
