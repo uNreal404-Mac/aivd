@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACK_FAILURE_TEXT, ACK_SUCCESS_TEXT, ackKey } from "../src/ack.mjs";
+import { ACK_FALLBACK_TEXT, ackKey } from "../src/ack.mjs";
 
 const SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 import { dedupeKeys } from "../src/dedupe.mjs";
@@ -427,7 +427,7 @@ test("emails a group @bot mention and then replies once with the fallback acknow
   assert.equal(forwardCalls[0].url, RESEND_URL);
   assert.equal(new Headers(forwardCalls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
   assert.equal(SIGNATURE.length > 0, true);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
@@ -464,7 +464,7 @@ test("forwards and acknowledges a repeated Feishu delivery only once", async () 
 
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
 });
 
@@ -513,7 +513,7 @@ test("acks before the deferred email forward resolves when waitUntil is availabl
 
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
 });
 
@@ -535,7 +535,7 @@ test("emails a 进度 command in the forwarding chat and then acknowledges it", 
   assert.equal(forwardCalls.length, 1);
   assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 进度"));
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
 });
@@ -560,7 +560,7 @@ test("still acknowledges a forward-chat @bot mention when the email forward fail
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.ok(forwardCalls.length >= 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_FAILURE_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
   assert.equal(await env.BOT_KV.get(ackKey("om_pfail")), "1");
   // The failed attempt clears its placeholder so a later redelivery can email again.
@@ -585,7 +585,7 @@ test("does not mark a forwarding-chat message processed when the Resend key is m
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.equal(forwardCalls.length, 0);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_FAILURE_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
   assert.equal(await env.BOT_KV.get(eventKey), null);
   assert.equal(await env.BOT_KV.get(messageKey), null);
@@ -617,7 +617,7 @@ test("forwards an unsupported forward-chat message with a placeholder instead of
   assert.equal(forwardCalls.length, 1);
   assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: [unsupported:file]"));
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
 });
 
@@ -653,9 +653,54 @@ test("acks a forward-chat mention with the fixed text without ever calling the L
   assert.equal(forwardCalls.length, 1);
   assert.equal(llmCalls.length, 0);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
   assert.equal(await env.BOT_KV.get(ackKey("om_ack")), "1");
+});
+
+test("always replies with the fixed acknowledgement for links, deadlines, and prices, never the LLM", async () => {
+  const leaks = [
+    "落地页 http://old.grokbot.example/landing 明天上线，价格 199",
+    "明天上线",
+    "价格 199 元",
+  ];
+
+  for (const [index, text] of leaks.entries()) {
+    const replies = [];
+    const forwardCalls = [];
+    const llmCalls = [];
+    const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+    const worker = createWorker({
+      fetchImpl: async (url, init = {}) => {
+        if (String(url).includes("/chat/completions")) {
+          llmCalls.push({ url: String(url), init });
+          return Response.json({ choices: [{ message: { role: "assistant", content: "泄露内容" } }] });
+        }
+        return baseFetch(url, init);
+      },
+    });
+    const env = makeEnv();
+    env.RESEND_API_KEY = RESEND_KEY;
+    env.LLM_BASE_URL = "https://llm.test/v1";
+    env.LLM_MODEL = "test-model";
+    env.LLM_API_KEY = "llm-test-key";
+
+    const response = await send(
+      worker,
+      messagePayload({ text, messageId: `om_leak_${index}`, eventId: `evt_leak_${index}` }),
+      env,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(forwardCalls.length, 1);
+    assert.equal(llmCalls.length, 0);
+    assert.equal(replies.length, 1);
+    const ack = JSON.parse(replies[0].content).text;
+    assert.equal(ack, ACK_FALLBACK_TEXT);
+    assert.equal(ack.includes("明天上线"), false);
+    assert.equal(ack.includes("199"), false);
+    assert.equal(ack.includes("old.grokbot.example"), false);
+  }
 });
 
 test("does not email or acknowledge the same forward-chat message twice", async () => {
@@ -719,7 +764,7 @@ test("acknowledges a successful forward even when the model call would fail", as
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
 });
 
