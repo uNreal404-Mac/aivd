@@ -6,12 +6,15 @@ import { i18n, type Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 import {
+  MODEL_PAGE_COPY,
   MODEL_SEO,
   MODEL_SLUGS,
   buildFaqJsonLd,
   getCapabilities,
   getModelSeo,
+  localizeModelSeo,
   modelHref,
+  resolveLocale,
   tryHref,
 } from "@/lib/model-seo";
 import { buildAlternates } from "@/lib/seo";
@@ -41,17 +44,20 @@ export async function generateMetadata({
     return {};
   }
 
+  const loc = resolveLocale(locale);
+  const copy = localizeModelSeo(entry, loc);
   const path = `/models/${slug}`;
   const localePrefix = locale === i18n.defaultLocale ? "" : `/${locale}`;
 
   return {
-    title: entry.title,
-    description: entry.description,
+    title: copy.title,
+    description: copy.description,
     alternates: buildAlternates(path, locale),
     openGraph: {
-      title: entry.title,
-      description: entry.description,
+      title: copy.title,
+      description: copy.description,
       url: `${siteConfig.url}${localePrefix}${path}`,
+      locale: loc === "zh" ? "zh_CN" : "en_US",
     },
     robots: isNoIndexEnvironment() ? NOINDEX_ROBOTS : undefined,
   };
@@ -144,54 +150,61 @@ export default async function ModelSeoPage({ params }: ModelSeoPageProps) {
     notFound();
   }
 
+  const loc = resolveLocale(locale);
+  const copy = MODEL_PAGE_COPY[loc];
+  const localized = localizeModelSeo(entry, loc);
+
   const capabilities = getCapabilities(entry.modelId);
   const otherModels = MODEL_SEO.filter((model) => model.slug !== entry.slug);
-  const steps = [
-    "Write a prompt",
-    `Pick ${entry.name} and settings`,
-    "Generate and download",
-  ];
+  const steps = copy.steps(localized.name);
 
   return (
     <main style={pageStyle}>
       <div style={containerStyle}>
-        <h1 style={h1Style}>{entry.name} AI Video Generator</h1>
-        <p style={introStyle}>{entry.intro}</p>
+        <h1 style={h1Style}>{copy.h1(localized.name)}</h1>
+        <p style={introStyle}>{localized.intro}</p>
 
         <a href={tryHref(locale, entry)} style={buttonStyle}>
-          Try {entry.name}
+          {copy.tryLabel(localized.name)}
         </a>
 
         {capabilities && (
           <section style={sectionStyle}>
-            <h2 style={h2Style}>Capabilities</h2>
+            <h2 style={h2Style}>{copy.capabilitiesHeading}</h2>
             <ul style={listStyle}>
               <li>
-                Durations:{" "}
-                {capabilities.durations.map((d) => `${d}s`).join(", ")}
+                {copy.durations}:{" "}
+                {capabilities.durations
+                  .map((d) => `${d}${copy.secondsSuffix}`)
+                  .join(", ")}
               </li>
               {capabilities.resolutions.length > 0 && (
-                <li>Resolutions: {capabilities.resolutions.join(", ")}</li>
+                <li>
+                  {copy.resolutions}: {capabilities.resolutions.join(", ")}
+                </li>
               )}
-              <li>Aspect ratios: {capabilities.aspectRatios.join(", ")}</li>
               <li>
-                Image to video: {capabilities.imageToVideo ? "Yes" : "No"}
+                {copy.aspectRatios}: {capabilities.aspectRatios.join(", ")}
+              </li>
+              <li>
+                {copy.imageToVideo}:{" "}
+                {capabilities.imageToVideo ? copy.yes : copy.no}
               </li>
             </ul>
           </section>
         )}
 
         <section style={sectionStyle}>
-          <h2 style={h2Style}>Use cases</h2>
+          <h2 style={h2Style}>{copy.useCasesHeading}</h2>
           <ul style={listStyle}>
-            {entry.useCases.map((useCase) => (
+            {localized.useCases.map((useCase) => (
               <li key={useCase}>{useCase}</li>
             ))}
           </ul>
         </section>
 
         <section style={sectionStyle}>
-          <h2 style={h2Style}>How to use</h2>
+          <h2 style={h2Style}>{copy.howToHeading}</h2>
           <ol style={listStyle}>
             {steps.map((step) => (
               <li key={step}>{step}</li>
@@ -200,8 +213,8 @@ export default async function ModelSeoPage({ params }: ModelSeoPageProps) {
         </section>
 
         <section style={sectionStyle}>
-          <h2 style={h2Style}>FAQ</h2>
-          {entry.faqs.map((faq) => (
+          <h2 style={h2Style}>{copy.faqHeading}</h2>
+          {localized.faqs.map((faq) => (
             <details key={faq.q} style={detailsStyle}>
               <summary style={summaryStyle}>{faq.q}</summary>
               <p style={answerStyle}>{faq.a}</p>
@@ -210,7 +223,7 @@ export default async function ModelSeoPage({ params }: ModelSeoPageProps) {
         </section>
 
         <section style={sectionStyle}>
-          <h2 style={h2Style}>Other models</h2>
+          <h2 style={h2Style}>{copy.otherModelsHeading}</h2>
           <ul style={listStyle}>
             {otherModels.map((model) => (
               <li key={model.slug}>
@@ -226,7 +239,7 @@ export default async function ModelSeoPage({ params }: ModelSeoPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildFaqJsonLd(entry)),
+          __html: JSON.stringify(buildFaqJsonLd(entry, loc)),
         }}
       />
     </main>
