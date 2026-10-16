@@ -1,6 +1,4 @@
 export const GROK_FORWARD_CHAT_ID = "oc_ff147ab4f0cf2288fe99fda95e9e54ad";
-export const FORWARD_EMAIL_FROM = "onboarding@resend.dev";
-export const FORWARD_EMAIL_TO = ["tuapi@mail.grokbot.com"];
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const FORWARD_TIMEOUT_MS = 8000;
@@ -44,12 +42,22 @@ function resendHeaders(apiKey, messageId) {
   };
 }
 
-// Optional override: env.FORWARD_EMAIL_TO is a comma-separated recipient list from the
-// Worker vars; unset or blank falls back to the constant in this file.
+// Sender and recipients only ever come from Worker vars, so no address is committed to
+// source. An unset sender or an empty recipient list means "not configured" and the
+// caller skips the forward instead of guessing an address.
+export function forwardSender(env) {
+  return typeof env?.FORWARD_EMAIL_FROM === "string" ? env.FORWARD_EMAIL_FROM.trim() : "";
+}
+
+// env.FORWARD_EMAIL_TO is a comma-separated recipient list; unset or blank yields an
+// empty list (never a source fallback).
 export function forwardRecipients(env) {
   const configured = typeof env?.FORWARD_EMAIL_TO === "string" ? env.FORWARD_EMAIL_TO : "";
-  const parsed = configured.split(",").map((value) => value.trim()).filter(Boolean);
-  return parsed.length > 0 ? parsed : FORWARD_EMAIL_TO;
+  return configured.split(",").map((value) => value.trim()).filter(Boolean);
+}
+
+export function isForwardEmailConfigured(env) {
+  return Boolean(forwardSender(env)) && forwardRecipients(env).length > 0;
 }
 
 // Built once per forward so the cron retry can resend the exact same JSON body.
@@ -58,7 +66,7 @@ export function buildForwardEmailBody({ env, payload, selected, context, subject
   return {
     createTime,
     body: JSON.stringify({
-      from: FORWARD_EMAIL_FROM,
+      from: forwardSender(env),
       to: forwardRecipients(env),
       subject: `${subjectPrefix ? `${subjectPrefix} ` : ""}[feishu] ${senderLabel(context)} (${context.senderOpenId || "unknown"}) ${selected.messageId}`,
       text: [
@@ -106,6 +114,13 @@ export async function forwardToGrok({
 
   const apiKey = typeof env?.RESEND_API_KEY === "string" ? env.RESEND_API_KEY : "";
   if (!apiKey || !kv) return { ok: false, attempts: 0, status: null };
+
+  // Missing email configuration is a skip, not an error: never call Resend, never claim
+  // the dedupe key (so a later configured retry can still send), and never log an address.
+  if (!isForwardEmailConfigured(env)) {
+    console.log(`[feishu-forward] message_id=${selected.messageId} skipped: email not configured`);
+    return { ok: false, attempts: 0, status: null, skipped: "email_not_configured" };
+  }
 
   const dedupeKey = forwardKey(selected.messageId);
   try {
@@ -235,6 +250,14 @@ export async function retryPendingForwards({ env, kv, fetchImpl, now = Date.now 
   const summary = { scanned: 0, sent: 0, failed: 0, skipped: 0, gaveUp: 0 };
   const apiKey = typeof env?.RESEND_API_KEY === "string" ? env.RESEND_API_KEY : "";
   if (!apiKey || !kv) return summary;
+
+  // The email config can go missing between the first attempt and the cron retry. In that
+  // case leave every queued record untouched and log the same skip (never an address), so
+  // the next configured run still owns the resend.
+  if (!isForwardEmailConfigured(env)) {
+    console.log("[feishu-forward] skipped: email not configured");
+    return summary;
+  }
 
   // Cheap gate first: without the flag nothing is queued, so never spend a kv.list call.
   let flag = null;

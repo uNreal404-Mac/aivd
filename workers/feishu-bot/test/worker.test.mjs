@@ -75,10 +75,15 @@ function makeEnv(kv = fakeKv()) {
     FEISHU_APP_SECRET: "test-app-secret",
     FEISHU_VERIFICATION_TOKEN: "verify-token",
     FEISHU_ENCRYPT_KEY: "",
+    FORWARD_EMAIL_FROM: TEST_FROM,
+    FORWARD_EMAIL_TO: TEST_TO,
   };
 }
 
 const RESEND_URL = "https://api.resend.com/emails";
+// Example-only addresses: the real sender/recipients come from Worker vars.
+const TEST_FROM = "bot@example.com";
+const TEST_TO = "ops@example.com";
 
 function makeFeishuFetch({ failReplyCount = 0, replies = [], calls = [] } = {}) {
   return async (url, init = {}) => {

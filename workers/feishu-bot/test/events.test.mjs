@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decodeFeishuRequest, extractMessageText, mentionsBot, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "../src/events.mjs";
+import { decodeFeishuRequest, extractMessageText, mentionsBot, postPlainText, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "../src/events.mjs";
 import { GROK_FORWARD_CHAT_ID } from "../src/forward.mjs";
 
 const encoder = new TextEncoder();
@@ -255,6 +255,84 @@ test("omits an empty post title and returns null for an empty post", () => {
     extractMessageText({ message_type: "post", content: JSON.stringify({ content: [] }) }),
     null,
   );
+});
+
+function postEventPayload({ content, chatType = "group", mentions, eventId = "evt_post", messageId = "om_post" } = {}) {
+  const message = {
+    message_id: messageId,
+    chat_type: chatType,
+    message_type: "post",
+    content: JSON.stringify(content),
+  };
+  if (Array.isArray(mentions)) message.mentions = mentions;
+  return {
+    schema: "2.0",
+    header: { event_id: eventId, event_type: "im.message.receive_v1", token: "verify-token" },
+    event: { sender: { sender_type: "user" }, message },
+  };
+}
+
+test("renders post text elements as plain text regardless of style", () => {
+  const content = {
+    title: "需求",
+    content: [[
+      { tag: "text", text: "落地页要", style: ["bold"] },
+      { tag: "text", text: "加中文", style: ["italic"] },
+    ]],
+  };
+
+  assert.equal(postPlainText(content, "ou_bot"), "落地页要加中文");
+});
+
+test("joins post paragraphs with a line break", () => {
+  const content = {
+    content: [
+      [{ tag: "text", text: "第一段" }],
+      [{ tag: "text", text: "第二段" }],
+    ],
+  };
+
+  assert.equal(postPlainText(content, "ou_bot"), "第一段\n第二段");
+});
+
+test("accepts a post wrapped by language and the block directly", () => {
+  const block = { title: "标题", content: [[{ tag: "text", text: "正文" }]] };
+  const wrapped = { zh_cn: block, en_us: { title: "Title", content: [[{ tag: "text", text: "ignored" }]] } };
+
+  assert.equal(postPlainText(wrapped, "ou_bot"), "正文");
+  assert.equal(postPlainText(block, "ou_bot"), "正文");
+});
+
+test("selects a group post that @s the bot through an at element", () => {
+  const payload = postEventPayload({
+    content: {
+      title: "需求",
+      content: [[
+        { tag: "at", user_id: "ou_bot", user_name: "小助手" },
+        { tag: "text", text: "落地页要加中文" },
+      ]],
+    },
+  });
+
+  assert.deepEqual(selectMessageEvent(payload, "ou_bot"), {
+    eventId: "evt_post",
+    messageId: "om_post",
+    chatType: "group",
+    text: "落地页要加中文",
+  });
+});
+
+test("ignores a group post that only @s another user", () => {
+  const payload = postEventPayload({
+    content: {
+      content: [[
+        { tag: "at", user_id: "ou_person", user_name: "老王" },
+        { tag: "text", text: "看一下这个" },
+      ]],
+    },
+  });
+
+  assert.equal(selectMessageEvent(payload, "ou_bot"), null);
 });
 
 test("extracts image messages as a marker and returns null for other types", () => {

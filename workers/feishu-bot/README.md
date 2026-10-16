@@ -24,7 +24,7 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 
 ## Resend 重试队列（Cron Trigger）
 
-转发群消息通过 Resend 发信。首次 3 次尝试（0s / 1s / 3s 退避）全部失败时不再丢弃消息：Worker 把 `{ messageId, body, attempts, firstFailedAt, lastStatus, nextAttemptAt }` 写入 KV 待发队列（前缀 `feishu:resend:pending:`，TTL 7 天），把该消息的去重键改成 `pending` 标记（同样 7 天），并写下队列标记 `feishu:resend:__has_pending`（同样 7 天），因此飞书重投不会再发一次；`nextAttemptAt` 首次为「当前时间 + 10 分钟」，队列至少 10 分钟后才会第一次重试。首次与重试请求都带 `Idempotency-Key: feishu-forward-<message_id>`，由 Resend 侧去重。写待发记录失败时退回旧行为（删除去重键）。`forwardToGrok()` 返回 `{ ok, attempts, status, queued }`。
+转发群消息通过 Resend 发信。首次 3 次尝试（0s / 1s / 3s 退避）全部失败时不再丢弃消息：Worker 把 `{ messageId, body, attempts, firstFailedAt, lastStatus, nextAttemptAt }` 写入 KV 待发队列（前缀 `feishu:resend:pending:`，TTL 7 天），把该消息的去重键改成 `pending` 标记（同样 7 天），并写下队列标记 `feishu:resend:__has_pending`（同样 7 天），因此飞书重投不会再发一次；`nextAttemptAt` 首次为「当前时间 + 10 分钟」，队列至少 10 分钟后才会第一次重试。首次与重试请求都带 `Idempotency-Key: feishu-forward-<message_id>`，由 Resend 侧去重。写待发记录失败时退回旧行为（删除去重键）。`forwardToGrok()` 返回 `{ ok, attempts, status, queued, skipped }`。未配置 `FORWARD_EMAIL_FROM` 或 `FORWARD_EMAIL_TO`（或为空）时直接跳过：不调用 Resend、不占用去重键，日志里也不出现任何地址。
 
 `wrangler.toml` 的 `[triggers] crons = ["*/10 * * * *"]` 每 10 分钟触发一次 `scheduled()`，调用 `retryPendingForwards()`（每次最多 `CRON_BATCH_LIMIT = 20` 条）：
 
@@ -39,7 +39,7 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 - 返回 `{ scanned, sent, failed, skipped, gaveUp }`，每条记录打印一行 `[feishu-forward-cron] message_id=.. status=.. attempts=.. result=sent|failed|skipped|gave_up`。
 - 一轮里列出的记录全部被清空（`list_complete`）时删除 `__has_pending` 标记，之后队列为空时不再 `kv.list`。
 
-未配置 `RESEND_API_KEY` 或 `BOT_KV` 时 `retryPendingForwards()` 直接返回全零，不发任何请求。
+未配置 `RESEND_API_KEY` 或 `BOT_KV` 时 `retryPendingForwards()` 直接返回全零，不发任何请求。未配置 `FORWARD_EMAIL_FROM` 或 `FORWARD_EMAIL_TO` 时同样提前返回全零：不调 Resend，也不改动待发记录。
 
 ## 费用边界
 
@@ -69,7 +69,8 @@ Worker 将回调请求体限制在 1 MiB。飞书事件路径把读 body、外�
 | `GITHUB_TOKEN` | 需求命令必须；进度命令可选 | 细粒度 PAT，**仅本仓库** `CharlesHarry7/dreamutopia-clone`。权限：Issues **Read and write**。进度读公开 issue 正文与 pulls（不用模型）；没有 token 时仍走公开接口。创建/关单回帖需要写权限 |
 | `GITHUB_WEBHOOK_SECRET` | 使用关闭回帖时必须 | GitHub webhook 的 HMAC 密钥，校验 `X-Hub-Signature-256`。请用高熵随机串，与 GitHub webhook Secret 填同一值 |
 | `ALLOWED_CHAT_IDS` | **需求** 与可选 LLM 必须（合入后由运营填写） | 允许提交需求、以及（若已配置 LLM）自由对话的飞书 `chat_id`，逗号分隔。也可写在 `src/config.mjs` 的 `allowedChatIds`。未设置或为空时 **失败关闭**。这不是 secret |
-| `FORWARD_EMAIL_TO` | 可选 | Worker `[vars]`，转发邮件的收件人，逗号分隔（如 `a@example.com,b@example.com`）。未设置或为空时用源码常量 `["tuapi@mail.grokbot.com"]`。这不是 secret |
+| `FORWARD_EMAIL_FROM` | 转发必须 | set FORWARD_EMAIL_FROM / FORWARD_EMAIL_TO (Worker vars)；发件人。**不要**写进源码或提交任何真实地址。未设置时跳过发信：不调用 Resend、不占用去重键、日志不含任何地址。这不是 secret |
+| `FORWARD_EMAIL_TO` | 转发必须 | set FORWARD_EMAIL_FROM / FORWARD_EMAIL_TO (Worker vars)；收件人，逗号分隔（如 `a@example.com,b@example.com`）。未设置或为空时跳过发信：不调用 Resend、不占用去重键、日志不含任何地址。这不是 secret |
 | `LLM_BASE_URL` | 可选 LLM 必须（与下面两项同时有才开启） | Worker `[vars]` 示例：`https://api.openai.com/v1`（或其他 OpenAI 兼容 host）。**不要**把该值写进源码当运行时默认；缺省则 LLM 关闭 |
 | `LLM_MODEL` | 可选 LLM 必须 | Worker `[vars]` 示例：`gpt-4o-mini`。**不要**把模型名写进源码当运行时默认 |
 | `LLM_API_KEY` | 可选 LLM 必须 | **仅 Cloudflare Worker Secret**（`wrangler secret put LLM_API_KEY`）。运行时从 `env.LLM_API_KEY` 读取。禁止写入代码、测试、注释、日志或 PR |

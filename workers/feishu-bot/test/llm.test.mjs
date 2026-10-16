@@ -124,7 +124,7 @@ test("chat completions URL is derived from the configured base without putting t
 });
 
 test("post-filters model text: strip #\d+ and SHAs, redact privacy fields, drop 老三", () => {
-  const filtered = filterLlmOutput("见 PR #21 和 abcdef1，邮箱 a@b.com，电话 13812345678。老三说可以。");
+  const filtered = filterLlmOutput("见 PR #21 和 abcdef1，邮箱 a@example.com，电话 13812345678。老三说可以。");
   assert.doesNotMatch(filtered, /#\d+/);
   assert.doesNotMatch(filtered, /\b[0-9a-f]{7,40}\b/i);
   assert.match(filtered, /已脱敏-邮箱/);
@@ -186,7 +186,7 @@ test("allowlisted freeform chat posts an OpenAI-compatible completion and filter
     userText: "案例页现在是什么样？看 PR #34 / 1c5dd76",
     fetchImpl: githubAndLlmFetch({
       llmCalls,
-      completion: "案例页已经换了样片。详见 PR #34（1c5dd76）。邮箱 boss@x.com",
+      completion: "案例页已经换了样片。详见 PR #34（1c5dd76）。邮箱 boss@example.com",
     }),
   });
 

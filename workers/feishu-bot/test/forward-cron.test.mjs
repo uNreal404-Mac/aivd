@@ -3,8 +3,6 @@ import test from "node:test";
 import {
   CRON_BATCH_LIMIT,
   CRON_SENDING_TTL_SECONDS,
-  FORWARD_EMAIL_FROM,
-  FORWARD_EMAIL_TO,
   FORWARD_FAILED_MARK,
   FORWARD_PENDING_MARK,
   FORWARD_SENDING_PLACEHOLDER,
@@ -22,6 +20,9 @@ import worker from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const RESEND_KEY = "re_test_key";
+// Example-only addresses: the real sender/recipients come from Worker vars.
+const TEST_FORWARD_EMAIL_FROM = "bot@example.com";
+const TEST_FORWARD_EMAIL_TO = "ops@example.com";
 
 function fakeKv(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -58,8 +59,8 @@ function queuedKv(initial = {}) {
 
 function emailBody(messageId) {
   return JSON.stringify({
-    from: FORWARD_EMAIL_FROM,
-    to: FORWARD_EMAIL_TO,
+    from: TEST_FORWARD_EMAIL_FROM,
+    to: [TEST_FORWARD_EMAIL_TO],
     subject: `[feishu] 老王 ${messageId}`,
     text: "text: 随便聊聊",
   });
@@ -81,8 +82,13 @@ function pendingKeys(kv) {
   return [...kv.values.keys()].filter((key) => key.startsWith(PENDING_PREFIX));
 }
 
-function resendEnv() {
-  return { RESEND_API_KEY: RESEND_KEY };
+function resendEnv(overrides = {}) {
+  return {
+    RESEND_API_KEY: RESEND_KEY,
+    FORWARD_EMAIL_FROM: TEST_FORWARD_EMAIL_FROM,
+    FORWARD_EMAIL_TO: TEST_FORWARD_EMAIL_TO,
+    ...overrides,
+  };
 }
 
 test("cron resends a pending email with an Idempotency-Key, clears the pending record and marks it sent", async () => {
@@ -240,6 +246,46 @@ test("cron returns zeros when the Resend key or KV binding is missing", async ()
   }
 });
 
+test("cron skips the queue and leaves pending records untouched when email config is missing", async () => {
+  const cases = [
+    { FORWARD_EMAIL_FROM: "", FORWARD_EMAIL_TO: TEST_FORWARD_EMAIL_TO },
+    { FORWARD_EMAIL_FROM: TEST_FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO: "" },
+    { FORWARD_EMAIL_FROM: "   ", FORWARD_EMAIL_TO: " , " },
+  ];
+
+  for (const overrides of cases) {
+    const kv = queuedKv({
+      [pendingKey("om_nocfg")]: pendingRecord("om_nocfg"),
+      [forwardKey("om_nocfg")]: FORWARD_PENDING_MARK,
+    });
+    const calls = [];
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (...args) => { logs.push(args.join(" ")); };
+    let summary;
+    try {
+      summary = await retryPendingForwards({
+        env: resendEnv(overrides),
+        kv,
+        fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+      });
+    } finally {
+      console.log = originalLog;
+    }
+
+    assert.deepEqual(summary, { scanned: 0, sent: 0, failed: 0, skipped: 0, gaveUp: 0 });
+    assert.equal(calls.length, 0);
+    assert.equal(kv.writes.length, 0);
+    assert.equal(kv.deletes.length, 0);
+    assert.equal(kv.listCalls, 0);
+    assert.ok(await kv.get(pendingKey("om_nocfg")));
+    assert.equal(await kv.get(forwardKey("om_nocfg")), FORWARD_PENDING_MARK);
+    const skipLog = logs.find((line) => line.includes("skipped: email not configured"));
+    assert.ok(skipLog, "expected a skip log line");
+    assert.equal(skipLog.includes("@"), false);
+  }
+});
+
 test("cron processes at most CRON_BATCH_LIMIT pending records per run", async () => {
   const initial = {};
   for (let index = 0; index < CRON_BATCH_LIMIT + 5; index += 1) {
@@ -265,7 +311,12 @@ test("worker.scheduled queues the cron retry through waitUntil", async () => {
     [pendingKey("om_cron")]: pendingRecord("om_cron"),
     [forwardKey("om_cron")]: FORWARD_PENDING_MARK,
   });
-  const env = { BOT_KV: kv, RESEND_API_KEY: RESEND_KEY };
+  const env = {
+    BOT_KV: kv,
+    RESEND_API_KEY: RESEND_KEY,
+    FORWARD_EMAIL_FROM: TEST_FORWARD_EMAIL_FROM,
+    FORWARD_EMAIL_TO: TEST_FORWARD_EMAIL_TO,
+  };
   const queued = [];
   const ctx = { waitUntil: (promise) => { queued.push(promise); } };
   const originalFetch = globalThis.fetch;
@@ -292,7 +343,12 @@ test("worker.scheduled queues the cron retry through waitUntil", async () => {
 
 test("worker.scheduled still completes when it runs without a waitUntil context", async () => {
   const kv = queuedKv({ [pendingKey("om_nocontext")]: pendingRecord("om_nocontext") });
-  const env = { BOT_KV: kv, RESEND_API_KEY: RESEND_KEY };
+  const env = {
+    BOT_KV: kv,
+    RESEND_API_KEY: RESEND_KEY,
+    FORWARD_EMAIL_FROM: TEST_FORWARD_EMAIL_FROM,
+    FORWARD_EMAIL_TO: TEST_FORWARD_EMAIL_TO,
+  };
   const originalFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {

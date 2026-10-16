@@ -153,6 +153,47 @@ function renderPostContent(content) {
   return blocks.length > 0 ? blocks.join("\n\n") : null;
 }
 
+function firstPostBlock(content) {
+  for (const value of Object.values(content)) {
+    if (value && typeof value === "object" && Array.isArray(value.content)) return value;
+  }
+  return null;
+}
+
+function plainTextFromElement(element, botOpenId) {
+  if (!element || typeof element !== "object") return "";
+  switch (element.tag) {
+    case "text":
+      return typeof element.text === "string" ? element.text : "";
+    case "a":
+      if (typeof element.text === "string" && element.text) return element.text;
+      return typeof element.href === "string" ? element.href : "";
+    case "at": {
+      if (botOpenId && (element.user_id === botOpenId || element.open_id === botOpenId)) return "";
+      const name = typeof element.user_name === "string" && element.user_name ? element.user_name : "user";
+      return `@${name}`;
+    }
+    default:
+      return "";
+  }
+}
+
+// Plain-text view of a post for the command/answer path. Unlike extractMessageText it
+// renders no link/image markers and drops the bot's own mention; the Grok forward keeps
+// using extractMessageText so forward behaviour is unchanged.
+export function postPlainText(content, botOpenId) {
+  if (!content || typeof content !== "object") return null;
+  const block = Array.isArray(content.content) ? content : firstPostBlock(content);
+  if (!block || !Array.isArray(block.content)) return null;
+
+  const paragraphs = [];
+  for (const paragraph of block.content) {
+    const elements = Array.isArray(paragraph) ? paragraph : [paragraph];
+    paragraphs.push(elements.map((element) => plainTextFromElement(element, botOpenId)).join(""));
+  }
+  return paragraphs.join("\n").trim();
+}
+
 export function extractMessageText(message) {
   const content = parseMessageContent(message);
   if (content === null) return null;
@@ -199,20 +240,34 @@ export function selectMessageEvent(payload, botOpenId) {
   const messageId = message?.message_id;
   if (typeof eventId !== "string" || !eventId || typeof messageId !== "string" || !messageId) return null;
   if (payload?.event?.sender?.sender_type !== "user") return null;
-  if (message?.message_type !== "text") {
-    console.log(`[feishu] ignored message_type=${message?.message_type ?? ""} message_id=${messageId}`);
+  const messageType = message?.message_type;
+  if (messageType !== "text" && messageType !== "post") {
+    console.log(`[feishu] ignored message_type=${messageType ?? ""} message_id=${messageId}`);
     return null;
+  }
+
+  const isPost = messageType === "post";
+  const trimmedBotOpenId = typeof botOpenId === "string" ? botOpenId : "";
+  if (message.chat_type === "p2p") {
+    const text = isPost ? postPlainText(parseMessageContent(message), trimmedBotOpenId) : textFromMessage(message);
+    if (text === null) return null;
+    return { eventId, messageId, chatType: "p2p", text };
+  }
+  if (message.chat_type !== "group" || !trimmedBotOpenId) return null;
+
+  if (isPost) {
+    // A post has no mention key to strip: the at element for the bot is dropped while
+    // rendering the text, and any mention of the bot (mentions array or at element)
+    // selects the message.
+    if (!mentionsBot(message, trimmedBotOpenId)) return null;
+    const postText = postPlainText(parseMessageContent(message), trimmedBotOpenId);
+    return { eventId, messageId, chatType: "group", text: postText ?? "" };
   }
 
   let text = textFromMessage(message);
   if (text === null) return null;
-  if (message.chat_type === "p2p") {
-    return { eventId, messageId, chatType: "p2p", text };
-  }
-  if (message.chat_type !== "group" || typeof botOpenId !== "string" || !botOpenId) return null;
-
   const botMention = Array.isArray(message.mentions)
-    ? message.mentions.find((mention) => mention?.id?.open_id === botOpenId && typeof mention.key === "string" && mention.key.length > 0)
+    ? message.mentions.find((mention) => mention?.id?.open_id === trimmedBotOpenId && typeof mention.key === "string" && mention.key.length > 0)
     : null;
   if (!botMention) return null;
 

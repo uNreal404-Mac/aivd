@@ -149,8 +149,9 @@ function hasMessageIdentity(payload) {
 }
 
 function eligibleGroupShape(payload) {
+  const messageType = payload?.event?.message?.message_type;
   return payload?.event?.sender?.sender_type === "user"
-    && payload?.event?.message?.message_type === "text"
+    && (messageType === "text" || messageType === "post")
     && hasMessageIdentity(payload);
 }
 
@@ -387,6 +388,7 @@ export function createWorker({
               senderName = "";
             }
           }
+          const forwardContext = { ...context, senderName: senderName || "" };
 
           // The asker sees a reaction as soon as the bot picks the message up; it is best
           // effort and never blocks the forward or the acknowledgement.
@@ -423,34 +425,37 @@ export function createWorker({
             }
           }
 
-          // Mirror the message to the Grok webhook in parallel with the email; a webhook
-          // failure must never affect the email or the acknowledgement.
-          const webhookWork = postGrokWebhook({
-            env,
-            payload: buildWebhookPayload({
-              text: forwarded.text,
-              senderOpenId: context.senderOpenId,
-              senderName: senderName || context.senderName,
-              messageId: forwarded.messageId,
-              chatId: context.chatId,
-              mentionedBot: mentioned,
-            }),
-            fetchImpl: workFetch,
-          }).catch((error) => {
-            console.log(`[feishu-webhook] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
-          });
+          // The webhook is a mirror of the email forward: start it alongside the forward so
+          // neither waits on the other, and let it never change the forward/ack outcome.
+          // Only a message that mentions the bot itself is mirrored.
+          const webhookWork = mentionsMe
+            ? postGrokWebhook({
+              env,
+              payload: buildWebhookPayload({ selected: forwarded, context: forwardContext, mentionedBot: true }),
+              fetchImpl: workFetch,
+              ...(sleep ? { sleep } : {}),
+            }).catch((error) => {
+              console.log(`[feishu-webhook] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
+            })
+            : null;
 
           const result = await forwardToGrok({
             env,
             kv,
             payload,
             selected: forwarded,
-            context: { ...context, senderName: senderName || "" },
+            context: forwardContext,
             fetchImpl: workFetch,
             receivedAt,
             ...(sleep ? { sleep } : {}),
             ...(autoAnswer ? { subjectPrefix: "[auto]", extraLines: [`auto_answer: ${autoAnswer}`] } : {}),
           });
+
+          if (webhookWork) {
+            // Never await the webhook before the 200 when the runtime lets us defer work.
+            if (deferWork) ctx.waitUntil(webhookWork);
+            else await webhookWork;
+          }
           // The @bot acknowledgement must still go out when forwarding fails; only a
           // successful forward marks the message processed. In production the request is
           // acked with 200 first (ctx.waitUntil), so a failed forward is NOT redelivered
@@ -470,8 +475,6 @@ export function createWorker({
           });
           if (deferWork) ctx.waitUntil(ackWork);
           else await ackWork;
-          if (deferWork) ctx.waitUntil(webhookWork);
-          else await webhookWork;
 
           if (!result.ok) {
             // Drop the event marker so a redelivery can retry the email instead of being

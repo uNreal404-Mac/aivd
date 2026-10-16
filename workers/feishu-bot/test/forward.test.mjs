@@ -5,11 +5,16 @@ import { AUTO_PROGRESS_KEY, autoEventKey, autoLlmCountKey } from "../src/auto-an
 
 const SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 import { dedupeKeys } from "../src/dedupe.mjs";
-import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, FORWARD_PENDING_MARK, GROK_FORWARD_CHAT_ID, PENDING_BACKOFF_MS, PENDING_FLAG_KEY, PENDING_TTL_SECONDS, forwardKey, forwardToGrok, pendingKey, senderLabel } from "../src/forward.mjs";
+import { FORWARD_PENDING_MARK, GROK_FORWARD_CHAT_ID, PENDING_BACKOFF_MS, PENDING_FLAG_KEY, PENDING_TTL_SECONDS, forwardKey, forwardToGrok, pendingKey, senderLabel } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const RESEND_KEY = "re_test_key";
+// Example-only addresses: the real sender/recipients come from Worker vars.
+const TEST_FROM = "bot@example.com";
+const TEST_TO = "ops@example.com";
+const WEBHOOK_URL = "https://grok.test/hooks/feishu";
+const WEBHOOK_KEY = "grok-webhook-key";
 
 function fakeKv() {
   const values = new Map();
@@ -48,6 +53,8 @@ function recordingSleep() {
 function resendEnv(overrides = {}) {
   return {
     RESEND_API_KEY: RESEND_KEY,
+    FORWARD_EMAIL_FROM: TEST_FROM,
+    FORWARD_EMAIL_TO: TEST_TO,
     ...overrides,
   };
 }
@@ -79,6 +86,8 @@ function makeEnv(kv = fakeKv()) {
     FEISHU_APP_SECRET: "test-app-secret",
     FEISHU_VERIFICATION_TOKEN: "verify-token",
     FEISHU_ENCRYPT_KEY: "",
+    FORWARD_EMAIL_FROM: TEST_FROM,
+    FORWARD_EMAIL_TO: TEST_TO,
   };
 }
 
@@ -187,8 +196,8 @@ test("emails the trimmed message through Resend with a bearer token and records 
   assert.equal(new Headers(calls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
   assert.equal(new Headers(calls[0].init.headers).get("idempotency-key"), "feishu-forward-om_1");
   const body = JSON.parse(calls[0].init.body);
-  assert.equal(body.from, FORWARD_EMAIL_FROM);
-  assert.deepEqual(body.to, FORWARD_EMAIL_TO);
+  assert.equal(body.from, TEST_FROM);
+  assert.deepEqual(body.to, [TEST_TO]);
   assert.equal(body.subject, "[feishu] 老王 (ou_user) om_1");
   for (const fragment of [
     "sender_open_id: ou_user",
@@ -359,8 +368,8 @@ test("queues a pending retry record when every Resend attempt fails", async () =
   assert.equal(typeof pending.firstFailedAt, "number");
   assert.equal(pending.nextAttemptAt, pending.firstFailedAt + PENDING_BACKOFF_MS[0]);
   const body = JSON.parse(pending.body);
-  assert.equal(body.from, FORWARD_EMAIL_FROM);
-  assert.deepEqual(body.to, FORWARD_EMAIL_TO);
+  assert.equal(body.from, TEST_FROM);
+  assert.deepEqual(body.to, [TEST_TO]);
   assert.equal(body.subject, "[feishu] 老王 (ou_user) om_1");
   assert.ok(body.text.includes("text: 随便聊聊"));
   assert.ok(body.text.includes("create_time: 1700000000000"));
@@ -907,29 +916,88 @@ test("never acknowledges a forward-chat mention sent by the bot itself", async (
   assert.equal(await env.BOT_KV.get(ackKey("om_self")), null);
 });
 
-test("uses the comma-separated FORWARD_EMAIL_TO override and falls back when it is blank", async () => {
-  const cases = [
-    ["a@example.com, b@example.com ,", ["a@example.com", "b@example.com"]],
-    ["", FORWARD_EMAIL_TO],
-    [undefined, FORWARD_EMAIL_TO],
-  ];
+test("parses the comma-separated FORWARD_EMAIL_TO list into trimmed recipients", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const calls = [];
+  const result = await forwardToGrok({
+    env: resendEnv({ FORWARD_EMAIL_TO: "a@example.com, b@example.com ," }),
+    kv,
+    payload: {},
+    selected: selectedMessage(),
+    context: senderContext(),
+    fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+    sleep,
+  });
 
-  for (const [configured, expected] of cases) {
+  assert.equal(result.ok, true);
+  assert.deepEqual(JSON.parse(calls[0].init.body).to, ["a@example.com", "b@example.com"]);
+});
+
+test("skips the email without calling Resend when FORWARD_EMAIL_TO is blank or missing", async () => {
+  for (const configured of ["", "   ", " , ", undefined]) {
     const kv = fakeKv();
     const { sleep } = recordingSleep();
     const calls = [];
-    const result = await forwardToGrok({
-      env: resendEnv({ FORWARD_EMAIL_TO: configured }),
-      kv,
-      payload: {},
-      selected: selectedMessage(),
-      context: senderContext(),
-      fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
-      sleep,
-    });
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (...args) => { logs.push(args.join(" ")); };
+    let result;
+    try {
+      result = await forwardToGrok({
+        env: resendEnv({ FORWARD_EMAIL_TO: configured }),
+        kv,
+        payload: {},
+        selected: selectedMessage(),
+        context: senderContext(),
+        fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+        sleep,
+      });
+    } finally {
+      console.log = originalLog;
+    }
 
-    assert.equal(result.ok, true);
-    assert.deepEqual(JSON.parse(calls[0].init.body).to, expected);
+    assert.deepEqual(result, { ok: false, attempts: 0, status: null, skipped: "email_not_configured" });
+    assert.equal(calls.length, 0);
+    assert.equal(kv.writes.length, 0);
+    assert.equal(await kv.get(forwardKey("om_1")), null);
+    const skipLog = logs.find((line) => line.includes("skipped: email not configured"));
+    assert.ok(skipLog, "expected a skip log line");
+    assert.match(skipLog, /message_id=om_1/);
+    assert.equal(skipLog.includes("@"), false);
+  }
+});
+
+test("skips the email without calling Resend when FORWARD_EMAIL_FROM is blank or missing", async () => {
+  for (const configured of ["", "   ", undefined]) {
+    const kv = fakeKv();
+    const { sleep } = recordingSleep();
+    const calls = [];
+    const logs = [];
+    const originalLog = console.log;
+    console.log = (...args) => { logs.push(args.join(" ")); };
+    let result;
+    try {
+      result = await forwardToGrok({
+        env: resendEnv({ FORWARD_EMAIL_FROM: configured }),
+        kv,
+        payload: {},
+        selected: selectedMessage(),
+        context: senderContext(),
+        fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+        sleep,
+      });
+    } finally {
+      console.log = originalLog;
+    }
+
+    assert.deepEqual(result, { ok: false, attempts: 0, status: null, skipped: "email_not_configured" });
+    assert.equal(calls.length, 0);
+    assert.equal(kv.writes.length, 0);
+    assert.equal(await kv.get(forwardKey("om_1")), null);
+    const skipLog = logs.find((line) => line.includes("skipped: email not configured"));
+    assert.ok(skipLog, "expected a skip log line");
+    assert.equal(skipLog.includes("@"), false);
   }
 });
 
@@ -1090,7 +1158,7 @@ test("a failed webhook mirror never affects the email or the acknowledgement", a
     console.log = originalLog;
   }
 
-  assert.equal(logs.some((line) => line.includes("[feishu-webhook]")), true);
+  assert.equal(logs.some((line) => line.includes("[grok-webhook]")), true);
   assert.equal(logs.some((line) => line.includes("super-secret-key")), false);
 });
 
@@ -1213,4 +1281,118 @@ test("stops auto-answering once the daily LLM limit is reached", async () => {
   assert.equal(replies.length, 1);
   assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
   assert.equal(await env.BOT_KV.get(autoLlmCountKey()), "1");
+});
+
+test("posts the Grok webhook for a forwarding-chat @bot mention while still emailing the message", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === WEBHOOK_URL) {
+        webhookCalls.push({ url: String(url), init });
+        return Response.json({ ok: true });
+      }
+      return baseFetch(url, init);
+    },
+    sleep: async () => {},
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = WEBHOOK_URL;
+  env.GROK_WEBHOOK_KEY = WEBHOOK_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "落地页要加中文", messageId: "om_hook_bot", eventId: "evt_hook_bot" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(webhookCalls.length, 1);
+  assert.equal(webhookCalls[0].init.method, "POST");
+  const headers = new Headers(webhookCalls[0].init.headers);
+  assert.equal(headers.get("authorization"), `Bearer ${WEBHOOK_KEY}`);
+  assert.equal(headers.get("content-type"), "application/json");
+  assert.deepEqual(JSON.parse(webhookCalls[0].init.body), {
+    text: "落地页要加中文",
+    sender_open_id: "ou_user",
+    sender_name: "老王",
+    message_id: "om_hook_bot",
+    chat_id: GROK_FORWARD_CHAT_ID,
+    mentioned_bot: true,
+  });
+  assert.equal(replies.length, 1);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+});
+
+test("does not post the Grok webhook when the forward-chat message only mentions another user", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === WEBHOOK_URL) {
+        webhookCalls.push({ url: String(url), init });
+        return Response.json({ ok: true });
+      }
+      return baseFetch(url, init);
+    },
+    sleep: async () => {},
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = WEBHOOK_URL;
+  env.GROK_WEBHOOK_KEY = WEBHOOK_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({
+      text: "随便聊聊",
+      mentions: [{ key: "@_user_2", id: { open_id: "ou_other" } }],
+      messageId: "om_hook_other",
+      eventId: "evt_hook_other",
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(webhookCalls.length, 0);
+  assert.equal(replies.length, 0);
+});
+
+test("does not post the Grok webhook for a forward-chat message with no mention", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const worker = createWorker({
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === WEBHOOK_URL) {
+        webhookCalls.push({ url: String(url), init });
+        return Response.json({ ok: true });
+      }
+      return baseFetch(url, init);
+    },
+    sleep: async () => {},
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = WEBHOOK_URL;
+  env.GROK_WEBHOOK_KEY = WEBHOOK_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "随便聊聊", mentions: [], messageId: "om_hook_none", eventId: "evt_hook_none" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(webhookCalls.length, 0);
+  assert.equal(replies.length, 0);
 });
