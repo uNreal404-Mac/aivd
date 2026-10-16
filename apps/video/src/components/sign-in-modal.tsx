@@ -31,10 +31,18 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
   const handleSocialLogin = async (provider: "google") => {
     setSignInClicked(provider);
     try {
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider,
         callbackURL,
       });
+
+      if (error) {
+        console.error(`${provider} signIn error:`, error);
+        setSignInClicked(null);
+        toast.error("Login failed", {
+          description: `Could not sign in with ${provider}. Please try again.`,
+        });
+      }
     } catch (error) {
       console.error(`${provider} signIn error:`, error);
       setSignInClicked(null);
@@ -57,10 +65,18 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
     setSignInClicked("email");
 
     try {
-      await authClient.signIn.magicLink({
+      const { error } = await authClient.signIn.magicLink({
         email: email.toLowerCase(),
         callbackURL,
       });
+
+      if (error) {
+        console.error("Magic link signIn error:", error);
+        toast.error("Something went wrong", {
+          description: "Your sign in request failed. Please try again.",
+        });
+        return;
+      }
 
       toast.success("Check your email", {
         description: "We sent you a login link. Be sure to check your spam too.",

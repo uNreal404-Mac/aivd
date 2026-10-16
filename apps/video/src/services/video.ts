@@ -184,6 +184,7 @@ export class VideoService {
       }
     }
 
+    const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
 
     const parameters: Record<string, unknown> = {
@@ -332,7 +333,7 @@ export class VideoService {
       });
     }
 
-    const provider = getProvider(actualProvider);
+
 
     const callbackUrl = this.callbackBaseUrl
       ? generateSignedCallbackUrl(

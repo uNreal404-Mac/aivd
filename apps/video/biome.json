@@ -11,6 +11,8 @@
       ".claude/**",
       ".next/**",
       ".contentlayer/**",
+      ".open-next/**",
+      ".wrangler/**",
       "apps/**",
       "packages/**",
       "tooling/**",

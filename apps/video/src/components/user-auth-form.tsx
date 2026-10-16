@@ -48,10 +48,18 @@ export function UserAuthForm({
     setIsLoading(true);
 
     try {
-      await authClient.signIn.magicLink({
+      const { error } = await authClient.signIn.magicLink({
         email: data.email.toLowerCase(),
         callbackURL: searchParams?.get("from") ?? `/${lang}/my-creations`,
       });
+
+      if (error) {
+        console.error("Error during sign in:", error);
+        toast.error("Something went wrong.", {
+          description: "Your sign in request failed. Please try again.",
+        });
+        return;
+      }
 
       toast.success("Check your email", {
         description: "We sent you a login link. Be sure to check your spam too.",
@@ -121,6 +129,12 @@ export function UserAuthForm({
             .social({
               provider: "google",
               callbackURL: searchParams?.get("from") ?? `/${lang}/my-creations`,
+            })
+            .then(({ error }) => {
+              if (error) {
+                console.error("Google signIn error:", error);
+                setIsGoogleLoading(false);
+              }
             })
             .catch((error) => {
               console.error("Google signIn error:", error);

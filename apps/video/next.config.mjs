@@ -8,6 +8,13 @@ if (!process.env.SKIP_ENV_VALIDATION) {
   await import("./src/lib/auth/env.mjs");
 }
 
+// Only initialize the OpenNext Cloudflare dev bindings during local development
+// so that `next build` and tests are unaffected.
+if (process.env.NODE_ENV === "development") {
+  const { initOpenNextCloudflareForDev } = await import("@opennextjs/cloudflare");
+  initOpenNextCloudflareForDev();
+}
+
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,

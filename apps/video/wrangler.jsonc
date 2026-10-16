@@ -1,0 +1,29 @@
+{
+  // Preview-only Cloudflare Workers config for the Next.js app via @opennextjs/cloudflare.
+  // Secrets (BETTER_AUTH_SECRET, DATABASE_URL) are set with `wrangler secret put <NAME>`
+  // and must never be committed to this file.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dreamutopia-video-preview",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "dreamutopia-video-preview"
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_NOINDEX": "true",
+    "VIDEO_GENERATION_ENABLED": "false"
+  }
+}
