@@ -1,0 +1,40 @@
+:root {
+  --ex-bg: #07060f;
+  --ex-surface: #13112a;
+  --ex-border: rgba(139, 92, 246, 0.18);
+  --ex-text: #f5f3ff;
+  --ex-muted: #a5a1c2;
+  --ex-accent: #8b5cf6;
+  --ex-accent-hover: #7c3aed;
+  --ex-on-accent: #ffffff;
+  --ex-chip-bg: rgba(255, 255, 255, 0.06);
+  --ex-overlay: linear-gradient(
+    to top,
+    rgba(7, 6, 15, 0.85),
+    rgba(7, 6, 15, 0) 60%
+  );
+  --ex-radius-card: 16px;
+  --ex-radius-chip: 999px;
+  --ex-gap: 16px;
+  --ex-glass-bg: rgba(255, 255, 255, 0.1);
+  --ex-glass-border: rgba(255, 255, 255, 0.18);
+  --ex-glass-blur: 16px;
+}
+
+.ex-glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  backdrop-filter: blur(var(--ex-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ex-glass-blur));
+  background: var(--ex-glass-bg);
+  border: 1px solid var(--ex-glass-border);
+  color: var(--ex-text);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .ex-glass-btn {
+    background: rgba(19, 17, 42, 0.92);
+  }
+}
