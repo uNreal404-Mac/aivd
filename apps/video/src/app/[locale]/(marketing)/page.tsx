@@ -1,3 +1,5 @@
+import { setRequestLocale } from "next-intl/server";
+
 import { FAQSection } from "@/components/landing/faq-section";
 import { DuHome } from "@/components/hf/du-home";
 
@@ -62,6 +64,7 @@ export async function generateMetadata({ params }: PageMetadataProps) {
 
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
+  setRequestLocale(locale);
 
   return (
     <>

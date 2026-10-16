@@ -33,22 +33,26 @@ import {
 import {
   CATEGORY_CARDS,
   CATEGORY_FILTERS,
-  CATEGORY_HEADER,
   CREDITS_BANNER,
   EFFECT_CARDS,
-  EFFECTS_HEADER,
   HERO,
   HERO_CARDS,
   MODEL_CARDS,
-  MODELS_HEADER,
   STEPS,
-  STEPS_HEADER,
   TOOL_CHIPS,
   localizedHref,
   type Cta,
   type CtaVariant,
-  type SectionHeader,
 } from "@/lib/du-home";
+
+type LabeledCta = Cta & { label: string };
+
+interface SectionHeader {
+  eyebrow: string;
+  title: string;
+  accent: string;
+  desc: string;
+}
 
 const ICONS: Record<string, LucideIcon> = {
   Sparkles,
@@ -85,7 +89,7 @@ function ctaClasses(variant: CtaVariant): string {
   return `${base} text-[var(--du-accent-text)] hover:text-[var(--du-accent)]`;
 }
 
-function CtaButton({ cta, lang }: { cta: Cta; lang: string }) {
+function CtaButton({ cta, lang }: { cta: LabeledCta; lang: string }) {
   return (
     <Link href={localizedHref(lang, cta.href)} className={ctaClasses(cta.variant)}>
       <Icon name={cta.icon} className="h-4 w-4" />
@@ -128,12 +132,9 @@ export function DuHome({ lang }: { lang: string }) {
   const t = useTranslations("DuHome");
 
   const hero = {
-    ...HERO,
-    eyebrow: t("hero.eyebrow"),
-    titleLead: t("hero.titleLead"),
-    titleAccent: t("hero.titleAccent"),
-    subtitle: t("hero.subtitle"),
-    ctas: HERO.ctas.map((cta, i) => ({ ...cta, label: t(`hero.ctas.c${i}`) })),
+    ctas: HERO.ctas.map(
+      (cta, i): LabeledCta => ({ ...cta, label: t(`hero.ctas.c${i}`) })
+    ),
   };
 
   const heroCards = HERO_CARDS.map((card, i) => ({
@@ -147,8 +148,7 @@ export function DuHome({ lang }: { lang: string }) {
     label: t(`toolChips.c${i}`),
   }));
 
-  const header = (key: string, base: SectionHeader): SectionHeader => ({
-    ...base,
+  const header = (key: string): SectionHeader => ({
     eyebrow: t(`${key}.eyebrow`),
     title: t(`${key}.title`),
     accent: t(`${key}.accent`),
@@ -210,17 +210,17 @@ export function DuHome({ lang }: { lang: string }) {
         <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 lg:grid-cols-[55fr_45fr] lg:items-center">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--du-text-dim)]">
-              {hero.eyebrow}
+              {t("hero.eyebrow")}
             </p>
             <h1 className="mt-4 text-5xl font-bold leading-[1.1] text-[var(--du-text)] sm:text-[64px]">
-              {hero.titleLead}
+              {t("hero.titleLead")}
               <br />
               <span className="inline-block bg-[image:var(--du-gradient)] bg-clip-text pb-2 text-transparent">
-                {hero.titleAccent}
+                {t("hero.titleAccent")}
               </span>
             </h1>
             <p className="mt-5 max-w-[480px] text-lg text-[var(--du-text-muted)]">
-              {hero.subtitle}
+              {t("hero.subtitle")}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               {hero.ctas.map((cta, i) => (
@@ -306,13 +306,13 @@ export function DuHome({ lang }: { lang: string }) {
       {/* 2. Category wall */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
         <SectionHeading
-          header={header("categoryHeader", CATEGORY_HEADER)}
+          header={header("categoryHeader")}
           action={
             <Link
               href="#"
               className="text-sm text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-accent)]"
             >
-              View all →
+              {t("viewAll")}
             </Link>
           }
         />
@@ -376,7 +376,7 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 3. Model cards */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={header("modelsHeader", MODELS_HEADER)} />
+        <SectionHeading header={header("modelsHeader")} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {modelCards.map((model) => (
             <div
@@ -405,7 +405,7 @@ export function DuHome({ lang }: { lang: string }) {
                   href={localizedHref(lang, model.href)}
                   className={glass("button", "inline-flex h-9 items-center px-3 text-xs")}
                 >
-                  Learn more →
+                  {t("learnMore")}
                 </Link>
               </div>
             </div>
@@ -415,7 +415,7 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 4. Effect cards */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={header("effectsHeader", EFFECTS_HEADER)} />
+        <SectionHeading header={header("effectsHeader")} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {effectCards.map((effect) => (
             <div
@@ -439,7 +439,7 @@ export function DuHome({ lang }: { lang: string }) {
                   "absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
                 )}
               >
-                Try it →
+                {t("tryIt")}
               </Link>
             </div>
           ))}
@@ -448,7 +448,7 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 5. Three steps */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={header("stepsHeader", STEPS_HEADER)} />
+        <SectionHeading header={header("stepsHeader")} />
         <div className="mt-10 flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
           {steps.map((step, index) => (
             <Fragment key={step.number}>
