@@ -1,0 +1,169 @@
+/* Onboarding welcome modal.
+   Colors come exclusively from the site theme tokens (--du-*), aliased below.
+   No color literals and no fallbacks. */
+
+.ob-overlay {
+  --ob-bg: var(--du-bg);
+  --ob-bg-elev: var(--du-bg-elev);
+  --ob-surface: var(--du-surface);
+  --ob-surface-2: var(--du-surface-2);
+  --ob-border: var(--du-border);
+  --ob-border-strong: var(--du-border-strong);
+  --ob-text: var(--du-text);
+  --ob-text-muted: var(--du-text-muted);
+  --ob-text-dim: var(--du-text-dim);
+  --ob-accent: var(--du-accent);
+  --ob-accent-2: var(--du-accent-2);
+  --ob-accent-soft: var(--du-accent-soft);
+  --ob-on-accent: var(--du-on-accent);
+  --ob-gradient: var(--du-gradient);
+  --ob-glow: var(--du-glow);
+  --ob-scrim: var(--du-glass-overlay-scrim);
+  --ob-radius-card: var(--du-glass-radius-card);
+  --ob-radius-btn: var(--du-glass-radius-btn);
+
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--ob-scrim);
+  backdrop-filter: blur(8px);
+}
+
+.ob-dialog {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 34rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  padding: 1.75rem;
+  color: var(--ob-text);
+  background: var(--ob-bg-elev);
+  border: 1px solid var(--ob-border-strong);
+  border-radius: var(--ob-radius-card);
+  box-shadow: var(--ob-glow);
+}
+
+.ob-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ob-text-muted);
+  background: none;
+  border: 1px solid var(--ob-border);
+  border-radius: var(--ob-radius-btn);
+  cursor: pointer;
+}
+
+.ob-close:hover,
+.ob-close:focus-visible {
+  color: var(--ob-text);
+  background: var(--ob-surface-2);
+  border-color: var(--ob-border-strong);
+}
+
+.ob-dialog-title {
+  margin: 0;
+  padding-right: 2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ob-text);
+}
+
+.ob-gift {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  color: var(--ob-text);
+  background: var(--ob-accent-soft);
+  border: 1px solid var(--ob-border);
+  border-radius: var(--ob-radius-btn);
+}
+
+.ob-gift-expiry {
+  color: var(--ob-text-muted);
+}
+
+.ob-prompts-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ob-text-muted);
+}
+
+.ob-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ob-prompt {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--ob-text);
+  background: var(--ob-surface);
+  border: 1px solid var(--ob-border);
+  border-radius: var(--ob-radius-card);
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.ob-prompt:hover,
+.ob-prompt:focus-visible {
+  background: var(--ob-surface-2);
+  border-color: var(--ob-border-strong);
+  transform: translateY(-1px);
+}
+
+.ob-prompt:focus-visible,
+.ob-btn:focus-visible,
+.ob-close:focus-visible {
+  outline: 2px solid var(--ob-accent);
+  outline-offset: 2px;
+}
+
+.ob-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.ob-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  border-radius: var(--ob-radius-btn);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+.ob-btn-secondary {
+  color: var(--ob-text);
+  background: var(--ob-surface);
+  border: 1px solid var(--ob-border-strong);
+}
+
+.ob-btn-secondary:hover {
+  background: var(--ob-surface-2);
+}
