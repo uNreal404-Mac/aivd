@@ -16,6 +16,7 @@ import {
   RESULT_FILTERS,
   RIGHT_TABS,
   STUDIO_MODELS,
+  UNAVAILABLE_LABEL,
   canGenerate,
   defaultSettings,
   estimateCredits,
@@ -325,21 +326,26 @@ export function AiVideoStudio({
             <div className="flex flex-col gap-1">
               {STUDIO_MODELS.map((option) => {
                 const selected = option.id === settings.modelId;
+                const unavailable = !option.available;
 
                 return (
                   <button
                     key={option.id}
                     type="button"
                     aria-pressed={selected}
+                    aria-disabled={unavailable}
+                    disabled={unavailable}
                     onClick={() => {
                       setSettings((previous) => selectModel(previous, option.id));
                       setPickerOpen(false);
                     }}
                     className={[
                       "flex items-start gap-2 rounded-[var(--hfv-radius-chip)] px-2.5 py-2 text-left transition-colors",
-                      selected
-                        ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-                        : "text-[var(--hfv-text)] hover:bg-[var(--hfv-panel-3)]",
+                      unavailable
+                        ? "cursor-not-allowed opacity-50"
+                        : selected
+                          ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
+                          : "text-[var(--hfv-text)] hover:bg-[var(--hfv-panel-3)]",
                     ].join(" ")}
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -347,7 +353,11 @@ export function AiVideoStudio({
                         <span className="text-sm font-semibold">
                           {option.name}
                         </span>
-                        {option.badge ? (
+                        {unavailable ? (
+                          <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
+                            {UNAVAILABLE_LABEL}
+                          </span>
+                        ) : option.badge ? (
                           <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-accent)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-accent-text)]">
                             {option.badge}
                           </span>

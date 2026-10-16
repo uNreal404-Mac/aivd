@@ -29,6 +29,18 @@ describe("defaultSettings", () => {
     expect(settings.prompt).toBe("");
   });
 
+  it("defaults to the first available model, skipping unavailable ones", () => {
+    const firstAvailable = STUDIO_MODELS.find((model) => model.available);
+
+    expect(firstAvailable).toBeDefined();
+    expect(firstAvailable?.id).not.toBe("kling-3");
+
+    const settings = defaultSettings();
+
+    expect(settings.modelId).toBe(firstAvailable?.id);
+    expect(settings.modelId).not.toBe("kling-3");
+  });
+
   it("derives every field from the provided model", () => {
     const model = STUDIO_MODELS[2];
     const settings = defaultSettings(model);
@@ -40,11 +52,11 @@ describe("defaultSettings", () => {
 });
 
 describe("selectModel", () => {
-  it("keeps supported options when switching models", () => {
-    const start = defaultSettings(STUDIO_MODELS[0]);
-    const next = selectModel(start, STUDIO_MODELS[4].id);
+  it("keeps supported options when switching between available models", () => {
+    const start = defaultSettings(STUDIO_MODELS[2]);
+    const next = selectModel(start, STUDIO_MODELS[0].id);
 
-    expect(next.modelId).toBe(STUDIO_MODELS[4].id);
+    expect(next.modelId).toBe(STUDIO_MODELS[0].id);
     expect(next.duration).toBe(start.duration);
     expect(next.aspect).toBe(start.aspect);
     expect(next.resolution).toBe(start.resolution);
@@ -54,7 +66,7 @@ describe("selectModel", () => {
     const start = {
       ...defaultSettings(STUDIO_MODELS[1]),
       duration: 7,
-      aspect: "4:3",
+      aspect: "2:1",
       resolution: "4k",
     };
     const next = selectModel(start, STUDIO_MODELS[0].id);
@@ -67,7 +79,7 @@ describe("selectModel", () => {
 
   it("disables audio when the new model has no audio", () => {
     const start = { ...defaultSettings(STUDIO_MODELS[2]), audio: true };
-    const next = selectModel(start, STUDIO_MODELS[3].id);
+    const next = selectModel(start, STUDIO_MODELS[0].id);
 
     expect(next.audio).toBe(false);
   });
@@ -78,14 +90,21 @@ describe("selectModel", () => {
 
     expect(next).toEqual(start);
   });
+
+  it("ignores an unavailable model", () => {
+    const start = defaultSettings(STUDIO_MODELS[0]);
+    const next = selectModel(start, "kling-3");
+
+    expect(next).toEqual(start);
+  });
 });
 
 describe("estimateCredits", () => {
   it("multiplies duration by the model rate", () => {
-    const settings = defaultSettings(STUDIO_MODELS[3]);
+    const settings = defaultSettings(STUDIO_MODELS[1]);
 
     expect(estimateCredits(settings)).toBe(
-      Math.ceil(settings.duration * STUDIO_MODELS[3].creditsPerSecond),
+      Math.ceil(settings.duration * STUDIO_MODELS[1].creditsPerSecond),
     );
   });
 
@@ -127,6 +146,32 @@ describe("canGenerate", () => {
     });
   });
 
+  it("reports unavailable-model when the selected model is unavailable", () => {
+    const settings = {
+      ...defaultSettings(STUDIO_MODELS[0]),
+      modelId: "kling-3",
+      prompt: "a cat",
+    };
+
+    expect(canGenerate(settings, true)).toEqual({
+      ok: false,
+      reason: "unavailable-model",
+    });
+  });
+
+  it("reports unavailable-model before disabled", () => {
+    const settings = {
+      ...defaultSettings(STUDIO_MODELS[0]),
+      modelId: "kling-3",
+      prompt: "a cat",
+    };
+
+    expect(canGenerate(settings, false)).toEqual({
+      ok: false,
+      reason: "unavailable-model",
+    });
+  });
+
   it("reports disabled when generation is turned off", () => {
     const settings = { ...defaultSettings(STUDIO_MODELS[0]), prompt: "a cat" };
 
@@ -144,24 +189,17 @@ describe("canGenerate", () => {
 });
 
 describe("buildGenerateRequest", () => {
-  it("maps every supported studio model id to its backend model id", () => {
-    const expected: Record<string, string> = {
-      "seedance-2": "seedance-1.5-pro",
-      "veo-3-1": "veo-3.1",
-      "wan-2-7": "wan2.6",
-      "sora-2": "sora-2",
-    };
-
-    for (const [modelId, backendId] of Object.entries(expected)) {
+  it("sets body.model to the selected model id for every available model", () => {
+    for (const model of STUDIO_MODELS.filter((item) => item.available)) {
       const result = buildGenerateRequest(
-        { ...defaultSettings(), modelId, prompt: "a cat" },
+        { ...defaultSettings(model), prompt: "a cat" },
         "key-1",
       );
 
       expect(result.ok).toBe(true);
 
       if (result.ok) {
-        expect(result.body.model).toBe(backendId);
+        expect(result.body.model).toBe(model.id);
       }
     }
   });
@@ -213,7 +251,7 @@ describe("buildGenerateRequest", () => {
     ).toEqual({ ok: false, reason: "empty-prompt" });
   });
 
-  it("reports unsupported-model when the backend has no mapping", () => {
+  it("reports unsupported-model for an unavailable model", () => {
     expect(
       buildGenerateRequest(
         {
@@ -369,7 +407,7 @@ describe("submitGeneration", () => {
     expect(result).toEqual({ ok: false, message: "Please enter a prompt." });
   });
 
-  it("does not call fetch when the model is unsupported", async () => {
+  it("does not call fetch when the model is unavailable", async () => {
     const fetchImpl = vi.fn<typeof fetch>();
 
     const result = await submitGeneration(

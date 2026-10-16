@@ -3,7 +3,7 @@ import { videoService } from "@/services/video";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
-import { isAllowedImageUrl } from "@/lib/image-url-allowlist";
+import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -13,8 +13,8 @@ const generateSchema = z.object({
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),
   quality: z.string().optional(),
-  imageUrl: z.string().url().optional(),
-  imageUrls: z.array(z.string().url()).optional(),
+  imageUrl: z.string().min(1).max(2048).optional(),
+  imageUrls: z.array(z.string().min(1).max(2048)).optional(),
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
@@ -39,7 +39,11 @@ export async function POST(request: NextRequest) {
       ...(data.imageUrl ? [data.imageUrl] : []),
       ...(data.imageUrls ?? []),
     ];
-    if (imageUrls.some((imageUrl) => !isAllowedImageUrl(imageUrl))) {
+    if (
+      imageUrls.some(
+        (imageUrl) => !isAllowedImageInput(imageUrl, { userId: user.id }),
+      )
+    ) {
       return apiError("Image URL host is not allowed.", 400, {
         code: "IMAGE_URL_NOT_ALLOWED",
       });
