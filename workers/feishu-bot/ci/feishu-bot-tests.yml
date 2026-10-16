@@ -1,0 +1,22 @@
+name: Feishu bot tests
+
+on:
+  push:
+    paths:
+      - "workers/feishu-bot/**"
+  pull_request:
+    paths:
+      - "workers/feishu-bot/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/feishu-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test

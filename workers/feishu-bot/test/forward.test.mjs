@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ACK_FALLBACK_TEXT, ackKey } from "../src/ack.mjs";
 import { dedupeKeys } from "../src/dedupe.mjs";
-import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, FORWARD_PENDING_MARK, GROK_FORWARD_CHAT_ID, PENDING_TTL_SECONDS, forwardKey, forwardToGrok, pendingKey } from "../src/forward.mjs";
+import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, FORWARD_PENDING_MARK, GROK_FORWARD_CHAT_ID, PENDING_BACKOFF_MS, PENDING_FLAG_KEY, PENDING_TTL_SECONDS, forwardKey, forwardToGrok, pendingKey } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -187,7 +187,8 @@ test("emails the trimmed message through Resend with a bearer token and records 
   }
   assert.equal(await kv.get(forwardKey("om_1")), "1");
   assert.deepEqual(kv.writes.map(({ value }) => value), ["sending", "1"]);
-  assert.deepEqual(kv.writes[0].options, { expirationTtl: 120 });
+  // The in-flight placeholder must outlive the 10-minute cron interval.
+  assert.deepEqual(kv.writes[0].options, { expirationTtl: 900 });
   assert.deepEqual(kv.writes[1].options, { expirationTtl: 604800 });
 });
 
@@ -340,6 +341,7 @@ test("queues a pending retry record when every Resend attempt fails", async () =
   assert.equal(pending.attempts, 3);
   assert.equal(pending.lastStatus, 502);
   assert.equal(typeof pending.firstFailedAt, "number");
+  assert.equal(pending.nextAttemptAt, pending.firstFailedAt + PENDING_BACKOFF_MS[0]);
   const body = JSON.parse(pending.body);
   assert.equal(body.from, FORWARD_EMAIL_FROM);
   assert.deepEqual(body.to, FORWARD_EMAIL_TO);
@@ -355,6 +357,7 @@ test("queues a pending retry record when every Resend attempt fails", async () =
     options: { expirationTtl: PENDING_TTL_SECONDS },
   });
   assert.equal(await kv.get(forwardKey("om_1")), FORWARD_PENDING_MARK);
+  assert.equal(await kv.get(PENDING_FLAG_KEY), "1");
 
   // A redelivery of the same message is treated as claimed and sends nothing.
   const sentBefore = attempts;
@@ -789,4 +792,30 @@ test("never acknowledges a forward-chat mention sent by the bot itself", async (
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 0);
   assert.equal(await env.BOT_KV.get(ackKey("om_self")), null);
+});
+
+test("uses the comma-separated FORWARD_EMAIL_TO override and falls back when it is blank", async () => {
+  const cases = [
+    ["a@example.com, b@example.com ,", ["a@example.com", "b@example.com"]],
+    ["", FORWARD_EMAIL_TO],
+    [undefined, FORWARD_EMAIL_TO],
+  ];
+
+  for (const [configured, expected] of cases) {
+    const kv = fakeKv();
+    const { sleep } = recordingSleep();
+    const calls = [];
+    const result = await forwardToGrok({
+      env: resendEnv({ FORWARD_EMAIL_TO: configured }),
+      kv,
+      payload: {},
+      selected: selectedMessage(),
+      context: senderContext(),
+      fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+      sleep,
+    });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(JSON.parse(calls[0].init.body).to, expected);
+  }
 });

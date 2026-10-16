@@ -27,6 +27,6 @@ keep_vars = true
 binding = "BOT_KV"
 id = "8f0f016240cb488e979429918bf8795b"
 
-# Every minute, retry forward emails that failed all in-flight attempts (see README).
+# Every 10 minutes, retry forward emails that failed all in-flight attempts (see README).
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/10 * * * *"]
