@@ -101,8 +101,7 @@
     },
     "textToVideo": {
       "title": "文本转视频",
-      "description": "使用先进的 AI 模型将文本提示转化为精彩视频",
-      "stat": "生成速度"
+      "description": "使用先进的 AI 模型将文本提示转化为精彩视频"
     },
     "imageToVideo": {
       "title": "图片转视频",

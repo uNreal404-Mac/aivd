@@ -101,8 +101,7 @@
     },
     "textToVideo": {
       "title": "Text to Video",
-      "description": "Transform your text prompts into stunning videos using advanced AI models",
-      "stat": "Generation speed"
+      "description": "Transform your text prompts into stunning videos using advanced AI models"
     },
     "imageToVideo": {
       "title": "Image to Video",

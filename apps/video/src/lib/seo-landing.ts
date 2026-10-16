@@ -301,7 +301,7 @@ const EN_TEXT_TO_VIDEO: SeoLandingContent = {
     },
     {
       title: "Match it to a model",
-      body: "Choose the model whose strengths line up with the scene — motion, detail or speed.",
+      body: "Choose the model whose strengths line up with the scene — motion, detail or visual style.",
     },
     {
       title: "Generate and compare",
@@ -480,7 +480,7 @@ const ZH_TEXT_TO_VIDEO: SeoLandingContent = {
     },
     {
       title: "匹配合适的模型",
-      body: "根据画面重点选择模型：运动感、细节或生成速度。",
+      body: "根据画面重点选择模型：运动感、细节或画面风格。",
     },
     {
       title: "生成并对比",
