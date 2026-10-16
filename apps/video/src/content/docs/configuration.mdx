@@ -150,32 +150,25 @@ One-time purchase credit packages:
 Configure credit consumption for each AI model:
 
 ```typescript
-"sora-2": {
-  baseCredits: 10,      // Base credits (e.g., 10 seconds)
-  perSecond: 2,         // Additional credits per second
+"seedance-1.5-pro": {
+  baseCredits: 0,       // Base credits
+  perSecond: 4,         // Credits per second
+  qualityMultiplier: 2, // 1080p = base × 2
   enabled: true,        // Enable/disable this model
 }
 ```
 
 ### Pricing Examples
 
-**Sora 2** - Linear pricing:
+**Seedance 1.5 Pro** - Per-second pricing with a 1080p quality multiplier:
 ```typescript
-baseCredits: 10,   // 10s = 10 credits
-perSecond: 2,      // 15s = 10 + (5 × 2) = 20 credits
+perSecond: 4,          // Each second = 4 credits
+qualityMultiplier: 2,  // 1080p = 720p × 2
 ```
 
-**Wan 2.6** - With quality multiplier:
+**Seedance 1.0 Pro Fast / Quality** - Per-second pricing:
 ```typescript
-baseCredits: 156,          // 5s 720p = 156 credits
-perSecond: 78,             // Each extra second = 78 credits
-qualityMultiplier: 1.67,   // 1080p = 720p × 1.67
-```
-
-**Veo 3.1** - Flat rate:
-```typescript
-baseCredits: 60,   // Fixed 60 credits (not duration-based)
-perSecond: 0,
+perSecond: 4,   // Each second = 4 credits
 ```
 
 ## Tips

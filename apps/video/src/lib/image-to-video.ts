@@ -1,4 +1,5 @@
 import { getModelConfig } from "@/config/credits";
+import { VIDEO_MODEL_PRICING } from "@/config/pricing-user";
 
 /**
  * Image-to-video: shared constants, client-side validation and request
@@ -11,6 +12,14 @@ export function isI2VGenerationEnabled(
   env: Record<string, string | undefined> = process.env,
 ): boolean {
   return env.VIDEO_GENERATION_ENABLED === "true";
+}
+
+/**
+ * Client-side guard for uploads: while generation is disabled the studio must
+ * never reach `/api/v1/upload`.
+ */
+export function canUploadImage(generationEnabled: boolean): boolean {
+  return generationEnabled === true;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -131,14 +140,19 @@ export function i2vCopy(locale: string): I2VCopy {
   return locale === "zh" ? I2V_COPY.zh : I2V_COPY.en;
 }
 
-export const I2V_MODEL_IDS = [
+/** Models we are willing to expose, filtered down to the enabled ones. */
+const I2V_CANDIDATE_IDS = [
   "seedance-1.5-pro",
-  "wan2.6",
-  "veo-3.1",
-  "sora-2",
+  "seedance-1.0-pro-fast",
+  "seedance-1.0-pro-quality",
 ] as const;
 
-export type I2VModelId = (typeof I2V_MODEL_IDS)[number];
+export type I2VModelId = (typeof I2V_CANDIDATE_IDS)[number];
+
+/** Enabled models only, derived from the shared pricing config. */
+export const I2V_MODEL_IDS: readonly I2VModelId[] = I2V_CANDIDATE_IDS.filter(
+  (id) => VIDEO_MODEL_PRICING[id]?.enabled === true,
+);
 
 export interface I2VModel {
   id: I2VModelId;
