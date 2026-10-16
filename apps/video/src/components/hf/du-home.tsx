@@ -265,9 +265,11 @@ export function DuHome({ lang }: { lang: string }) {
               </div>
               <div className="mt-3 flex items-center justify-between gap-2">
                 <span className="text-sm text-[var(--du-text)]">{card.title}</span>
-                <span className="du-glass-btn du-glass-on-media inline-flex items-center gap-1 px-2 py-1 text-xs">
+                <span
+                  aria-label="Like"
+                  className="du-glass-btn du-glass-on-media inline-flex items-center px-2 py-1 text-xs"
+                >
                   <Icon name="Heart" className="h-3 w-3" />
-                  {card.likes}
                 </span>
               </div>
             </div>

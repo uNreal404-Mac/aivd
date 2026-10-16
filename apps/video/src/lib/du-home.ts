@@ -33,7 +33,6 @@ export interface CategoryCard {
   id: string;
   title: string;
   category: string;
-  likes: string;
   image: string;
   alt: string;
 }
@@ -139,14 +138,14 @@ export const CATEGORY_FILTERS: string[] = [
 ];
 
 export const CATEGORY_CARDS: CategoryCard[] = [
-  { id: "golden-hour", title: "Golden Hour", category: "Cinematic", likes: "1.2k", image: img("golden-hour"), alt: "Golden hour light across a field" },
-  { id: "neon-streets", title: "Neon Streets", category: "Sci-Fi", likes: "980", image: img("neon-streets"), alt: "Neon signs reflected on wet asphalt" },
-  { id: "liquid-light", title: "Liquid Light", category: "Stylize", likes: "874", image: img("liquid-light"), alt: "Liquid light swirls in violet tones" },
-  { id: "coast-drive", title: "Coast Drive", category: "Cinematic", likes: "1.5k", image: img("coast-drive"), alt: "Road along a coastal cliff" },
-  { id: "first-steps", title: "First Steps", category: "Anime", likes: "760", image: img("first-steps"), alt: "Anime style figure walking at dawn" },
-  { id: "silver-muse", title: "Silver Muse", category: "Portrait", likes: "1.1k", image: img("silver-muse"), alt: "Studio portrait in silver tones" },
-  { id: "glass-city", title: "Glass City", category: "Sci-Fi", likes: "643", image: img("glass-city"), alt: "Glass towers under a violet sky" },
-  { id: "edge-of-space", title: "Edge of Space", category: "Fantasy", likes: "1.9k", image: img("edge-of-space"), alt: "Lone figure at the edge of space" },
+  { id: "golden-hour", title: "Golden Hour", category: "Cinematic", image: img("golden-hour"), alt: "Golden hour light across a field" },
+  { id: "neon-streets", title: "Neon Streets", category: "Sci-Fi", image: img("neon-streets"), alt: "Neon signs reflected on wet asphalt" },
+  { id: "liquid-light", title: "Liquid Light", category: "Stylize", image: img("liquid-light"), alt: "Liquid light swirls in violet tones" },
+  { id: "coast-drive", title: "Coast Drive", category: "Cinematic", image: img("coast-drive"), alt: "Road along a coastal cliff" },
+  { id: "first-steps", title: "First Steps", category: "Anime", image: img("first-steps"), alt: "Anime style figure walking at dawn" },
+  { id: "silver-muse", title: "Silver Muse", category: "Portrait", image: img("silver-muse"), alt: "Studio portrait in silver tones" },
+  { id: "glass-city", title: "Glass City", category: "Sci-Fi", image: img("glass-city"), alt: "Glass towers under a violet sky" },
+  { id: "edge-of-space", title: "Edge of Space", category: "Fantasy", image: img("edge-of-space"), alt: "Lone figure at the edge of space" },
 ];
 
 export const MODELS_HEADER: SectionHeader = {
