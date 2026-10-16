@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok } from "../src/forward.mjs";
+import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
 
-const FORWARD_URL = "https://grok.test/forward";
-const FORWARD_SECRET = "grok-test-secret";
+const RESEND_URL = "https://api.resend.com/emails";
+const RESEND_KEY = "re_test_key";
 
 function fakeKv() {
   const values = new Map();
@@ -20,10 +20,15 @@ function fakeKv() {
   };
 }
 
-function forwardEnv(overrides = {}) {
+function deferred() {
+  let resolve;
+  const promise = new Promise((r) => { resolve = r; });
+  return { promise, resolve };
+}
+
+function resendEnv(overrides = {}) {
   return {
-    GROK_FORWARD_URL: FORWARD_URL,
-    GROK_FORWARD_KEY: FORWARD_SECRET,
+    RESEND_API_KEY: RESEND_KEY,
     ...overrides,
   };
 }
@@ -88,7 +93,7 @@ function makeRecordingFetch({ replies = [], calls = [], forwardCalls = [] } = {}
   return async (url, init = {}) => {
     const href = String(url);
     calls.push({ url: href, init });
-    if (href === FORWARD_URL) {
+    if (href === RESEND_URL) {
       forwardCalls.push({ url: href, init });
       return Response.json({ ok: true });
     }
@@ -115,7 +120,7 @@ async function send(worker, payload, env) {
   return worker.fetch(request, env, {});
 }
 
-test("forwards the trimmed message to Grok with a bearer token and records a dedupe key", async () => {
+test("emails the trimmed message through Resend with a bearer token and records a dedupe key", async () => {
   const kv = fakeKv();
   const calls = [];
   const fetchImpl = async (url, init = {}) => {
@@ -125,7 +130,7 @@ test("forwards the trimmed message to Grok with a bearer token and records a ded
   const payload = { event: { message: { create_time: "1700000000000" } } };
 
   const result = await forwardToGrok({
-    env: forwardEnv(),
+    env: resendEnv(),
     kv,
     payload,
     selected: selectedMessage(),
@@ -135,24 +140,30 @@ test("forwards the trimmed message to Grok with a bearer token and records a ded
 
   assert.equal(result, true);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, FORWARD_URL);
+  assert.equal(calls[0].url, RESEND_URL);
   assert.equal(calls[0].init.method, "POST");
   assert.equal(new Headers(calls[0].init.headers).get("content-type"), "application/json");
-  assert.equal(new Headers(calls[0].init.headers).get("authorization"), `Bearer ${FORWARD_SECRET}`);
-  assert.deepEqual(JSON.parse(calls[0].init.body), {
-    sender_open_id: "ou_user",
-    sender_name: "老王",
-    text: "随便聊聊",
-    chat_id: GROK_FORWARD_CHAT_ID,
-    message_id: "om_1",
-    create_time: "1700000000000",
-  });
+  assert.equal(new Headers(calls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.from, FORWARD_EMAIL_FROM);
+  assert.deepEqual(body.to, FORWARD_EMAIL_TO);
+  assert.equal(body.subject, "[feishu] 老王");
+  for (const fragment of [
+    "sender_open_id: ou_user",
+    "sender_name: 老王",
+    "text: 随便聊聊",
+    `chat_id: ${GROK_FORWARD_CHAT_ID}`,
+    "message_id: om_1",
+    "create_time: 1700000000000",
+  ]) {
+    assert.ok(body.text.includes(fragment), `expected email body to contain ${fragment}`);
+  }
   assert.equal(await kv.get(forwardKey("evt-1")), "1");
   assert.deepEqual(kv.writes[0].options, { expirationTtl: 604800 });
 });
 
-test("skips forwarding without fetching when the forward URL or key is missing", async () => {
-  for (const env of [forwardEnv({ GROK_FORWARD_URL: "" }), forwardEnv({ GROK_FORWARD_KEY: "" })]) {
+test("skips forwarding without fetching when the Resend API key is missing", async () => {
+  for (const env of [resendEnv({ RESEND_API_KEY: "" }), resendEnv({ RESEND_API_KEY: undefined })]) {
     const calls = [];
     const kv = fakeKv();
     const result = await forwardToGrok({
@@ -176,7 +187,7 @@ test("treats an already-forwarded event as done without a second fetch", async (
   const fetchImpl = async (url, init = {}) => { calls.push({ url, init }); return Response.json({ ok: true }); };
 
   const result = await forwardToGrok({
-    env: forwardEnv(),
+    env: resendEnv(),
     kv,
     payload: {},
     selected: selectedMessage(),
@@ -192,7 +203,7 @@ test("skips messages from other chats without fetching", async () => {
   const calls = [];
   const kv = fakeKv();
   const result = await forwardToGrok({
-    env: forwardEnv(),
+    env: resendEnv(),
     kv,
     payload: {},
     selected: selectedMessage(),
@@ -205,10 +216,10 @@ test("skips messages from other chats without fetching", async () => {
   assert.equal(await kv.get(forwardKey("evt-1")), null);
 });
 
-test("returns false and writes no dedupe key when Grok responds with an error", async () => {
+test("returns false and writes no dedupe key when Resend responds with an error", async () => {
   const kv = fakeKv();
   const result = await forwardToGrok({
-    env: forwardEnv(),
+    env: resendEnv(),
     kv,
     payload: {},
     selected: selectedMessage(),
@@ -221,25 +232,25 @@ test("returns false and writes no dedupe key when Grok responds with an error", 
   assert.equal(kv.writes.length, 0);
 });
 
-test("forwards a group mention to Grok instead of replying to Feishu", async () => {
+test("emails a group mention instead of replying to Feishu", async () => {
   const replies = [];
   const calls = [];
   const forwardCalls = [];
   const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, calls, forwardCalls }) });
   const env = makeEnv();
-  env.GROK_FORWARD_URL = FORWARD_URL;
-  env.GROK_FORWARD_KEY = FORWARD_SECRET;
+  env.RESEND_API_KEY = RESEND_KEY;
 
   const response = await send(worker, messagePayload({ text: "随便聊聊", messageId: "om_fwd", eventId: "evt_fwd" }), env);
 
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 1);
-  assert.equal(new Headers(forwardCalls[0].init.headers).get("authorization"), `Bearer ${FORWARD_SECRET}`);
+  assert.equal(forwardCalls[0].url, RESEND_URL);
+  assert.equal(new Headers(forwardCalls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
   assert.equal(replies.length, 0);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), false);
 });
 
-test("uses the normal reply path when Grok forwarding is not configured", async () => {
+test("uses the normal reply path when email forwarding is not configured", async () => {
   const replies = [];
   const forwardCalls = [];
   const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls }) });
@@ -257,12 +268,56 @@ test("forwards a repeated Feishu delivery only once", async () => {
   const forwardCalls = [];
   const worker = createWorker({ fetchImpl: makeRecordingFetch({ replies, forwardCalls }) });
   const env = makeEnv();
-  env.GROK_FORWARD_URL = FORWARD_URL;
-  env.GROK_FORWARD_KEY = FORWARD_SECRET;
+  env.RESEND_API_KEY = RESEND_KEY;
   const payload = messagePayload({ text: "随便聊聊", messageId: "om_retry", eventId: "evt_retry" });
 
   assert.equal((await send(worker, payload, env)).status, 200);
   assert.equal((await send(worker, payload, env)).status, 200);
+
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 0);
+});
+
+test("acks before the deferred email forward resolves when waitUntil is available", async () => {
+  const replies = [];
+  const calls = [];
+  const forwardCalls = [];
+  const gate = deferred();
+  const started = deferred();
+
+  const baseFetch = makeRecordingFetch({ replies, calls, forwardCalls });
+  const fetchImpl = async (url, init = {}) => {
+    const href = String(url);
+    if (href === RESEND_URL) {
+      forwardCalls.push({ url: href, init });
+      started.resolve();
+      await gate.promise;
+      return Response.json({ ok: true });
+    }
+    return baseFetch(url, init);
+  };
+
+  const worker = createWorker({ fetchImpl });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  const waitUntilPromises = [];
+  const ctx = { waitUntil: (promise) => { waitUntilPromises.push(promise); } };
+  const request = new Request("https://worker.test/feishu/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(messagePayload({ text: "随便聊聊", messageId: "om_bg", eventId: "evt_bg" })),
+  });
+
+  const response = await worker.fetch(request, env, ctx);
+
+  assert.equal(response.status, 200);
+  assert.equal(waitUntilPromises.length, 1);
+  await started.promise;
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(replies.length, 0);
+
+  gate.resolve();
+  await Promise.all(waitUntilPromises);
 
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 0);
