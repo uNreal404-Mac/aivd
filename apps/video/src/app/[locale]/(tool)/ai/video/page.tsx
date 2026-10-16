@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AiVideoStudio } from "@/components/hf/ai-video-studio";
 import type { Locale } from "@/config/i18n-config";
+import { settingsFromSearchParams } from "@/lib/ai-video-studio";
 import { buildAlternates } from "@/lib/seo";
 
 type PageParams = {
@@ -22,10 +23,17 @@ export async function generateMetadata({
   };
 }
 
-export default function AiVideoPage() {
+export default async function AiVideoPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+
   return (
     <AiVideoStudio
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
+      initialSettings={settingsFromSearchParams(sp)}
     />
   );
 }

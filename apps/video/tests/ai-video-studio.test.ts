@@ -5,7 +5,9 @@ import {
   canGenerate,
   defaultSettings,
   estimateCredits,
+  PROMPT_PARAM_MAX,
   selectModel,
+  settingsFromSearchParams,
   STUDIO_MODELS,
   submitGeneration,
 } from "@/lib/ai-video-studio";
@@ -421,5 +423,99 @@ describe("submitGeneration", () => {
       ok: false,
       message: "This model is not available yet.",
     });
+  });
+});
+
+describe("settingsFromSearchParams", () => {
+  it("prefills a valid model id and adjusts duration to that model", () => {
+    const settings = settingsFromSearchParams({ model: "wan2.6" });
+    const model = STUDIO_MODELS.find((item) => item.id === "wan2.6");
+
+    expect(model).toBeDefined();
+    expect(settings.modelId).toBe("wan2.6");
+    expect(model?.durations).toContain(settings.duration);
+  });
+
+  it("ignores an unavailable model id", () => {
+    const settings = settingsFromSearchParams({ model: "kling-3" });
+
+    expect(settings).toEqual({ ...defaultSettings(), preset: undefined });
+    expect(settings.modelId).not.toBe("kling-3");
+  });
+
+  it("ignores an unknown model id", () => {
+    const settings = settingsFromSearchParams({ model: "does-not-exist" });
+
+    expect(settings.modelId).toBe(defaultSettings().modelId);
+  });
+
+  it("ignores aliases like veo-3-1", () => {
+    const settings = settingsFromSearchParams({ model: "veo-3-1" });
+
+    expect(settings.modelId).toBe(defaultSettings().modelId);
+  });
+
+  it("takes the first value when a param is an array", () => {
+    const settings = settingsFromSearchParams({
+      model: ["wan2.6", "seedance-1.5-pro"],
+      prompt: ["first shot", "second shot"],
+    });
+
+    expect(settings.modelId).toBe("wan2.6");
+    expect(settings.prompt).toBe("first shot");
+  });
+
+  it("trims the prompt", () => {
+    const settings = settingsFromSearchParams({ prompt: "  a cat  " });
+
+    expect(settings.prompt).toBe("a cat");
+  });
+
+  it("caps the prompt at PROMPT_PARAM_MAX characters", () => {
+    const settings = settingsFromSearchParams({
+      prompt: `  ${"a".repeat(PROMPT_PARAM_MAX + 500)}  `,
+    });
+
+    expect(settings.prompt).toHaveLength(PROMPT_PARAM_MAX);
+    expect(settings.prompt).toBe("a".repeat(PROMPT_PARAM_MAX));
+  });
+
+  it("accepts a valid preset", () => {
+    const settings = settingsFromSearchParams({ preset: "slow-zoom" });
+
+    expect(settings.preset).toBe("slow-zoom");
+  });
+
+  it("lowercases and trims a preset", () => {
+    const settings = settingsFromSearchParams({ preset: "  Slow-Zoom  " });
+
+    expect(settings.preset).toBe("slow-zoom");
+  });
+
+  it("rejects an invalid preset", () => {
+    expect(
+      settingsFromSearchParams({ preset: "<script>" }).preset,
+    ).toBeUndefined();
+    expect(settingsFromSearchParams({ preset: "A B" }).preset).toBeUndefined();
+    expect(
+      settingsFromSearchParams({ preset: "a".repeat(65) }).preset,
+    ).toBeUndefined();
+  });
+
+  it("returns the defaults for empty params", () => {
+    expect(settingsFromSearchParams({})).toEqual(defaultSettings());
+  });
+
+  it("never adds a preset key to the generate request body", () => {
+    const result = buildGenerateRequest(
+      { ...defaultSettings(), prompt: "a cat", preset: "slow-zoom" },
+      "key-1",
+    );
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect("preset" in result.body).toBe(false);
+    }
   });
 });
