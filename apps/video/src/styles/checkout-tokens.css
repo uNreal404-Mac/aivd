@@ -1,12 +1,12 @@
 :root {
-  --co-bg: #07060F;
-  --co-surface: #13112A;
-  --co-border: rgba(139, 92, 246, 0.18);
-  --co-text: #F5F3FF;
-  --co-muted: #A5A1C2;
-  --co-accent: #8B5CF6;
-  --co-accent-hover: #7C3AED;
-  --co-on-accent: #FFFFFF;
-  --co-success: #34D399;
+  --co-bg: var(--du-bg);
+  --co-surface: var(--du-surface);
+  --co-border: var(--du-border);
+  --co-text: var(--du-text);
+  --co-muted: var(--du-text-muted);
+  --co-accent: var(--du-accent);
+  --co-accent-hover: var(--du-accent-hover);
+  --co-on-accent: var(--du-on-accent);
+  --co-success: var(--du-success);
   --co-radius: 20px;
 }

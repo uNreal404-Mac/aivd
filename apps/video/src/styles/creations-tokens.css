@@ -5,18 +5,18 @@
    ============================================ */
 
 :root {
-  --cr-accent: var(--du-accent, #8b5cf6);
-  --cr-surface: var(--du-surface, #16161d);
-  --cr-surface-raised: var(--du-surface-raised, #1e1e29);
-  --cr-border: var(--du-border, rgba(255, 255, 255, 0.08));
-  --cr-text: var(--du-text, #f5f5f7);
-  --cr-text-muted: var(--du-text-muted, rgba(245, 245, 247, 0.6));
-  --cr-overlay: var(--du-overlay, rgba(8, 8, 12, 0.72));
+  --cr-accent: var(--du-accent);
+  --cr-surface: var(--du-surface);
+  --cr-surface-raised: var(--du-surface-2);
+  --cr-border: var(--du-border);
+  --cr-text: var(--du-text);
+  --cr-text-muted: var(--du-text-muted);
+  --cr-overlay: var(--du-glass-overlay-scrim);
 
-  --cr-queued: var(--du-warning, #f59e0b);
-  --cr-generating: var(--du-accent, #8b5cf6);
-  --cr-done: var(--du-success, #22c55e);
-  --cr-failed: var(--du-danger, #ef4444);
+  --cr-queued: var(--du-warning);
+  --cr-generating: var(--du-accent);
+  --cr-done: var(--du-success);
+  --cr-failed: var(--du-danger);
 
   --cr-radius-sm: var(--du-radius-sm, 8px);
   --cr-radius-md: var(--du-radius-md, 12px);
@@ -474,7 +474,7 @@
   width: 100%;
   max-height: 70vh;
   border-radius: var(--cr-radius-md);
-  background: #000;
+  background: var(--du-bg);
   display: block;
 }
 

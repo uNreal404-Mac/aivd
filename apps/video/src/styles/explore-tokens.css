@@ -1,23 +1,23 @@
 :root {
-  --ex-bg: #07060f;
-  --ex-surface: #13112a;
-  --ex-border: rgba(139, 92, 246, 0.18);
-  --ex-text: #f5f3ff;
-  --ex-muted: #a5a1c2;
-  --ex-accent: #8b5cf6;
-  --ex-accent-hover: #7c3aed;
-  --ex-on-accent: #ffffff;
-  --ex-chip-bg: rgba(255, 255, 255, 0.06);
+  --ex-bg: var(--du-bg);
+  --ex-surface: var(--du-surface);
+  --ex-border: var(--du-border);
+  --ex-text: var(--du-text);
+  --ex-muted: var(--du-text-muted);
+  --ex-accent: var(--du-accent);
+  --ex-accent-hover: var(--du-accent-hover);
+  --ex-on-accent: var(--du-on-accent);
+  --ex-chip-bg: var(--du-glass-bg);
   --ex-overlay: linear-gradient(
     to top,
-    rgba(7, 6, 15, 0.85),
-    rgba(7, 6, 15, 0) 60%
+    color-mix(in srgb, var(--du-bg) 85%, transparent),
+    transparent 60%
   );
   --ex-radius-card: 16px;
   --ex-radius-chip: 999px;
   --ex-gap: 16px;
-  --ex-glass-bg: rgba(255, 255, 255, 0.1);
-  --ex-glass-border: rgba(255, 255, 255, 0.18);
+  --ex-glass-bg: var(--du-glass-bg);
+  --ex-glass-border: var(--du-glass-border);
   --ex-glass-blur: 16px;
 }
 
@@ -35,6 +35,6 @@
 
 @supports not (backdrop-filter: blur(1px)) {
   .ex-glass-btn {
-    background: rgba(19, 17, 42, 0.92);
+    background: var(--du-glass-fallback-bg);
   }
 }

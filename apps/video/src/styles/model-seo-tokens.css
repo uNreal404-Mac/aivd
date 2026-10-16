@@ -7,16 +7,16 @@
 
 :root {
   /* Colours */
-  --ms-bg: #07060f;
-  --ms-surface: #13112a;
-  --ms-surface-muted: rgba(139, 92, 246, 0.06);
-  --ms-border-color: rgba(139, 92, 246, 0.18);
+  --ms-bg: var(--du-bg);
+  --ms-surface: var(--du-surface);
+  --ms-surface-muted: var(--du-accent-soft);
+  --ms-border-color: var(--du-border);
   --ms-border-width: 1px;
-  --ms-text: #f5f3ff;
-  --ms-muted: #a5a1c2;
-  --ms-accent: #8b5cf6;
-  --ms-accent-hover: #7c3aed;
-  --ms-on-accent: #ffffff;
+  --ms-text: var(--du-text);
+  --ms-muted: var(--du-text-muted);
+  --ms-accent: var(--du-accent);
+  --ms-accent-hover: var(--du-accent-hover);
+  --ms-on-accent: var(--du-on-accent);
 
   /* Shape */
   --ms-radius: 16px;

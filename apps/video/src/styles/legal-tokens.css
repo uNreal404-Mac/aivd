@@ -1,10 +1,10 @@
 :root {
-  --lg-bg: #07060f;
-  --lg-surface: #13112a;
-  --lg-border: rgba(139, 92, 246, 0.18);
-  --lg-text: #f5f3ff;
-  --lg-muted: #a5a1c2;
-  --lg-accent: #a78bfa;
+  --lg-bg: var(--du-bg);
+  --lg-surface: var(--du-surface);
+  --lg-border: var(--du-border);
+  --lg-text: var(--du-text);
+  --lg-muted: var(--du-text-muted);
+  --lg-accent: var(--du-accent-text);
   --lg-heading-size: 28px;
   --lg-body-size: 15px;
   --lg-max-width: 760px;

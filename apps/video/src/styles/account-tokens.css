@@ -1,15 +1,15 @@
 /* Design tokens + classes for the /account page. Every color comes from a var(). */
 
 :root {
-  --acct-bg: #0b0b12;
-  --acct-panel: #14141f;
-  --acct-panel-2: #1b1b2a;
-  --acct-border: #26263a;
-  --acct-text: #f4f4fb;
-  --acct-muted: #9a9ab2;
-  --acct-accent: #8b5cf6;
-  --acct-positive: #34d399;
-  --acct-negative: #f87171;
+  --acct-bg: var(--du-bg);
+  --acct-panel: var(--du-surface);
+  --acct-panel-2: var(--du-surface-2);
+  --acct-border: var(--du-border);
+  --acct-text: var(--du-text);
+  --acct-muted: var(--du-text-muted);
+  --acct-accent: var(--du-accent);
+  --acct-positive: var(--du-success);
+  --acct-negative: var(--du-danger);
   --acct-radius: 12px;
 }
 

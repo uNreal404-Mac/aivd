@@ -10,25 +10,25 @@
  */
 
 :root {
-  --hfv-bg: #0f1113;
-  --hfv-panel: #131517;
-  --hfv-panel-2: #1c1e20;
-  --hfv-panel-3: #23262a;
-  --hfv-border: rgba(255, 255, 255, 0.05);
-  --hfv-border-strong: rgba(255, 255, 255, 0.1);
-  --hfv-field: rgba(255, 255, 255, 0.05);
-  --hfv-text: #f7f7f8;
-  --hfv-muted: #898a8b;
-  --hfv-faint: rgba(247, 247, 248, 0.5);
-  --hfv-accent: #8b5cf6;
-  --hfv-accent-text: #ffffff;
-  --hfv-accent-soft: rgba(139, 92, 246, 0.14);
-  --hfv-chip: rgba(255, 255, 255, 0.1);
-  --hfv-chip-bg: rgba(255, 255, 255, 0.1);
-  --hfv-chip-active-bg: #f7f7f8;
-  --hfv-chip-active-text: #0f1113;
-  --hfv-danger: #f0544a;
-  --hfv-overlay: rgba(0, 0, 0, 0.55);
+  --hfv-bg: var(--du-bg);
+  --hfv-panel: var(--du-bg-elev);
+  --hfv-panel-2: var(--du-surface);
+  --hfv-panel-3: var(--du-surface-2);
+  --hfv-border: var(--du-border);
+  --hfv-border-strong: var(--du-border-strong);
+  --hfv-field: var(--du-glass-bg);
+  --hfv-text: var(--du-text);
+  --hfv-muted: var(--du-text-muted);
+  --hfv-faint: var(--du-text-dim);
+  --hfv-accent: var(--du-accent);
+  --hfv-accent-text: var(--du-on-accent);
+  --hfv-accent-soft: var(--du-accent-soft);
+  --hfv-chip: var(--du-glass-bg-strong);
+  --hfv-chip-bg: var(--du-glass-bg-strong);
+  --hfv-chip-active-bg: var(--du-text);
+  --hfv-chip-active-text: var(--du-bg);
+  --hfv-danger: var(--du-danger);
+  --hfv-overlay: var(--du-glass-overlay-scrim);
 
   --hfv-radius-panel: 20px;
   --hfv-radius-card: 14px;
