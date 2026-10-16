@@ -473,6 +473,7 @@ export function ToolPageLayout({
           toast.warning(
             "We could not confirm your submission yet. Your credits are on hold and will not be charged twice — check My Creations shortly."
           );
+          setIsSubmitting(false);
           return;
         }
         throw new Error(result.error?.message || "Failed to generate video");
