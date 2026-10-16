@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/config/i18n-config";
+import { siteConfig } from "@/config/site";
 import { buildAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -41,7 +42,7 @@ export default function PrivacyPolicyPage() {
                 <p>We implement appropriate security measures to protect your personal information.</p>
 
                 <h2>5. Contact Us</h2>
-                <p>If you have questions about this policy, please contact us at support@dreamutopia-clone.pages.dev.</p>
+                <p>If you have questions about this policy, please contact us at {siteConfig.supportEmail}.</p>
             </div>
         </div>
     );

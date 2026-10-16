@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { BlurFade } from "@/components/magicui/blur-fade";
+import { siteConfig } from "@/config/site";
 
 interface FAQItem {
   questionKey: string;
@@ -55,7 +56,7 @@ export function FAQSection() {
       name: t(item.questionKey),
       acceptedAnswer: {
         "@type": "Answer",
-        text: t(item.answerKey),
+        text: t(item.answerKey, { email: siteConfig.supportEmail }),
       },
     })),
   };
@@ -121,7 +122,7 @@ export function FAQSection() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="pl-10 text-muted-foreground leading-relaxed">
-                        {t(item.answerKey)}
+                        {t(item.answerKey, { email: siteConfig.supportEmail })}
                       </AccordionContent>
                     </AccordionItem>
                   </motion.div>
@@ -142,10 +143,10 @@ export function FAQSection() {
               <p className="text-muted-foreground">
                 {t("contact")}
                 <a
-                  href="mailto:support@dreamutopia-clone.pages.dev"
+                  href={`mailto:${siteConfig.supportEmail}`}
                   className="text-primary hover:underline mx-1"
                 >
-                  support@dreamutopia-clone.pages.dev
+                  {siteConfig.supportEmail}
                 </a>
               </p>
             </motion.div>

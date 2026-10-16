@@ -7,6 +7,7 @@ export interface SiteConfig {
   description: string;
   url: string;
   ogImage: string;
+  supportEmail: string;
   links: {
     github?: string;
     twitter?: string;
@@ -27,6 +28,8 @@ export const siteConfig: SiteConfig = {
   description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
   url: process.env.NEXT_PUBLIC_APP_URL || "https://dreamutopia-clone.pages.dev",
   ogImage: "/og.png",
+  // TODO(config): placeholder support email — set NEXT_PUBLIC_SUPPORT_EMAIL to the real DreamUtopia support inbox before launch
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com",
   links: {},
   auth: {
     enableGoogleLogin: true,

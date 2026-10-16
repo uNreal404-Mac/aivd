@@ -20,6 +20,7 @@ import { cn } from "@/components/ui";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 
+import { siteConfig } from "@/config/site";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import {
   canPurchasePackages,
@@ -268,9 +269,9 @@ export function CreemPricing({
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@dreamutopia-clone.pages.dev"
+            href={`mailto:${siteConfig.supportEmail}`}
           >
-            support@dreamutopia-clone.pages.dev
+            {siteConfig.supportEmail}
           </a>{" "}
           {dictPrice.contact}
           <br />

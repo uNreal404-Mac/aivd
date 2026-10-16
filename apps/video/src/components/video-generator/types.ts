@@ -568,6 +568,7 @@ export interface GeneratorTexts {
   aiVideo?: string;
   aiImage?: string;
   credits?: string;
+  perGeneration?: string;
   videoModels?: string;
   imageModels?: string;
   selectStyle?: string;

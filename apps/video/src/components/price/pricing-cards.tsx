@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { BillingFormButton } from "@/components/price/billing-form-button";
 import { priceDataMap, type SubscriptionPlanTranslation } from "@/config/price/price-data";
+import { siteConfig } from "@/config/site";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { UserSubscriptionPlan } from "@/types";
 import { LocaleLink } from "@/i18n/navigation";
@@ -133,9 +134,9 @@ export function PricingCards({
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@dreamutopia-clone.pages.dev"
+            href={`mailto:${siteConfig.supportEmail}`}
           >
-            support@dreamutopia-clone.pages.dev
+            {siteConfig.supportEmail}
           </a>{" "}
           {t('contact')}
           <br />

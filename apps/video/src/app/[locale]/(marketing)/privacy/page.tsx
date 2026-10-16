@@ -1,3 +1,4 @@
+import { siteConfig } from "@/config/site";
 import type { Locale } from "@/config/i18n-config";
 
 export const metadata = {
@@ -76,7 +77,7 @@ export default async function PrivacyPage({
 
                         <h2>9. 联系我们</h2>
                         <p>
-                            如果您对本隐私政策有任何疑问，请联系我们：privacy@dreamutopia-clone.pages.dev
+                            如果您对本隐私政策有任何疑问，请联系我们：{siteConfig.supportEmail}
                         </p>
                     </>
                 ) : (
@@ -140,7 +141,7 @@ export default async function PrivacyPage({
 
                         <h2>9. Contact Us</h2>
                         <p>
-                            If you have any questions about this Privacy Policy, please contact us at: privacy@dreamutopia-clone.pages.dev
+                            If you have any questions about this Privacy Policy, please contact us at: {siteConfig.supportEmail}
                         </p>
                     </>
                 )}

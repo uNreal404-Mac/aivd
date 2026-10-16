@@ -1,3 +1,4 @@
+import { siteConfig } from "@/config/site";
 import type { Locale } from "@/config/i18n-config";
 
 export const metadata = {
@@ -71,7 +72,7 @@ export default async function TermsPage({
 
                         <h2>10. 联系我们</h2>
                         <p>
-                            如果您对这些条款有任何疑问，请联系我们：support@dreamutopia-clone.pages.dev
+                            如果您对这些条款有任何疑问，请联系我们：{siteConfig.supportEmail}
                         </p>
                     </>
                 ) : (
@@ -130,7 +131,7 @@ export default async function TermsPage({
 
                         <h2>10. Contact Us</h2>
                         <p>
-                            If you have any questions about these Terms, please contact us at: support@dreamutopia-clone.pages.dev
+                            If you have any questions about these Terms, please contact us at: {siteConfig.supportEmail}
                         </p>
                     </>
                 )}

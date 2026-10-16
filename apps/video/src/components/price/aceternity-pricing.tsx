@@ -17,6 +17,7 @@ import {
   type CreditsDictionary,
   type LocalizedPackage,
 } from "@/hooks/use-credit-packages";
+import { siteConfig } from "@/config/site";
 
 interface AceternityPricingProps {
   userId?: string;
@@ -231,9 +232,9 @@ export function AceternityPricing({
               Email{" "}
               <a
                 className="font-medium text-primary hover:underline"
-                href="mailto:support@dreamutopia-clone.pages.dev"
+                href={`mailto:${siteConfig.supportEmail}`}
               >
-                support@dreamutopia-clone.pages.dev
+                {siteConfig.supportEmail}
               </a>{" "}
               {dictPrice.contact}
               <br />

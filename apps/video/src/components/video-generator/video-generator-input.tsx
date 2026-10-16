@@ -1390,7 +1390,7 @@ export function VideoGeneratorInput({
             {/* Credits & Submit */}
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                {calculatedCredits} {texts.credits}
+                {calculatedCredits} {texts.credits} {texts.perGeneration ?? "per video"}
               </span>
               <button
                 type="button"
