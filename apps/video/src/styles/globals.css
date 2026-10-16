@@ -323,6 +323,36 @@
 }
 
 /* ============================================
+ * 【HF Studio 设计令牌】
+ * ============================================
+ * 以下变量是主题变量的语义别名，供 AI 视频工作台使用。
+ * 只允许颜色引用，不要写死 hex/rgb/颜色名。
+ * 变量引用是惰性求值，因此浅色/深色模式会自动跟随。
+ * ============================================ */
+:root {
+  --hfv-bg: var(--background);
+  --hfv-text: var(--foreground);
+  --hfv-muted: var(--muted-foreground);
+  --hfv-panel: var(--card);
+  --hfv-panel-2: var(--secondary);
+  --hfv-panel-3: var(--accent);
+  --hfv-field: var(--input);
+  --hfv-border: var(--border);
+  --hfv-border-strong: var(--ring);
+  --hfv-overlay: color-mix(in oklab, var(--background) 82%, transparent);
+  --hfv-accent: var(--primary);
+  --hfv-accent-text: var(--primary-foreground);
+  --hfv-accent-soft: color-mix(in oklab, var(--primary) 18%, var(--card));
+  --hfv-chip-bg: var(--muted);
+  --hfv-chip-active-bg: var(--primary);
+  --hfv-chip-active-text: var(--primary-foreground);
+  --hfv-radius-panel: var(--radius);
+  --hfv-radius-card: calc(var(--radius) - 2px);
+  --hfv-radius-chip: 999px;
+  --hfv-radius-btn: calc(var(--radius) - 2px);
+}
+
+/* ============================================
  * Tailwind CSS v4 边框兼容性
  * ============================================
  * Tailwind CSS v4 默认边框颜色改为 currentColor

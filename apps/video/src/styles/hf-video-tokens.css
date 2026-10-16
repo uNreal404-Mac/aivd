@@ -1,0 +1,36 @@
+/**
+ * ============================================
+ * AI Video Studio tokens
+ * ============================================
+ *
+ * Single source of truth for every color used by the
+ * AI video studio page. No colors may be declared elsewhere.
+ *
+ * ============================================
+ */
+
+:root {
+  --hfv-bg: #0f1113;
+  --hfv-panel: #131517;
+  --hfv-panel-2: #1c1e20;
+  --hfv-panel-3: #23262a;
+  --hfv-border: rgba(255, 255, 255, 0.05);
+  --hfv-border-strong: rgba(255, 255, 255, 0.1);
+  --hfv-field: rgba(255, 255, 255, 0.05);
+  --hfv-text: #f7f7f8;
+  --hfv-muted: #898a8b;
+  --hfv-faint: rgba(247, 247, 248, 0.5);
+  --hfv-accent: #d1fe17;
+  --hfv-accent-text: #1a1a1a;
+  --hfv-accent-soft: rgba(209, 254, 23, 0.12);
+  --hfv-chip: rgba(255, 255, 255, 0.1);
+  --hfv-chip-active-bg: #f7f7f8;
+  --hfv-chip-active-text: #0f1113;
+  --hfv-danger: #f0544a;
+  --hfv-overlay: rgba(0, 0, 0, 0.55);
+
+  --hfv-radius-panel: 20px;
+  --hfv-radius-card: 14px;
+  --hfv-radius-btn: 12px;
+  --hfv-radius-chip: 8px;
+}
