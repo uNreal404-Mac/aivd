@@ -1,0 +1,19 @@
+:root {
+  --du-bg: #07060F;
+  --du-bg-elev: #0E0C1D;
+  --du-surface: #13112A;
+  --du-surface-2: #1A1736;
+  --du-border: rgba(139, 92, 246, 0.18);
+  --du-border-strong: rgba(139, 92, 246, 0.45);
+  --du-text: #F5F3FF;
+  --du-text-muted: #A5A1C2;
+  --du-text-dim: #6E6A8E;
+  --du-accent: #8B5CF6;
+  --du-accent-hover: #7C3AED;
+  --du-accent-soft: rgba(139, 92, 246, 0.14);
+  --du-accent-text: #A78BFA;
+  --du-accent-2: #C084FC;
+  --du-gradient: linear-gradient(90deg, #8B5CF6 0%, #C084FC 100%);
+  --du-glow: 0 0 32px rgba(139, 92, 246, 0.45);
+  --du-on-accent: #FFFFFF;
+}
