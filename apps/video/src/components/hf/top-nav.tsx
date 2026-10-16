@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Gem, Menu, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
@@ -19,21 +20,21 @@ interface HfTopNavProps {
 }
 
 interface NavItem {
-  label: string;
+  key: string;
   href: string;
-  badge?: { label: string; tone: "lime" | "muted" };
+  badge?: { badgeKey: "top" | "new" | "soon"; tone: "lime" | "muted" };
   disabled?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Explore", href: "/explore" },
-  { label: "Video", href: "/text-to-video", badge: { label: "Top", tone: "lime" } },
-  { label: "Image to Video", href: "/image-to-video" },
-  { label: "Reference", href: "/reference-to-video", badge: { label: "New", tone: "lime" } },
-  { label: "My creations", href: "/my-creations" },
-  { label: "Image", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
-  { label: "Audio", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
-  { label: "Effects", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
+  { key: "explore", href: "/explore" },
+  { key: "video", href: "/text-to-video", badge: { badgeKey: "top", tone: "lime" } },
+  { key: "imageToVideo", href: "/image-to-video" },
+  { key: "reference", href: "/reference-to-video", badge: { badgeKey: "new", tone: "lime" } },
+  { key: "myCreations", href: "/my-creations" },
+  { key: "image", href: "", badge: { badgeKey: "soon", tone: "muted" }, disabled: true },
+  { key: "audio", href: "", badge: { badgeKey: "soon", tone: "muted" }, disabled: true },
+  { key: "effects", href: "", badge: { badgeKey: "soon", tone: "muted" }, disabled: true },
 ];
 
 function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
@@ -54,6 +55,7 @@ function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
 export function HfTopNav({ user, lang }: HfTopNavProps) {
   const pathname = useLocalePathname();
   const signInModal = useSigninModal();
+  const t = useTranslations("HfNav");
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
@@ -67,15 +69,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     const active = !item.disabled && isActive(item.href);
     const content = (
       <>
-        <span className="whitespace-nowrap">{item.label}</span>
-        {item.badge && <Badge label={item.badge.label} tone={item.badge.tone} />}
+        <span className="whitespace-nowrap">{t(`items.${item.key}`)}</span>
+        {item.badge && (
+          <Badge label={t(`badges.${item.badge.badgeKey}`)} tone={item.badge.tone} />
+        )}
       </>
     );
 
     if (item.disabled) {
       return (
         <span
-          key={item.label}
+          key={item.key}
           aria-disabled="true"
           className={cn(
             "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[var(--du-text-dim)] opacity-60",
@@ -89,7 +93,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
     return (
       <Link
-        key={item.label}
+        key={item.key}
         href={`/${lang}${item.href}`}
         onClick={mobile ? () => setMenuOpen(false) : undefined}
         className={cn(
@@ -130,7 +134,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href={`/${lang}/pricing`}
-            aria-label="Pricing"
+            aria-label={t("pricing")}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:hidden"
           >
             <Gem className="h-4 w-4" />
@@ -140,14 +144,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-[var(--du-glass-bg)] px-3 text-sm font-medium text-[var(--du-text)] hover:bg-[var(--du-glass-bg-strong)] lg:flex"
           >
             <Gem className="h-4 w-4" />
-            Pricing
+            {t("pricing")}
           </Link>
 
           {user ? (
             <Link
               href={`/${lang}/my-creations`}
               className="flex h-11 min-w-11 shrink-0 items-center rounded-[10px] px-1 lg:h-9 lg:min-w-0"
-              aria-label="My creations"
+              aria-label={t("myCreations")}
             >
               <UserAvatar
                 user={{ name: user.name ?? null, image: user.image ?? null }}
@@ -161,21 +165,21 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 onClick={() => signInModal.onOpen()}
                 className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-transparent bg-[var(--du-accent-soft)] px-3 text-sm font-medium text-[var(--du-accent-text)] hover:border-[var(--du-border-strong)] lg:flex"
               >
-                Login
+                {t("login")}
               </button>
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
                 className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:flex"
               >
-                Sign up
+                {t("signUp")}
               </button>
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
                 className="flex h-11 min-w-11 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:hidden"
               >
-                Sign up
+                {t("signUp")}
               </button>
             </>
           )}
@@ -183,7 +187,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {/* Mobile menu toggle */}
           <button
             type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? t("closeMenu") : t("openMenu")}
             onClick={() => setMenuOpen((prev) => !prev)}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-glass-bg)] text-[var(--du-text)] lg:hidden"
           >
@@ -203,7 +207,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               className="flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--du-text)] hover:text-[var(--du-accent-text)]"
             >
               <Gem className="h-4 w-4" />
-              Pricing
+              {t("pricing")}
             </Link>
             {!user && (
               <button
@@ -214,7 +218,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 }}
                 className="mt-1 mx-3 flex h-11 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
               >
-                Sign up
+                {t("signUp")}
               </button>
             )}
           </nav>

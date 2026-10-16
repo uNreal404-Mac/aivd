@@ -21,6 +21,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { useTranslations } from "next-intl";
+
 import { GallerySection } from "@/components/gallery/gallery-section";
 import {
   GLASS_BUTTON,
@@ -123,18 +125,81 @@ function SectionHeading({
 
 export function DuHome({ lang }: { lang: string }) {
   const [active, setActive] = useState("All");
+  const t = useTranslations("DuHome");
+
+  const hero = {
+    ...HERO,
+    eyebrow: t("hero.eyebrow"),
+    titleLead: t("hero.titleLead"),
+    titleAccent: t("hero.titleAccent"),
+    subtitle: t("hero.subtitle"),
+    ctas: HERO.ctas.map((cta, i) => ({ ...cta, label: t(`hero.ctas.c${i}`) })),
+  };
+
+  const heroCards = HERO_CARDS.map((card, i) => ({
+    ...card,
+    caption: t(`heroCards.c${i}.caption`),
+    alt: t(`heroCards.c${i}.alt`),
+  }));
+
+  const toolChips = TOOL_CHIPS.map((chip, i) => ({
+    ...chip,
+    label: t(`toolChips.c${i}`),
+  }));
+
+  const header = (key: string, base: SectionHeader): SectionHeader => ({
+    ...base,
+    eyebrow: t(`${key}.eyebrow`),
+    title: t(`${key}.title`),
+    accent: t(`${key}.accent`),
+    desc: t(`${key}.desc`),
+  });
+
+  const categoryCards = CATEGORY_CARDS.map((card) => ({
+    ...card,
+    title: t(`categoryCards.${card.id}.title`),
+    alt: t(`categoryCards.${card.id}.alt`),
+  }));
+
+  const modelCards = MODEL_CARDS.map((card) => ({
+    ...card,
+    title: t(`modelCards.${card.id}.title`),
+    description: t(`modelCards.${card.id}.description`),
+    alt: t(`modelCards.${card.id}.alt`),
+  }));
+
+  const effectCards = EFFECT_CARDS.map((card) => ({
+    ...card,
+    title: t(`effectCards.${card.id}.title`),
+    alt: t(`effectCards.${card.id}.alt`),
+  }));
+
+  const steps = STEPS.map((step) => ({
+    ...step,
+    title: t(`steps.s${step.number}.title`),
+    description: t(`steps.s${step.number}.description`),
+  }));
+
+  const creditsBanner = {
+    ...CREDITS_BANNER,
+    title: t("creditsBanner.title"),
+    accent: t("creditsBanner.accent"),
+    subtitle: t("creditsBanner.subtitle"),
+    alt: t("creditsBanner.alt"),
+    cta: { ...CREDITS_BANNER.cta, label: t("creditsBanner.cta") },
+  };
 
   const visibleCategories =
     active === "All" || active === "More"
-      ? CATEGORY_CARDS
-      : CATEGORY_CARDS.filter((card) => card.category === active);
+      ? categoryCards
+      : categoryCards.filter((card) => card.category === active);
 
-  const largeCards = HERO_CARDS.filter((card) => card.size === "large");
-  const smallCards = HERO_CARDS.filter((card) => card.size === "small");
+  const largeCards = heroCards.filter((card) => card.size === "large");
+  const smallCards = heroCards.filter((card) => card.size === "small");
 
-  const creditLead = CREDITS_BANNER.title.slice(
+  const creditLead = creditsBanner.title.slice(
     0,
-    CREDITS_BANNER.title.length - CREDITS_BANNER.accent.length
+    creditsBanner.title.length - creditsBanner.accent.length
   );
 
   return (
@@ -145,27 +210,27 @@ export function DuHome({ lang }: { lang: string }) {
         <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 lg:grid-cols-[55fr_45fr] lg:items-center">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--du-text-dim)]">
-              {HERO.eyebrow}
+              {hero.eyebrow}
             </p>
             <h1 className="mt-4 text-5xl font-bold leading-[1.1] text-[var(--du-text)] sm:text-[64px]">
-              {HERO.titleLead}
+              {hero.titleLead}
               <br />
               <span className="inline-block bg-[image:var(--du-gradient)] bg-clip-text pb-2 text-transparent">
-                {HERO.titleAccent}
+                {hero.titleAccent}
               </span>
             </h1>
             <p className="mt-5 max-w-[480px] text-lg text-[var(--du-text-muted)]">
-              {HERO.subtitle}
+              {hero.subtitle}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              {HERO.ctas.map((cta) => (
-                <CtaButton key={cta.label} cta={cta} lang={lang} />
+              {hero.ctas.map((cta, i) => (
+                <CtaButton key={i} cta={cta} lang={lang} />
               ))}
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
-              {TOOL_CHIPS.map((chip) => (
+              {toolChips.map((chip, i) => (
                 <Link
-                  key={chip.label}
+                  key={i}
                   href={localizedHref(lang, chip.href)}
                   className={glass(
                     "button",
@@ -182,9 +247,9 @@ export function DuHome({ lang }: { lang: string }) {
           <div className="relative flex items-center justify-center gap-4">
             <span className="absolute -left-6 top-10 hidden h-[280px] w-[200px] rotate-[-8deg] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] opacity-40 lg:block" />
             <div className="relative w-[220px] sm:w-[300px] lg:w-[340px]">
-              {largeCards.map((card) => (
+              {largeCards.map((card, i) => (
                 <div
-                  key={card.caption}
+                  key={i}
                   className="relative aspect-[3/4] w-full rotate-[-4deg] overflow-hidden rounded-2xl border border-[var(--du-border-strong)] shadow-[var(--du-glow)]"
                 >
                   <img
@@ -211,9 +276,9 @@ export function DuHome({ lang }: { lang: string }) {
               ))}
             </div>
             <div className="flex flex-col gap-3">
-              {smallCards.map((card) => (
+              {smallCards.map((card, i) => (
                 <div
-                  key={card.caption}
+                  key={i}
                   className="relative aspect-[3/4] w-[110px] overflow-hidden rounded-2xl border border-[var(--du-border)] sm:w-[130px]"
                 >
                   <img
@@ -241,7 +306,7 @@ export function DuHome({ lang }: { lang: string }) {
       {/* 2. Category wall */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
         <SectionHeading
-          header={CATEGORY_HEADER}
+          header={header("categoryHeader", CATEGORY_HEADER)}
           action={
             <Link
               href="#"
@@ -266,7 +331,7 @@ export function DuHome({ lang }: { lang: string }) {
                     : glass("button", "h-9 px-4 text-sm")
                 }
               >
-                {filter}
+                {t(`filters.${filter.replace(/[^A-Za-z]/g, "")}`)}
               </button>
             );
           })}
@@ -295,7 +360,7 @@ export function DuHome({ lang }: { lang: string }) {
               <div className="mt-3 flex items-center justify-between gap-2">
                 <span className="text-sm text-[var(--du-text)]">{card.title}</span>
                 <span
-                  aria-label="Like"
+                  aria-label={t("like")}
                   className={glass(
                     "media-button",
                     "inline-flex items-center px-2 py-1 text-xs"
@@ -311,9 +376,9 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 3. Model cards */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={MODELS_HEADER} />
+        <SectionHeading header={header("modelsHeader", MODELS_HEADER)} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {MODEL_CARDS.map((model) => (
+          {modelCards.map((model) => (
             <div
               key={model.id}
               className={glass("card", "flex flex-col p-4")}
@@ -350,9 +415,9 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 4. Effect cards */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={EFFECTS_HEADER} />
+        <SectionHeading header={header("effectsHeader", EFFECTS_HEADER)} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EFFECT_CARDS.map((effect) => (
+          {effectCards.map((effect) => (
             <div
               key={effect.id}
               className="relative aspect-[16/9] overflow-hidden rounded-xl border border-[var(--du-border)]"
@@ -383,9 +448,9 @@ export function DuHome({ lang }: { lang: string }) {
 
       {/* 5. Three steps */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <SectionHeading header={STEPS_HEADER} />
+        <SectionHeading header={header("stepsHeader", STEPS_HEADER)} />
         <div className="mt-10 flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <Fragment key={step.number}>
               <div className={glass("card", "flex flex-1 gap-4 p-5")}>
                 <div className="flex items-center border-r border-[var(--du-border)] pr-4 text-[28px] font-bold text-[var(--du-text-dim)]">
@@ -403,7 +468,7 @@ export function DuHome({ lang }: { lang: string }) {
                   </p>
                 </div>
               </div>
-              {index < STEPS.length - 1 && (
+              {index < steps.length - 1 && (
                 <span className="hidden shrink-0 text-[var(--du-accent-text)] lg:inline-flex">
                   <Icon name="ArrowRight" className="h-5 w-5" />
                 </span>
@@ -420,8 +485,8 @@ export function DuHome({ lang }: { lang: string }) {
       <section className="mx-auto max-w-[1200px] px-6 pb-16">
         <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[var(--du-border-strong)]">
           <img
-            src={CREDITS_BANNER.image}
-            alt={CREDITS_BANNER.alt}
+            src={creditsBanner.image}
+            alt={creditsBanner.alt}
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -430,14 +495,14 @@ export function DuHome({ lang }: { lang: string }) {
             <h2 className="text-[32px] font-bold text-[var(--du-text)]">
               {creditLead}
               <span className="text-[var(--du-accent-text)]">
-                {CREDITS_BANNER.accent}
+                {creditsBanner.accent}
               </span>
             </h2>
             <p className="text-sm text-[var(--du-text-muted)]">
-              {CREDITS_BANNER.subtitle}
+              {creditsBanner.subtitle}
             </p>
             <div>
-              <CtaButton cta={CREDITS_BANNER.cta} lang={lang} />
+              <CtaButton cta={creditsBanner.cta} lang={lang} />
             </div>
           </div>
         </div>

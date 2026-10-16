@@ -9,7 +9,7 @@ const SCAN_DIRS = ["src/app", "src/config", "src/components", "src/messages"];
 const SCAN_EXTS = new Set([".ts", ".tsx", ".json", ".mdx"]);
 
 const FORBIDDEN =
-  /in seconds|\d+\s*-\s*\d+\s*minutes|fast generation|快速生成|lightning fast|faster generation|闪电般快速|更快生成|faster takes|longer shots|generation speed|生成速度/i;
+  /in seconds|\d+\s*-\s*\d+\s*minutes|fast generation|快速生成|lightning fast|faster generation|闪电般快速|更快生成|faster takes|longer shots|generation speed|生成速度|average time|generation time/i;
 
 function collectFiles(dir: string): string[] {
   const files: string[] = [];

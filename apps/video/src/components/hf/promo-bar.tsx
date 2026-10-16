@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 
 interface HfPromoBarProps {
@@ -9,6 +10,7 @@ interface HfPromoBarProps {
 }
 
 export function HfPromoBar({ lang }: HfPromoBarProps) {
+  const t = useTranslations("HfPromo");
   const [visible, setVisible] = useState(true);
 
   if (!visible) {
@@ -18,15 +20,13 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
   return (
     <div className="relative flex h-[45px] items-center justify-center bg-[image:var(--du-gradient)] px-4 text-[var(--du-on-accent)]">
       <div className="flex items-center gap-3 text-sm">
-        <span className="hidden sm:inline">
-          New here? Get starter credits when you create an account
-        </span>
-        <span className="sm:hidden">Get starter credits on sign up</span>
+        <span className="hidden sm:inline">{t("long")}</span>
+        <span className="sm:hidden">{t("short")}</span>
         <Link
           href={`/${lang}/pricing`}
           className="inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
         >
-          See plans
+          {t("seePlans")}
         </Link>
       </div>
       <button

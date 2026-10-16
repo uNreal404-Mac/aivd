@@ -139,36 +139,6 @@
       "description": "Powered by the latest AI video generation models"
     }
   },
-  "HowItWorks": {
-    "badge": "Simple Process",
-    "title": "How It Works",
-    "subtitle": "Create your video in 4 simple steps",
-    "description": "Get started with an intuitive video creation workflow",
-    "bottomHint": "No credit card required • {credits} free credits to start",
-    "cta": "Start Creating Now",
-    "steps": {
-      "prompt": {
-        "title": "Describe Your Video",
-        "description": "Enter a detailed text prompt describing the video you want to create",
-        "stat": "Average time"
-      },
-      "upload": {
-        "title": "Upload Reference",
-        "description": "Optionally add a reference image to guide the AI (optional)",
-        "stat": "Formats supported"
-      },
-      "generate": {
-        "title": "AI Generates",
-        "description": "Our AI processes your request and creates a unique video",
-        "stat": "Generation time"
-      },
-      "download": {
-        "title": "Download & Share",
-        "description": "Get your HD video and share it anywhere you want",
-        "stat": "Max quality"
-      }
-    }
-  },
   "CTA": {
     "badge": "Limited Time Offer",
     "title": "Ready to Create Amazing Videos?",
@@ -614,5 +584,205 @@
       "modelUnavailable": "The original model {model} is not available. Please choose an alternative model.",
       "needsOwnImage": "Upload your own image — the author's source image is private."
     }
+  },
+  "DuHome": {
+    "hero": {
+      "eyebrow": "AI studio · Write · Animate · Discover",
+      "titleLead": "Bring stories",
+      "titleAccent": "to life.",
+      "subtitle": "DreamUtopia turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
+      "ctas": {
+        "c0": "Start Creating",
+        "c1": "Try a Sample",
+        "c2": "Watch Video"
+      }
+    },
+    "heroCards": {
+      "c0": {
+        "caption": "Tomorrow starts with one idea.",
+        "alt": "Portrait lit by violet studio light"
+      },
+      "c1": {
+        "caption": "New worlds waiting.",
+        "alt": "Neon city street at night"
+      },
+      "c2": {
+        "caption": "Push past limits.",
+        "alt": "Astronaut drifting above a planet"
+      }
+    },
+    "toolChips": {
+      "c0": "Text to Video",
+      "c1": "Image to Video",
+      "c2": "Image Generation",
+      "c3": "More Tools"
+    },
+    "categoryHeader": {
+      "eyebrow": "Explore ideas",
+      "title": "Find your next direction.",
+      "accent": "next direction.",
+      "desc": "From film-style shots to anime worlds — see what the community is making."
+    },
+    "filters": {
+      "All": "All",
+      "Cinematic": "Cinematic",
+      "Anime": "Anime",
+      "Portrait": "Portrait",
+      "Fantasy": "Fantasy",
+      "SciFi": "Sci-Fi",
+      "Nature": "Nature",
+      "Stylize": "Stylize",
+      "More": "More"
+    },
+    "categoryCards": {
+      "golden-hour": {
+        "title": "Golden Hour",
+        "alt": "Golden hour light across a field"
+      },
+      "neon-streets": {
+        "title": "Neon Streets",
+        "alt": "Neon signs reflected on wet asphalt"
+      },
+      "liquid-light": {
+        "title": "Liquid Light",
+        "alt": "Liquid light swirls in violet tones"
+      },
+      "coast-drive": {
+        "title": "Coast Drive",
+        "alt": "Road along a coastal cliff"
+      },
+      "first-steps": {
+        "title": "First Steps",
+        "alt": "Anime style figure walking at dawn"
+      },
+      "silver-muse": {
+        "title": "Silver Muse",
+        "alt": "Studio portrait in silver tones"
+      },
+      "glass-city": {
+        "title": "Glass City",
+        "alt": "Glass towers under a violet sky"
+      },
+      "edge-of-space": {
+        "title": "Edge of Space",
+        "alt": "Lone figure at the edge of space"
+      }
+    },
+    "modelsHeader": {
+      "eyebrow": "Our models",
+      "title": "The right model for every frame.",
+      "accent": "every frame.",
+      "desc": "Realistic or stylized — pick the engine that fits your idea."
+    },
+    "modelCards": {
+      "video-lite": {
+        "title": "Video Lite",
+        "description": "Everyday clips for ideas and drafts.",
+        "alt": "Draft clip preview"
+      },
+      "video-pro": {
+        "title": "Video Pro",
+        "description": "Cinematic motion and detail for finished shots.",
+        "alt": "Cinematic motion frame"
+      },
+      "image-studio": {
+        "title": "Image Studio",
+        "description": "Detailed stills from text or reference.",
+        "alt": "Detailed generated still"
+      },
+      "anime-style": {
+        "title": "Anime & Style",
+        "description": "Bold styles and looks for standout frames.",
+        "alt": "Stylized anime frame"
+      }
+    },
+    "effectsHeader": {
+      "eyebrow": "Creative effects",
+      "title": "Turn ordinary into unforgettable.",
+      "accent": "unforgettable.",
+      "desc": "One-click looks, camera moves and visual effects."
+    },
+    "effectCards": {
+      "float-away": {
+        "title": "Float Away",
+        "alt": "Figure floating above the ground"
+      },
+      "style-swap": {
+        "title": "Style Swap",
+        "alt": "Scene changing visual style"
+      },
+      "fire-light": {
+        "title": "Fire Light",
+        "alt": "Warm fire light on a face"
+      },
+      "world-grow": {
+        "title": "World Grow",
+        "alt": "Landscape growing outward"
+      },
+      "orbit-360": {
+        "title": "360 Orbit",
+        "alt": "Camera orbiting a subject"
+      },
+      "slow-time": {
+        "title": "Slow Time",
+        "alt": "Slow motion water splash"
+      }
+    },
+    "stepsHeader": {
+      "eyebrow": "How it works",
+      "title": "From idea to incredible. In 3 steps.",
+      "accent": "In 3 steps.",
+      "desc": "Go from a rough idea to a finished clip in a few clicks."
+    },
+    "steps": {
+      "s01": {
+        "title": "Describe it",
+        "description": "Write a sentence, a mood or a full scene."
+      },
+      "s02": {
+        "title": "Pick a model",
+        "description": "Choose the engine and the look you want."
+      },
+      "s03": {
+        "title": "Generate & share",
+        "description": "Render your clip and share it in one tap."
+      }
+    },
+    "creditsBanner": {
+      "title": "Start creating with free credits.",
+      "accent": "free credits.",
+      "subtitle": "No card needed. Turn your next idea into something real.",
+      "cta": "Get Free Credits →",
+      "alt": "Planet horizon lit from behind"
+    },
+    "like": "Like"
+  },
+  "HfNav": {
+    "items": {
+      "explore": "Explore",
+      "video": "Video",
+      "imageToVideo": "Image to Video",
+      "reference": "Reference",
+      "myCreations": "My creations",
+      "image": "Image",
+      "audio": "Audio",
+      "effects": "Effects"
+    },
+    "badges": {
+      "top": "Top",
+      "new": "New",
+      "soon": "Soon"
+    },
+    "pricing": "Pricing",
+    "login": "Login",
+    "signUp": "Sign up",
+    "myCreations": "My creations",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "HfPromo": {
+    "long": "New here? Get starter credits when you create an account",
+    "short": "Get starter credits on sign up",
+    "seePlans": "See plans"
   }
 }

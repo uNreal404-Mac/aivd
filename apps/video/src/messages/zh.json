@@ -139,36 +139,6 @@
       "description": "由最新的 AI 视频生成模型驱动"
     }
   },
-  "HowItWorks": {
-    "badge": "简单流程",
-    "title": "使用方法",
-    "subtitle": "4 步创建您的视频",
-    "description": "使用直观的视频创作工作流程轻松上手",
-    "bottomHint": "无需信用卡 • {credits} 个免费积分开始",
-    "cta": "立即开始创作",
-    "steps": {
-      "prompt": {
-        "title": "描述您的视频",
-        "description": "输入详细的文本提示，描述您想创建的视频",
-        "stat": "平均时间"
-      },
-      "upload": {
-        "title": "上传参考",
-        "description": "可选择添加参考图片来引导 AI（可选）",
-        "stat": "支持格式"
-      },
-      "generate": {
-        "title": "AI 生成",
-        "description": "我们的 AI 处理您的请求并创建独特视频",
-        "stat": "生成时间"
-      },
-      "download": {
-        "title": "下载分享",
-        "description": "获取高清视频，随时随地分享",
-        "stat": "最高质量"
-      }
-    }
-  },
   "CTA": {
     "badge": "限时优惠",
     "title": "准备好创作精彩视频了吗？",
@@ -291,7 +261,7 @@
     "onetime": "积分包",
     "monthly": "按月",
     "yearly": "按年",
-    "off_percent": "40% OFF",
+    "off_percent": "省 40%",
     "no_products": "暂无可用产品",
     "per_year": "/年",
     "per_month": "/月",
@@ -614,5 +584,205 @@
       "modelUnavailable": "原模型 {model} 已不可用，请选择其他模型。",
       "needsOwnImage": "请上传你自己的图片 —— 作者的源图片是私密的。"
     }
+  },
+  "DuHome": {
+    "hero": {
+      "eyebrow": "AI 工作室 · 写作 · 动画 · 探索",
+      "titleLead": "让故事",
+      "titleAccent": "鲜活起来。",
+      "subtitle": "DreamUtopia 把一句话变成电影般的片段、画面与完整世界——无需摄像机。",
+      "ctas": {
+        "c0": "开始创作",
+        "c1": "试试示例",
+        "c2": "观看视频"
+      }
+    },
+    "heroCards": {
+      "c0": {
+        "caption": "明天，从一个想法开始。",
+        "alt": "紫色影棚灯光下的人像"
+      },
+      "c1": {
+        "caption": "新世界正在等待。",
+        "alt": "夜晚的霓虹街道"
+      },
+      "c2": {
+        "caption": "突破边界。",
+        "alt": "漂浮在星球上方的宇航员"
+      }
+    },
+    "toolChips": {
+      "c0": "文字生视频",
+      "c1": "图片生视频",
+      "c2": "图片生成",
+      "c3": "更多工具"
+    },
+    "categoryHeader": {
+      "eyebrow": "探索灵感",
+      "title": "找到你的下一个方向。",
+      "accent": "下一个方向。",
+      "desc": "从电影感镜头到动画世界——看看社区都在创作什么。"
+    },
+    "filters": {
+      "All": "全部",
+      "Cinematic": "电影感",
+      "Anime": "动画",
+      "Portrait": "人像",
+      "Fantasy": "奇幻",
+      "SciFi": "科幻",
+      "Nature": "自然",
+      "Stylize": "风格化",
+      "More": "更多"
+    },
+    "categoryCards": {
+      "golden-hour": {
+        "title": "黄金时刻",
+        "alt": "阳光洒满田野的黄金时刻"
+      },
+      "neon-streets": {
+        "title": "霓虹街头",
+        "alt": "霓虹招牌映在湿漉漉的柏油路上"
+      },
+      "liquid-light": {
+        "title": "流动之光",
+        "alt": "紫色调的流动光影"
+      },
+      "coast-drive": {
+        "title": "海岸公路",
+        "alt": "沿着海边悬崖的公路"
+      },
+      "first-steps": {
+        "title": "第一步",
+        "alt": "动画风格的人物在黎明中行走"
+      },
+      "silver-muse": {
+        "title": "银色缪斯",
+        "alt": "银色调的影棚人像"
+      },
+      "glass-city": {
+        "title": "玻璃之城",
+        "alt": "紫色天空下的玻璃高楼"
+      },
+      "edge-of-space": {
+        "title": "太空边缘",
+        "alt": "太空边缘的孤独身影"
+      }
+    },
+    "modelsHeader": {
+      "eyebrow": "我们的模型",
+      "title": "每一帧，都有合适的模型。",
+      "accent": "合适的模型。",
+      "desc": "写实还是风格化——挑一个贴合你想法的引擎。"
+    },
+    "modelCards": {
+      "video-lite": {
+        "title": "视频轻量版",
+        "description": "日常片段，适合构思与草稿。",
+        "alt": "草稿片段预览"
+      },
+      "video-pro": {
+        "title": "视频专业版",
+        "description": "电影级的动态与细节，适合成片镜头。",
+        "alt": "电影级动态画面"
+      },
+      "image-studio": {
+        "title": "图像工作室",
+        "description": "由文字或参考图生成精细静帧。",
+        "alt": "精细生成的静帧"
+      },
+      "anime-style": {
+        "title": "动画与风格",
+        "description": "鲜明风格与造型，打造出彩画面。",
+        "alt": "风格化的动画画面"
+      }
+    },
+    "effectsHeader": {
+      "eyebrow": "创意特效",
+      "title": "把平凡变成难忘。",
+      "accent": "难忘。",
+      "desc": "一键风格、运镜与视觉效果。"
+    },
+    "effectCards": {
+      "float-away": {
+        "title": "飘然离地",
+        "alt": "漂浮在地面上方的人物"
+      },
+      "style-swap": {
+        "title": "风格切换",
+        "alt": "画面风格发生变化的场景"
+      },
+      "fire-light": {
+        "title": "火光",
+        "alt": "映在脸上的温暖火光"
+      },
+      "world-grow": {
+        "title": "世界生长",
+        "alt": "向外生长的风景"
+      },
+      "orbit-360": {
+        "title": "360 环绕",
+        "alt": "镜头环绕拍摄主体"
+      },
+      "slow-time": {
+        "title": "慢时光",
+        "alt": "慢动作的水花"
+      }
+    },
+    "stepsHeader": {
+      "eyebrow": "如何使用",
+      "title": "从想法到惊艳，3 步完成。",
+      "accent": "3 步完成。",
+      "desc": "轻点几下，从粗略想法到完成片段。"
+    },
+    "steps": {
+      "s01": {
+        "title": "描述它",
+        "description": "写一句话、一种情绪，或一整场戏。"
+      },
+      "s02": {
+        "title": "选择模型",
+        "description": "挑选你想要的引擎与风格。"
+      },
+      "s03": {
+        "title": "生成并分享",
+        "description": "渲染你的片段，一键分享。"
+      }
+    },
+    "creditsBanner": {
+      "title": "用免费积分开始创作。",
+      "accent": "开始创作。",
+      "subtitle": "无需绑卡。把下一个想法变成真实作品。",
+      "cta": "领取免费积分 →",
+      "alt": "从背后被照亮的星球地平线"
+    },
+    "like": "喜欢"
+  },
+  "HfNav": {
+    "items": {
+      "explore": "探索",
+      "video": "视频",
+      "imageToVideo": "图片生视频",
+      "reference": "参考",
+      "myCreations": "我的创作",
+      "image": "图片",
+      "audio": "音频",
+      "effects": "特效"
+    },
+    "badges": {
+      "top": "热门",
+      "new": "新",
+      "soon": "即将上线"
+    },
+    "pricing": "价格",
+    "login": "登录",
+    "signUp": "注册",
+    "myCreations": "我的创作",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单"
+  },
+  "HfPromo": {
+    "long": "新来的？注册账号即可获得起始积分",
+    "short": "注册即得起始积分",
+    "seePlans": "查看方案"
   }
 }
