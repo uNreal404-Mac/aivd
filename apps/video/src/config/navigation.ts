@@ -110,6 +110,13 @@ export const ALL_HEADER_MODELS = [
     modelId: "seedance-1.5-pro",
   },
   {
+    id: "seedance-1-0",
+    title: "Seedance 1.0",
+    subtitle: "by ByteDance",
+    href: "/seedance-1-0",
+    modelId: "seedance-1.0-pro-fast",
+  },
+  {
     id: "wan",
     title: "Wan 2.6",
     subtitle: "by Alibaba",

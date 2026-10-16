@@ -56,6 +56,28 @@ describe("headerModels only exposes enabled video models", () => {
   });
 });
 
+describe("seedance-1-0", () => {
+  it("is listed in headerModels right after the seedance 1.5 entry", () => {
+    const index = headerModels.findIndex((m) => m.href === "/seedance-1-5");
+    expect(index).toBeGreaterThanOrEqual(0);
+
+    const next = headerModels[index + 1];
+    expect(next?.href).toBe("/seedance-1-0");
+    expect(next?.title).toBe("Seedance 1.0");
+  });
+
+  it("has a route file", () => {
+    expect(
+      fs.existsSync(
+        path.join(
+          projectRoot,
+          "src/app/[locale]/(marketing)/seedance-1-0/page.tsx"
+        )
+      )
+    ).toBe(true);
+  });
+});
+
 describe("isVideoModelEnabled", () => {
   it("returns false for disabled models", () => {
     expect(isVideoModelEnabled("sora-2")).toBe(false);
