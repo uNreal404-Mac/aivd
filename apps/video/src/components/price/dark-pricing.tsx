@@ -11,6 +11,8 @@ import { readAttributionCookie } from "@/lib/attribution";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import {
   getLocalizedOnetimePackages,
@@ -111,6 +113,7 @@ export function DarkPricing({
   }, [monthlyProducts, yearlyProducts]);
 
   const handleCheckout = (product: LocalizedPackage) => {
+    if (!PAYMENTS_ENABLED) return;
     if (!userId) {
       signInModal.onOpen();
       return;
@@ -444,7 +447,7 @@ function PricingCard({
                 <span className="mt-4 block w-full">
                   <button
                     type="button"
-                    disabled={isPending || isRestricted}
+                    disabled={isPending || isRestricted || !PAYMENTS_ENABLED}
                     onClick={() => onCheckout(product)}
                     className={cn(cardButtonClass, "mt-0")}
                   >
@@ -453,6 +456,8 @@ function PricingCard({
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Processing...
                       </>
+                    ) : !PAYMENTS_ENABLED ? (
+                      "Payments coming soon"
                     ) : isRestricted ? (
                       "Subscribers Only"
                     ) : product.billingPeriod ? (
