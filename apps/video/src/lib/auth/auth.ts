@@ -103,7 +103,7 @@ const plugins: AuthPlugin[] = [
         : "Activate your account";
 
       try {
-        await resend.emails.send({
+        const { error: sendError } = await resend.emails.send({
           from: env.RESEND_FROM,
           to: email,
           subject: authSubject,
@@ -117,6 +117,9 @@ const plugins: AuthPlugin[] = [
             "X-Entity-Ref-ID": new Date().getTime() + "",
           },
         });
+        if (sendError) {
+          throw new Error(`Resend send failed: ${sendError.name ?? "error"}`);
+        }
       } catch (error) {
         console.error("Failed to send magic link email:", error);
         throw error;

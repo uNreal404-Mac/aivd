@@ -31,6 +31,7 @@ const config = {
   /** We already do linting and typechecking as separate tasks in CI */
   typescript: { ignoreBuildErrors: true },
   output: "standalone",
+  serverExternalPackages: ["postgres"],
 };
 
 // Compose plugins
