@@ -17,9 +17,9 @@ interface BillingListProps {
 }
 
 const statusConfig: Record<InvoiceStatus, { label: string; className: string }> = {
-  paid: { label: "Paid", className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  failed: { label: "Failed", className: "bg-rose-500/10 text-rose-500 border-rose-500/20" },
+  paid: { label: "Paid", className: "bg-[var(--du-success)]/10 text-[var(--du-success)] border-[var(--du-success)]/20" },
+  pending: { label: "Pending", className: "bg-[var(--du-warning)]/10 text-[var(--du-warning)] border-[var(--du-warning)]/20" },
+  failed: { label: "Failed", className: "bg-[var(--du-danger)]/10 text-[var(--du-danger)] border-[var(--du-danger)]/20" },
 };
 
 export function BillingList({ invoices, hasMore, onLoadMore }: BillingListProps) {

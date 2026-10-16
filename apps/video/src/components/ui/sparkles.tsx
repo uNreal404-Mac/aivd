@@ -62,7 +62,7 @@ export const SparklesCore = (props: ParticlesProps) => {
           options={{
             background: {
               color: {
-                value: background ?? "#0d47a1",
+                value: background ?? "var(--du-accent)",
               },
             },
             fullScreen: {
@@ -123,7 +123,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                 },
               },
               color: {
-                value: particleColor ?? "#ffffff",
+                value: particleColor ?? "var(--du-text)",
                 animation: {
                   h: {
                     count: 0,
@@ -254,7 +254,7 @@ export const SparklesCore = (props: ParticlesProps) => {
               shadow: {
                 blur: 0,
                 color: {
-                  value: "#000",
+                  value: "var(--du-bg)",
                 },
                 enable: false,
                 offset: {
@@ -396,7 +396,7 @@ export const SparklesCore = (props: ParticlesProps) => {
               links: {
                 blink: false,
                 color: {
-                  value: "#fff",
+                  value: "var(--du-text)",
                 },
                 consent: false,
                 distance: 100,
@@ -406,7 +406,7 @@ export const SparklesCore = (props: ParticlesProps) => {
                 shadow: {
                   blur: 5,
                   color: {
-                    value: "#000",
+                    value: "var(--du-bg)",
                   },
                   enable: false,
                 },

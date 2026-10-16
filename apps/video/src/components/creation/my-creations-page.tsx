@@ -91,13 +91,13 @@ export function MyCreationsPage({ locale }: MyCreationsPageProps) {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#0f1113] p-2 text-[#f7f7f8] sm:p-3">
-      <div className="flex min-h-[calc(100vh-5.5rem)] flex-col rounded-2xl border border-white/[0.06] bg-[#131416]">
+    <div className="min-h-[calc(100vh-4rem)] bg-[var(--du-bg)] p-2 text-[var(--du-text)] sm:p-3">
+      <div className="flex min-h-[calc(100vh-5.5rem)] flex-col rounded-2xl border border-[var(--du-glass-border)] bg-[var(--du-surface)]">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-white/[0.06] bg-[#131416]/95 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border-b border-[var(--du-glass-border)] bg-[var(--du-surface)]/95 px-4 py-3 backdrop-blur">
           <div className="flex items-center">
             <h1 className="text-base font-semibold">{t("title")}</h1>
-            <span className="ml-2 rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-[#9a9ba0]">
+            <span className="ml-2 rounded-full bg-[var(--du-glass-bg)] px-2 py-0.5 text-xs text-[var(--du-text-muted)]">
               {videos.length}
             </span>
           </div>
@@ -128,7 +128,7 @@ export function MyCreationsPage({ locale }: MyCreationsPageProps) {
 
               {/* Infinite scroll sentinel */}
               {hasMore && (
-                <div ref={observerTarget} className="py-4 text-center text-sm text-[#9a9ba0]">
+                <div ref={observerTarget} className="py-4 text-center text-sm text-[var(--du-text-muted)]">
                   {isFetchingNextPage ? "Loading..." : ""}
                 </div>
               )}

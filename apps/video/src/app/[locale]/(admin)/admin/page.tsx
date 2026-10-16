@@ -140,10 +140,10 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium">
               已完成
             </CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-[var(--du-success)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedVideos}</div>
+            <div className="text-2xl font-bold text-[var(--du-success)]">{completedVideos}</div>
             <p className="text-xs text-muted-foreground">
               {totalVideos > 0 ? ((completedVideos / totalVideos) * 100).toFixed(1) : 0}% 的总数
             </p>
@@ -155,10 +155,10 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium">
               失败
             </CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <XCircle className="h-4 w-4 text-[var(--du-danger)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{failedVideos}</div>
+            <div className="text-2xl font-bold text-[var(--du-danger)]">{failedVideos}</div>
             <p className="text-xs text-muted-foreground">
               {totalVideos > 0 ? ((failedVideos / totalVideos) * 100).toFixed(1) : 0}% 的总数
             </p>
@@ -170,10 +170,10 @@ export default async function AdminDashboardPage() {
             <CardTitle className="text-sm font-medium">
               处理中
             </CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <Clock className="h-4 w-4 text-[var(--du-warning)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingVideos}</div>
+            <div className="text-2xl font-bold text-[var(--du-warning)]">{pendingVideos}</div>
             <p className="text-xs text-muted-foreground">
               {totalVideos > 0 ? ((pendingVideos / totalVideos) * 100).toFixed(1) : 0}% 的总数
             </p>

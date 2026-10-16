@@ -173,7 +173,7 @@ export function DarkPricing({
     <section className="flex w-full flex-col text-left">
       {/* Tab 切换 */}
       <div className="mb-6 flex w-full flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1 rounded-xl border border-white/[0.06] bg-[#1c1d20] p-1">
+        <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--du-glass-border)] bg-[var(--du-surface-2)] p-1">
           <TabButton
             active={activeTab === "onetime"}
             onClick={() => setActiveTab("onetime")}
@@ -192,13 +192,13 @@ export function DarkPricing({
           >
             {t("yearly")}
             {yearlySavePct > 0 && (
-              <span className="ml-1.5 rounded bg-[#d1fe17] px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+              <span className="ml-1.5 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--du-on-accent)]">
                 {t("save_percent", { percent: yearlySavePct })}
               </span>
             )}
           </TabButton>
         </div>
-        <p className="text-xs text-[#9a9ba0]">{t("billing_note")}</p>
+        <p className="text-xs text-[var(--du-text-muted)]">{t("billing_note")}</p>
       </div>
 
       {/* 价格卡片 */}
@@ -245,17 +245,17 @@ export function DarkPricing({
             );
           })}
           {activeTab !== "onetime" && (
-            <div className="relative flex flex-col rounded-2xl border border-white/[0.06] bg-[#16181b] p-4">
+            <div className="relative flex flex-col rounded-2xl border border-[var(--du-glass-border)] bg-[var(--du-surface)] p-4">
               <p className="text-2xl font-black uppercase tracking-tight">
                 {t("business_title")}
               </p>
-              <p className="mt-1 text-sm text-[#9a9ba0]">{t("business_desc")}</p>
-              <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
-                <p className="text-sm text-[#9a9ba0]">{t("business_note")}</p>
+              <p className="mt-1 text-sm text-[var(--du-text-muted)]">{t("business_desc")}</p>
+              <div className="mt-4 rounded-xl border border-[var(--du-glass-border)] bg-[var(--du-glass-bg)] p-3">
+                <p className="text-sm text-[var(--du-text-muted)]">{t("business_note")}</p>
               </div>
               <div
                 aria-disabled="true"
-                className="mt-4 flex h-11 w-full cursor-not-allowed select-none items-center justify-center rounded-xl bg-white/[0.06] text-sm font-semibold text-[#9a9ba0]"
+                className="mt-4 flex h-11 w-full cursor-not-allowed select-none items-center justify-center rounded-xl bg-[var(--du-glass-bg-strong)] text-sm font-semibold text-[var(--du-text-muted)]"
               >
                 {t("coming_soon")}
               </div>
@@ -289,8 +289,8 @@ function TabButton({ active, children, onClick }: TabButtonProps) {
       className={cn(
         "relative h-9 rounded-lg px-4 text-sm font-medium transition-colors",
         active
-          ? "bg-[#26272b] text-[#f7f7f8]"
-          : "text-[#9a9ba0] hover:text-[#f7f7f8]"
+          ? "bg-[var(--du-surface-2)] text-[var(--du-text)]"
+          : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
       )}
     >
       {children}
@@ -340,8 +340,8 @@ function PricingCard({
   const cardButtonClass = cn(
     "mt-4 h-11 w-full rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
     isRecommended
-      ? "bg-[#d1fe17] text-black hover:bg-[#d1fe17]/90"
-      : "bg-white text-black hover:bg-white/90"
+      ? "bg-[var(--du-accent)] text-[var(--du-on-accent)] hover:bg-[var(--du-accent)]/90"
+      : "bg-[var(--du-text)] text-[var(--du-bg)] hover:bg-[var(--du-text)]/90"
   );
 
   return (
@@ -349,8 +349,8 @@ function PricingCard({
       className={cn(
         "relative flex flex-col rounded-2xl border p-4",
         isRecommended
-          ? "border-[#d1fe17]/40 bg-gradient-to-b from-[#d1fe17]/[0.12] via-[#16181b] to-[#16181b]"
-          : "border-white/[0.06] bg-[#16181b]"
+          ? "border-[var(--du-accent)]/40 bg-gradient-to-b from-[var(--du-accent)]/[0.12] via-[var(--du-surface)] to-[var(--du-surface)]"
+          : "border-[var(--du-glass-border)] bg-[var(--du-surface)]"
       )}
     >
       <div className="flex items-center">
@@ -358,26 +358,26 @@ function PricingCard({
           {product.displayName}
         </p>
         {isRecommended && (
-          <span className="ml-2 rounded bg-[#d1fe17] px-1.5 py-0.5 text-[10px] font-bold uppercase text-black">
+          <span className="ml-2 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--du-on-accent)]">
             {t("popular")}
           </span>
         )}
       </div>
 
       {product.displayDescription ? (
-        <p className="mt-1 text-sm text-[#9a9ba0]">
+        <p className="mt-1 text-sm text-[var(--du-text-muted)]">
           {product.displayDescription}
         </p>
       ) : null}
 
       {/* 显示积分数 */}
       {product.credits && (
-        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
+        <div className="mt-4 rounded-xl border border-[var(--du-glass-border)] bg-[var(--du-glass-bg)] p-3">
           <p className="text-sm font-semibold">
             {product.credits.toLocaleString()} {dictCredits.title || "Credits"}
           </p>
           {product.billingPeriod === "year" && (
-            <p className="mt-0.5 text-xs text-[#9a9ba0]">
+            <p className="mt-0.5 text-xs text-[var(--du-text-muted)]">
               {t("credits_per_month", {
                 credits: Math.round(product.credits / 12).toLocaleString(),
               })}
@@ -390,13 +390,13 @@ function PricingCard({
         <span className="text-4xl font-bold leading-none">
           {formatPrice(product.price.amount)}
         </span>
-        <span className="text-sm font-medium text-[#9a9ba0]">
+        <span className="text-sm font-medium text-[var(--du-text-muted)]">
           {product.billingPeriod ? (product.billingPeriod === "year" ? t("per_year") : t("per_month")) : ""}
         </span>
       </div>
 
       {product.billingPeriod === "year" && (
-        <p className="mt-1 text-xs text-[#9a9ba0]">
+        <p className="mt-1 text-xs text-[var(--du-text-muted)]">
           {t("price_per_month", {
             price: formatPrice(Math.round(product.price.amount / 12)),
           })}
@@ -466,19 +466,19 @@ function PricingCard({
         </button>
       )}
 
-      <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#9a9ba0]">
+      <div className="mt-4 rounded-xl border border-[var(--du-glass-border)] bg-[var(--du-glass-bg)] p-3">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
           {t("features")}
         </p>
         <ul>
           {features.map((feature, idx) => (
             <li className="flex items-start gap-2 py-1 text-sm" key={idx}>
               {feature.included ? (
-                <IconCheck className="h-4 w-4 shrink-0 text-[#d1fe17]" />
+                <IconCheck className="h-4 w-4 shrink-0 text-[var(--du-accent)]" />
               ) : (
-                <IconX className="h-4 w-4 shrink-0 text-[#9a9ba0]/60" />
+                <IconX className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]/60" />
               )}
-              <p className={cn(feature.included ? "text-[#f7f7f8]" : "text-[#9a9ba0]")}>
+              <p className={cn(feature.included ? "text-[var(--du-text)]" : "text-[var(--du-text-muted)]")}>
                 {feature.text}
               </p>
             </li>

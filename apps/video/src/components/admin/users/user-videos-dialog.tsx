@@ -126,7 +126,7 @@ export function UserVideosDialog({
     switch (status) {
       case "COMPLETED":
         return (
-          <Badge variant="default" className="gap-1 bg-green-600">
+          <Badge variant="default" className="gap-1 bg-[var(--du-success)]">
             <CheckCircle className="h-3 w-3" />
             已完成
           </Badge>
@@ -140,14 +140,14 @@ export function UserVideosDialog({
         );
       case "GENERATING":
         return (
-          <Badge variant="default" className="gap-1 bg-yellow-600">
+          <Badge variant="default" className="gap-1 bg-[var(--du-warning)]">
             <Spinner className="h-3 w-3 animate-spin" />
             生成中
           </Badge>
         );
       case "UPLOADING":
         return (
-          <Badge variant="default" className="gap-1 bg-blue-600">
+          <Badge variant="default" className="gap-1 bg-[var(--du-accent)]">
             <Clock className="h-3 w-3" />
             上传中
           </Badge>
@@ -183,19 +183,19 @@ export function UserVideosDialog({
               <div className="text-xs text-muted-foreground">总视频数</div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-[var(--du-success)]">
                 {stats.completed}
               </div>
               <div className="text-xs text-muted-foreground">已完成</div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-[var(--du-danger)]">
                 {stats.failed}
               </div>
               <div className="text-xs text-muted-foreground">失败</div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-2xl font-bold text-[var(--du-warning)]">
                 {stats.generating}
               </div>
               <div className="text-xs text-muted-foreground">生成中</div>
@@ -291,7 +291,7 @@ export function UserVideosDialog({
                         )
                       ) : video.errorMessage ? (
                         <span
-                          className="text-xs text-red-600 cursor-help"
+                          className="text-xs text-[var(--du-danger)] cursor-help"
                           title={video.errorMessage}
                         >
                           失败

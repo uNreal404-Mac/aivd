@@ -34,27 +34,27 @@ const statusConfig = {
   completed: {
     icon: CheckCircle2,
     labelKey: "status.completed",
-    labelColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    labelColor: "bg-[var(--du-success)]/10 text-[var(--du-success)] border-[var(--du-success)]/20",
   },
   pending: {
     icon: Clock,
     labelKey: "status.pending",
-    labelColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    labelColor: "bg-[var(--du-warning)]/10 text-[var(--du-warning)] border-[var(--du-warning)]/20",
   },
   generating: {
     icon: Clock,
     labelKey: "status.generating",
-    labelColor: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    labelColor: "bg-[var(--du-accent)]/10 text-[var(--du-accent-text)] border-[var(--du-accent)]/20",
   },
   uploading: {
     icon: Clock,
     labelKey: "status.uploading",
-    labelColor: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    labelColor: "bg-[var(--du-accent-2)]/10 text-[var(--du-accent-2)] border-[var(--du-accent-2)]/20",
   },
   failed: {
     icon: AlertCircle,
     labelKey: "status.failed",
-    labelColor: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    labelColor: "bg-[var(--du-danger)]/10 text-[var(--du-danger)] border-[var(--du-danger)]/20",
   },
 };
 
@@ -219,7 +219,7 @@ export function ResultPanel({
               className="rounded-xl border border-border bg-muted/30 p-4 flex flex-col justify-between min-h-[220px]"
             >
               <div className="flex items-center justify-between">
-                <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" variant="outline">
+                <Badge className="bg-[var(--du-accent)]/10 text-[var(--du-accent-text)] border-[var(--du-accent)]/20" variant="outline">
                   <Clock className="h-3 w-3 mr-1" />
                   {tStatus("generating")}
                 </Badge>
@@ -252,7 +252,7 @@ export function ResultPanel({
                 key={video.uuid}
                 className="rounded-xl border border-border bg-background/80 overflow-hidden flex flex-col"
               >
-                <div className="relative aspect-video bg-black">
+                <div className="relative aspect-video bg-[var(--du-bg)]">
                   {videoSrc ? (
                     <video
                       src={videoSrc}
@@ -268,7 +268,7 @@ export function ResultPanel({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <StatusIcon className={cn("h-10 w-10", isFailed ? "text-rose-500" : "text-muted-foreground")} />
+                      <StatusIcon className={cn("h-10 w-10", isFailed ? "text-[var(--du-danger)]" : "text-muted-foreground")} />
                     </div>
                   )}
 
@@ -302,7 +302,7 @@ export function ResultPanel({
 
                   {/* Error message for failed videos */}
                   {isFailed && video.errorMessage && (
-                    <div className="text-xs text-rose-600 dark:text-rose-400 line-clamp-2 bg-rose-500/10 px-2 py-1 rounded">
+                    <div className="text-xs text-[var(--du-danger)] line-clamp-2 bg-[var(--du-danger)]/10 px-2 py-1 rounded">
                       {(() => {
                         try {
                           const parsed = JSON.parse(video.errorMessage);
@@ -363,7 +363,7 @@ export function ResultPanel({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="flex-1 h-8 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20"
+                        className="flex-1 h-8 bg-[var(--du-accent)]/10 text-[var(--du-accent-text)] hover:bg-[var(--du-accent)]/20"
                         onClick={() => handleRetry(video.uuid)}
                         disabled={isRetrying === video.uuid}
                       >
@@ -377,7 +377,7 @@ export function ResultPanel({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-8 px-3 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-300"
+                        className="h-8 px-3 text-[var(--du-danger)] hover:bg-[var(--du-danger)]/10 hover:text-[var(--du-danger)]"
                         onClick={() => setDeleteDialogOpen(video.uuid)}
                         disabled={isDeleting === video.uuid}
                       >
@@ -395,7 +395,7 @@ export function ResultPanel({
                   </div>
 
                   {downloadErrorId === video.uuid && (
-                    <div className="text-xs text-rose-600 dark:text-rose-400">
+                    <div className="text-xs text-[var(--du-danger)]">
                       {tGallery("downloadError")}
                     </div>
                   )}

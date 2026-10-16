@@ -39,28 +39,28 @@ const FEATURED: FeaturedCard[] = [
     subtitle: 'Turn a written prompt into a finished clip.',
     href: '/text-to-video',
     gradient:
-      'radial-gradient(120% 120% at 15% 20%, rgba(209,254,23,0.18) 0%, rgba(209,254,23,0) 55%), linear-gradient(135deg, #1C1E21 0%, #131517 60%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 15% 20%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(135deg, var(--du-surface) 0%, var(--du-bg-elev) 60%, var(--du-bg) 100%)',
   },
   {
     title: 'Image to Video',
     subtitle: 'Animate a still frame with natural motion.',
     href: '/image-to-video',
     gradient:
-      'radial-gradient(120% 120% at 85% 15%, rgba(209,254,23,0.14) 0%, rgba(209,254,23,0) 50%), linear-gradient(160deg, #23262A 0%, #18191C 55%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 85% 15%, var(--du-accent-soft) 0%, transparent 50%), linear-gradient(160deg, var(--du-surface-2) 0%, var(--du-surface) 55%, var(--du-bg) 100%)',
   },
   {
     title: 'Reference to Video',
     subtitle: 'Match a look, a face, or a whole scene.',
     href: '/reference-to-video',
     gradient:
-      'radial-gradient(100% 100% at 50% 100%, rgba(209,254,23,0.12) 0%, rgba(209,254,23,0) 60%), linear-gradient(200deg, #1C1E20 0%, #131517 50%, #000000 100%)',
+      'radial-gradient(100% 100% at 50% 100%, var(--du-accent-soft) 0%, transparent 60%), linear-gradient(200deg, var(--du-surface) 0%, var(--du-bg-elev) 50%, var(--du-bg) 100%)',
   },
   {
     title: 'Motion Library',
     subtitle: 'Reusable camera moves and transitions.',
     soon: true,
     gradient:
-      'radial-gradient(120% 120% at 20% 80%, rgba(209,254,23,0.1) 0%, rgba(209,254,23,0) 55%), linear-gradient(120deg, #18191C 0%, #131517 60%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 20% 80%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(120deg, var(--du-surface) 0%, var(--du-bg-elev) 60%, var(--du-bg) 100%)',
   },
 ];
 
@@ -115,42 +115,42 @@ const STYLES: StyleTile[] = [
   {
     title: 'Neon city drift',
     gradient:
-      'radial-gradient(120% 120% at 30% 20%, rgba(209,254,23,0.2) 0%, rgba(209,254,23,0) 55%), linear-gradient(160deg, #23262A 0%, #131517 60%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 30% 20%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(160deg, var(--du-surface-2) 0%, var(--du-bg-elev) 60%, var(--du-bg) 100%)',
   },
   {
     title: 'Soft studio light',
     gradient:
-      'radial-gradient(120% 120% at 70% 30%, rgba(209,254,23,0.12) 0%, rgba(209,254,23,0) 50%), linear-gradient(140deg, #1C1E21 0%, #18191C 55%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 70% 30%, var(--du-accent-soft) 0%, transparent 50%), linear-gradient(140deg, var(--du-surface) 0%, var(--du-surface) 55%, var(--du-bg) 100%)',
   },
   {
     title: 'Analog film grain',
     gradient:
-      'radial-gradient(100% 100% at 50% 90%, rgba(209,254,23,0.1) 0%, rgba(209,254,23,0) 60%), linear-gradient(200deg, #1C1E20 0%, #131517 50%, #000000 100%)',
+      'radial-gradient(100% 100% at 50% 90%, var(--du-accent-soft) 0%, transparent 60%), linear-gradient(200deg, var(--du-surface) 0%, var(--du-bg-elev) 50%, var(--du-bg) 100%)',
   },
   {
     title: 'Slow dolly push',
     gradient:
-      'radial-gradient(120% 120% at 20% 70%, rgba(209,254,23,0.14) 0%, rgba(209,254,23,0) 55%), linear-gradient(120deg, #18191C 0%, #131517 60%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 20% 70%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(120deg, var(--du-surface) 0%, var(--du-bg-elev) 60%, var(--du-bg) 100%)',
   },
   {
     title: 'Golden hour haze',
     gradient:
-      'radial-gradient(120% 120% at 80% 20%, rgba(209,254,23,0.16) 0%, rgba(209,254,23,0) 50%), linear-gradient(150deg, #23262A 0%, #1C1E20 55%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 80% 20%, var(--du-accent-soft) 0%, transparent 50%), linear-gradient(150deg, var(--du-surface-2) 0%, var(--du-surface) 55%, var(--du-bg) 100%)',
   },
   {
     title: 'Deep space orbit',
     gradient:
-      'radial-gradient(100% 100% at 50% 50%, rgba(209,254,23,0.08) 0%, rgba(209,254,23,0) 60%), linear-gradient(180deg, #131517 0%, #0F1113 60%, #000000 100%)',
+      'radial-gradient(100% 100% at 50% 50%, var(--du-accent-soft) 0%, transparent 60%), linear-gradient(180deg, var(--du-bg-elev) 0%, var(--du-bg) 60%, var(--du-bg) 100%)',
   },
   {
     title: 'Handheld energy',
     gradient:
-      'radial-gradient(120% 120% at 25% 25%, rgba(209,254,23,0.18) 0%, rgba(209,254,23,0) 55%), linear-gradient(135deg, #1C1E21 0%, #18191C 60%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 25% 25%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(135deg, var(--du-surface) 0%, var(--du-surface) 60%, var(--du-bg) 100%)',
   },
   {
     title: 'Minimal product spin',
     gradient:
-      'radial-gradient(120% 120% at 75% 75%, rgba(209,254,23,0.12) 0%, rgba(209,254,23,0) 50%), linear-gradient(210deg, #23262A 0%, #131517 55%, #0F1113 100%)',
+      'radial-gradient(120% 120% at 75% 75%, var(--du-accent-soft) 0%, transparent 50%), linear-gradient(210deg, var(--du-surface-2) 0%, var(--du-bg-elev) 55%, var(--du-bg) 100%)',
   },
 ];
 
@@ -177,7 +177,7 @@ const STEPS = [
 
 function DemoChip() {
   return (
-    <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-white/80">
+    <span className="absolute left-2 top-2 rounded bg-[var(--du-glass-overlay-scrim)] px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text)]/80">
       DEMO
     </span>
   );
@@ -185,7 +185,7 @@ function DemoChip() {
 
 function SoonChip() {
   return (
-    <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[#898A8B]">
+    <span className="rounded-md bg-[var(--du-glass-bg)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-text-muted)]">
       Soon
     </span>
   );
@@ -195,10 +195,10 @@ export function HfExploreHome({ lang }: { lang: string }) {
   return (
     <div className="w-full px-4 pb-16">
       <header className="pt-4">
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[#F7F7F8] sm:text-[32px]">
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[var(--du-text)] sm:text-[32px]">
           Explore DreamUtopia
         </h1>
-        <p className="mt-1 text-sm text-[#898A8B]">
+        <p className="mt-1 text-sm text-[var(--du-text-muted)]">
           Generate, animate, and direct video with AI.
         </p>
       </header>
@@ -214,10 +214,10 @@ export function HfExploreHome({ lang }: { lang: string }) {
                 >
                   <DemoChip />
                 </div>
-                <h3 className="mt-3 font-[family-name:var(--font-display)] text-base font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
+                <h3 className="mt-3 font-[family-name:var(--font-display)] text-base font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
                   {card.title}
                 </h3>
-                <p className="mt-1 text-sm text-[#898A8B]">{card.subtitle}</p>
+                <p className="mt-1 text-sm text-[var(--du-text-muted)]">{card.subtitle}</p>
               </>
             );
 
@@ -252,34 +252,34 @@ export function HfExploreHome({ lang }: { lang: string }) {
       </section>
 
       <section className="mt-8 flex flex-col gap-5 lg:flex-row">
-        <div className="relative flex h-[272px] w-full shrink-0 flex-col justify-center overflow-hidden rounded-[20px] bg-[#1C1E20] p-6 lg:w-[600px]">
+        <div className="relative flex h-[272px] w-full shrink-0 flex-col justify-center overflow-hidden rounded-[20px] bg-[var(--du-surface)] p-6 lg:w-[600px]">
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(120% 120% at 90% 20%, rgba(209,254,23,0.16) 0%, rgba(209,254,23,0) 55%), linear-gradient(120deg, #1C1E20 0%, #131517 60%, #0F1113 100%)',
+                'radial-gradient(120% 120% at 90% 20%, var(--du-accent-soft) 0%, transparent 55%), linear-gradient(120deg, var(--du-surface) 0%, var(--du-bg-elev) 60%, var(--du-bg) 100%)',
             }}
           />
           <div className="relative">
-            <h2 className="font-[family-name:var(--font-display)] text-[36px] font-bold uppercase leading-[1.05] tracking-[-0.04em] text-[#F7F7F8]">
+            <h2 className="font-[family-name:var(--font-display)] text-[36px] font-bold uppercase leading-[1.05] tracking-[-0.04em] text-[var(--du-text)]">
               Start creating
               <br />
-              <span className="text-[#D1FE17]">with free credits</span>
+              <span className="text-[var(--du-accent)]">with free credits</span>
             </h2>
             <ul className="mt-4 space-y-1.5">
               {CHECKLIST.map((item) => (
                 <li
                   key={item}
-                  className="flex items-center gap-2 text-xs text-[#898A8B]"
+                  className="flex items-center gap-2 text-xs text-[var(--du-text-muted)]"
                 >
-                  <Check className="h-3.5 w-3.5 shrink-0 text-[#D1FE17]" />
+                  <Check className="h-3.5 w-3.5 shrink-0 text-[var(--du-accent)]" />
                   {item}
                 </li>
               ))}
             </ul>
             <Link
               href={`/${lang}/text-to-video`}
-              className="mt-5 inline-flex h-11 items-center gap-2 rounded-[10px] bg-[#D1FE17] px-4 text-sm font-semibold text-[#1A1A1A]"
+              className="mt-5 inline-flex h-11 items-center gap-2 rounded-[10px] bg-[var(--du-accent)] px-4 text-sm font-semibold text-[var(--du-on-accent)]"
             >
               Open the studio
               <ArrowRight className="h-4 w-4" />
@@ -293,23 +293,23 @@ export function HfExploreHome({ lang }: { lang: string }) {
             const body = (
               <>
                 <div className="flex items-start justify-between">
-                  <Icon className="h-5 w-5 text-[#F7F7F8]" />
-                  <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[#898A8B]">
+                  <Icon className="h-5 w-5 text-[var(--du-text)]" />
+                  <span className="rounded-md bg-[var(--du-glass-bg)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-text-muted)]">
                     {tool.tag}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-[#F7F7F8]">
+                  <h3 className="text-sm font-semibold text-[var(--du-text)]">
                     {tool.title}
                   </h3>
                   {tool.chip ? (
-                    <span className="rounded-md bg-[#D1FE17] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[#131517]">
+                    <span className="rounded-md bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-on-accent)]">
                       {tool.chip}
                     </span>
                   ) : null}
                   {tool.soon ? <SoonChip /> : null}
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-[#898A8B]">
+                <p className="mt-1 line-clamp-2 text-xs text-[var(--du-text-muted)]">
                   {tool.description}
                 </p>
               </>
@@ -320,7 +320,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
                 <div
                   key={tool.title}
                   aria-disabled="true"
-                  className="cursor-not-allowed rounded-[16px] bg-[#1C1E21] p-4 opacity-60"
+                  className="cursor-not-allowed rounded-[16px] bg-[var(--du-surface)] p-4 opacity-60"
                 >
                   {body}
                 </div>
@@ -331,7 +331,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
               <Link
                 key={tool.title}
                 href={`/${lang}${tool.href}`}
-                className="rounded-[16px] bg-[#1C1E21] p-4 transition-colors hover:bg-[#23262A]"
+                className="rounded-[16px] bg-[var(--du-surface)] p-4 transition-colors hover:bg-[var(--du-surface-2)]"
               >
                 {body}
               </Link>
@@ -342,12 +342,12 @@ export function HfExploreHome({ lang }: { lang: string }) {
 
       <section className="mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
             Trending styles
           </h2>
           <Link
             href={`/${lang}/text-to-video`}
-            className="text-sm font-medium text-[#D1FE17]"
+            className="text-sm font-medium text-[var(--du-accent)]"
           >
             See all
           </Link>
@@ -361,29 +361,29 @@ export function HfExploreHome({ lang }: { lang: string }) {
               >
                 <DemoChip />
               </div>
-              <p className="mt-2 text-xs text-[#898A8B]">{tile.title}</p>
+              <p className="mt-2 text-xs text-[var(--du-text-muted)]">{tile.title}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="mt-10">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
+        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
           How it works
         </h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {STEPS.map((step, index) => (
             <div
               key={step.title}
-              className="rounded-[16px] bg-[#1C1E21] p-4"
+              className="rounded-[16px] bg-[var(--du-surface)] p-4"
             >
-              <span className="font-mono text-[10px] font-semibold uppercase text-[#D1FE17]">
+              <span className="font-mono text-[10px] font-semibold uppercase text-[var(--du-accent)]">
                 {`0${index + 1}`}
               </span>
-              <h3 className="mt-2 text-sm font-semibold text-[#F7F7F8]">
+              <h3 className="mt-2 text-sm font-semibold text-[var(--du-text)]">
                 {step.title}
               </h3>
-              <p className="mt-1 text-xs text-[#898A8B]">{step.body}</p>
+              <p className="mt-1 text-xs text-[var(--du-text-muted)]">{step.body}</p>
             </div>
           ))}
         </div>

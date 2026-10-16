@@ -160,7 +160,7 @@ export function VideoDetailDialog({
 
           <div className="flex flex-col lg:flex-row h-full">
             {/* Left: Video Player (~65% for better 16:9 display) */}
-            <div className="lg:w-[65%] h-[60vh] lg:h-full bg-black flex items-center justify-center">
+            <div className="lg:w-[65%] h-[60vh] lg:h-full bg-[var(--du-bg)] flex items-center justify-center">
               {video.videoUrl ? (
                 <video
                   ref={videoRef}
@@ -187,10 +187,10 @@ export function VideoDetailDialog({
                 <Badge
                   className={
                     normalizedStatus === "completed"
-                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      ? "bg-[var(--du-success)]/10 text-[var(--du-success)] border-[var(--du-success)]/20"
                       : normalizedStatus === "failed"
-                      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                      : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                      ? "bg-[var(--du-danger)]/10 text-[var(--du-danger)] border-[var(--du-danger)]/20"
+                      : "bg-[var(--du-accent)]/10 text-[var(--du-accent)] border-[var(--du-accent)]/20"
                   }
                   variant="outline"
                 >
