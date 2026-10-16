@@ -128,6 +128,7 @@ describe("formatCreatedAt", () => {
 describe("modelLabel", () => {
   it("maps known model ids to display names", () => {
     expect(modelLabel("seedance-1.5-pro")).toBe("Seedance 1.5 Pro");
+    expect(modelLabel("wan2.6")).toBe("Wan 2.6");
     expect(modelLabel("wan-2.6")).toBe("Wan 2.6");
     expect(modelLabel("veo-3.1")).toBe("Veo 3.1");
     expect(modelLabel("sora-2")).toBe("Sora 2");

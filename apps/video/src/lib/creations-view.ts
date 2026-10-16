@@ -37,6 +37,7 @@ export const STATUS_TABS: readonly StatusTab[] = [
 
 const MODEL_LABELS: Readonly<Record<string, string>> = {
   "seedance-1.5-pro": "Seedance 1.5 Pro",
+  "wan2.6": "Wan 2.6",
   "wan-2.6": "Wan 2.6",
   "veo-3.1": "Veo 3.1",
   "sora-2": "Sora 2",
