@@ -9,6 +9,8 @@ import { createWorker } from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const RESEND_KEY = "re_test_key";
+const WEBHOOK_URL = "https://grok.test/hooks/feishu";
+const WEBHOOK_KEY = "grok-webhook-key";
 
 function fakeKv() {
   const values = new Map();
@@ -740,4 +742,69 @@ test("never acknowledges a forward-chat mention sent by the bot itself", async (
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 0);
   assert.equal(await env.BOT_KV.get(ackKey("om_self")), null);
+});
+
+test("posts the Grok webhook for a forwarding-chat @bot mention while still emailing and acking", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const fetchImpl = async (url, init = {}) => {
+    if (String(url) === WEBHOOK_URL) {
+      webhookCalls.push({ url: String(url), init });
+      return Response.json({ ok: true });
+    }
+    return baseFetch(url, init);
+  };
+  const worker = createWorker({ fetchImpl, sleep: async () => {} });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = WEBHOOK_URL;
+  env.GROK_WEBHOOK_KEY = WEBHOOK_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "落地页要加中文", messageId: "om_hook", eventId: "evt_hook" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(webhookCalls.length, 1);
+  assert.equal(new Headers(webhookCalls[0].init.headers).get("authorization"), `Bearer ${WEBHOOK_KEY}`);
+  const body = JSON.parse(webhookCalls[0].init.body);
+  assert.equal(body.message_id, "om_hook");
+  assert.equal(body.chat_id, GROK_FORWARD_CHAT_ID);
+  assert.equal(body.mentioned_bot, true);
+  assert.equal(replies.length, 1);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
+});
+
+test("does not post the Grok webhook for a forwarding-chat message with no mention", async () => {
+  const replies = [];
+  const forwardCalls = [];
+  const webhookCalls = [];
+  const baseFetch = makeRecordingFetch({ replies, forwardCalls });
+  const fetchImpl = async (url, init = {}) => {
+    if (String(url) === WEBHOOK_URL) {
+      webhookCalls.push({ url: String(url), init });
+      return Response.json({ ok: true });
+    }
+    return baseFetch(url, init);
+  };
+  const worker = createWorker({ fetchImpl, sleep: async () => {} });
+  const env = makeEnv();
+  env.RESEND_API_KEY = RESEND_KEY;
+  env.GROK_WEBHOOK_URL = WEBHOOK_URL;
+  env.GROK_WEBHOOK_KEY = WEBHOOK_KEY;
+
+  const response = await send(
+    worker,
+    messagePayload({ text: "随便聊聊", mentions: [], messageId: "om_hook_none", eventId: "evt_hook_none" }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(forwardCalls.length, 1);
+  assert.equal(webhookCalls.length, 0);
 });

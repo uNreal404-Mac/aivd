@@ -4,6 +4,7 @@ import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
 import { decodeFeishuRequest, mentionsBot, messageContext, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "./events.mjs";
 import { forwardToGrok, GROK_FORWARD_CHAT_ID } from "./forward.mjs";
+import { buildWebhookPayload, postGrokWebhook } from "./grok-webhook.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
@@ -320,17 +321,56 @@ export function createWorker({
               senderName = "";
             }
           }
+          const forwardContext = { ...context, senderName: senderName || "" };
+
+          // A real mention can only be confirmed after resolving the bot identity; any
+          // failure (missing credentials, network, deadline) is treated as not mentioned.
+          let mentioned = false;
+          if (hasMentionEvidence(message)) {
+            try {
+              if (!token) {
+                token = await getTenantAccessToken({
+                  kv,
+                  appId: env.FEISHU_APP_ID,
+                  appSecret: env.FEISHU_APP_SECRET,
+                  fetchImpl: workFetch,
+                  now,
+                });
+              }
+              const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now, env });
+              mentioned = mentionsBot(message, botOpenId);
+            } catch {
+              mentioned = false;
+            }
+          }
+
+          // The webhook is a mirror of the email forward: start it alongside the forward so
+          // neither waits on the other, and let it never change the forward/ack outcome.
+          const webhookWork = mentioned
+            ? postGrokWebhook({
+              env,
+              payload: buildWebhookPayload({ selected: forwarded, context: forwardContext, mentionedBot: true }),
+              fetchImpl: workFetch,
+              ...(sleep ? { sleep } : {}),
+            })
+            : null;
 
           const result = await forwardToGrok({
             env,
             kv,
             payload,
             selected: forwarded,
-            context: { ...context, senderName: senderName || "" },
+            context: forwardContext,
             fetchImpl: workFetch,
             receivedAt,
             ...(sleep ? { sleep } : {}),
           });
+
+          if (webhookWork) {
+            // Never await the webhook before the 200 when the runtime lets us defer work.
+            if (deferWork) ctx.waitUntil(webhookWork);
+            else await webhookWork;
+          }
           // The @bot acknowledgement must still go out when forwarding fails; only a
           // successful forward marks the message processed. In production the request is
           // acked with 200 first (ctx.waitUntil), so a failed forward is NOT redelivered
@@ -338,7 +378,7 @@ export function createWorker({
           const ackWork = sendForwardAck({
             payload,
             selected: forwarded,
-            context: { ...context, senderName: senderName || "" },
+            context: forwardContext,
             kv,
             env,
             fetchImpl: workFetch,
