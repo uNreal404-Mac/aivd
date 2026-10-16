@@ -10,6 +10,11 @@
  *  - /ai-video-generator-with-audio (new route)
  *  - /ai-short-video-generator      (new route)
  *  - /ai-video-generator-for-tiktok (new route)
+ *  - /animate-image-ai              (new route)
+ *  - /ai-video-ad-generator         (new route)
+ *  - /ai-product-video-generator    (new route)
+ *  - /ai-cinematic-video-generator  (new route)
+ *  - /ai-b-roll-generator           (new route)
  *
  * Copy rules: original English + Chinese, no invented metrics (no user counts,
  * ratings, speeds or prices), no third-party brands other than the real model
@@ -29,6 +34,18 @@ import {
   ZH_FRAMES_TO_VIDEO,
   ZH_REFERENCE_TO_VIDEO,
 } from "./seo-landing-more";
+import {
+  EN_AI_B_ROLL,
+  EN_AI_CINEMATIC_VIDEO,
+  EN_AI_PRODUCT_VIDEO,
+  EN_AI_VIDEO_AD,
+  EN_ANIMATE_IMAGE_AI,
+  ZH_AI_B_ROLL,
+  ZH_AI_CINEMATIC_VIDEO,
+  ZH_AI_PRODUCT_VIDEO,
+  ZH_AI_VIDEO_AD,
+  ZH_ANIMATE_IMAGE_AI,
+} from "./seo-landing-more-3";
 
 export type SeoLandingSlug =
   | "ai-video-generator"
@@ -38,7 +55,12 @@ export type SeoLandingSlug =
   | "frames-to-video"
   | "ai-video-generator-with-audio"
   | "ai-short-video-generator"
-  | "ai-video-generator-for-tiktok";
+  | "ai-video-generator-for-tiktok"
+  | "animate-image-ai"
+  | "ai-video-ad-generator"
+  | "ai-product-video-generator"
+  | "ai-cinematic-video-generator"
+  | "ai-b-roll-generator";
 
 export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator",
@@ -49,6 +71,11 @@ export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator-with-audio",
   "ai-short-video-generator",
   "ai-video-generator-for-tiktok",
+  "animate-image-ai",
+  "ai-video-ad-generator",
+  "ai-product-video-generator",
+  "ai-cinematic-video-generator",
+  "ai-b-roll-generator",
 ];
 
 export type SeoLocale = "en" | "zh";
@@ -545,6 +572,26 @@ export const SEO_LANDING: Record<
   "ai-video-generator-for-tiktok": {
     en: EN_AI_VIDEO_FOR_TIKTOK,
     zh: ZH_AI_VIDEO_FOR_TIKTOK,
+  },
+  "animate-image-ai": {
+    en: EN_ANIMATE_IMAGE_AI,
+    zh: ZH_ANIMATE_IMAGE_AI,
+  },
+  "ai-video-ad-generator": {
+    en: EN_AI_VIDEO_AD,
+    zh: ZH_AI_VIDEO_AD,
+  },
+  "ai-product-video-generator": {
+    en: EN_AI_PRODUCT_VIDEO,
+    zh: ZH_AI_PRODUCT_VIDEO,
+  },
+  "ai-cinematic-video-generator": {
+    en: EN_AI_CINEMATIC_VIDEO,
+    zh: ZH_AI_CINEMATIC_VIDEO,
+  },
+  "ai-b-roll-generator": {
+    en: EN_AI_B_ROLL,
+    zh: ZH_AI_B_ROLL,
   },
 };
 

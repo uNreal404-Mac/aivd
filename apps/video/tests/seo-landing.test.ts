@@ -35,6 +35,20 @@ const NEW_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator-with-audio",
   "ai-short-video-generator",
   "ai-video-generator-for-tiktok",
+  "animate-image-ai",
+  "ai-video-ad-generator",
+  "ai-product-video-generator",
+  "ai-cinematic-video-generator",
+  "ai-b-roll-generator",
+];
+
+/** Slugs added in job42c; each compares exactly three enabled models. */
+const JOB42C_SLUGS: readonly SeoLandingSlug[] = [
+  "animate-image-ai",
+  "ai-video-ad-generator",
+  "ai-product-video-generator",
+  "ai-cinematic-video-generator",
+  "ai-b-roll-generator",
 ];
 
 /** Marketing routes only: reference-to-video lives under the tool layout. */
@@ -119,7 +133,7 @@ function copyStrings(content: SeoLandingContent): string[] {
 }
 
 describe("seo landing content", () => {
-  it("registers exactly the eight expected slugs", () => {
+  it("registers exactly the thirteen expected slugs", () => {
     expect([...SEO_LANDING_SLUGS]).toEqual([
       "ai-video-generator",
       "text-to-video",
@@ -129,8 +143,13 @@ describe("seo landing content", () => {
       "ai-video-generator-with-audio",
       "ai-short-video-generator",
       "ai-video-generator-for-tiktok",
+      "animate-image-ai",
+      "ai-video-ad-generator",
+      "ai-product-video-generator",
+      "ai-cinematic-video-generator",
+      "ai-b-roll-generator",
     ]);
-    expect(SEO_LANDING_SLUGS).toHaveLength(8);
+    expect(SEO_LANDING_SLUGS).toHaveLength(13);
     expect(new Set(SEO_LANDING_SLUGS).size).toBe(SEO_LANDING_SLUGS.length);
     expect(Object.keys(SEO_LANDING).sort()).toEqual(
       [...SEO_LANDING_SLUGS].sort(),
@@ -227,6 +246,21 @@ describe("seo landing content", () => {
     }
   });
 
+  it("compares exactly three enabled models on the job42c pages", () => {
+    for (const slug of JOB42C_SLUGS) {
+      for (const locale of LOCALES) {
+        const content = seoLandingFor(slug, locale);
+        const label = `${slug}/${locale}`;
+        expect(content.compareRows, `${label} rows`).toHaveLength(3);
+        for (const row of content.compareRows) {
+          expect(ENABLED_MODELS, `${label} model`).toContain(row.model);
+          expect(row.bestFor.trim(), `${label} bestFor`).not.toBe("");
+          expect(row.input.trim(), `${label} input`).not.toBe("");
+        }
+      }
+    }
+  });
+
   it("never names a disabled model on the new pages", () => {
     const disabled = ["Wan", "Veo", "Sora"];
     for (const { label, content } of NEW_CASES) {
@@ -247,6 +281,19 @@ describe("seo landing content", () => {
           expect(haystack, `${label} ${term}`).not.toContain(
             term.toLowerCase(),
           );
+        }
+      }
+    }
+  });
+
+  it("never uses conversion or ROI language on the job42c pages", () => {
+    const banned = /convers|转化|ROI|销量/i;
+    for (const slug of JOB42C_SLUGS) {
+      for (const locale of LOCALES) {
+        const content = seoLandingFor(slug, locale);
+        const label = `${slug}/${locale}`;
+        for (const text of copyStrings(content)) {
+          expect(text, `${label} ${text}`).not.toMatch(banned);
         }
       }
     }
