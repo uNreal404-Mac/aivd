@@ -15,6 +15,7 @@
  *  - /ai-product-video-generator    (new route)
  *  - /ai-cinematic-video-generator  (new route)
  *  - /ai-b-roll-generator           (new route)
+ *  - /seedance-1-0                  (new marketing route, Seedance 1.0 models)
  *
  * Copy rules: original English + Chinese, no invented metrics (no user counts,
  * ratings, speeds or prices), no third-party brands other than the real model
@@ -46,6 +47,7 @@ import {
   ZH_AI_VIDEO_AD,
   ZH_ANIMATE_IMAGE_AI,
 } from "./seo-landing-more-3";
+import { EN_SEEDANCE_1_0, ZH_SEEDANCE_1_0 } from "./seo-landing-seedance-1-0";
 
 export type SeoLandingSlug =
   | "ai-video-generator"
@@ -60,7 +62,8 @@ export type SeoLandingSlug =
   | "ai-video-ad-generator"
   | "ai-product-video-generator"
   | "ai-cinematic-video-generator"
-  | "ai-b-roll-generator";
+  | "ai-b-roll-generator"
+  | "seedance-1-0";
 
 export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator",
@@ -76,6 +79,7 @@ export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-product-video-generator",
   "ai-cinematic-video-generator",
   "ai-b-roll-generator",
+  "seedance-1-0",
 ];
 
 export type SeoLocale = "en" | "zh";
@@ -600,6 +604,10 @@ export const SEO_LANDING: Record<
   "ai-b-roll-generator": {
     en: EN_AI_B_ROLL,
     zh: ZH_AI_B_ROLL,
+  },
+  "seedance-1-0": {
+    en: EN_SEEDANCE_1_0,
+    zh: ZH_SEEDANCE_1_0,
   },
 };
 

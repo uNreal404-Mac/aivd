@@ -134,7 +134,7 @@ function copyStrings(content: SeoLandingContent): string[] {
 }
 
 describe("seo landing content", () => {
-  it("registers exactly the thirteen expected slugs", () => {
+  it("registers exactly the fourteen expected slugs", () => {
     expect([...SEO_LANDING_SLUGS]).toEqual([
       "ai-video-generator",
       "text-to-video",
@@ -149,8 +149,9 @@ describe("seo landing content", () => {
       "ai-product-video-generator",
       "ai-cinematic-video-generator",
       "ai-b-roll-generator",
+      "seedance-1-0",
     ]);
-    expect(SEO_LANDING_SLUGS).toHaveLength(13);
+    expect(SEO_LANDING_SLUGS).toHaveLength(14);
     expect(new Set(SEO_LANDING_SLUGS).size).toBe(SEO_LANDING_SLUGS.length);
     expect(Object.keys(SEO_LANDING).sort()).toEqual(
       [...SEO_LANDING_SLUGS].sort(),
@@ -388,6 +389,58 @@ describe("animate-image-ai and image-to-video keyword split", () => {
   });
 });
 
+describe("seedance 1.0 landing page", () => {
+  const SLUG = "seedance-1-0" as const;
+  const MODELS = ["Seedance 1.0 Pro Fast", "Seedance 1.0 Pro Quality"];
+
+  it("compares exactly the two Seedance 1.0 Pro models", () => {
+    for (const locale of LOCALES) {
+      const content = seoLandingFor(SLUG, locale);
+      const label = `${SLUG}/${locale}`;
+
+      expect(content.compareRows, `${label} rows`).toHaveLength(2);
+      expect(content.compareRows.map((row) => row.model)).toEqual(MODELS);
+
+      for (const row of content.compareRows) {
+        expect(ENABLED_MODELS, `${label} model`).toContain(row.model);
+        expect(row.bestFor.trim(), `${label} bestFor`).not.toBe("");
+        expect(row.input.trim(), `${label} input`).not.toBe("");
+      }
+    }
+  });
+
+  it("keeps 1.5 out of the title, h1 and description", () => {
+    for (const locale of LOCALES) {
+      const content = seoLandingFor(SLUG, locale);
+      const label = `${SLUG}/${locale}`;
+      const headline = `${content.title} ${content.h1} ${content.description}`;
+
+      expect(headline, `${label} headline`).not.toContain("1.5");
+    }
+  });
+
+  it("never names a disabled model", () => {
+    for (const locale of LOCALES) {
+      const label = `${SLUG}/${locale}`;
+      for (const text of copyStrings(seoLandingFor(SLUG, locale))) {
+        expect(text, `${label} ${text}`).not.toMatch(DISABLED_MODEL_PATTERN);
+      }
+    }
+  });
+
+  it("links out to the 1.5 Pro capabilities and the text/image tools", () => {
+    for (const locale of LOCALES) {
+      const content = seoLandingFor(SLUG, locale);
+      const paths = content.related?.map((link) => link.path) ?? [];
+
+      expect(paths, `${SLUG}/${locale}`).toContain(
+        "/ai-video-generator-with-audio",
+      );
+      expect(paths, `${SLUG}/${locale}`).toContain("/frames-to-video");
+    }
+  });
+});
+
 describe("seo landing structured data", () => {
   it("builds a FAQPage with one question per faq entry", () => {
     const content = seoLandingFor("ai-video-generator", "en");
@@ -489,6 +542,20 @@ describe("sitemap coverage", () => {
       "page.tsx",
     ];
     expect(routeExists(toolSegments), "(tool)/reference-to-video/page.tsx").toBe(
+      true,
+    );
+  });
+
+  it("has a route file for the seedance 1.0 marketing page", () => {
+    const segments = [
+      "src",
+      "app",
+      "[locale]",
+      "(marketing)",
+      "seedance-1-0",
+      "page.tsx",
+    ];
+    expect(routeExists(segments), "(marketing)/seedance-1-0/page.tsx").toBe(
       true,
     );
   });
