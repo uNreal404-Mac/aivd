@@ -196,8 +196,9 @@ describe("du-glass styling", () => {
   it("uses the glass classes in the component", () => {
     const tsx = readSource("src/components/hf/du-home.tsx");
 
-    expect(tsx).toContain("du-glass-btn");
-    expect(tsx).toContain("du-glass");
+    expect(tsx).toContain(`from "@/components/ui/glass"`);
+    expect(tsx).toMatch(/glass\(\s*"card"|GLASS_CARD/);
+    expect(tsx).toMatch(/glass\(\s*"button"|GLASS_BUTTON/);
   });
 });
 
