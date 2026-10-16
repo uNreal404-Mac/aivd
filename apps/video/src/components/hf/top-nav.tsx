@@ -170,14 +170,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:flex"
+                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-signup)] px-3 text-sm font-medium text-[var(--du-signup-text)] shadow-[var(--du-glow)] hover:bg-[var(--du-signup-hover)] lg:flex"
               >
                 {t("signUp")}
               </button>
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="flex h-11 min-w-11 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:hidden"
+                className="flex h-11 min-w-11 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-signup)] px-3 text-sm font-medium text-[var(--du-signup-text)] shadow-[var(--du-glow)] hover:bg-[var(--du-signup-hover)] lg:hidden"
               >
                 {t("signUp")}
               </button>
@@ -216,7 +216,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                   setMenuOpen(false);
                   signInModal.onOpen();
                 }}
-                className="mt-1 mx-3 flex h-11 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
+                className="mt-1 mx-3 flex h-11 items-center justify-center rounded-[10px] bg-[var(--du-signup)] px-3 text-sm font-medium text-[var(--du-signup-text)]"
               >
                 {t("signUp")}
               </button>

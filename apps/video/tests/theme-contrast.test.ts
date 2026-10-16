@@ -74,3 +74,40 @@ describe("Mystic Universe theme contrast", () => {
     expect(contrast("#000000", "#FFFFFF")).toBeCloseTo(21, 1);
   });
 });
+
+describe("COU CTA and Sign up contrast", () => {
+  const ctaText = readHexVar("du-cta-text");
+  const signup = readHexVar("du-signup");
+  const signupHover = readHexVar("du-signup-hover");
+  const signupText = readHexVar("du-signup-text");
+
+  const ctaGradientLine = css.match(/--du-cta-gradient:[^\n]*/)?.[0];
+  const gradientStops = (ctaGradientLine?.match(/#[0-9a-fA-F]{6}/g) ?? []).map((s) =>
+    s.toLowerCase()
+  );
+
+  it("uses the agreed CTA gradient stops", () => {
+    expect(gradientStops).toEqual(["#66fcf1", "#45a29e"]);
+  });
+
+  it("keeps CTA text readable on every gradient stop", () => {
+    expect(ctaText).toBe("#0b0c10");
+    for (const stop of gradientStops) {
+      expect(contrast(ctaText, stop)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("uses the agreed Sign up fill and text colors", () => {
+    expect(signup).toBe("#a9479f");
+    expect(signupText).toBe("#ffffff");
+  });
+
+  it("keeps Sign up text readable on the fill and hover", () => {
+    expect(contrast(signupText, signup)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(signupText, signupHover)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("documents why #F4377F is not used for Sign up", () => {
+    expect(contrast("#ffffff", "#f4377f")).toBeLessThan(4.5);
+  });
+});

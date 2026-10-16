@@ -77,7 +77,7 @@ function ctaClasses(variant: CtaVariant): string {
   const base =
     "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-colors";
   if (variant === "primary") {
-    return `${base} h-12 px-6 bg-[var(--du-accent)] text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)]`;
+    return `${base} h-12 px-6 bg-[image:var(--du-cta-gradient)] text-[var(--du-cta-text)] shadow-[var(--du-glow)] hover:brightness-110`;
   }
   if (variant === "outline") {
     return `${base} ${GLASS_BUTTON} h-12 px-6`;

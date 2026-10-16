@@ -14,8 +14,16 @@
   --du-accent-text: #66FCF1;
   --du-accent-2: #45A29E;
   --du-gradient: linear-gradient(90deg, #66FCF1 0%, #45A29E 100%);
+  /* Primary creation CTA: #66FCF1 -> #45A29E gradient, dark text */
+  --du-cta-gradient: linear-gradient(90deg, #66FCF1 0%, #45A29E 100%);
+  --du-cta-text: #0B0C10;
   --du-glow: 0 0 32px rgba(102, 252, 241, 0.45);
   --du-on-accent: #0B0C10;
+
+  /* Sign up: #A9479F fill, white text; hover is a darker shade (white on #F4377F is below 4.5:1) */
+  --du-signup: #A9479F;
+  --du-signup-hover: #8E3B86;
+  --du-signup-text: #FFFFFF;
   --du-success: #34D399;
   --du-danger: #F87171;
   --du-warning: #f59e0b;
