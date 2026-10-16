@@ -25,21 +25,23 @@ import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 const fontDisplay = Space_Grotesk({
   subsets: ["latin"],
   weight: ["500", "700"],
   variable: "--font-display",
+  display: "swap",
 });
 
 // Font files can be colocated inside of `pages`
 const fontHeading = localFont({
   src: "../styles/fonts/CalSans-SemiBold.woff2",
   variable: "--font-heading",
+  display: "swap",
+  preload: false,
 });
-
-
 
 export function generateStaticParams() {
   return i18n.locales.map((locale) => ({ locale }));
