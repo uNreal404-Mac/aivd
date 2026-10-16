@@ -77,7 +77,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           aria-disabled="true"
           className={cn(
             "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[#898A8B] opacity-60",
-            mobile ? "px-3 py-2" : "hidden px-2 text-[14px] xl:flex"
+            mobile ? "min-h-11 px-3 py-2" : "hidden px-2 text-[14px] xl:flex"
           )}
         >
           {content}
@@ -93,7 +93,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         className={cn(
           "flex shrink-0 items-center gap-1.5 font-medium transition-colors",
           active ? "text-[#D1FE17]" : "text-[#F7F7F8] hover:text-[#D1FE17]",
-          mobile ? "px-3 py-2 text-sm" : "px-2 text-[14px]"
+          mobile ? "min-h-11 px-3 py-2 text-sm" : "px-2 text-[14px]"
         )}
       >
         {content}
@@ -106,7 +106,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       <div className="flex h-full items-center justify-between px-4">
         {/* Left: logo + desktop nav */}
         <div className="flex items-center gap-4">
-          <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
+          <Link
+            href={`/${lang}`}
+            className="flex min-h-11 min-w-11 shrink-0 items-center gap-2"
+          >
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[#F7F7F8]">
@@ -124,7 +127,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           <Link
             href={`/${lang}/pricing`}
             aria-label="Pricing"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[#F7F7F8] hover:bg-white/10 lg:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[#F7F7F8] hover:bg-white/10 lg:hidden"
           >
             <Gem className="h-4 w-4" />
           </Link>
@@ -139,7 +142,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {user ? (
             <Link
               href={`/${lang}/my-creations`}
-              className="flex h-9 shrink-0 items-center rounded-[10px] px-1"
+              className="flex h-11 min-w-11 shrink-0 items-center rounded-[10px] px-1"
               aria-label="My creations"
             >
               <UserAvatar
@@ -166,7 +169,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[#D1FE17] px-3 text-sm font-medium text-[#1A1A1A] hover:bg-[#c2ec12] lg:hidden"
+                className="flex h-11 min-w-11 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[#D1FE17] px-3 text-sm font-medium text-[#1A1A1A] hover:bg-[#c2ec12] lg:hidden"
               >
                 Sign up
               </button>
@@ -178,7 +181,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[#F7F7F8] lg:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white/5 text-[#F7F7F8] lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -193,7 +196,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link
               href={`/${lang}/pricing`}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#F7F7F8] hover:text-[#D1FE17]"
+              className="flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#F7F7F8] hover:text-[#D1FE17]"
             >
               <Gem className="h-4 w-4" />
               Pricing
@@ -205,7 +208,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                   setMenuOpen(false);
                   signInModal.onOpen();
                 }}
-                className="mt-1 mx-3 flex h-9 items-center justify-center rounded-[10px] bg-[#D1FE17] px-3 text-sm font-medium text-[#1A1A1A]"
+                className="mt-1 mx-3 flex h-11 items-center justify-center rounded-[10px] bg-[#D1FE17] px-3 text-sm font-medium text-[#1A1A1A]"
               >
                 Sign up
               </button>
