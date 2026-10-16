@@ -275,7 +275,7 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         {
           heading: "七、Cookie 与分析",
           paragraphs: [
-            "我们使用为保持登录状态和运行服务所必需的 Cookie。我们使用注重隐私的分析工具，它们不会建立广告画像，也不会出售你的数据。",
+            "我们使用为保持登录状态和运行服务所必需的 Cookie。我们可能使用基础的使用情况统计来了解和改进服务。我们不会出售您的个人数据。",
           ],
         },
         {
@@ -353,7 +353,7 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       {
         heading: "7. Cookies and analytics",
         paragraphs: [
-          "We use the cookies that are needed to keep you signed in and to run the service. We use privacy-friendly analytics that do not build advertising profiles and do not sell your data.",
+          "We use the cookies that are needed to keep you signed in and to run the service. We may use basic usage analytics to understand how the service is used and to improve it. We do not sell your personal data.",
         ],
       },
       {
