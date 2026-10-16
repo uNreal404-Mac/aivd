@@ -21,7 +21,8 @@ name = "feishu-bot"
 main = "src/worker.mjs"
 compatibility_date = "2026-10-15"
 workers_dev = true
+keep_vars = true
 
 [[kv_namespaces]]
 binding = "BOT_KV"
-id = "00000000000000000000000000000000"
+id = "8f0f016240cb488e979429918bf8795b"
