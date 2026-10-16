@@ -260,7 +260,7 @@ export const VIDEO_MODEL_PRICING: Record<string, VideoModelPricing> = {
     enabled: true,
   },
 
-  /** Seedance 1.0 Pro Fast - 快速生成（APImart） */
+  /** Seedance 1.0 Pro Fast - 低成本草稿（APImart） */
   "seedance-1.0-pro-fast": {
     baseCredits: 0,
     perSecond: 3, // 按秒计费

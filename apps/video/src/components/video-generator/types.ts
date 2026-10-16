@@ -156,9 +156,9 @@ export interface VideoModel {
    * Audio constraints for models that support audio.
    */
   audioConstraints?: {
-    /** Minimum duration in seconds */
+    /** Minimum duration (seconds) */
     minDuration?: number;
-    /** Maximum duration in seconds */
+    /** Maximum duration (seconds) */
     maxDuration?: number;
     /** Maximum file size in MB */
     maxSizeMB?: number;
@@ -192,9 +192,9 @@ export interface VideoModel {
     minVideos?: number;
     /** Maximum number of reference videos */
     maxVideos?: number;
-    /** Minimum duration in seconds */
+    /** Minimum duration (seconds) */
     minDuration?: number;
-    /** Maximum duration in seconds */
+    /** Maximum duration (seconds) */
     maxDuration?: number;
     /** Maximum file size in MB */
     maxSizeMB?: number;

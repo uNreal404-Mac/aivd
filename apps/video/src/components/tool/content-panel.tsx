@@ -30,7 +30,6 @@ const exampleVideos = [
 const features = [
   "Multiple AI models to choose from",
   "High quality 1080p output",
-  "Fast generation (2-5 minutes)",
   "Various aspect ratios supported",
 ];
 
