@@ -14,7 +14,11 @@ type AuthHandler = (request: Request) => Promise<Response>;
 
 let authHandler: AuthHandler;
 
-const oneTimeProduct = CREDIT_PACKAGES.find((p) => p.enabled);
+const foundOneTimeProduct = CREDIT_PACKAGES.find((p) => p.enabled);
+if (!foundOneTimeProduct) {
+  throw new Error("No one-time credit package configured");
+}
+const oneTimeProduct = foundOneTimeProduct;
 if (!oneTimeProduct) {
   throw new Error("No enabled credit package found in CREDIT_PACKAGES");
 }

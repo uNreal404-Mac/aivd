@@ -17,7 +17,7 @@ import {
 import { creditPackages, db, users } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "./env.mjs";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const toLogString = (value: unknown) => {
   if (value === null || value === undefined) return String(value);
@@ -170,17 +170,6 @@ if (env.CREEM_API_KEY) {
           ? `creem_sub_${subscriptionId}`
           : `creem_${productConfig.type}_${userId}_${Date.now()}`;
 
-        const [existing] = await db
-          .select({ id: creditPackages.id })
-          .from(creditPackages)
-          .where(eq(creditPackages.orderNo, orderNo))
-          .limit(1);
-
-        if (existing) {
-          console.log(`[Creem] Duplicate webhook ignored: ${orderNo}`);
-          return;
-        }
-
         const transType =
           productConfig.type === "subscription"
             ? CreditTransType.SUBSCRIPTION
@@ -190,13 +179,30 @@ if (env.CREEM_API_KEY) {
 
         console.log(`[Creem] Processing subscription: ${productName}, credits: ${credits}, userId: ${userId}`);
 
-        await creditService.recharge({
-          userId,
-          credits,
-          orderNo,
-          transType,
-          expiryDays: getProductExpiryDays(productConfig),
-          remark: `Creem payment: ${productName}`,
+        await db.transaction(async (trx) => {
+          await trx.execute(
+            sql`select pg_advisory_xact_lock(hashtext(${orderNo}))`
+          );
+
+          const [existing] = await trx
+            .select({ id: creditPackages.id })
+            .from(creditPackages)
+            .where(eq(creditPackages.orderNo, orderNo))
+            .limit(1);
+
+          if (existing) {
+            console.log(`[Creem] Duplicate webhook ignored: ${orderNo}`);
+            return;
+          }
+
+          await creditService.recharge({
+            userId,
+            credits,
+            orderNo,
+            transType,
+            expiryDays: getProductExpiryDays(productConfig),
+            remark: `Creem payment: ${productName}`,
+          });
         });
 
         console.log(`[Creem] Subscription processed: ${orderNo}`);
@@ -241,29 +247,34 @@ if (env.CREEM_API_KEY) {
           ? `creem_${orderId}`
           : `creem_onetime_${referenceId}_${Date.now()}`;
 
-        // 防止重复处理
-        const [existing] = await db
-          .select({ id: creditPackages.id })
-          .from(creditPackages)
-          .where(eq(creditPackages.orderNo, orderNo))
-          .limit(1);
-
-        if (existing) {
-          console.log(`[Creem] Duplicate checkout ignored: ${orderNo}`);
-          return;
-        }
-
         const productName = product?.name ?? productConfig.id;
 
         console.log(`[Creem] Processing one-time purchase: ${productName}, credits: ${credits}, userId: ${referenceId}`);
 
-        await creditService.recharge({
-          userId: referenceId,
-          credits,
-          orderNo,
-          transType: CreditTransType.ORDER_PAY,
-          expiryDays: getProductExpiryDays(productConfig),
-          remark: `Creem payment: ${productName}`,
+        await db.transaction(async (trx) => {
+          await trx.execute(
+            sql`select pg_advisory_xact_lock(hashtext(${orderNo}))`
+          );
+
+          const [existing] = await trx
+            .select({ id: creditPackages.id })
+            .from(creditPackages)
+            .where(eq(creditPackages.orderNo, orderNo))
+            .limit(1);
+
+          if (existing) {
+            console.log(`[Creem] Duplicate checkout ignored: ${orderNo}`);
+            return;
+          }
+
+          await creditService.recharge({
+            userId: referenceId,
+            credits,
+            orderNo,
+            transType: CreditTransType.ORDER_PAY,
+            expiryDays: getProductExpiryDays(productConfig),
+            remark: `Creem payment: ${productName}`,
+          });
         });
 
         console.log(`[Creem] One-time purchase completed: ${orderNo}`);
