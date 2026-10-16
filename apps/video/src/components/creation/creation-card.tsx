@@ -186,7 +186,7 @@ export function CreationCard({
                   e.stopPropagation();
                   onClick(video.uuid);
                 }}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 opacity-0 transition-opacity group-hover:opacity-100"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
               >
                 <Play className="ml-0.5 h-4 w-4 text-white fill-white" />
               </button>
@@ -229,7 +229,7 @@ export function CreationCard({
                   e.stopPropagation();
                   handleDownload();
                 }}
-                className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
               >
                 <Download className="h-4 w-4" />
               </Button>
@@ -239,7 +239,7 @@ export function CreationCard({
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
