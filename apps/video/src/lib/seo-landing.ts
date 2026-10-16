@@ -143,44 +143,34 @@ const MODEL_ROWS: Record<SeoLocale, readonly SeoLandingCompareRow[]> = {
   en: [
     {
       model: "Seedance 1.5 Pro",
-      bestFor: "Lively motion and rich scene detail",
+      bestFor: "Lively motion, rich scene detail and audio generation",
       input: MODEL_INPUT,
     },
     {
-      model: "Wan 2.6",
-      bestFor: "Expressive subjects and steady camera work",
+      model: "Seedance 1.0 Pro Fast",
+      bestFor: "Quicker drafts at a lower cost per second",
       input: MODEL_INPUT,
     },
     {
-      model: "Veo 3.1",
-      bestFor: "Cinematic realism and natural camera movement",
-      input: MODEL_INPUT,
-    },
-    {
-      model: "Sora 2",
-      bestFor: "Complex scenes and long descriptive prompts",
+      model: "Seedance 1.0 Pro Quality",
+      bestFor: "The most detailed Seedance 1.0 output",
       input: MODEL_INPUT,
     },
   ],
   zh: [
     {
       model: "Seedance 1.5 Pro",
-      bestFor: "运动生动，场景细节丰富",
+      bestFor: "运动生动、场景细节丰富，支持生成音频",
       input: MODEL_INPUT,
     },
     {
-      model: "Wan 2.6",
-      bestFor: "主体表现自然，镜头稳定",
+      model: "Seedance 1.0 Pro Fast",
+      bestFor: "适合快速出草稿，每秒成本更低",
       input: MODEL_INPUT,
     },
     {
-      model: "Veo 3.1",
-      bestFor: "电影感写实，运镜自然",
-      input: MODEL_INPUT,
-    },
-    {
-      model: "Sora 2",
-      bestFor: "适合复杂场景与长描述",
+      model: "Seedance 1.0 Pro Quality",
+      bestFor: "Seedance 1.0 中细节最丰富的输出",
       input: MODEL_INPUT,
     },
   ],
@@ -234,7 +224,7 @@ const EN_AI_VIDEO_GENERATOR: SeoLandingContent = {
     },
     {
       q: "Which model should I start with?",
-      a: "For lively motion, try Seedance 1.5 Pro. For cinematic realism, Veo 3.1. Wan 2.6 handles expressive subjects, and Sora 2 suits complex scenes.",
+      a: "For lively motion or clips with sound, try Seedance 1.5 Pro. For quick drafts, Seedance 1.0 Pro Fast. For the most detail from Seedance 1.0, Seedance 1.0 Pro Quality.",
     },
     {
       q: "Do I need editing experience?",
@@ -274,7 +264,7 @@ const EN_TEXT_TO_VIDEO: SeoLandingContent = {
     },
     {
       title: "Match it to a model",
-      body: "Choose the model whose strengths line up with the scene — motion, realism or descriptive detail.",
+      body: "Choose the model whose strengths line up with the scene — motion, detail or speed.",
     },
     {
       title: "Generate and compare",
@@ -408,7 +398,7 @@ const ZH_AI_VIDEO_GENERATOR: SeoLandingContent = {
     },
     {
       q: "应该先用哪个模型？",
-      a: "想要生动运动可以试试 Seedance 1.5 Pro；追求电影感写实可以选 Veo 3.1；Wan 2.6 擅长自然的主体表现，Sora 2 更适合复杂场景。",
+      a: "想要生动的运动或带声音的片段，可以试试 Seedance 1.5 Pro；快速出草稿选 Seedance 1.0 Pro Fast；想要 Seedance 1.0 中最丰富的细节，选 Seedance 1.0 Pro Quality。",
     },
     {
       q: "需要剪辑经验吗？",
@@ -447,7 +437,7 @@ const ZH_TEXT_TO_VIDEO: SeoLandingContent = {
     },
     {
       title: "匹配合适的模型",
-      body: "根据画面重点选择模型：运动感、写实度或对长描述的理解能力。",
+      body: "根据画面重点选择模型：运动感、细节或生成速度。",
     },
     {
       title: "生成并对比",
