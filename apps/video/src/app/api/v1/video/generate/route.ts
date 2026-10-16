@@ -4,8 +4,19 @@ import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
+import { IMAGE_REF_PATTERN } from "@/lib/storage";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
+
+const imageRefSchema = z
+  .string()
+  .min(1)
+  // signed URLs carry long X-Amz-* query strings
+  .max(2048)
+  .refine(
+    (value) => /^https?:\/\//.test(value) || IMAGE_REF_PATTERN.test(value),
+    "Invalid image reference",
+  );
 
 const generateSchema = z.object({
   prompt: z.string().min(1).max(5000),
@@ -13,8 +24,8 @@ const generateSchema = z.object({
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),
   quality: z.string().optional(),
-  imageUrl: z.string().min(1).max(2048).optional(),
-  imageUrls: z.array(z.string().min(1).max(2048)).optional(),
+  imageUrl: imageRefSchema.optional(),
+  imageUrls: z.array(imageRefSchema).optional(),
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
@@ -23,7 +34,7 @@ const generateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.VIDEO_GENERATION_ENABLED === "false") {
+    if (process.env.VIDEO_GENERATION_ENABLED !== "true") {
       return apiError(
         "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
         503,

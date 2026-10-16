@@ -3,7 +3,11 @@ import { nanoid } from "nanoid";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { handleApiError, apiSuccess } from "@/lib/api/response";
-import { getStorage } from "@/lib/storage";
+import {
+  SIGNED_URL_DEFAULT_TTL,
+  getStorage,
+  isStorageConfigured,
+} from "@/lib/storage";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -17,6 +21,11 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+
+    if (!isStorageConfigured()) {
+      throw new ApiError("Storage not configured", 503);
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 
@@ -40,13 +49,17 @@ export async function POST(request: Request) {
 
     const storage = getStorage();
     const buffer = Buffer.from(await file.arrayBuffer());
-    const uploaded = await storage.uploadFile({
+    await storage.uploadFile({
       key,
       body: buffer,
       contentType: file.type,
     });
 
-    return apiSuccess({ publicUrl: uploaded.url, key });
+    return apiSuccess({
+      key,
+      signedUrl: storage.getSignedUrl(key, SIGNED_URL_DEFAULT_TTL),
+      expiresIn: SIGNED_URL_DEFAULT_TTL,
+    });
   } catch (error) {
     return handleApiError(error);
   }
