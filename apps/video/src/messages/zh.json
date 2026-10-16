@@ -34,7 +34,7 @@
     "startCreating": "免费开始创作",
     "viewExamples": "查看示例",
     "features": {
-      "fast": "闪电般快速",
+      "fast": "流程简单",
       "easy": "简单易用",
       "ai": "AI 驱动"
     },
@@ -120,7 +120,7 @@
       "stat": "AI 模型"
     },
     "fast": {
-      "title": "闪电般快速",
+      "title": "流程简单",
       "description": "通过提示词或图片生成视频"
     },
     "secure": {
@@ -264,7 +264,6 @@
     },
     "features": {
       "hd_videos": "高清视频生成",
-      "fast_generation": "快速生成",
       "commercial_use": "商业使用授权",
       "custom_models": "自定义 AI 模型"
     }
@@ -326,7 +325,7 @@
   "Sidebar": {
     "title": "导航菜单",
     "upgradeTitle": "升级专业版",
-    "upgradeSubtitle": "解锁更快生成与更多额度"
+    "upgradeSubtitle": "解锁更多额度与功能"
   },
   "UpgradeModal": {
     "default_title": "升级您的方案",

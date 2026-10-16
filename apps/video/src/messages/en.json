@@ -34,7 +34,7 @@
     "startCreating": "Start Creating Free",
     "viewExamples": "View Examples",
     "features": {
-      "fast": "Lightning Fast",
+      "fast": "Simple Workflow",
       "easy": "Easy to Use",
       "ai": "AI-Powered"
     },
@@ -120,7 +120,7 @@
       "stat": "AI models"
     },
     "fast": {
-      "title": "Lightning Fast",
+      "title": "Simple Workflow",
       "description": "Generate videos from a prompt or an image"
     },
     "secure": {
@@ -264,7 +264,6 @@
     },
     "features": {
       "hd_videos": "HD video generation",
-      "fast_generation": "Fast generation speed",
       "commercial_use": "Commercial use license",
       "custom_models": "Custom AI models"
     }
@@ -326,7 +325,7 @@
   "Sidebar": {
     "title": "Navigation",
     "upgradeTitle": "Upgrade to Pro",
-    "upgradeSubtitle": "Unlock faster generation and more credits"
+    "upgradeSubtitle": "Unlock more credits and features"
   },
   "UpgradeModal": {
     "default_title": "Upgrade Your Plan",
