@@ -12,45 +12,45 @@
 :root,
 :root.dark,
 .dark {
-  --background: #0F1113;
-  --foreground: #F7F7F8;
-  --card: #131517;
-  --card-foreground: #F7F7F8;
-  --popover: #18191C;
-  --popover-foreground: #F7F7F8;
-  --primary: #D1FE17;
-  --primary-foreground: #1A1A1A;
-  --secondary: #1C1E20;
-  --secondary-foreground: #F7F7F8;
-  --muted: #1C1E21;
-  --muted-foreground: #898A8B;
-  --accent: #23262A;
-  --accent-foreground: #F7F7F8;
-  --destructive: #F0544A;
-  --destructive-foreground: #F7F7F8;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #D1FE17;
-  --chart-1: #D1FE17;
-  --chart-2: #A8A8A8;
-  --chart-3: #898A8B;
-  --chart-4: #23262A;
-  --chart-5: #1C1E21;
-  --sidebar: #131517;
-  --sidebar-foreground: #F7F7F8;
-  --sidebar-primary: #D1FE17;
-  --sidebar-primary-foreground: #1A1A1A;
-  --sidebar-accent: #23262A;
-  --sidebar-accent-foreground: #F7F7F8;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #D1FE17;
+  --background: var(--du-bg);
+  --foreground: var(--du-text);
+  --card: var(--du-surface);
+  --card-foreground: var(--du-text);
+  --popover: var(--du-surface-2);
+  --popover-foreground: var(--du-text);
+  --primary: var(--du-accent);
+  --primary-foreground: var(--du-on-accent);
+  --secondary: var(--du-surface-2);
+  --secondary-foreground: var(--du-text);
+  --muted: var(--du-surface-2);
+  --muted-foreground: var(--du-text-muted);
+  --accent: var(--du-surface-2);
+  --accent-foreground: var(--du-text);
+  --destructive: var(--du-accent-2);
+  --destructive-foreground: var(--du-text);
+  --border: var(--du-border);
+  --input: var(--du-border-strong);
+  --ring: var(--du-accent);
+  --chart-1: var(--du-accent);
+  --chart-2: var(--du-accent-2);
+  --chart-3: var(--du-text-muted);
+  --chart-4: var(--du-surface-2);
+  --chart-5: var(--du-surface);
+  --sidebar: var(--du-surface);
+  --sidebar-foreground: var(--du-text);
+  --sidebar-primary: var(--du-accent);
+  --sidebar-primary-foreground: var(--du-on-accent);
+  --sidebar-accent: var(--du-surface-2);
+  --sidebar-accent-foreground: var(--du-text);
+  --sidebar-border: var(--du-border);
+  --sidebar-ring: var(--du-accent);
   --radius: 0.75rem;
 }
 
 html,
 body {
-  background-color: #0F1113;
-  color: #F7F7F8;
+  background-color: var(--du-bg);
+  color: var(--du-text);
 }
 
 body {
@@ -65,7 +65,7 @@ body {
 }
 
 ::selection {
-  background: rgba(209, 254, 23, 0.24);
+  background: var(--du-accent-soft);
 }
 
 .hf-scroll-x {
