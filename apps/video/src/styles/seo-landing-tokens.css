@@ -64,9 +64,6 @@
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  background: var(--seo-surface);
-  border: 1px solid var(--seo-border);
-  border-radius: var(--seo-radius-card);
 }
 
 .seo-entry-label {
@@ -150,9 +147,6 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 1.25rem;
-  background: var(--seo-surface);
-  border: 1px solid var(--seo-border);
-  border-radius: var(--seo-radius-card);
 }
 
 .seo-step-index {
@@ -214,13 +208,10 @@
 
 .seo-faq-item {
   padding: 0.875rem 1rem;
-  background: var(--seo-surface);
-  border: 1px solid var(--seo-border);
-  border-radius: var(--seo-radius-card);
 }
 
 .seo-faq-item[open] {
-  border-color: var(--seo-border-strong);
+  border-color: var(--du-glass-border-hover);
 }
 
 .seo-faq-question {
