@@ -77,9 +77,9 @@ describe("buildCheckoutSessionParams", () => {
       productId: "pro-monthly",
     });
     expect(params.success_url).toBe(
-      "https://example.com/credits?payment=success"
+      "https://example.com/checkout/success?session_id={CHECKOUT_SESSION_ID}"
     );
-    expect(params.cancel_url).toBe("https://example.com/pricing");
+    expect(params.cancel_url).toBe("https://example.com/checkout/cancel");
   });
 
   it("builds one-time payment mode params without recurring", () => {

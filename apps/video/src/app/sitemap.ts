@@ -32,6 +32,7 @@ const SKIP_SEGMENTS = [
   "dashboard",
   "admin",
   "auth",
+  "checkout",
   "login",
   "register",
   "settings",

@@ -1,0 +1,12 @@
+:root {
+  --co-bg: #07060F;
+  --co-surface: #13112A;
+  --co-border: rgba(139, 92, 246, 0.18);
+  --co-text: #F5F3FF;
+  --co-muted: #A5A1C2;
+  --co-accent: #8B5CF6;
+  --co-accent-hover: #7C3AED;
+  --co-on-accent: #FFFFFF;
+  --co-success: #34D399;
+  --co-radius: 20px;
+}
