@@ -161,10 +161,10 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
                     setEmail(e.target.value);
                     setEmailError("");
                   }}
-                  className={cn(emailError && "border-red-500")}
+                  className={cn(emailError && "border-[var(--du-danger)]")}
                 />
                 {emailError && (
-                  <p className="px-1 text-xs text-red-600">{emailError}</p>
+                  <p className="px-1 text-xs text-[var(--du-danger)]">{emailError}</p>
                 )}
               </div>
               <Button

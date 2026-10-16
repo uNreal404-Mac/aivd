@@ -26,7 +26,7 @@ const showcaseVideos = [
     title: "Cinematic Nature",
     description: "A stunning landscape video",
     thumbnail: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-    gradient: "from-blue-500 to-cyan-500",
+    gradient: "from-[var(--du-accent)] to-[var(--du-accent-2)]",
     tag: "Text to Video",
   },
   {
@@ -34,7 +34,7 @@ const showcaseVideos = [
     title: "Product Animation",
     description: "Smooth product showcase",
     thumbnail: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80",
-    gradient: "from-purple-500 to-pink-500",
+    gradient: "from-[var(--du-accent)] to-[var(--du-accent-2)]",
     tag: "Image to Video",
   },
   {
@@ -42,7 +42,7 @@ const showcaseVideos = [
     title: "Abstract Art",
     description: "Creative AI-generated visuals",
     thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80",
-    gradient: "from-orange-500 to-red-500",
+    gradient: "from-[var(--du-warning)] to-[var(--du-danger)]",
     tag: "AI Creative",
   },
   {
@@ -50,7 +50,7 @@ const showcaseVideos = [
     title: "Urban Scene",
     description: "City life in motion",
     thumbnail: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&q=80",
-    gradient: "from-green-500 to-emerald-500",
+    gradient: "from-[var(--du-success)] to-[var(--du-success)]",
     tag: "Text to Video",
   },
   {
@@ -58,7 +58,7 @@ const showcaseVideos = [
     title: "Character Animation",
     description: "Bringing characters to life",
     thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80",
-    gradient: "from-indigo-500 to-purple-500",
+    gradient: "from-[var(--du-accent)] to-[var(--du-accent-2)]",
     tag: "Character",
   },
   {
@@ -66,7 +66,7 @@ const showcaseVideos = [
     title: "Space Journey",
     description: "Explore the cosmos",
     thumbnail: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&q=80",
-    gradient: "from-teal-500 to-cyan-500",
+    gradient: "from-[var(--du-accent-2)] to-[var(--du-accent)]",
     tag: "Text to Video",
   },
 ];
@@ -91,10 +91,10 @@ export function ShowcaseSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-6"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[var(--du-accent)]/10 to-[var(--du-accent-2)]/10 border border-[var(--du-accent)]/20 mb-6"
             >
-              <Sparkles className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+              <Sparkles className="h-4 w-4 text-[var(--du-accent)]" />
+              <span className="text-sm font-medium text-[var(--du-accent-text)] dark:text-[var(--du-accent-text)]">
                 {t("badge")}
               </span>
             </motion.div>
@@ -108,7 +108,7 @@ export function ShowcaseSection() {
               className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
             >
               {t("title")}
-              <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mt-2">
+              <span className="block bg-gradient-to-r from-[var(--du-accent)] via-[var(--du-accent-2)] to-[var(--du-accent)] bg-clip-text text-transparent mt-2">
                 {t("subtitle")}
               </span>
             </motion.h2>
@@ -146,8 +146,8 @@ export function ShowcaseSection() {
                       duration={15}
                       anchor={90}
                       borderWidth={2}
-                      colorFrom="#3B82F6"
-                      colorTo="#A855F7"
+                      colorFrom="var(--du-accent)"
+                      colorTo="var(--du-accent-2)"
                     />
                   )}
 
@@ -160,7 +160,7 @@ export function ShowcaseSection() {
                     />
 
                     {/* 悬停时的遮罩 */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300" />
+                    <div className="absolute inset-0 bg-[var(--du-glass-overlay-scrim)]/0 group-hover:bg-[var(--du-glass-overlay-scrim)]/40 transition-colors duration-300" />
 
                     {/* 播放按钮 */}
                     <motion.div
@@ -171,13 +171,13 @@ export function ShowcaseSection() {
                     >
                       <div className="relative">
                         <motion.div
-                          className="w-16 h-16 rounded-full bg-white/90 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center shadow-xl group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-300"
+                          className="w-16 h-16 rounded-full bg-[var(--du-glass-bg-strong)] backdrop-blur-sm flex items-center justify-center shadow-xl group-hover:bg-gradient-to-br group-hover:from-[var(--du-accent)] group-hover:to-[var(--du-accent-2)] transition-all duration-300"
                           whileHover={{ scale: 1.1 }}
                         >
-                          <Play className="h-6 w-6 text-foreground group-hover:text-white transition-colors ml-1" />
+                          <Play className="h-6 w-6 text-foreground group-hover:text-[var(--du-on-accent)] transition-colors ml-1" />
                         </motion.div>
                         {/* 波纹动画 */}
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 animate-ping opacity-0 group-hover:opacity-30" />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--du-accent)] to-[var(--du-accent-2)] animate-ping opacity-0 group-hover:opacity-30" />
                       </div>
                     </motion.div>
 
@@ -187,15 +187,15 @@ export function ShowcaseSection() {
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: 0.3 }}
-                      className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/20"
+                      className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[var(--du-glass-bg-strong)] backdrop-blur-sm border border-[var(--du-glass-border)]"
                     >
-                      <span className="text-xs font-medium text-white">{video.tag}</span>
+                      <span className="text-xs font-medium text-[var(--du-text)]">{video.tag}</span>
                     </motion.div>
                   </div>
 
                   {/* 视频信息 */}
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-1 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-blue-600 group-hover:to-purple-600 transition-all">
+                    <h3 className="text-lg font-semibold mb-1 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-[var(--du-accent)] group-hover:to-[var(--du-accent-2)] transition-all">
                       {video.title}
                     </h3>
                     <p className="text-sm text-muted-foreground">{video.description}</p>
@@ -217,12 +217,12 @@ export function ShowcaseSection() {
             <p className="text-muted-foreground mb-6">{t("ctaText")}</p>
             <LocaleLink href="/#generator">
               <ShimmerButton
-                shimmerColor="#ffffff"
+                shimmerColor="var(--du-on-accent)"
                 shimmerSize="0.05em"
                 shimmerDuration="3s"
                 borderRadius="100px"
-                background="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
-                className="px-8 py-3 text-base font-medium shadow-lg shadow-blue-500/25"
+                background="var(--du-gradient)"
+                className="px-8 py-3 text-base font-medium shadow-lg shadow-[var(--du-glow)]"
               >
                 {t("ctaButton")}
                 <ArrowRight className="ml-2 h-5 w-5" />

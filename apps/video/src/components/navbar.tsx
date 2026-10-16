@@ -59,7 +59,7 @@ export function NavBar({
                   className={cn(
                     "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
                     pathname.endsWith(item.href)
-                      ? "text-blue-500 font-semibold"
+                      ? "text-[var(--du-accent)] font-semibold"
                       : "",
                     item.disabled && "cursor-not-allowed opacity-80",
                   )}

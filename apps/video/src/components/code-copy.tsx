@@ -18,18 +18,18 @@ export function CodeCopy() {
   }
 
   return (
-    <div className="rounded-full h-12 px-3 flex items-center justify-between max-w-xl bg-neutral-200 dark:bg-neutral-700/40">
-      <div className="flex items-center space-x-2 font-mono text-neutral-700 dark:text-neutral-300">
+    <div className="rounded-full h-12 px-3 flex items-center justify-between max-w-xl bg-[var(--du-surface-2)] dark:bg-[var(--du-surface)]/40">
+      <div className="flex items-center space-x-2 font-mono text-[var(--du-text-dim)] dark:text-[var(--du-text-muted)]">
         <span>$</span>
         <span>{command}</span>
       </div>
       <button
         type="button"
         onClick={copyToClipboard}
-        className="p-1.5 hover:bg-gray-200 dark:hover:bg-neutral-800 rounded-md transition-colors ml-2"
+        className="p-1.5 hover:bg-[var(--du-surface-2)] dark:hover:bg-[var(--du-surface)] rounded-md transition-colors ml-2"
         aria-label="Copy to clipboard"
       >
-        {copied ? <Icons.Check className="w-4 h-4 text-neutral-700 dark:text-neutral-300" /> : <Icons.Copy className={`w-4 h-4 text-neutral-700 dark:text-neutral-300`} />}
+        {copied ? <Icons.Check className="w-4 h-4 text-[var(--du-text-dim)] dark:text-[var(--du-text-muted)]" /> : <Icons.Copy className={`w-4 h-4 text-[var(--du-text-dim)] dark:text-[var(--du-text-muted)]`} />}
       </button>
     </div>
   )

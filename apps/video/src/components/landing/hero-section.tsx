@@ -367,7 +367,7 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
             {/* 特性标签 */}
             <BlurFade delay={0.3} inView className="flex flex-wrap justify-center gap-3">
               {[
-                { icon: Zap, label: t("features.fast"), color: "text-yellow-500" },
+                { icon: Zap, label: t("features.fast"), color: "text-[var(--du-warning)]" },
                 { icon: Play, label: t("features.easy"), color: "text-primary" },
                 { icon: Sparkles, label: t("features.ai"), color: "text-primary" },
               ].map((feature, idx) => {
@@ -378,7 +378,7 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4 + idx * 0.1 }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/60 dark:bg-white/10 backdrop-blur-sm border border-border/50"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/60 dark:bg-[var(--du-glass-bg)] backdrop-blur-sm border border-border/50"
                   >
                     <Icon className={cn("h-4 w-4", feature.color)} />
                     <span className="text-sm font-medium">{feature.label}</span>
@@ -396,7 +396,7 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
             className="w-full max-w-4xl mx-auto relative"
           >
             {/* 装饰性光晕效果 */}
-            <div className="absolute -inset-4 rounded-3xl blur-3xl -z-10 opacity-30 dark:opacity-10" style={{ backgroundImage: "linear-gradient(to right, oklch(from var(--primary) l c h), oklch(from var(--primary) l c calc(h + 30)))" }} />
+            <div className="absolute -inset-4 rounded-3xl blur-3xl -z-10 opacity-30 dark:opacity-10 bg-gradient-to-r from-[var(--du-accent)] to-[var(--du-accent-2)]" />
 
             {/* 视频生成器 - 不需要外层容器，直接使用组件 */}
             {generatorConfig.videoModels.length > 0 ? (

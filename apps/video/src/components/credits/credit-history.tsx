@@ -20,27 +20,27 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   NEW_USER: {
     icon: ShoppingBag,
     label: "New User Gift",
-    color: "text-emerald-500",
+    color: "text-[var(--du-success)]",
   },
   VIDEO_CONSUME: { // Was video_generate
     icon: Video,
     label: "Video Gen",
-    color: "text-rose-500",
+    color: "text-[var(--du-danger)]",
   },
   ORDER_PAY: {
     icon: ShoppingBag,
     label: "Purchase",
-    color: "text-emerald-500",
+    color: "text-[var(--du-success)]",
   },
   SUBSCRIPTION: {
     icon: ShoppingBag,
     label: "Subscription",
-    color: "text-emerald-500",
+    color: "text-[var(--du-success)]",
   },
   REFUND: { // Was video_refund
     icon: RotateCcw,
     label: "Refund",
-    color: "text-emerald-500",
+    color: "text-[var(--du-success)]",
   },
   EXPIRED: {
     icon: ShoppingBag,
@@ -123,7 +123,7 @@ export function CreditHistory({ transactions, hasMore, onLoadMore }: CreditHisto
                     <td className="px-4 py-3 text-sm text-right">
                       <span className={cn(
                         "font-medium",
-                        isPositive ? "text-emerald-500" : "text-rose-500"
+                        isPositive ? "text-[var(--du-success)]" : "text-[var(--du-danger)]"
                       )}>
                         {isPositive ? "+" : ""}{transaction.credits}
                       </span>

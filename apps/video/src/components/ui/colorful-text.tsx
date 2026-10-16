@@ -5,16 +5,16 @@ import { motion } from "framer-motion";
 
 export function ColourfulText({ text }: { text: string }) {
   const colors = [
-    "rgb(131, 179, 32)",
-    "rgb(47, 195, 106)",
-    "rgb(42, 169, 210)",
-    "rgb(4, 112, 202)",
-    "rgb(107, 10, 255)",
-    "rgb(183, 0, 218)",
-    "rgb(218, 0, 171)",
-    "rgb(230, 64, 92)",
-    "rgb(232, 98, 63)",
-    "rgb(249, 129, 47)",
+    "var(--du-accent)",
+    "var(--du-success)",
+    "var(--du-accent)",
+    "var(--du-accent)",
+    "var(--du-accent-2)",
+    "var(--du-accent-2)",
+    "var(--du-accent-2)",
+    "var(--du-danger)",
+    "var(--du-warning)",
+    "var(--du-warning)",
   ];
 
   const [currentColors, setCurrentColors] = React.useState(colors);

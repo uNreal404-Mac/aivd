@@ -138,7 +138,7 @@ export function HeaderSimple({
           {/* Credits Display */}
           {user && balance && (
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted border border-border">
-              <Gem className="h-4 w-4 text-amber-500" />
+              <Gem className="h-4 w-4 text-[var(--du-warning)]" />
               <span className="text-sm font-medium">
                 {balance.availableCredits}
               </span>

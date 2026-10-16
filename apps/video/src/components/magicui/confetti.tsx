@@ -12,6 +12,9 @@ import { cn } from "@/components/ui";
 // Type for the confetti function
 type ConfettiInstance = CreateTypes | null;
 
+const duColor = (token: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+
 interface ConfettiProps extends React.ComponentPropsWithoutRef<"canvas"> {
   options?: Options;
   globalOptions?: GlobalOptions;
@@ -114,7 +117,12 @@ const fireConfetti = (opts?: Options) => {
 
 const fireSideConfetti = () => {
   const end = Date.now() + 3 * 1000;
-  const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
+  const colors = [
+    duColor("--du-accent"),
+    duColor("--du-accent-2"),
+    duColor("--du-warning"),
+    duColor("--du-warning"),
+  ];
 
   const frame = () => {
     if (Date.now() > end) return;
@@ -149,7 +157,13 @@ const fireStarsConfetti = () => {
     gravity: 0,
     decay: 0.94,
     startVelocity: 30,
-    colors: ["#FFE400", "#FFBD00", "#E89400", "#FFCA6C", "#FDFFB8"],
+    colors: [
+      duColor("--du-warning"),
+      duColor("--du-warning"),
+      duColor("--du-warning"),
+      duColor("--du-warning"),
+      duColor("--du-warning"),
+    ],
   };
 
   function shoot() {

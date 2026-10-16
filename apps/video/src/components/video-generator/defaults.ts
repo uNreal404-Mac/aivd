@@ -48,7 +48,7 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     id: "seedance-1.5-pro",
     name: "Seedance 1.5 Pro",
     icon: "https://videocdn.pollo.ai/web-cdn/pollo/production/cm3po9yyf0003oh0c2iyt8ajy/image/1754894158793-1e7ef687-c3c1-4f44-8b06-d044a8121f66.svg",
-    color: "#10b981",
+    color: "var(--du-success)",
     description: "Text/Image/Frames to video with audio",
     maxDuration: "12 sec",
     creditCost: 16, // 最小 4s 720p 有音频 = 16 积分 (4秒 × 4积分/秒)
@@ -66,7 +66,7 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     id: "seedance-1.0-pro-fast",
     name: "Seedance 1.0 Fast",
     icon: "https://videocdn.pollo.ai/web-cdn/pollo/production/cm3po9yyf0003oh0c2iyt8ajy/image/1754894158793-1e7ef687-c3c1-4f44-8b06-d044a8121f66.svg",
-    color: "#34d399",
+    color: "var(--du-success)",
     description: "Fast video generation, lower cost",
     maxDuration: "12 sec",
     creditCost: 15, // 5s 720p = 5×3 = 15
@@ -83,7 +83,7 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     id: "seedance-1.0-pro-quality",
     name: "Seedance 1.0 Quality",
     icon: "https://videocdn.pollo.ai/web-cdn/pollo/production/cm3po9yyf0003oh0c2iyt8ajy/image/1754894158793-1e7ef687-c3c1-4f44-8b06-d044a8121f66.svg",
-    color: "#059669",
+    color: "var(--du-success)",
     description: "Highest quality video generation",
     maxDuration: "12 sec",
     creditCost: 25, // 5s 720p = 5×5 = 25
