@@ -17,7 +17,7 @@
       "service": "dreamutopia-video-preview"
     }
   ],
-  "workers_dev": true,
+  "workers_dev": false,
   "preview_urls": false,
   "observability": {
     "enabled": true
