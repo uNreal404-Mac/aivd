@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getOnetimeProducts,
+  getSubscriptionProducts,
+} from "@/config/credits";
+import {
   FAQ_ITEMS,
   FAQ_ITEMS_ZH,
   PRICING_COPY,
@@ -8,6 +12,7 @@ import {
   costPer100Credits,
   displayPlanName,
   faqItemsFor,
+  featureLabels,
   monthlyEquivalentCents,
   plansForPeriod,
   pricingCopy,
@@ -177,5 +182,50 @@ describe("faqItemsFor", () => {
   it("falls back to English for other locales", () => {
     expect(faqItemsFor("en")).toBe(FAQ_ITEMS);
     expect(faqItemsFor("fr")).toBe(FAQ_ITEMS);
+  });
+});
+
+describe("featureLabels", () => {
+  it("maps known keys to English labels", () => {
+    expect(
+      featureLabels(["hd_videos", "fast_generation", "commercial_use"], "en")
+    ).toEqual(["HD video generation", "Commercial use license"]);
+  });
+
+  it("maps known keys to Chinese labels", () => {
+    expect(
+      featureLabels(["hd_videos", "fast_generation", "commercial_use"], "zh")
+    ).toEqual(["高清视频生成", "商业使用授权"]);
+  });
+
+  it("drops unknown keys", () => {
+    expect(featureLabels(["not_a_feature", "hd_videos"], "en")).toEqual([
+      "HD video generation",
+    ]);
+    expect(featureLabels(["fast_generation"], "en")).toEqual([]);
+  });
+
+  it("de-duplicates repeated labels", () => {
+    expect(
+      featureLabels(["hd_videos", "hd_videos", "commercial_use"], "en")
+    ).toEqual(["HD video generation", "Commercial use license"]);
+  });
+
+  it("returns an empty array when there are no features", () => {
+    expect(featureLabels(undefined, "en")).toEqual([]);
+    expect(featureLabels([], "en")).toEqual([]);
+  });
+
+  it("never returns a raw key for any configured plan or pack", () => {
+    const products = [...getSubscriptionProducts(), ...getOnetimeProducts()];
+    expect(products.length).toBeGreaterThan(0);
+
+    for (const product of products) {
+      for (const locale of ["en", "zh"]) {
+        for (const label of featureLabels(product.features, locale)) {
+          expect(label).not.toMatch(/^[a-z]+(_[a-z]+)+$/);
+        }
+      }
+    }
   });
 });

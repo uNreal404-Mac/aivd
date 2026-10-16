@@ -72,6 +72,51 @@ export function displayPlanName(name: string): string {
   return name.replace(/\s*\((?:yearly|annual|year)\)\s*$/i, "").trim();
 }
 
+/**
+ * Human-readable labels for the feature keys used in config, per locale.
+ * Keys that are intentionally unlabelled (e.g. `fast_generation`, which was
+ * removed in review) simply fall through and are never rendered.
+ */
+export const FEATURE_LABELS: Record<"en" | "zh", Record<string, string>> = {
+  en: {
+    hd_videos: "HD video generation",
+    commercial_use: "Commercial use license",
+    custom_models: "Custom AI models",
+  },
+  zh: {
+    hd_videos: "高清视频生成",
+    commercial_use: "商业使用授权",
+    custom_models: "自定义 AI 模型",
+  },
+};
+
+/** Label table for a locale: Chinese when `locale === "zh"`, English otherwise. */
+function featureLabelTable(locale: string): Record<string, string> {
+  return locale === "zh" ? FEATURE_LABELS.zh : FEATURE_LABELS.en;
+}
+
+/**
+ * Maps feature keys to display labels for a locale.
+ * Known keys keep their original order, unknown/unlabelled keys are dropped so
+ * a raw key is never rendered, and duplicate labels collapse to one entry.
+ */
+export function featureLabels(
+  features: readonly string[] | undefined,
+  locale: string
+): string[] {
+  const table = featureLabelTable(locale);
+  const labels: string[] = [];
+
+  for (const feature of features ?? []) {
+    const label = table[feature];
+    if (!label) continue;
+    if (labels.includes(label)) continue;
+    labels.push(label);
+  }
+
+  return labels;
+}
+
 export interface FaqItem {
   id: string;
   question: string;

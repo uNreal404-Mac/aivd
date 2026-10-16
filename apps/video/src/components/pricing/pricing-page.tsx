@@ -8,6 +8,7 @@ import {
   costPer100Credits,
   displayPlanName,
   faqItemsFor,
+  featureLabels,
   monthlyEquivalentCents,
   plansForPeriod,
   pricingCopy,
@@ -122,7 +123,7 @@ export function PricingPage({
           {plans.map((plan) => {
             const isPopular = plan.popular === true;
             const isYearly = plan.billingPeriod === "year";
-            const features = plan.features ?? [];
+            const features = featureLabels(plan.features, locale);
             const showError = errorId === plan.id;
 
             return (
@@ -190,7 +191,7 @@ export function PricingPage({
           <p className="pr-section__sub">{copy.creditPacksSubtitle}</p>
           <div className="pr-packs">
             {packs.map((pack) => {
-              const features = pack.features ?? [];
+              const features = featureLabels(pack.features, locale);
               const showError = errorId === pack.id;
 
               return (
