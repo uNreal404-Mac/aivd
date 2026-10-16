@@ -18,12 +18,9 @@ import {
   tryHref,
 } from "@/lib/model-seo";
 
-/** The four landing pages and the backend model id each one points at. */
+/** The landing pages and the backend model id each one points at. */
 const EXPECTED_MODEL_IDS: Record<string, string> = {
   "seedance-1-5-pro": "seedance-1.5-pro",
-  "wan-2-6": "wan2.6",
-  "veo-3-1": "veo-3.1",
-  "sora-2": "sora-2",
 };
 
 /** Matches a Simplified Chinese character (CJK Unified Ideograph). */
@@ -64,15 +61,15 @@ function collectCopyStrings(copy: (typeof MODEL_PAGE_COPY)["en"]): string[] {
     copy.howToHeading,
     copy.faqHeading,
     copy.otherModelsHeading,
-    copy.h1("Sora 2"),
-    copy.tryLabel("Sora 2"),
-    ...copy.steps("Sora 2"),
+    copy.h1("Seedance 1.5 Pro"),
+    copy.tryLabel("Seedance 1.5 Pro"),
+    ...copy.steps("Seedance 1.5 Pro"),
   ];
 }
 
 describe("model SEO data", () => {
-  it("exposes exactly the four documented slugs and backend ids", () => {
-    expect(MODEL_SLUGS).toHaveLength(4);
+  it("exposes exactly the documented slugs and backend ids", () => {
+    expect(MODEL_SLUGS).toHaveLength(1);
     expect([...MODEL_SLUGS].sort()).toEqual(
       Object.keys(EXPECTED_MODEL_IDS).sort()
     );
@@ -278,11 +275,13 @@ describe("MODEL_PAGE_COPY", () => {
   it("keeps the English labels free of Chinese characters", () => {
     const en = MODEL_PAGE_COPY.en;
 
-    expect(en.h1("Sora 2")).toBe("Sora 2 AI Video Generator");
-    expect(en.tryLabel("Sora 2")).toBe("Try Sora 2");
-    expect(en.steps("Sora 2")).toEqual([
+    expect(en.h1("Seedance 1.5 Pro")).toBe(
+      "Seedance 1.5 Pro AI Video Generator"
+    );
+    expect(en.tryLabel("Seedance 1.5 Pro")).toBe("Try Seedance 1.5 Pro");
+    expect(en.steps("Seedance 1.5 Pro")).toEqual([
       "Write a prompt",
-      "Pick Sora 2 and settings",
+      "Pick Seedance 1.5 Pro and settings",
       "Generate and download",
     ]);
     expect(en.secondsSuffix).toBe("s");
@@ -296,19 +295,19 @@ describe("MODEL_PAGE_COPY", () => {
   it("writes the Chinese labels in Chinese characters", () => {
     const zh = MODEL_PAGE_COPY.zh;
 
-    expect(zh.h1("Sora 2")).toBe("Sora 2 AI 视频生成器");
-    expect(zh.tryLabel("Sora 2")).toBe("试用 Sora 2");
-    expect(zh.steps("Sora 2")).toEqual([
+    expect(zh.h1("Seedance 1.5 Pro")).toBe("Seedance 1.5 Pro AI 视频生成器");
+    expect(zh.tryLabel("Seedance 1.5 Pro")).toBe("试用 Seedance 1.5 Pro");
+    expect(zh.steps("Seedance 1.5 Pro")).toEqual([
       "写下提示词",
-      "选择 Sora 2 并调整参数",
+      "选择 Seedance 1.5 Pro 并调整参数",
       "生成并下载",
     ]);
     expect(zh.secondsSuffix).toBe("秒");
     expect([zh.yes, zh.no]).toEqual(["是", "否"]);
-    expect(hasCjk(zh.h1("Sora 2"))).toBe(true);
-    expect(hasCjk(zh.tryLabel("Sora 2"))).toBe(true);
+    expect(hasCjk(zh.h1("Seedance 1.5 Pro"))).toBe(true);
+    expect(hasCjk(zh.tryLabel("Seedance 1.5 Pro"))).toBe(true);
 
-    for (const step of zh.steps("Sora 2")) {
+    for (const step of zh.steps("Seedance 1.5 Pro")) {
       expect(hasCjk(step)).toBe(true);
     }
 
