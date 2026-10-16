@@ -1,4 +1,15 @@
+import { createHash, createHmac } from "node:crypto";
+
 import { s3mini } from "s3mini";
+
+/** TTL bounds (in seconds) for presigned media URLs. */
+export const SIGNED_URL_MIN_TTL = 900;
+export const SIGNED_URL_MAX_TTL = 3600;
+export const SIGNED_URL_DEFAULT_TTL = 900;
+
+const SIGNING_ALGORITHM = "AWS4-HMAC-SHA256";
+const SIGNING_SERVICE = "s3";
+const UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD";
 
 export interface StorageConfig {
   endpoint: string;
@@ -6,7 +17,6 @@ export interface StorageConfig {
   accessKeyId: string;
   secretAccessKey: string;
   bucket: string;
-  publicDomain?: string;
 }
 
 /**
@@ -68,7 +78,6 @@ export function getStorageConfig(
       accessKeyId: accessKeyId as string,
       secretAccessKey: secretAccessKey as string,
       bucket: bucket as string,
-      publicDomain: readEnv(env.STORAGE_DOMAIN),
     },
   };
 }
@@ -90,21 +99,82 @@ export class StorageNotConfiguredError extends Error {
   }
 }
 
+/** RFC3986 encoding: encodeURIComponent plus the characters AWS requires escaped. */
+function encodeRfc3986(value: string): string {
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+}
+
+/** Encode each path segment of a storage key, preserving "/" separators. */
+function encodeKeyPath(key: string): string {
+  return key
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function buildCanonicalQuery(params: Record<string, string>): string {
+  return Object.entries(params)
+    .map(([key, value]) => [encodeRfc3986(key), encodeRfc3986(value)] as const)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+}
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function hmac(key: string | Buffer, value: string): Buffer {
+  return createHmac("sha256", key).update(value, "utf8").digest();
+}
+
+function formatAmzDate(date: Date): string {
+  return date.toISOString().replace(/[:-]|\.\d{3}/g, "");
+}
+
+function deriveSigningKey(
+  secretAccessKey: string,
+  dateStamp: string,
+  region: string,
+  service: string
+): Buffer {
+  const kDate = hmac(`AWS4${secretAccessKey}`, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  return hmac(kService, "aws4_request");
+}
+
 export class Storage {
   private client: s3mini;
-  private endpointWithBucket: string;
-  private publicDomain?: string;
+  private endpoint: string;
+  private origin: string;
+  private host: string;
+  private basePath: string;
+  private bucket: string;
+  private region: string;
+  private accessKeyId: string;
+  private secretAccessKey: string;
 
   constructor(config: StorageConfig) {
-    const endpoint = config.endpoint.replace(/\/$/, "");
-    this.endpointWithBucket = `${endpoint}/${config.bucket}`;
-    this.publicDomain = config.publicDomain?.replace(/\/$/, "");
+    this.endpoint = config.endpoint.replace(/\/+$/, "");
+    this.bucket = config.bucket;
+    this.region = config.region;
+    this.accessKeyId = config.accessKeyId;
+    this.secretAccessKey = config.secretAccessKey;
+
+    const endpointUrl = new URL(this.endpoint);
+    this.origin = endpointUrl.origin;
+    this.host = endpointUrl.host;
+    this.basePath = endpointUrl.pathname.replace(/\/+$/, "");
 
     this.client = new s3mini({
-      endpoint: this.endpointWithBucket,
-      region: config.region,
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
+      endpoint: `${this.endpoint}/${this.bucket}`,
+      region: this.region,
+      accessKeyId: this.accessKeyId,
+      secretAccessKey: this.secretAccessKey,
     });
   }
 
@@ -115,7 +185,7 @@ export class Storage {
     key: string;
     body: Buffer;
     contentType?: string;
-  }): Promise<{ url: string; key: string }> {
+  }): Promise<{ key: string }> {
     const response = await this.client.putObject(
       params.key,
       params.body,
@@ -126,7 +196,7 @@ export class Storage {
       throw new Error(`Failed to upload file: ${response.statusText}`);
     }
 
-    return { url: this.getPublicUrl(params.key), key: params.key };
+    return { key: params.key };
   }
 
   /**
@@ -136,7 +206,7 @@ export class Storage {
     sourceUrl: string;
     key: string;
     contentType?: string;
-  }): Promise<{ url: string; key: string }> {
+  }): Promise<{ key: string }> {
     const response = await fetch(params.sourceUrl);
     if (!response.ok) {
       throw new Error(`Failed to download: ${response.statusText}`);
@@ -156,14 +226,92 @@ export class Storage {
   }
 
   /**
-   * 获取公开 URL
+   * Build an AWS SigV4 presigned GET URL (query-string auth) for a private object.
+   * The object is only reachable for `ttlSeconds` (15-60 minutes).
    */
-  getPublicUrl(key: string): string {
-    if (this.publicDomain) {
-      return `${this.publicDomain}/${key}`;
+  getSignedUrl(
+    key: string,
+    ttlSeconds: number = SIGNED_URL_DEFAULT_TTL,
+    now: Date = new Date()
+  ): string {
+    if (ttlSeconds < SIGNED_URL_MIN_TTL || ttlSeconds > SIGNED_URL_MAX_TTL) {
+      throw new RangeError(
+        `Signed URL TTL must be between ${SIGNED_URL_MIN_TTL} and ${SIGNED_URL_MAX_TTL} seconds`
+      );
     }
-    return `${this.endpointWithBucket}/${key}`;
+
+    const amzDate = formatAmzDate(now);
+    const dateStamp = amzDate.slice(0, 8);
+    const scope = `${dateStamp}/${this.region}/${SIGNING_SERVICE}/aws4_request`;
+    const canonicalUri = `${this.basePath}/${this.bucket}/${encodeKeyPath(key)}`;
+
+    const canonicalQuery = buildCanonicalQuery({
+      "X-Amz-Algorithm": SIGNING_ALGORITHM,
+      "X-Amz-Credential": `${this.accessKeyId}/${scope}`,
+      "X-Amz-Date": amzDate,
+      "X-Amz-Expires": String(ttlSeconds),
+      "X-Amz-SignedHeaders": "host",
+    });
+
+    const canonicalRequest = [
+      "GET",
+      canonicalUri,
+      canonicalQuery,
+      `host:${this.host}`,
+      "",
+      "host",
+      UNSIGNED_PAYLOAD,
+    ].join("\n");
+
+    const stringToSign = [
+      SIGNING_ALGORITHM,
+      amzDate,
+      scope,
+      sha256Hex(canonicalRequest),
+    ].join("\n");
+
+    const signingKey = deriveSigningKey(
+      this.secretAccessKey,
+      dateStamp,
+      this.region,
+      SIGNING_SERVICE
+    );
+    const signature = createHmac("sha256", signingKey)
+      .update(stringToSign, "utf8")
+      .digest("hex");
+
+    return `${this.origin}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
   }
+}
+
+/** A stored object key (as opposed to a legacy http(s) media URL). */
+export function isStorageKey(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.length > 0 && !/^https?:\/\//i.test(trimmed);
+}
+
+/** Shape of a client-submitted image reference backed by an upload key. */
+export const IMAGE_REF_PATTERN = /^uploads\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/;
+
+/**
+ * Resolve a stored media reference into a URL the browser can fetch.
+ * - null/empty -> null
+ * - legacy http(s) URL -> returned as-is
+ * - storage key -> short-lived presigned URL
+ */
+export function signMediaRef(
+  value: string | null | undefined,
+  ttl: number = SIGNED_URL_DEFAULT_TTL
+): string | null {
+  if (!value || value.trim().length === 0) {
+    return null;
+  }
+
+  if (!isStorageKey(value)) {
+    return value;
+  }
+
+  return getStorage().getSignedUrl(value, ttl);
 }
 
 // 单例工厂

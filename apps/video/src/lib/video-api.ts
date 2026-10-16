@@ -41,7 +41,7 @@ export function resolutionToQuality(resolution?: string): string {
 }
 
 /**
- * Upload image and return public URL
+ * Upload image and return its storage key
  */
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
@@ -57,7 +57,7 @@ export async function uploadImage(file: File): Promise<string> {
     throw new Error(uploadData.error?.message || "Failed to upload image");
   }
 
-  return uploadData.data.publicUrl as string;
+  return uploadData.data.key as string;
 }
 
 /**

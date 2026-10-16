@@ -30,7 +30,6 @@
     "AI_CALLBACK_URL": "https://dreamutopia-video.pages.dev/api/v1/video/callback",
     "STORAGE_ENDPOINT": "https://3d16103f94443a1948212feedf4ddcc1.r2.cloudflarestorage.com",
     "STORAGE_REGION": "auto",
-    "STORAGE_BUCKET": "dreamutopia-video-media",
-    "STORAGE_DOMAIN": "https://pub-815356967201474cb205db07727e85fa.r2.dev"
+    "STORAGE_BUCKET": "dreamutopia-video-media"
   }
 }
