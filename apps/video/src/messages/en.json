@@ -34,7 +34,7 @@
     "startCreating": "Start Creating Free",
     "viewExamples": "View Examples",
     "features": {
-      "fast": "Lightning Fast",
+      "fast": "Simple Workflow",
       "easy": "Easy to Use",
       "ai": "AI-Powered"
     },
@@ -120,7 +120,7 @@
       "stat": "AI models"
     },
     "fast": {
-      "title": "Lightning Fast",
+      "title": "Simple Workflow",
       "description": "Generate videos from a prompt or an image"
     },
     "secure": {
@@ -264,7 +264,6 @@
     },
     "features": {
       "hd_videos": "HD video generation",
-      "fast_generation": "Fast generation speed",
       "commercial_use": "Commercial use license",
       "custom_models": "Custom AI models"
     }
@@ -326,7 +325,7 @@
   "Sidebar": {
     "title": "Navigation",
     "upgradeTitle": "Upgrade to Pro",
-    "upgradeSubtitle": "Unlock faster generation and more credits"
+    "upgradeSubtitle": "Unlock more credits and features"
   },
   "UpgradeModal": {
     "default_title": "Upgrade Your Plan",
@@ -455,6 +454,25 @@
   "dashboard": {
     "myCreations": {
       "title": "My Creations",
+      "tabs": {
+        "all": "All",
+        "queued": "Queued",
+        "generating": "Generating",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "view": {
+        "grid": "Grid",
+        "list": "List"
+      },
+      "tag": {
+        "queued": "Queued",
+        "generating": "Generating",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "loadMore": "Load more",
+      "close": "Close",
       "filter": {
         "allStatus": "All Status",
         "all": "All",
@@ -490,7 +508,8 @@
       "empty": {
         "title": "No creations yet",
         "description": "Your generated videos will appear here",
-        "cta": "Start creating"
+        "cta": "Start creating",
+        "ctaStart": "Start Creating"
       },
       "deleteConfirm": {
         "title": "Delete video?",
@@ -547,5 +566,54 @@
     "copyLink": "Copy link",
     "removeFromHistory": "Remove from history",
     "generationFailed": "Generation Failed"
+  },
+  "Gallery": {
+    "title": "Gallery",
+    "subtitle": "Public works from the community",
+    "pageTitle": "Community Gallery",
+    "pageSubtitle": "Videos shared by creators. Open one to see its prompt and use it as a template.",
+    "empty": "No public works yet — be the first to share.",
+    "loadMore": "Load more",
+    "useTemplate": "Use Template",
+    "protectedPromptBadge": "Protected Prompt",
+    "promptProtected": "Prompt protected by author",
+    "anonymous": "Anonymous",
+    "publicBadge": "Public",
+    "privateBadge": "Private",
+    "shareToGallery": "Share to Gallery",
+    "removeFromGallery": "Remove from Gallery",
+    "preparing": "Preparing…",
+    "downloadError": "Failed to download video",
+    "unpublishSuccess": "Removed from Gallery",
+    "unpublishError": "Failed to remove from Gallery. Please try again.",
+    "publishDialog": {
+      "title": "Share to Gallery",
+      "description": "Publish this video so anyone can watch it and reuse its prompt.",
+      "videoPreview": "Preview",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Give your work a title",
+      "descriptionLabel": "Description",
+      "descriptionOptional": "optional",
+      "descriptionPlaceholder": "Say a few words about this work",
+      "promptLabel": "Prompt",
+      "promptWillBePublic": "Your prompt will be public",
+      "originalPromptLabel": "Your original prompt",
+      "protectPrompt": "Protect prompt",
+      "protectPromptHint": "Hide your original prompt and share a different one instead.",
+      "publicPromptLabel": "Public prompt",
+      "publicPromptPlaceholder": "Leave empty to hide the prompt entirely",
+      "allowAssetReuse": "Allow others to reuse my input image",
+      "submit": "Publish",
+      "submitting": "Publishing…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "invalid": "Please check the title length and try again.",
+      "error": "Failed to publish. Please try again.",
+      "alreadyInGallery": "Already in Gallery"
+    },
+    "notices": {
+      "modelUnavailable": "The original model {model} is not available. Please choose an alternative model.",
+      "needsOwnImage": "Upload your own image — the author's source image is private."
+    }
   }
 }

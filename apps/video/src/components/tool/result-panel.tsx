@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Download, RefreshCw, Sparkles, Trash2, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Play, Download, RefreshCw, Sparkles, Trash2, AlertCircle, CheckCircle2, Clock, Share2, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/components/ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PublishDialog } from "@/components/gallery/publish-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,8 @@ interface ResultPanelProps {
   onRegenerate?: () => void;
   onDelete?: (uuid: string) => void;
   onRetry?: (uuid: string) => void;
+  isSuperAccount?: boolean;
+  onPublished?: (uuid: string) => void;
   className?: string;
 }
 
@@ -61,15 +64,21 @@ export function ResultPanel({
   onRegenerate,
   onDelete,
   onRetry,
+  isSuperAccount = false,
+  onPublished,
   className,
 }: ResultPanelProps) {
   const tTool = useTranslations("ToolPage");
   const tStatus = useTranslations("dashboard.myCreations.status");
   const tActions = useTranslations("dashboard.myCreations.actions");
+  const tGallery = useTranslations("Gallery");
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState<string | null>(null);
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+  const [downloadErrorId, setDownloadErrorId] = useState<string | null>(null);
+  const [publishTarget, setPublishTarget] = useState<Video | null>(null);
 
   const hasItems = currentVideos.length > 0 || generatingIds.length > 0;
 
@@ -90,6 +99,34 @@ export function ResultPanel({
     } finally {
       setIsRetrying(null);
     }
+  };
+
+  const handleDownload = async (uuid: string, src: string) => {
+    if (!src || preparingId) return;
+    setPreparingId(uuid);
+    setDownloadErrorId(null);
+    try {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error("download failed");
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${uuid}.mp4`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setDownloadErrorId(uuid);
+    } finally {
+      setPreparingId(null);
+    }
+  };
+
+  const handlePublished = (uuid: string) => {
+    setPublishTarget(null);
+    onPublished?.(uuid);
   };
 
   if (!hasItems) {
@@ -205,6 +242,8 @@ export function ResultPanel({
             const StatusIcon = config.icon;
 
             const isCompleted = normalizedStatus === "completed";
+            const isPublic = video.visibility === "public";
+            const isPreparing = preparingId === video.uuid;
             const isFailed = normalizedStatus === "failed";
             const isProcessing = normalizedStatus === "pending" || normalizedStatus === "generating" || normalizedStatus === "uploading";
 
@@ -279,20 +318,45 @@ export function ResultPanel({
                   <div className="flex items-center gap-2">
                     {/* Download - completed only */}
                     {isCompleted && (
-                      <a
-                        href={videoSrc || "#"}
-                        download
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(video.uuid, videoSrc)}
+                        disabled={!videoSrc || isPreparing}
                         className={cn(
                           "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-1 justify-center",
-                          videoSrc
+                          videoSrc && !isPreparing
                             ? "bg-primary text-primary-foreground hover:bg-primary/90"
                             : "bg-muted/30 text-muted-foreground cursor-not-allowed"
                         )}
                       >
-                        <Download className="h-3.5 w-3.5" />
-                        {tActions("download")}
-                      </a>
+                        {isPreparing ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Download className="h-3.5 w-3.5" />
+                        )}
+                        {!videoSrc || isPreparing
+                          ? tGallery("preparing")
+                          : tActions("download")}
+                      </button>
                     )}
+
+                    {/* Share to Gallery - completed only */}
+                    {isCompleted &&
+                      (isPublic ? (
+                        <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[var(--du-border)] bg-[var(--du-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--du-accent-text)]">
+                          <Share2 className="h-3.5 w-3.5" />
+                          {tGallery("publicBadge")}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setPublishTarget(video)}
+                          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[var(--du-border)] bg-[var(--du-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--du-accent-text)] transition-all hover:bg-[var(--du-accent)] hover:text-[var(--du-on-accent)]"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                          {tGallery("shareToGallery")}
+                        </button>
+                      ))}
 
                     {/* Retry - failed only */}
                     {isFailed && onRetry && (
@@ -329,6 +393,12 @@ export function ResultPanel({
                       </div>
                     )}
                   </div>
+
+                  {downloadErrorId === video.uuid && (
+                    <div className="text-xs text-rose-600 dark:text-rose-400">
+                      {tGallery("downloadError")}
+                    </div>
+                  )}
                 </div>
 
                 {/* Delete confirmation dialog */}
@@ -356,6 +426,16 @@ export function ResultPanel({
           })}
         </div>
       </div>
+
+      <PublishDialog
+        open={publishTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setPublishTarget(null);
+        }}
+        video={publishTarget}
+        isSuperAccount={isSuperAccount}
+        onPublished={handlePublished}
+      />
     </div>
   );
 }

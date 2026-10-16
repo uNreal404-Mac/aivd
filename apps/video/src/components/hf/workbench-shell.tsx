@@ -60,7 +60,7 @@ const HOW_STEPS: { title: string; body: string }[] = [
 
 function DemoChip() {
   return (
-    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#898A8B]">
+    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       Demo
     </span>
   );
@@ -68,7 +68,7 @@ function DemoChip() {
 
 function SoonChip() {
   return (
-    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#898A8B]">
+    <span className="rounded-[6px] bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       Soon
     </span>
   );
@@ -87,7 +87,7 @@ export function HfWorkbenchShell({
 
   return (
     <div className="flex h-auto flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row">
-      <aside className="flex w-full shrink-0 flex-col rounded-[20px] border border-white/5 bg-[#131517] lg:w-[320px] lg:overflow-y-auto">
+      <aside className="flex w-full shrink-0 flex-col rounded-[20px] border border-white/5 bg-[var(--du-surface)] lg:w-[320px] lg:overflow-y-auto">
         <div className="flex items-center gap-4 border-b border-white/5 px-3 pt-3">
           {MODE_TABS.map((tab) => {
             const isActive = tab.key === activeMode;
@@ -115,8 +115,8 @@ export function HfWorkbenchShell({
         </div>
 
         <div className="p-3">
-          <div className="relative flex h-[104px] flex-col justify-center overflow-hidden rounded-[14px] bg-[radial-gradient(120%_140%_at_0%_0%,rgba(209,254,23,0.24)_0%,rgba(209,254,23,0.08)_38%,#131517_78%)] px-4">
-            <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[#D1FE17]">
+          <div className="relative flex h-[104px] flex-col justify-center overflow-hidden rounded-[14px] bg-[radial-gradient(120%_140%_at_0%_0%,var(--du-accent-soft)_0%,var(--du-accent-soft)_38%,var(--du-surface)_78%)] px-4">
+            <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-accent-text)]">
               DreamUtopia Video
             </span>
             <span className="mt-1 text-[12px] text-white/70">
@@ -131,7 +131,7 @@ export function HfWorkbenchShell({
         <div className="flex-1 p-3">{generator}</div>
       </aside>
 
-      <section className="min-w-0 flex-1 rounded-[20px] border border-white/5 bg-[#131517] p-5 lg:overflow-y-auto">
+      <section className="min-w-0 flex-1 rounded-[20px] border border-white/5 bg-[var(--du-surface)] p-5 lg:overflow-y-auto">
         <div className="flex items-center gap-1">
           {RIGHT_TABS.map(({ key, label, Icon }) => {
             const isActive = key === rightTab;
@@ -159,14 +159,14 @@ export function HfWorkbenchShell({
           <div>
             <div className="mt-6 flex flex-col items-center gap-6 md:flex-row">
               <div className="flex-1">
-                <h2 className="font-display text-[28px] font-bold uppercase leading-tight tracking-[-0.04em] text-[#F7F7F8] md:text-[32px]">
+                <h2 className="font-display text-[28px] font-bold uppercase leading-tight tracking-[-0.04em] text-[var(--du-text)] md:text-[32px]">
                   {heroTitle}
                 </h2>
-                <p className="mt-3 max-w-[420px] text-[14px] text-[#898A8B]">
+                <p className="mt-3 max-w-[420px] text-[14px] text-[var(--du-text-muted)]">
                   {heroDescription}
                 </p>
               </div>
-              <div className="relative aspect-video w-full overflow-hidden rounded-[12px] bg-[linear-gradient(135deg,#1C1E20_0%,#23262A_45%,rgba(209,254,23,0.24)_100%)] md:w-[44%]">
+              <div className="relative aspect-video w-full overflow-hidden rounded-[12px] bg-[linear-gradient(135deg,var(--du-surface-2)_0%,var(--du-surface-2)_45%,var(--du-accent-soft)_100%)] md:w-[44%]">
                 <span className="absolute right-3 top-3">
                   <DemoChip />
                 </span>
@@ -184,7 +184,7 @@ export function HfWorkbenchShell({
                       onClick={() => setFilter(item)}
                       className={`h-8 rounded-full px-3 text-[14px] font-medium transition-colors ${
                         isActive
-                          ? "bg-white text-[#131517]"
+                          ? "bg-white text-[var(--du-surface)]"
                           : "text-white/60 hover:text-white/80"
                       }`}
                     >
@@ -199,7 +199,7 @@ export function HfWorkbenchShell({
               {LIBRARY_TILES.map((tile) => (
                 <div
                   key={tile.title}
-                  className="relative aspect-[3/4] overflow-hidden rounded-[12px] bg-[linear-gradient(160deg,#1C1E20_0%,#23262A_55%,rgba(209,254,23,0.2)_100%)]"
+                  className="relative aspect-[3/4] overflow-hidden rounded-[12px] bg-[linear-gradient(160deg,var(--du-surface-2)_0%,var(--du-surface-2)_55%,var(--du-accent-soft)_100%)]"
                 >
                   <span className="absolute right-2 top-2">
                     <DemoChip />
@@ -220,15 +220,15 @@ export function HfWorkbenchShell({
             {HOW_STEPS.map((step, index) => (
               <div
                 key={step.title}
-                className="rounded-[16px] bg-[#1C1E21] p-5"
+                className="rounded-[16px] bg-[var(--du-surface-2)] p-5"
               >
-                <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[#D1FE17]">
+                <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-accent-text)]">
                   {`Step ${index + 1}`}
                 </span>
-                <h3 className="mt-2 text-[16px] font-semibold text-[#F7F7F8]">
+                <h3 className="mt-2 text-[16px] font-semibold text-[var(--du-text)]">
                   {step.title}
                 </h3>
-                <p className="mt-1 text-[14px] text-[#898A8B]">{step.body}</p>
+                <p className="mt-1 text-[14px] text-[var(--du-text-muted)]">{step.body}</p>
               </div>
             ))}
           </div>
