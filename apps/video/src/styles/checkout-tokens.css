@@ -1,0 +1,12 @@
+:root {
+  --co-bg: var(--du-bg);
+  --co-surface: var(--du-surface);
+  --co-border: var(--du-border);
+  --co-text: var(--du-text);
+  --co-muted: var(--du-text-muted);
+  --co-accent: var(--du-accent);
+  --co-accent-hover: var(--du-accent-hover);
+  --co-on-accent: var(--du-on-accent);
+  --co-success: var(--du-success);
+  --co-radius: 20px;
+}

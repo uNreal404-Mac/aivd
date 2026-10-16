@@ -127,7 +127,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "month" as const,
     popular: false,
     enabled: true,
-    features: ["hd_videos", "fast_generation"],
+    features: ["hd_videos"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq21zX2Z16", // 从 Creem 后台复制 Pro Monthly Product ID
@@ -137,7 +137,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "month" as const,
     popular: true, // 推荐
     enabled: true,
-    features: ["hd_videos", "fast_generation", "commercial_use"],
+    features: ["hd_videos", "commercial_use"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z18", // 从 Creem 后台复制 Ultimate Monthly Product ID
@@ -147,7 +147,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "month" as const,
     popular: false,
     enabled: true,
-    features: ["hd_videos", "fast_generation", "commercial_use"],
+    features: ["hd_videos", "commercial_use"],
   },
 
   // ===== 年付订阅（月付 × 10，买 10 送 2） =====
@@ -159,7 +159,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "year" as const,
     popular: false,
     enabled: true,
-    features: ["hd_videos", "fast_generation"],
+    features: ["hd_videos"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z55", // 从 Creem 后台复制 Pro Yearly Product ID
@@ -169,7 +169,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "year" as const,
     popular: true,
     enabled: true,
-    features: ["hd_videos", "fast_generation", "commercial_use"],
+    features: ["hd_videos", "commercial_use"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z21", // 从 Creem 后台复制 Ultimate Yearly Product ID
@@ -179,7 +179,7 @@ export const SUBSCRIPTION_PRODUCTS = [
     period: "year" as const,
     popular: false,
     enabled: true,
-    features: ["hd_videos", "fast_generation", "commercial_use"],
+    features: ["hd_videos", "commercial_use"],
   },
 ];
 
@@ -208,7 +208,7 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
     popular: true, // 推荐
     enabled: true,
     allowFreeUser: true, // 所有用户可购买
-    features: ["hd_videos", "fast_generation"],
+    features: ["hd_videos"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z12", // 从 Creem 后台复制 Standard Pack Product ID
@@ -218,7 +218,7 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
     popular: false,
     enabled: true,
     allowFreeUser: false, // 仅订阅用户
-    features: ["hd_videos", "fast_generation"],
+    features: ["hd_videos"],
   },
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z13", // 从 Creem 后台复制 Pro Pack Product ID
@@ -228,7 +228,7 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
     popular: false,
     enabled: true,
     allowFreeUser: false, // 仅订阅用户
-    features: ["hd_videos", "fast_generation", "commercial_use"],
+    features: ["hd_videos", "commercial_use"],
   },
 ];
 

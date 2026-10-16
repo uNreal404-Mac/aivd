@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 const SIGNATURE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 
 function getCallbackSecret(): string {
   const secret = process.env.CALLBACK_HMAC_SECRET;
@@ -41,6 +42,11 @@ export function verifyCallbackSignature(
   const ts = Number.parseInt(timestamp);
   if (Number.isNaN(ts) || Date.now() - ts > SIGNATURE_EXPIRY_MS) {
     return { valid: false, error: "Signature expired" };
+  }
+
+  // Reject timestamps far in the future (guards against clock-skew abuse)
+  if (ts - Date.now() > MAX_FUTURE_SKEW_MS) {
+    return { valid: false, error: "Signature timestamp in the future" };
   }
 
   // Verify signature

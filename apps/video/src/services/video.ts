@@ -1,7 +1,12 @@
 import { VideoStatus, db, videos } from "@/db";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { getStorage } from "@/lib/storage";
+import {
+  getStorage,
+  isStorageConfigured,
+  isStorageKey,
+  signMediaRef,
+} from "@/lib/storage";
 import { getModelConfig, calculateModelCredits } from "../config/credits";
 import {
   getProvider,
@@ -85,9 +90,54 @@ export class VideoService {
   }
 
   /**
+   * Sign a private storage key for a short-lived provider fetch.
+   * http(s) URLs pass through unchanged.
+   */
+  private signImageInput(value: string): string {
+    return isStorageKey(value) ? getStorage().getSignedUrl(value, 3600) : value;
+  }
+
+  /**
+   * Return a copy of a video row with media columns replaced by short-lived
+   * signed URLs. Legacy http(s) values pass through; when storage is not
+   * configured a stored key resolves to null instead of throwing.
+   */
+  private signVideoRow<
+    T extends { videoUrl: string | null; startImageUrl?: string | null }
+  >(row: T): T {
+    const sign = (value: string | null | undefined): string | null => {
+      if (!value) {
+        return null;
+      }
+      if (isStorageKey(value) && !isStorageConfigured()) {
+        return null;
+      }
+      return signMediaRef(value);
+    };
+
+    return {
+      ...row,
+      videoUrl: sign(row.videoUrl),
+      startImageUrl: sign(row.startImageUrl),
+    } as T;
+  }
+
+  /**
    * Create video generation task
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
+    for (const imageInput of [params.imageUrl, ...(params.imageUrls ?? [])]) {
+      if (
+        imageInput &&
+        isStorageKey(imageInput) &&
+        !imageInput.startsWith(`uploads/${params.userId}/`)
+      ) {
+        throw new ApiError("Invalid image reference", 400, {
+          code: "INVALID_IMAGE_REF",
+        });
+      }
+    }
+
     const modelConfig = getModelConfig(params.model);
     if (!modelConfig) {
       throw new ApiError(`Unsupported model: ${params.model}`, 400, {
@@ -342,6 +392,13 @@ export class VideoService {
       )
       : undefined;
 
+    const signedImageUrl = params.imageUrl
+      ? this.signImageInput(params.imageUrl)
+      : undefined;
+    const signedImageUrls = params.imageUrls?.map((value) =>
+      this.signImageInput(value)
+    );
+
     // Call the provider. Split definite rejections from unknown outcomes.
     let providerResult: VideoTaskResponse;
     try {
@@ -351,8 +408,8 @@ export class VideoService {
         duration: effectiveDuration,  // ✅ 使用计算后的时长
         aspectRatio: params.aspectRatio,
         quality: params.quality,
-        imageUrl: params.imageUrl,
-        imageUrls: params.imageUrls,
+        imageUrl: signedImageUrl,
+        imageUrls: signedImageUrls,
         mode: resolvedMode,
         outputNumber,
         generateAudio: params.generateAudio,
@@ -535,7 +592,7 @@ export class VideoService {
     if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
       return {
         status: video.status,
-        videoUrl: video.videoUrl || undefined,
+        videoUrl: signMediaRef(video.videoUrl) || undefined,
         error: video.errorMessage || undefined,
       };
     }
@@ -618,7 +675,7 @@ export class VideoService {
       }
 
       if (video.status === VideoStatus.COMPLETED) {
-        return { status: video.status, videoUrl: video.videoUrl };
+        return { status: video.status, videoUrl: signMediaRef(video.videoUrl) };
       }
       if (video.status === VideoStatus.FAILED) {
         return { status: video.status, videoUrl: null };
@@ -628,7 +685,7 @@ export class VideoService {
         video.status !== VideoStatus.GENERATING &&
         video.status !== VideoStatus.UPLOADING
       ) {
-        return { status: video.status, videoUrl: video.videoUrl };
+        return { status: video.status, videoUrl: signMediaRef(video.videoUrl) };
       }
 
       await trx
@@ -654,22 +711,24 @@ export class VideoService {
         .update(videos)
         .set({
           status: VideoStatus.COMPLETED,
-          videoUrl: uploaded.url,
+          videoUrl: uploaded.key,
           thumbnailUrl: result.thumbnailUrl || null,
           completedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(videos.uuid, videoUuid));
 
+      const signedUrl = signMediaRef(uploaded.key);
+
       emitVideoEvent({
         userId: video.userId,
         videoUuid,
         status: "COMPLETED",
-        videoUrl: uploaded.url,
+        videoUrl: signedUrl ?? undefined,
         thumbnailUrl: result.thumbnailUrl || null,
       });
 
-      return { status: VideoStatus.COMPLETED, videoUrl: uploaded.url };
+      return { status: VideoStatus.COMPLETED, videoUrl: signedUrl };
     });
   }
 
@@ -736,7 +795,7 @@ export class VideoService {
         )
       )
       .limit(1);
-    return video ?? null;
+    return video ? this.signVideoRow(video) : null;
   }
 
   /**
@@ -784,7 +843,7 @@ export class VideoService {
     if (hasMore) list.pop();
 
     return {
-      videos: list,
+      videos: list.map((video) => this.signVideoRow(video)),
       nextCursor: hasMore ? list[list.length - 1]?.uuid : undefined,
     };
   }
