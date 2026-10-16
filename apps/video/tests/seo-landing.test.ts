@@ -50,6 +50,24 @@ const JOB42C_SLUGS: readonly SeoLandingSlug[] = [
   "ai-b-roll-generator",
 ];
 
+/** Slugs added in job42d; each compares exactly three enabled models. */
+const JOB42D_SLUGS: readonly SeoLandingSlug[] = [
+  "ai-animation-generator",
+  "ai-anime-video-generator",
+  "ai-cartoon-video-generator",
+  "ai-logo-animation",
+  "ai-real-estate-video-generator",
+];
+
+const JOB42D_CASES = JOB42D_SLUGS.flatMap((slug) =>
+  LOCALES.map((locale) => ({
+    slug,
+    locale,
+    label: `${slug}/${locale}`,
+    content: seoLandingFor(slug, locale),
+  })),
+);
+
 /** Marketing routes only: reference-to-video lives under the tool layout. */
 const NEW_MARKETING_SLUGS: readonly SeoLandingSlug[] = NEW_SLUGS.filter(
   (slug) => slug !== "reference-to-video",
@@ -134,7 +152,7 @@ function copyStrings(content: SeoLandingContent): string[] {
 }
 
 describe("seo landing content", () => {
-  it("registers exactly the fourteen expected slugs", () => {
+  it("registers exactly the nineteen expected slugs", () => {
     expect([...SEO_LANDING_SLUGS]).toEqual([
       "ai-video-generator",
       "text-to-video",
@@ -150,8 +168,13 @@ describe("seo landing content", () => {
       "ai-cinematic-video-generator",
       "ai-b-roll-generator",
       "seedance-1-0",
+      "ai-animation-generator",
+      "ai-anime-video-generator",
+      "ai-cartoon-video-generator",
+      "ai-logo-animation",
+      "ai-real-estate-video-generator",
     ]);
-    expect(SEO_LANDING_SLUGS).toHaveLength(14);
+    expect(SEO_LANDING_SLUGS).toHaveLength(19);
     expect(new Set(SEO_LANDING_SLUGS).size).toBe(SEO_LANDING_SLUGS.length);
     expect(Object.keys(SEO_LANDING).sort()).toEqual(
       [...SEO_LANDING_SLUGS].sort(),
@@ -437,6 +460,101 @@ describe("seedance 1.0 landing page", () => {
         "/ai-video-generator-with-audio",
       );
       expect(paths, `${SLUG}/${locale}`).toContain("/frames-to-video");
+    }
+  });
+});
+
+describe("job42d landing pages", () => {
+  it("compares exactly three enabled models on every page", () => {
+    for (const { label, content } of JOB42D_CASES) {
+      expect(content.compareRows, `${label} rows`).toHaveLength(3);
+      for (const row of content.compareRows) {
+        expect(ENABLED_MODELS, `${label} model`).toContain(row.model);
+        expect(row.bestFor.trim(), `${label} bestFor`).not.toBe("");
+        expect(row.input.trim(), `${label} input`).not.toBe("");
+      }
+    }
+  });
+
+  it("never names a disabled model, free generation or watermark-free output", () => {
+    const disabledModel = /\b(?:Wan|Veo|Sora)\b/;
+    const banned = ["free", "免费", "watermark", "水印"];
+    for (const { label, content } of JOB42D_CASES) {
+      for (const text of copyStrings(content)) {
+        expect(text, `${label} disabled model`).not.toMatch(disabledModel);
+        const haystack = text.toLowerCase();
+        for (const term of banned) {
+          expect(haystack, `${label} ${term}`).not.toContain(term);
+        }
+      }
+    }
+  });
+
+  it("never mentions lip-sync or a style preset", () => {
+    const banned = /lip.?sync|口型|style preset|风格预设/i;
+    for (const { label, content } of JOB42D_CASES) {
+      for (const text of copyStrings(content)) {
+        expect(text, `${label} ${text}`).not.toMatch(banned);
+      }
+    }
+  });
+
+  it("keeps the English title and h1 on separate keywords", () => {
+    const banned: Record<string, RegExp> = {
+      "ai-animation-generator": /anime|cartoon|logo/i,
+      "ai-anime-video-generator": /animation|cartoon/i,
+      "ai-cartoon-video-generator": /animation|anime/i,
+      "ai-logo-animation": /generator/i,
+    };
+
+    for (const [slug, pattern] of Object.entries(banned)) {
+      const content = seoLandingFor(slug as SeoLandingSlug, "en");
+      const headline = `${content.title} ${content.h1}`;
+      expect(headline, `${slug} headline`).not.toMatch(pattern);
+    }
+  });
+
+  it("keeps the Chinese title and h1 on separate keywords", () => {
+    const banned: Record<string, RegExp> = {
+      "ai-animation-generator": /动漫|卡通|标志/,
+      "ai-anime-video-generator": /动画|卡通/,
+      "ai-cartoon-video-generator": /动画|动漫/,
+      "ai-logo-animation": /生成器/,
+    };
+
+    for (const [slug, pattern] of Object.entries(banned)) {
+      const content = seoLandingFor(slug as SeoLandingSlug, "zh");
+      const headline = `${content.title} ${content.h1}`;
+      expect(headline, `${slug} headline`).not.toMatch(pattern);
+    }
+  });
+
+  it("has a marketing route file for every page", () => {
+    for (const slug of JOB42D_SLUGS) {
+      const segments = [
+        "src",
+        "app",
+        "[locale]",
+        "(marketing)",
+        slug,
+        "page.tsx",
+      ];
+      expect(routeExists(segments), `(marketing)/${slug}/page.tsx`).toBe(true);
+    }
+  });
+
+  it("links to at least one existing landing page", () => {
+    const slugPaths = new Set(SEO_LANDING_SLUGS.map((slug) => `/${slug}`));
+
+    for (const { label, content } of JOB42D_CASES) {
+      expect(
+        content.related?.length ?? 0,
+        `${label} related`,
+      ).toBeGreaterThan(0);
+      for (const link of content.related ?? []) {
+        expect(link.label.trim(), `${label} related label`).not.toBe("");
+        expect(slugPaths.has(link.path), `${label} ${link.path}`).toBe(true);
+      }
     }
   });
 });

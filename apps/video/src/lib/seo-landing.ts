@@ -16,6 +16,11 @@
  *  - /ai-cinematic-video-generator  (new route)
  *  - /ai-b-roll-generator           (new route)
  *  - /seedance-1-0                  (new marketing route, Seedance 1.0 models)
+ *  - /ai-animation-generator        (new route)
+ *  - /ai-anime-video-generator      (new route)
+ *  - /ai-cartoon-video-generator    (new route)
+ *  - /ai-logo-animation             (new route)
+ *  - /ai-real-estate-video-generator (new route)
  *
  * Copy rules: original English + Chinese, no invented metrics (no user counts,
  * ratings, speeds or prices), no third-party brands other than the real model
@@ -47,6 +52,18 @@ import {
   ZH_AI_VIDEO_AD,
   ZH_ANIMATE_IMAGE_AI,
 } from "./seo-landing-more-3";
+import {
+  EN_AI_ANIMATION,
+  EN_AI_ANIME_VIDEO,
+  EN_AI_CARTOON_VIDEO,
+  EN_AI_LOGO_ANIMATION,
+  EN_AI_REAL_ESTATE_VIDEO,
+  ZH_AI_ANIMATION,
+  ZH_AI_ANIME_VIDEO,
+  ZH_AI_CARTOON_VIDEO,
+  ZH_AI_LOGO_ANIMATION,
+  ZH_AI_REAL_ESTATE_VIDEO,
+} from "./seo-landing-more-4";
 import { EN_SEEDANCE_1_0, ZH_SEEDANCE_1_0 } from "./seo-landing-seedance-1-0";
 
 export type SeoLandingSlug =
@@ -63,7 +80,12 @@ export type SeoLandingSlug =
   | "ai-product-video-generator"
   | "ai-cinematic-video-generator"
   | "ai-b-roll-generator"
-  | "seedance-1-0";
+  | "seedance-1-0"
+  | "ai-animation-generator"
+  | "ai-anime-video-generator"
+  | "ai-cartoon-video-generator"
+  | "ai-logo-animation"
+  | "ai-real-estate-video-generator";
 
 export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator",
@@ -80,6 +102,11 @@ export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-cinematic-video-generator",
   "ai-b-roll-generator",
   "seedance-1-0",
+  "ai-animation-generator",
+  "ai-anime-video-generator",
+  "ai-cartoon-video-generator",
+  "ai-logo-animation",
+  "ai-real-estate-video-generator",
 ];
 
 export type SeoLocale = "en" | "zh";
@@ -608,6 +635,26 @@ export const SEO_LANDING: Record<
   "seedance-1-0": {
     en: EN_SEEDANCE_1_0,
     zh: ZH_SEEDANCE_1_0,
+  },
+  "ai-animation-generator": {
+    en: EN_AI_ANIMATION,
+    zh: ZH_AI_ANIMATION,
+  },
+  "ai-anime-video-generator": {
+    en: EN_AI_ANIME_VIDEO,
+    zh: ZH_AI_ANIME_VIDEO,
+  },
+  "ai-cartoon-video-generator": {
+    en: EN_AI_CARTOON_VIDEO,
+    zh: ZH_AI_CARTOON_VIDEO,
+  },
+  "ai-logo-animation": {
+    en: EN_AI_LOGO_ANIMATION,
+    zh: ZH_AI_LOGO_ANIMATION,
+  },
+  "ai-real-estate-video-generator": {
+    en: EN_AI_REAL_ESTATE_VIDEO,
+    zh: ZH_AI_REAL_ESTATE_VIDEO,
   },
 };
 
