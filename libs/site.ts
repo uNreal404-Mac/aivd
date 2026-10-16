@@ -14,6 +14,7 @@ export const PAYMENT_SITE = "dreamutopia";
 /** Public HTML routes listed in sitemap.xml (reset is noindex). */
 export const PUBLIC_PATHS = [
   "/",
+  "/ai/video",
   "/pricing",
   "/workspace",
   "/auth",

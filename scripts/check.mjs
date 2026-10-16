@@ -152,7 +152,7 @@ else ok.push(`BRAND_NAME is ${JSON.stringify(BRAND)}`);
 mustContain("libs/examples.ts", "BRAND_NAME", "examples pages read BRAND_NAME");
 mustNotContain("libs/examples.ts", "DreamUtopia", "examples.ts does not hardcode DreamUtopia");
 const PUBLIC_PAGES = [
-  { rel: "out/index.html", path: "/", title: "DreamUtopia — Free AI Image & Video Generator" },
+  { rel: "out/index.html", path: "/", title: "AI Video Generator — Create Cinematic AI Videos | DreamUtopia" },
   { rel: "out/pricing.html", path: "/pricing", title: "Pricing Plans | DreamUtopia AI" },
   { rel: "out/workspace.html", path: "/workspace", title: "AI Video Generator – Turn Photos into Videos | DreamUtopia" },
   { rel: "out/auth.html", path: "/auth", title: "Sign in — DreamUtopia" },

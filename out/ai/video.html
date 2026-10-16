@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Video Generator — Image &amp; Text to Video | DreamUtopia</title>
+<meta name="description" content="Free AI video generator by DreamUtopia. Turn any image or text prompt into a cinematic AI video in seconds — no signup required.">
+<link rel="canonical" href="https://dreamutopia-clone.pages.dev/ai/video">
+<link rel="icon" href="/assets/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="/assets/css/hf.css">
+<style>
+/* Local fixes (after hf.css so these win the cascade) */
+#preview{display:block}
+#preview[hidden]{display:none}
+#grid{align-content:start;row-gap:12px}
+</style>
+</head>
+<body>
+
+<header class="hf-nav">
+  <a class="hf-nav__logo" href="/"><img src="/assets/images/logo.webp" alt="DreamUtopia">DreamUtopia</a>
+  <nav class="hf-nav__links">
+    <a href="/">Home</a>
+    <a href="/ai/video">AI Video</a>
+    <a href="/examples">Examples</a>
+    <a href="/pricing">Pricing</a>
+  </nav>
+  <div class="hf-nav__right">
+    <a class="credit-chip" href="/pricing">0 credits</a>
+    <a class="btn-login" href="/auth">Login</a>
+    <button class="hf-nav__menu" aria-label="Menu">☰</button>
+  </div>
+</header>
+
+<main class="gen-layout">
+  <aside class="gen-panel">
+    <h1 style="font-size:20px;margin:0 0 16px">AI Video Generator</h1>
+
+    <label class="gen-upload">
+      <input type="file" accept="image/*" id="file" hidden>
+      <span>Upload Start Image</span>
+      <span>PNG, JPG or WebP · previewed locally</span>
+      <img id="preview" alt="Upload preview" hidden style="max-height:150px;border-radius:8px">
+    </label>
+
+    <label class="gen-field" for="prompt">
+      <span>Describe Your Video</span>
+      <textarea id="prompt" placeholder="A slow dolly-in through a neon city at night, cinematic, 35mm"></textarea>
+    </label>
+
+    <label class="gen-field" for="model">
+      <span>Model</span>
+      <select class="gen-select" id="model">
+        <option value="cinematic">Cinematic</option>
+        <option value="image-to-video">Image to Video</option>
+        <option value="text-to-video">Text to Video</option>
+        <option value="start-end-frame">Start &amp; End Frame</option>
+      </select>
+    </label>
+
+    <div class="gen-field">
+      <span>Duration</span>
+      <div class="gen-segment">
+        <button type="button" class="is-active active">5s</button>
+        <button type="button">10s</button>
+      </div>
+    </div>
+
+    <div class="gen-field">
+      <span>Aspect</span>
+      <div class="gen-segment">
+        <button type="button" class="is-active active">16:9</button>
+        <button type="button">9:16</button>
+        <button type="button">1:1</button>
+      </div>
+    </div>
+
+    <p class="notice" style="margin:16px 0 0">Estimated: 10 credits</p>
+
+    <button class="gen-submit" id="gen" type="button">Generate</button>
+
+    <p class="notice" id="notice" hidden style="margin-top:12px">Public generation is not open yet — <a href="/pricing">see pricing</a></p>
+  </aside>
+
+  <section class="gen-result">
+    <h2 class="hf-section-title" style="font-size:20px">Results</h2>
+    <div class="gen-segment" style="width:max-content;margin-bottom:16px">
+      <button type="button" class="is-active active">All</button>
+      <button type="button">Videos</button>
+      <button type="button">Images</button>
+    </div>
+
+    <p class="gen-result__empty" id="empty">Your generations will appear here</p>
+
+    <div class="gen-result__grid" id="grid">
+      <figure style="margin:0">
+        <img src="/assets/demo/0_out_68e31a44b7b1d011.jpg" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="/assets/demo/0_out_980c5a0e163959b6.jpg" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="/assets/demo/0_out_f7d00e65d3c1a45d.jpg" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="/assets/images/g1.webp" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="/assets/images/g2.webp" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="/assets/images/g3.webp" alt="AI video sample" loading="lazy">
+        <figcaption class="notice" style="padding:6px 0">Sample</figcaption>
+      </figure>
+    </div>
+
+    <p class="notice" style="margin-top:16px">
+      The DreamUtopia free AI video generator turns a single image or a written prompt into a
+      short cinematic clip. Pick a model, choose your duration and aspect ratio, and describe the
+      motion you want — camera moves, mood, lighting and style. Generations normally finish in
+      under two minutes and you keep full ownership of everything you create.
+    </p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var prompt = params.get('prompt');
+  if (prompt) document.getElementById('prompt').value = prompt;
+  var model = params.get('model');
+  if (model) {
+    var sel = document.getElementById('model');
+    if ([].some.call(sel.options, function (o) { return o.value === model; })) sel.value = model;
+  }
+
+  document.querySelectorAll('.gen-segment').forEach(function (group) {
+    group.addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+      group.querySelectorAll('button').forEach(function (b) {
+        b.classList.toggle('is-active', b === btn);
+        b.classList.toggle('active', b === btn);
+      });
+    });
+  });
+
+  var file = document.getElementById('file');
+  var preview = document.getElementById('preview');
+  var previewUrl = null;
+  file.addEventListener('change', function () {
+    var f = file.files && file.files[0];
+    if (!f) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(f);
+    preview.src = previewUrl;
+    preview.removeAttribute('hidden');
+  });
+
+  document.getElementById('gen').addEventListener('click', function () {
+    document.getElementById('notice').hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
