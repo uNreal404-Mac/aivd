@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { signOutboundText } from "../src/config.mjs";
-import { getBotOpenId, getTenantAccessToken, replyToMessage, replyUuid } from "../src/feishu-api.mjs";
+import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage, replyUuid } from "../src/feishu-api.mjs";
 
 function fakeKv(seed = {}) {
   const values = new Map(Object.entries(seed));
@@ -133,4 +133,64 @@ test("throws when the Feishu reply API rejects the request", async () => {
     text: "回复内容",
     fetchImpl: async () => jsonResponse({ code: 11223, msg: "no permission" }),
   }));
+});
+
+test("uses the configured bot open_id without touching KV or the bot API", async () => {
+  const kv = fakeKv();
+  let fetchCalls = 0;
+
+  const openId = await getBotOpenId({
+    kv,
+    token: "tenant-token",
+    env: { FEISHU_BOT_OPEN_ID: "ou_configured" },
+    fetchImpl: async () => { fetchCalls += 1; throw new Error("unexpected fetch"); },
+  });
+
+  assert.equal(openId, "ou_configured");
+  assert.equal(fetchCalls, 0);
+  assert.deepEqual(kv.puts, []);
+});
+
+test("loads and caches a sender name from the contact API", async () => {
+  const kv = fakeKv();
+  const calls = [];
+  const fetchImpl = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return jsonResponse({ code: 0, data: { user: { name: "老王" } } });
+  };
+
+  assert.equal(await getUserName({ kv, token: "tenant-token", openId: "ou_user", fetchImpl }), "老王");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://open.feishu.cn/open-apis/contact/v3/users/ou_user?user_id_type=open_id");
+  assert.equal(calls[0].init.method, "GET");
+  assert.equal(calls[0].init.headers.Authorization, "Bearer tenant-token");
+
+  assert.equal(await getUserName({ kv, token: "tenant-token", openId: "ou_user", fetchImpl }), "老王");
+  assert.equal(calls.length, 1);
+  assert.deepEqual(kv.puts, [{
+    key: "feishu:user_name:ou_user",
+    value: "老王",
+    options: { expirationTtl: 86400 },
+  }]);
+});
+
+test("returns an empty sender name instead of throwing when the contact lookup fails", async () => {
+  assert.equal(await getUserName({
+    kv: fakeKv(),
+    token: "tenant-token",
+    openId: "ou_user",
+    fetchImpl: async () => new Response("", { status: 500 }),
+  }), "");
+  assert.equal(await getUserName({
+    kv: fakeKv(),
+    token: "tenant-token",
+    openId: "ou_user",
+    fetchImpl: async () => jsonResponse({ code: 41050, msg: "no permission" }),
+  }), "");
+  assert.equal(await getUserName({
+    kv: fakeKv(),
+    token: "tenant-token",
+    openId: "",
+    fetchImpl: async () => { throw new Error("unexpected fetch"); },
+  }), "");
 });

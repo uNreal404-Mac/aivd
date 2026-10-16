@@ -5,6 +5,7 @@ const TOKEN_CACHE_KEY = "feishu:tenant_access_token";
 const BOT_OPEN_ID_CACHE_KEY = "feishu:bot:open_id";
 const TOKEN_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 const BOT_OPEN_ID_TTL_SECONDS = 24 * 60 * 60;
+const USER_NAME_TTL_SECONDS = 24 * 60 * 60;
 const encoder = new TextEncoder();
 
 function currentTime(now) {
@@ -66,7 +67,10 @@ export async function getTenantAccessToken({ kv, appId, appSecret, fetchImpl = f
   return payload.tenant_access_token;
 }
 
-export async function getBotOpenId({ kv, token, fetchImpl = fetch }) {
+export async function getBotOpenId({ kv, token, fetchImpl = fetch, env }) {
+  const configuredOpenId = typeof env?.FEISHU_BOT_OPEN_ID === "string" ? env.FEISHU_BOT_OPEN_ID : "";
+  if (configuredOpenId) return configuredOpenId;
+
   const cachedOpenId = await kv.get(BOT_OPEN_ID_CACHE_KEY);
   if (typeof cachedOpenId === "string" && cachedOpenId) return cachedOpenId;
 
@@ -82,6 +86,39 @@ export async function getBotOpenId({ kv, token, fetchImpl = fetch }) {
 
   await kv.put(BOT_OPEN_ID_CACHE_KEY, openId, { expirationTtl: BOT_OPEN_ID_TTL_SECONDS });
   return openId;
+}
+
+export async function getUserName({ kv, token, openId, fetchImpl = fetch }) {
+  if (typeof openId !== "string" || !openId) return "";
+  const cacheKey = `feishu:user_name:${openId}`;
+
+  try {
+    const cached = await kv.get(cacheKey);
+    if (typeof cached === "string" && cached) return cached;
+  } catch {
+    // A cache miss or read failure falls through to the API.
+  }
+
+  try {
+    const response = await fetchImpl(
+      `${FEISHU_API}/contact/v3/users/${encodeURIComponent(openId)}?user_id_type=open_id`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    const payload = await jsonResponse(response);
+    const name = payload?.data?.user?.name;
+    if (payload?.code !== 0 || typeof name !== "string" || !name) return "";
+    try {
+      await kv.put(cacheKey, name, { expirationTtl: USER_NAME_TTL_SECONDS });
+    } catch {
+      // Caching is best effort.
+    }
+    return name;
+  } catch {
+    return "";
+  }
 }
 
 export async function replyUuid(messageId) {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decodeFeishuRequest, selectMessageEvent, validateVerificationToken } from "../src/events.mjs";
+import { decodeFeishuRequest, extractMessageText, mentionsBot, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "../src/events.mjs";
+import { GROK_FORWARD_CHAT_ID } from "../src/forward.mjs";
 
 const encoder = new TextEncoder();
 
@@ -196,4 +197,182 @@ test("ignores unrelated events, bot-authored messages, non-text messages, and mi
   assert.equal(selectMessageEvent(eventPayload({ messageType: "image" }), "ou_bot"), null);
   assert.equal(selectMessageEvent(eventPayload({ eventId: "" }), "ou_bot"), null);
   assert.equal(selectMessageEvent(eventPayload({ messageId: "" }), "ou_bot"), null);
+});
+
+test("extracts plain text message content", () => {
+  assert.equal(
+    extractMessageText({ message_type: "text", content: JSON.stringify({ text: "你好" }) }),
+    "你好",
+  );
+});
+
+test("renders a rich post with a title and every supported element type", () => {
+  const message = {
+    message_type: "post",
+    content: JSON.stringify({
+      title: "发布",
+      content: [[
+        { tag: "text", text: "看 " },
+        { tag: "a", text: "官网", href: "https://example.com" },
+        { tag: "a", text: "同链接", href: "同链接" },
+        { tag: "at", user_name: "老三" },
+        { tag: "at", user_id: "ou_x" },
+        { tag: "img", image_key: "img_1" },
+        { tag: "media", file_key: "file_1" },
+        { tag: "emotion", emoji_type: "SMILE" },
+        { tag: "unknown", text: "ignored" },
+      ]],
+    }),
+  };
+
+  assert.equal(
+    extractMessageText(message),
+    "发布\n看 官网 (https://example.com)同链接@老三@ou_x[image:img_1][media:file_1][SMILE]",
+  );
+});
+
+test("renders a post keyed by language with a blank line between languages", () => {
+  const message = {
+    message_type: "post",
+    content: JSON.stringify({
+      zh_cn: { title: "标题", content: [[{ tag: "text", text: "中文" }]] },
+      en_us: { title: "Title", content: [[{ tag: "text", text: "English" }]] },
+    }),
+  };
+
+  assert.equal(extractMessageText(message), "标题\n中文\n\nTitle\nEnglish");
+});
+
+test("omits an empty post title and returns null for an empty post", () => {
+  assert.equal(
+    extractMessageText({
+      message_type: "post",
+      content: JSON.stringify({ title: "", content: [[{ tag: "text", text: "只有正文" }]] }),
+    }),
+    "只有正文",
+  );
+  assert.equal(
+    extractMessageText({ message_type: "post", content: JSON.stringify({ content: [] }) }),
+    null,
+  );
+});
+
+test("extracts image messages as a marker and returns null for other types", () => {
+  assert.equal(
+    extractMessageText({ message_type: "image", content: JSON.stringify({ image_key: "img_9" }) }),
+    "[image:img_9]",
+  );
+  assert.equal(extractMessageText({ message_type: "file", content: JSON.stringify({ file_key: "f" }) }), null);
+  assert.equal(extractMessageText({ message_type: "text", content: "not-json" }), null);
+});
+
+function forwardPayload({
+  eventId = "evt_fwd",
+  messageId = "om_fwd",
+  chatId = GROK_FORWARD_CHAT_ID,
+  chatType = "group",
+  messageType = "text",
+  senderType = "user",
+  eventType = "im.message.receive_v1",
+  content = JSON.stringify({ text: "随便聊聊" }),
+} = {}) {
+  return {
+    schema: "2.0",
+    header: { event_id: eventId, event_type: eventType, token: "verify-token" },
+    event: {
+      sender: { sender_type: senderType, sender_id: { open_id: "ou_user", name: "老王" } },
+      message: {
+        message_id: messageId,
+        chat_id: chatId,
+        chat_type: chatType,
+        message_type: messageType,
+        content,
+      },
+    },
+  };
+}
+
+test("selects any forward-chat group message without requiring a mention", () => {
+  assert.deepEqual(selectForwardMessage(forwardPayload(), GROK_FORWARD_CHAT_ID), {
+    eventId: "evt_fwd",
+    messageId: "om_fwd",
+    chatType: "group",
+    messageType: "text",
+    text: "随便聊聊",
+  });
+});
+
+test("selects forward messages only from the configured chat and from users", () => {
+  assert.equal(selectForwardMessage(forwardPayload({ chatId: "oc_other" }), GROK_FORWARD_CHAT_ID), null);
+  assert.equal(selectForwardMessage(forwardPayload({ chatType: "p2p" }), GROK_FORWARD_CHAT_ID), null);
+  assert.equal(selectForwardMessage(forwardPayload({ senderType: "app" }), GROK_FORWARD_CHAT_ID), null);
+  assert.equal(selectForwardMessage(forwardPayload({ eventType: "im.message.reaction_v1" }), GROK_FORWARD_CHAT_ID), null);
+  assert.equal(selectForwardMessage(forwardPayload({ messageId: "" }), GROK_FORWARD_CHAT_ID), null);
+});
+
+test("marks an unsupported forward message instead of dropping it", () => {
+  const selected = selectForwardMessage(
+    forwardPayload({ messageType: "file", content: JSON.stringify({ file_key: "file_1" }) }),
+    GROK_FORWARD_CHAT_ID,
+  );
+
+  assert.deepEqual(selected, {
+    eventId: "evt_fwd",
+    messageId: "om_fwd",
+    chatType: "group",
+    messageType: "file",
+    text: "[unsupported:file]",
+  });
+});
+
+test("logs an ignored non-text reply message and an unsupported forward message", () => {
+  const logged = [];
+  const original = console.log;
+  console.log = (...args) => { logged.push(args.join(" ")); };
+  try {
+    assert.equal(selectMessageEvent(eventPayload({ messageType: "image" }), "ou_bot"), null);
+    const selected = selectForwardMessage(
+      forwardPayload({ messageType: "file", content: JSON.stringify({ file_key: "file_1" }) }),
+      GROK_FORWARD_CHAT_ID,
+    );
+    assert.equal(selected.text, "[unsupported:file]");
+  } finally {
+    console.log = original;
+  }
+
+  assert.ok(logged.some((line) => line.includes("ignored message_type=image")));
+  assert.ok(logged.some((line) => line.includes("unsupported message_type=file")));
+});
+
+test("detects a bot mention from the text mentions array", () => {
+  const message = {
+    message_type: "text",
+    content: JSON.stringify({ text: "@_bot_1 需求：落地页要加中文" }),
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+  };
+
+  assert.equal(mentionsBot(message, "ou_bot"), true);
+  assert.equal(mentionsBot(message, "ou_other"), false);
+  assert.equal(mentionsBot(message, ""), false);
+});
+
+test("detects a bot mention from a post at element", () => {
+  const message = {
+    message_type: "post",
+    content: JSON.stringify({
+      title: "需求",
+      content: [[{ tag: "at", user_id: "ou_bot" }, { tag: "text", text: " 落地页要加中文" }]],
+    }),
+    mentions: [],
+  };
+  const otherBot = {
+    message_type: "post",
+    content: JSON.stringify({
+      zh_cn: { content: [[{ tag: "at", user_id: "ou_other" }]] },
+    }),
+  };
+
+  assert.equal(mentionsBot(message, "ou_bot"), true);
+  assert.equal(mentionsBot(otherBot, "ou_bot"), false);
+  assert.equal(mentionsBot({ message_type: "text", content: JSON.stringify({ text: "没有提到" }) }, "ou_bot"), false);
 });

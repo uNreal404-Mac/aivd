@@ -91,6 +91,83 @@ export function validateVerificationToken(payload, configuredToken) {
   return sameToken(receivedToken, configuredToken);
 }
 
+function parseMessageContent(message) {
+  if (typeof message?.content !== "string") return null;
+  try {
+    return JSON.parse(message.content);
+  } catch {
+    return null;
+  }
+}
+
+function renderPostElement(element) {
+  if (!element || typeof element !== "object") return "";
+  switch (element.tag) {
+    case "text":
+      return typeof element.text === "string" ? element.text : "";
+    case "a": {
+      const label = typeof element.text === "string" ? element.text : "";
+      if (typeof element.href === "string" && element.href && element.href !== label) return `${label} (${element.href})`;
+      return label;
+    }
+    case "at": {
+      const name = element.user_name || element.user_id;
+      return `@${typeof name === "string" && name ? name : "user"}`;
+    }
+    case "img":
+      return `[image:${element.image_key}]`;
+    case "media":
+      return `[media:${element.file_key}]`;
+    case "emotion":
+      return `[${element.emoji_type}]`;
+    default:
+      return "";
+  }
+}
+
+function renderPostBlock(block) {
+  if (!block || typeof block !== "object") return "";
+  const lines = [];
+  if (typeof block.title === "string" && block.title.length > 0) lines.push(block.title);
+  if (Array.isArray(block.content)) {
+    for (const paragraph of block.content) {
+      const elements = Array.isArray(paragraph) ? paragraph : [paragraph];
+      lines.push(elements.map(renderPostElement).join(""));
+    }
+  }
+  return lines.join("\n");
+}
+
+function renderPostContent(content) {
+  if (!content || typeof content !== "object") return null;
+  if (Array.isArray(content.content)) {
+    const rendered = renderPostBlock(content);
+    return rendered.length > 0 ? rendered : null;
+  }
+  const blocks = [];
+  for (const value of Object.values(content)) {
+    if (!value || typeof value !== "object") continue;
+    const rendered = renderPostBlock(value);
+    if (rendered.length > 0) blocks.push(rendered);
+  }
+  return blocks.length > 0 ? blocks.join("\n\n") : null;
+}
+
+export function extractMessageText(message) {
+  const content = parseMessageContent(message);
+  if (content === null) return null;
+  switch (message?.message_type) {
+    case "text":
+      return typeof content.text === "string" ? content.text : null;
+    case "post":
+      return renderPostContent(content);
+    case "image":
+      return typeof content.image_key === "string" ? `[image:${content.image_key}]` : null;
+    default:
+      return null;
+  }
+}
+
 function textFromMessage(message) {
   try {
     const content = JSON.parse(message.content);
@@ -111,6 +188,7 @@ export function messageContext(payload) {
     chatId: typeof message.chat_id === "string" ? message.chat_id : "",
     senderOpenId: typeof senderId.open_id === "string" ? senderId.open_id : "",
     senderName: named,
+    createTime: typeof message.create_time === "string" ? message.create_time : "",
   };
 }
 
@@ -120,7 +198,11 @@ export function selectMessageEvent(payload, botOpenId) {
   const message = payload?.event?.message;
   const messageId = message?.message_id;
   if (typeof eventId !== "string" || !eventId || typeof messageId !== "string" || !messageId) return null;
-  if (payload?.event?.sender?.sender_type !== "user" || message?.message_type !== "text") return null;
+  if (payload?.event?.sender?.sender_type !== "user") return null;
+  if (message?.message_type !== "text") {
+    console.log(`[feishu] ignored message_type=${message?.message_type ?? ""} message_id=${messageId}`);
+    return null;
+  }
 
   let text = textFromMessage(message);
   if (text === null) return null;
@@ -136,4 +218,51 @@ export function selectMessageEvent(payload, botOpenId) {
 
   text = text.split(botMention.key).join("");
   return { eventId, messageId, chatType: "group", text };
+}
+
+export function selectForwardMessage(payload, forwardChatId) {
+  if (payload?.header?.event_type !== "im.message.receive_v1") return null;
+  const eventId = payload.header.event_id;
+  const message = payload?.event?.message;
+  const messageId = message?.message_id;
+  if (typeof eventId !== "string" || !eventId || typeof messageId !== "string" || !messageId) return null;
+  if (payload?.event?.sender?.sender_type !== "user") return null;
+  if (message?.chat_type !== "group") return null;
+  if (typeof forwardChatId !== "string" || !forwardChatId || message?.chat_id !== forwardChatId) return null;
+
+  const messageType = message.message_type;
+  let text = extractMessageText(message);
+  if (text === null) {
+    text = `[unsupported:${messageType}]`;
+    console.log(`[feishu] unsupported message_type=${messageType} message_id=${messageId}`);
+  }
+  return { eventId, messageId, chatType: "group", messageType, text };
+}
+
+function postBlocks(content) {
+  if (!content || typeof content !== "object") return [];
+  if (Array.isArray(content.content)) return [content];
+  return Object.values(content).filter((block) => block && typeof block === "object" && Array.isArray(block.content));
+}
+
+function atElementMatches(element, botOpenId) {
+  if (!element || typeof element !== "object" || element.tag !== "at") return false;
+  return element.user_id === botOpenId || element.open_id === botOpenId;
+}
+
+export function mentionsBot(message, botOpenId) {
+  if (typeof botOpenId !== "string" || !botOpenId) return false;
+  if (Array.isArray(message?.mentions) && message.mentions.some((mention) => mention?.id?.open_id === botOpenId)) {
+    return true;
+  }
+
+  const content = parseMessageContent(message);
+  if (!content || typeof content !== "object") return false;
+  for (const block of postBlocks(content)) {
+    for (const paragraph of block.content) {
+      const elements = Array.isArray(paragraph) ? paragraph : [paragraph];
+      if (elements.some((element) => atElementMatches(element, botOpenId))) return true;
+    }
+  }
+  return false;
 }

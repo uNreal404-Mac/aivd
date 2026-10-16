@@ -3,6 +3,7 @@ import test from "node:test";
 import { dedupeKeys } from "../src/dedupe.mjs";
 import { HELP_MESSAGE, PROGRESS_MESSAGE } from "../src/commands.mjs";
 import { signOutboundText } from "../src/config.mjs";
+import { GROK_FORWARD_CHAT_ID } from "../src/forward.mjs";
 import { hmacSha256Hex } from "../src/github.mjs";
 import { createWorker } from "../src/worker.mjs";
 
@@ -74,9 +75,17 @@ function makeEnv(kv = fakeKv()) {
   };
 }
 
+const RESEND_URL = "https://api.resend.com/emails";
+
 function makeFeishuFetch({ failReplyCount = 0, replies = [], calls = [] } = {}) {
   return async (url, init = {}) => {
     calls.push({ url, init });
+    if (url === RESEND_URL) {
+      return Response.json({ ok: true });
+    }
+    if (url === RESEND_URL) {
+      return Response.json({ ok: true });
+    }
     if (url.endsWith("/auth/v3/tenant_access_token/internal")) {
       return Response.json({ code: 0, tenant_access_token: "tenant-test-token", expire: 7200 });
     }
@@ -606,6 +615,56 @@ test("acks Feishu before model work finishes when ctx.waitUntil is used", async 
   await Promise.all(pending);
   assert.equal(replies.length, 1, "reply should be sent after waitUntil work");
   assert.match(JSON.parse(replies[0].content).text, /先聊两句/);
+});
+
+test("emails a forward-chat message with no mention and never looks up the bot open_id", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [],
+    messageId: "om_fwd_worker",
+    eventId: "evt_fwd_worker",
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(replies.length, 0);
+  assert.equal(calls.some(({ url }) => String(url) === RESEND_URL), true);
+  assert.equal(calls.some(({ url }) => String(url).includes("/bot/v3/info")), false);
+});
+
+test("does not mark a forward-chat message processed when the email fails, so Feishu retries", async () => {
+  const kv = fakeKv();
+  const baseFetch = makeFeishuFetch({});
+  const worker = createWorker({
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === RESEND_URL) return new Response("", { status: 502 });
+      return baseFetch(url, init);
+    },
+  });
+  const env = makeEnv(kv);
+  env.RESEND_API_KEY = "re_test_key";
+  const [eventKey, messageKey] = dedupeKeys("evt_fwd_fail", "om_fwd_fail");
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [],
+    messageId: "om_fwd_fail",
+    eventId: "evt_fwd_fail",
+  }), env);
+
+  assert.equal(response.status, 503);
+  assert.equal(await kv.get(eventKey), null);
+  assert.equal(await kv.get(messageKey), null);
 });
 
 test("ignores duplicate event_id when ctx.waitUntil is used", async () => {

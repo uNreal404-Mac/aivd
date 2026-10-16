@@ -1,12 +1,13 @@
+import { ACK_SIGNATURE, ACK_TTL_SECONDS, ackKey, buildAckText } from "./ack.mjs";
 import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
-import { decodeFeishuRequest, messageContext, selectMessageEvent, validateVerificationToken } from "./events.mjs";
+import { decodeFeishuRequest, mentionsBot, messageContext, selectForwardMessage, selectMessageEvent, validateVerificationToken } from "./events.mjs";
 import { forwardToGrok, GROK_FORWARD_CHAT_ID } from "./forward.mjs";
 import { fetchHealthSummary } from "./health.mjs";
-import { getBotOpenId, getTenantAccessToken, replyToMessage } from "./feishu-api.mjs";
+import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
-import { replyWithOptionalLlm } from "./llm.mjs";
+import { replyWithOptionalLlm, summarizeForAck } from "./llm.mjs";
 import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
 
 const SITE_URL = botConfig.siteUrl;
@@ -140,6 +141,42 @@ function eligibleGroupShape(payload) {
     && hasMessageIdentity(payload);
 }
 
+const AT_TAG_PATTERN = /"tag"\s*:\s*"at"/u;
+
+function hasMentionEvidence(message) {
+  if (Array.isArray(message?.mentions) && message.mentions.length > 0) return true;
+  return typeof message?.content === "string" && AT_TAG_PATTERN.test(message.content);
+}
+
+async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, now }) {
+  if (payload?.event?.sender?.sender_type !== "user") return;
+  if (!hasMentionEvidence(payload?.event?.message)) return;
+
+  const marker = ackKey(selected.messageId);
+  if (await kv.get(marker)) return;
+
+  const token = await getTenantAccessToken({
+    kv,
+    appId: env.FEISHU_APP_ID,
+    appSecret: env.FEISHU_APP_SECRET,
+    fetchImpl,
+    now,
+  });
+  const botOpenId = await getBotOpenId({ kv, token, fetchImpl, now, env });
+  if (typeof context?.senderOpenId === "string" && context.senderOpenId && context.senderOpenId === botOpenId) return;
+  if (!mentionsBot(payload?.event?.message, botOpenId)) return;
+
+  const summary = await summarizeForAck({ env, text: selected.text, fetchImpl });
+  await kv.put(marker, "1", { expirationTtl: ACK_TTL_SECONDS });
+  await replyToMessage({
+    token,
+    messageId: selected.messageId,
+    text: buildAckText(summary),
+    fetchImpl,
+    config: { ...botConfig, signature: ACK_SIGNATURE },
+  });
+}
+
 async function commandReply({
   command,
   selected,
@@ -212,6 +249,7 @@ export function createWorker({
       if (typeof env?.FEISHU_VERIFICATION_TOKEN !== "string" || !env.FEISHU_VERIFICATION_TOKEN) {
         return textResponse("Webhook is not configured", 503);
       }
+      const receivedAt = now();
       const requestBudgetMs = Number.isFinite(callbackBudgetMs) && callbackBudgetMs > 0
         ? Math.min(CALLBACK_BUDGET_MS, callbackBudgetMs)
         : CALLBACK_BUDGET_MS;
@@ -245,7 +283,66 @@ export function createWorker({
 
         let token = null;
         let selected = null;
-        const chatType = payload?.event?.message?.chat_type;
+        const message = payload?.event?.message;
+        const chatType = message?.chat_type;
+
+        if (chatType === "group" && message?.chat_id === GROK_FORWARD_CHAT_ID) {
+          // The forwarding chat is mirror-only: it never gets a Feishu reply, and every accepted
+          // message is emailed to Grok whether or not it mentions the bot.
+          const forwarded = selectForwardMessage(payload, GROK_FORWARD_CHAT_ID);
+          if (!forwarded) return;
+          if (await hasProcessed(kv, forwarded.eventId, forwarded.messageId)) return;
+
+          const context = messageContext(payload);
+          let senderName = context.senderName;
+          if (!senderName && context.senderOpenId) {
+            try {
+              token = await getTenantAccessToken({
+                kv,
+                appId: env.FEISHU_APP_ID,
+                appSecret: env.FEISHU_APP_SECRET,
+                fetchImpl: workFetch,
+                now,
+              });
+              senderName = await getUserName({
+                kv,
+                token,
+                openId: context.senderOpenId,
+                fetchImpl: workFetch,
+              });
+            } catch {
+              senderName = "";
+            }
+          }
+
+          const result = await forwardToGrok({
+            env,
+            kv,
+            payload,
+            selected: forwarded,
+            context: { ...context, senderName: senderName || "" },
+            fetchImpl: workFetch,
+            receivedAt,
+          });
+          if (!result.ok) throw new Error("forward_failed");
+          await markProcessed(kv, forwarded.eventId, forwarded.messageId);
+
+          const ackWork = sendForwardAck({
+            payload,
+            selected: forwarded,
+            context: { ...context, senderName: senderName || "" },
+            kv,
+            env,
+            fetchImpl: workFetch,
+            now,
+          }).catch((error) => {
+            console.log(`[feishu-ack] message_id=${forwarded.messageId} failed error=${error?.message ?? error}`);
+          });
+          if (deferWork) ctx.waitUntil(ackWork);
+          else await ackWork;
+          return;
+        }
+
         if (chatType === "p2p") {
           selected = selectMessageEvent(payload, "");
         } else if (chatType === "group") {
@@ -257,7 +354,7 @@ export function createWorker({
             fetchImpl: workFetch,
             now,
           });
-          const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now });
+          const botOpenId = await getBotOpenId({ kv, token, fetchImpl: workFetch, now, env });
           selected = selectMessageEvent(payload, botOpenId);
         } else {
           return;
@@ -277,14 +374,6 @@ export function createWorker({
 
         const command = parseCommand(selected.text);
         const context = messageContext(payload);
-        await forwardToGrok({ env, kv, payload, selected, context, fetchImpl: workFetch });
-        // The forwarding chat is mirror-only: whatever the message says (commands included) and
-        // whatever Resend answers, it never gets a Feishu reply. It is always marked processed so
-        // Feishu retries do not send the email (or a reply) twice.
-        if (context?.chatId === GROK_FORWARD_CHAT_ID) {
-          await markProcessed(kv, selected.eventId, selected.messageId);
-          return;
-        }
         const text = await commandReply({
           command,
           selected,

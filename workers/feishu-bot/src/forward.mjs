@@ -6,53 +6,96 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const FORWARD_TIMEOUT_MS = 8000;
 const FORWARD_TTL_SECONDS = 604800;
 
-export function forwardKey(eventId) {
-  return `feishu:forwarded:event:${eventId}`;
+const RETRY_DELAYS_MS = [1000, 3000];
+
+export function forwardKey(messageId) {
+  return `feishu:forwarded:message:${messageId}`;
 }
 
-export async function forwardToGrok({ env, kv, payload, selected, context, fetchImpl }) {
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function forwardToGrok({
+  env,
+  kv,
+  payload,
+  selected,
+  context,
+  fetchImpl,
+  receivedAt,
+  sleep = defaultSleep,
+}) {
+  if (selected?.chatType !== "group") return { ok: false, attempts: 0, status: null };
+  if (context?.chatId !== GROK_FORWARD_CHAT_ID) return { ok: false, attempts: 0, status: null };
+
+  const apiKey = typeof env?.RESEND_API_KEY === "string" ? env.RESEND_API_KEY : "";
+  if (!apiKey || !kv) return { ok: false, attempts: 0, status: null };
+
+  const dedupeKey = forwardKey(selected.messageId);
   try {
-    if (selected?.chatType !== "group") return false;
-    if (context?.chatId !== GROK_FORWARD_CHAT_ID) return false;
+    if (await kv.get(dedupeKey)) return { ok: true, attempts: 0, status: null };
+  } catch {
+    return { ok: false, attempts: 0, status: null };
+  }
 
-    const apiKey = typeof env?.RESEND_API_KEY === "string" ? env.RESEND_API_KEY : "";
-    if (!apiKey || !kv) return false;
-
-    const dedupeKey = forwardKey(selected.eventId);
-    if (await kv.get(dedupeKey)) return true;
-
-    const text = [
-      `sender_open_id: ${context.senderOpenId}`,
-      `sender_name: ${context.senderName}`,
+  const receivedAtMs = Number.isFinite(receivedAt) ? receivedAt : Date.now();
+  const createTime = payload?.event?.message?.create_time ?? "";
+  const body = JSON.stringify({
+    from: FORWARD_EMAIL_FROM,
+    to: FORWARD_EMAIL_TO,
+    subject: `[feishu] ${context.senderName || context.senderOpenId || "unknown"} ${selected.messageId}`,
+    text: [
+      `sender_name: ${context.senderName ?? ""}`,
+      `sender_open_id: ${context.senderOpenId ?? ""}`,
+      `message_type: ${selected.messageType ?? ""}`,
       `text: ${typeof selected.text === "string" ? selected.text.trim() : selected.text}`,
       `chat_id: ${context.chatId}`,
       `message_id: ${selected.messageId}`,
-      `create_time: ${payload?.event?.message?.create_time ?? ""}`,
-    ].join("\n");
+      `create_time: ${createTime}`,
+    ].join("\n"),
+  });
 
-    const response = await fetchImpl(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: FORWARD_EMAIL_FROM,
-        to: FORWARD_EMAIL_TO,
-        subject: `[feishu] ${context.senderName || "unknown"}`,
-        text,
-      }),
-      signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS),
-    });
-
-    if (!response?.ok) {
-      console.error(`Resend email forward failed with status ${response?.status ?? "unknown"}`);
-      return false;
+  let attempts = 0;
+  let status = null;
+  for (let index = 0; index <= RETRY_DELAYS_MS.length; index += 1) {
+    attempts += 1;
+    let resendAt = Date.now();
+    let ok = false;
+    try {
+      const response = await fetchImpl(RESEND_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${apiKey}`,
+        },
+        body,
+        signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS),
+      });
+      resendAt = Date.now();
+      status = response?.status ?? null;
+      ok = Boolean(response?.ok);
+    } catch (error) {
+      resendAt = Date.now();
+      status = error?.status ?? null;
     }
-    await kv.put(dedupeKey, "1", { expirationTtl: FORWARD_TTL_SECONDS });
-    return true;
-  } catch (error) {
-    console.error(`Resend email forward failed with status ${error?.status ?? "unknown"}`);
-    return false;
+
+    console.log(
+      `[feishu-forward] message_id=${selected.messageId} create_time=${createTime} received_at=${receivedAtMs}`
+      + ` resend_at=${resendAt} status=${status ?? "unknown"} attempt=${attempts} latency_ms=${resendAt - receivedAtMs}`,
+    );
+
+    if (ok) {
+      try {
+        await kv.put(dedupeKey, "1", { expirationTtl: FORWARD_TTL_SECONDS });
+      } catch {
+        // Marking is best effort; a 2xx already sent the email.
+      }
+      return { ok: true, attempts, status };
+    }
+
+    if (index < RETRY_DELAYS_MS.length) await sleep(RETRY_DELAYS_MS[index]);
   }
+
+  return { ok: false, attempts, status };
 }
