@@ -35,6 +35,8 @@ export function LandingFooter() {
       links: [
         { title: t('privacy'), href: "/privacy" },
         { title: t('terms'), href: "/terms" },
+        { title: locale === "zh" ? "退款政策" : "Refund Policy", href: "/refund-policy" },
+        { title: locale === "zh" ? "联系我们" : "Contact", href: "/contact" },
         // { title: t('cookie'), href: "/cookies" },
       ],
     },
