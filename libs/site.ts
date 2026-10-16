@@ -22,5 +22,6 @@ export const PUBLIC_PATHS = [
   "/image-to-video",
   "/photo-to-video",
   "/free-ai-video",
+  "/ai-video",
   "/examples",
 ] as const;

@@ -161,6 +161,7 @@ const PUBLIC_PAGES = [
   { rel: "out/image-to-video.html", path: "/image-to-video", title: "Image to Video AI — Turn a still into a clip | DreamUtopia" },
   { rel: "out/photo-to-video.html", path: "/photo-to-video", title: "Photo to Video AI — Animate a camera photo | DreamUtopia" },
   { rel: "out/free-ai-video.html", path: "/free-ai-video", title: "Free AI Video Generator — 2 Lite clips, no signup | DreamUtopia" },
+  { rel: "out/ai-video.html", path: "/ai-video", title: "AI Video Generator - Text, Image and First/Last Frame | DreamUtopia" },
   { rel: "out/examples.html", path: "/examples", title: `AI Video Examples – Image to Video Samples | ${BRAND}` },
 ];
 {
@@ -501,6 +502,27 @@ mustContain("out/photo-to-video.html", 'href="/workspace"', "photo-to-video CTA 
 mustNotContain("out/photo-to-video.html", 'href="/business"', "photo-to-video has no /business");
 mustContain("out/free-ai-video.html", 'href="/workspace"', "free-ai-video CTA goes to /workspace");
 mustNotContain("out/free-ai-video.html", 'href="/business"', "free-ai-video has no /business");
+mustContain("out/ai-video.html", 'href="/workspace"', "ai-video CTA goes to /workspace");
+mustNotContain("out/ai-video.html", 'href="/business"', "ai-video has no /business");
+{
+  const src = read("out/ai-video.html");
+  const title = (src.match(/<title>([^<]+)<\/title>/) || [])[1] || "";
+  const h1 = (src.match(/<h1[^>]*>([^<]+)<\/h1>/) || [])[1] || "";
+  if (/ai video generator/i.test(title)) ok.push("ai-video title contains 'ai video generator'");
+  else fail.push("ai-video title must contain 'ai video generator'");
+  if (/ai video generator/i.test(h1)) ok.push("ai-video H1 contains 'ai video generator'");
+  else fail.push("ai-video H1 must contain 'ai video generator'");
+  const h1Count = (src.match(/<h1[\s>]/g) || []).length;
+  if (h1Count === 1) ok.push("ai-video has exactly one H1");
+  else fail.push(`ai-video must have exactly one H1 (found ${h1Count})`);
+  const body = src.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
+  for (const needle of ["How it looks", "Models in one workspace", "Built for", "What is AI video generation?", "Lite video = 3 credits"]) {
+    if (body.includes(needle)) ok.push(`ai-video static HTML (no JS) contains ${JSON.stringify(needle)}`);
+    else fail.push(`ai-video static HTML must contain ${JSON.stringify(needle)} outside <script>`);
+  }
+  if (src.includes('"@type":"FAQPage"')) ok.push("ai-video JSON-LD FAQPage");
+  else fail.push("ai-video missing FAQPage JSON-LD");
+}
 mustNotContain("out/sitemap.xml", "/business", "sitemap omits /business");
 mustContain("out/workspace.html", 'DU.t("gen.closed"', "workspace shows 暂未开放 when closed");
 mustContain("out/assets/js/du.js", `const BRAND_NAME = "${BRAND}"`, "du.js BRAND_NAME matches libs/site.ts");
@@ -810,6 +832,7 @@ mustNotContain("functions/robots.txt.ts", "Disallow: /partners", "function robot
     "out/image-to-video.html",
     "out/photo-to-video.html",
     "out/free-ai-video.html",
+    "out/ai-video.html",
     "out/reset.html",
     "out/demo.html",
     "out/examples.html",
