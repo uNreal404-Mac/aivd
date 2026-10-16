@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACK_FALLBACK_TEXT, ackKey, buildAckText } from "../src/ack.mjs";
+import { ACK_FALLBACK_TEXT, ackKey } from "../src/ack.mjs";
 import { dedupeKeys } from "../src/dedupe.mjs";
 import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
@@ -611,7 +611,7 @@ test("forwards an unsupported forward-chat message with a placeholder instead of
   assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
 });
 
-test("emails a forward-chat mention and then replies once with the LLM summary", async () => {
+test("acks a forward-chat mention with the fixed text without ever calling the LLM", async () => {
   const replies = [];
   const forwardCalls = [];
   const llmCalls = [];
@@ -641,10 +641,9 @@ test("emails a forward-chat mention and then replies once with the LLM summary",
 
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 1);
-  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls.length, 0);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, buildAckText("落地页要加中文。"));
-  assert.match(JSON.parse(replies[0].content).text, /老三/);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.equal(await env.BOT_KV.get(ackKey("om_ack")), "1");
 });
 

@@ -107,7 +107,7 @@ export async function forwardToGrok({
   try {
     await kv.delete(dedupeKey);
   } catch {
-    // Clearing is best effort; the placeholder TTL still lets a later delivery retry.
+    // Clearing is best effort; dropping the placeholder clears the in-flight claim.
   }
 
   return { ok: false, attempts, status };

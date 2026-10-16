@@ -241,34 +241,3 @@ export async function replyWithOptionalLlm({
     return HELP_MESSAGE;
   }
 }
-
-export const ACK_SUMMARY_PROMPT = "用一句中文复述用户的需求，不超过40字。只复述，不回答问题，不承诺时间、价格或功能。只输出复述本身。";
-export const DEFAULT_ACK_SUMMARY_TIMEOUT_MS = 5000;
-
-export async function summarizeForAck({
-  env = {},
-  text,
-  fetchImpl = fetch,
-  timeoutMs = DEFAULT_ACK_SUMMARY_TIMEOUT_MS,
-  config = botConfig,
-} = {}) {
-  const llm = resolveLlmConfig(env, config);
-  if (!llm) return "";
-  const user = filterLlmOutput(text);
-  if (!user) return "";
-
-  try {
-    const raw = await completeChat({
-      llm,
-      messages: [
-        { role: "system", content: ACK_SUMMARY_PROMPT },
-        { role: "user", content: user },
-      ],
-      fetchImpl,
-      timeoutMs: resolveLlmTimeoutMs(timeoutMs, DEFAULT_ACK_SUMMARY_TIMEOUT_MS),
-    });
-    return filterLlmOutput(raw).trim();
-  } catch {
-    return "";
-  }
-}

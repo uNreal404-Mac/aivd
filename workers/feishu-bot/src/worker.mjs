@@ -1,4 +1,4 @@
-import { ACK_SIGNATURE, ACK_TTL_SECONDS, ackKey, buildAckText } from "./ack.mjs";
+import { ACK_FALLBACK_TEXT, ACK_SIGNATURE, ACK_TTL_SECONDS, ackKey } from "./ack.mjs";
 import { parseCommand } from "./commands.mjs";
 import { botConfig } from "./config.mjs";
 import { hasProcessed, markProcessed } from "./dedupe.mjs";
@@ -7,7 +7,7 @@ import { forwardToGrok, GROK_FORWARD_CHAT_ID } from "./forward.mjs";
 import { fetchHealthSummary } from "./health.mjs";
 import { getBotOpenId, getTenantAccessToken, getUserName, replyToMessage } from "./feishu-api.mjs";
 import { fetchProgressSummary } from "./progress.mjs";
-import { replyWithOptionalLlm, summarizeForAck } from "./llm.mjs";
+import { replyWithOptionalLlm } from "./llm.mjs";
 import { handleFeishuRequest, handleGithubWebhook } from "./requests.mjs";
 
 const SITE_URL = botConfig.siteUrl;
@@ -169,14 +169,13 @@ async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, 
   if (typeof context?.senderOpenId === "string" && context.senderOpenId && context.senderOpenId === botOpenId) return;
   if (!mentionsBot(payload?.event?.message, botOpenId)) return;
 
-  const summary = await summarizeForAck({ env, text: selected.text, fetchImpl });
   await kv.put(marker, "1", { expirationTtl: ACK_TTL_SECONDS });
   await replyToMessage({
     token,
     messageId: selected.messageId,
-    text: buildAckText(summary),
-    fetchImpl,
+    text: ACK_FALLBACK_TEXT,
     config: { ...botConfig, signature: ACK_SIGNATURE },
+    fetchImpl,
   });
 }
 
@@ -330,7 +329,9 @@ export function createWorker({
             ...(sleep ? { sleep } : {}),
           });
           // The @bot acknowledgement must still go out when forwarding fails; only a
-          // successful forward marks the message processed so Feishu can retry.
+          // successful forward marks the message processed. In production the request is
+          // acked with 200 first (ctx.waitUntil), so a failed forward is NOT redelivered
+          // by Feishu; we only avoid marking it processed. A non-deferred call returns 503.
           const ackWork = sendForwardAck({
             payload,
             selected: forwarded,
