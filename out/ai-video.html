@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Video Generator - Text, Image and First/Last Frame | DreamUtopia</title>
+<meta name="description" content="Create studio-grade AI videos from text prompts or images with DreamUtopia's AI video generator. Free trials available.">
+<link rel="canonical" href="https://dreamutopia-clone.pages.dev/ai-video">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DreamUtopia">
+<meta property="og:title" content="AI Video Generator - Text, Image and First/Last Frame | DreamUtopia">
+<meta property="og:description" content="Create studio-grade AI videos from text prompts or images with DreamUtopia's AI video generator. Free trials available.">
+<meta property="og:url" content="https://dreamutopia-clone.pages.dev/ai-video">
+<meta property="og:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI Video Generator - Text, Image and First/Last Frame | DreamUtopia">
+<meta name="twitter:description" content="Create studio-grade AI videos from text prompts or images with DreamUtopia's AI video generator. Free trials available.">
+<meta name="twitter:image" content="https://dreamutopia-clone.pages.dev/assets/images/feature-image-to-video.webp">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"DreamUtopia AI Video Generator","applicationCategory":"MultimediaApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is AI video generation?","acceptedAnswer":{"@type":"Answer","text":"AI video generation creates moving videos from text prompts or images using machine learning models."}},{"@type":"Question","name":"Which models can I use?","acceptedAnswer":{"@type":"Answer","text":"You can use Lite (Kling), Medium (Kling), and Pro with sound (Kling) models."}},{"@type":"Question","name":"Can I use my own images?","acceptedAnswer":{"@type":"Answer","text":"Yes, you can upload your own images in JPG, PNG, WebP, GIF, or TIFF formats."}},{"@type":"Question","name":"Is it free to try?","acceptedAnswer":{"@type":"Answer","text":"Guests get 2 Lite image-to-video tries. New accounts get 10 credits."}},{"@type":"Question","name":"What can I use the videos for?","acceptedAnswer":{"@type":"Answer","text":"Social clips, ads, product demos and storyboards. Check the terms before commercial use."}}]}
+</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/assets/icons/icon-192.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d0d12;--bg2:#16161e;--card:#1c1c26;--border:#2a2a38;--text:#fff;--text2:#a8a8b8;--text3:#6a6a7a;--primary:#a855f7;--accent:#ec4899}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
+a{color:#c084fc;text-decoration:none}
+a:hover{text-decoration:underline}
+header{background:rgba(13,13,18,.92);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff}
+.logo img{width:28px;height:28px;border-radius:7px}
+nav a{color:var(--text2);font-size:14px;margin-left:12px;font-weight:500}
+main{max-width:1100px;margin:48px auto 80px;padding:0 20px}
+h1{font-size:36px;font-weight:800;letter-spacing:-.6px;line-height:1.2;margin-bottom:14px}
+.lead{font-size:17px;color:var(--text2);margin-bottom:22px}
+.cta{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;margin:8px 10px 28px 0}
+.cta.alt{background:transparent;border:1px solid #3a3a4a;color:#fff}
+h2{font-size:20px;margin:28px 0 10px}
+p,li{color:var(--text2);font-size:15px}
+ul{padding-left:20px;margin:8px 0 16px}
+li{margin:8px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:18px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.prompt-bar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:18px 0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.chips select{flex:1 1 120px;background:var(--bg2);color:var(--text);border:1px solid var(--border);padding:8px;border-radius:6px}
+details{margin-bottom:16px}
+details summary{cursor:pointer;font-weight:600;margin-bottom:8px}
+footer{border-top:1px solid var(--border);padding:24px 20px;text-align:center;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<a href="/" class="logo"><img src="/assets/images/logo.webp" alt="" width="28" height="28"> DreamUtopia AI</a>
+<nav>
+<a href="/">Home</a>
+<a href="/workspace">Workspace</a>
+<a href="/pricing">Pricing</a>
+</nav>
+</header>
+<main>
+<p style="font-size:12px;letter-spacing:2px;color:var(--text3);font-weight:700">AI VIDEO GENERATOR</p>
+<h1>Studio-grade AI video from a prompt or a photo</h1>
+<p class="lead">Create stunning AI videos from text prompts or images with DreamUtopia's AI video generator. Free trials available.</p>
+<div class="prompt-bar">
+<textarea placeholder="Describe the shot: subject, camera move, light..." rows="3" style="width:100%;background:var(--card);border:1px solid var(--border);padding:10px;border-radius:6px;resize:none"></textarea>
+<div class="chips">
+<select>
+<option>Lite (Kling)</option>
+<option>Medium (Kling)</option>
+<option>Pro with sound (Kling)</option>
+</select>
+<select>
+<option>5s</option>
+<option>10s</option>
+</select>
+<select>
+<option>16:9</option>
+<option>9:16</option>
+<option>1:1</option>
+</select>
+</div>
+<a class="cta" href="/workspace" data-gen-cta="samples" data-open-href="/workspace" data-open-label="Generate">Generate</a>
+<p style="font-size:12px;color:var(--text3);margin-top:10px">Generation runs in the workspace. Public generation may be paused; the button then shows samples.</p>
+</div>
+
+<h2>How it looks</h2>
+<div class="grid">
+<div class="card"><h3>First and last frame</h3><p>Lock start and end frames for precise control.</p></div>
+<div class="card"><h3>Image to video</h3><p>Animate a still photo with a text prompt. <a href="/image-to-video">Learn more</a></p></div>
+<div class="card"><h3>Text to video</h3><p>Create videos from text prompts only.</p></div>
+<div class="card"><h3>Photo to video</h3><p>Turn photos into animated videos. <a href="/photo-to-video">Learn more</a></p></div>
+</div>
+
+<h2>Models in one workspace</h2>
+<div class="grid">
+<div class="card"><h3>Lite (Kling)</h3><p>Basic model for quick generation. Lite video = 3 credits.</p><a href="/workspace" class="cta alt" data-gen-cta="samples" data-open-href="/workspace" data-open-label="Generate">Generate</a></div>
+<div class="card"><h3>Medium (Kling)</h3><p>Improved quality and motion. Medium = 5 credits.</p><a href="/workspace" class="cta alt" data-gen-cta="samples" data-open-href="/workspace" data-open-label="Generate">Generate</a></div>
+<div class="card"><h3>Pro with sound (Kling)</h3><p>Professional model with audio. Pro = 16 credits.</p><a href="/workspace" class="cta alt" data-gen-cta="samples" data-open-href="/workspace" data-open-label="Generate">Generate</a></div>
+</div>
+
+<h2>Built for</h2>
+<div class="grid">
+<div class="card"><h3>Filmmakers</h3><p>Create cinematic scenes with AI-generated motion.</p></div>
+<div class="card"><h3>Marketing teams</h3><p>Produce engaging video content for campaigns.</p></div>
+<div class="card"><h3>Content creators</h3><p>Generate unique video content for social media.</p></div>
+<div class="card"><h3>E-commerce brands</h3><p>Visualize products with dynamic video presentations.</p></div>
+</div>
+
+<h2>FAQ</h2>
+<details>
+<summary>What is AI video generation?</summary>
+<p>AI video generation creates moving videos from text prompts or images using machine learning models.</p>
+</details>
+<details>
+<summary>Which models can I use?</summary>
+<p>You can use Lite (Kling), Medium (Kling), and Pro with sound (Kling) models.</p>
+</details>
+<details>
+<summary>Can I use my own images?</summary>
+<p>Yes, you can upload your own images in JPG, PNG, WebP, GIF, or TIFF formats.</p>
+</details>
+<details>
+<summary>Is it free to try?</summary>
+<p>Guests get 2 Lite image-to-video tries. New accounts get 10 credits.</p>
+</details>
+<details>
+<summary>What can I use the videos for?</summary>
+<p>Social clips, ads, product demos and storyboards. Check the terms before commercial use.</p>
+</details>
+
+<h2>Make your first clip</h2>
+<a class="cta" href="/workspace" data-gen-cta="samples" data-open-href="/workspace" data-open-label="Generate">Generate</a>
+<a class="cta alt" href="/pricing">See credit packs</a>
+
+<p style="margin-top:40px"><a href="/image-to-video">Image to video</a> · <a href="/photo-to-video">Photo to video</a> · <a href="/free-ai-video">Free AI video</a> · <a href="/pricing">Pricing</a></p>
+</main>
+<footer>© 2026 DreamUtopia AI · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
+<script src="/assets/js/du.js"></script>
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/seo.js"></script>
+<script>if (window.DU && DU.bootGenerationCtas) DU.bootGenerationCtas();</script>
+</body>
+</html>
+textarea{color:var(--text);font:inherit}
