@@ -1,0 +1,47 @@
+/*
+ * Design tokens for the /models/[slug] SEO landing pages.
+ *
+ * Every colour and size the page needs is exposed here as a --ms-* custom
+ * property, so the page component never hard-codes a value.
+ */
+
+:root {
+  /* Colours */
+  --ms-bg: #07060f;
+  --ms-surface: #13112a;
+  --ms-surface-muted: rgba(139, 92, 246, 0.06);
+  --ms-border-color: rgba(139, 92, 246, 0.18);
+  --ms-border-width: 1px;
+  --ms-text: #f5f3ff;
+  --ms-muted: #a5a1c2;
+  --ms-accent: #8b5cf6;
+  --ms-accent-hover: #7c3aed;
+  --ms-on-accent: #ffffff;
+
+  /* Shape */
+  --ms-radius: 16px;
+  --ms-radius-sm: 10px;
+
+  /* Spacing scale */
+  --ms-space-1: 4px;
+  --ms-space-2: 8px;
+  --ms-space-3: 12px;
+  --ms-space-4: 16px;
+  --ms-space-5: 24px;
+  --ms-space-6: 32px;
+  --ms-space-7: 48px;
+  --ms-space-8: 64px;
+
+  /* Typography */
+  --ms-font-body: 16px;
+  --ms-font-small: 14px;
+  --ms-font-h1: clamp(32px, 5vw, 52px);
+  --ms-font-h2: 24px;
+  --ms-font-h3: 18px;
+  --ms-line-height: 1.6;
+  --ms-line-height-tight: 1.25;
+
+  /* Layout and motion */
+  --ms-page-max-width: 960px;
+  --ms-transition: 150ms ease;
+}

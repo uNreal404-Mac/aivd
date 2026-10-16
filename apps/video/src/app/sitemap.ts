@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { i18n } from "@/config/i18n-config";
+import { MODEL_SLUGS } from "@/lib/model-seo";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment } from "@/lib/indexing";
 import { execSync } from "node:child_process";
@@ -79,6 +80,12 @@ async function scanPages(
       } else if (entry.name === 'page.tsx') {
         // 计算路由路径
         const relativePath = fullPath.replace(baseDir, '');
+
+        // 动态路由（如 [slug]）无法静态枚举，跳过并由显式条目补充
+        if (relativePath.includes('[')) {
+          continue;
+        }
+
         const routePath = relativePath
           .replace(/\/page\.tsx$/, '')           // 移除 /page.tsx
           .replace(/\[.*?\]/g, '')                // 移除动态路由参数
@@ -136,6 +143,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 自动扫描所有页面
   const appDir = join(process.cwd(), 'src', 'app', '[locale]');
   const routes = await scanPages(appDir, appDir);
+
+  // 动态路由页面需显式补充（scanPages 会跳过含 "[" 的页面）
+  const modelsPageFile = join(appDir, '(marketing)', 'models', '[slug]', 'page.tsx');
+  for (const slug of MODEL_SLUGS) {
+    routes.push({
+      path: `models/${slug}`,
+      file: modelsPageFile,
+      priority: 0.7,
+      changeFrequency: 'weekly',
+    });
+  }
 
   console.log('🗺️  Sitemap: 发现页面:', routes.length);
 
