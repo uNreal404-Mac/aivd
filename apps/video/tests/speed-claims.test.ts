@@ -5,10 +5,11 @@ import { describe, expect, it } from "vitest";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const SCAN_DIRS = ["src/app", "src/config", "src/components"];
+const SCAN_DIRS = ["src/app", "src/config", "src/components", "src/messages"];
 const SCAN_EXTS = new Set([".ts", ".tsx", ".json", ".mdx"]);
 
-const FORBIDDEN = /in seconds|\d+\s*-\s*\d+\s*minutes|fast generation|快速生成/i;
+const FORBIDDEN =
+  /in seconds|\d+\s*-\s*\d+\s*minutes|fast generation|快速生成|lightning fast|faster generation|闪电般快速|更快生成/i;
 
 function collectFiles(dir: string): string[] {
   const files: string[] = [];

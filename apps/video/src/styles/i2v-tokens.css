@@ -4,15 +4,15 @@
  */
 
 :root {
-  --i2v-bg: #0b0b0f;
-  --i2v-panel: #15151c;
-  --i2v-panel-2: #1d1d26;
-  --i2v-border: rgba(255, 255, 255, 0.08);
-  --i2v-text: #f5f5f7;
-  --i2v-muted: #9a9aa8;
-  --i2v-accent: #8b5cf6;
-  --i2v-accent-2: #a78bfa;
-  --i2v-danger: #f87171;
+  --i2v-bg: var(--du-bg);
+  --i2v-panel: var(--du-surface);
+  --i2v-panel-2: var(--du-surface-2);
+  --i2v-border: var(--du-border);
+  --i2v-text: var(--du-text);
+  --i2v-muted: var(--du-text-muted);
+  --i2v-accent: var(--du-accent);
+  --i2v-accent-2: var(--du-accent-text);
+  --i2v-danger: var(--du-danger);
   --i2v-radius: 18px;
 
   /* derived tokens */
@@ -22,11 +22,11 @@
   --i2v-space-sm: 10px;
   --i2v-space-lg: 24px;
   --i2v-control-height: 44px;
-  --i2v-accent-soft: rgba(139, 92, 246, 0.16);
-  --i2v-accent-ring: rgba(139, 92, 246, 0.38);
-  --i2v-danger-soft: rgba(248, 113, 113, 0.14);
-  --i2v-raised: rgba(255, 255, 255, 0.03);
-  --i2v-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  --i2v-accent-soft: var(--du-accent-soft);
+  --i2v-accent-ring: var(--du-border-strong);
+  --i2v-danger-soft: color-mix(in srgb, var(--du-danger) 14%, transparent);
+  --i2v-raised: color-mix(in srgb, var(--du-text) 3%, transparent);
+  --i2v-shadow: var(--du-glass-shadow);
   --i2v-transition: 160ms ease;
 }
 

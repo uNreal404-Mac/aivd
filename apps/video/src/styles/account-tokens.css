@@ -1,0 +1,235 @@
+/* Design tokens + classes for the /account page. Every color comes from a var(). */
+
+:root {
+  --acct-bg: var(--du-bg);
+  --acct-panel: var(--du-surface);
+  --acct-panel-2: var(--du-surface-2);
+  --acct-border: var(--du-border);
+  --acct-text: var(--du-text);
+  --acct-muted: var(--du-text-muted);
+  --acct-accent: var(--du-accent);
+  --acct-positive: var(--du-success);
+  --acct-negative: var(--du-danger);
+  --acct-radius: 12px;
+}
+
+.acct-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  min-height: 100%;
+  background: var(--acct-bg);
+  color: var(--acct-text);
+}
+
+.acct-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.acct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.acct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--acct-panel);
+  border: 1px solid var(--acct-border);
+  border-radius: var(--acct-radius);
+}
+
+.acct-card-heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--acct-muted);
+}
+
+.acct-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.acct-metric-label {
+  font-size: 12px;
+  color: var(--acct-muted);
+}
+
+.acct-metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-metric-value-lg {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.acct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.acct-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--acct-text);
+  background: var(--acct-accent);
+  border: 1px solid var(--acct-accent);
+  border-radius: var(--acct-radius);
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.acct-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.acct-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--acct-panel-2);
+  border-color: var(--acct-border);
+  color: var(--acct-muted);
+}
+
+.acct-button-secondary {
+  background: var(--acct-panel-2);
+  border-color: var(--acct-border);
+  color: var(--acct-text);
+}
+
+.acct-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--acct-negative);
+}
+
+.acct-positive {
+  color: var(--acct-positive);
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-negative {
+  color: var(--acct-negative);
+  font-variant-numeric: tabular-nums;
+}
+
+.acct-muted {
+  color: var(--acct-muted);
+}
+
+.acct-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acct-chip {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--acct-muted);
+  background: var(--acct-panel-2);
+  border: 1px solid var(--acct-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.acct-chip-active {
+  color: var(--acct-text);
+  border-color: var(--acct-accent);
+}
+
+.acct-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.acct-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.acct-th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--acct-muted);
+  border-bottom: 1px solid var(--acct-border);
+  white-space: nowrap;
+}
+
+.acct-td {
+  padding: 12px;
+  border-bottom: 1px solid var(--acct-border);
+  vertical-align: top;
+}
+
+.acct-row:last-child .acct-td {
+  border-bottom: none;
+}
+
+.acct-remark {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--acct-muted);
+}
+
+.acct-empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--acct-muted);
+}
+
+.acct-skeleton-row {
+  height: 14px;
+  margin: 10px 0;
+  background: var(--acct-panel-2);
+  border-radius: var(--acct-radius);
+  animation: acct-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes acct-pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}

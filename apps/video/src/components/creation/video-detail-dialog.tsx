@@ -5,7 +5,7 @@
 // ============================================
 
 import { useEffect, useRef, useState } from "react";
-import { X, Download, Trash2 } from "lucide-react";
+import { X, Download, Trash2, Share2, EyeOff, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cn } from "@/components/ui";
@@ -28,12 +28,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Video } from "@/lib/types/dashboard";
+import { PublishDialog } from "@/components/gallery/publish-dialog";
+
+/** A work is public only when the API says so; anything else counts as private. */
+function isPublicVideo(video: Video | null): boolean {
+  return video?.visibility === "public";
+}
 
 interface VideoDetailDialogProps {
   video: Video | null;
   open: boolean;
   onClose: () => void;
   onDelete?: (uuid: string) => void;
+  /** Called after a successful publish so callers can refresh their list. */
+  onPublished?: (uuid: string) => void;
+  /** Called after a successful unpublish so callers can refresh their list. */
+  onUnpublished?: (uuid: string) => void;
   isDeleting?: boolean;
 }
 
@@ -42,10 +52,16 @@ export function VideoDetailDialog({
   open,
   onClose,
   onDelete,
+  onPublished,
+  onUnpublished,
   isDeleting,
 }: VideoDetailDialogProps) {
   const t = useTranslations("dashboard.myCreations");
+  const tg = useTranslations("Gallery");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [isPublic, setIsPublic] = useState(() => isPublicVideo(video));
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Auto-play video when dialog opens
@@ -65,6 +81,11 @@ export function VideoDetailDialog({
     }
   }, [open]);
 
+  // Re-sync visibility whenever the shown video changes (e.g. after a refetch).
+  useEffect(() => {
+    setIsPublic(isPublicVideo(video));
+  }, [video]);
+
   if (!video) return null;
 
   const handleDelete = async () => {
@@ -82,6 +103,32 @@ export function VideoDetailDialog({
       link.click();
       document.body.removeChild(link);
       toast.success(t("actions.downloadSuccess"));
+    }
+  };
+
+  const handlePublished = (uuid: string) => {
+    setIsPublic(true);
+    onPublished?.(uuid);
+  };
+
+  const handleUnpublish = async () => {
+    if (isUnpublishing) return;
+
+    setIsUnpublishing(true);
+    try {
+      const response = await fetch(`/api/v1/video/${video.uuid}/unpublish`, {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("unpublish failed");
+
+      setIsPublic(false);
+      onUnpublished?.(video.uuid);
+      toast.success(tg("unpublishSuccess"));
+    } catch {
+      toast.error(tg("unpublishError"));
+    } finally {
+      setIsUnpublishing(false);
     }
   };
 
@@ -198,6 +245,30 @@ export function VideoDetailDialog({
               {normalizedStatus === "completed" && (
                 <>
                   <div className="border-t border-border" />
+                  {isPublic ? (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleUnpublish}
+                      disabled={isUnpublishing}
+                    >
+                      {isUnpublishing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 mr-2" />
+                      )}
+                      {tg("removeFromGallery")}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowPublishDialog(true)}
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      {tg("shareToGallery")}
+                    </Button>
+                  )}
                   <div className="flex gap-3">
                     <Button
                       variant="outline"
@@ -223,6 +294,14 @@ export function VideoDetailDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Publish to gallery dialog */}
+      <PublishDialog
+        open={showPublishDialog}
+        onOpenChange={setShowPublishDialog}
+        video={video}
+        onPublished={handlePublished}
+      />
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

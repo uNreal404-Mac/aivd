@@ -2,11 +2,12 @@ import { Inter as FontSans, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
+import "@/styles/theme.css";
 import "@/styles/globals.css";
 import "@/styles/hf-theme.css";
+import "@/styles/hf-video-tokens.css";
+import "@/styles/hf-home-tokens.css";
 
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { NextIntlClientProvider } from "next-intl";
 
 import { cn } from "@/components/ui";
@@ -153,8 +154,6 @@ export default async function RootLayout({
               <PlausibleAnalytics />
               <AttributionCapture />
               {children}
-              <Analytics />
-              <SpeedInsights />
               <Toaster richColors position="top-right" />
               <TailwindIndicator />
             </QueryProvider>

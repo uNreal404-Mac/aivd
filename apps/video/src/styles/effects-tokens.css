@@ -1,0 +1,36 @@
+:root {
+  --fx-bg: var(--du-bg);
+  --fx-surface: var(--du-surface);
+  --fx-border: var(--du-border);
+  --fx-text: var(--du-text);
+  --fx-muted: var(--du-text-muted);
+  --fx-accent: var(--du-accent);
+  --fx-accent-hover: var(--du-accent-hover);
+  --fx-on-accent: var(--du-on-accent);
+  --fx-chip-bg: var(--du-glass-bg);
+  --fx-overlay: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--du-bg) 90%, transparent),
+    transparent 55%
+  );
+  --fx-radius-card: 18px;
+  --fx-radius-chip: 999px;
+  --fx-gap: 16px;
+  --fx-glass-bg: var(--du-glass-bg);
+  --fx-glass-border: var(--du-glass-border);
+  --fx-glass-blur: 16px;
+}
+
+.fx-glass-btn {
+  background: var(--fx-glass-bg);
+  border: 1px solid var(--fx-glass-border);
+  color: var(--fx-text);
+  -webkit-backdrop-filter: blur(var(--fx-glass-blur));
+  backdrop-filter: blur(var(--fx-glass-blur));
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .fx-glass-btn {
+    background: var(--du-glass-fallback-bg);
+  }
+}
