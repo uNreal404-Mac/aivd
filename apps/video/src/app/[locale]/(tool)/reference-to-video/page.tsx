@@ -4,6 +4,9 @@ import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { getConfiguredAIProvider } from "@/ai";
+import { SeoLanding } from "@/components/seo/seo-landing";
+import { seoLandingFor } from "@/lib/seo-landing";
+import "@/styles/seo-landing-tokens.css";
 
 interface ReferenceToVideoPageProps {
   params: Promise<{
@@ -16,20 +19,21 @@ export async function generateMetadata({
 }: ReferenceToVideoPageProps) {
   const { locale } = await params;
   const config = getToolPageConfig("reference-to-video");
+  const landing = seoLandingFor("reference-to-video", locale);
   const alternates = buildAlternates("/reference-to-video", locale);
   const ogImage = resolveOgImage(config.seo?.ogImage);
 
   return {
-    title: config.seo?.title,
-    description: config.seo?.description,
+    title: landing.title,
+    description: landing.description,
     keywords: config.seo?.keywords,
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,
     },
     openGraph: {
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title: landing.title,
+      description: landing.description,
       url: alternates.canonical,
       siteName: siteConfig.name,
       type: "website",
@@ -37,8 +41,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title: landing.title,
+      description: landing.description,
       images: ogImage ? [ogImage] : undefined,
     },
   };
@@ -51,10 +55,18 @@ export default async function ReferenceToVideoPage({ params }: ReferenceToVideoP
   );
   const { locale } = await params;
   return (
-    <ToolPageLayout
-      config={config}
-      locale={locale}
-      toolRoute="reference-to-video"
-    />
+    <>
+      <ToolPageLayout
+        config={config}
+        locale={locale}
+        toolRoute="reference-to-video"
+      />
+      <SeoLanding
+        slug="reference-to-video"
+        locale={locale}
+        headingLevel="h2"
+        showHeroEntry={false}
+      />
+    </>
   );
 }

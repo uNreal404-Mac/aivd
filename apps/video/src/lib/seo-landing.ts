@@ -1,10 +1,15 @@
 /**
  * SEO landing copy + structured data for the video app.
  *
- * Three entry pages share one content shape:
- *  - /ai-video-generator  (new route)
- *  - /text-to-video       (existing tool route, landing appended below the tool)
- *  - /image-to-video      (existing tool route, landing appended below the tool)
+ * These entry pages share one content shape:
+ *  - /ai-video-generator            (new route)
+ *  - /text-to-video                 (existing tool route, landing appended below the tool)
+ *  - /image-to-video                (existing tool route, landing appended below the tool)
+ *  - /reference-to-video            (existing tool route, landing appended below the tool)
+ *  - /frames-to-video               (new route)
+ *  - /ai-video-generator-with-audio (new route)
+ *  - /ai-short-video-generator      (new route)
+ *  - /ai-video-generator-for-tiktok (new route)
  *
  * Copy rules: original English + Chinese, no invented metrics (no user counts,
  * ratings, speeds or prices), no third-party brands other than the real model
@@ -12,15 +17,38 @@
  * existing generator.
  */
 
+import {
+  EN_AI_SHORT_VIDEO,
+  EN_AI_VIDEO_FOR_TIKTOK,
+  EN_AI_VIDEO_WITH_AUDIO,
+  EN_FRAMES_TO_VIDEO,
+  EN_REFERENCE_TO_VIDEO,
+  ZH_AI_SHORT_VIDEO,
+  ZH_AI_VIDEO_FOR_TIKTOK,
+  ZH_AI_VIDEO_WITH_AUDIO,
+  ZH_FRAMES_TO_VIDEO,
+  ZH_REFERENCE_TO_VIDEO,
+} from "./seo-landing-more";
+
 export type SeoLandingSlug =
   | "ai-video-generator"
   | "text-to-video"
-  | "image-to-video";
+  | "image-to-video"
+  | "reference-to-video"
+  | "frames-to-video"
+  | "ai-video-generator-with-audio"
+  | "ai-short-video-generator"
+  | "ai-video-generator-for-tiktok";
 
 export const SEO_LANDING_SLUGS: readonly SeoLandingSlug[] = [
   "ai-video-generator",
   "text-to-video",
   "image-to-video",
+  "reference-to-video",
+  "frames-to-video",
+  "ai-video-generator-with-audio",
+  "ai-short-video-generator",
+  "ai-video-generator-for-tiktok",
 ];
 
 export type SeoLocale = "en" | "zh";
@@ -498,6 +526,26 @@ export const SEO_LANDING: Record<
     en: EN_IMAGE_TO_VIDEO,
     zh: ZH_IMAGE_TO_VIDEO,
   },
+  "reference-to-video": {
+    en: EN_REFERENCE_TO_VIDEO,
+    zh: ZH_REFERENCE_TO_VIDEO,
+  },
+  "frames-to-video": {
+    en: EN_FRAMES_TO_VIDEO,
+    zh: ZH_FRAMES_TO_VIDEO,
+  },
+  "ai-video-generator-with-audio": {
+    en: EN_AI_VIDEO_WITH_AUDIO,
+    zh: ZH_AI_VIDEO_WITH_AUDIO,
+  },
+  "ai-short-video-generator": {
+    en: EN_AI_SHORT_VIDEO,
+    zh: ZH_AI_SHORT_VIDEO,
+  },
+  "ai-video-generator-for-tiktok": {
+    en: EN_AI_VIDEO_FOR_TIKTOK,
+    zh: ZH_AI_VIDEO_FOR_TIKTOK,
+  },
 };
 
 function normalizeLocale(locale: string): SeoLocale {
@@ -513,8 +561,9 @@ export function seoLandingFor(
 
 /**
  * Where the entry point sends the visitor: the existing generator routes.
- * `ai-video-generator` and `text-to-video` share the text generator;
- * `image-to-video` points at the image entry.
+ * `ai-video-generator`, `text-to-video` and the new SEO pages share the text
+ * generator, `image-to-video` points at the image entry, and
+ * `reference-to-video` points at the reference tool route.
  */
 export function generatorHref(
   locale: string,
@@ -524,7 +573,9 @@ export function generatorHref(
   const base =
     slug === "image-to-video"
       ? `/${locale}/image-to-video`
-      : `/${locale}/ai/video`;
+      : slug === "reference-to-video"
+        ? `/${locale}/reference-to-video`
+        : `/${locale}/ai/video`;
 
   const trimmed = prompt?.trim();
   return trimmed ? `${base}?prompt=${encodeURIComponent(trimmed)}` : base;
