@@ -79,6 +79,7 @@ function UpgradeModalContent() {
     features: {
       hd_videos: tCredits("features.hd_videos"),
       fast_generation: tCredits("features.fast_generation"),
+      commercial_use: tCredits("features.commercial_use"),
       custom_models: tCredits("features.custom_models"),
     },
   };
