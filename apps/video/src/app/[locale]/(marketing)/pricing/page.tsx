@@ -1,5 +1,7 @@
-import { PricingSection } from "@/components/landing/pricing-section";
-import { FAQSection } from "@/components/landing/faq-section";
+import "@/styles/pricing-tokens.css";
+import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
+import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
+import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
@@ -45,9 +47,10 @@ export async function generateMetadata({
 
 export default async function PricingPage() {
   return (
-    <div className="flex w-full flex-col gap-0">
-      <PricingSection headingLevel="h1" />
-      <FAQSection />
-    </div>
+    <PricingPageView
+      paymentsEnabled={isPaymentsConfigured()}
+      subscriptions={getSubscriptionProducts()}
+      packs={getOnetimeProducts()}
+    />
   );
 }

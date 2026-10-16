@@ -1,0 +1,451 @@
+/* ============================================
+   DreamUtopia pricing page
+   Design tokens are all prefixed with --pr-.
+   Every colour below is referenced through a variable.
+   ============================================ */
+
+:root {
+  --pr-bg: #0b0b0f;
+  --pr-surface: #15151c;
+  --pr-surface-2: #1d1d26;
+  --pr-border: rgba(255, 255, 255, 0.08);
+  --pr-text: #f5f5f7;
+  --pr-muted: #9a9aa8;
+  --pr-accent: #8b5cf6;
+  --pr-accent-2: #a78bfa;
+  --pr-accent-text: #fff;
+  --pr-radius: 20px;
+  --pr-radius-sm: 12px;
+  --pr-success: #34d399;
+  --pr-danger: #fca5a5;
+  --pr-accent-soft: rgba(139, 92, 246, 0.12);
+  --pr-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- page shell ---------- */
+
+.pr-page {
+  background: var(--pr-bg);
+  color: var(--pr-text);
+  padding: 64px 24px 104px;
+  min-height: 100%;
+}
+
+.pr-shell {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* ---------- hero ---------- */
+
+.pr-hero {
+  max-width: 720px;
+  margin: 0 auto 40px;
+  text-align: center;
+}
+
+.pr-hero__title {
+  margin: 0 0 16px;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.pr-hero__sub {
+  margin: 0;
+  color: var(--pr-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* ---------- billing toggle ---------- */
+
+.pr-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 44px;
+}
+
+.pr-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--pr-border);
+  border-radius: 999px;
+  background: var(--pr-surface);
+}
+
+.pr-toggle__btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--pr-muted);
+  padding: 10px 22px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pr-toggle__btn:hover {
+  color: var(--pr-text);
+}
+
+.pr-toggle__btn--active,
+.pr-toggle__btn--active:hover {
+  background: var(--pr-accent);
+  color: var(--pr-accent-text);
+}
+
+.pr-toggle__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--pr-border);
+  border-radius: 999px;
+  background: var(--pr-accent-soft);
+  color: var(--pr-accent-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ---------- plan grid & cards ---------- */
+
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.pr-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 30px 26px;
+  border: 1px solid var(--pr-border);
+  border-radius: var(--pr-radius);
+  background: var(--pr-surface);
+}
+
+.pr-card--popular {
+  border-color: var(--pr-accent);
+  background:
+    linear-gradient(180deg, var(--pr-accent-soft), transparent 45%),
+    var(--pr-surface);
+  box-shadow: var(--pr-shadow);
+}
+
+.pr-card__ribbon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pr-accent);
+  color: var(--pr-accent-text);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pr-card__name {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.pr-card__credits {
+  margin: 0;
+  color: var(--pr-accent-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pr-card__spacer {
+  flex: 1 1 auto;
+}
+
+/* ---------- price ---------- */
+
+.pr-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pr-price__amount {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.pr-price__period {
+  color: var(--pr-muted);
+  font-size: 0.95rem;
+}
+
+.pr-price__note {
+  display: block;
+  margin-top: 6px;
+  color: var(--pr-muted);
+  font-size: 0.8rem;
+}
+
+/* ---------- feature list ---------- */
+
+.pr-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pr-features li {
+  display: flex;
+  gap: 10px;
+  color: var(--pr-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.pr-features li::before {
+  content: "\2713";
+  flex: 0 0 auto;
+  color: var(--pr-success);
+  font-weight: 700;
+}
+
+/* ---------- buttons ---------- */
+
+.pr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 1px solid var(--pr-border);
+  border-radius: var(--pr-radius-sm);
+  background: var(--pr-surface-2);
+  color: var(--pr-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.pr-btn:hover:not(:disabled) {
+  border-color: var(--pr-accent-2);
+}
+
+.pr-btn--primary {
+  border-color: var(--pr-accent);
+  background: var(--pr-accent);
+  color: var(--pr-accent-text);
+}
+
+.pr-btn--primary:hover:not(:disabled) {
+  border-color: var(--pr-accent-2);
+  background: var(--pr-accent-2);
+}
+
+.pr-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pr-btn--sm {
+  width: auto;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
+.pr-error {
+  margin: 8px 0 0;
+  color: var(--pr-danger);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* ---------- credit packs ---------- */
+
+.pr-packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pr-pack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid var(--pr-border);
+  border-radius: var(--pr-radius-sm);
+  background: var(--pr-surface);
+}
+
+.pr-pack__credits {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pr-pack__meta {
+  color: var(--pr-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.pr-pack__spacer {
+  flex: 1 1 auto;
+}
+
+/* ---------- sections ---------- */
+
+.pr-section {
+  margin-top: 80px;
+}
+
+.pr-section__title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pr-section__sub {
+  margin: 0 0 24px;
+  color: var(--pr-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ---------- comparison table ---------- */
+
+.pr-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--pr-border);
+  border-radius: var(--pr-radius);
+  background: var(--pr-surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.pr-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.pr-table th,
+.pr-table td {
+  padding: 16px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--pr-border);
+  font-size: 0.92rem;
+}
+
+.pr-table thead th {
+  background: var(--pr-surface-2);
+  color: var(--pr-text);
+  font-weight: 700;
+}
+
+.pr-table tbody th {
+  color: var(--pr-muted);
+  font-weight: 500;
+}
+
+.pr-table tbody tr:last-child th,
+.pr-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.pr-table__yes {
+  color: var(--pr-success);
+  font-weight: 700;
+}
+
+.pr-table__no {
+  color: var(--pr-muted);
+}
+
+/* ---------- FAQ ---------- */
+
+.pr-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pr-faq details {
+  padding: 4px 18px;
+  border: 1px solid var(--pr-border);
+  border-radius: var(--pr-radius-sm);
+  background: var(--pr-surface);
+}
+
+.pr-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.pr-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.pr-faq summary::after {
+  content: "+";
+  color: var(--pr-muted);
+  font-weight: 700;
+}
+
+.pr-faq details[open] summary::after {
+  content: "\2212";
+}
+
+.pr-faq p {
+  margin: 0 0 16px;
+  color: var(--pr-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .pr-page {
+    padding: 48px 18px 88px;
+  }
+
+  .pr-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pr-section {
+    margin-top: 64px;
+  }
+}
