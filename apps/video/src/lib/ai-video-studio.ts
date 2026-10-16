@@ -80,7 +80,11 @@ export type StudioSettings = {
   resolution: string;
   audio: boolean;
   prompt: string;
+  preset?: string;
 };
+
+export const PROMPT_PARAM_MAX = 5000;
+export const PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export function defaultSettings(model?: StudioModel): StudioSettings {
   const selected =
@@ -121,6 +125,46 @@ export function selectModel(
       ? settings.resolution
       : next.resolutions[0],
     audio: next.audio ? settings.audio : false,
+  };
+}
+
+function firstParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+export function settingsFromSearchParams(
+  params: Record<string, string | string[] | undefined>,
+): StudioSettings {
+  let settings = defaultSettings();
+
+  const modelParam = firstParam(params.model);
+
+  if (modelParam) {
+    const model = STUDIO_MODELS.find(
+      (item) => item.id === modelParam && item.available,
+    );
+
+    if (model) {
+      settings = selectModel(settings, model.id);
+    }
+  }
+
+  const promptParam = firstParam(params.prompt) ?? "";
+  const prompt = promptParam.trim().slice(0, PROMPT_PARAM_MAX);
+
+  const presetParam = firstParam(params.preset);
+  const preset = presetParam ? presetParam.toLowerCase().trim() : undefined;
+
+  return {
+    ...settings,
+    prompt,
+    preset: preset && PRESET_PATTERN.test(preset) ? preset : undefined,
   };
 }
 

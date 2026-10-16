@@ -98,11 +98,13 @@ function ChipGroup({
 
 export function AiVideoStudio({
   generationEnabled,
+  initialSettings,
 }: {
   generationEnabled: boolean;
+  initialSettings?: StudioSettings;
 }) {
-  const [settings, setSettings] = useState<StudioSettings>(() =>
-    defaultSettings(),
+  const [settings, setSettings] = useState<StudioSettings>(
+    () => initialSettings ?? defaultSettings(),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -281,6 +283,25 @@ export function AiVideoStudio({
             </span>
           </div>
         </div>
+
+        {settings.preset ? (
+          <span className="flex w-fit items-center gap-1.5 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] px-2.5 py-1 text-xs text-[var(--hfv-text)]">
+            Preset: {settings.preset}
+            <button
+              type="button"
+              aria-label="Clear preset"
+              onClick={() =>
+                setSettings((previous) => ({
+                  ...previous,
+                  preset: undefined,
+                }))
+              }
+              className="text-[var(--hfv-muted)]"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </span>
+        ) : null}
 
         <button
           type="button"
