@@ -4,6 +4,7 @@ import { getLocale, getMessages } from "next-intl/server";
 
 import "@/styles/globals.css";
 import "@/styles/hf-theme.css";
+import "@/styles/hf-home-tokens.css";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
