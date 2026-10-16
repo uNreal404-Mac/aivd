@@ -67,7 +67,7 @@ WelcomeEmail.PreviewProps = {
         features: "With DreamUtopia, you can:",
         featuresList: {
           generate: "Generate stunning AI videos in minutes",
-          models: "Use multiple AI models like Sora 2, Veo 3.1, and more",
+          models: "Use Seedance 1.5 Pro and the Seedance 1.0 models",
           share: "Download and share your creations anywhere",
         },
         cta: "Start Creating Videos",

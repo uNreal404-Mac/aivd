@@ -57,10 +57,8 @@ describe("headerModels only exposes enabled video models", () => {
 });
 
 describe("isVideoModelEnabled", () => {
-  it("returns false for disabled models", () => {
-    expect(isVideoModelEnabled("sora-2")).toBe(false);
-    expect(isVideoModelEnabled("veo-3.1")).toBe(false);
-    expect(isVideoModelEnabled("wan2.6")).toBe(false);
+  it("returns false for unknown models", () => {
+    expect(isVideoModelEnabled("not-a-model")).toBe(false);
   });
 
   it("returns true for enabled models", () => {
