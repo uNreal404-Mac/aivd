@@ -1,0 +1,36 @@
+:root {
+  --fx-bg: #07060F;
+  --fx-surface: #13112A;
+  --fx-border: rgba(139, 92, 246, 0.18);
+  --fx-text: #F5F3FF;
+  --fx-muted: #A5A1C2;
+  --fx-accent: #8B5CF6;
+  --fx-accent-hover: #7C3AED;
+  --fx-on-accent: #FFFFFF;
+  --fx-chip-bg: rgba(255, 255, 255, 0.06);
+  --fx-overlay: linear-gradient(
+    to top,
+    rgba(7, 6, 15, 0.9),
+    rgba(7, 6, 15, 0) 55%
+  );
+  --fx-radius-card: 18px;
+  --fx-radius-chip: 999px;
+  --fx-gap: 16px;
+  --fx-glass-bg: rgba(255, 255, 255, 0.10);
+  --fx-glass-border: rgba(255, 255, 255, 0.18);
+  --fx-glass-blur: 16px;
+}
+
+.fx-glass-btn {
+  background: var(--fx-glass-bg);
+  border: 1px solid var(--fx-glass-border);
+  color: var(--fx-text);
+  -webkit-backdrop-filter: blur(var(--fx-glass-blur));
+  backdrop-filter: blur(var(--fx-glass-blur));
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .fx-glass-btn {
+    background: rgba(19, 17, 42, 0.92);
+  }
+}
