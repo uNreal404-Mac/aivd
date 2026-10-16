@@ -1,3 +1,5 @@
+import { getModelConfig } from "@/config/credits";
+
 /**
  * Image-to-video: shared constants, client-side validation and request
  * helpers. Everything in here is intentionally free of React so it can be
@@ -5,22 +7,67 @@
  */
 
 /** Master switch. While `false` no generation request is ever sent. */
-export const I2V_GENERATION_ENABLED: boolean = false;
+export function isI2VGenerationEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.VIDEO_GENERATION_ENABLED === "true";
+}
 
-export const I2V_MODELS = [
-  { id: "seedance-1.5-pro", label: "Seedance 1.5 Pro" },
-  { id: "wan-2.6", label: "Wan 2.6" },
-  { id: "veo-3.1", label: "Veo 3.1" },
-  { id: "sora-2", label: "Sora 2" },
+export const I2V_MODEL_IDS = [
+  "seedance-1.5-pro",
+  "wan2.6",
+  "veo-3.1",
+  "sora-2",
 ] as const;
 
-export type I2VModelId = (typeof I2V_MODELS)[number]["id"];
+export type I2VModelId = (typeof I2V_MODEL_IDS)[number];
 
-export const DURATIONS = [5, 10] as const;
-export type I2VDuration = (typeof DURATIONS)[number];
+export interface I2VModel {
+  id: I2VModelId;
+  label: string;
+  durations: number[];
+  aspectRatios: string[];
+}
 
-export const ASPECT_RATIOS = ["16:9", "9:16", "1:1"] as const;
-export type I2VAspectRatio = (typeof ASPECT_RATIOS)[number];
+export const I2V_MODELS: I2VModel[] = I2V_MODEL_IDS.map((id) => {
+  const config = getModelConfig(id);
+  return {
+    id,
+    label: config?.name ?? id,
+    durations: config?.durations ?? [],
+    aspectRatios: config?.aspectRatios ?? [],
+  };
+});
+
+/** Durations allowed for a model, read from the shared credit config. */
+export function durationsFor(modelId: string): number[] {
+  return I2V_MODELS.find((model) => model.id === modelId)?.durations ?? [];
+}
+
+/** Aspect ratios allowed for a model, read from the shared credit config. */
+export function aspectRatiosFor(modelId: string): string[] {
+  return I2V_MODELS.find((model) => model.id === modelId)?.aspectRatios ?? [];
+}
+
+/**
+ * Snaps a duration/aspect-ratio pair onto the model's allowed values,
+ * falling back to the first option when the current one is not supported.
+ */
+export function normalizeSettings(
+  modelId: string,
+  duration: number,
+  aspectRatio: string,
+): { duration: number; aspectRatio: string } {
+  const durations = durationsFor(modelId);
+  const aspectRatios = aspectRatiosFor(modelId);
+
+  return {
+    duration: durations.includes(duration) ? duration : durations[0],
+    aspectRatio: aspectRatios.includes(aspectRatio)
+      ? aspectRatio
+      : aspectRatios[0],
+  };
+}
 
 export const ALLOWED_TYPES: readonly string[] = [
   "image/jpeg",
@@ -213,18 +260,34 @@ export type SubmitResult =
   | { ok: false; reason: "disabled" }
   | { ok: false; reason: "error"; message: string };
 
+export interface SubmitOptions {
+  enabled: boolean;
+  fetchFn?: FetchLike;
+  idempotencyKey?: string;
+}
+
+/** Generates a fresh key so retries of the same submit stay unique. */
+export function newIdempotencyKey(): string {
+  return crypto.randomUUID();
+}
+
 export async function submitImageToVideo(
   body: GenerateVideoBody,
-  fetchFn: FetchLike = fetch,
+  options: SubmitOptions,
 ): Promise<SubmitResult> {
-  if (!I2V_GENERATION_ENABLED) {
+  if (!options.enabled) {
     return { ok: false, reason: "disabled" };
   }
+
+  const fetchFn = options.fetchFn ?? fetch;
 
   try {
     const response = await fetchFn(GENERATE_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": options.idempotencyKey ?? crypto.randomUUID(),
+      },
       body: JSON.stringify(body),
     });
 

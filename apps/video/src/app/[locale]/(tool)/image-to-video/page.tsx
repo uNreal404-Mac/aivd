@@ -2,6 +2,7 @@ import "@/styles/i2v-tokens.css";
 
 import { getToolPageConfig } from "@/config/tool-pages";
 import { I2VStudio } from "@/components/image-to-video/i2v-studio";
+import { isI2VGenerationEnabled } from "@/lib/image-to-video";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
@@ -46,5 +47,7 @@ export async function generateMetadata({
 }
 
 export default function ImageToVideoPage() {
-  return <I2VStudio />;
+  const generationEnabled = isI2VGenerationEnabled();
+
+  return <I2VStudio generationEnabled={generationEnabled} />;
 }

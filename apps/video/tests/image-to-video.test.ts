@@ -2,15 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   ALLOWED_TYPES,
-  ASPECT_RATIOS,
-  DURATIONS,
   GENERATE_ENDPOINT,
-  I2V_GENERATION_ENABLED,
   I2V_MODELS,
   MAX_BYTES,
   MAX_PROMPT_LENGTH,
   UPLOAD_ENDPOINT,
+  aspectRatiosFor,
   canSubmit,
+  durationsFor,
+  isI2VGenerationEnabled,
+  normalizeSettings,
   parseUploadResponse,
   submitImageToVideo,
   uploadImage,
@@ -33,7 +34,7 @@ describe("constants", () => {
   it("exposes exactly the four supported models", () => {
     expect(I2V_MODELS.map((model) => model.id)).toEqual([
       "seedance-1.5-pro",
-      "wan-2.6",
+      "wan2.6",
       "veo-3.1",
       "sora-2",
     ]);
@@ -45,9 +46,23 @@ describe("constants", () => {
     ]);
   });
 
-  it("exposes the duration and aspect ratio choices", () => {
-    expect([...DURATIONS]).toEqual([5, 10]);
-    expect([...ASPECT_RATIOS]).toEqual(["16:9", "9:16", "1:1"]);
+  it("reads per-model durations from the shared config", () => {
+    expect(durationsFor("sora-2")).toEqual([10, 15]);
+    expect(durationsFor("veo-3.1")).toEqual([8]);
+    expect(durationsFor("wan2.6")).toEqual([5, 10, 15]);
+    expect(durationsFor("seedance-1.5-pro")).toEqual([4, 5, 6, 8, 10, 12]);
+  });
+
+  it("omits 1:1 for models that do not support it", () => {
+    expect(aspectRatiosFor("sora-2")).not.toContain("1:1");
+    expect(aspectRatiosFor("veo-3.1")).not.toContain("1:1");
+  });
+
+  it("snaps unsupported settings onto the model's allowed values", () => {
+    expect(normalizeSettings("veo-3.1", 5, "1:1")).toEqual({
+      duration: 8,
+      aspectRatio: "16:9",
+    });
   });
 
   it("accepts the four image types and caps size at 10MB", () => {
@@ -60,8 +75,17 @@ describe("constants", () => {
     expect(MAX_BYTES).toBe(10 * 1024 * 1024);
   });
 
-  it("ships with generation paused", () => {
-    expect(I2V_GENERATION_ENABLED).toBe(false);
+  it("enables generation only for the exact 'true' value", () => {
+    expect(isI2VGenerationEnabled({ VIDEO_GENERATION_ENABLED: "true" })).toBe(
+      true,
+    );
+    expect(isI2VGenerationEnabled({ VIDEO_GENERATION_ENABLED: "1" })).toBe(
+      false,
+    );
+    expect(isI2VGenerationEnabled({ VIDEO_GENERATION_ENABLED: "false" })).toBe(
+      false,
+    );
+    expect(isI2VGenerationEnabled({})).toBe(false);
   });
 });
 
@@ -232,9 +256,34 @@ describe("submitImageToVideo", () => {
   it("never calls fetch while generation is disabled", async () => {
     const fetchFn = vi.fn(async () => stubResponse(200, { success: true }));
 
-    const result = await submitImageToVideo(body, fetchFn as FetchLike);
+    const result = await submitImageToVideo(body, {
+      enabled: false,
+      fetchFn: fetchFn as FetchLike,
+    });
 
     expect(fetchFn).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, reason: "disabled" });
+  });
+
+  it("sends the provided idempotency key when enabled", async () => {
+    const fetchFn = vi.fn(async () => stubResponse(200, { success: true }));
+
+    await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+      idempotencyKey: "key-123",
+    });
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    const [input, init] = fetchFn.mock.calls[0] as unknown as [
+      string,
+      RequestInit | undefined,
+    ];
+    expect(input).toBe(GENERATE_ENDPOINT);
+    expect(init?.method).toBe("POST");
+    expect(
+      (init?.headers as Record<string, string>)["Idempotency-Key"],
+    ).toBe("key-123");
   });
 });

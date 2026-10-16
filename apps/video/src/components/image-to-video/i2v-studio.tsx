@@ -4,18 +4,17 @@ import { useRef, useState } from "react";
 
 import {
   ALLOWED_TYPES,
-  ASPECT_RATIOS,
-  DURATIONS,
-  I2V_GENERATION_ENABLED,
   I2V_MODELS,
   MAX_BYTES,
   MAX_PROMPT_LENGTH,
+  aspectRatiosFor,
   canSubmit,
+  durationsFor,
+  newIdempotencyKey,
+  normalizeSettings,
   submitImageToVideo,
   uploadImage,
   validateImageFile,
-  type I2VAspectRatio,
-  type I2VDuration,
   type I2VModelId,
 } from "@/lib/image-to-video";
 
@@ -29,8 +28,13 @@ const PROMPT_TIPS = [
   "Name the light or mood to steer the final look.",
 ];
 
-export function I2VStudio() {
+interface I2VStudioProps {
+  generationEnabled: boolean;
+}
+
+export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
@@ -41,8 +45,12 @@ export function I2VStudio() {
 
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<I2VModelId>(I2V_MODELS[0].id);
-  const [duration, setDuration] = useState<I2VDuration>(DURATIONS[0]);
-  const [aspectRatio, setAspectRatio] = useState<I2VAspectRatio>(ASPECT_RATIOS[0]);
+  const [duration, setDuration] = useState<number>(
+    durationsFor(I2V_MODELS[0].id)[0],
+  );
+  const [aspectRatio, setAspectRatio] = useState<string>(
+    aspectRatiosFor(I2V_MODELS[0].id)[0],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -118,21 +126,36 @@ export function I2VStudio() {
     }
   }
 
+  function handleModelChange(nextModel: I2VModelId) {
+    setModel(nextModel);
+    const normalized = normalizeSettings(nextModel, duration, aspectRatio);
+    setDuration(normalized.duration);
+    setAspectRatio(normalized.aspectRatio);
+  }
+
   async function handleGenerate() {
-    if (I2V_GENERATION_ENABLED !== true || !imageKey) {
+    if (generationEnabled !== true || !imageKey) {
       return;
     }
 
     setSubmitting(true);
     setSubmitError(null);
 
-    const result = await submitImageToVideo({
-      model,
-      prompt: prompt.trim(),
-      duration,
-      aspectRatio,
-      imageKey,
-    });
+    const result = await submitImageToVideo(
+      {
+        model,
+        prompt: prompt.trim(),
+        duration,
+        aspectRatio,
+        imageKey,
+      },
+      {
+        enabled: generationEnabled,
+        idempotencyKey: idempotencyKeyRef.current,
+      },
+    );
+
+    idempotencyKeyRef.current = newIdempotencyKey();
 
     setSubmitting(false);
 
@@ -142,7 +165,7 @@ export function I2VStudio() {
   }
 
   const formReady = canSubmit({ imageKey, prompt, uploading });
-  const generateDisabled = !I2V_GENERATION_ENABLED || !formReady || submitting;
+  const generateDisabled = !generationEnabled || !formReady || submitting;
 
   const dropzoneClassName = [
     "i2v-dropzone",
@@ -286,7 +309,9 @@ export function I2VStudio() {
               id="i2v-model"
               className="i2v-select"
               value={model}
-              onChange={(event) => setModel(event.target.value as I2VModelId)}
+              onChange={(event) =>
+                handleModelChange(event.target.value as I2VModelId)
+              }
             >
               {I2V_MODELS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -299,7 +324,7 @@ export function I2VStudio() {
           <fieldset className="i2v-field">
             <legend className="i2v-label">Duration</legend>
             <div className="i2v-chips">
-              {DURATIONS.map((option) => (
+              {durationsFor(model).map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -320,7 +345,7 @@ export function I2VStudio() {
           <fieldset className="i2v-field">
             <legend className="i2v-label">Aspect ratio</legend>
             <div className="i2v-chips">
-              {ASPECT_RATIOS.map((option) => (
+              {aspectRatiosFor(model).map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -349,14 +374,14 @@ export function I2VStudio() {
                 <span className="i2v-spinner" aria-hidden="true" />
                 <span>Sending…</span>
               </>
-            ) : I2V_GENERATION_ENABLED ? (
+            ) : generationEnabled ? (
               "Generate video"
             ) : (
               "Generation is paused"
             )}
           </button>
 
-          {!I2V_GENERATION_ENABLED ? (
+          {!generationEnabled ? (
             <p className="i2v-help">Video generation is not open yet.</p>
           ) : null}
 
