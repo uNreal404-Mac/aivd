@@ -70,7 +70,7 @@ type ResultItem = {
 
 function chipClass(active: boolean, disabled = false): string {
   return [
-    "rounded-[var(--hfv-radius-chip)] border px-3 py-1.5 text-xs transition-colors",
+    "inline-flex max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded-[var(--hfv-radius-chip)] border px-3 py-1.5 text-xs transition-colors",
     active
       ? "border-[var(--hfv-chip-active-bg)] bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
       : "border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] text-[var(--hfv-text)]",
@@ -197,7 +197,7 @@ export function AiVideoStudio({
                 aria-disabled={!active}
                 aria-pressed={active}
                 className={[
-                  "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors max-md:min-h-11 max-md:min-w-11 max-md:justify-center",
                   active
                     ? "border-[var(--hfv-text)] text-[var(--hfv-text)]"
                     : "border-[var(--hfv-border)] text-[var(--hfv-muted)]",
@@ -224,7 +224,7 @@ export function AiVideoStudio({
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="absolute right-3 top-3 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] px-2.5 py-1 text-[10px] uppercase tracking-wide text-[var(--hfv-text)]"
+            className="absolute right-3 top-3 inline-flex max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] px-2.5 py-1 text-[10px] uppercase tracking-wide text-[var(--hfv-text)]"
           >
             Change
           </button>
@@ -534,7 +534,7 @@ export function AiVideoStudio({
                 aria-pressed={active}
                 onClick={() => setActiveTab(tab)}
                 className={[
-                  "flex items-center gap-1.5 rounded-[var(--hfv-radius-chip)] px-3 py-1.5 text-xs transition-colors",
+                  "flex items-center gap-1.5 rounded-[var(--hfv-radius-chip)] px-3 py-1.5 text-xs transition-colors max-md:min-h-11 max-md:min-w-11 max-md:justify-center",
                   active
                     ? "bg-[var(--hfv-chip-bg)] text-[var(--hfv-text)]"
                     : "text-[var(--hfv-muted)]",
@@ -577,7 +577,7 @@ export function AiVideoStudio({
                   aria-pressed={active}
                   onClick={() => setActiveFilter(filter)}
                   className={[
-                    "rounded-full px-3 py-1 text-xs transition-colors",
+                    "inline-flex max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded-full px-3 py-1 text-xs transition-colors",
                     active
                       ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
                       : "text-[var(--hfv-muted)]",
