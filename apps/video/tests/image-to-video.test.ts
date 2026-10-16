@@ -1,15 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { VIDEO_MODEL_PRICING } from "../src/config/pricing-user";
 import {
   ALLOWED_TYPES,
   GENERATE_ENDPOINT,
+  I2V_COPY,
   I2V_MODELS,
+  I2V_MODEL_IDS,
   MAX_BYTES,
   MAX_PROMPT_LENGTH,
   UPLOAD_ENDPOINT,
   aspectRatiosFor,
   canSubmit,
   durationsFor,
+  i2vCopy,
   isI2VGenerationEnabled,
   normalizeSettings,
   parseUploadResponse,
@@ -17,7 +21,7 @@ import {
   uploadImage,
   validateImageFile,
 } from "../src/lib/image-to-video";
-import type { FetchLike } from "../src/lib/image-to-video";
+import type { FetchLike, I2VCopy } from "../src/lib/image-to-video";
 
 function stubResponse(
   status: number,
@@ -31,38 +35,64 @@ function stubFile(type = "image/png", size = 2048): File {
 }
 
 describe("constants", () => {
-  it("exposes exactly the four supported models", () => {
-    expect(I2V_MODELS.map((model) => model.id)).toEqual([
+  it("exposes only the enabled Seedance models", () => {
+    expect(I2V_MODEL_IDS).toEqual([
       "seedance-1.5-pro",
-      "wan2.6",
-      "veo-3.1",
-      "sora-2",
+      "seedance-1.0-pro-fast",
+      "seedance-1.0-pro-quality",
     ]);
-    expect(I2V_MODELS.map((model) => model.label)).toEqual([
-      "Seedance 1.5 Pro",
-      "Wan 2.6",
-      "Veo 3.1",
-      "Sora 2",
-    ]);
+    expect(I2V_MODELS.map((model) => model.id)).toEqual([...I2V_MODEL_IDS]);
+  });
+
+  it("only exposes models that are enabled in the pricing config", () => {
+    for (const id of I2V_MODEL_IDS) {
+      expect(VIDEO_MODEL_PRICING[id]?.enabled).toBe(true);
+    }
+  });
+
+  it("never exposes a legacy provider name", () => {
+    const legacy = /\b(wan|veo|sora|kling)\b/i;
+
+    for (const id of I2V_MODEL_IDS) {
+      expect(id).not.toMatch(legacy);
+    }
+
+    for (const model of I2V_MODELS) {
+      expect(model.id).not.toMatch(legacy);
+      expect(model.label).not.toMatch(legacy);
+    }
   });
 
   it("reads per-model durations from the shared config", () => {
-    expect(durationsFor("sora-2")).toEqual([10, 15]);
-    expect(durationsFor("veo-3.1")).toEqual([8]);
-    expect(durationsFor("wan2.6")).toEqual([5, 10, 15]);
     expect(durationsFor("seedance-1.5-pro")).toEqual([4, 5, 6, 8, 10, 12]);
+
+    for (const id of I2V_MODEL_IDS) {
+      expect(durationsFor(id).length).toBeGreaterThan(0);
+      expect(aspectRatiosFor(id).length).toBeGreaterThan(0);
+    }
   });
 
-  it("omits 1:1 for models that do not support it", () => {
-    expect(aspectRatiosFor("sora-2")).not.toContain("1:1");
-    expect(aspectRatiosFor("veo-3.1")).not.toContain("1:1");
+  it("returns nothing for models that are no longer offered", () => {
+    expect(durationsFor("wan2.6")).toEqual([]);
+    expect(aspectRatiosFor("sora-2")).toEqual([]);
+    expect(durationsFor("kling-2.0")).toEqual([]);
   });
 
   it("snaps unsupported settings onto the model's allowed values", () => {
-    expect(normalizeSettings("veo-3.1", 5, "1:1")).toEqual({
-      duration: 8,
-      aspectRatio: "16:9",
-    });
+    for (const id of I2V_MODEL_IDS) {
+      const durations = durationsFor(id);
+      const aspectRatios = aspectRatiosFor(id);
+
+      expect(normalizeSettings(id, -1, "__unsupported__")).toEqual({
+        duration: durations[0],
+        aspectRatio: aspectRatios[0],
+      });
+
+      expect(normalizeSettings(id, durations[0], aspectRatios[0])).toEqual({
+        duration: durations[0],
+        aspectRatio: aspectRatios[0],
+      });
+    }
   });
 
   it("accepts the four image types and caps size at 10MB", () => {
@@ -89,7 +119,43 @@ describe("constants", () => {
   });
 });
 
+describe("I2V_COPY", () => {
+  it("has a non-empty zh translation for every English string", () => {
+    const keys = Object.keys(I2V_COPY.en) as (keyof I2VCopy)[];
+
+    expect(keys.length).toBeGreaterThan(0);
+
+    for (const key of keys) {
+      const value = I2V_COPY.zh[key];
+      expect(typeof value).toBe("string");
+      expect(value.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses a different title in Chinese", () => {
+    expect(I2V_COPY.en.title).not.toBe(I2V_COPY.zh.title);
+  });
+
+  it("resolves the zh copy only for the zh locale", () => {
+    expect(i2vCopy("zh")).toBe(I2V_COPY.zh);
+    expect(i2vCopy("en")).toBe(I2V_COPY.en);
+    expect(i2vCopy("fr")).toBe(I2V_COPY.en);
+  });
+});
+
 describe("validateImageFile", () => {
+  it("returns the zh message when given the zh copy", () => {
+    expect(
+      validateImageFile({ type: "application/pdf", size: 1024 }, I2V_COPY.zh),
+    ).toBe(I2V_COPY.zh.invalidType);
+    expect(
+      validateImageFile(
+        { type: "image/png", size: MAX_BYTES + 1 },
+        I2V_COPY.zh,
+      ),
+    ).toBe(I2V_COPY.zh.tooLarge);
+  });
+
   it("accepts every allowed image type", () => {
     for (const type of ALLOWED_TYPES) {
       expect(validateImageFile({ type, size: 1024 })).toBeNull();

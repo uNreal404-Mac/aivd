@@ -1,0 +1,258 @@
+/* SEO landing tokens: aliases of the design-system custom properties only.
+   Never hard-code colors here; everything resolves through var(--du-*). */
+
+:root {
+  --seo-bg: var(--du-bg);
+  --seo-bg-elev: var(--du-bg-elev);
+  --seo-surface: var(--du-surface);
+  --seo-surface-2: var(--du-surface-2);
+  --seo-border: var(--du-border);
+  --seo-border-strong: var(--du-border-strong);
+  --seo-text: var(--du-text);
+  --seo-text-muted: var(--du-text-muted);
+  --seo-text-dim: var(--du-text-dim);
+  --seo-accent: var(--du-accent);
+  --seo-accent-2: var(--du-accent-2);
+  --seo-accent-soft: var(--du-accent-soft);
+  --seo-on-accent: var(--du-on-accent);
+  --seo-gradient: var(--du-gradient);
+  --seo-radius-card: var(--du-glass-radius-card);
+  --seo-radius-btn: var(--du-glass-radius-btn);
+}
+
+.seo-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  color: var(--seo-text);
+  background: var(--seo-bg);
+}
+
+.seo-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.seo-hero-title {
+  margin: 0;
+  color: var(--seo-text);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.seo-hero-sub {
+  margin: 0;
+  color: var(--seo-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.seo-eyebrow {
+  margin: 0;
+  color: var(--seo-accent-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seo-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--seo-surface);
+  border: 1px solid var(--seo-border);
+  border-radius: var(--seo-radius-card);
+}
+
+.seo-entry-label {
+  color: var(--seo-text-dim);
+  font-size: 0.8125rem;
+}
+
+.seo-textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.75rem 0.875rem;
+  color: var(--seo-text);
+  background: var(--seo-bg-elev);
+  border: 1px solid var(--seo-border);
+  border-radius: var(--seo-radius-card);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.seo-textarea:focus-visible {
+  outline: 2px solid var(--seo-accent);
+  outline-offset: 2px;
+  border-color: var(--seo-border-strong);
+}
+
+.seo-submit {
+  align-self: flex-start;
+  padding: 0.75rem 1.25rem;
+  color: var(--seo-on-accent);
+  background: var(--seo-gradient);
+  border: 1px solid var(--seo-border-strong);
+  border-radius: var(--seo-radius-btn);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.seo-submit:focus-visible {
+  outline: 2px solid var(--seo-accent-2);
+  outline-offset: 2px;
+}
+
+.seo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.seo-section-title {
+  margin: 0;
+  color: var(--seo-text);
+  font-size: 1.375rem;
+  line-height: 1.25;
+}
+
+.seo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 60ch;
+}
+
+.seo-body p {
+  margin: 0;
+  color: var(--seo-text-muted);
+  line-height: 1.7;
+}
+
+.seo-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seo-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  background: var(--seo-surface);
+  border: 1px solid var(--seo-border);
+  border-radius: var(--seo-radius-card);
+}
+
+.seo-step-index {
+  color: var(--seo-accent);
+  font-weight: 600;
+}
+
+.seo-step-title {
+  margin: 0;
+  color: var(--seo-text);
+  font-size: 1rem;
+}
+
+.seo-step-body {
+  margin: 0;
+  color: var(--seo-text-muted);
+  line-height: 1.6;
+}
+
+.seo-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--seo-border);
+  border-radius: var(--seo-radius-card);
+}
+
+.seo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.seo-table th,
+.seo-table td {
+  padding: 0.75rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--seo-border);
+}
+
+.seo-table thead th {
+  color: var(--seo-text);
+  font-weight: 600;
+}
+
+.seo-table td {
+  color: var(--seo-text-muted);
+}
+
+.seo-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.seo-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.seo-faq-item {
+  padding: 0.875rem 1rem;
+  background: var(--seo-surface);
+  border: 1px solid var(--seo-border);
+  border-radius: var(--seo-radius-card);
+}
+
+.seo-faq-item[open] {
+  border-color: var(--seo-border-strong);
+}
+
+.seo-faq-question {
+  color: var(--seo-text);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seo-faq-answer {
+  margin: 0.625rem 0 0;
+  color: var(--seo-text-muted);
+  line-height: 1.65;
+}
+
+.seo-accent {
+  color: var(--seo-accent);
+}
+
+.seo-muted {
+  color: var(--seo-text-muted);
+}
+
+.seo-dim {
+  color: var(--seo-text-dim);
+}
+
+.seo-surface {
+  background: var(--seo-surface-2);
+  border-radius: var(--seo-radius-card);
+}
+
+.seo-accent-soft {
+  background: var(--seo-accent-soft);
+  border-radius: var(--seo-radius-card);
+}

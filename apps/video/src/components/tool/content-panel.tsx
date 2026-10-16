@@ -30,7 +30,6 @@ const exampleVideos = [
 const features = [
   "Multiple AI models to choose from",
   "High quality 1080p output",
-  "Fast generation (2-5 minutes)",
   "Various aspect ratios supported",
 ];
 
@@ -44,7 +43,7 @@ export function ContentPanel({ lang = "en" }: ContentPanelProps) {
             Transform Your Images into Stunning Videos
           </h2>
           <p className="text-muted-foreground">
-            Powered by the latest AI models: Sora 2, Veo 3.1, Seedance 1.5, and Wan 2.6
+            Powered by Seedance 1.5 Pro, Seedance 1.0 Pro Fast and Seedance 1.0 Pro Quality
           </p>
         </div>
 

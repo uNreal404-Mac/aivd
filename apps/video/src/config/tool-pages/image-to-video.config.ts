@@ -89,7 +89,6 @@ export const imageToVideoConfig: ToolPageConfig = {
       "Upload any photo (JPG, PNG, WEBP up to 10MB)",
       "Multiple AI models for different animation styles",
       "Full HD output up to 1080p resolution",
-      "Fast generation in 2-5 minutes",
       "Commercial use rights included",
     ],
 

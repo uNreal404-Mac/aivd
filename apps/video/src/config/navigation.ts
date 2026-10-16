@@ -3,6 +3,8 @@
 // 统一管理所有导航菜单项
 // ============================================
 
+import { VIDEO_MODEL_PRICING } from "@/config/pricing-user";
+
 export interface NavItem {
   id: string;
   title: string;
@@ -84,18 +86,29 @@ export const sidebarNavigation: NavGroup[] = [
   },
 ];
 
-// 落地页顶部导航 - Models 下拉菜单
-export const headerModels = [
-  { id: "sora", title: "Sora 2", subtitle: "by OpenAI", href: "/sora-2" },
-  { id: "veo", title: "Veo 3.1", subtitle: "by Google", href: "/veo-3-1" },
+// 落地页顶部导航 - Models 下拉菜单（全部模型）
+export const ALL_HEADER_MODELS = [
   {
     id: "seedance",
     title: "Seedance 1.5",
     subtitle: "by ByteDance",
     href: "/seedance-1-5",
+    modelId: "seedance-1.5-pro",
   },
-  { id: "wan", title: "Wan 2.6", subtitle: "by Alibaba", href: "/wan-2-6" },
 ];
+
+/**
+ * 判断某个视频模型是否启用
+ * 唯一数据源：VIDEO_MODEL_PRICING (src/config/pricing-user.ts)
+ */
+export function isVideoModelEnabled(modelId: string): boolean {
+  return VIDEO_MODEL_PRICING[modelId]?.enabled === true;
+}
+
+// 落地页顶部导航 - Models 下拉菜单（仅展示启用的模型）
+export const headerModels = ALL_HEADER_MODELS.filter((m) =>
+  isVideoModelEnabled(m.modelId)
+);
 
 // 落地页顶部导航 - Tools 下拉菜单
 export const headerTools = [

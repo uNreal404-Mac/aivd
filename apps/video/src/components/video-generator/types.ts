@@ -47,14 +47,14 @@ export type ModeIconType = "text" | "image" | "reference" | "frames";
  * @example
  * ```ts
  * const model: VideoModel = {
- *   id: "sora-2",
- *   name: "Sora 2",
+ *   id: "seedance-1.5-pro",
+ *   name: "Seedance 1.5 Pro",
  *   icon: "S",
  *   badge: "New",
- *   color: "#000000",
- *   description: "OpenAI's advanced video generation model",
- *   maxDuration: "15 sec",
- *   creditCost: 7,
+ *   color: "#ec4899",
+ *   description: "Text/Image/Frames to video with audio",
+ *   maxDuration: "12 sec",
+ *   creditCost: 16,
  * };
  * ```
  */
@@ -156,9 +156,9 @@ export interface VideoModel {
    * Audio constraints for models that support audio.
    */
   audioConstraints?: {
-    /** Minimum duration in seconds */
+    /** Minimum duration (seconds) */
     minDuration?: number;
-    /** Maximum duration in seconds */
+    /** Maximum duration (seconds) */
     maxDuration?: number;
     /** Maximum file size in MB */
     maxSizeMB?: number;
@@ -192,9 +192,9 @@ export interface VideoModel {
     minVideos?: number;
     /** Maximum number of reference videos */
     maxVideos?: number;
-    /** Minimum duration in seconds */
+    /** Minimum duration (seconds) */
     minDuration?: number;
-    /** Maximum duration in seconds */
+    /** Maximum duration (seconds) */
     maxDuration?: number;
     /** Maximum file size in MB */
     maxSizeMB?: number;
@@ -269,7 +269,7 @@ export interface ImageModel {
  *   icon: "text",
  *   uploadType: "single",
  *   // Optional: restrict to specific models
- *   supportedModels: ["sora-2", "wan2.6", "veo-3.1"],
+ *   supportedModels: ["seedance-1.5-pro", "seedance-1.0-pro-fast"],
  *   // Optional: override default durations for this mode
  *   durations: ["4s", "5s", "8s"],
  * };

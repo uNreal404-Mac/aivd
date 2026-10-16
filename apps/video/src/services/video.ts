@@ -28,7 +28,7 @@ import { getConfiguredAIProvider } from "@/ai/provider-config";
 export interface GenerateVideoParams {
   userId: string;
   prompt: string;
-  model: string; // "sora-2"
+  model: string; // "seedance-1.5-pro"
   duration?: number;
   aspectRatio?: string; // "16:9" | "9:16"
   quality?: string; // "standard" | "high"

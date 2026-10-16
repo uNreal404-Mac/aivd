@@ -1,4 +1,5 @@
 import { getModelConfig } from "@/config/credits";
+import { VIDEO_MODEL_PRICING } from "@/config/pricing-user";
 
 /**
  * Image-to-video: shared constants, client-side validation and request
@@ -13,14 +14,145 @@ export function isI2VGenerationEnabled(
   return env.VIDEO_GENERATION_ENABLED === "true";
 }
 
-export const I2V_MODEL_IDS = [
+/**
+ * Client-side guard for uploads: while generation is disabled the studio must
+ * never reach `/api/v1/upload`.
+ */
+export function canUploadImage(generationEnabled: boolean): boolean {
+  return generationEnabled === true;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Copy                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export interface I2VCopy {
+  title: string;
+  subtitle: string;
+  sourceImageLabel: string;
+  uploading: string;
+  dropzoneTitle: string;
+  /** `{size}` is replaced with the max upload size in MB. */
+  dropzoneHint: string;
+  /** `{size}` is replaced with the max upload size in MB. */
+  imageHelp: string;
+  previewAlt: string;
+  fallbackFileName: string;
+  replace: string;
+  remove: string;
+  promptLabel: string;
+  promptPlaceholder: string;
+  modelLabel: string;
+  durationLegend: string;
+  aspectRatioLegend: string;
+  generate: string;
+  generationPaused: string;
+  generationClosed: string;
+  sending: string;
+  stageEmptyText: string;
+  tipsTitle: string;
+  tip1: string;
+  tip2: string;
+  tip3: string;
+  noFile: string;
+  invalidType: string;
+  tooLarge: string;
+  signInToUpload: string;
+  uploadsUnavailable: string;
+  uploadFailed: string;
+  generationFailed: string;
+}
+
+export const I2V_COPY: { en: I2VCopy; zh: I2VCopy } = {
+  en: {
+    title: "Image to Video",
+    subtitle:
+      "Bring a still frame to life with a short, directed camera move.",
+    sourceImageLabel: "Source image",
+    uploading: "Uploading…",
+    dropzoneTitle: "Drop an image or click to browse",
+    dropzoneHint: "JPG, PNG, WEBP or GIF, up to {size}MB",
+    imageHelp: "One image up to {size}MB. Wide or square frames work best.",
+    previewAlt: "Your uploaded keyframe",
+    fallbackFileName: "Uploaded image",
+    replace: "Replace",
+    remove: "Remove",
+    promptLabel: "Describe the motion",
+    promptPlaceholder: "Slow push in while the subject turns toward the light",
+    modelLabel: "Model",
+    durationLegend: "Duration",
+    aspectRatioLegend: "Aspect ratio",
+    generate: "Generate video",
+    generationPaused: "Generation is paused",
+    generationClosed: "Video generation is not open yet.",
+    sending: "Sending…",
+    stageEmptyText: "Your video will appear here",
+    tipsTitle: "Tips",
+    tip1: "Describe the camera move, not only the subject.",
+    tip2: "Keep the motion small so the subject stays recognisable.",
+    tip3: "Name the light or mood to steer the final look.",
+    noFile: "Please choose an image file.",
+    invalidType: "That file type is not supported. Use a JPG, PNG, WEBP or GIF.",
+    tooLarge: "That image is larger than 10MB. Please choose a smaller file.",
+    signInToUpload: "Sign in to upload",
+    uploadsUnavailable: "Uploads are not available yet",
+    uploadFailed: "Upload failed. Please try again.",
+    generationFailed: "Generation request failed. Please try again.",
+  },
+  zh: {
+    title: "图生视频",
+    subtitle: "用一段简短、有方向的镜头运动，让静帧活起来。",
+    sourceImageLabel: "源图片",
+    uploading: "上传中…",
+    dropzoneTitle: "拖入图片，或点击选择文件",
+    dropzoneHint: "JPG、PNG、WEBP 或 GIF，最大 {size}MB",
+    imageHelp: "一张图片，最大 {size}MB。宽画幅或方形构图效果最佳。",
+    previewAlt: "你上传的关键帧",
+    fallbackFileName: "已上传的图片",
+    replace: "替换",
+    remove: "删除",
+    promptLabel: "描述画面运动",
+    promptPlaceholder: "镜头缓慢推近，主体转向光源",
+    modelLabel: "模型",
+    durationLegend: "时长",
+    aspectRatioLegend: "画面比例",
+    generate: "生成视频",
+    generationPaused: "生成功能已暂停",
+    generationClosed: "视频生成功能尚未开放。",
+    sending: "发送中…",
+    stageEmptyText: "你的视频将在这里显示",
+    tipsTitle: "小贴士",
+    tip1: "描述镜头运动，而不只是主体。",
+    tip2: "运动幅度小一些，主体更容易保持清晰。",
+    tip3: "点明光线或氛围，引导最终画面风格。",
+    noFile: "请选择一张图片文件。",
+    invalidType: "不支持该文件类型。请使用 JPG、PNG、WEBP 或 GIF。",
+    tooLarge: "该图片超过 10MB，请选择更小的文件。",
+    signInToUpload: "请登录后上传",
+    uploadsUnavailable: "上传功能暂不可用",
+    uploadFailed: "上传失败，请重试。",
+    generationFailed: "生成请求失败，请重试。",
+  },
+};
+
+/** Returns the copy for a locale, falling back to English. */
+export function i2vCopy(locale: string): I2VCopy {
+  return locale === "zh" ? I2V_COPY.zh : I2V_COPY.en;
+}
+
+/** Models we are willing to expose, filtered down to the enabled ones. */
+const I2V_CANDIDATE_IDS = [
   "seedance-1.5-pro",
-  "wan2.6",
-  "veo-3.1",
-  "sora-2",
+  "seedance-1.0-pro-fast",
+  "seedance-1.0-pro-quality",
 ] as const;
 
-export type I2VModelId = (typeof I2V_MODEL_IDS)[number];
+export type I2VModelId = (typeof I2V_CANDIDATE_IDS)[number];
+
+/** Enabled models only, derived from the shared pricing config. */
+export const I2V_MODEL_IDS: readonly I2VModelId[] = I2V_CANDIDATE_IDS.filter(
+  (id) => VIDEO_MODEL_PRICING[id]?.enabled === true,
+);
 
 export interface I2VModel {
   id: I2VModelId;
@@ -93,17 +225,20 @@ export interface ImageFileLike {
 }
 
 /** Returns an inline error message, or `null` when the file is acceptable. */
-export function validateImageFile(file: ImageFileLike): string | null {
+export function validateImageFile(
+  file: ImageFileLike,
+  copy: I2VCopy = I2V_COPY.en,
+): string | null {
   if (!file) {
-    return "Please choose an image file.";
+    return copy.noFile;
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return "That file type is not supported. Use a JPG, PNG, WEBP or GIF.";
+    return copy.invalidType;
   }
 
   if (file.size > MAX_BYTES) {
-    return "That image is larger than 10MB. Please choose a smaller file.";
+    return copy.tooLarge;
   }
 
   return null;
@@ -138,13 +273,17 @@ interface UploadEnvelope {
 }
 
 /** Maps a raw upload response onto a stable, UI-friendly result. */
-export function parseUploadResponse(status: number, json: unknown): UploadResult {
+export function parseUploadResponse(
+  status: number,
+  json: unknown,
+  copy: I2VCopy = I2V_COPY.en,
+): UploadResult {
   if (status === 401) {
-    return { ok: false, message: "Sign in to upload" };
+    return { ok: false, message: copy.signInToUpload };
   }
 
   if (status === 503) {
-    return { ok: false, message: "Uploads are not available yet" };
+    return { ok: false, message: copy.uploadsUnavailable };
   }
 
   const payload = (json ?? null) as UploadEnvelope | null;
@@ -166,7 +305,7 @@ export function parseUploadResponse(status: number, json: unknown): UploadResult
     message:
       typeof message === "string" && message.trim().length > 0
         ? message
-        : "Upload failed. Please try again.",
+        : copy.uploadFailed,
   };
 }
 
@@ -193,6 +332,7 @@ async function readJson(response: FetchResponseLike): Promise<unknown> {
 export async function uploadImage(
   file: File,
   fetchFn: FetchLike = fetch,
+  copy: I2VCopy = I2V_COPY.en,
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
@@ -203,9 +343,9 @@ export async function uploadImage(
       body: form,
     });
 
-    return parseUploadResponse(response.status, await readJson(response));
+    return parseUploadResponse(response.status, await readJson(response), copy);
   } catch {
-    return { ok: false, message: "Upload failed. Please try again." };
+    return { ok: false, message: copy.uploadFailed };
   }
 }
 
@@ -264,6 +404,7 @@ export interface SubmitOptions {
   enabled: boolean;
   fetchFn?: FetchLike;
   idempotencyKey?: string;
+  copy?: I2VCopy;
 }
 
 /** Generates a fresh key so retries of the same submit stay unique. */
@@ -280,6 +421,7 @@ export async function submitImageToVideo(
   }
 
   const fetchFn = options.fetchFn ?? fetch;
+  const copy = options.copy ?? I2V_COPY.en;
 
   try {
     const response = await fetchFn(GENERATE_ENDPOINT, {
@@ -306,13 +448,13 @@ export async function submitImageToVideo(
       message:
         typeof message === "string" && message.trim().length > 0
           ? message
-          : "Generation request failed. Please try again.",
+          : copy.generationFailed,
     };
   } catch {
     return {
       ok: false,
       reason: "error",
-      message: "Generation request failed. Please try again.",
+      message: copy.generationFailed,
     };
   }
 }

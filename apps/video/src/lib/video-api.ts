@@ -87,7 +87,7 @@ export async function transformSubmitData(
     quality = resolutionToQuality(data.resolution);
   }
 
-  const model = data.model || "sora-2";
+  const model = data.model || "seedance-1.5-pro";
 
   return {
     prompt: data.prompt,

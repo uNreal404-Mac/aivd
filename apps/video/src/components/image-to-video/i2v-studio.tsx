@@ -9,7 +9,9 @@ import {
   MAX_PROMPT_LENGTH,
   aspectRatiosFor,
   canSubmit,
+  canUploadImage,
   durationsFor,
+  i2vCopy,
   newIdempotencyKey,
   normalizeSettings,
   submitImageToVideo,
@@ -22,17 +24,13 @@ const EMPTY_PLACEHOLDER = "/images/placeholders/i2v-empty.svg";
 
 const MAX_MB = Math.round(MAX_BYTES / (1024 * 1024));
 
-const PROMPT_TIPS = [
-  "Describe the camera move, not only the subject.",
-  "Keep the motion small so the subject stays recognisable.",
-  "Name the light or mood to steer the final look.",
-];
-
 interface I2VStudioProps {
   generationEnabled: boolean;
+  locale: string;
 }
 
-export function I2VStudio({ generationEnabled }: I2VStudioProps) {
+export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
+  const copy = i2vCopy(locale);
   const inputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
 
@@ -70,10 +68,17 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   }
 
   async function handleFile(file: File) {
-    const validationError = validateImageFile({
-      type: file.type,
-      size: file.size,
-    });
+    if (!canUploadImage(generationEnabled)) {
+      return;
+    }
+
+    const validationError = validateImageFile(
+      {
+        type: file.type,
+        size: file.size,
+      },
+      copy,
+    );
 
     if (validationError) {
       setFileName(null);
@@ -90,7 +95,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     setPreviewUrl(null);
     setUploading(true);
 
-    const result = await uploadImage(file);
+    const result = await uploadImage(file, fetch, copy);
 
     setUploading(false);
 
@@ -152,6 +157,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
       {
         enabled: generationEnabled,
         idempotencyKey: idempotencyKeyRef.current,
+        copy,
       },
     );
 
@@ -180,15 +186,13 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     <div className="i2v-studio">
       <div className="i2v-studio__left">
         <header className="i2v-header">
-          <h1 className="i2v-title">Image to Video</h1>
-          <p className="i2v-subtitle">
-            Bring a still frame to life with a short, directed camera move.
-          </p>
+          <h1 className="i2v-title">{copy.title}</h1>
+          <p className="i2v-subtitle">{copy.subtitle}</p>
         </header>
 
         <section className="i2v-panel" aria-labelledby="i2v-image-label">
           <span className="i2v-label" id="i2v-image-label">
-            Source image
+            {copy.sourceImageLabel}
           </span>
 
           <input
@@ -197,6 +201,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             id="i2v-image-input"
             type="file"
             accept={ALLOWED_TYPES.join(",")}
+            disabled={!generationEnabled}
             aria-labelledby="i2v-image-label"
             aria-describedby="i2v-image-help i2v-image-error"
             onChange={handleInputChange}
@@ -206,11 +211,11 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             <div className="i2v-preview">
               <div className="i2v-preview__thumb">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewUrl} alt="Your uploaded keyframe" />
+                <img src={previewUrl} alt={copy.previewAlt} />
               </div>
               <div className="i2v-preview__meta">
                 <span className="i2v-preview__name" title={fileName ?? undefined}>
-                  {fileName ?? "Uploaded image"}
+                  {fileName ?? copy.fallbackFileName}
                 </span>
               </div>
               <div className="i2v-preview__actions">
@@ -219,14 +224,14 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                   className="i2v-button i2v-button--small"
                   onClick={openPicker}
                 >
-                  Replace
+                  {copy.replace}
                 </button>
                 <button
                   type="button"
                   className="i2v-button i2v-button--small i2v-button--ghost"
                   onClick={clearImage}
                 >
-                  Remove
+                  {copy.remove}
                 </button>
               </div>
             </div>
@@ -246,7 +251,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
               {uploading ? (
                 <>
                   <span className="i2v-spinner" aria-hidden="true" />
-                  <span className="i2v-dropzone__title">Uploading…</span>
+                  <span className="i2v-dropzone__title">{copy.uploading}</span>
                 </>
               ) : (
                 <>
@@ -263,10 +268,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                     <circle cx="8.5" cy="9" r="1.5" />
                   </svg>
                   <span className="i2v-dropzone__title">
-                    Drop an image or click to browse
+                    {copy.dropzoneTitle}
                   </span>
                   <span className="i2v-dropzone__hint">
-                    JPG, PNG, WEBP or GIF, up to {MAX_MB}MB
+                    {copy.dropzoneHint.replace("{size}", String(MAX_MB))}
                   </span>
                 </>
               )}
@@ -274,7 +279,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           )}
 
           <p className="i2v-help" id="i2v-image-help">
-            One image up to {MAX_MB}MB. Wide or square frames work best.
+            {copy.imageHelp.replace("{size}", String(MAX_MB))}
           </p>
 
           <p className="i2v-error" id="i2v-image-error" role="alert">
@@ -285,7 +290,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
         <section className="i2v-panel" aria-label="Motion settings">
           <div className="i2v-field">
             <label className="i2v-label" htmlFor="i2v-prompt">
-              Describe the motion
+              {copy.promptLabel}
             </label>
             <textarea
               id="i2v-prompt"
@@ -293,7 +298,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
               value={prompt}
               maxLength={MAX_PROMPT_LENGTH}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Slow push in while the subject turns toward the light"
+              placeholder={copy.promptPlaceholder}
               aria-describedby="i2v-prompt-counter"
             />
             <span className="i2v-counter" id="i2v-prompt-counter">
@@ -303,7 +308,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
 
           <div className="i2v-field">
             <label className="i2v-label" htmlFor="i2v-model">
-              Model
+              {copy.modelLabel}
             </label>
             <select
               id="i2v-model"
@@ -322,7 +327,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           </div>
 
           <fieldset className="i2v-field">
-            <legend className="i2v-label">Duration</legend>
+            <legend className="i2v-label">{copy.durationLegend}</legend>
             <div className="i2v-chips">
               {durationsFor(model).map((option) => (
                 <button
@@ -343,7 +348,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           </fieldset>
 
           <fieldset className="i2v-field">
-            <legend className="i2v-label">Aspect ratio</legend>
+            <legend className="i2v-label">{copy.aspectRatioLegend}</legend>
             <div className="i2v-chips">
               {aspectRatiosFor(model).map((option) => (
                 <button
@@ -372,17 +377,17 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             {submitting ? (
               <>
                 <span className="i2v-spinner" aria-hidden="true" />
-                <span>Sending…</span>
+                <span>{copy.sending}</span>
               </>
             ) : generationEnabled ? (
-              "Generate video"
+              copy.generate
             ) : (
-              "Generation is paused"
+              copy.generationPaused
             )}
           </button>
 
           {!generationEnabled ? (
-            <p className="i2v-help">Video generation is not open yet.</p>
+            <p className="i2v-help">{copy.generationClosed}</p>
           ) : null}
 
           <p className="i2v-error" role="alert">
@@ -400,7 +405,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                 <img
                   className="i2v-stage__media"
                   src={previewUrl}
-                  alt="Your uploaded keyframe"
+                  alt={copy.previewAlt}
                 />
               </>
             ) : (
@@ -413,7 +418,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                   aria-hidden="true"
                 />
                 <p className="i2v-stage__emptyText">
-                  Your video will appear here
+                  {copy.stageEmptyText}
                 </p>
               </div>
             )}
@@ -422,10 +427,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
 
         <section className="i2v-tips" aria-labelledby="i2v-tips-title">
           <h2 className="i2v-tips__title" id="i2v-tips-title">
-            Tips
+            {copy.tipsTitle}
           </h2>
           <ul className="i2v-tips__list">
-            {PROMPT_TIPS.map((tip) => (
+            {[copy.tip1, copy.tip2, copy.tip3].map((tip) => (
               <li className="i2v-tips__item" key={tip}>
                 {tip}
               </li>

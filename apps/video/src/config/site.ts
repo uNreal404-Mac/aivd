@@ -28,7 +28,7 @@ export const SUPPORT_EMAIL = "tuapi@mail.grokbot.com";
 
 export const siteConfig: SiteConfig = {
   name: "DreamUtopia",
-  description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
+  description: "AI Video Generation Platform - Create videos with Seedance 1.5 Pro and Seedance 1.0 models",
   url: process.env.NEXT_PUBLIC_APP_URL || "https://dreamutopia-clone.pages.dev",
   ogImage: "/og.png",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || SUPPORT_EMAIL,
