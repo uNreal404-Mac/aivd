@@ -73,6 +73,16 @@ const plugins: AuthPlugin[] = [
   ...(process.env.NODE_ENV === "development" ? [] : [nextCookies()]),
   magicLink({
     sendMagicLink: async ({ email, url }) => {
+      // Dev/test only: print the magic-link URL to the server console instead
+      // of emailing it. Unreachable in production builds (NODE_ENV check).
+      if (
+        process.env.NODE_ENV !== "production" &&
+        process.env.AUTH_DEV_LOG_MAGIC_LINK === "true"
+      ) {
+        console.info(`[dev-magic-link] ${email} ${url}`);
+        return;
+      }
+
       // Dynamic import to avoid Edge Runtime issues in middleware
       const { MagicLinkEmail } = await import(
         "@/lib/emails/magic-link-email"

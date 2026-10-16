@@ -12,6 +12,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -136,6 +137,7 @@
     "react-email": "^5.2.5",
     "tailwindcss": "^4.0.14",
     "tsx": "^4.19.2",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "vitest": "^3.2.4"
   }
 }
