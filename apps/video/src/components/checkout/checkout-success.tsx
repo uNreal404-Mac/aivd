@@ -272,7 +272,7 @@ export default function CheckoutSuccess({
           {copy.creditsAdded.replace("{credits}", String(view.credits))}
         </p>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${lang}/text-to-video`}>
+          <Link className="co-btn" href={`/${lang}/ai/video`}>
             {copy.startCreating}
           </Link>
           <Link className="co-link" href={`/${lang}/my-creations`}>

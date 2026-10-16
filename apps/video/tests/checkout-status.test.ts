@@ -103,3 +103,13 @@ describe("checkout status route", () => {
     expect(source).not.toContain(".delete(");
   });
 });
+
+describe("checkout success CTA", () => {
+  it("sends paid users to the ai/video generation page", () => {
+    const source = read(
+      join("src", "components", "checkout", "checkout-success.tsx")
+    );
+    expect(source).toContain("/ai/video");
+    expect(source).not.toContain("/text-to-video");
+  });
+});
