@@ -528,7 +528,7 @@ export class VideoService {
       .limit(1);
 
     if (!video) {
-      throw new Error("Video not found");
+      throw new ApiError("Video not found", 404);
     }
 
     if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
@@ -591,7 +591,7 @@ export class VideoService {
       .limit(1);
 
     if (!video) {
-      throw new Error("Video not found");
+      throw new ApiError("Video not found", 404);
     }
 
     return this.refreshStatus(video.uuid, userId);

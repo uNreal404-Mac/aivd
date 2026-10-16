@@ -467,6 +467,17 @@ export function ToolPageLayout({
       }
 
       const result = await response.json();
+
+      if (result.success !== true) {
+        if (result.error?.details?.code === "SUBMIT_RESULT_UNKNOWN") {
+          toast.warning(
+            "We could not confirm your submission yet. Your credits are on hold and will not be charged twice — check My Creations shortly."
+          );
+          return;
+        }
+        throw new Error(result.error?.message || "Failed to generate video");
+      }
+
       const videoUuid = result.data.videoUuid as string;
 
       toast.success("Generation started");
