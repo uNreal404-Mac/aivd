@@ -15,6 +15,16 @@ export function forwardKey(messageId) {
   return `feishu:forwarded:message:${messageId}`;
 }
 
+export function senderLabel(context) {
+  // senderName is filled by the worker's getUserName contact lookup; when that lookup
+  // fails it is empty, so the label falls back to the first 8 characters of the open_id.
+  const name = typeof context?.senderName === "string" ? context.senderName.trim() : "";
+  if (name) return name;
+  const openId = typeof context?.senderOpenId === "string" ? context.senderOpenId : "";
+  if (openId) return openId.slice(0, 8);
+  return "unknown";
+}
+
 function defaultSleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -51,7 +61,7 @@ export async function forwardToGrok({
   const body = JSON.stringify({
     from: FORWARD_EMAIL_FROM,
     to: FORWARD_EMAIL_TO,
-    subject: `[feishu] ${context.senderName || context.senderOpenId || "unknown"} ${selected.messageId}`,
+    subject: `[feishu] ${senderLabel(context)} (${context.senderOpenId || "unknown"}) ${selected.messageId}`,
     text: [
       `sender_name: ${context.senderName ?? ""}`,
       `sender_open_id: ${context.senderOpenId ?? ""}`,

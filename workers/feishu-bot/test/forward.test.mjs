@@ -4,7 +4,7 @@ import { ACK_FAILURE_TEXT, ACK_SUCCESS_TEXT, ackKey } from "../src/ack.mjs";
 
 const SIGNATURE = "Grok Bot · AI视频项目专属机器人 老三";
 import { dedupeKeys } from "../src/dedupe.mjs";
-import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok } from "../src/forward.mjs";
+import { FORWARD_EMAIL_FROM, FORWARD_EMAIL_TO, GROK_FORWARD_CHAT_ID, forwardKey, forwardToGrok, senderLabel } from "../src/forward.mjs";
 import { createWorker } from "../src/worker.mjs";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -144,6 +144,15 @@ async function send(worker, payload, env) {
   return worker.fetch(request, env, {});
 }
 
+function assertMentionedAck(reply, openId, expectedText) {
+  assert.equal(reply.msg_type, "post");
+  assert.deepEqual(JSON.parse(reply.content).zh_cn.content[0], [
+    { tag: "at", user_id: openId },
+    { tag: "text", text: ` ${expectedText}` },
+  ]);
+  assert.doesNotMatch(reply.content, /Grok Bot/);
+}
+
 test("emails the trimmed message through Resend with a bearer token and records a dedupe key", async () => {
   const kv = fakeKv();
   const calls = [];
@@ -174,7 +183,7 @@ test("emails the trimmed message through Resend with a bearer token and records 
   const body = JSON.parse(calls[0].init.body);
   assert.equal(body.from, FORWARD_EMAIL_FROM);
   assert.deepEqual(body.to, FORWARD_EMAIL_TO);
-  assert.equal(body.subject, "[feishu] 老王 om_1");
+  assert.equal(body.subject, "[feishu] 老王 (ou_user) om_1");
   for (const fragment of [
     "sender_open_id: ou_user",
     "sender_name: 老王",
@@ -388,9 +397,9 @@ test("dedupes by message id so a repeated delivery never emails twice", async ()
 
 test("formats the email subject from the sender name and message id", async () => {
   const cases = [
-    [senderContext({ senderName: "老王", senderOpenId: "ou_user" }), "[feishu] 老王 om_1"],
-    [senderContext({ senderName: "", senderOpenId: "ou_user" }), "[feishu] ou_user om_1"],
-    [senderContext({ senderName: "", senderOpenId: "" }), "[feishu] unknown om_1"],
+    [senderContext({ senderName: "老王", senderOpenId: "ou_user" }), "[feishu] 老王 (ou_user) om_1"],
+    [senderContext({ senderName: "", senderOpenId: "ou_user" }), "[feishu] ou_user (ou_user) om_1"],
+    [senderContext({ senderName: "", senderOpenId: "" }), "[feishu] unknown (unknown) om_1"],
   ];
 
   for (const [context, expected] of cases) {
@@ -427,8 +436,7 @@ test("emails a group @bot mention and then replies once with the fallback acknow
   assert.equal(forwardCalls[0].url, RESEND_URL);
   assert.equal(new Headers(forwardCalls[0].init.headers).get("authorization"), `Bearer ${RESEND_KEY}`);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
   assert.equal(SIGNATURE.length > 0, true);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
   assert.equal(await env.BOT_KV.get(ackKey("om_fwd")), "1");
@@ -464,8 +472,7 @@ test("forwards and acknowledges a repeated Feishu delivery only once", async () 
 
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
 });
 
 test("acks before the deferred email forward resolves when waitUntil is available", async () => {
@@ -513,8 +520,7 @@ test("acks before the deferred email forward resolves when waitUntil is availabl
 
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
 });
 
 test("emails a 进度 command in the forwarding chat and then acknowledges it", async () => {
@@ -535,8 +541,7 @@ test("emails a 进度 command in the forwarding chat and then acknowledges it", 
   assert.equal(forwardCalls.length, 1);
   assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: 进度"));
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
 });
 
@@ -560,8 +565,7 @@ test("still acknowledges a forward-chat @bot mention when the email forward fail
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.ok(forwardCalls.length >= 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_FAILURE_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_FAILURE_TEXT);
   assert.equal(await env.BOT_KV.get(ackKey("om_pfail")), "1");
   // The failed attempt clears its placeholder so a later redelivery can email again.
   assert.equal(await env.BOT_KV.get(forwardKey("om_pfail")), null);
@@ -585,8 +589,7 @@ test("does not mark a forwarding-chat message processed when the Resend key is m
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.equal(forwardCalls.length, 0);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_FAILURE_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_FAILURE_TEXT);
   assert.equal(await env.BOT_KV.get(eventKey), null);
   assert.equal(await env.BOT_KV.get(messageKey), null);
 
@@ -617,8 +620,7 @@ test("forwards an unsupported forward-chat message with a placeholder instead of
   assert.equal(forwardCalls.length, 1);
   assert.ok(JSON.parse(forwardCalls[0].init.body).text.includes("text: [unsupported:file]"));
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
 });
 
 test("acks a forward-chat mention with the fixed text without ever calling the LLM", async () => {
@@ -653,8 +655,7 @@ test("acks a forward-chat mention with the fixed text without ever calling the L
   assert.equal(forwardCalls.length, 1);
   assert.equal(llmCalls.length, 0);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
   assert.equal(await env.BOT_KV.get(ackKey("om_ack")), "1");
 });
 
@@ -719,8 +720,76 @@ test("acknowledges a successful forward even when the model call would fail", as
   assert.equal(response.status, 200);
   assert.equal(forwardCalls.length, 1);
   assert.equal(replies.length, 1);
-  assert.equal(JSON.parse(replies[0].content).text, ACK_SUCCESS_TEXT);
-  assert.doesNotMatch(JSON.parse(replies[0].content).text, /Grok Bot/);
+  assertMentionedAck(replies[0], "ou_user", ACK_SUCCESS_TEXT);
+});
+
+test("labels the forwarded email subject with the looked-up sender name when one exists", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const calls = [];
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage({ messageId: "om_label_name" }),
+    context: senderContext({ senderName: "测试用户", senderOpenId: "ou_test1234abcd" }),
+    fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+    sleep,
+  });
+
+  assert.equal(result.ok, true);
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.subject, "[feishu] 测试用户 (ou_test1234abcd) om_label_name");
+  assert.ok(body.text.includes("sender_name: 测试用户"));
+  assert.ok(body.text.includes("sender_open_id: ou_test1234abcd"));
+});
+
+test("labels the forwarded email subject with the open_id prefix when no name was looked up", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const calls = [];
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage({ messageId: "om_label_id" }),
+    context: senderContext({ senderName: "", senderOpenId: "ou_test1234abcd" }),
+    fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+    sleep,
+  });
+
+  assert.equal(result.ok, true);
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.subject, "[feishu] ou_test1 (ou_test1234abcd) om_label_id");
+  assert.ok(body.text.includes("sender_name: "));
+  assert.ok(body.text.includes("sender_open_id: ou_test1234abcd"));
+});
+
+test("labels the forwarded email subject unknown when neither name nor open_id is present", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const calls = [];
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage({ messageId: "om_label_none" }),
+    context: senderContext({ senderName: "", senderOpenId: "" }),
+    fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return Response.json({ ok: true }); },
+    sleep,
+  });
+
+  assert.equal(result.ok, true);
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.subject, "[feishu] unknown (unknown) om_label_none");
+});
+
+test("gives two different fake senders two different labels", () => {
+  const first = senderLabel({ senderName: "", senderOpenId: "ou_test1234abcd" });
+  const second = senderLabel({ senderName: "测试用户", senderOpenId: "ou_test5678efgh" });
+  assert.equal(first, "ou_test1");
+  assert.equal(second, "测试用户");
+  assert.notEqual(first, second);
 });
 
 test("never acknowledges a forward-chat mention sent by the bot itself", async () => {

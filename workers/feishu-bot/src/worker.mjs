@@ -175,8 +175,10 @@ async function sendForwardAck({ payload, selected, context, kv, env, fetchImpl, 
     token,
     messageId: selected.messageId,
     text,
-    // Passing the text as the signature keeps signOutboundText from appending a
-    // second signature block to the fixed acknowledgement.
+    // Mentioning the sender turns the fixed acknowledgement into an @-reply; the post
+    // branch of replyToMessage never appends a signature. The signature override keeps
+    // the text fallback (invalid/absent open_id) free of a second signature block too.
+    mentionOpenIds: [context.senderOpenId],
     config: { ...botConfig, signature: text },
     fetchImpl,
   });

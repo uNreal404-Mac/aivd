@@ -670,6 +670,69 @@ test("does not mark a forward-chat message processed when the email fails, so Fe
   assert.equal(await kv.get(messageKey), null);
 });
 
+test("acknowledges a forward-chat @bot mention with an at-tag post on forward success", async () => {
+  const replies = [];
+  const calls = [];
+  const worker = createWorker({ fetchImpl: makeFeishuFetch({ replies, calls }) });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    senderOpenId: "ou_test1234abcd",
+    senderName: "测试用户",
+    messageId: "om_fwd_ack_ok",
+    eventId: "evt_fwd_ack_ok",
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal(calls.some(({ url }) => String(url) === RESEND_URL), true);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  assert.deepEqual(JSON.parse(replies[0].content).zh_cn.content[0], [
+    { tag: "at", user_id: "ou_test1234abcd" },
+    { tag: "text", text: " 收到，老三正在处理" },
+  ]);
+  assert.doesNotMatch(replies[0].content, /Grok Bot/);
+});
+
+test("acknowledges a forward-chat @bot mention with the failure text when the email forward fails", async () => {
+  const replies = [];
+  const baseFetch = makeFeishuFetch({ replies });
+  const worker = createWorker({
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      if (String(url) === RESEND_URL) return new Response("", { status: 502 });
+      return baseFetch(url, init);
+    },
+  });
+  const env = makeEnv();
+  env.RESEND_API_KEY = "re_test_key";
+
+  const response = await send(worker, messagePayload({
+    chatType: "group",
+    chatId: GROK_FORWARD_CHAT_ID,
+    text: "随便聊聊",
+    mentions: [{ key: "@_bot_1", id: { open_id: "ou_bot" } }],
+    senderOpenId: "ou_test1234abcd",
+    senderName: "测试用户",
+    messageId: "om_fwd_ack_fail",
+    eventId: "evt_fwd_ack_fail",
+  }), env);
+
+  assert.equal(response.status, 503);
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].msg_type, "post");
+  assert.deepEqual(JSON.parse(replies[0].content).zh_cn.content[0], [
+    { tag: "at", user_id: "ou_test1234abcd" },
+    { tag: "text", text: " 转发失败，请稍后重试" },
+  ]);
+  assert.doesNotMatch(replies[0].content, /Grok Bot/);
+});
+
 test("ignores duplicate event_id when ctx.waitUntil is used", async () => {
   const replies = [];
   const pending = [];
