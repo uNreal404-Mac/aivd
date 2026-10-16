@@ -20,6 +20,9 @@ function fakeKv() {
       values.set(key, value);
       writes.push({ key, value, options });
     },
+    async delete(key) {
+      values.delete(key);
+    },
   };
 }
 

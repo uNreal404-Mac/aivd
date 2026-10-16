@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACK_FALLBACK_TEXT, ackKey, buildAckText } from "../src/ack.mjs";
+import { ACK_FALLBACK_TEXT, ackKey, buildAckText, isSafeAckSummary } from "../src/ack.mjs";
 import { summarizeForAck } from "../src/llm.mjs";
 
 const LLM_URL = "https://llm.test/v1";
@@ -40,6 +40,32 @@ test("truncates the summary to at most 30 characters and namespaces the dedupe k
   assert.equal(text, `收到，我理解是：${"需".repeat(30)}。马上安排，结果稍后回复。——老三`);
   assert.equal(text.includes("需".repeat(31)), false);
   assert.equal(ackKey("om_1"), "feishu:acked:message:om_1");
+});
+
+test("falls back to the fixed acknowledgement text for unsafe summaries", () => {
+  const unsafe = [
+    "https://dreamutopia-clone.pages.dev",
+    "www.example.com",
+    "明天上线",
+    "价格是 9.9 元",
+    "$5",
+    "保证一定完成",
+  ];
+
+  for (const summary of unsafe) {
+    assert.equal(isSafeAckSummary(summary), false, `expected ${summary} to be unsafe`);
+    assert.equal(buildAckText(summary), ACK_FALLBACK_TEXT, `expected fallback for ${summary}`);
+  }
+});
+
+test("keeps a safe summary inside the acknowledgement text", () => {
+  const summary = "落地页要加中文";
+
+  assert.equal(isSafeAckSummary(summary), true);
+  assert.equal(
+    buildAckText(summary),
+    "收到，我理解是：落地页要加中文。马上安排，结果稍后回复。——老三",
+  );
 });
 
 test("returns an empty string when the LLM is not configured", async () => {

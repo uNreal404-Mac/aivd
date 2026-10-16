@@ -8,6 +8,9 @@ const FORWARD_TTL_SECONDS = 604800;
 
 const RETRY_DELAYS_MS = [1000, 3000];
 
+export const FORWARD_SENDING_PLACEHOLDER = "sending";
+export const FORWARD_SENDING_TTL_SECONDS = 120;
+
 export function forwardKey(messageId) {
   return `feishu:forwarded:message:${messageId}`;
 }
@@ -34,7 +37,11 @@ export async function forwardToGrok({
 
   const dedupeKey = forwardKey(selected.messageId);
   try {
-    if (await kv.get(dedupeKey)) return { ok: true, attempts: 0, status: null };
+    // Any stored value ("sending" placeholder or "1") means the message is already
+    // claimed, so a redelivery inside the window must not send a second email.
+    if (await kv.get(dedupeKey)) return { ok: true, attempts: 0, status: null, skipped: true };
+    // Claim the message before calling Resend so concurrent deliveries cannot both send.
+    await kv.put(dedupeKey, FORWARD_SENDING_PLACEHOLDER, { expirationTtl: FORWARD_SENDING_TTL_SECONDS });
   } catch {
     return { ok: false, attempts: 0, status: null };
   }
@@ -95,6 +102,12 @@ export async function forwardToGrok({
     }
 
     if (index < RETRY_DELAYS_MS.length) await sleep(RETRY_DELAYS_MS[index]);
+  }
+
+  try {
+    await kv.delete(dedupeKey);
+  } catch {
+    // Clearing is best effort; the placeholder TTL still lets a later delivery retry.
   }
 
   return { ok: false, attempts, status };

@@ -114,6 +114,9 @@ function createDeadlineKv(kv, deadlineAt, monotonicNow) {
     put(...args) {
       return runBeforeDeadline(() => kv.put(...args), deadlineAt, monotonicNow);
     },
+    delete(...args) {
+      return runBeforeDeadline(() => kv.delete(...args), deadlineAt, monotonicNow);
+    },
   };
 }
 
@@ -237,6 +240,7 @@ export function createWorker({
   now = Date.now,
   callbackBudgetMs = CALLBACK_BUDGET_MS,
   monotonicNow = () => performance.now(),
+  sleep,
 } = {}) {
   return {
     async fetch(request, env, ctx) {
@@ -323,10 +327,10 @@ export function createWorker({
             context: { ...context, senderName: senderName || "" },
             fetchImpl: workFetch,
             receivedAt,
+            ...(sleep ? { sleep } : {}),
           });
-          if (!result.ok) throw new Error("forward_failed");
-          await markProcessed(kv, forwarded.eventId, forwarded.messageId);
-
+          // The @bot acknowledgement must still go out when forwarding fails; only a
+          // successful forward marks the message processed so Feishu can retry.
           const ackWork = sendForwardAck({
             payload,
             selected: forwarded,
@@ -340,6 +344,9 @@ export function createWorker({
           });
           if (deferWork) ctx.waitUntil(ackWork);
           else await ackWork;
+
+          if (!result.ok) throw new Error("forward_failed");
+          await markProcessed(kv, forwarded.eventId, forwarded.messageId);
           return;
         }
 

@@ -11,13 +11,19 @@ const RESEND_KEY = "re_test_key";
 function fakeKv() {
   const values = new Map();
   const writes = [];
+  const deletes = [];
   return {
     values,
     writes,
+    deletes,
     async get(key) { return values.get(key) ?? null; },
     async put(key, value, options) {
       values.set(key, value);
       writes.push({ key, value, options });
+    },
+    async delete(key) {
+      values.delete(key);
+      deletes.push(key);
     },
   };
 }
@@ -179,7 +185,9 @@ test("emails the trimmed message through Resend with a bearer token and records 
     assert.ok(body.text.includes(fragment), `expected email body to contain ${fragment}`);
   }
   assert.equal(await kv.get(forwardKey("om_1")), "1");
-  assert.deepEqual(kv.writes[0].options, { expirationTtl: 604800 });
+  assert.deepEqual(kv.writes.map(({ value }) => value), ["sending", "1"]);
+  assert.deepEqual(kv.writes[0].options, { expirationTtl: 120 });
+  assert.deepEqual(kv.writes[1].options, { expirationTtl: 604800 });
 });
 
 test("skips forwarding without fetching when the Resend API key is missing", async () => {
@@ -217,7 +225,50 @@ test("treats an already-forwarded message as done without a second fetch", async
     sleep,
   });
 
-  assert.deepEqual(result, { ok: true, attempts: 0, status: null });
+  assert.deepEqual(result, { ok: true, attempts: 0, status: null, skipped: true });
+  assert.equal(calls.length, 0);
+});
+
+test("writes a sending placeholder before the Resend request", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const writesAtFetch = [];
+
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage(),
+    context: senderContext(),
+    fetchImpl: async () => {
+      writesAtFetch.push(kv.writes.map(({ key, value }) => `${key}=${value}`));
+      return Response.json({ ok: true });
+    },
+    sleep,
+  });
+
+  assert.deepEqual(result, { ok: true, attempts: 1, status: 200 });
+  assert.deepEqual(writesAtFetch, [[`${forwardKey("om_1")}=sending`]]);
+  assert.deepEqual(kv.writes.map(({ value }) => value), ["sending", "1"]);
+});
+
+test("does not send again while an unexpired sending placeholder is present", async () => {
+  const kv = fakeKv();
+  const { sleep } = recordingSleep();
+  const calls = [];
+  await kv.put(forwardKey("om_1"), "sending", { expirationTtl: 120 });
+
+  const result = await forwardToGrok({
+    env: resendEnv(),
+    kv,
+    payload: {},
+    selected: selectedMessage(),
+    context: senderContext(),
+    fetchImpl: async (url, init = {}) => { calls.push({ url, init }); return Response.json({ ok: true }); },
+    sleep,
+  });
+
+  assert.deepEqual(result, { ok: true, attempts: 0, status: null, skipped: true });
   assert.equal(calls.length, 0);
 });
 
@@ -282,7 +333,8 @@ test("leaves the message unmarked when every Resend attempt fails", async () => 
   assert.equal(attempts, 3);
   assert.deepEqual(delays, [1000, 3000]);
   assert.equal(await kv.get(forwardKey("om_1")), null);
-  assert.equal(kv.writes.length, 0);
+  assert.deepEqual(kv.writes.map(({ value }) => value), ["sending"]);
+  assert.deepEqual(kv.deletes, [forwardKey("om_1")]);
 });
 
 test("retries after a thrown transport error and marks the message on the next success", async () => {
@@ -328,7 +380,7 @@ test("dedupes by message id so a repeated delivery never emails twice", async ()
   });
 
   assert.equal(first.ok, true);
-  assert.deepEqual(second, { ok: true, attempts: 0, status: null });
+  assert.deepEqual(second, { ok: true, attempts: 0, status: null, skipped: true });
   assert.equal(calls.length, 1);
 });
 
@@ -481,7 +533,7 @@ test("emails a 进度 command in the forwarding chat and then acknowledges it", 
   assert.equal(calls.some(({ url }) => url.includes("/im/v1/messages/")), true);
 });
 
-test("does not mark a forwarding-chat message processed after a Resend failure so Feishu can retry", async () => {
+test("still acknowledges a forward-chat @bot mention when the email forward fails, and never marks it processed", async () => {
   const replies = [];
   const forwardCalls = [];
   const baseFetch = makeRecordingFetch({ replies, forwardCalls });
@@ -500,14 +552,18 @@ test("does not mark a forwarding-chat message processed after a Resend failure s
 
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.ok(forwardCalls.length >= 1);
-  assert.equal(replies.length, 0);
+  assert.equal(replies.length, 1);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
+  assert.equal(await env.BOT_KV.get(ackKey("om_pfail")), "1");
+  // The failed attempt clears its placeholder so a later redelivery can email again.
+  assert.equal(await env.BOT_KV.get(forwardKey("om_pfail")), null);
   assert.equal(await env.BOT_KV.get(eventKey), null);
   assert.equal(await env.BOT_KV.get(messageKey), null);
 
   const before = forwardCalls.length;
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.ok(forwardCalls.length > before);
-  assert.equal(replies.length, 0);
+  assert.equal(replies.length, 1);
 });
 
 test("does not mark a forwarding-chat message processed when the Resend key is missing", async () => {
@@ -520,13 +576,14 @@ test("does not mark a forwarding-chat message processed when the Resend key is m
 
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.equal(forwardCalls.length, 0);
-  assert.equal(replies.length, 0);
+  assert.equal(replies.length, 1);
+  assert.equal(JSON.parse(replies[0].content).text, ACK_FALLBACK_TEXT);
   assert.equal(await env.BOT_KV.get(eventKey), null);
   assert.equal(await env.BOT_KV.get(messageKey), null);
 
   assert.equal((await send(worker, payload, env)).status, 503);
   assert.equal(forwardCalls.length, 0);
-  assert.equal(replies.length, 0);
+  assert.equal(replies.length, 1);
 });
 
 test("forwards an unsupported forward-chat message with a placeholder instead of dropping it", async () => {
