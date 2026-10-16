@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ALLOWED_TYPES,
   GENERATE_ENDPOINT,
+  I2V_COPY,
   I2V_MODELS,
   MAX_BYTES,
   MAX_PROMPT_LENGTH,
@@ -10,6 +11,7 @@ import {
   aspectRatiosFor,
   canSubmit,
   durationsFor,
+  i2vCopy,
   isI2VGenerationEnabled,
   normalizeSettings,
   parseUploadResponse,
@@ -17,7 +19,7 @@ import {
   uploadImage,
   validateImageFile,
 } from "../src/lib/image-to-video";
-import type { FetchLike } from "../src/lib/image-to-video";
+import type { FetchLike, I2VCopy } from "../src/lib/image-to-video";
 
 function stubResponse(
   status: number,
@@ -89,7 +91,43 @@ describe("constants", () => {
   });
 });
 
+describe("I2V_COPY", () => {
+  it("has a non-empty zh translation for every English string", () => {
+    const keys = Object.keys(I2V_COPY.en) as (keyof I2VCopy)[];
+
+    expect(keys.length).toBeGreaterThan(0);
+
+    for (const key of keys) {
+      const value = I2V_COPY.zh[key];
+      expect(typeof value).toBe("string");
+      expect(value.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses a different title in Chinese", () => {
+    expect(I2V_COPY.en.title).not.toBe(I2V_COPY.zh.title);
+  });
+
+  it("resolves the zh copy only for the zh locale", () => {
+    expect(i2vCopy("zh")).toBe(I2V_COPY.zh);
+    expect(i2vCopy("en")).toBe(I2V_COPY.en);
+    expect(i2vCopy("fr")).toBe(I2V_COPY.en);
+  });
+});
+
 describe("validateImageFile", () => {
+  it("returns the zh message when given the zh copy", () => {
+    expect(
+      validateImageFile({ type: "application/pdf", size: 1024 }, I2V_COPY.zh),
+    ).toBe(I2V_COPY.zh.invalidType);
+    expect(
+      validateImageFile(
+        { type: "image/png", size: MAX_BYTES + 1 },
+        I2V_COPY.zh,
+      ),
+    ).toBe(I2V_COPY.zh.tooLarge);
+  });
+
   it("accepts every allowed image type", () => {
     for (const type of ALLOWED_TYPES) {
       expect(validateImageFile({ type, size: 1024 })).toBeNull();

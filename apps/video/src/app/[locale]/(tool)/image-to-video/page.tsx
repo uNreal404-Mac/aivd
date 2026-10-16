@@ -46,8 +46,11 @@ export async function generateMetadata({
   };
 }
 
-export default function ImageToVideoPage() {
+export default async function ImageToVideoPage({
+  params,
+}: ImageToVideoPageProps) {
+  const { locale } = await params;
   const generationEnabled = isI2VGenerationEnabled();
 
-  return <I2VStudio generationEnabled={generationEnabled} />;
+  return <I2VStudio generationEnabled={generationEnabled} locale={locale} />;
 }
