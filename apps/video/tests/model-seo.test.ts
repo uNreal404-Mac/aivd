@@ -101,6 +101,7 @@ describe("model SEO data", () => {
     for (const title of titles) {
       expect(title.length).toBeLessThanOrEqual(60);
       expect(title.length).toBeGreaterThan(0);
+      expect(title).not.toContain("DreamUtopia");
     }
     expect(new Set(titles).size).toBe(titles.length);
   });
@@ -139,6 +140,7 @@ describe("model SEO data", () => {
       expect(title.length).toBeGreaterThan(0);
       expect(title.length).toBeLessThanOrEqual(60);
       expect(hasCjk(title)).toBe(true);
+      expect(title).not.toContain("DreamUtopia");
     }
 
     expect(new Set(titles).size).toBe(titles.length);

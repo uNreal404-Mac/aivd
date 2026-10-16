@@ -93,7 +93,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
     slug: "seedance-1-5-pro",
     modelId: "seedance-1.5-pro",
     name: "Seedance 1.5 Pro",
-    title: "Seedance 1.5 Pro AI Video Generator | DreamUtopia",
+    title: "Seedance 1.5 Pro AI Video Generator",
     description:
       "Generate short videos from text or a still image with Seedance 1.5 Pro. Compare durations, resolutions and aspect ratios, then start creating.",
     intro:
@@ -126,7 +126,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
       },
     ],
     zh: {
-      title: "Seedance 1.5 Pro AI 视频生成器 | DreamUtopia",
+      title: "Seedance 1.5 Pro AI 视频生成器",
       description:
         "使用 Seedance 1.5 Pro 从文字或单张图片生成短视频。查看支持的时长、分辨率与画面比例，然后开始创作。",
       intro: "把你的提示词或一张参考图，变成一段简短的成片。",
@@ -163,7 +163,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
     slug: "wan-2-6",
     modelId: "wan2.6",
     name: "Wan 2.6",
-    title: "Wan 2.6 AI Video Generator | DreamUtopia",
+    title: "Wan 2.6 AI Video Generator",
     description:
       "Try Wan 2.6 for text-to-video and image-to-video generation. Review the available settings above and pick what fits your idea.",
     intro:
@@ -196,7 +196,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
       },
     ],
     zh: {
-      title: "Wan 2.6 AI 视频生成器 | DreamUtopia",
+      title: "Wan 2.6 AI 视频生成器",
       description:
         "使用 Wan 2.6 体验文生视频与图生视频。查看上方可用设置，挑选最适合你创意的一项。",
       intro: "一款灵活的视频模型，适用于提示词驱动的片段与图生视频动画。",
@@ -233,7 +233,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
     slug: "veo-3-1",
     modelId: "veo-3.1",
     name: "Veo 3.1",
-    title: "Veo 3.1 AI Video Generator | DreamUtopia",
+    title: "Veo 3.1 AI Video Generator",
     description:
       "Explore Veo 3.1 as an option for AI video generation. Check the capabilities listed above before you decide which model to use.",
     intro:
@@ -262,7 +262,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
       },
     ],
     zh: {
-      title: "Veo 3.1 AI 视频生成器 | DreamUtopia",
+      title: "Veo 3.1 AI 视频生成器",
       description:
         "把 Veo 3.1 作为 AI 视频生成的一个选项来了解。在做决定前，先看看上方列出的能力。",
       intro: "一款可以和创作面板里其他模型并排比较的视频模型。",
@@ -295,7 +295,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
     slug: "sora-2",
     modelId: "sora-2",
     name: "Sora 2",
-    title: "Sora 2 AI Video Generator | DreamUtopia",
+    title: "Sora 2 AI Video Generator",
     description:
       "See how Sora 2 handles prompt-based and image-based video creation. The settings above show everything this model currently supports.",
     intro: "A prompt-first video model for quick, expressive short clips.",
@@ -323,7 +323,7 @@ export const MODEL_SEO: ModelSeoEntry[] = [
       },
     ],
     zh: {
-      title: "Sora 2 AI 视频生成器 | DreamUtopia",
+      title: "Sora 2 AI 视频生成器",
       description:
         "看看 Sora 2 如何处理基于提示词与基于图片的视频创作。上方设置展示了该模型目前支持的全部能力。",
       intro: "一款以提示词为先的视频模型，适合快速、富有表现力的短片。",
