@@ -31,3 +31,4 @@ bucket_name = "dreamutopia-media"
 
 [vars]
 GENERATION_ENABLED = "false"
+GOOGLE_REDIRECT_URI = "https://dreamutopia-clone.pages.dev/api/auth/google/callback"
