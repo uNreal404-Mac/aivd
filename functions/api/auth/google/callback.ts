@@ -1,5 +1,4 @@
 import type { Env } from "../../../libs/utils";
-import { json } from "../../../libs/utils";
 import { createSession } from "../../../libs/auth";
 import { makeReferralCode, mergeGuestJobs } from "../../../libs/account";
 import { randomId } from "../../../libs/utils";
