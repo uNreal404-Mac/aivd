@@ -130,3 +130,14 @@ node scripts/feishu-notify.mjs acceptance \
 ```bash
 node scripts/test-feishu-notify.mjs
 ```
+
+
+## Google sign-in and Stripe
+
+Google sign-in uses Google OAuth with the callback `/api/auth/google/callback`. Configure
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and the production callback URL in Google Cloud.
+Stripe uses one-time Checkout credit packs and the existing signature-verified webhook at
+`/api/stripe/webhook`. Configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` as
+Cloudflare Pages secrets, then apply `migrations/005_stripe_sessions.sql` before accepting
+paid webhooks. The pricing page probes `GET /api/checkout` and only opens Stripe when the
+backend reports both checkout and secrets as configured.
