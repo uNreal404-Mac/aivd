@@ -1,5 +1,5 @@
 import { json, preflight, hasDb, hasSessions, hasMedia, hasKieKey } from "../../libs/utils";
-import { hasStripe } from "../../libs/stripe";
+import { hasStripe, hasStripeWebhook } from "../../libs/stripe";
 import { hasMailer } from "../../libs/mail";
 import { hasKieWebhookHmac } from "../../libs/kieWebhook";
 import { isGenerationEnabled } from "../../libs/generation";
@@ -16,7 +16,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   };
   const authReady = bindings.DB && bindings.SESSIONS;
   const kieConfigured = hasKieKey(env);
-  const checkoutConfigured = hasStripe(env);
+  const checkoutConfigured = hasStripe(env) && hasStripeWebhook(env);
   const mailConfigured = hasMailer(env);
   const kieWebhookHmac = hasKieWebhookHmac(env);
   const generationEnabled = isGenerationEnabled(env);
