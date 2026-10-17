@@ -21,7 +21,9 @@ bucket_name = "dreamutopia-media"
 # Secrets (Pages dashboard / wrangler pages secret):
 #   KIE_API_KEY
 #   KIE_WEBHOOK_HMAC_KEY                   (optional; kie.ai Settings → webhookHmacKey)
-#   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET  (paid credits)
+#   GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET       (Google OAuth)
+#   GOOGLE_REDIRECT_URI                            (optional; defaults to /api/auth/google/callback)
+#   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET      (paid credits)
 #   Webhook: https://dreamutopia-clone.pages.dev/api/stripe/webhook  (checkout.session.completed)
 #   D1: npx wrangler d1 execute dreamutopia-db --remote --file=migrations/005_stripe_sessions.sql
 #   RESEND_API_KEY + MAIL_FROM                 (password reset + welcome email)
@@ -31,3 +33,4 @@ bucket_name = "dreamutopia-media"
 
 [vars]
 GENERATION_ENABLED = "false"
+GOOGLE_REDIRECT_URI = "https://dreamutopia-clone.pages.dev/api/auth/google/callback"

@@ -8,7 +8,7 @@ import {
   parsePackId,
   publicPacks,
 } from "../../libs/packs";
-import { createCheckoutSession, hasStripe } from "../../libs/stripe";
+import { createCheckoutSession, hasStripe, hasStripeWebhook } from "../../libs/stripe";
 import { rateLimitedResponse, takeRateLimit } from "../../libs/rateLimit";
 
 export const onRequestOptions = (): Response => preflight();
@@ -31,13 +31,13 @@ function catalog(configured: boolean) {
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
-  const configured = hasStripe(env);
+  const configured = hasStripe(env) && hasStripeWebhook(env);
   // Honest 503 until Stripe is configured — never look like a live charge endpoint.
   return json(catalog(configured), configured ? 200 : 503);
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
-  if (!hasStripe(env) || !env.STRIPE_SECRET_KEY) {
+  if (!hasStripe(env) || !hasStripeWebhook(env) || !env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
     return json(
       {
         error: "checkout_not_configured",

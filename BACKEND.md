@@ -271,3 +271,18 @@ Without the secret, the same POST returns `code: "kie_api_key_missing"` (503).
 - [ ] `/api/health` → `generateReady: true`, `uploadReady: true`
 - [ ] Logged-in POST `/api/upload` then `/api/generate` queues a KIE job; GET returns `resultUrl`
 - [ ] Logged-out POST `/api/generate` with `imageUrl` consumes one of two guest Lite tries
+
+
+## Google sign-in
+
+Google OAuth is implemented at `/api/auth/google/start` and `/api/auth/google/callback`.
+Create a Web application OAuth client in Google Cloud Console and register this exact callback:
+
+```
+https://dreamutopia-clone.pages.dev/api/auth/google/callback
+```
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Cloudflare Pages secrets. The optional
+`GOOGLE_REDIRECT_URI` must match the registered callback exactly when it is set. OAuth state
+is stored in KV for ten minutes, and the callback only accepts verified Google email addresses.
+Google users receive the same 10-credit signup grant and session format as password users.

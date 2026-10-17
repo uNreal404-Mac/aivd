@@ -482,7 +482,7 @@
 
   // Flip to true to let pricing Select POST /api/checkout and open Stripe.
   // Backend /api/checkout is unchanged; this only gates visitor-facing CTAs.
-  const PAYMENTS_ENABLED = false;
+  const PAYMENTS_ENABLED = true;
   let generationEnabled = false;
 
   global.DU = {

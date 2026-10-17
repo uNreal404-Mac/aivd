@@ -1,3 +1,9 @@
 /business /workspace 301
 /business/ /workspace 301
 /business.html /workspace 301
+/zh /?lang=zh 302
+/zh/ /?lang=zh 302
+/zh/index.html /?lang=zh 302
+/zh/workspace /workspace?lang=zh 302
+/zh/pricing /pricing?lang=zh 302
+/zh/auth /auth?mode=login&lang=zh 302

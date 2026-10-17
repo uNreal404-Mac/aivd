@@ -9,6 +9,10 @@ export interface Env {
   /** Pages secret — required for real KIE image-to-video */
   KIE_API_KEY?: string;
   KIE_API_BASE?: string;
+  /** Google OAuth (optional). */
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_REDIRECT_URI?: string;
   /** Stripe Checkout (optional). Without it, GET /api/checkout returns configured:false. */
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;

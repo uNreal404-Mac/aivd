@@ -65,6 +65,7 @@ nav>a:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .submit:hover:not(:disabled){opacity:.92}
 .submit:disabled{opacity:.55;cursor:not-allowed}
 .form-error{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fecaca;font-size:13px}
+.oauth-divider{display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px;margin:18px 0}.oauth-divider::before,.oauth-divider::after{content:\"\";height:1px;background:var(--border);flex:1}.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-weight:600;background:var(--bg2);transition:border-color .2s,background .2s}.google-btn:hover{border-color:var(--primary);background:rgba(168,85,247,.08)}
 .form-error.show{display:block}
 .perk{margin-top:18px;padding:12px 14px;border-radius:12px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);font-size:13px;color:var(--text2)}
 .perk b{color:#fff;font-weight:600}
@@ -132,6 +133,12 @@ nav{display:none}
 <div class="form-error" id="formError" role="alert"></div>
 </form>
 
+<div class="oauth-divider" id="googleDivider"><span>or</span></div>
+<a class="google-btn" id="googleBtn" href="/api/auth/google/start?next=%2Fworkspace">
+  <span aria-hidden="true">G</span>
+  <span>Continue with Google</span>
+</a>
+
 <div class="perk" id="perk" data-i18n-html="auth.perk">New accounts get <b>10 free credits</b> instantly — no credit card required.</div>
 <p class="switch" id="switchLine">Already have an account? <a href="/auth?mode=login" id="switchLink">Log in</a></p>
 <a class="back" href="/workspace" data-i18n="auth.back">← Back to workspace</a>
@@ -147,6 +154,13 @@ nav{display:none}
 <script>
 const TOKEN_KEY = "dreamutopia_token";
 const CREDITS_KEY = "dreamutopia_credits";
+(function consumeGoogleToken() {
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const token = hash.get("token");
+  if (!token) return;
+  localStorage.setItem(TOKEN_KEY, token);
+  history.replaceState(null, "", location.pathname + location.search);
+})();
 const PACKS = {
   starter: { name: "Starter Pack", price: "$5", credits: 10 },
   plus: { name: "Plus Pack", price: "$25", credits: 50 },
@@ -180,6 +194,13 @@ const formError = document.getElementById("formError");
 const passwordInput = document.getElementById("password");
 const hdrLogin = document.getElementById("hdrLogin");
 const hdrSignup = document.getElementById("hdrSignup");
+const googleBtn = document.getElementById("googleBtn");
+const googleDivider = document.getElementById("googleDivider");
+function syncGoogleButton() {
+  if (!googleBtn) return;
+  const next = nextPath || "/workspace";
+  googleBtn.href = "/api/auth/google/start?next=" + encodeURIComponent(next);
+}
 
 function authUrl(nextAuthMode) {
   let url = "/auth?mode=" + nextAuthMode;
@@ -208,6 +229,9 @@ function setMode(next) {
   mode = next === "login" ? "login" : next === "forgot" ? "forgot" : "register";
   const isLogin = mode === "login";
   const isForgot = mode === "forgot";
+  if (googleBtn) googleBtn.hidden = isForgot;
+  if (googleDivider) googleDivider.hidden = isForgot;
+  syncGoogleButton();
   const passwordField = passwordInput.closest(".field");
   const forgotWrap = document.getElementById("forgotLinkWrap");
   title.textContent = isForgot
@@ -345,6 +369,11 @@ document.getElementById("authForm").onsubmit = async (e) => {
 
 (async function init() {
   setMode(mode);
+  syncGoogleButton();
+  if (params.get("google_error")) {
+    formError.textContent = "Google sign-in could not be completed. Please try again.";
+    formError.classList.add("show");
+  }
   const existing = localStorage.getItem(TOKEN_KEY);
   if (!existing) return;
   try {

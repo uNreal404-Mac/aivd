@@ -1229,6 +1229,12 @@
 
   function detect() {
     try {
+      const requested = new URLSearchParams(window.location.search).get("lang");
+      if (requested) {
+        const selected = normalize(requested);
+        localStorage.setItem(KEY, selected);
+        return selected;
+      }
       const saved = localStorage.getItem(KEY);
       if (saved) return normalize(saved);
     } catch (e) {}
@@ -1259,6 +1265,13 @@
     scope.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
       el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
     });
+    const titles = {
+      en: "DreamUtopia — Free AI Image & Video Generator",
+      zh: "DreamUtopia｜AI 图片与视频生成器",
+      ja: "DreamUtopia｜AI画像・動画ジェネレーター",
+      es: "DreamUtopia｜Generador de imágenes y vídeos con IA"
+    };
+    document.title = titles[current] || document.title;
     document.documentElement.lang = HTML_LANG[current] || "en";
     document.querySelectorAll(".lang-select").forEach(function (sel) {
       if (sel.value !== current) sel.value = current;
