@@ -75,7 +75,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   });
   const profile = (await profileResponse.json().catch(() => ({}))) as GoogleProfile;
   const email = profile.email?.trim().toLowerCase();
-  if (!profileResponse.ok || !email || profile.email_verified === false) {
+  if (!profileResponse.ok || !email || profile.email_verified !== true) {
     return redirectToAuth(origin, { google_error: "email_not_verified" });
   }
 
