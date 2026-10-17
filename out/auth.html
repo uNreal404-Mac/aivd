@@ -64,7 +64,7 @@ nav>a:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .submit{width:100%;margin-top:8px;padding:14px;border-radius:12px;font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;box-shadow:0 10px 28px rgba(168,85,247,.25);transition:opacity .2s}
 .submit:hover:not(:disabled){opacity:.92}
 .submit:disabled{opacity:.55;cursor:not-allowed}
-.form-error{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fecaca;font-size:13px}
+.form-error{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fecaca;font-size:13px}\n.oauth-divider{display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px;margin:18px 0}.oauth-divider::before,.oauth-divider::after{content:\"\";height:1px;background:var(--border);flex:1}.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px 14px;border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-weight:600;background:var(--bg2);transition:border-color .2s,background .2s}.google-btn:hover{border-color:var(--primary);background:rgba(168,85,247,.08)}
 .form-error.show{display:block}
 .perk{margin-top:18px;padding:12px 14px;border-radius:12px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);font-size:13px;color:var(--text2)}
 .perk b{color:#fff;font-weight:600}
@@ -147,6 +147,13 @@ nav{display:none}
 <script>
 const TOKEN_KEY = "dreamutopia_token";
 const CREDITS_KEY = "dreamutopia_credits";
+(function consumeGoogleToken() {
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+  const token = hash.get("token");
+  if (!token) return;
+  localStorage.setItem(TOKEN_KEY, token);
+  history.replaceState(null, "", location.pathname + location.search);
+})();
 const PACKS = {
   starter: { name: "Starter Pack", price: "$5", credits: 10 },
   plus: { name: "Plus Pack", price: "$25", credits: 50 },
@@ -180,6 +187,13 @@ const formError = document.getElementById("formError");
 const passwordInput = document.getElementById("password");
 const hdrLogin = document.getElementById("hdrLogin");
 const hdrSignup = document.getElementById("hdrSignup");
+const googleBtn = document.getElementById("googleBtn");
+const googleDivider = document.getElementById("googleDivider");
+function syncGoogleButton() {
+  if (!googleBtn) return;
+  const next = nextPath || "/workspace";
+  googleBtn.href = "/api/auth/google/start?next=" + encodeURIComponent(next);
+}
 
 function authUrl(nextAuthMode) {
   let url = "/auth?mode=" + nextAuthMode;
@@ -208,6 +222,9 @@ function setMode(next) {
   mode = next === "login" ? "login" : next === "forgot" ? "forgot" : "register";
   const isLogin = mode === "login";
   const isForgot = mode === "forgot";
+  if (googleBtn) googleBtn.hidden = isForgot;
+  if (googleDivider) googleDivider.hidden = isForgot;
+  syncGoogleButton();
   const passwordField = passwordInput.closest(".field");
   const forgotWrap = document.getElementById("forgotLinkWrap");
   title.textContent = isForgot
