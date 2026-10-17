@@ -4,12 +4,11 @@
  * 正确恢复视频：下载 evolink 视频，上传到 R2
  */
 
-const postgres = require("postgres");
 const dotenv = require("dotenv");
+const { executeD1, sqlValue } = require("./d1-cli");
 
 dotenv.config({ path: ".env.local" });
 
-const DATABASE_URL = process.env.DATABASE_URL;
 const EVOLINK_API_KEY = process.env.EVOLINK_API_KEY;
 
 // R2 配置
@@ -69,24 +68,22 @@ async function downloadAndUploadToR2(client, videoUuid, sourceUrl) {
   return { url, key };
 }
 
-async function updateVideoWithR2Url(sql, videoUuid, r2Url, originalUrl, thumbnailUrl) {
-  await sql`
+function updateVideoWithR2Url(videoUuid, r2Key, originalUrl, thumbnailUrl) {
+  executeD1(`
     UPDATE videos
     SET
       status = 'COMPLETED',
-      video_url = ${r2Url},
-      original_video_url = ${originalUrl},
-      thumbnail_url = ${thumbnailUrl || null},
-      updated_at = NOW(),
-      completed_at = NOW()
-    WHERE uuid = ${videoUuid}
-  `;
+      video_url = ${sqlValue(r2Key)},
+      original_video_url = ${sqlValue(originalUrl)},
+      thumbnail_url = ${sqlValue(thumbnailUrl)},
+      updated_at = unixepoch(),
+      completed_at = unixepoch()
+    WHERE uuid = ${sqlValue(videoUuid)}
+  `);
 }
 
 async function main() {
   console.log("🔍 正确恢复视频（下载到 R2）...\n");
-
-  const sql = postgres(DATABASE_URL);
 
   // 动态导入 s3mini
   const { s3mini } = await import("s3mini");
@@ -101,17 +98,16 @@ async function main() {
 
   try {
     // 查找已完成的视频，但 video_url 还是 evolink 临时链接的
-    const videos = await sql`
+    const videos = executeD1(`
       SELECT uuid, external_task_id, video_url
       FROM videos
       WHERE status = 'COMPLETED'
         AND video_url LIKE '%tempfile.aiquickdraw.com%'
       ORDER BY completed_at DESC
-    `;
+    `);
 
     if (videos.length === 0) {
       console.log("✅ 没有需要处理的视频");
-      await sql.end();
       return;
     }
 
@@ -146,10 +142,9 @@ async function main() {
         );
 
         // 更新数据库
-        await updateVideoWithR2Url(
-          sql,
+        updateVideoWithR2Url(
           video.uuid,
-          uploaded.url,
+          uploaded.key,
           video.video_url,
           task.data?.thumbnail_url
         );
@@ -161,10 +156,8 @@ async function main() {
     }
 
     console.log("✅ 恢复完成");
-    await sql.end();
   } catch (error) {
     console.error("❌ 错误:", error);
-    await sql.end();
     throw error;
   }
 }

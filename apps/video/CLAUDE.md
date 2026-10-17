@@ -9,7 +9,7 @@ VideoFly is a SaaS platform for AI-powered video generation. It's built as a sta
 - **Framework**: Next.js 15 (App Router)
 - **Runtime**: React 19
 - **Language**: TypeScript
-- **Database**: PostgreSQL with **Drizzle ORM**
+- **Database**: Cloudflare D1 with **Drizzle ORM**
 - **Auth**: Better Auth + Google OAuth + Magic Link
 - **Styling**: Tailwind CSS 4 + shadcn/ui (Radix UI)
 - **Package Manager**: pnpm
@@ -259,8 +259,8 @@ Route groups with `(locale)`:
 
 ```bash
 # Database
-DATABASE_URL=postgresql://...
-POSTGRES_URL=...
+# Cloudflare D1 is bound as DB in wrangler.jsonc; no connection URL is used.
+# Apply remote migrations with: pnpm db:migrate
 
 # Auth
 BETTER_AUTH_SECRET=...

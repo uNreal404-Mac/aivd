@@ -1,7 +1,7 @@
 {
   // Preview-only Cloudflare Workers config for the Next.js app via @opennextjs/cloudflare.
-  // Secrets (BETTER_AUTH_SECRET, DATABASE_URL) are set with `wrangler secret put <NAME>`
-  // and must never be committed to this file.
+  // Secrets (BETTER_AUTH_SECRET and provider credentials) are set with
+  // `wrangler secret put <NAME>` and must never be committed to this file.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dreamutopia-video-preview",
   "main": ".open-next/worker.js",
@@ -17,14 +17,23 @@
       "service": "dreamutopia-video-preview"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dreamutopia-db",
+      "database_id": "d7418d45-b49a-4d5a-9427-acdf639baa5a",
+      "migrations_dir": "src/db/migrations"
+    }
+  ],
   "workers_dev": true,
-  "preview_urls": false,
+  "preview_urls": true,
   "observability": {
     "enabled": true
   },
   // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY and CALLBACK_HMAC_SECRET are secrets.
   // Set them with `wrangler secret put <NAME>` — never commit them to this file.
   "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://dreamutopia-video-preview.gujiahui961118.workers.dev",
     "NEXT_PUBLIC_NOINDEX": "true",
     "VIDEO_GENERATION_ENABLED": "false",
     "AI_CALLBACK_URL": "https://dreamutopia-video.pages.dev/api/v1/video/callback",

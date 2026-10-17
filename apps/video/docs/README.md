@@ -157,7 +157,7 @@
 
 #### 环境变量 (`.env.local`)
 
-- [ ] 数据库连接 (`DATABASE_URL`)
+- [ ] Cloudflare D1 `DB` binding 与 Migration
 - [ ] 应用 URL (`NEXT_PUBLIC_APP_URL`)
 - [ ] Better Auth Secret (`BETTER_AUTH_SECRET`)
 - [ ] Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)

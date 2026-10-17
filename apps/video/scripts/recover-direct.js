@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * 直接从数据库和 evolink API 恢复视频
+ * 直接从 Cloudflare D1 和 evolink API 恢复视频
  */
 
-const postgres = require("postgres");
 const dotenv = require("dotenv");
+const { executeD1, sqlValue } = require("./d1-cli");
 
 // 加载环境变量
 dotenv.config({ path: ".env.local" });
 
-const DATABASE_URL = process.env.DATABASE_URL;
 const EVOLINK_API_KEY = process.env.EVOLINK_API_KEY;
 
 async function checkEvolinkTask(taskId) {
@@ -30,34 +29,32 @@ async function checkEvolinkTask(taskId) {
   return await response.json();
 }
 
-async function updateVideoStatus(sql, videoUuid, status, videoUrl, thumbnailUrl, errorMessage) {
-  await sql`
+function updateVideoStatus(videoUuid, status, videoUrl, thumbnailUrl, errorMessage) {
+  executeD1(`
     UPDATE videos
     SET
-      status = ${status},
-      video_url = ${videoUrl || null},
-      thumbnail_url = ${thumbnailUrl || null},
-      error_message = ${errorMessage || null},
-      updated_at = NOW(),
-      completed_at = NOW()
-    WHERE uuid = ${videoUuid}
-  `;
+      status = ${sqlValue(status)},
+      video_url = ${sqlValue(videoUrl)},
+      thumbnail_url = ${sqlValue(thumbnailUrl)},
+      error_message = ${sqlValue(errorMessage)},
+      updated_at = unixepoch(),
+      completed_at = unixepoch()
+    WHERE uuid = ${sqlValue(videoUuid)}
+  `);
 }
 
 async function main() {
   console.log("🔍 恢复卡住的视频...\n");
 
-  const sql = postgres(DATABASE_URL);
-
   try {
     // 查找卡住的视频
-    const stuckVideos = await sql`
+    const stuckVideos = executeD1(`
       SELECT uuid, status, provider, external_task_id
       FROM videos
       WHERE status IN ('PENDING', 'GENERATING', 'UPLOADING')
       ORDER BY created_at DESC
       LIMIT 20
-    `;
+    `);
 
     if (stuckVideos.length === 0) {
       console.log("✅ 没有卡住的视频");
@@ -86,8 +83,7 @@ async function main() {
           console.log(`   视频URL: ${task.results[0]}`);
 
           // 更新数据库
-          await updateVideoStatus(
-            sql,
+          updateVideoStatus(
             video.uuid,
             "COMPLETED",
             task.results[0],
@@ -101,8 +97,7 @@ async function main() {
 
           const errorMsg = task.error?.message || "Task failed";
 
-          await updateVideoStatus(
-            sql,
+          updateVideoStatus(
             video.uuid,
             "FAILED",
             null,
@@ -120,10 +115,8 @@ async function main() {
     }
 
     console.log("✅ 恢复完成");
-    await sql.end();
   } catch (error) {
     console.error("❌ 错误:", error);
-    await sql.end();
     throw error;
   }
 }

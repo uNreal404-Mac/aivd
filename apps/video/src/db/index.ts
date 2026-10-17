@@ -1,100 +1,59 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/d1";
 
 import * as schema from "./schema";
 
-const getDatabaseUrl = () =>
-  process.env.DATABASE_URL?.trim() || process.env.POSTGRES_URL?.trim() || "";
-
-const parseSslConfig = (url: string) => {
-  const mode = (
-    process.env.DATABASE_SSL_MODE ||
-    process.env.DATABASE_SSL ||
-    ""
-  )
-    .toLowerCase()
-    .trim();
-
-  if (mode === "disable" || mode === "false" || mode === "0" || mode === "off") {
-    return undefined;
+type D1Binding = Parameters<typeof drizzle>[0];
+declare global {
+  interface CloudflareEnv {
+    DB: D1Binding;
   }
-
-  if (mode === "require" || mode === "true" || mode === "1" || mode === "on") {
-    return "require" as const;
-  }
-
-  const isLocalhost = url.includes("localhost") || url.includes("127.0.0.1");
-  return isLocalhost ? undefined : ("require" as const);
-};
-
-const isWorkers =
-  typeof navigator !== "undefined" &&
-  navigator.userAgent === "Cloudflare-Workers";
-
-function createDb() {
-  const databaseUrl = getDatabaseUrl();
-  if (!databaseUrl || !databaseUrl.startsWith("postgres")) {
-    throw new Error(
-      "Missing or invalid DATABASE_URL. Set a valid PostgreSQL connection string in your .env file.\n" +
-        "Example: DATABASE_URL='postgresql://user:password@host:port/database'"
-    );
-  }
-  const ssl = parseSslConfig(databaseUrl);
-  const sql = isWorkers
-    ? postgres(databaseUrl, {
-        max: 1,
-        ssl,
-        prepare: false,
-        fetch_types: false,
-        connect_timeout: 10,
-      })
-    : postgres(databaseUrl, {
-        max: 10,
-        ssl,
-      });
-  return drizzle(sql, { schema });
+  var __D1_TEST_DB__: D1Binding | undefined;
 }
 
-// On Workers, an I/O object (socket) cannot be reused across requests, so we
-// keep one drizzle instance per request keyed by the per-request
-// ExecutionContext. Off Workers, we keep a single global lazy instance.
-const workersDbCache = new WeakMap<object, ReturnType<typeof createDb>>();
+const createDb = (binding: D1Binding) => drizzle(binding, { schema });
+type Database = ReturnType<typeof createDb>;
 
-let _db: ReturnType<typeof createDb> | undefined;
+const databaseCache = new WeakMap<object, Database>();
 
-function getDb(): ReturnType<typeof createDb> {
-  if (!isWorkers) {
-    if (!_db) {
-      _db = createDb();
-    }
-    return _db;
-  }
-
-  let ctx: object | undefined;
+export function hasDbBinding(): boolean {
   try {
-    ctx = getCloudflareContext().ctx;
+    return Boolean(getCloudflareContext().env.DB);
   } catch {
-    ctx = undefined;
+    return false;
+  }
+}
+
+function getDb(): Database {
+  let binding =
+    process.env.NODE_ENV === "test" ? globalThis.__D1_TEST_DB__ : undefined;
+  try {
+    binding ??= getCloudflareContext().env.DB;
+  } catch {
+    binding = undefined;
   }
 
-  if (!ctx) {
-    return createDb();
+  if (!binding) {
+    throw new Error(
+      "Missing Cloudflare D1 binding 'DB'. Configure d1_databases in wrangler.jsonc."
+    );
   }
 
-  const cached = workersDbCache.get(ctx);
-  if (cached) {
-    return cached;
-  }
+  const key = binding as unknown as object;
+  const cached = databaseCache.get(key);
+  if (cached) return cached;
 
-  const instance = createDb();
-  workersDbCache.set(ctx, instance);
+  const instance = createDb(binding);
+  databaseCache.set(key, instance);
   return instance;
 }
 
-export const db = new Proxy({} as ReturnType<typeof createDb>, {
-  get(_target, prop, receiver) {
-    return Reflect.get(getDb(), prop, receiver);
+// Keep imports stable across the application while resolving the request-local
+// D1 binding lazily from OpenNext's Cloudflare context.
+export const db = new Proxy({} as Database, {
+  get(_target, prop) {
+    const instance = getDb();
+    return Reflect.get(instance, prop, instance);
   },
 });
 

@@ -39,7 +39,12 @@ interface PackageAllocation {
   credits: number;
 }
 
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbReader = Pick<typeof db, "select">;
+
+function isConstraintError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /(?:UNIQUE|CHECK) constraint failed/i.test(message);
+}
 
 export class CreditService {
   /**
@@ -113,23 +118,21 @@ export class CreditService {
   }): Promise<{ success: boolean; holdId: number }> {
     const { userId, credits, videoUuid } = params;
 
-    return db.transaction(async (trx) => {
-      const [existingHold] = await trx
-        .select()
-        .from(creditHolds)
-        .where(eq(creditHolds.videoUuid, videoUuid))
-        .limit(1);
-
-      if (existingHold) {
-        if (existingHold.status === "HOLDING") {
-          return { success: true, holdId: existingHold.id };
-        }
-        throw new Error(`Hold already processed for video: ${videoUuid}`);
+    const existingHold = await this.findHold(videoUuid);
+    if (existingHold) {
+      if (existingHold.status === "HOLDING") {
+        return { success: true, holdId: existingHold.id };
       }
+      throw new Error(`Hold already processed for video: ${videoUuid}`);
+    }
 
+    // D1 does not expose interactive transactions. Its batch API is atomic,
+    // so the package updates and hold insert are committed or rolled back
+    // together. CHECK constraints prevent a concurrent request from taking a
+    // package below zero; in that case we re-read and retry safely.
+    for (let attempt = 0; attempt < 3; attempt++) {
       const now = new Date();
-
-      const packages = await trx
+      const packages = await db
         .select()
         .from(creditPackages)
         .where(
@@ -150,7 +153,7 @@ export class CreditService {
         );
 
       const availableCredits = packages.reduce(
-        (sum, p) => sum + p.remainingCredits,
+        (sum, pkg) => sum + pkg.remainingCredits,
         0
       );
       if (availableCredits < credits) {
@@ -161,25 +164,24 @@ export class CreditService {
 
       const allocation: PackageAllocation[] = [];
       let remaining = credits;
-
       for (const pkg of packages) {
         if (remaining <= 0) break;
-
         const toFreeze = Math.min(pkg.remainingCredits, remaining);
         allocation.push({ packageId: pkg.id, credits: toFreeze });
-
-        await trx
-          .update(creditPackages)
-          .set({
-            remainingCredits: pkg.remainingCredits - toFreeze,
-            frozenCredits: pkg.frozenCredits + toFreeze,
-          })
-          .where(eq(creditPackages.id, pkg.id));
-
         remaining -= toFreeze;
       }
 
-      const [holdResult] = await trx
+      const updates = allocation.map(({ packageId, credits: amount }) =>
+        db
+          .update(creditPackages)
+          .set({
+            remainingCredits: sql`${creditPackages.remainingCredits} - ${amount}`,
+            frozenCredits: sql`${creditPackages.frozenCredits} + ${amount}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(creditPackages.id, packageId))
+      );
+      const insertHold = db
         .insert(creditHolds)
         .values({
           userId,
@@ -190,165 +192,144 @@ export class CreditService {
         })
         .returning({ id: creditHolds.id });
 
-      if (!holdResult) {
-        throw new Error("Failed to create credit hold");
+      try {
+        const results = await db.batch(
+          [...updates, insertHold] as unknown as Parameters<typeof db.batch>[0]
+        );
+        const inserted = results[results.length - 1] as
+          | Array<{ id: number }>
+          | undefined;
+        const holdId = inserted?.[0]?.id;
+        if (!holdId) throw new Error("Failed to create credit hold");
+        return { success: true, holdId };
+      } catch (error) {
+        const racedHold = await this.findHold(videoUuid);
+        if (racedHold?.status === "HOLDING") {
+          return { success: true, holdId: racedHold.id };
+        }
+        if (!isConstraintError(error) || attempt === 2) throw error;
       }
+    }
 
-      return { success: true, holdId: holdResult.id };
-    });
+    throw new Error("Failed to freeze credits");
   }
 
   /**
    * 结算积分（任务成功时调用）
    */
   async settle(videoUuid: string): Promise<void> {
-    await db.transaction(async (trx) => {
-      const [hold] = await trx
-        .select()
-        .from(creditHolds)
-        .where(eq(creditHolds.videoUuid, videoUuid))
-        .limit(1);
+    const hold = await this.findHold(videoUuid);
+    if (!hold) throw new Error(`Hold not found for video: ${videoUuid}`);
+    if (hold.status === "SETTLED") return;
+    if (hold.status !== "HOLDING") {
+      throw new Error(`Invalid hold status: ${hold.status}`);
+    }
 
-      if (!hold) {
-        throw new Error(`Hold not found for video: ${videoUuid}`);
-      }
-
-      if (hold.status === "SETTLED") {
-        return;
-      }
-
-      if (hold.status !== "HOLDING") {
-        throw new Error(`Invalid hold status: ${hold.status}`);
-      }
-
-      const allocation = hold.packageAllocation as PackageAllocation[];
-
-      for (const { packageId, credits } of allocation) {
-        const [pkg] = await trx
-          .select()
-          .from(creditPackages)
-          .where(eq(creditPackages.id, packageId))
-          .limit(1);
-
-        if (pkg) {
-          await trx
-            .update(creditPackages)
-            .set({
-              frozenCredits: pkg.frozenCredits - credits,
-            })
-            .where(eq(creditPackages.id, packageId));
-
-          const [updatedPkg] = await trx
-            .select()
-            .from(creditPackages)
-            .where(eq(creditPackages.id, packageId))
-            .limit(1);
-
-          if (
-            updatedPkg &&
-            updatedPkg.remainingCredits === 0 &&
-            updatedPkg.frozenCredits === 0
-          ) {
-            await trx
-              .update(creditPackages)
-              .set({ status: CreditPackageStatus.DEPLETED })
-              .where(eq(creditPackages.id, packageId));
-          }
-        }
-      }
-
-      await trx
-        .update(creditHolds)
+    const balance = await this.getBalanceInTx(db, hold.userId);
+    const updates = hold.packageAllocation.map(({ packageId, credits }) =>
+      db
+        .update(creditPackages)
         .set({
-          status: "SETTLED",
-          settledAt: new Date(),
+          frozenCredits: sql`${creditPackages.frozenCredits} - ${credits}`,
+          status: sql`case when ${creditPackages.remainingCredits} = 0 and ${creditPackages.frozenCredits} - ${credits} = 0 then 'DEPLETED' else ${creditPackages.status} end`,
+          updatedAt: new Date(),
         })
-        .where(eq(creditHolds.videoUuid, videoUuid));
+        .where(eq(creditPackages.id, packageId))
+    );
 
-      const balance = await this.getBalanceInTx(trx, hold.userId);
-      await trx.insert(creditTransactions).values({
-        transNo: `TXN${Date.now()}${nanoid(6)}`,
-        userId: hold.userId,
-        transType: CreditTransType.VIDEO_CONSUME,
-        credits: -hold.credits,
-        balanceAfter: balance.availableCredits,
-        videoUuid,
-        holdId: hold.id,
-        remark: `Video generation settled: ${videoUuid}`,
-      });
-    });
+    try {
+      await db.batch(
+        [
+          ...updates,
+          db
+            .update(creditHolds)
+            .set({ status: "SETTLED", settledAt: new Date() })
+            .where(
+              and(
+                eq(creditHolds.videoUuid, videoUuid),
+                eq(creditHolds.status, "HOLDING")
+              )
+            ),
+          db.insert(creditTransactions).values({
+            transNo: `TXN${Date.now()}${nanoid(6)}`,
+            userId: hold.userId,
+            transType: CreditTransType.VIDEO_CONSUME,
+            credits: -hold.credits,
+            balanceAfter: balance.availableCredits,
+            videoUuid,
+            holdId: hold.id,
+            remark: `Video generation settled: ${videoUuid}`,
+          }),
+        ] as unknown as Parameters<typeof db.batch>[0]
+      );
+    } catch (error) {
+      const current = await this.findHold(videoUuid);
+      if (current?.status === "SETTLED") return;
+      throw error;
+    }
   }
 
   /**
    * 释放积分（任务失败时调用）
    */
   async release(videoUuid: string): Promise<void> {
-    await db.transaction(async (trx) => {
-      const [hold] = await trx
-        .select()
-        .from(creditHolds)
-        .where(eq(creditHolds.videoUuid, videoUuid))
-        .limit(1);
+    const hold = await this.findHold(videoUuid);
+    if (!hold) throw new Error(`Hold not found for video: ${videoUuid}`);
+    if (hold.status === "RELEASED") return;
+    if (hold.status !== "HOLDING") {
+      throw new Error(`Invalid hold status: ${hold.status}`);
+    }
 
-      if (!hold) {
-        throw new Error(`Hold not found for video: ${videoUuid}`);
-      }
-
-      if (hold.status === "RELEASED") {
-        return;
-      }
-
-      if (hold.status !== "HOLDING") {
-        throw new Error(`Invalid hold status: ${hold.status}`);
-      }
-
-      const allocation = hold.packageAllocation as PackageAllocation[];
-
-      for (const { packageId, credits } of allocation) {
-        const [pkg] = await trx
-          .select()
-          .from(creditPackages)
-          .where(eq(creditPackages.id, packageId))
-          .limit(1);
-
-        if (pkg) {
-          await trx
-            .update(creditPackages)
-            .set({
-              remainingCredits: pkg.remainingCredits + credits,
-              frozenCredits: pkg.frozenCredits - credits,
-            })
-            .where(eq(creditPackages.id, packageId));
-        }
-      }
-
-      await trx
-        .update(creditHolds)
+    const balance = await this.getBalanceInTx(db, hold.userId);
+    const updates = hold.packageAllocation.map(({ packageId, credits }) =>
+      db
+        .update(creditPackages)
         .set({
-          status: "RELEASED",
-          settledAt: new Date(),
+          remainingCredits: sql`${creditPackages.remainingCredits} + ${credits}`,
+          frozenCredits: sql`${creditPackages.frozenCredits} - ${credits}`,
+          status: CreditPackageStatus.ACTIVE,
+          updatedAt: new Date(),
         })
-        .where(eq(creditHolds.videoUuid, videoUuid));
+        .where(eq(creditPackages.id, packageId))
+    );
 
-      const balance = await this.getBalanceInTx(trx, hold.userId);
-      await trx.insert(creditTransactions).values({
-        transNo: `TXN${Date.now()}${nanoid(6)}`,
-        userId: hold.userId,
-        transType: CreditTransType.REFUND,
-        credits: 0,
-        balanceAfter: balance.availableCredits,
-        videoUuid,
-        holdId: hold.id,
-        remark: `Video generation failed, credits released: ${videoUuid}`,
-      });
-    });
+    try {
+      await db.batch(
+        [
+          ...updates,
+          db
+            .update(creditHolds)
+            .set({ status: "RELEASED", settledAt: new Date() })
+            .where(
+              and(
+                eq(creditHolds.videoUuid, videoUuid),
+                eq(creditHolds.status, "HOLDING")
+              )
+            ),
+          db.insert(creditTransactions).values({
+            transNo: `TXN${Date.now()}${nanoid(6)}`,
+            userId: hold.userId,
+            transType: CreditTransType.REFUND,
+            credits: 0,
+            balanceAfter: balance.availableCredits + hold.credits,
+            videoUuid,
+            holdId: hold.id,
+            remark: `Video generation failed, credits released: ${videoUuid}`,
+          }),
+        ] as unknown as Parameters<typeof db.batch>[0]
+      );
+    } catch (error) {
+      const current = await this.findHold(videoUuid);
+      if (current?.status === "RELEASED") return;
+      throw error;
+    }
   }
 
   /**
    * 充值积分
    *
-   * 可传入已有事务（trx），让调用方的检查与本次发放共享同一事务；
-   * 未传入时自行开启事务，行为与之前一致。
+   * D1 batch makes the package and audit transaction an atomic unit. The
+   * unique order number keeps payment/webhook retries idempotent.
    */
   async recharge(
     params: {
@@ -358,16 +339,16 @@ export class CreditService {
       transType?: CreditTransType;
       expiryDays?: number;
       remark?: string;
-    },
-    trx?: Transaction
-  ): Promise<{ packageId: number }> {
+    }
+  ): Promise<{ packageId: number; created: boolean }> {
     const transType = params.transType || CreditTransType.ORDER_PAY;
     const expiryDays =
       params.expiryDays ?? CREDITS_CONFIG.expiration.purchaseDays;
     const expiredAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
-    const run = async (tx: Transaction): Promise<{ packageId: number }> => {
-      const [pkgResult] = await tx
+    const balance = await this.getBalanceInTx(db, params.userId);
+    const [packageResult] = await db.batch([
+      db
         .insert(creditPackages)
         .values({
           userId: params.userId,
@@ -380,32 +361,32 @@ export class CreditService {
           expiredAt,
           updatedAt: new Date(),
         })
-        .returning({ id: creditPackages.id });
+        .onConflictDoNothing({ target: creditPackages.orderNo }),
+      db
+        .insert(creditTransactions)
+        .values({
+          transNo: `TXN${Date.now()}${nanoid(6)}`,
+          userId: params.userId,
+          transType,
+          credits: params.credits,
+          balanceAfter: balance.availableCredits + params.credits,
+          orderNo: params.orderNo,
+          remark: params.remark || `Recharge: ${params.orderNo}`,
+        })
+        .onConflictDoNothing({ target: creditTransactions.orderNo }),
+    ]);
 
-      if (!pkgResult) {
-        throw new Error("Failed to create credit package");
-      }
+    const [pkg] = await db
+      .select({ id: creditPackages.id })
+      .from(creditPackages)
+      .where(eq(creditPackages.orderNo, params.orderNo))
+      .limit(1);
+    if (!pkg) throw new Error("Failed to create credit package");
 
-      const balance = await this.getBalanceInTx(tx, params.userId);
-      await tx.insert(creditTransactions).values({
-        transNo: `TXN${Date.now()}${nanoid(6)}`,
-        userId: params.userId,
-        transType,
-        credits: params.credits,
-        balanceAfter: balance.availableCredits,
-        packageId: pkgResult.id,
-        orderNo: params.orderNo,
-        remark: params.remark || `Recharge: ${params.orderNo}`,
-      });
-
-      return { packageId: pkgResult.id };
-    };
-
-    if (trx) {
-      return run(trx);
-    }
-
-    return db.transaction(run);
+    const created =
+      Number((packageResult as { meta?: { changes?: number } }).meta?.changes) >
+      0;
+    return { packageId: pkg.id, created };
   }
 
   /**
@@ -511,10 +492,22 @@ export class CreditService {
   }
 
   /**
-   * 事务内获取余额（内部方法）
+   * Find a hold without exposing it outside the credit service.
+   */
+  private async findHold(videoUuid: string) {
+    const [hold] = await db
+      .select()
+      .from(creditHolds)
+      .where(eq(creditHolds.videoUuid, videoUuid))
+      .limit(1);
+    return hold ?? null;
+  }
+
+  /**
+   * 获取余额（内部方法）
    */
   private async getBalanceInTx(
-    trx: Pick<typeof db, "select">,
+    trx: DbReader,
     userId: string
   ): Promise<CreditBalance> {
     const now = new Date();

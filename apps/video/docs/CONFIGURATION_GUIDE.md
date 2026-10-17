@@ -25,9 +25,10 @@
 
 ```bash
 # ============================================
-# 数据库配置
+# 数据库配置（Cloudflare D1）
 # ============================================
-DATABASE_URL=postgresql://user:password@host:port/database?sslmode=require
+# D1 不使用连接 URL。数据库绑定配置在 wrangler.jsonc，名称为 DB。
+# 首次部署前执行：pnpm db:migrate
 
 # ============================================
 # 应用配置

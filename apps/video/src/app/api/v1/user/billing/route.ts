@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
 import { db } from "@/db";
 import { creditPackages } from "@/db/schema";
-import { sql, eq, and } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import type { CreditTransType } from "@/db/schema";
 
 /**
@@ -26,25 +26,30 @@ export async function GET(request: NextRequest) {
     // Get ORDER_PAY type value
     const orderPayType: CreditTransType = "ORDER_PAY";
 
-    // Build base query - use raw SQL for complex query with enum
-    const packages = await db.execute(sql`
-      SELECT
-        id,
-        user_id as "userId",
-        initial_credits as "initialCredits",
-        remaining_credits as "remainingCredits",
-        trans_type as "transType",
-        order_no as "orderNo",
-        status,
-        expired_at as "expiredAt",
-        created_at as "createdAt"
-      FROM credit_packages
-      WHERE user_id = ${user.id}
-        AND trans_type = ${orderPayType}
-        ${cursor ? sql`AND id < ${Number.parseInt(cursor)}` : sql``}
-      ORDER BY created_at DESC
-      LIMIT ${limit + 1}
-    `);
+    const conditions = [
+      eq(creditPackages.userId, user.id),
+      eq(creditPackages.transType, orderPayType),
+    ];
+    if (cursor) {
+      conditions.push(lt(creditPackages.id, Number.parseInt(cursor)));
+    }
+
+    const packages = await db
+      .select({
+        id: creditPackages.id,
+        userId: creditPackages.userId,
+        initialCredits: creditPackages.initialCredits,
+        remainingCredits: creditPackages.remainingCredits,
+        transType: creditPackages.transType,
+        orderNo: creditPackages.orderNo,
+        status: creditPackages.status,
+        expiredAt: creditPackages.expiredAt,
+        createdAt: creditPackages.createdAt,
+      })
+      .from(creditPackages)
+      .where(and(...conditions))
+      .orderBy(desc(creditPackages.createdAt))
+      .limit(limit + 1);
 
     // Check if there's more data
     const hasMore = packages.length > limit;
@@ -56,8 +61,8 @@ export async function GET(request: NextRequest) {
       : null;
 
     // Transform to invoice format
-    const invoices = results.map((pkg: any) => {
-      const initialCredits = pkg.initialCredits as number;
+    const invoices = results.map((pkg) => {
+      const initialCredits = pkg.initialCredits;
       const itemDescription = initialCredits === 100
         ? "100 Credits"
         : initialCredits === 500
@@ -75,7 +80,7 @@ export async function GET(request: NextRequest) {
         id: String(pkg.id),
         amount: amount,
         currency: "USD",
-        status: (pkg.status as string).toLowerCase(),
+        status: pkg.status.toLowerCase(),
         items: [
           {
             type: "credits",
@@ -83,7 +88,7 @@ export async function GET(request: NextRequest) {
             quantity: initialCredits,
           },
         ],
-        createdAt: new Date(pkg.createdAt as string),
+        createdAt: pkg.createdAt,
       };
     });
 

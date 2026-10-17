@@ -17,10 +17,6 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 30000,
     env: {
-      DATABASE_URL:
-        process.env.TEST_DATABASE_URL ??
-        "postgresql://vf:vf@127.0.0.1:5432/videofly_test",
-      DATABASE_SSL_MODE: "disable",
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "test-secret-not-real",
     },

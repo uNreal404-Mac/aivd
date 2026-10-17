@@ -1,33 +1,23 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean,
+  check,
   index,
   integer,
-  jsonb,
-  pgEnum,
-  pgTable,
-  serial,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
-export const subscriptionPlanEnum = pgEnum("SubscriptionPlan", [
-  "FREE",
-  "PRO",
-  "BUSINESS",
-]);
-
-export const statusEnum = pgEnum("Status", [
+const subscriptionPlans = ["FREE", "PRO", "BUSINESS"] as const;
+const clusterStatuses = [
   "PENDING",
   "CREATING",
   "INITING",
   "RUNNING",
   "STOPPED",
   "DELETED",
-]);
-
-export const creditTransTypeEnum = pgEnum("CreditTransType", [
+] as const;
+const creditTransTypes = [
   "NEW_USER",
   "ORDER_PAY",
   "SUBSCRIPTION",
@@ -35,91 +25,86 @@ export const creditTransTypeEnum = pgEnum("CreditTransType", [
   "REFUND",
   "EXPIRED",
   "SYSTEM_ADJUST",
-]);
-
-export const creditPackageStatusEnum = pgEnum("CreditPackageStatus", [
-  "ACTIVE",
-  "DEPLETED",
-  "EXPIRED",
-]);
-
-export const videoStatusEnum = pgEnum("VideoStatus", [
+] as const;
+const creditPackageStatuses = ["ACTIVE", "DEPLETED", "EXPIRED"] as const;
+const videoStatuses = [
   "PENDING",
   "GENERATING",
   "UPLOADING",
   "COMPLETED",
   "FAILED",
-]);
+] as const;
 
-export const customers = pgTable(
+const timestamp = (name: string) => integer(name, { mode: "timestamp" });
+const boolean = (name: string) => integer(name, { mode: "boolean" });
+const uuid = (name: string) =>
+  text(name)
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
+
+export const customers = sqliteTable(
   "Customer",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     authUserId: text("authUserId").notNull(),
     name: text("name"),
-    plan: subscriptionPlanEnum("plan"),
+    plan: text("plan", { enum: subscriptionPlans }),
     stripeCustomerId: text("stripeCustomerId").unique(),
     stripeSubscriptionId: text("stripeSubscriptionId").unique(),
     stripePriceId: text("stripePriceId"),
     stripeCurrentPeriodEnd: timestamp("stripeCurrentPeriodEnd"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    authUserIdIdx: index("Customer_authUserId_idx").on(table.authUserId),
-  })
+  (table) => [index("Customer_authUserId_idx").on(table.authUserId)]
 );
 
-export const users = pgTable("user", {
-  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+export const users = sqliteTable("user", {
+  id: uuid("id"),
   name: text("name"),
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").default(false).notNull(),
   image: text("image"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+  updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
   isAdmin: boolean("isAdmin").default(false).notNull(),
   isSuperAccount: boolean("isSuperAccount").default(false).notNull(),
 });
 
-export const creemSubscriptions = pgTable(
+export const creemSubscriptions = sqliteTable(
   "creem_subscriptions",
   {
-    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id"),
     userId: text("user_id").notNull(),
     productId: text("product_id").notNull(),
     subscriptionId: text("subscription_id").notNull().unique(),
     status: text("status").notNull(),
     currentPeriodEnd: timestamp("current_period_end"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updated_at").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    userIdIdx: index("creem_subscriptions_user_id_idx").on(table.userId),
-  })
+  (table) => [index("creem_subscriptions_user_id_idx").on(table.userId)]
 );
 
-export const sessions = pgTable(
+export const sessions = sqliteTable(
   "session",
   {
-    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id"),
     userId: text("userId").notNull(),
     token: text("token").notNull().unique(),
     expiresAt: timestamp("expiresAt").notNull(),
     ipAddress: text("ipAddress"),
     userAgent: text("userAgent"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    userIdIdx: index("session_user_id_idx").on(table.userId),
-  })
+  (table) => [index("session_user_id_idx").on(table.userId)]
 );
 
-export const accounts = pgTable(
+export const accounts = sqliteTable(
   "account",
   {
-    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id"),
     userId: text("userId").notNull(),
     accountId: text("accountId").notNull(),
     providerId: text("providerId").notNull(),
@@ -130,157 +115,113 @@ export const accounts = pgTable(
     scope: text("scope"),
     idToken: text("idToken"),
     password: text("password"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    userIdIdx: index("account_user_id_idx").on(table.userId),
-    providerAccountIdIdx: uniqueIndex("account_provider_account_id_idx").on(
+  (table) => [
+    index("account_user_id_idx").on(table.userId),
+    uniqueIndex("account_provider_account_id_idx").on(
       table.providerId,
       table.accountId
     ),
-  })
+  ]
 );
 
-export const verifications = pgTable("verification", {
-  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+export const verifications = sqliteTable("verification", {
+  id: uuid("id"),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+  updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
 });
 
-export const legacyAccounts = pgTable(
-  "Account",
-  {
-    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
-    userId: text("userId").notNull(),
-    type: text("type").notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("providerAccountId").notNull(),
-    refreshToken: text("refresh_token"),
-    accessToken: text("access_token"),
-    expiresAt: integer("expires_at"),
-    tokenType: text("token_type"),
-    scope: text("scope"),
-    idToken: text("id_token"),
-    sessionState: text("session_state"),
-  },
-  (table) => ({
-    providerAccountIdIdx: uniqueIndex("Account_provider_account_id_idx").on(
-      table.provider,
-      table.providerAccountId
-    ),
-  })
-);
-
-export const legacySessions = pgTable("Session", {
-  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
-  sessionToken: text("sessionToken").notNull().unique(),
-  userId: text("userId").notNull(),
-  expires: timestamp("expires").notNull(),
-});
-
-export const legacyUsers = pgTable("User", {
-  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name"),
-  email: text("email").unique(),
-  emailVerified: timestamp("emailVerified"),
-  image: text("image"),
-});
-
-export const legacyVerificationTokens = pgTable(
-  "VerificationToken",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull().unique(),
-    expires: timestamp("expires").notNull(),
-  },
-  (table) => ({
-    identifierTokenIdx: uniqueIndex("VerificationToken_identifier_token_idx").on(
-      table.identifier,
-      table.token
-    ),
-  })
-);
-
-export const k8sClusterConfigs = pgTable(
+export const k8sClusterConfigs = sqliteTable(
   "K8sClusterConfig",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
     location: text("location").notNull(),
     authUserId: text("authUserId").notNull(),
-    plan: subscriptionPlanEnum("plan").default("FREE"),
+    plan: text("plan", { enum: subscriptionPlans }).default("FREE"),
     network: text("network"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-    status: statusEnum("status").default("PENDING"),
+    createdAt: timestamp("createdAt").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
+    status: text("status", { enum: clusterStatuses }).default("PENDING"),
     delete: boolean("delete").default(false),
   },
-  (table) => ({
-    authUserIdIdx: index("K8sClusterConfig_authUserId_idx").on(table.authUserId),
-  })
+  (table) => [
+    index("K8sClusterConfig_authUserId_idx").on(table.authUserId),
+  ]
 );
 
-export const creditPackages = pgTable(
+export const creditPackages = sqliteTable(
   "credit_packages",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     userId: text("user_id").notNull(),
     initialCredits: integer("initial_credits").notNull(),
     remainingCredits: integer("remaining_credits").notNull(),
     frozenCredits: integer("frozen_credits").default(0).notNull(),
-    transType: creditTransTypeEnum("trans_type").notNull(),
+    transType: text("trans_type", { enum: creditTransTypes }).notNull(),
     orderNo: text("order_no"),
-    status: creditPackageStatusEnum("status").default("ACTIVE").notNull(),
+    status: text("status", { enum: creditPackageStatuses })
+      .default("ACTIVE")
+      .notNull(),
     expiredAt: timestamp("expired_at"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updated_at").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    userStatusIdx: index("credit_packages_user_id_status_idx").on(
+  (table) => [
+    index("credit_packages_user_id_status_idx").on(
       table.userId,
       table.status
     ),
-    userExpiredIdx: index("credit_packages_user_id_expired_at_idx").on(
+    index("credit_packages_user_id_expired_at_idx").on(
       table.userId,
       table.expiredAt
     ),
-    orderNoUniqueIdx: uniqueIndex("credit_packages_order_no_unique").on(
-      table.orderNo
+    uniqueIndex("credit_packages_order_no_unique").on(table.orderNo),
+    check(
+      "credit_packages_remaining_nonnegative",
+      sql`${table.remainingCredits} >= 0`
     ),
-  })
+    check(
+      "credit_packages_frozen_nonnegative",
+      sql`${table.frozenCredits} >= 0`
+    ),
+  ]
 );
 
-export const creditHolds = pgTable(
+export const creditHolds = sqliteTable(
   "credit_holds",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     userId: text("user_id").notNull(),
     videoUuid: text("video_uuid").notNull().unique(),
     credits: integer("credits").notNull(),
     status: text("status").default("HOLDING").notNull(),
-    packageAllocation: jsonb("package_allocation").notNull(),
+    packageAllocation: text("package_allocation", { mode: "json" })
+      .$type<Array<{ packageId: number; credits: number }>>()
+      .notNull(),
     packageId: integer("package_id"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
     settledAt: timestamp("settled_at"),
   },
-  (table) => ({
-    userIdx: index("credit_holds_user_id_idx").on(table.userId),
-    statusIdx: index("credit_holds_status_idx").on(table.status),
-    packageIdx: index("credit_holds_package_id_idx").on(table.packageId),
-  })
+  (table) => [
+    index("credit_holds_user_id_idx").on(table.userId),
+    index("credit_holds_status_idx").on(table.status),
+    index("credit_holds_package_id_idx").on(table.packageId),
+  ]
 );
 
-export const creditTransactions = pgTable(
+export const creditTransactions = sqliteTable(
   "credit_transactions",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     transNo: text("trans_no").notNull().unique(),
     userId: text("user_id").notNull(),
-    transType: creditTransTypeEnum("trans_type").notNull(),
+    transType: text("trans_type", { enum: creditTransTypes }).notNull(),
     credits: integer("credits").notNull(),
     balanceAfter: integer("balance_after").notNull(),
     packageId: integer("package_id"),
@@ -288,27 +229,31 @@ export const creditTransactions = pgTable(
     orderNo: text("order_no"),
     holdId: integer("hold_id"),
     remark: text("remark"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
   },
-  (table) => ({
-    userIdx: index("credit_transactions_user_id_idx").on(table.userId),
-    transTypeIdx: index("credit_transactions_trans_type_idx").on(table.transType),
-    createdAtIdx: index("credit_transactions_created_at_idx").on(
-      table.createdAt
-    ),
-  })
+  (table) => [
+    index("credit_transactions_user_id_idx").on(table.userId),
+    index("credit_transactions_trans_type_idx").on(table.transType),
+    index("credit_transactions_created_at_idx").on(table.createdAt),
+    uniqueIndex("credit_transactions_order_no_unique").on(table.orderNo),
+    uniqueIndex("credit_transactions_hold_id_unique").on(table.holdId),
+  ]
 );
 
-export const videos = pgTable(
+export const videos = sqliteTable(
   "videos",
   {
-    id: serial("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     uuid: text("uuid").notNull().unique(),
     userId: text("user_id").notNull(),
     prompt: text("prompt").notNull(),
     model: text("model").notNull(),
-    parameters: jsonb("parameters"),
-    status: videoStatusEnum("status").default("PENDING").notNull(),
+    parameters: text("parameters", { mode: "json" })
+      .$type<Record<string, unknown> | null>(),
+    idempotencyKey: text("idempotency_key"),
+    status: text("status", { enum: videoStatuses })
+      .default("PENDING")
+      .notNull(),
     provider: text("provider"),
     externalTaskId: text("external_task_id"),
     errorMessage: text("error_message"),
@@ -321,8 +266,8 @@ export const videos = pgTable(
     aspectRatio: text("aspect_ratio"),
     fileSize: integer("file_size"),
     creditsUsed: integer("credits_used").default(0).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updated_at").default(sql`(unixepoch())`).notNull(),
     completedAt: timestamp("completed_at"),
     generationTime: integer("generation_time"),
     isDeleted: boolean("is_deleted").default(false).notNull(),
@@ -334,15 +279,19 @@ export const videos = pgTable(
     promptProtected: boolean("prompt_protected").default(false).notNull(),
     assetsReusable: boolean("assets_reusable").default(false).notNull(),
   },
-  (table) => ({
-    userIdx: index("videos_user_id_idx").on(table.userId),
-    statusIdx: index("videos_status_idx").on(table.status),
-    createdAtIdx: index("videos_created_at_idx").on(table.createdAt),
-    visibilityPublishedIdx: index("videos_visibility_published_idx").on(
+  (table) => [
+    index("videos_user_id_idx").on(table.userId),
+    index("videos_status_idx").on(table.status),
+    index("videos_created_at_idx").on(table.createdAt),
+    index("videos_visibility_published_idx").on(
       table.visibility,
       table.publishedAt
     ),
-  })
+    uniqueIndex("videos_user_id_idempotency_key_unique").on(
+      table.userId,
+      table.idempotencyKey
+    ),
+  ]
 );
 
 export type Customer = typeof customers.$inferSelect;

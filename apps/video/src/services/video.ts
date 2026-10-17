@@ -1,5 +1,5 @@
 import { VideoStatus, db, videos } from "@/db";
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   getStorage,
@@ -251,71 +251,41 @@ export class VideoService {
       parameters.idempotencyKey = idempotencyKey;
     }
 
-    // Insert the video row. When an idempotency key is provided, take an
-    // advisory lock keyed on (userId, key) so concurrent double submits
-    // serialize: the second caller will see the first caller's row.
-    let videoResult: { uuid: string; id: number } | undefined;
-    if (idempotencyKey) {
-      videoResult = await db.transaction(async (trx) => {
-        await trx.execute(
-          sql`select pg_advisory_xact_lock(hashtext(${`${params.userId}:${idempotencyKey}`}))`
-        );
+    // D1 has no advisory locks. A dedicated, unique idempotency column makes
+    // concurrent double-submits collapse to the same video row atomically.
+    const insert = db.insert(videos).values({
+      uuid: videoUuid,
+      userId: params.userId,
+      prompt: params.prompt,
+      model: params.model,
+      parameters,
+      idempotencyKey: idempotencyKey ?? null,
+      status: VideoStatus.PENDING,
+      startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
+      creditsUsed: creditsRequired,
+      duration: effectiveDuration,
+      aspectRatio: params.aspectRatio || null,
+      provider: actualProvider,
+      updatedAt: new Date(),
+    });
 
-        const [existing] = await trx
-          .select()
-          .from(videos)
-          .where(
-            and(
-              eq(videos.userId, params.userId),
-              eq(videos.isDeleted, false),
-              sql`${videos.parameters}->>'idempotencyKey' = ${idempotencyKey}`
-            )
-          )
-          .limit(1);
-
-        if (existing) {
-          return { uuid: existing.uuid, id: existing.id };
-        }
-
-        const [inserted] = await trx
-          .insert(videos)
-          .values({
-            uuid: videoUuid,
-            userId: params.userId,
-            prompt: params.prompt,
-            model: params.model,
-            parameters,
-            status: VideoStatus.PENDING,
-            startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
-            creditsUsed: creditsRequired,
-            duration: effectiveDuration,
-            aspectRatio: params.aspectRatio || null,
-            provider: actualProvider,
-            updatedAt: new Date(),
+    const [inserted] = idempotencyKey
+      ? await insert
+          .onConflictDoNothing({
+            target: [videos.userId, videos.idempotencyKey],
           })
-          .returning({ uuid: videos.uuid, id: videos.id });
+          .returning({ uuid: videos.uuid, id: videos.id })
+      : await insert.returning({ uuid: videos.uuid, id: videos.id });
 
-        return inserted;
-      });
-    } else {
-      const [inserted] = await db
-        .insert(videos)
-        .values({
-          uuid: videoUuid,
-          userId: params.userId,
-          prompt: params.prompt,
-          model: params.model,
-          parameters,
-          status: VideoStatus.PENDING,
-          startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
-          creditsUsed: creditsRequired,
-          duration: effectiveDuration,
-          aspectRatio: params.aspectRatio || null,
-          provider: actualProvider,
-          updatedAt: new Date(),
-        })
-        .returning({ uuid: videos.uuid, id: videos.id });
-      videoResult = inserted;
+    let videoResult = inserted;
+    if (!videoResult && idempotencyKey) {
+      const existing = await this.findByIdempotencyKey(
+        params.userId,
+        idempotencyKey
+      );
+      if (existing) {
+        videoResult = { uuid: existing.uuid, id: existing.id };
+      }
     }
 
     if (!videoResult) {
@@ -524,7 +494,7 @@ export class VideoService {
         and(
           eq(videos.userId, userId),
           eq(videos.isDeleted, false),
-          sql`${videos.parameters}->>'idempotencyKey' = ${idempotencyKey}`
+              eq(videos.idempotencyKey, idempotencyKey)
         )
       )
       .limit(1);
@@ -662,74 +632,87 @@ export class VideoService {
     videoUuid: string,
     result: VideoTaskResponse
   ): Promise<{ status: string; videoUrl?: string | null }> {
-    return db.transaction(async (trx) => {
-      const [video] = await trx
+    const [claimed] = await db
+      .update(videos)
+      .set({
+        status: VideoStatus.UPLOADING,
+        originalVideoUrl: result.videoUrl,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(videos.uuid, videoUuid),
+          inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING])
+        )
+      )
+      .returning();
+
+    if (!claimed) {
+      const [current] = await db
         .select()
         .from(videos)
         .where(eq(videos.uuid, videoUuid))
-        .limit(1)
-        .for("update");
+        .limit(1);
+      if (!current) throw new Error("Video not found");
+      return {
+        status: current.status,
+        videoUrl:
+          current.status === VideoStatus.COMPLETED
+            ? signMediaRef(current.videoUrl)
+            : null,
+      };
+    }
 
-      if (!video) {
-        throw new Error("Video not found");
-      }
-
-      if (video.status === VideoStatus.COMPLETED) {
-        return { status: video.status, videoUrl: signMediaRef(video.videoUrl) };
-      }
-      if (video.status === VideoStatus.FAILED) {
-        return { status: video.status, videoUrl: null };
-      }
-
-      if (
-        video.status !== VideoStatus.GENERATING &&
-        video.status !== VideoStatus.UPLOADING
-      ) {
-        return { status: video.status, videoUrl: signMediaRef(video.videoUrl) };
-      }
-
-      await trx
-        .update(videos)
-        .set({
-          status: VideoStatus.UPLOADING,
-          originalVideoUrl: result.videoUrl,
-          updatedAt: new Date(),
-        })
-        .where(eq(videos.uuid, videoUuid));
-
-      const storage = getStorage();
-      const key = `videos/${videoUuid}/${Date.now()}.mp4`;
-      const uploaded = await storage.downloadAndUpload({
-        sourceUrl: result.videoUrl!,
-        key,
-        contentType: "video/mp4",
-      });
-
-      await creditService.settle(videoUuid);
-
-      await trx
-        .update(videos)
-        .set({
-          status: VideoStatus.COMPLETED,
-          videoUrl: uploaded.key,
-          thumbnailUrl: result.thumbnailUrl || null,
-          completedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(videos.uuid, videoUuid));
-
-      const signedUrl = signMediaRef(uploaded.key);
-
-      emitVideoEvent({
-        userId: video.userId,
-        videoUuid,
-        status: "COMPLETED",
-        videoUrl: signedUrl ?? undefined,
-        thumbnailUrl: result.thumbnailUrl || null,
-      });
-
-      return { status: VideoStatus.COMPLETED, videoUrl: signedUrl };
+    const storage = getStorage();
+    const key = `videos/${videoUuid}/${Date.now()}.mp4`;
+    const uploaded = await storage.downloadAndUpload({
+      sourceUrl: result.videoUrl!,
+      key,
+      contentType: "video/mp4",
     });
+
+    await creditService.settle(videoUuid);
+
+    const [completed] = await db
+      .update(videos)
+      .set({
+        status: VideoStatus.COMPLETED,
+        videoUrl: uploaded.key,
+        thumbnailUrl: result.thumbnailUrl || null,
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(videos.uuid, videoUuid),
+          eq(videos.status, VideoStatus.UPLOADING)
+        )
+      )
+      .returning();
+
+    if (!completed) {
+      const [current] = await db
+        .select()
+        .from(videos)
+        .where(eq(videos.uuid, videoUuid))
+        .limit(1);
+      if (!current) throw new Error("Video not found");
+      return {
+        status: current.status,
+        videoUrl: signMediaRef(current.videoUrl),
+      };
+    }
+
+    const signedUrl = signMediaRef(uploaded.key);
+    emitVideoEvent({
+      userId: completed.userId,
+      videoUuid,
+      status: "COMPLETED",
+      videoUrl: signedUrl ?? undefined,
+      thumbnailUrl: result.thumbnailUrl || null,
+    });
+
+    return { status: VideoStatus.COMPLETED, videoUrl: signedUrl };
   }
 
   /**
@@ -739,45 +722,60 @@ export class VideoService {
     videoUuid: string,
     errorMessage?: string
   ): Promise<{ status: string; errorMessage?: string | null }> {
-    return db.transaction(async (trx) => {
-      const [video] = await trx
+    const [video] = await db
+      .select()
+      .from(videos)
+      .where(eq(videos.uuid, videoUuid))
+      .limit(1);
+
+    if (!video) throw new Error("Video not found");
+    if (
+      video.status === VideoStatus.COMPLETED ||
+      video.status === VideoStatus.FAILED
+    ) {
+      return { status: video.status, errorMessage: video.errorMessage };
+    }
+
+    await creditService.release(videoUuid);
+
+    const message = errorMessage || "Generation failed";
+    const [failed] = await db
+      .update(videos)
+      .set({
+        status: VideoStatus.FAILED,
+        errorMessage: message,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(videos.uuid, videoUuid),
+          inArray(videos.status, [
+            VideoStatus.PENDING,
+            VideoStatus.GENERATING,
+            VideoStatus.UPLOADING,
+          ])
+        )
+      )
+      .returning();
+
+    if (!failed) {
+      const [current] = await db
         .select()
         .from(videos)
         .where(eq(videos.uuid, videoUuid))
-        .limit(1)
-        .for("update");
+        .limit(1);
+      if (!current) throw new Error("Video not found");
+      return { status: current.status, errorMessage: current.errorMessage };
+    }
 
-      if (!video) {
-        throw new Error("Video not found");
-      }
-
-      if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
-        return { status: video.status, errorMessage: video.errorMessage };
-      }
-
-      await creditService.release(videoUuid);
-
-      await trx
-        .update(videos)
-        .set({
-          status: VideoStatus.FAILED,
-          errorMessage: errorMessage || "Generation failed",
-          updatedAt: new Date(),
-        })
-        .where(eq(videos.uuid, videoUuid));
-
-      emitVideoEvent({
-        userId: video.userId,
-        videoUuid,
-        status: "FAILED",
-        error: errorMessage || "Generation failed",
-      });
-
-      return {
-        status: VideoStatus.FAILED,
-        errorMessage: errorMessage || "Generation failed",
-      };
+    emitVideoEvent({
+      userId: failed.userId,
+      videoUuid,
+      status: "FAILED",
+      error: message,
     });
+
+    return { status: VideoStatus.FAILED, errorMessage: message };
   }
 
   /**

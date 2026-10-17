@@ -14,10 +14,10 @@ import {
   getProductExpiryDays,
 } from "@/config/credits";
 
-import { creditPackages, db, users } from "@/db";
+import { db, users } from "@/db";
 import * as schema from "@/db/schema";
 import { env } from "./env.mjs";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const toLogString = (value: unknown) => {
   if (value === null || value === undefined) return String(value);
@@ -71,7 +71,11 @@ type AuthPlugin =
 const plugins: AuthPlugin[] = [
   // Avoid Next.js dev DataCloneError from cookies() in some environments.
   ...(process.env.NODE_ENV === "development" ? [] : [nextCookies()]),
-  magicLink({
+];
+
+if (env.RESEND_API_KEY && env.RESEND_FROM) {
+  const resendFrom = env.RESEND_FROM;
+  plugins.push(magicLink({
     sendMagicLink: async ({ email, url }) => {
       // Dev/test only: print the magic-link URL to the server console instead
       // of emailing it. Unreachable in production builds (NODE_ENV check).
@@ -104,7 +108,7 @@ const plugins: AuthPlugin[] = [
 
       try {
         const { error: sendError } = await resend.emails.send({
-          from: env.RESEND_FROM,
+          from: resendFrom,
           to: email,
           subject: authSubject,
           react: MagicLinkEmail({
@@ -126,8 +130,8 @@ const plugins: AuthPlugin[] = [
       }
     },
     expiresIn: 300, // 5 minutes
-  }),
-];
+  }));
+}
 
 if (env.CREEM_API_KEY) {
   plugins.push(
@@ -182,31 +186,18 @@ if (env.CREEM_API_KEY) {
 
         console.log(`[Creem] Processing subscription: ${productName}, credits: ${credits}, userId: ${userId}`);
 
-        await db.transaction(async (trx) => {
-          await trx.execute(
-            sql`select pg_advisory_xact_lock(hashtext(${orderNo}))`
-          );
-
-          const [existing] = await trx
-            .select({ id: creditPackages.id })
-            .from(creditPackages)
-            .where(eq(creditPackages.orderNo, orderNo))
-            .limit(1);
-
-          if (existing) {
-            console.log(`[Creem] Duplicate webhook ignored: ${orderNo}`);
-            return;
-          }
-
-          await creditService.recharge({
-            userId,
-            credits,
-            orderNo,
-            transType,
-            expiryDays: getProductExpiryDays(productConfig),
-            remark: `Creem payment: ${productName}`,
-          });
+        const recharge = await creditService.recharge({
+          userId,
+          credits,
+          orderNo,
+          transType,
+          expiryDays: getProductExpiryDays(productConfig),
+          remark: `Creem payment: ${productName}`,
         });
+        if (!recharge.created) {
+          console.log(`[Creem] Duplicate webhook ignored: ${orderNo}`);
+          return;
+        }
 
         console.log(`[Creem] Subscription processed: ${orderNo}`);
       },
@@ -254,31 +245,18 @@ if (env.CREEM_API_KEY) {
 
         console.log(`[Creem] Processing one-time purchase: ${productName}, credits: ${credits}, userId: ${referenceId}`);
 
-        await db.transaction(async (trx) => {
-          await trx.execute(
-            sql`select pg_advisory_xact_lock(hashtext(${orderNo}))`
-          );
-
-          const [existing] = await trx
-            .select({ id: creditPackages.id })
-            .from(creditPackages)
-            .where(eq(creditPackages.orderNo, orderNo))
-            .limit(1);
-
-          if (existing) {
-            console.log(`[Creem] Duplicate checkout ignored: ${orderNo}`);
-            return;
-          }
-
-          await creditService.recharge({
-            userId: referenceId,
-            credits,
-            orderNo,
-            transType: CreditTransType.ORDER_PAY,
-            expiryDays: getProductExpiryDays(productConfig),
-            remark: `Creem payment: ${productName}`,
-          });
+        const recharge = await creditService.recharge({
+          userId: referenceId,
+          credits,
+          orderNo,
+          transType: CreditTransType.ORDER_PAY,
+          expiryDays: getProductExpiryDays(productConfig),
+          remark: `Creem payment: ${productName}`,
         });
+        if (!recharge.created) {
+          console.log(`[Creem] Duplicate checkout ignored: ${orderNo}`);
+          return;
+        }
 
         console.log(`[Creem] One-time purchase completed: ${orderNo}`);
       },
@@ -294,7 +272,7 @@ export const auth = betterAuth({
 
   // Drizzle adapter with schema for Better Auth
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: "sqlite",
     schema: {
       user: schema.users,
       session: schema.sessions,
@@ -327,13 +305,16 @@ export const auth = betterAuth({
   },
 
   // Google OAuth
-  socialProviders: {
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      prompt: "select_account", // Always show account picker
-    },
-  },
+  socialProviders:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            prompt: "select_account", // Always show account picker
+          },
+        }
+      : {},
 
   // Custom user fields
   user: {

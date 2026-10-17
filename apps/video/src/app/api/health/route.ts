@@ -15,10 +15,15 @@ async function checkDatabase(): Promise<boolean> {
         reject(new Error("db check timed out"));
       }, DB_CHECK_TIMEOUT_MS);
     });
-    await Promise.race([db.execute(sql`select 1`), timeout]);
+    await Promise.race([db.get(sql`select 1`), timeout]);
     return true;
   } catch (error) {
-    console.error("[health] db check failed", (error as { code?: string; name?: string })?.code ?? (error as Error)?.name, String((error as Error)?.message ?? "").replace(/postgres(ql)?:\/\/\S+/g, "<redacted>").slice(0, 160));
+    console.error(
+      "[health] D1 check failed",
+      (error as { code?: string; name?: string })?.code ??
+        (error as Error)?.name,
+      String((error as Error)?.message ?? "").slice(0, 160)
+    );
     return false;
   } finally {
     if (timeoutId !== undefined) {

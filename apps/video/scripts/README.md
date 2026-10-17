@@ -104,9 +104,9 @@ pnpm script:reset-credits user@example.com --confirm
 确保 `.env.local` 文件中配置了：
 
 ```env
-# 数据库连接
-DATABASE_URL=postgresql://...
-POSTGRES_URL=postgresql://...
+# 数据库
+# Cloudflare D1 通过 wrangler.jsonc 中的 DB binding 提供。
+# 远程 Migration：pnpm db:migrate
 
 # 管理员邮箱（使用该邮箱登录自动成为管理员）
 ADMIN_EMAIL="your-email@example.com"

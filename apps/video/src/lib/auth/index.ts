@@ -1,6 +1,7 @@
 // Server-only exports - these should only be imported in server components
 // For client components, import from "@/lib/auth/client" instead
 
+import { hasDbBinding } from "@/db";
 import type { User } from "./auth";
 
 // Re-export auth instance (server-only)
@@ -12,7 +13,7 @@ export { auth, type Session, type User } from "./auth";
  * @see https://www.better-auth.com/docs/integrations/next
  */
 export async function getCurrentUser(): Promise<User | null> {
-  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+  if (!hasDbBinding()) {
     return null;
   }
   const { headers } = await import("next/headers");
@@ -28,7 +29,7 @@ export async function getCurrentUser(): Promise<User | null> {
  * Must be called from App Router (uses next/headers)
  */
 export async function getServerSession() {
-  if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+  if (!hasDbBinding()) {
     return null;
   }
   const { headers } = await import("next/headers");

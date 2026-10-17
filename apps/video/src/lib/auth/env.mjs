@@ -9,8 +9,8 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
     // Google OAuth
-    GOOGLE_CLIENT_ID: z.string().min(1),
-    GOOGLE_CLIENT_SECRET: z.string().min(1),
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     // Stripe (optional - only required if using Stripe as billing provider)
     STRIPE_API_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
@@ -18,8 +18,8 @@ export const env = createEnv({
     CREEM_API_KEY: z.string().min(1).optional(),
     CREEM_WEBHOOK_SECRET: z.string().optional(),
     // Resend Email
-    RESEND_API_KEY: z.string().min(1),
-    RESEND_FROM: z.string().min(1),
+    RESEND_API_KEY: z.string().min(1).optional(),
+    RESEND_FROM: z.string().min(1).optional(),
     // Admin
     ADMIN_EMAIL: z.string().optional(),
     // Debug
@@ -44,4 +44,7 @@ export const env = createEnv({
     ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     IS_DEBUG: process.env.IS_DEBUG,
   },
+  skipValidation:
+    !!process.env.SKIP_ENV_VALIDATION ||
+    process.env.npm_lifecycle_event === "lint",
 });

@@ -40,7 +40,7 @@
 
 - Node.js 18+
 - pnpm 9+
-- PostgreSQL 数据库
+- Cloudflare D1 数据库
 
 ### 安装
 
@@ -112,7 +112,7 @@ videofly/
 | 框架 | Next.js 15 (App Router) |
 | 运行时 | React 19 |
 | 语言 | TypeScript |
-| 数据库 | PostgreSQL + Drizzle ORM |
+| 数据库 | Cloudflare D1 + Drizzle ORM |
 | 认证 | Better Auth + Google OAuth + Magic Link |
 | 样式 | Tailwind CSS 4 + shadcn/ui |
 | 支付 | Creem + Stripe |
@@ -122,8 +122,8 @@ videofly/
 ## 📝 环境变量
 
 ```bash
-# 数据库
-DATABASE_URL='postgresql://user:pass@host:5432/db'
+# 数据库由 wrangler.jsonc 的 Cloudflare D1 `DB` binding 提供
+# 初始化远程数据库：pnpm db:migrate
 
 # 认证
 BETTER_AUTH_SECRET='your-secret'

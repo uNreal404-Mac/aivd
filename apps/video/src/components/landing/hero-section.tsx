@@ -254,7 +254,7 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
       // Check for common errors and provide helpful messages
       if (message.includes("credits") || message.includes("Credit")) {
         toast.error("Insufficient credits. Please top up and try again.");
-      } else if (message.includes("database") || message.includes("DATABASE_URL")) {
+      } else if (message.includes("database") || message.includes("D1 binding")) {
         toast.error("Service temporarily unavailable. Please try again later.");
       } else {
         toast.error(message || "Failed to generate video. Please try again.");
