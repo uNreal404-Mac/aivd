@@ -17,6 +17,7 @@ import {
   VideoDetailDialog,
 } from "@/components/creation";
 import type { Video, VideoFilterOptions } from "@/lib/types/dashboard";
+import { authClient } from "@/lib/auth/client";
 
 interface MyCreationsPageProps {
   locale: string;
@@ -24,6 +25,7 @@ interface MyCreationsPageProps {
 
 export function MyCreationsPage({ locale }: MyCreationsPageProps) {
   const t = useTranslations("dashboard.myCreations");
+  const { data: session } = authClient.useSession();
 
   // Filter state
   const [filter, setFilter] = useState<VideoFilterOptions>({
@@ -49,6 +51,12 @@ export function MyCreationsPage({ locale }: MyCreationsPageProps) {
 
   // Auto-refresh processing videos
   useRefreshProcessingVideos(videos, refetch);
+
+  useEffect(() => {
+    if (!selectedVideo) return;
+    const fresh = videos.find((video) => video.uuid === selectedVideo.uuid);
+    if (fresh) setSelectedVideo(fresh);
+  }, [selectedVideo, videos]);
 
   // Infinite scroll observer
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -142,6 +150,9 @@ export function MyCreationsPage({ locale }: MyCreationsPageProps) {
           open={!!selectedVideo}
           onClose={handleCloseDialog}
           onDelete={deleteVideo}
+          onPublished={() => void refetch()}
+          onUnpublished={() => void refetch()}
+          isSuperAccount={Boolean(session?.user?.isSuperAccount)}
           isDeleting={isDeleting}
         />
       </div>

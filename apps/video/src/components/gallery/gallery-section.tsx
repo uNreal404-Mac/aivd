@@ -89,7 +89,11 @@ function GalleryThumb({ item }: { item: GalleryItem }) {
   return <span className="block h-full w-full bg-[image:var(--du-gradient)]" />;
 }
 
-export function GallerySection() {
+export function GallerySection({
+  initialItemUuid,
+}: {
+  initialItemUuid?: string;
+} = {}) {
   const t = useTranslations("Gallery");
   const tc = useTranslations("Common");
   const locale = useLocale();
@@ -130,6 +134,29 @@ export function GallerySection() {
   useEffect(() => {
     void loadInitial();
   }, [loadInitial]);
+
+  useEffect(() => {
+    if (!initialItemUuid) return;
+
+    let cancelled = false;
+    const loadRequestedItem = async () => {
+      try {
+        const response = await fetch(`/api/v1/gallery/${initialItemUuid}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const item = unwrapApiData<GalleryItem>(await response.json());
+        if (!cancelled) setActiveItem(item);
+      } catch {
+        // The list remains usable when a shared item was removed meanwhile.
+      }
+    };
+
+    void loadRequestedItem();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialItemUuid]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loadingMore) return;

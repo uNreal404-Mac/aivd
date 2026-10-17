@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { selectMock } = vi.hoisted(() => ({ selectMock: vi.fn() }));
+const { selectMock, updateMock } = vi.hoisted(() => ({
+  selectMock: vi.fn(),
+  updateMock: vi.fn(),
+}));
 
-vi.mock("@/db", () => ({ db: { select: selectMock } }));
+vi.mock("@/db", () => ({
+  db: { select: selectMock, update: updateMock },
+}));
 vi.mock("@/lib/storage", () => ({
   signMediaRef: (ref: string | null) => ref,
 }));
@@ -41,6 +46,7 @@ function makeChain(result: Promise<unknown>) {
 describe("GalleryService.listPublic", () => {
   beforeEach(() => {
     selectMock.mockReset();
+    updateMock.mockReset();
   });
 
   it("returns an empty page when migration 0003 is not applied", async () => {
@@ -78,6 +84,7 @@ describe("GalleryService.listPublic", () => {
 describe("GalleryService.getPublic", () => {
   beforeEach(() => {
     selectMock.mockReset();
+    updateMock.mockReset();
   });
 
   it("maps a missing-schema error to a 404", async () => {
@@ -107,6 +114,7 @@ describe("GalleryService.getPublic", () => {
 describe("GalleryService.getTemplate", () => {
   beforeEach(() => {
     selectMock.mockReset();
+    updateMock.mockReset();
   });
 
   it("maps a missing-schema error to a 404", async () => {
@@ -115,5 +123,43 @@ describe("GalleryService.getTemplate", () => {
     await expect(galleryService.getTemplate("video-1")).rejects.toMatchObject({
       status: 404,
     });
+  });
+});
+
+describe("GalleryService.publish authorization", () => {
+  beforeEach(() => {
+    selectMock.mockReset();
+    updateMock.mockReset();
+  });
+
+  it("rejects a protected-prompt request from a regular account", async () => {
+    selectMock
+      .mockReturnValueOnce(
+        makeChain(
+          Promise.resolve([
+            {
+              uuid: "video-1",
+              userId: "user-1",
+              prompt: "private original",
+              status: "COMPLETED",
+              videoUrl: "videos/video-1.mp4",
+              visibility: "private",
+              isDeleted: false,
+            },
+          ])
+        )
+      )
+      .mockReturnValueOnce(
+        makeChain(Promise.resolve([{ isSuperAccount: false }]))
+      );
+
+    await expect(
+      galleryService.publish("user-1", "video-1", {
+        title: "Protected work",
+        protectPrompt: true,
+        publicPrompt: "public version",
+      })
+    ).rejects.toMatchObject({ status: 403 });
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

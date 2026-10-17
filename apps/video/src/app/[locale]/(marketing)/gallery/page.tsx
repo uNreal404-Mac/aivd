@@ -44,10 +44,13 @@ export async function generateMetadata({
 
 export default async function GalleryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: Locale }>;
+  searchParams: Promise<{ video?: string }>;
 }) {
   const { locale } = await params;
+  const { video } = await searchParams;
   const t = await getTranslations({ locale, namespace: "Gallery" });
 
   return (
@@ -60,7 +63,7 @@ export default async function GalleryPage({
           {t("pageSubtitle")}
         </p>
         <div className="mt-8">
-          <GallerySection />
+          <GallerySection initialItemUuid={video} />
         </div>
       </div>
     </div>

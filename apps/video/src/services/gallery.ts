@@ -91,6 +91,13 @@ export class GalleryService {
       .where(eq(users.id, userId))
       .limit(1);
 
+    if (input.protectPrompt && !author?.isSuperAccount) {
+      throw new ApiError(
+        "Protected prompts require a Super Account",
+        403
+      );
+    }
+
     const fields = resolvePublishFields({
       isSuperAccount: Boolean(author?.isSuperAccount),
       originalPrompt: video.prompt,
@@ -129,6 +136,74 @@ export class GalleryService {
         .limit(1);
       const recheck = canPublish(current ?? null, userId);
       throw publishError(recheck.ok ? "ALREADY_PUBLISHED" : recheck.code);
+    }
+
+    return updated;
+  }
+
+  /** Update the public metadata of an already-published work. Super Account only. */
+  async updatePublication(userId: string, uuid: string, input: PublishInput) {
+    const [video] = await db
+      .select()
+      .from(videos)
+      .where(eq(videos.uuid, uuid))
+      .limit(1);
+
+    if (!video || video.isDeleted) {
+      throw new ApiError("Video not found", 404);
+    }
+    if (video.userId !== userId) {
+      throw new ApiError("You do not own this video", 403);
+    }
+    if (video.visibility !== "public") {
+      throw new ApiError("Video is not published", 409);
+    }
+    if (video.status !== "COMPLETED" || !video.videoUrl) {
+      throw new ApiError("Only completed videos can be published", 409);
+    }
+
+    const [author] = await db
+      .select({ isSuperAccount: users.isSuperAccount })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!author?.isSuperAccount) {
+      throw new ApiError(
+        "Only Super Accounts can edit published prompt settings",
+        403
+      );
+    }
+
+    const fields = resolvePublishFields({
+      isSuperAccount: true,
+      originalPrompt: video.prompt,
+      input,
+    });
+
+    const [updated] = await db
+      .update(videos)
+      .set({
+        galleryTitle: fields.galleryTitle,
+        galleryDescription: fields.galleryDescription,
+        publicPrompt: fields.publicPrompt,
+        promptProtected: fields.promptProtected,
+        assetsReusable: fields.assetsReusable,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(videos.uuid, uuid),
+          eq(videos.userId, userId),
+          eq(videos.visibility, "public"),
+          eq(videos.status, "COMPLETED"),
+          eq(videos.isDeleted, false)
+        )
+      )
+      .returning();
+
+    if (!updated) {
+      throw new ApiError("Video is no longer published", 409);
     }
 
     return updated;

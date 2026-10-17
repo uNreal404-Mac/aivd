@@ -31,6 +31,11 @@ export interface PublishableVideo {
   videoUrl?: string | null;
   thumbnailUrl?: string | null;
   startImageUrl?: string | null;
+  galleryTitle?: string | null;
+  galleryDescription?: string | null;
+  publicPrompt?: string | null;
+  promptProtected?: boolean | null;
+  assetsReusable?: boolean | null;
 }
 
 interface PublishDialogProps {
@@ -39,6 +44,8 @@ interface PublishDialogProps {
   video: PublishableVideo | null;
   /** Super accounts may protect the prompt and edit the public one. */
   isSuperAccount?: boolean;
+  /** Editing is restricted again by the backend to the owner and Super role. */
+  mode?: "publish" | "edit";
   onPublished?: (uuid: string) => void;
 }
 
@@ -79,6 +86,7 @@ export function PublishDialog({
   onOpenChange,
   video,
   isSuperAccount = false,
+  mode = "publish",
   onPublished,
 }: PublishDialogProps) {
   const t = useTranslations("Gallery.publishDialog");
@@ -100,15 +108,23 @@ export function PublishDialog({
   useEffect(() => {
     if (!open || !videoId) return;
 
-    setTitle(originalPrompt.slice(0, GALLERY_FALLBACK_TITLE_LENGTH));
-    setDescription("");
-    setProtectPrompt(false);
-    setPublicPrompt("");
-    setAllowAssetReuse(false);
+    setTitle(
+      mode === "edit"
+        ? (video?.galleryTitle ?? originalPrompt).slice(0, GALLERY_TITLE_MAX)
+        : originalPrompt.slice(0, GALLERY_FALLBACK_TITLE_LENGTH)
+    );
+    setDescription(mode === "edit" ? video?.galleryDescription ?? "" : "");
+    setProtectPrompt(
+      canProtect && (mode === "edit" ? Boolean(video?.promptProtected) : true)
+    );
+    setPublicPrompt(mode === "edit" ? video?.publicPrompt ?? "" : "");
+    setAllowAssetReuse(
+      mode === "edit" ? Boolean(video?.assetsReusable) : false
+    );
     setIsSubmitting(false);
     setAlreadyInGallery(false);
     setError(null);
-  }, [open, videoId, originalPrompt]);
+  }, [canProtect, mode, open, originalPrompt, video, videoId]);
 
   const handleSubmit = async () => {
     if (!videoId || isSubmitting || alreadyInGallery) return;
@@ -118,6 +134,10 @@ export function PublishDialog({
     if (canProtect && protectPrompt) {
       draft.protectPrompt = true;
       draft.publicPrompt = publicPrompt.trim();
+      if (!draft.publicPrompt) {
+        setError("invalid");
+        return;
+      }
     }
     if (hasStartImage && allowAssetReuse) draft.allowAssetReuse = true;
 
@@ -131,7 +151,7 @@ export function PublishDialog({
     setError(null);
     try {
       const response = await fetch(`/api/v1/video/${videoId}/publish`, {
-        method: "POST",
+        method: mode === "edit" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
@@ -170,10 +190,10 @@ export function PublishDialog({
       <DialogContent className="border-[var(--du-border)] bg-[var(--du-surface)] text-[var(--du-text)] md:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-[var(--du-text)]">
-            {t("title")}
+            {t(mode === "edit" ? "editTitle" : "title")}
           </DialogTitle>
           <DialogDescription className="text-[var(--du-text-muted)]">
-            {t("description")}
+            {t(mode === "edit" ? "editDescription" : "description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -238,21 +258,43 @@ export function PublishDialog({
 
               {canProtect ? (
                 <>
-                  <label className="flex items-center gap-3 text-sm text-[var(--du-text)]">
-                    <input
-                      type="checkbox"
-                      checked={protectPrompt}
-                      onChange={(event) =>
-                        setProtectPrompt(event.target.checked)
-                      }
-                      disabled={disabled}
-                      className="h-4 w-4 rounded border-[var(--du-border)] accent-[var(--du-accent)]"
-                    />
-                    {t("protectPrompt")}
-                  </label>
-                  <p className="text-xs text-[var(--du-text-dim)]">
-                    {t("protectPromptHint")}
-                  </p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-xs font-medium text-[var(--du-text-muted)]">
+                      {t("promptVisibility")}
+                    </legend>
+                    <label className="flex items-start gap-3 text-sm text-[var(--du-text)]">
+                      <input
+                        type="radio"
+                        name="prompt-visibility"
+                        checked={!protectPrompt}
+                        onChange={() => setProtectPrompt(false)}
+                        disabled={disabled}
+                        className="mt-0.5 h-4 w-4 border-[var(--du-border)] accent-[var(--du-accent)]"
+                      />
+                      <span>
+                        <span className="block">{t("publicPromptOption")}</span>
+                        <span className="block text-xs text-[var(--du-text-dim)]">
+                          {t("publicPromptOptionHint")}
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 text-sm text-[var(--du-text)]">
+                      <input
+                        type="radio"
+                        name="prompt-visibility"
+                        checked={protectPrompt}
+                        onChange={() => setProtectPrompt(true)}
+                        disabled={disabled}
+                        className="mt-0.5 h-4 w-4 border-[var(--du-border)] accent-[var(--du-accent)]"
+                      />
+                      <span>
+                        <span className="block">{t("protectedPromptOption")}</span>
+                        <span className="block text-xs text-[var(--du-text-dim)]">
+                          {t("protectPromptHint")}
+                        </span>
+                      </span>
+                    </label>
+                  </fieldset>
 
                   {protectPrompt && (
                     <div className="space-y-1.5">
@@ -319,7 +361,9 @@ export function PublishDialog({
             disabled={disabled}
             className="rounded-[var(--du-glass-radius-btn)] bg-[var(--du-gradient)] px-4 py-2 text-sm font-medium text-[var(--du-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? t("submitting") : t("submit")}
+            {isSubmitting
+              ? t(mode === "edit" ? "saving" : "submitting")
+              : t(mode === "edit" ? "save" : "submit")}
           </button>
         </DialogFooter>
       </DialogContent>

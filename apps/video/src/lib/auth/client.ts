@@ -1,12 +1,24 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { magicLinkClient } from "better-auth/client/plugins";
+import {
+  inferAdditionalFields,
+  magicLinkClient,
+} from "better-auth/client/plugins";
 import { creemClient } from "@creem_io/better-auth/client";
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
-  plugins: [magicLinkClient(), creemClient()],
+  plugins: [
+    inferAdditionalFields({
+      user: {
+        isAdmin: { type: "boolean", required: false, input: false },
+        isSuperAccount: { type: "boolean", required: false, input: false },
+      },
+    }),
+    magicLinkClient(),
+    creemClient(),
+  ],
 });
 
 // Export commonly used methods
@@ -33,4 +45,5 @@ export type User = {
   createdAt: Date;
   updatedAt: Date;
   isAdmin?: boolean | null;
+  isSuperAccount?: boolean | null;
 };

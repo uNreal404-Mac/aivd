@@ -5,8 +5,9 @@
 // ============================================
 
 import { useEffect, useRef, useState } from "react";
-import { X, Download, Trash2, Share2, EyeOff, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { X, Download, Trash2, Share2, EyeOff, Loader2, Eye, Pencil } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cn } from "@/components/ui";
 import {
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Video } from "@/lib/types/dashboard";
 import { PublishDialog } from "@/components/gallery/publish-dialog";
+import { localizedHref } from "@/lib/du-home";
 
 /** A work is public only when the API says so; anything else counts as private. */
 function isPublicVideo(video: Video | null): boolean {
@@ -44,6 +46,7 @@ interface VideoDetailDialogProps {
   onPublished?: (uuid: string) => void;
   /** Called after a successful unpublish so callers can refresh their list. */
   onUnpublished?: (uuid: string) => void;
+  isSuperAccount?: boolean;
   isDeleting?: boolean;
 }
 
@@ -54,12 +57,16 @@ export function VideoDetailDialog({
   onDelete,
   onPublished,
   onUnpublished,
+  isSuperAccount = false,
   isDeleting,
 }: VideoDetailDialogProps) {
   const t = useTranslations("dashboard.myCreations");
   const tg = useTranslations("Gallery");
+  const locale = useLocale();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [publishDialogMode, setPublishDialogMode] = useState<
+    "publish" | "edit" | null
+  >(null);
   const [isPublic, setIsPublic] = useState(() => isPublicVideo(video));
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -246,24 +253,47 @@ export function VideoDetailDialog({
                 <>
                   <div className="border-t border-border" />
                   {isPublic ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleUnpublish}
-                      disabled={isUnpublishing}
-                    >
-                      {isUnpublishing ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <EyeOff className="h-4 w-4 mr-2" />
-                      )}
-                      {tg("removeFromGallery")}
-                    </Button>
+                    <div className="space-y-2">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link
+                          href={localizedHref(
+                            locale,
+                            `/gallery?video=${encodeURIComponent(video.uuid)}`
+                          )}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          {tg("viewInGallery")}
+                        </Link>
+                      </Button>
+                      {isSuperAccount ? (
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setPublishDialogMode("edit")}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          {tg("editPublication")}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={handleUnpublish}
+                        disabled={isUnpublishing}
+                      >
+                        {isUnpublishing ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 mr-2" />
+                        )}
+                        {tg("removeFromGallery")}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => setShowPublishDialog(true)}
+                      onClick={() => setPublishDialogMode("publish")}
                     >
                       <Share2 className="h-4 w-4 mr-2" />
                       {tg("shareToGallery")}
@@ -297,9 +327,13 @@ export function VideoDetailDialog({
 
       {/* Publish to gallery dialog */}
       <PublishDialog
-        open={showPublishDialog}
-        onOpenChange={setShowPublishDialog}
+        open={publishDialogMode !== null}
+        onOpenChange={(next) => {
+          if (!next) setPublishDialogMode(null);
+        }}
         video={video}
+        isSuperAccount={isSuperAccount}
+        mode={publishDialogMode ?? "publish"}
         onPublished={handlePublished}
       />
 

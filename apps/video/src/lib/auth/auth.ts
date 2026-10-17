@@ -344,6 +344,12 @@ export const auth = betterAuth({
         defaultValue: false,
         input: false, // Prevent users from setting this
       },
+      isSuperAccount: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false, // Granted only through trusted database/admin tooling
+      },
     },
   },
 
@@ -359,6 +365,7 @@ export const auth = betterAuth({
 // Extend user type with additional fields
 export type User = typeof auth.$Infer.Session.user & {
   isAdmin?: boolean | null;
+  isSuperAccount?: boolean | null;
 };
 
 // Session type with extended user
