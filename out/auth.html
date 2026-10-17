@@ -133,6 +133,12 @@ nav{display:none}
 <div class="form-error" id="formError" role="alert"></div>
 </form>
 
+<div class="oauth-divider" id="googleDivider"><span>or</span></div>
+<a class="google-btn" id="googleBtn" href="/api/auth/google/start?next=%2Fworkspace">
+  <span aria-hidden="true">G</span>
+  <span>Continue with Google</span>
+</a>
+
 <div class="perk" id="perk" data-i18n-html="auth.perk">New accounts get <b>10 free credits</b> instantly — no credit card required.</div>
 <p class="switch" id="switchLine">Already have an account? <a href="/auth?mode=login" id="switchLink">Log in</a></p>
 <a class="back" href="/workspace" data-i18n="auth.back">← Back to workspace</a>
@@ -363,6 +369,11 @@ document.getElementById("authForm").onsubmit = async (e) => {
 
 (async function init() {
   setMode(mode);
+  syncGoogleButton();
+  if (params.get("google_error")) {
+    formError.textContent = "Google sign-in could not be completed. Please try again.";
+    formError.classList.add("show");
+  }
   const existing = localStorage.getItem(TOKEN_KEY);
   if (!existing) return;
   try {
