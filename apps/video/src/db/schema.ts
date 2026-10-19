@@ -27,6 +27,9 @@ const creditTransTypes = [
   "SYSTEM_ADJUST",
 ] as const;
 const creditPackageStatuses = ["ACTIVE", "DEPLETED", "EXPIRED"] as const;
+export const mediaTypes = ["video", "image", "audio"] as const;
+export type MediaType = (typeof mediaTypes)[number];
+
 const videoStatuses = [
   "PENDING",
   "GENERATING",
@@ -260,6 +263,16 @@ export const videos = sqliteTable(
     userId: text("user_id").notNull(),
     prompt: text("prompt").notNull(),
     model: text("model").notNull(),
+    /** What this generation row produces: "video" (default), "image" or "audio". */
+    mediaType: text("media_type", { enum: mediaTypes })
+      .default("video")
+      .notNull(),
+    /**
+     * Reserved for post-generation actions (extend / variation / upscale /
+     * add-music): the uuid of the row this one was derived from. Null for
+     * fresh generations. See src/services/post-generation.ts.
+     */
+    parentUuid: text("parent_uuid"),
     parameters: text("parameters", { mode: "json" })
       .$type<Record<string, unknown> | null>(),
     idempotencyKey: text("idempotency_key"),
@@ -294,6 +307,8 @@ export const videos = sqliteTable(
   (table) => [
     index("videos_user_id_idx").on(table.userId),
     index("videos_status_idx").on(table.status),
+    index("videos_user_media_type_idx").on(table.userId, table.mediaType),
+    index("videos_parent_uuid_idx").on(table.parentUuid),
     index("videos_created_at_idx").on(table.createdAt),
     index("videos_visibility_published_idx").on(
       table.visibility,

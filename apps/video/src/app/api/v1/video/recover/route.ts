@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { videos } from "@/db/schema";
-import { eq, or, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { getProvider } from "@/ai";
 
 /**
@@ -23,10 +23,13 @@ export async function GET(request: NextRequest) {
       .select()
       .from(videos)
       .where(
-        or(
-          eq(videos.status, "PENDING"),
-          eq(videos.status, "GENERATING"),
-          eq(videos.status, "UPLOADING")
+        and(
+          eq(videos.mediaType, "video"),
+          or(
+            eq(videos.status, "PENDING"),
+            eq(videos.status, "GENERATING"),
+            eq(videos.status, "UPLOADING")
+          )
         )
       )
       .orderBy(sql`"videos"."created_at" DESC`)

@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 import { videoService } from "@/services/video";
+import {
+  getRowMediaType,
+  mediaGenerationService,
+} from "@/services/media-generation";
 import { type ProviderType } from "@/ai";
 import { verifyCallbackSignature } from "@/ai/utils/callback-signature";
 import { apiSuccess, apiError } from "@/lib/api/response";
@@ -38,6 +42,15 @@ export async function POST(
     }
 
     const payload = await request.json();
+
+    // Image/audio rows share this route; dispatch them to the media service.
+    if (providerType === "kie") {
+      const mediaType = await getRowMediaType(videoUuid);
+      if (mediaType === "image" || mediaType === "audio") {
+        await mediaGenerationService.handleCallback(payload, videoUuid);
+        return apiSuccess({ received: true });
+      }
+    }
 
     // Pass in videoUuid (already verified)
     await videoService.handleCallback(providerType, payload, videoUuid);

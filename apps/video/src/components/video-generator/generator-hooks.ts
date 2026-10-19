@@ -187,7 +187,7 @@ export function useGeneratorState(
   );
 
   // 高级设置
-  const [generateAudio, setGenerateAudio] = useState(true);
+  const [generateAudio, setGenerateAudio] = useState(false);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);

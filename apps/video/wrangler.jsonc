@@ -40,6 +40,10 @@
     "NEXT_PUBLIC_IS_PREVIEW": "true",
     "NEXT_PUBLIC_NOINDEX": "true",
     "VIDEO_GENERATION_ENABLED": "false",
+    // Image (kie nano-banana etc.) and music (kie Suno V6) generation switches.
+    // Keep "false" except for boss-approved tests; when off the routes return 503.
+    "IMAGE_GENERATION_ENABLED": "false",
+    "AUDIO_GENERATION_ENABLED": "false",
     "NEXT_PUBLIC_BILLING_PROVIDER": "stripe",
     "NEXT_PUBLIC_PAYMENTS_ENABLED": "true",
     "STRIPE_LIVE_MODE": "false",

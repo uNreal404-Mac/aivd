@@ -175,7 +175,7 @@ export function VideoGeneratorInput({
   const [customError, setCustomError] = useState<string | null>(null);
 
   // Advanced settings state
-  const [generateAudio, setGenerateAudio] = useState(true);
+  const [generateAudio, setGenerateAudio] = useState(false);
 
   // Video-specific state
   const [selectedVideoModel, setSelectedVideoModel] = useState<VideoModel | null>(

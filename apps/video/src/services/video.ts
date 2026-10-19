@@ -606,6 +606,11 @@ export class VideoService {
       return;
     }
 
+    if (video.mediaType !== "video") {
+      console.error("handleCallback: not a video row");
+      return;
+    }
+
     if (video.externalTaskId && video.externalTaskId !== result.taskId) {
       console.error(
         `Task ID mismatch: expected ${video.externalTaskId}, got ${result.taskId}`
@@ -894,6 +899,7 @@ export class VideoService {
     const conditions = [
       eq(videos.userId, userId),
       eq(videos.isDeleted, false),
+      eq(videos.mediaType, "video"),
     ];
 
     if (options?.status) {
