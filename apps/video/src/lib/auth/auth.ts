@@ -106,24 +106,55 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
         ? `Sign-in link for ${(siteConfig as { name: string }).name}`
         : "Activate your account";
 
+      // RESEND_FROM must be a Resend-verified address (set via
+      // `wrangler secret put RESEND_FROM --name dreamutopia-video-preview`).
+      // Never commit the value. Prefer html over Resend `react:` — OpenNext
+      // Workers often fail React email rendering and return opaque 500s.
       try {
-        const { error: sendError } = await resend.emails.send({
+        const { render } = await import("@react-email/render");
+        const mailType = userVerified ? "login" as const : "register" as const;
+        const siteName = (siteConfig as { name: string }).name;
+        const emailElement = MagicLinkEmail({
+          firstName: existingUser?.name ?? "",
+          actionUrl: url,
+          mailType,
+          siteName,
+        });
+        const html = await render(emailElement);
+        const text = await render(emailElement, { plainText: true });
+
+        const { error: sendError, data: sendData } = await resend.emails.send({
           from: resendFrom,
           to: email,
           subject: authSubject,
-          react: MagicLinkEmail({
-            firstName: existingUser?.name ?? "",
-            actionUrl: url,
-            mailType: userVerified ? "login" : "register",
-            siteName: (siteConfig as { name: string }).name,
-          }),
+          html,
+          text,
           headers: {
             "X-Entity-Ref-ID": new Date().getTime() + "",
           },
         });
         if (sendError) {
-          throw new Error(`Resend send failed: ${sendError.name ?? "error"}`);
+          const fromDomain = resendFrom.includes("@")
+            ? resendFrom.split("@").pop()
+            : "(unknown)";
+          const detail = [
+            sendError.name,
+            (sendError as { message?: string }).message,
+            (sendError as { statusCode?: number }).statusCode,
+          ]
+            .filter(Boolean)
+            .join(" | ");
+          console.error(
+            "Failed to send magic link email:",
+            detail,
+            "fromDomain=",
+            fromDomain,
+          );
+          throw new Error(
+            `Resend send failed (${detail || "error"}). Check RESEND_FROM domain is verified in Resend (current from domain: ${fromDomain}).`,
+          );
         }
+        console.info("Magic link email sent:", sendData?.id ?? "ok");
       } catch (error) {
         console.error("Failed to send magic link email:", error);
         throw error;
