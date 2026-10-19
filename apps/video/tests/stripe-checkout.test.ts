@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import Stripe from "stripe";
 import type { CreditPackageConfig } from "@/config/credits";
 import {
+  CHECKOUT_SITE_ID,
+  STATEMENT_DESCRIPTOR_SUFFIX,
   buildCheckoutSessionParams,
   createStripeClient,
+  describeProduct,
   getStripeKeyMode,
   getStripeSecretKey,
   getUsableStripeKey,
@@ -17,6 +20,15 @@ const subscriptionProduct: CreditPackageConfig = {
   price: { amount: 1999, currency: "USD" },
   type: "subscription",
   billingPeriod: "month",
+};
+
+const yearlyProduct: CreditPackageConfig = {
+  id: "pro-yearly",
+  name: "Pro Yearly",
+  credits: 12000,
+  price: { amount: 19999, currency: "USD" },
+  type: "subscription",
+  billingPeriod: "year",
 };
 
 const creditPack: CreditPackageConfig = {
@@ -164,6 +176,41 @@ describe("createStripeClient", () => {
   });
 });
 
+describe("describeProduct", () => {
+  it("describes an one-time credit pack", () => {
+    expect(describeProduct(creditPack)).toBe(
+      "100 credits for AI video generation on aidv.ai"
+    );
+  });
+
+  it("describes a monthly subscription with grouped thousands", () => {
+    expect(describeProduct(subscriptionProduct)).toBe(
+      "1,000 credits per month for AI video generation on aidv.ai"
+    );
+  });
+
+  it("describes a yearly subscription", () => {
+    expect(describeProduct(yearlyProduct)).toBe(
+      "12,000 credits per year for AI video generation on aidv.ai"
+    );
+  });
+});
+
+describe("statement descriptor suffix", () => {
+  it("uses the site id as checkout site", () => {
+    expect(CHECKOUT_SITE_ID).toBe("aidv.ai");
+  });
+
+  it("fits Stripe's 22-character limit", () => {
+    expect(STATEMENT_DESCRIPTOR_SUFFIX.length).toBeGreaterThan(0);
+    expect(STATEMENT_DESCRIPTOR_SUFFIX.length).toBeLessThanOrEqual(22);
+  });
+
+  it("contains only allowed characters", () => {
+    expect(STATEMENT_DESCRIPTOR_SUFFIX).toMatch(/^[A-Za-z0-9 .-]+$/);
+  });
+});
+
 describe("buildCheckoutSessionParams", () => {
   it("builds subscription mode params", () => {
     const params = buildCheckoutSessionParams({
@@ -177,6 +224,7 @@ describe("buildCheckoutSessionParams", () => {
     expect(params.metadata).toEqual({
       userId: "user_1",
       productId: "pro-monthly",
+      site: "aidv.ai",
     });
 
     const lineItems = params.line_items;
@@ -187,16 +235,36 @@ describe("buildCheckoutSessionParams", () => {
     expect(priceData?.currency).toBe("usd");
     expect(priceData?.unit_amount).toBe(1999);
     expect(priceData?.recurring).toEqual({ interval: "month" });
-    expect(priceData?.product_data).toEqual({ name: "Pro Monthly" });
+    expect(priceData?.product_data).toEqual({
+      name: "Pro Monthly",
+      description:
+        "1,000 credits per month for AI video generation on aidv.ai",
+    });
 
     expect(params.subscription_data?.metadata).toEqual({
       userId: "user_1",
       productId: "pro-monthly",
+      site: "aidv.ai",
     });
+    expect(params.payment_intent_data).toBeUndefined();
     expect(params.success_url).toBe(
       "https://example.com/checkout/success?session_id={CHECKOUT_SESSION_ID}"
     );
     expect(params.cancel_url).toBe("https://example.com/checkout/cancel");
+  });
+
+  it("sets price_data.product_data.description for one-time products", () => {
+    const params = buildCheckoutSessionParams({
+      product: creditPack,
+      userId: "user_2",
+      origin: "https://example.com",
+    });
+
+    const priceData = params.line_items?.[0].price_data;
+    expect(priceData?.product_data).toEqual({
+      name: "Small Pack",
+      description: "100 credits for AI video generation on aidv.ai",
+    });
   });
 
   it("builds one-time payment mode params without recurring", () => {
@@ -211,6 +279,7 @@ describe("buildCheckoutSessionParams", () => {
     expect(params.metadata).toEqual({
       userId: "user_2",
       productId: "pack-small",
+      site: "aidv.ai",
     });
 
     const priceData = params.line_items?.[0].price_data;
@@ -218,9 +287,14 @@ describe("buildCheckoutSessionParams", () => {
     expect(priceData?.unit_amount).toBe(999);
     expect(priceData?.recurring).toBeUndefined();
 
+    expect(params.subscription_data).toBeUndefined();
     expect(params.payment_intent_data?.metadata).toEqual({
       userId: "user_2",
       productId: "pack-small",
+      site: "aidv.ai",
     });
+    expect(params.payment_intent_data?.statement_descriptor_suffix).toBe(
+      "AIDV"
+    );
   });
 });

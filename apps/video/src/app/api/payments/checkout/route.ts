@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { getProductById } from "@/config/credits";
 import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
+import { createRateLimiter } from "@/lib/rate-limit";
 import {
   buildCheckoutSessionParams,
   createStripeClient,
@@ -11,6 +12,8 @@ import {
 } from "@/payment/stripe-checkout";
 
 export const dynamic = "force-dynamic";
+
+const checkoutLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 
 export const POST = async (req: NextRequest) => {
   if (!isPaymentsConfigured()) {
@@ -28,6 +31,19 @@ export const POST = async (req: NextRequest) => {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const limitResult = checkoutLimiter.check(`user:${user.id}`);
+  if (!limitResult.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limitResult.retryAfterSeconds),
+        },
+      }
+    );
   }
 
   let body: { productId?: string };

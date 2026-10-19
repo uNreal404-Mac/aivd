@@ -4,6 +4,12 @@ import type { CreditPackageConfig } from "@/config/credits";
 const STRIPE_SECRET_KEY_VAR = "STRIPE_SECRET_KEY";
 const STRIPE_LIVE_MODE_VAR = "STRIPE_LIVE_MODE";
 
+/** Site identifier attached to all checkout metadata. */
+export const CHECKOUT_SITE_ID = "aidv.ai";
+
+/** Statement descriptor suffix (card payments only, max 22 chars). */
+export const STATEMENT_DESCRIPTOR_SUFFIX = "AIDV";
+
 /**
  * Read the Stripe secret key from a (possibly injected) environment object.
  *
@@ -85,6 +91,25 @@ export function createStripeClient(secretKey: string): Stripe {
   });
 }
 
+/**
+ * Human-readable product description shown on the Stripe Checkout page.
+ *
+ * Examples:
+ * - one-time: "100 credits for AI video generation on aidv.ai"
+ * - monthly: "1,000 credits per month for AI video generation on aidv.ai"
+ * - yearly: "1,000 credits per year for AI video generation on aidv.ai"
+ */
+export function describeProduct(product: CreditPackageConfig): string {
+  const credits = product.credits.toLocaleString("en-US");
+
+  if (product.type === "subscription") {
+    const period = product.billingPeriod === "year" ? "year" : "month";
+    return `${credits} credits per ${period} for AI video generation on ${CHECKOUT_SITE_ID}`;
+  }
+
+  return `${credits} credits for AI video generation on ${CHECKOUT_SITE_ID}`;
+}
+
 export interface BuildCheckoutSessionParamsArgs {
   product: CreditPackageConfig;
   userId: string;
@@ -103,11 +128,18 @@ export function buildCheckoutSessionParams({
 }: BuildCheckoutSessionParamsArgs): Stripe.Checkout.SessionCreateParams {
   const isSubscription = product.type === "subscription";
 
+  const metadata: Record<string, string> = {
+    userId,
+    productId: product.id,
+    site: CHECKOUT_SITE_ID,
+  };
+
   const priceData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData = {
     currency: product.price.currency.toLowerCase(),
     unit_amount: product.price.amount,
     product_data: {
       name: product.name,
+      description: describeProduct(product),
     },
   };
 
@@ -126,27 +158,21 @@ export function buildCheckoutSessionParams({
       },
     ],
     client_reference_id: userId,
-    metadata: {
-      userId,
-      productId: product.id,
-    },
+    metadata: { ...metadata },
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/checkout/cancel`,
   };
 
   if (isSubscription) {
+    // NOTE: Stripe rejects `payment_intent_data` when mode=subscription.
     params.subscription_data = {
-      metadata: {
-        userId,
-        productId: product.id,
-      },
+      metadata: { ...metadata },
     };
   } else {
+    // Statement descriptor suffix applies to card payments only.
     params.payment_intent_data = {
-      metadata: {
-        userId,
-        productId: product.id,
-      },
+      metadata: { ...metadata },
+      statement_descriptor_suffix: STATEMENT_DESCRIPTOR_SUFFIX,
     };
   }
 
