@@ -360,3 +360,85 @@ export async function submitImageToVideo(
     };
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Job status                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export type I2VJobState =
+  | "PENDING"
+  | "GENERATING"
+  | "UPLOADING"
+  | "COMPLETED"
+  | "FAILED";
+
+/** A job is terminal once it has completed or failed. */
+export function isTerminalJobState(status: string | undefined): boolean {
+  return status === "COMPLETED" || status === "FAILED";
+}
+
+/** Reads `data.data.videoUuid` from the generate response envelope. */
+export function extractVideoUuid(data: unknown): string | null {
+  const payload = (data ?? null) as
+    | { data?: { videoUuid?: unknown } }
+    | null;
+  const videoUuid = payload?.data?.videoUuid;
+  return typeof videoUuid === "string" && videoUuid.length > 0
+    ? videoUuid
+    : null;
+}
+
+export interface JobStatusResult {
+  status?: string;
+  videoUrl?: string | null;
+  errorMessage?: string | null;
+}
+
+const VIDEO_STATUS_BASE = "/api/v1/video/";
+
+/**
+ * GETs /api/v1/video/<uuid> and normalises the envelope. Returns `null` on
+ * non-2xx responses or network errors so callers can keep polling.
+ */
+export async function fetchJobStatus(
+  videoUuid: string,
+  fetchFn: FetchLike = fetch,
+): Promise<JobStatusResult | null> {
+  try {
+    const response = await fetchFn(
+      `${VIDEO_STATUS_BASE}${encodeURIComponent(videoUuid)}`,
+      { method: "GET" },
+    );
+
+    if (response.status < 200 || response.status >= 300) {
+      return null;
+    }
+
+    const json = await readJson(response);
+    const payload = (json ?? null) as
+      | {
+          success?: boolean;
+          data?: {
+            status?: unknown;
+            videoUrl?: unknown;
+            errorMessage?: unknown;
+          };
+        }
+      | null;
+
+    if (!payload || payload.success === false) {
+      return null;
+    }
+
+    const data = payload.data ?? {};
+
+    return {
+      status: typeof data.status === "string" ? data.status : undefined,
+      videoUrl: typeof data.videoUrl === "string" ? data.videoUrl : null,
+      errorMessage:
+        typeof data.errorMessage === "string" ? data.errorMessage : null,
+    };
+  } catch {
+    return null;
+  }
+}

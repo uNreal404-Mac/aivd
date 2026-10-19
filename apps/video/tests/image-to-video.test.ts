@@ -10,7 +10,10 @@ import {
   aspectRatiosFor,
   canSubmit,
   durationsFor,
+  extractVideoUuid,
+  fetchJobStatus,
   isI2VGenerationEnabled,
+  isTerminalJobState,
   normalizeSettings,
   parseUploadResponse,
   submitImageToVideo,
@@ -421,5 +424,89 @@ describe("submitImageToVideo", () => {
       message: "Generation request failed. Please try again.",
       retryable: true,
     });
+  });
+});
+
+describe("isTerminalJobState", () => {
+  it("is true only for COMPLETED and FAILED", () => {
+    expect(isTerminalJobState("COMPLETED")).toBe(true);
+    expect(isTerminalJobState("FAILED")).toBe(true);
+    expect(isTerminalJobState("PENDING")).toBe(false);
+    expect(isTerminalJobState("GENERATING")).toBe(false);
+    expect(isTerminalJobState("UPLOADING")).toBe(false);
+    expect(isTerminalJobState(undefined)).toBe(false);
+  });
+});
+
+describe("extractVideoUuid", () => {
+  it("reads data.videoUuid from the generate response envelope", () => {
+    expect(
+      extractVideoUuid({ success: true, data: { videoUuid: "vid_123" } }),
+    ).toBe("vid_123");
+  });
+
+  it("returns null when the uuid is missing or not a string", () => {
+    expect(extractVideoUuid(null)).toBeNull();
+    expect(extractVideoUuid({})).toBeNull();
+    expect(extractVideoUuid({ success: true, data: {} })).toBeNull();
+    expect(
+      extractVideoUuid({ success: true, data: { videoUuid: 123 } }),
+    ).toBeNull();
+    expect(
+      extractVideoUuid({ success: true, data: { videoUuid: "" } }),
+    ).toBeNull();
+  });
+});
+
+describe("fetchJobStatus", () => {
+  it("parses a 2xx envelope", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(200, {
+        success: true,
+        data: {
+          status: "GENERATING",
+          videoUrl: "https://cdn.test/v.mp4",
+          errorMessage: null,
+        },
+      }),
+    );
+
+    const result = await fetchJobStatus("vid_1", fetchFn as FetchLike);
+
+    expect(result).toEqual({
+      status: "GENERATING",
+      videoUrl: "https://cdn.test/v.mp4",
+      errorMessage: null,
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("URL-encodes the video uuid", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(200, { success: true, data: { status: "PENDING" } }),
+    );
+
+    await fetchJobStatus("vid with/slash", fetchFn as FetchLike);
+
+    const [url] = fetchFn.mock.calls[0] as unknown as [string];
+    expect(url).toBe("/api/v1/video/vid%20with%2Fslash");
+  });
+
+  it("returns null on a 404", async () => {
+    const fetchFn = vi.fn(async () => stubResponse(404, { success: false }));
+
+    await expect(
+      fetchJobStatus("vid_1", fetchFn as FetchLike),
+    ).resolves.toBeNull();
+  });
+
+  it("returns null when the network call throws", async () => {
+    const fetchFn = vi.fn(async () => {
+      throw new Error("offline");
+    });
+
+    await expect(
+      fetchJobStatus("vid_1", fetchFn as FetchLike),
+    ).resolves.toBeNull();
   });
 });

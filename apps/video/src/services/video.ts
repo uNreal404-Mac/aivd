@@ -1,5 +1,5 @@
 import { VideoStatus, db, videos } from "@/db";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   getStorage,
@@ -24,6 +24,7 @@ import { generateSignedCallbackUrl } from "@/ai/utils/callback-signature";
 import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
+import { buildDedupeKey, DEDUPE_WINDOW_SECONDS } from "./video-dedupe";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -234,6 +235,37 @@ export class VideoService {
       }
     }
 
+    const dedupeImageUrls = [params.imageUrl, ...(params.imageUrls ?? [])].filter(
+      (value): value is string => Boolean(value)
+    );
+
+    const dedupeKey = buildDedupeKey({
+      userId: params.userId,
+      model: params.model,
+      mode: resolvedMode,
+      prompt: params.prompt,
+      duration: effectiveDuration,
+      aspectRatio: params.aspectRatio,
+      quality: params.quality,
+      imageUrls: dedupeImageUrls,
+      outputNumber,
+      generateAudio: params.generateAudio,
+    });
+
+    const recentDuplicate = await this.findRecentDuplicate(
+      params.userId,
+      dedupeKey
+    );
+    if (recentDuplicate) {
+      return {
+        videoUuid: recentDuplicate.uuid,
+        taskId: recentDuplicate.externalTaskId ?? "",
+        provider: recentDuplicate.provider as ProviderType,
+        status: recentDuplicate.status,
+        creditsUsed: recentDuplicate.creditsUsed,
+      };
+    }
+
     const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
 
@@ -246,6 +278,7 @@ export class VideoService {
       imageUrl: params.imageUrl,
       imageUrls: params.imageUrls,
       generateAudio: params.generateAudio,
+      dedupeKey,
     };
     if (idempotencyKey) {
       parameters.idempotencyKey = idempotencyKey;
@@ -307,6 +340,24 @@ export class VideoService {
           provider: existing.provider as ProviderType,
           status: existing.status,
           creditsUsed: existing.creditsUsed,
+        };
+      }
+    }
+
+    // Race: two requests may both pass the pre-check and insert. D1
+    // serializes writes, so the earliest inserted row (lowest id) wins.
+    // If we are not the oldest matching row, drop our row and return the
+    // winner before freezing credits or calling the provider.
+    if (videoResult.uuid === videoUuid) {
+      const winner = await this.findRecentDuplicate(params.userId, dedupeKey);
+      if (winner && winner.uuid !== videoUuid) {
+        await db.delete(videos).where(eq(videos.uuid, videoUuid));
+        return {
+          videoUuid: winner.uuid,
+          taskId: winner.externalTaskId ?? "",
+          provider: winner.provider as ProviderType,
+          status: winner.status,
+          creditsUsed: winner.creditsUsed,
         };
       }
     }
@@ -499,6 +550,37 @@ export class VideoService {
       )
       .limit(1);
     return existing ?? null;
+  }
+
+  /**
+   * Find the oldest recent, non-failed video with the same dedupe key.
+   */
+  private async findRecentDuplicate(
+    userId: string,
+    dedupeKey: string,
+    excludeUuid?: string
+  ) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_SECONDS * 1000);
+    const conditions = [
+      eq(videos.userId, userId),
+      eq(videos.isDeleted, false),
+      ne(videos.status, VideoStatus.FAILED),
+      gte(videos.createdAt, since),
+      sql`json_extract(${videos.parameters}, '$.dedupeKey') = ${dedupeKey}`,
+    ];
+
+    if (excludeUuid) {
+      conditions.push(ne(videos.uuid, excludeUuid));
+    }
+
+    const [row] = await db
+      .select()
+      .from(videos)
+      .where(and(...conditions))
+      .orderBy(asc(videos.id))
+      .limit(1);
+
+    return row ?? null;
   }
 
   /**
