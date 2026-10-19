@@ -300,6 +300,9 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
   logger: debugLogger,
+  onAPIError: {
+    errorURL: "/login",
+  },
 
   // Drizzle adapter with schema for Better Auth
   database: drizzleAdapter(db, {
