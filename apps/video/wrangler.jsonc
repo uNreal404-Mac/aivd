@@ -21,7 +21,7 @@
     {
       "binding": "DB",
       "database_name": "dreamutopia-video-preview",
-      "database_id": "2d38ed50-8b20-4d9e-bd2a-5b805762b8fa",
+      "database_id": "55c01e49-1df2-4c42-9227-55055b23134c",
       "migrations_dir": "src/db/migrations"
     }
   ],
