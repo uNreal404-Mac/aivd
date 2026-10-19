@@ -144,8 +144,52 @@ function checkoutSessionEvent(
 function invoicePaidEvent(
   id: string,
   billingReason: string,
-  opts: { livemode?: boolean } = {}
+  opts: {
+    livemode?: boolean;
+    /**
+     * `legacy` (default): metadata on `subscription_details` (SDK-typed field).
+     * `parent`: live payload — top-level `subscription_details` is null and
+     * metadata is on `parent.subscription_details`.
+     * `both`: both paths are set to different values so parent-first order
+     * can be asserted.
+     */
+    metadataAt?: "legacy" | "parent" | "both";
+  } = {}
 ) {
+  const legacyMetadata = { userId: "user_1", productId: "pro-monthly" };
+  const parentMetadata = { userId: "user_parent", productId: "pro-parent" };
+  const metadataAt = opts.metadataAt ?? "legacy";
+
+  const invoice: Record<string, unknown> = {
+    id: "in_test_123",
+    object: "invoice",
+    billing_reason: billingReason,
+  };
+
+  if (metadataAt === "parent") {
+    invoice.subscription_details = null;
+    invoice.parent = {
+      type: "subscription_details",
+      quote_details: null,
+      subscription_details: {
+        metadata: legacyMetadata,
+        subscription: "sub_test_123",
+      },
+    };
+  } else if (metadataAt === "both") {
+    invoice.subscription_details = { metadata: legacyMetadata };
+    invoice.parent = {
+      type: "subscription_details",
+      quote_details: null,
+      subscription_details: {
+        metadata: parentMetadata,
+        subscription: "sub_test_123",
+      },
+    };
+  } else {
+    invoice.subscription_details = { metadata: legacyMetadata };
+  }
+
   return {
     id,
     object: "event",
@@ -156,14 +200,7 @@ function invoicePaidEvent(
     request: { id: null, idempotency_key: null },
     type: "invoice.paid",
     data: {
-      object: {
-        id: "in_test_123",
-        object: "invoice",
-        billing_reason: billingReason,
-        subscription_details: {
-          metadata: { userId: "user_1", productId: "pro-monthly" },
-        },
-      },
+      object: invoice,
     },
   };
 }
@@ -327,6 +364,79 @@ describe("handleStripeWebhook", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: true, result: "granted" });
     expect(state.credits).toBe(100);
+  });
+
+  it("grants renewal credits from invoice.parent.subscription_details.metadata", async () => {
+    const calls: Array<{
+      orderNo: string;
+      userId: string;
+      productId: string;
+    }> = [];
+    const seen = new Set<string>();
+    const grantCreditsOnce: GrantCreditsOnce = async (args) => {
+      calls.push(args);
+      if (seen.has(args.orderNo)) return "duplicate";
+      seen.add(args.orderNo);
+      return "granted";
+    };
+    const event = invoicePaidEvent("evt_renewal_parent", "subscription_cycle", {
+      metadataAt: "parent",
+    });
+    const signature = sign(JSON.stringify(event));
+
+    const first = await deliver(event, signature, grantCreditsOnce);
+    const second = await deliver(event, signature, grantCreditsOnce);
+
+    expect(first).toEqual({
+      status: 200,
+      body: { received: true, result: "granted" },
+    });
+    expect(second).toEqual({
+      status: 200,
+      body: { received: true, result: "duplicate" },
+    });
+    expect(calls).toEqual([
+      {
+        orderNo: "stripe_evt_renewal_parent",
+        userId: "user_1",
+        productId: "pro-monthly",
+      },
+      {
+        orderNo: "stripe_evt_renewal_parent",
+        userId: "user_1",
+        productId: "pro-monthly",
+      },
+    ]);
+  });
+
+  it("prefers parent.subscription_details.metadata over subscription_details.metadata", async () => {
+    const calls: Array<{
+      orderNo: string;
+      userId: string;
+      productId: string;
+    }> = [];
+    const grantCreditsOnce: GrantCreditsOnce = async (args) => {
+      calls.push(args);
+      return "granted";
+    };
+    const event = invoicePaidEvent("evt_renewal_both", "subscription_cycle", {
+      metadataAt: "both",
+    });
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce);
+
+    expect(res).toEqual({
+      status: 200,
+      body: { received: true, result: "granted" },
+    });
+    expect(calls).toEqual([
+      {
+        orderNo: "stripe_evt_renewal_both",
+        userId: "user_parent",
+        productId: "pro-parent",
+      },
+    ]);
   });
 
   it("ignores invoice.paid with billing_reason subscription_create", async () => {
