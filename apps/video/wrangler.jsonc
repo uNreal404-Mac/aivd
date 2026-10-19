@@ -33,7 +33,7 @@
   // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY and CALLBACK_HMAC_SECRET are secrets.
   // Set them with `wrangler secret put <NAME>` — never commit them to this file.
   "vars": {
-    "NEXT_PUBLIC_APP_URL": "https://dreamutopia-video-preview.pages.dev",
+    "NEXT_PUBLIC_APP_URL": "https://dreamutopia-video.pages.dev",
     "NEXT_PUBLIC_NOINDEX": "true",
     "VIDEO_GENERATION_ENABLED": "false",
     "AI_CALLBACK_URL": "https://dreamutopia-video.pages.dev/api/v1/video/callback",
