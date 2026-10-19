@@ -12,6 +12,7 @@ import { UserAuthForm } from "@/components/user-auth-form";
 import type { Locale } from "@/config/i18n-config";
 import { getLoginErrorMessageKey } from "@/lib/auth/login-error";
 import { getSafeCallbackURL } from "@/lib/auth/redirect";
+import { PreviewBadge } from "@/components/layout/preview-badge";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -60,6 +61,10 @@ export default async function LoginPage({
             height="64"
             alt="aidv.ai Logo - AI Video Generation Platform"
           />
+          <div className="flex items-center justify-center gap-2 text-sm font-medium">
+            <span>aidv.ai</span>
+            <PreviewBadge />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {t("welcome_back")}
           </h1>

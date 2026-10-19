@@ -46,7 +46,9 @@ export default function PrivacyPolicyPage() {
                 <p>We implement appropriate security measures to protect your personal information.</p>
 
                 <h2>5. Contact Us</h2>
-                <p>If you have questions about this policy, please contact us at {siteConfig.supportEmail}.</p>
+                {siteConfig.supportEmail ? (
+                    <p>If you have questions about this policy, please contact us at {siteConfig.supportEmail}.</p>
+                ) : null}
             </div>
         </div>
     );

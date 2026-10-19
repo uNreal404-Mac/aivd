@@ -1,33 +1,66 @@
 # Phase 2: aivd-preview host cutover
 
-Do not apply this change in phase 1. `apps/video/wrangler.jsonc` must remain
-unchanged until the new Pages host is ready.
+This is the runbook for switching the public preview host from
+`dreamutopia-video.pages.dev` to `aivd-preview.pages.dev`. Do not apply it
+until the new Pages host, auth callbacks, and Stripe TEST webhook are ready.
 
-## `wrangler.jsonc` var changes
+## Runtime variable names
 
-```diff
---- a/apps/video/wrangler.jsonc
-+++ b/apps/video/wrangler.jsonc
-@@
--    "NEXT_PUBLIC_APP_URL": "https://dreamutopia-video.pages.dev",
-+    "NEXT_PUBLIC_APP_URL": "https://aivd-preview.pages.dev",
-@@
--    "AI_CALLBACK_URL": "https://dreamutopia-video.pages.dev/api/v1/video/callback",
-+    "AI_CALLBACK_URL": "https://aivd-preview.pages.dev/api/v1/video/callback",
-```
+Set these names on the app Worker and keep the values environment-specific:
 
-Deploy the app with the new public URL:
+- `APP_URL`
+- `NEXT_PUBLIC_APP_URL`
+- `BETTER_AUTH_URL`
+- `AI_CALLBACK_URL`
+- `NEXT_PUBLIC_IS_PREVIEW`
+- `NEXT_PUBLIC_SUPPORT_EMAIL` (optional; leave empty to omit support-email UI)
 
-```bash
-NEXT_PUBLIC_APP_URL='https://aivd-preview.pages.dev' pnpm -C apps/video run cf:deploy
-```
+## Secret and credential names
 
-## Checklist
+The switch must preserve or configure these names without putting their values
+in this repository:
 
-- [ ] Add Google OAuth redirect URI `https://aivd-preview.pages.dev/api/auth/callback/google` and keep the old URI.
-- [ ] Add a Stripe TEST webhook endpoint at `https://aivd-preview.pages.dev/api/webhooks/stripe`.
-- [ ] Switch `APP_URL` and deploy with the two `wrangler.jsonc` var changes above.
-- [ ] Enable the old-domain 301 by deploying `deploy/pages-proxy/_worker.redirect-phase2.js` as the old Pages proxy's `public/_worker.js`.
+- `BETTER_AUTH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `RESEND_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CALLBACK_HMAC_SECRET`
+- `STORAGE_ACCESS_KEY`
+- `STORAGE_SECRET_KEY`
+- `CREEM_API_KEY`
+- `CREEM_WEBHOOK_SECRET`
 
-The Stripe route above is the route currently implemented at
-`src/app/api/webhooks/stripe/route.ts`.
+## Command order
+
+1. Set the runtime variables and secrets above in the target Worker, with
+   `APP_URL`, `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL`, and `AI_CALLBACK_URL`
+   using the new public host. Keep `NEXT_PUBLIC_IS_PREVIEW` enabled for this
+   preview deployment.
+2. Add the Google OAuth redirect URI for
+   `/api/auth/callback/google` on the new host, and keep the old URI until the
+   acceptance check is complete.
+3. Add the Stripe TEST webhook endpoint at
+   `/api/webhooks/stripe` on the new host.
+4. Build and deploy the app Worker:
+
+   ```bash
+   pnpm -C apps/video run cf:build
+   pnpm -C apps/video run cf:deploy
+   ```
+
+5. Confirm the new host is serving the app and that auth and Stripe TEST
+   callbacks reach the intended Worker.
+6. Activate the old-host redirect proxy last. Copy the finalized phase-2
+   worker into the old Pages project and deploy that Pages project:
+
+   ```bash
+   cp apps/video/deploy/pages-proxy/_worker.redirect-phase2.js apps/video/deploy/pages-proxy/public/_worker.js
+   pnpm -C apps/video exec wrangler pages deploy deploy/pages-proxy/public --project-name <old-pages-project>
+   ```
+
+The phase-2 proxy redirects normal old-host traffic while keeping exactly
+`/api/auth`, `/api/auth/*`, `/api/webhooks`, and `/api/webhooks/*` proxied to
+the old Worker. Roll back by restoring the phase-1 `public/_worker.js` and
+redeploying that Pages project.

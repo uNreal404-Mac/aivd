@@ -296,7 +296,7 @@ if (env.CREEM_API_KEY) {
 }
 
 export const auth = betterAuth({
-  baseURL: env.NEXT_PUBLIC_APP_URL,
+  baseURL: env.BETTER_AUTH_URL ?? env.APP_URL ?? env.NEXT_PUBLIC_APP_URL,
   trustedOrigins: [
     ...new Set(
       [

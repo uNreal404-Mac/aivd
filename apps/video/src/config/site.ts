@@ -7,7 +7,7 @@ export interface SiteConfig {
   description: string;
   url: string;
   ogImage: string;
-  supportEmail: string;
+  supportEmail?: string;
   links: {
     github?: string;
     twitter?: string;
@@ -23,14 +23,18 @@ export interface SiteConfig {
   };
 }
 
-// Single source of truth for the support address (bot inbox).
-export const SUPPORT_EMAIL = "tuapi@mail.grokbot.com";
+export function getSupportEmail(value = process.env.NEXT_PUBLIC_SUPPORT_EMAIL) {
+  const email = value?.trim();
+  return email || undefined;
+}
 
-const defaultAppUrl = "https://dreamutopia-video.pages.dev";
-const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL || defaultAppUrl;
+const configuredAppUrl =
+  process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim() || "";
+
+export const SUPPORT_EMAIL = getSupportEmail();
 
 export function isPreviewSiteFor(
-  appUrl = process.env.NEXT_PUBLIC_APP_URL,
+  appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL,
   previewFlag = process.env.NEXT_PUBLIC_IS_PREVIEW,
 ) {
   if (previewFlag === "true") return true;
@@ -55,7 +59,7 @@ export const siteConfig: SiteConfig = {
   description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
   url: configuredAppUrl,
   ogImage: "/og.png",
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || SUPPORT_EMAIL,
+  supportEmail: SUPPORT_EMAIL,
   links: {},
   auth: {
     enableGoogleLogin: true,

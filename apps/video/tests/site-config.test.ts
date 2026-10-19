@@ -1,6 +1,14 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { getSiteTitle, isPreviewSiteFor } from "@/config/site";
+import {
+  getSiteTitle,
+  getSupportEmail,
+  isPreviewSiteFor,
+  siteConfig,
+} from "@/config/site";
+import { PreviewBadge } from "@/components/layout/preview-badge";
 
 describe("preview site configuration", () => {
   it("detects the explicit preview flag and pages.dev hosts", () => {
@@ -13,5 +21,22 @@ describe("preview site configuration", () => {
     expect(getSiteTitle("zh", true)).toBe("aidv.ai 预览站");
     expect(getSiteTitle("en", true)).toBe("aidv.ai Preview");
     expect(getSiteTitle("en", false)).toBe("aidv.ai");
+  });
+
+  it("only exposes a trimmed support email when the environment provides one", () => {
+    expect(getSupportEmail(undefined)).toBeUndefined();
+    expect(getSupportEmail("")).toBeUndefined();
+    expect(getSupportEmail("   ")).toBeUndefined();
+    expect(getSupportEmail(" support@example.com ")).toBe("support@example.com");
+    expect(siteConfig.supportEmail).toBeUndefined();
+  });
+
+  it("renders the shared preview badge", () => {
+    const markup = renderToStaticMarkup(
+      createElement(PreviewBadge, { show: true }),
+    );
+
+    expect(markup).toContain('data-testid="preview-badge"');
+    expect(markup).toContain(">Preview</span>");
   });
 });

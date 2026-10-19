@@ -24,7 +24,7 @@ export type LegalDoc = {
 export type LegalKind = "terms" | "privacy" | "refund" | "contact";
 
 export type LegalContext = {
-  email: string;
+  email?: string;
   companyName: string;
   companyAddress: string;
   governingLaw: string;
@@ -49,6 +49,23 @@ function resolveGoverningLaw(governingLaw: string, locale: LegalLocale): string 
   return locale === "zh"
     ? "运营方所在地适用的法律"
     : "the laws applicable where the operator is established";
+}
+
+function supportParagraph(
+  email: string | undefined,
+  build: (email: string) => string,
+): string[] {
+  const normalized = email?.trim();
+  return normalized ? [build(normalized)] : [];
+}
+
+function omitEmptySections(doc: LegalDoc): LegalDoc {
+  return {
+    ...doc,
+    sections: doc.sections.filter(
+      (section) => section.paragraphs.length > 0 || (section.bullets?.length ?? 0) > 0,
+    ),
+  };
 }
 
 function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
@@ -131,7 +148,9 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "十、联系我们",
-          paragraphs: [`对本条款有疑问？请发送邮件至 ${ctx.email}。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `对本条款有疑问？请发送邮件至 ${email}。`,
+          ),
         },
       ],
     };
@@ -212,7 +231,10 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "10. Contact",
-        paragraphs: [`Questions about these terms? Email us at ${ctx.email}.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Questions about these terms? Email us at ${email}.`,
+        ),
       },
     ],
   };
@@ -268,9 +290,9 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "六、你的权利",
-          paragraphs: [
-            `你可以要求访问、删除或导出你的个人信息，也可以要求我们更正这些信息。请发送邮件至 ${ctx.email}，我们会协助你。如法律要求，部分信息可能会被保留。`,
-          ],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `你可以要求访问、删除或导出你的个人信息，也可以要求我们更正这些信息。请发送邮件至 ${email}，我们会协助你。如法律要求，部分信息可能会被保留。`,
+          ),
         },
         {
           heading: "七、Cookie 与分析",
@@ -292,7 +314,9 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "十、联系我们",
-          paragraphs: [`对隐私有疑问？请发送邮件至 ${ctx.email}。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `对隐私有疑问？请发送邮件至 ${email}。`,
+          ),
         },
       ],
     };
@@ -346,9 +370,11 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "6. Your rights",
-        paragraphs: [
-          `You can ask to access, delete, or export your personal information, or ask us to correct it. Email us at ${ctx.email} and we will help. Some information may be kept where the law requires it.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `You can ask to access, delete, or export your personal information, or ask us to correct it. Email us at ${email} and we will help. Some information may be kept where the law requires it.`,
+        ),
       },
       {
         heading: "7. Cookies and analytics",
@@ -370,7 +396,10 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "10. Contact",
-        paragraphs: [`Questions about privacy? Email us at ${ctx.email}.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Questions about privacy? Email us at ${email}.`,
+        ),
       },
     ],
   };
@@ -410,13 +439,15 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "五、如何申请退款",
-          paragraphs: [
-            `请发送邮件至 ${ctx.email}，并提供账号邮箱和订单号，同时说明遇到的问题。申请通过后，我们会将退款退回原支付方式。`,
-          ],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `请发送邮件至 ${email}，并提供账号邮箱和订单号，同时说明遇到的问题。申请通过后，我们会将退款退回原支付方式。`,
+          ),
         },
         {
           heading: "六、联系我们",
-          paragraphs: [`如果对付款还有其他疑问，请发送邮件至 ${ctx.email}，我们会为你核实。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `如果对付款还有其他疑问，请发送邮件至 ${email}，我们会为你核实。`,
+          ),
         },
       ],
     };
@@ -455,15 +486,19 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "5. How to request a refund",
-        paragraphs: [
-          `Email us at ${ctx.email} with the email address on your account and your order ID, and tell us what went wrong. If your request is approved, we send the refund to the original payment method.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `Email us at ${email} with the email address on your account and your order ID, and tell us what went wrong. If your request is approved, we send the refund to the original payment method.`,
+        ),
       },
       {
         heading: "6. Contact",
-        paragraphs: [
-          `Still have a question about a payment? Email us at ${ctx.email} and we will look into it.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `Still have a question about a payment? Email us at ${email} and we will look into it.`,
+        ),
       },
     ],
   };
@@ -486,7 +521,9 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       sections: [
         {
           heading: "一、支持",
-          paragraphs: [`请发送邮件至 ${ctx.email}。我们会尽快回复。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `请发送邮件至 ${email}。我们会尽快回复。`,
+          ),
         },
         {
           heading: "二、请提供以下信息",
@@ -519,7 +556,10 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
     sections: [
       {
         heading: "1. Support",
-        paragraphs: [`Email us at ${ctx.email}. We reply as soon as we can.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Email us at ${email}. We reply as soon as we can.`,
+        ),
       },
       {
         heading: "2. What to include",
@@ -544,16 +584,24 @@ export function getLegalDoc(
   locale: LegalLocale,
   ctx: LegalContext,
 ): LegalDoc {
+  let doc: LegalDoc;
+
   switch (kind) {
     case "terms":
-      return termsDoc(locale, ctx);
+      doc = termsDoc(locale, ctx);
+      break;
     case "privacy":
-      return privacyDoc(locale, ctx);
+      doc = privacyDoc(locale, ctx);
+      break;
     case "refund":
-      return refundDoc(locale, ctx);
+      doc = refundDoc(locale, ctx);
+      break;
     case "contact":
-      return contactDoc(locale, ctx);
+      doc = contactDoc(locale, ctx);
+      break;
     default:
-      return termsDoc(locale, ctx);
+      doc = termsDoc(locale, ctx);
   }
+
+  return omitEmptySections(doc);
 }

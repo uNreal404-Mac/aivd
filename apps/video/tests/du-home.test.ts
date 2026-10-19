@@ -202,9 +202,8 @@ describe("du-glass styling", () => {
 });
 
 describe("site config", () => {
-  it("uses the bot inbox as the support address", () => {
-    expect(SUPPORT_EMAIL).toBe("tuapi@mail.grokbot.com");
-    expect(SUPPORT_EMAIL).not.toContain("example.com");
+  it("leaves the support address unset until configured", () => {
+    expect(SUPPORT_EMAIL).toBeUndefined();
   });
 });
 

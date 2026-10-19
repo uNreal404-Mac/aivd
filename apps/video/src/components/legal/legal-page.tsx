@@ -6,7 +6,7 @@ export type LegalPageProps = {
     doc: LegalDoc;
     locale: string;
     lastUpdated: string;
-    email: string;
+    email?: string;
 };
 
 const wrapperStyle: CSSProperties = {
@@ -83,21 +83,22 @@ const linkStyle: CSSProperties = {
  * Renders a paragraph, turning the support email (when present) into a
  * mailto link. Kept as a simple split so the copy stays plain text.
  */
-function Paragraph({ text, email }: { text: string; email: string }) {
-    const index = email.length > 0 ? text.indexOf(email) : -1;
+function Paragraph({ text, email }: { text: string; email?: string }) {
+    const normalizedEmail = email?.trim();
+    const index = normalizedEmail ? text.indexOf(normalizedEmail) : -1;
 
-    if (index === -1) {
+    if (!normalizedEmail || index === -1) {
         return <p style={paragraphStyle}>{text}</p>;
     }
 
     const before = text.slice(0, index);
-    const after = text.slice(index + email.length);
+    const after = text.slice(index + normalizedEmail.length);
 
     return (
         <p style={paragraphStyle}>
             {before}
-            <a href={`mailto:${email}`} style={linkStyle}>
-                {email}
+            <a href={`mailto:${normalizedEmail}`} style={linkStyle}>
+            {normalizedEmail}
             </a>
             {after}
         </p>
