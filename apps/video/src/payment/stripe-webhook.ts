@@ -119,6 +119,37 @@ function paymentIntentIdFrom(
   return typeof value === "string" ? value : value.id;
 }
 
+/**
+ * Subscription metadata copied onto a renewal invoice.
+ *
+ * Live `invoice.paid` payloads (current API, including test-clock renewals)
+ * leave the top-level field null and send metadata here:
+ *
+ * ```
+ * invoice.subscription_details === null
+ * invoice.parent.subscription_details.metadata === { userId, productId }
+ * ```
+ *
+ * Stripe SDK v14 only types the older `invoice.subscription_details.metadata`
+ * field, so that path is the fallback when `parent` is absent.
+ */
+function subscriptionMetadataFromInvoice(
+  invoice: Stripe.Invoice
+): Stripe.Metadata | null | undefined {
+  const withParent = invoice as Stripe.Invoice & {
+    parent?: {
+      subscription_details?: {
+        metadata?: Stripe.Metadata | null;
+      } | null;
+    } | null;
+  };
+
+  return (
+    withParent.parent?.subscription_details?.metadata ??
+    invoice.subscription_details?.metadata
+  );
+}
+
 interface ProcessEventDeps {
   grantCreditsOnce: GrantCreditsOnce;
   revokeCreditsForOrder?: RevokeCreditsForOrder;
@@ -162,7 +193,7 @@ async function processEvent(
         };
       }
 
-      const metadata = invoice.subscription_details?.metadata;
+      const metadata = subscriptionMetadataFromInvoice(invoice);
       const userId = metadata?.userId;
       const productId = metadata?.productId;
 
