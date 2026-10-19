@@ -1,0 +1,58 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
+import { requireAuth } from "@/lib/auth";
+import { HfTopNav } from "@/components/hf/top-nav";
+import { Sidebar } from "@/components/layout/sidebar";
+import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
+import { i18n } from "@/config/i18n-config";
+import { NOINDEX_ROBOTS } from "@/lib/indexing";
+
+interface DashboardLayoutProps {
+  children?: React.ReactNode;
+  params: Promise<{
+    locale: string;
+  }>;
+}
+
+export const metadata: Metadata = {
+  robots: NOINDEX_ROBOTS,
+};
+
+export function generateStaticParams() {
+  return i18n.locales.map((locale) => ({ locale }));
+}
+
+export default async function DashboardLayout({
+  children,
+  params,
+}: DashboardLayoutProps) {
+  const { locale } = await params;
+  const user = await requireAuth(`/${locale}/login`);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <HfTopNav
+        user={{
+          name: user.name,
+          image: user.image,
+          email: user.email,
+        }}
+        lang={locale}
+      />
+
+      <div className="flex h-[calc(100vh-52px)]">
+        {/* Left Sidebar - Fixed 200px */}
+        <Sidebar lang={locale} />
+
+        {/* Main Content Area - Flex */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">{children}</div>
+        </main>
+      </div>
+
+      {/* 全局升级弹窗 */}
+      <UpgradeModal />
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+name = "dreamutopia-video"
+pages_build_output_dir = "./public"
+compatibility_date = "2025-09-01"
+
+[[services]]
+binding = "APP"
+service = "dreamutopia-video-preview"

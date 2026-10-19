@@ -1,0 +1,40 @@
+:root {
+  --ex-bg: var(--du-bg);
+  --ex-surface: var(--du-surface);
+  --ex-border: var(--du-border);
+  --ex-text: var(--du-text);
+  --ex-muted: var(--du-text-muted);
+  --ex-accent: var(--du-accent);
+  --ex-accent-hover: var(--du-accent-hover);
+  --ex-on-accent: var(--du-on-accent);
+  --ex-chip-bg: var(--du-glass-bg);
+  --ex-overlay: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--du-bg) 85%, transparent),
+    transparent 60%
+  );
+  --ex-radius-card: 16px;
+  --ex-radius-chip: 999px;
+  --ex-gap: 16px;
+  --ex-glass-bg: var(--du-glass-bg);
+  --ex-glass-border: var(--du-glass-border);
+  --ex-glass-blur: 16px;
+}
+
+.ex-glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  backdrop-filter: blur(var(--ex-glass-blur));
+  -webkit-backdrop-filter: blur(var(--ex-glass-blur));
+  background: var(--ex-glass-bg);
+  border: 1px solid var(--ex-glass-border);
+  color: var(--ex-text);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .ex-glass-btn {
+    background: var(--du-glass-fallback-bg);
+  }
+}

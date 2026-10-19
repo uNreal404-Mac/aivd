@@ -1,0 +1,77 @@
+/**
+ * ============================================
+ * DreamUtopia 主题覆盖 - hf-theme
+ * ============================================
+ *
+ * 覆盖 shadcn CSS 变量，统一为深色品牌主题。
+ * 纯 CSS，不使用 @apply。
+ *
+ * ============================================
+ */
+
+:root,
+:root.dark,
+.dark {
+  --background: var(--du-bg);
+  --foreground: var(--du-text);
+  --card: var(--du-surface);
+  --card-foreground: var(--du-text);
+  --popover: var(--du-surface-2);
+  --popover-foreground: var(--du-text);
+  --primary: var(--du-accent);
+  --primary-foreground: var(--du-on-accent);
+  --secondary: var(--du-surface-2);
+  --secondary-foreground: var(--du-text);
+  --muted: var(--du-surface-2);
+  --muted-foreground: var(--du-text-muted);
+  --accent: var(--du-surface-2);
+  --accent-foreground: var(--du-text);
+  --destructive: var(--du-accent-2);
+  --destructive-foreground: var(--du-text);
+  --border: var(--du-border);
+  --input: var(--du-border-strong);
+  --ring: var(--du-accent);
+  --chart-1: var(--du-accent);
+  --chart-2: var(--du-accent-2);
+  --chart-3: var(--du-text-muted);
+  --chart-4: var(--du-surface-2);
+  --chart-5: var(--du-surface);
+  --sidebar: var(--du-surface);
+  --sidebar-foreground: var(--du-text);
+  --sidebar-primary: var(--du-accent);
+  --sidebar-primary-foreground: var(--du-on-accent);
+  --sidebar-accent: var(--du-surface-2);
+  --sidebar-accent-foreground: var(--du-text);
+  --sidebar-border: var(--du-border);
+  --sidebar-ring: var(--du-accent);
+  --radius: 0.75rem;
+}
+
+html,
+body {
+  background-color: var(--du-bg);
+  color: var(--du-text);
+}
+
+body {
+  font-family: var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Space Grotesk", ui-sans-serif, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+}
+
+::selection {
+  background: var(--du-accent-soft);
+}
+
+.hf-scroll-x {
+  scrollbar-width: none;
+}
+
+.hf-scroll-x::-webkit-scrollbar {
+  display: none;
+}

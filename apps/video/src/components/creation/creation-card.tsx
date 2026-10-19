@@ -1,0 +1,326 @@
+"use client";
+
+// ============================================
+// Creation Card Component
+// ============================================
+
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { Play, Clock, AlertCircle, MoreHorizontal, Download, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { cn } from "@/components/ui";
+import { formatDistanceToNow } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Video } from "@/lib/types/dashboard";
+
+interface CreationCardProps {
+  video: Video;
+  onClick: (uuid: string) => void;
+  onDelete?: (uuid: string) => void;
+  isDeleting?: boolean;
+}
+
+const statusConfig = {
+  completed: {
+    icon: Play,
+    iconBg: "bg-primary",
+    labelKey: "status.completed",
+    labelColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  },
+  pending: {
+    icon: Clock,
+    iconBg: "bg-muted",
+    labelKey: "status.pending",
+    labelColor: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  },
+  generating: {
+    icon: Clock,
+    iconBg: "bg-muted",
+    labelKey: "status.generating",
+    labelColor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  },
+  uploading: {
+    icon: Clock,
+    iconBg: "bg-muted",
+    labelKey: "status.uploading",
+    labelColor: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  },
+  failed: {
+    icon: AlertCircle,
+    iconBg: "bg-destructive/10",
+    labelKey: "status.failed",
+    labelColor: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+  },
+};
+
+export function CreationCard({
+  video,
+  onClick,
+  onDelete,
+  isDeleting,
+}: CreationCardProps) {
+  const t = useTranslations("dashboard.myCreations");
+  const tg = useTranslations("Gallery");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const normalizedStatus = (video.status || "pending").toLowerCase() as keyof typeof statusConfig;
+  const config = statusConfig[normalizedStatus] ?? statusConfig.pending;
+  const StatusIcon = config.icon;
+  const statusLabel = t(config.labelKey as "status.completed");
+
+  const isProcessing =
+    normalizedStatus === "pending" ||
+    normalizedStatus === "generating" ||
+    normalizedStatus === "uploading";
+  const isFailed = normalizedStatus === "failed";
+  const isCompleted = normalizedStatus === "completed";
+  /** Older rows may omit `visibility`; anything but "public" counts as private. */
+  const isPublic = video.visibility === "public";
+
+  const handleDelete = async () => {
+    setShowDeleteDialog(false);
+    await onDelete?.(video.uuid);
+  };
+
+  const handleDownload = () => {
+    if (video.videoUrl) {
+      const link = document.createElement("a");
+      link.href = video.videoUrl;
+      link.download = `dreamutopia-${video.uuid}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(t("actions.downloadSuccess"));
+    }
+  };
+
+  const handlePreviewStart = () => {
+    if (!isCompleted || !video.videoUrl) return;
+    const element = videoRef.current;
+    if (!element) return;
+    element.currentTime = 0;
+    element.play().catch(() => {});
+  };
+
+  const handlePreviewStop = () => {
+    const element = videoRef.current;
+    if (!element) return;
+    element.pause();
+    element.currentTime = 0;
+  };
+
+  return (
+    <>
+      <div
+        className={cn(
+          "group relative cursor-pointer overflow-hidden rounded-xl bg-[#1c1d20] ring-1 ring-white/[0.06] transition hover:ring-white/[0.14]",
+          isDeleting && "opacity-50 pointer-events-none"
+        )}
+        onClick={() => onClick(video.uuid)}
+        onMouseEnter={handlePreviewStart}
+        onMouseLeave={handlePreviewStop}
+      >
+        {/* Thumbnail / Preview */}
+        <div className="relative aspect-video w-full overflow-hidden bg-[#0f1113]">
+          {isCompleted && video.videoUrl ? (
+            <video
+              ref={videoRef}
+              src={video.videoUrl}
+              poster={video.thumbnailUrl || undefined}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-cover"
+            />
+          ) : video.thumbnailUrl ? (
+            <img
+              src={video.thumbnailUrl}
+              alt={video.prompt}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center">
+              <StatusIcon className="h-12 w-12 text-[#9a9ba0]" />
+              {isFailed && video.errorMessage && (
+                <p className="text-[11px] text-destructive line-clamp-3">
+                  {(() => {
+                    try {
+                      const parsed = JSON.parse(video.errorMessage);
+                      return parsed.error?.message || parsed.message || video.errorMessage;
+                    } catch {
+                      return video.errorMessage;
+                    }
+                  })()}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Bottom gradient overlay */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+
+          {/* Overlay for completed videos */}
+          {isCompleted && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button
+                type="button"
+                aria-label={t("actions.play")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClick(video.uuid);
+                }}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+              >
+                <Play className="ml-0.5 h-4 w-4 text-white fill-white" />
+              </button>
+            </div>
+          )}
+
+          {/* Status + gallery visibility badges */}
+          <div className="absolute top-2 left-2 flex items-center gap-1.5">
+            <Badge
+              className={cn(
+                config.labelColor,
+                "rounded-md border-0 bg-black/60 text-[11px] text-white backdrop-blur"
+              )}
+              variant="outline"
+            >
+              {statusLabel}
+            </Badge>
+            {isCompleted && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "rounded-md backdrop-blur",
+                  isPublic
+                    ? "border-[var(--du-accent)] bg-[var(--du-bg-elev)] text-[var(--du-accent-text)]"
+                    : "border-[var(--du-border)] bg-[var(--du-bg-elev)] text-[var(--du-text-muted)]"
+                )}
+              >
+                {isPublic ? tg("publicBadge") : tg("privateBadge")}
+              </Badge>
+            )}
+          </div>
+
+          {/* Duration badge (completed only) */}
+          {isCompleted && video.duration > 0 && (
+            <div className="absolute bottom-2 right-2">
+              <Badge
+                variant="secondary"
+                className="rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white"
+              >
+                {Math.floor(video.duration)}s
+              </Badge>
+            </div>
+          )}
+
+          {/* Action menu */}
+          <div className="absolute top-2 right-2 flex gap-1.5">
+            {isCompleted && video.videoUrl && (
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label={t("actions.download")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+                className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isCompleted && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDownload(); }}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {t("actions.download")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); setShowDeleteDialog(true); }}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t("actions.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Card info */}
+        <div className="px-2.5 py-2 space-y-1">
+          {/* Model & Aspect Ratio */}
+          <div className="flex items-center justify-between text-[11px] text-[#9a9ba0]">
+            <span className="font-medium capitalize">{video.model}</span>
+            <span>{video.aspectRatio}</span>
+          </div>
+
+          {/* Prompt */}
+          <div className="text-xs text-[#f7f7f8] line-clamp-1">
+            {video.prompt}
+          </div>
+
+          {/* Date */}
+          <div className="text-[11px] text-[#9a9ba0]">
+            {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
+          </div>
+
+          {/* Error is displayed in the preview area for failed videos */}
+        </div>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteConfirm.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteConfirm.message")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("deleteConfirm.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("deleteConfirm.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

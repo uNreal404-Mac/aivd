@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="i2vEmptySurface" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15151c" />
+      <stop offset="1" stop-color="#1d1d26" />
+    </linearGradient>
+    <linearGradient id="i2vEmptyAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6" />
+      <stop offset="1" stop-color="#a78bfa" />
+    </linearGradient>
+  </defs>
+
+  <rect width="640" height="360" fill="url(#i2vEmptySurface)" />
+
+  <circle cx="320" cy="180" r="118" fill="url(#i2vEmptyAccent)" opacity="0.08" />
+
+  <rect x="196" y="118" width="248" height="124" rx="20" fill="none" stroke="url(#i2vEmptyAccent)" stroke-width="4" opacity="0.85" />
+
+  <rect x="216" y="138" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+  <rect x="216" y="166" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+  <rect x="216" y="194" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+
+  <rect x="410" y="138" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+  <rect x="410" y="166" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+  <rect x="410" y="194" width="14" height="14" rx="4" fill="url(#i2vEmptyAccent)" opacity="0.45" />
+
+  <path d="M296 148 L360 180 L296 212 Z" fill="url(#i2vEmptyAccent)" />
+</svg>
