@@ -279,6 +279,14 @@ export async function submitImageToVideo(
     return { ok: false, reason: "disabled" };
   }
 
+  if (!body.imageKey || body.imageKey.trim().length === 0) {
+    return {
+      ok: false,
+      reason: "error",
+      message: "Please upload an image first.",
+    };
+  }
+
   const fetchFn = options.fetchFn ?? fetch;
 
   try {
@@ -288,7 +296,14 @@ export async function submitImageToVideo(
         "Content-Type": "application/json",
         "Idempotency-Key": options.idempotencyKey ?? crypto.randomUUID(),
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: body.model,
+        prompt: body.prompt,
+        duration: body.duration,
+        aspectRatio: body.aspectRatio,
+        imageUrl: body.imageKey,
+        mode: "image-to-video",
+      }),
     });
 
     const data = await readJson(response);

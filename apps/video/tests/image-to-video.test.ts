@@ -286,4 +286,40 @@ describe("submitImageToVideo", () => {
       (init?.headers as Record<string, string>)["Idempotency-Key"],
     ).toBe("key-123");
   });
+
+  it("sends the uploaded image key as imageUrl in image-to-video mode", async () => {
+    const fetchFn = vi.fn(async () => stubResponse(200, { success: true }));
+
+    await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+      idempotencyKey: "key-123",
+    });
+
+    const [, init] = fetchFn.mock.calls[0] as unknown as [
+      string,
+      RequestInit | undefined,
+    ];
+    const payload = JSON.parse(String(init?.body)) as Record<string, unknown>;
+
+    expect(payload.imageUrl).toBe("k1");
+    expect(payload.mode).toBe("image-to-video");
+    expect(payload).not.toHaveProperty("imageKey");
+  });
+
+  it("refuses to submit without an uploaded image", async () => {
+    const fetchFn = vi.fn(async () => stubResponse(200, { success: true }));
+
+    const result = await submitImageToVideo(
+      { ...body, imageKey: "" },
+      { enabled: true, fetchFn: fetchFn as FetchLike },
+    );
+
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      reason: "error",
+      message: "Please upload an image first.",
+    });
+  });
 });

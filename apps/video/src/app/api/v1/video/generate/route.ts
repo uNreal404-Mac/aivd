@@ -5,6 +5,7 @@ import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { imageRefSchema } from "@/lib/image-ref-schema";
+import { resolveGenerateImageInputs } from "@/lib/generate-image-inputs";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -16,6 +17,8 @@ const generateSchema = z.object({
   quality: z.string().optional(),
   imageUrl: imageRefSchema.optional(),
   imageUrls: z.array(imageRefSchema).optional(),
+  imageKey: imageRefSchema.optional(),
+  imageKeys: z.array(imageRefSchema).optional(),
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
@@ -36,10 +39,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = generateSchema.parse(body);
 
+    const imageInputs = resolveGenerateImageInputs(data);
     const imageUrls = [
-      ...(data.imageUrl ? [data.imageUrl] : []),
-      ...(data.imageUrls ?? []),
+      ...(imageInputs.imageUrl ? [imageInputs.imageUrl] : []),
+      ...(imageInputs.imageUrls ?? []),
     ];
+
+    if (
+      imageUrls.length === 0 &&
+      (imageInputs.requestedImage ||
+        data.mode === "image-to-video" ||
+        data.mode === "reference-to-video" ||
+        data.mode === "frames-to-video")
+    ) {
+      return apiError("Image input is required for this mode.", 400, {
+        code: "MISSING_INPUT_MEDIA",
+      });
+    }
+
     if (
       imageUrls.some(
         (imageUrl) => !isAllowedImageInput(imageUrl, { userId: user.id }),
@@ -62,8 +79,8 @@ export async function POST(request: NextRequest) {
       duration: data.duration,
       aspectRatio: data.aspectRatio,
       quality: data.quality,
-      imageUrl: data.imageUrl,
-      imageUrls: data.imageUrls,
+      imageUrl: imageInputs.imageUrl,
+      imageUrls: imageInputs.imageUrls,
       mode: data.mode,
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
