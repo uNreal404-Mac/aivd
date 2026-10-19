@@ -87,50 +87,50 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
         return;
       }
 
-      // Dynamic import to avoid Edge Runtime issues in middleware
-      const { MagicLinkEmail } = await import(
-        "@/lib/emails/magic-link-email"
-      );
-      const { resend } = await import("@/lib/email");
-      const { siteConfig } = await import("@/config/site");
-
-      // Check if user exists to determine email type
-      const [existingUser] = await db
-        .select({ name: users.name, emailVerified: users.emailVerified })
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
-      const userVerified = !!existingUser?.emailVerified;
-      const authSubject = userVerified
-        ? `Sign-in link for ${(siteConfig as { name: string }).name}`
-        : "Activate your account";
-
       // RESEND_FROM must be a Resend-verified address (set via
       // `wrangler secret put RESEND_FROM --name dreamutopia-video-preview`).
-      // Never commit the value. Prefer html over Resend `react:` — OpenNext
-      // Workers often fail React email rendering and return opaque 500s.
+      // Never commit the value. Use plain HTML (no react-email render) so
+      // OpenNext Workers cannot fail during JSX email rendering.
       try {
-        const { render } = await import("@react-email/render");
-        const mailType = userVerified ? "login" as const : "register" as const;
+        const { Resend } = await import("resend");
+        const { siteConfig } = await import("@/config/site");
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+          throw new Error("RESEND_API_KEY is not set on the Worker");
+        }
+        const resend = new Resend(apiKey);
+
+        const [existingUser] = await db
+          .select({ name: users.name, emailVerified: users.emailVerified })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        const userVerified = !!existingUser?.emailVerified;
         const siteName = (siteConfig as { name: string }).name;
-        const emailElement = MagicLinkEmail({
-          firstName: existingUser?.name ?? "",
-          actionUrl: url,
-          mailType,
-          siteName,
-        });
-        const html = await render(emailElement);
-        const text = await render(emailElement, { plainText: true });
+        const authSubject = userVerified
+          ? `Sign-in link for ${siteName}`
+          : "Activate your account";
+        const firstName = existingUser?.name?.trim() || "there";
+        const actionLabel = userVerified ? "Sign in" : "Activate Account";
+        const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px">
+<h2>${siteName}</h2>
+<p>Hi ${firstName},</p>
+<p>Click the button below to ${userVerified ? "sign in to" : "activate"} your account.</p>
+<p><a href="${url}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#fff;border-radius:6px;text-decoration:none">${actionLabel}</a></p>
+<p>This link expires in 5 minutes and can only be used once.</p>
+<p style="color:#666;font-size:12px">${siteName}</p>
+</body></html>`;
+        const textBody = `Hi ${firstName},\n\n${actionLabel}: ${url}\n\nThis link expires in 5 minutes.\n\n${siteName}`;
 
         const { error: sendError, data: sendData } = await resend.emails.send({
           from: resendFrom,
           to: email,
           subject: authSubject,
           html,
-          text,
+          text: textBody,
           headers: {
-            "X-Entity-Ref-ID": new Date().getTime() + "",
+            "X-Entity-Ref-ID": String(Date.now()),
           },
         });
         if (sendError) {
@@ -151,7 +151,7 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
             fromDomain,
           );
           throw new Error(
-            `Resend send failed (${detail || "error"}). Check RESEND_FROM domain is verified in Resend (current from domain: ${fromDomain}).`,
+            `Resend send failed (${detail || "error"}). Verify RESEND_FROM domain in Resend (from domain: ${fromDomain}).`,
           );
         }
         console.info("Magic link email sent:", sendData?.id ?? "ok");
