@@ -98,12 +98,6 @@ export const imageToVideoConfig: ToolPageConfig = {
       { name: "Seedance 1.0 Fast", provider: "ByteDance", color: "#34d399" },
       { name: "Seedance 1.0 Quality", provider: "ByteDance", color: "#059669" },
     ],
-
-    stats: {
-      videosGenerated: "500K+",
-      usersCount: "50K+",
-      avgRating: 4.8,
-    },
   },
 
   // 多语言 key 前缀

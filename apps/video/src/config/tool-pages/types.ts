@@ -94,13 +94,6 @@ export interface ToolLandingConfig {
     provider: string;
     color: string;
   }>;
-
-  // 统计数据（可选）
-  stats?: {
-    videosGenerated?: string;
-    usersCount?: string;
-    avgRating?: number;
-  };
 }
 
 // ============================================================================

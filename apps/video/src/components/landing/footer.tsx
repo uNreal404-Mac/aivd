@@ -9,16 +9,17 @@ import { LocaleLink } from "@/i18n/navigation";
 export function LandingFooter() {
   const t = useTranslations('Footer');
   const locale = useLocale();
+  const isZh = locale === "zh";
   const currentYear = new Date().getFullYear();
 
   const footerSections = [
     {
       title: t('product'),
       links: [
-        { title: "Image to Video", href: "/image-to-video" },
-        { title: "Text to Video", href: "/text-to-video" },
-        { title: "Reference to Video", href: "/reference-to-video" },
-        { title: "Pricing", href: "/pricing" },
+        { title: isZh ? "图生视频" : "Image to Video", href: "/image-to-video" },
+        { title: isZh ? "文生视频" : "Text to Video", href: "/text-to-video" },
+        { title: isZh ? "参考图生视频" : "Reference to Video", href: "/reference-to-video" },
+        { title: isZh ? "价格" : "Pricing", href: "/pricing" },
       ],
     },
     // {
@@ -35,8 +36,8 @@ export function LandingFooter() {
       links: [
         { title: t('privacy'), href: "/privacy" },
         { title: t('terms'), href: "/terms" },
-        { title: locale === "zh" ? "退款政策" : "Refund Policy", href: "/refund-policy" },
-        { title: locale === "zh" ? "联系我们" : "Contact", href: "/contact" },
+        { title: isZh ? "退款政策" : "Refund Policy", href: "/refund-policy" },
+        { title: isZh ? "联系我们" : "Contact", href: "/contact" },
         // { title: t('cookie'), href: "/cookies" },
       ],
     },
@@ -57,7 +58,9 @@ export function LandingFooter() {
               🎬 aivd.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
-              Transform your ideas into stunning videos with AI.
+              {isZh
+                ? "用 AI 把文字和图片变成短视频。"
+                : "Turn text and images into short AI videos."}
             </p>
           </div>
 
@@ -89,9 +92,9 @@ export function LandingFooter() {
             {t('copyright', { year: currentYear })}
           </p>
           <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
-            Made with
+            {isZh ? "由 aivd.ai 团队" : "Made with"}
             <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            by aivd.ai Team
+            {isZh ? "用心打造" : "by the aivd.ai team"}
           </p>
         </div>
       </div>

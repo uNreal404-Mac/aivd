@@ -15,7 +15,7 @@
 
 "use client";
 
-import { Play, ArrowRight, Sparkles, Check, Users, Video } from "lucide-react";
+import { Play, ArrowRight, Sparkles, Check } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/components/ui";
@@ -242,46 +242,6 @@ export function ToolLandingPage({
                   </motion.div>
                 ))}
               </div>
-            </motion.div>
-          </BlurFade>
-        )}
-
-        {/* Stats Section (optional) */}
-        {landing.stats && (
-          <BlurFade delay={0.4} inView>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="grid grid-cols-3 gap-4 py-8"
-            >
-              {landing.stats.videosGenerated && (
-                <div className="text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-                    <Video className="h-5 w-5 text-blue-500" />
-                    {landing.stats.videosGenerated}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Videos Generated</div>
-                </div>
-              )}
-              {landing.stats.usersCount && (
-                <div className="text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-                    <Users className="h-5 w-5 text-purple-500" />
-                    {landing.stats.usersCount}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Happy Users</div>
-                </div>
-              )}
-              {landing.stats.avgRating && (
-                <div className="text-center space-y-1">
-                  <div className="text-2xl font-bold text-yellow-500">
-                    {landing.stats.avgRating} ★
-                  </div>
-                  <div className="text-xs text-muted-foreground">Average Rating</div>
-                </div>
-              )}
             </motion.div>
           </BlurFade>
         )}

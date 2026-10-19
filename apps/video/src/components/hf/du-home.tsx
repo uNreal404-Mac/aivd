@@ -223,7 +223,7 @@ export function DuHome({ lang }: { lang: string }) {
           header={CATEGORY_HEADER}
           action={
             <Link
-              href="#"
+              href={localizedHref(lang, "/explore")}
               className="text-sm text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-accent)]"
             >
               View all →

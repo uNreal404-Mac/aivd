@@ -52,21 +52,37 @@ export function NavBar({
         <div className="flex items-center space-x-3">
           {items?.length ? (
             <nav className="hidden gap-6 md:flex">
-              {items?.map((item, index) => (
-                <LocaleLink
-                  key={index}
-                  href={item.disabled ? "#" : item.href}
-                  className={cn(
-                    "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
-                    pathname.endsWith(item.href)
-                      ? "text-blue-500 font-semibold"
-                      : "",
-                    item.disabled && "cursor-not-allowed opacity-80",
-                  )}
-                >
-                  {item.title}
-                </LocaleLink>
-              ))}
+              {items?.map((item, index) =>
+                item.disabled ? (
+                  <span
+                    key={index}
+                    aria-disabled="true"
+                    className={cn(
+                      "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
+                      pathname.endsWith(item.href)
+                        ? "text-blue-500 font-semibold"
+                        : "",
+                      item.disabled && "cursor-not-allowed opacity-80",
+                    )}
+                  >
+                    {item.title}
+                  </span>
+                ) : (
+                  <LocaleLink
+                    key={index}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center text-lg font-medium transition-colors hover:text-foreground/80 sm:text-sm",
+                      pathname.endsWith(item.href)
+                        ? "text-blue-500 font-semibold"
+                        : "",
+                      item.disabled && "cursor-not-allowed opacity-80",
+                    )}
+                  >
+                    {item.title}
+                  </LocaleLink>
+                ),
+              )}
             </nav>
           ) : null}
 

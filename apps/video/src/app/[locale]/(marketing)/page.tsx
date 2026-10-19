@@ -22,13 +22,13 @@ export async function generateMetadata({ params }: PageMetadataProps) {
   const { locale } = await params;
 
   const titles = {
-    en: "AI Video Generator - Create Stunning Videos with Sora 2 & Veo 3.1",
-    zh: "AI视频生成器 - 使用Sora 2和Veo 3.1创建精彩视频",
+    en: "AI Video Generator – Text & Image to Video with Seedance 1.5 Pro",
+    zh: "AI 视频生成器 – 用 Seedance 1.5 Pro 文字、图片生成视频",
   };
 
   const descriptions = {
-    en: "Transform your ideas into stunning videos with AI. Access Sora 2, Veo 3.1, Wan 2.6, and more. Fast, easy, and professional quality video generation in minutes. Start creating today!",
-    zh: "用AI将您的想法转化为精彩视频。访问Sora 2、Veo 3.1、Wan 2.6等模型。快速、简单、专业品质的视频生成，几分钟内完成。立即开始创作！",
+    en: "Turn a prompt or a photo into a short AI video with Seedance 1.5 Pro. Text-to-video and image-to-video in your browser, pay with credits, no editing skills needed.",
+    zh: "用 Seedance 1.5 Pro 把一句描述或一张图片变成 AI 短视频。浏览器里直接文生视频、图生视频，按积分付费，无需剪辑基础。",
   };
 
   const canonicalUrl = `${siteConfig.url}${locale === i18n.defaultLocale ? "" : `/${locale}`}`;
