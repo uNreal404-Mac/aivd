@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { afterAll } from "vitest";
 import { getPlatformProxy } from "wrangler";
@@ -17,17 +17,27 @@ const platform = await getPlatformProxy<{ DB: D1Binding }>({
   persist: false,
 });
 
-const migration = await readFile(
-  path.resolve(process.cwd(), "src/db/migrations/0000_d1_initial.sql"),
-  "utf8"
-);
-for (const statement of migration.split("--> statement-breakpoint")) {
-  const sql = statement.trim();
-  if (sql) await platform.env.DB.prepare(sql).run();
+const migrationsDir = path.resolve(process.cwd(), "src/db/migrations");
+const migrationFiles = (await readdir(migrationsDir))
+  .filter((file) => file.endsWith(".sql"))
+  .sort();
+
+if (migrationFiles.length === 0) {
+  throw new Error(`No migration files found in ${migrationsDir}`);
 }
+
+for (const file of migrationFiles) {
+  const migration = await readFile(path.join(migrationsDir, file), "utf8");
+  for (const statement of migration.split("--> statement-breakpoint")) {
+    const trimmed = statement.trim();
+    if (trimmed) await platform.env.DB.prepare(trimmed).run();
+  }
+}
+
 globalThis.__D1_TEST_DB__ = platform.env.DB;
 
 afterAll(async () => {
   globalThis.__D1_TEST_DB__ = undefined;
   await platform.dispose();
 });
+

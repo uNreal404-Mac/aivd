@@ -1,7 +1,16 @@
+import type Stripe from "stripe";
+import { eq } from "drizzle-orm";
+
 import { getProductById, getProductExpiryDays } from "@/config/credits";
+import { db, stripeWebhookEvents } from "@/db";
 import { CreditTransType, creditService } from "@/services/credit";
 
-import type { GrantCreditsOnce } from "@/payment/stripe-webhook";
+import type {
+  FindOrderNoForPaymentIntent,
+  GrantCreditsOnce,
+  RevokeCreditsForOrder,
+  WebhookEventStore,
+} from "@/payment/stripe-webhook";
 
 /**
  * Grants credits exactly once per `orderNo`.
@@ -36,3 +45,64 @@ export const grantCreditsOnce: GrantCreditsOnce = async ({
 
   return result.created ? "granted" : "duplicate";
 };
+
+/**
+ * Revokes credits for a refunded/disputed order. Idempotent per
+ * `revokeOrderNo` (unique index on `credit_transactions.order_no`).
+ */
+export const revokeCreditsForOrder: RevokeCreditsForOrder = async ({
+  orderNo,
+  revokeOrderNo,
+  ratio,
+  reason,
+}) => {
+  const result = await creditService.revokeForOrder({
+    orderNo,
+    revokeOrderNo,
+    ratio,
+    remark: `Stripe ${reason}: ${orderNo}`,
+  });
+  return result.status;
+};
+
+/**
+ * D1-backed processed-event store. `event_id` is the primary key, so
+ * `onConflictDoNothing` makes concurrent deliveries safe.
+ */
+export const d1WebhookEventStore: WebhookEventStore = {
+  async isProcessed(eventId) {
+    const [row] = await db
+      .select({ eventId: stripeWebhookEvents.eventId })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, eventId))
+      .limit(1);
+    return Boolean(row);
+  },
+  async markProcessed({ eventId, type, livemode, result }) {
+    await db
+      .insert(stripeWebhookEvents)
+      .values({ eventId, type, livemode, result })
+      .onConflictDoNothing({ target: stripeWebhookEvents.eventId });
+  },
+};
+
+/**
+ * Maps a Stripe PaymentIntent id back to the `orderNo` we use for grants
+ * (`stripe_<checkout session id>`), by listing checkout sessions for the
+ * payment intent.
+ *
+ * @see https://docs.stripe.com/api/checkout/sessions/list (param `payment_intent`)
+ */
+export function createFindOrderNoForPaymentIntent(
+  stripe: Stripe
+): FindOrderNoForPaymentIntent {
+  return async (paymentIntentId) => {
+    const list = await stripe.checkout.sessions.list({
+      payment_intent: paymentIntentId,
+      limit: 1,
+    });
+    const session = list.data[0];
+    return session ? `stripe_${session.id}` : null;
+  };
+}
+

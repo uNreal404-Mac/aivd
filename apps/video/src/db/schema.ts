@@ -240,6 +240,18 @@ export const creditTransactions = sqliteTable(
   ]
 );
 
+export const stripeWebhookEvents = sqliteTable(
+  "stripe_webhook_events",
+  {
+    eventId: text("event_id").primaryKey(),
+    type: text("type").notNull(),
+    livemode: boolean("livemode").default(false).notNull(),
+    result: text("result"),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+  },
+  (table) => [index("stripe_webhook_events_type_idx").on(table.type)]
+);
+
 export const videos = sqliteTable(
   "videos",
   {
@@ -299,6 +311,7 @@ export type BetterAuthUser = typeof users.$inferSelect;
 export type CreditPackage = typeof creditPackages.$inferSelect;
 export type CreditHold = typeof creditHolds.$inferSelect;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type Video = typeof videos.$inferSelect;
 
 export const SubscriptionPlan = {
@@ -337,3 +350,4 @@ export const VideoStatus = {
   FAILED: "FAILED",
 } as const;
 export type VideoStatus = (typeof VideoStatus)[keyof typeof VideoStatus];
+

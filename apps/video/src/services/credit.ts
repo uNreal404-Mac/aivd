@@ -390,6 +390,104 @@ export class CreditService {
   }
 
   /**
+   * 撤销某个订单已发放的积分（Stripe 退款/拒付时调用）。
+   *
+   * 幂等键为 `revokeOrderNo`（每次退款/拒付事件唯一），重复调用返回
+   * `duplicate`，因此 Stripe webhook 重试是安全的。
+   *
+   * `ratio` 表示要撤销的初始积分比例（clamp 到 [0,1]）：1 表示撤销全部初始
+   * 积分，0.5 表示撤销一半（部分退款）。累计撤销不会超过初始积分，也不会
+   * 低于积分包的剩余积分（即不会撤销已被消耗的积分）。
+   */
+  async revokeForOrder(params: {
+    orderNo: string;
+    revokeOrderNo: string;
+    ratio: number;
+    remark?: string;
+  }): Promise<{
+    status: "revoked" | "duplicate" | "not_found" | "nothing_to_revoke";
+    credits: number;
+  }> {
+    const [pkg] = await db
+      .select()
+      .from(creditPackages)
+      .where(eq(creditPackages.orderNo, params.orderNo))
+      .limit(1);
+    if (!pkg) {
+      return { status: "not_found", credits: 0 };
+    }
+
+    const [existingRevoke] = await db
+      .select({ id: creditTransactions.id })
+      .from(creditTransactions)
+      .where(eq(creditTransactions.orderNo, params.revokeOrderNo))
+      .limit(1);
+    if (existingRevoke) {
+      return { status: "duplicate", credits: 0 };
+    }
+
+    const ratio = Math.min(1, Math.max(0, params.ratio));
+    const target =
+      ratio >= 1 ? pkg.initialCredits : Math.floor(pkg.initialCredits * ratio);
+
+    const [revokedSum] = await db
+      .select({
+        total: sql<number>`coalesce(sum(${creditTransactions.credits}), 0)`,
+      })
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.packageId, pkg.id),
+          eq(creditTransactions.transType, CreditTransType.REFUND)
+        )
+      );
+    const alreadyRevoked = -Number(revokedSum?.total ?? 0);
+
+    const delta = Math.min(
+      target - alreadyRevoked,
+      pkg.remainingCredits
+    );
+    if (delta <= 0) {
+      return { status: "nothing_to_revoke", credits: 0 };
+    }
+
+    const balance = await this.getBalanceInTx(db, pkg.userId);
+
+    try {
+      await db.batch(
+        [
+          db.insert(creditTransactions).values({
+            transNo: `TXN${Date.now()}${nanoid(6)}`,
+            userId: pkg.userId,
+            transType: CreditTransType.REFUND,
+            credits: -delta,
+            balanceAfter: balance.availableCredits - delta,
+            packageId: pkg.id,
+            orderNo: params.revokeOrderNo,
+            remark: params.remark,
+          }),
+          db
+            .update(creditPackages)
+            .set({
+              remainingCredits: sql`max(0, ${creditPackages.remainingCredits} - ${delta})`,
+              updatedAt: new Date(),
+            })
+            .where(eq(creditPackages.id, pkg.id)),
+        ] as unknown as Parameters<typeof db.batch>[0]
+      );
+    } catch (error) {
+      // Concurrent deliveries of the same revokeOrderNo race on the unique
+      // index; the second one is a duplicate, not an error.
+      if (isConstraintError(error)) {
+        return { status: "duplicate", credits: 0 };
+      }
+      throw error;
+    }
+
+    return { status: "revoked", credits: delta };
+  }
+
+  /**
    * 新用户赠送积分
    * - 幂等性：通过 transType=NEW_USER 检查防止重复发放
    * - 配置：在 src/config/pricing-user.ts 中统一管理
@@ -551,3 +649,4 @@ export class CreditService {
 }
 
 export const creditService = new CreditService();
+

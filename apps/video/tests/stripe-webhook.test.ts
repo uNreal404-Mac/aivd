@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import Stripe from "stripe";
 import {
   handleStripeWebhook,
+  type FindOrderNoForPaymentIntent,
   type GrantCreditsOnce,
+  type RevokeCreditsForOrder,
+  type WebhookEventStore,
 } from "@/payment/stripe-webhook";
 
 const stripe = new Stripe("sk_test_dummy", {
@@ -35,11 +38,64 @@ function createIdempotentGranter(creditsPerGrant = 100) {
   return { grantCreditsOnce, state };
 }
 
+/** In-memory processed-event store. */
+function createMemoryEventStore() {
+  const processed = new Map<
+    string,
+    { type: string; livemode: boolean; result: string }
+  >();
+
+  const store: WebhookEventStore = {
+    async isProcessed(eventId) {
+      return processed.has(eventId);
+    },
+    async markProcessed(args) {
+      processed.set(args.eventId, {
+        type: args.type,
+        livemode: args.livemode,
+        result: args.result,
+      });
+    },
+  };
+
+  return { store, processed };
+}
+
+interface RevokeCall {
+  orderNo: string;
+  revokeOrderNo: string;
+  ratio: number;
+  reason: "refund" | "dispute";
+}
+
+function createRevokeRecorder(
+  result: "revoked" | "duplicate" | "not_found" | "nothing_to_revoke" =
+    "revoked"
+) {
+  const calls: RevokeCall[] = [];
+  const revokeCreditsForOrder: RevokeCreditsForOrder = async (args) => {
+    calls.push(args);
+    return result;
+  };
+  return { revokeCreditsForOrder, calls };
+}
+
+function fixedFinder(orderNo: string | null): FindOrderNoForPaymentIntent {
+  return async () => orderNo;
+}
+
+interface DeliverOptions {
+  allowLivemode?: boolean;
+  eventStore?: WebhookEventStore;
+  revokeCreditsForOrder?: RevokeCreditsForOrder;
+  findOrderNoForPaymentIntent?: FindOrderNoForPaymentIntent;
+}
+
 async function deliver(
   event: unknown,
   signature: string | null,
   grantCreditsOnce: GrantCreditsOnce,
-  options: { allowLivemode?: boolean } = {}
+  options: DeliverOptions = {}
 ) {
   const payload = JSON.stringify(event);
   return handleStripeWebhook({
@@ -49,6 +105,9 @@ async function deliver(
     stripe,
     grantCreditsOnce,
     allowLivemode: options.allowLivemode === true,
+    eventStore: options.eventStore,
+    revokeCreditsForOrder: options.revokeCreditsForOrder,
+    findOrderNoForPaymentIntent: options.findOrderNoForPaymentIntent,
   });
 }
 
@@ -104,6 +163,63 @@ function invoicePaidEvent(
         subscription_details: {
           metadata: { userId: "user_1", productId: "pro-monthly" },
         },
+      },
+    },
+  };
+}
+
+function chargeRefundedEvent(
+  id: string,
+  opts: {
+    amount?: number;
+    amountRefunded?: number;
+    paymentIntent?: string | null;
+  } = {}
+) {
+  return {
+    id,
+    object: "event",
+    api_version: "2024-06-20",
+    created: 1_700_000_000,
+    livemode: false,
+    pending_webhooks: 1,
+    request: { id: null, idempotency_key: null },
+    type: "charge.refunded",
+    data: {
+      object: {
+        id: "ch_test_123",
+        object: "charge",
+        amount: opts.amount ?? 1000,
+        amount_refunded: opts.amountRefunded ?? 1000,
+        payment_intent:
+          opts.paymentIntent === undefined ? "pi_test_123" : opts.paymentIntent,
+      },
+    },
+  };
+}
+
+function disputeEvent(
+  id: string,
+  disputeId: string,
+  type: string,
+  opts: { paymentIntent?: string | null; status?: string } = {}
+) {
+  return {
+    id,
+    object: "event",
+    api_version: "2024-06-20",
+    created: 1_700_000_000,
+    livemode: false,
+    pending_webhooks: 1,
+    request: { id: null, idempotency_key: null },
+    type,
+    data: {
+      object: {
+        id: disputeId,
+        object: "dispute",
+        status: opts.status ?? "needs_response",
+        payment_intent:
+          opts.paymentIntent === undefined ? "pi_test_123" : opts.paymentIntent,
       },
     },
   };
@@ -264,3 +380,164 @@ describe("handleStripeWebhook", () => {
     expect(state.granted).toBe(1);
   });
 });
+
+describe("handleStripeWebhook event store", () => {
+  it("short-circuits a replayed event id without calling handlers", async () => {
+    const { grantCreditsOnce, state } = createIdempotentGranter();
+    const { store, processed } = createMemoryEventStore();
+    const event = checkoutSessionEvent("evt_replay");
+    const signature = sign(JSON.stringify(event));
+
+    const first = await deliver(event, signature, grantCreditsOnce, {
+      eventStore: store,
+    });
+    const second = await deliver(event, signature, grantCreditsOnce, {
+      eventStore: store,
+    });
+
+    expect(first.body).toEqual({ received: true, result: "granted" });
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual({ received: true, duplicate: true });
+    expect(state.calls).toBe(1);
+    expect(state.granted).toBe(1);
+    expect(state.credits).toBe(100);
+    expect(await store.isProcessed("evt_replay")).toBe(true);
+    expect(processed.has("evt_replay")).toBe(true);
+  });
+
+  it("propagates handler errors and does not mark the event processed", async () => {
+    const { store } = createMemoryEventStore();
+    const grantCreditsOnce: GrantCreditsOnce = async () => {
+      throw new Error("boom");
+    };
+    const event = checkoutSessionEvent("evt_boom");
+    const payload = JSON.stringify(event);
+
+    await expect(
+      deliver(event, sign(payload), grantCreditsOnce, { eventStore: store })
+    ).rejects.toThrow("boom");
+
+    expect(await store.isProcessed("evt_boom")).toBe(false);
+  });
+});
+
+describe("handleStripeWebhook refunds and disputes", () => {
+  it("revokes all credits for a full charge.refunded", async () => {
+    const { grantCreditsOnce } = createIdempotentGranter();
+    const { revokeCreditsForOrder, calls } = createRevokeRecorder();
+    const event = chargeRefundedEvent("evt_refund_full", {
+      amount: 1000,
+      amountRefunded: 1000,
+    });
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: fixedFinder("stripe_cs_test_123"),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, result: "revoked" });
+    expect(calls).toEqual([
+      {
+        orderNo: "stripe_cs_test_123",
+        revokeOrderNo: "stripe_refund_evt_refund_full",
+        ratio: 1,
+        reason: "refund",
+      },
+    ]);
+  });
+
+  it("passes a partial refund ratio through to revocation", async () => {
+    const { grantCreditsOnce } = createIdempotentGranter();
+    const { revokeCreditsForOrder, calls } = createRevokeRecorder();
+    const event = chargeRefundedEvent("evt_refund_half", {
+      amount: 1000,
+      amountRefunded: 500,
+    });
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: fixedFinder("stripe_cs_test_456"),
+    });
+
+    expect(res.body).toEqual({ received: true, result: "revoked" });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual({
+      orderNo: "stripe_cs_test_456",
+      revokeOrderNo: "stripe_refund_evt_refund_half",
+      ratio: 0.5,
+      reason: "refund",
+    });
+  });
+
+  it("ignores a refund when the payment intent cannot be matched", async () => {
+    const { grantCreditsOnce } = createIdempotentGranter();
+    const { revokeCreditsForOrder, calls } = createRevokeRecorder();
+    const event = chargeRefundedEvent("evt_refund_unmatched");
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: fixedFinder(null),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, ignored: "unmatched_payment" });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("revokes all credits when a dispute is created", async () => {
+    const { grantCreditsOnce } = createIdempotentGranter();
+    const { revokeCreditsForOrder, calls } = createRevokeRecorder();
+    const event = disputeEvent(
+      "evt_dispute_created",
+      "dp_test_1",
+      "charge.dispute.created"
+    );
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: fixedFinder("stripe_cs_test_789"),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, result: "revoked" });
+    expect(calls).toEqual([
+      {
+        orderNo: "stripe_cs_test_789",
+        revokeOrderNo: "stripe_dispute_dp_test_1",
+        ratio: 1,
+        reason: "dispute",
+      },
+    ]);
+  });
+
+  it("logs dispute closures without revoking credits", async () => {
+    const { grantCreditsOnce } = createIdempotentGranter();
+    const { revokeCreditsForOrder, calls } = createRevokeRecorder();
+    const event = disputeEvent(
+      "evt_dispute_closed",
+      "dp_test_2",
+      "charge.dispute.closed",
+      { status: "won" }
+    );
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: fixedFinder("stripe_cs_test_789"),
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      received: true,
+      ignored: "dispute_logged",
+      status: "won",
+    });
+    expect(calls).toHaveLength(0);
+  });
+});
+

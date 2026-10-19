@@ -4,7 +4,12 @@ import {
   createStripeClient,
   getUsableStripeKey,
 } from "@/payment/stripe-checkout";
-import { grantCreditsOnce } from "@/payment/stripe-fulfillment";
+import {
+  createFindOrderNoForPaymentIntent,
+  d1WebhookEventStore,
+  grantCreditsOnce,
+  revokeCreditsForOrder,
+} from "@/payment/stripe-fulfillment";
 import { handleStripeWebhook } from "@/payment/stripe-webhook";
 
 const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
@@ -30,13 +35,19 @@ export const POST = async (req: NextRequest) => {
     const payload = await req.text();
     const signature = req.headers.get("stripe-signature");
 
+    // One client per request, shared by verification and lookups.
+    const stripe = createStripeClient(keyResult.key);
+
     const result = await handleStripeWebhook({
       payload,
       signature,
       webhookSecret,
-      stripe: createStripeClient(keyResult.key),
+      stripe,
       allowLivemode: keyResult.mode === "live",
       grantCreditsOnce,
+      eventStore: d1WebhookEventStore,
+      revokeCreditsForOrder,
+      findOrderNoForPaymentIntent: createFindOrderNoForPaymentIntent(stripe),
     });
 
     return NextResponse.json(result.body, { status: result.status });
@@ -47,3 +58,4 @@ export const POST = async (req: NextRequest) => {
     return NextResponse.json({ error: "webhook_failed" }, { status: 500 });
   }
 };
+
