@@ -30,8 +30,9 @@
   "observability": {
     "enabled": true
   },
-  // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, CALLBACK_HMAC_SECRET, STRIPE_SECRET_KEY
-  // (sk_test_/rk_test_) and STRIPE_WEBHOOK_SECRET are secrets.
+  // KIE_API_KEY, FAL_KEY, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY,
+  // CALLBACK_HMAC_SECRET, STRIPE_SECRET_KEY (sk_test_/rk_test_) and
+  // STRIPE_WEBHOOK_SECRET are secrets.
   // Set them with `wrangler secret put <NAME>` — never commit them to this file.
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://aivd-preview.pages.dev",
@@ -40,6 +41,7 @@
     "NEXT_PUBLIC_IS_PREVIEW": "true",
     "NEXT_PUBLIC_NOINDEX": "true",
     "VIDEO_GENERATION_ENABLED": "false",
+    "DEFAULT_AI_PROVIDER": "kie",
     "NEXT_PUBLIC_BILLING_PROVIDER": "stripe",
     "NEXT_PUBLIC_PAYMENTS_ENABLED": "true",
     "STRIPE_LIVE_MODE": "false",
