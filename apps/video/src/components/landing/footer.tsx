@@ -54,7 +54,7 @@ export function LandingFooter() {
               href="/"
               className="flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
             >
-              🎬 aidv.ai
+              🎬 aivd.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
               Transform your ideas into stunning videos with AI.
@@ -91,7 +91,7 @@ export function LandingFooter() {
           <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
             Made with
             <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            by aidv.ai Team
+            by aivd.ai Team
           </p>
         </div>
       </div>

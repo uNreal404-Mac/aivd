@@ -5,10 +5,10 @@ const STRIPE_SECRET_KEY_VAR = "STRIPE_SECRET_KEY";
 const STRIPE_LIVE_MODE_VAR = "STRIPE_LIVE_MODE";
 
 /** Site identifier attached to all checkout metadata. */
-export const CHECKOUT_SITE_ID = "aidv.ai";
+export const CHECKOUT_SITE_ID = "aivd.ai";
 
 /** Statement descriptor suffix (card payments only, max 22 chars). */
-export const STATEMENT_DESCRIPTOR_SUFFIX = "AIDV";
+export const STATEMENT_DESCRIPTOR_SUFFIX = "AIVD";
 
 /**
  * Read the Stripe secret key from a (possibly injected) environment object.
@@ -95,9 +95,9 @@ export function createStripeClient(secretKey: string): Stripe {
  * Human-readable product description shown on the Stripe Checkout page.
  *
  * Examples:
- * - one-time: "100 credits for AI video generation on aidv.ai"
- * - monthly: "1,000 credits per month for AI video generation on aidv.ai"
- * - yearly: "1,000 credits per year for AI video generation on aidv.ai"
+ * - one-time: "100 credits for AI video generation on aivd.ai"
+ * - monthly: "1,000 credits per month for AI video generation on aivd.ai"
+ * - yearly: "1,000 credits per year for AI video generation on aivd.ai"
  */
 export function describeProduct(product: CreditPackageConfig): string {
   const credits = product.credits.toLocaleString("en-US");

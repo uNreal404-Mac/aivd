@@ -1,4 +1,4 @@
-const CALLBACK_ORIGIN = "https://aidv.ai";
+const CALLBACK_ORIGIN = "https://aivd.ai";
 
 /**
  * Keep auth callbacks on this site and within a relative path.

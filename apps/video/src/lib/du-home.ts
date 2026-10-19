@@ -1,5 +1,5 @@
 /**
- * Data for the aidv.ai homepage (see spec.md, apps/video).
+ * Data for the aivd.ai homepage (see spec.md, apps/video).
  * Locale-free hrefs only (see "Allowed hrefs"); prefix with localizedHref().
  */
 
@@ -67,7 +67,7 @@ export const HERO = {
   titleLead: "Bring stories",
   titleAccent: "to life.",
   subtitle:
-    "aidv.ai turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
+    "aivd.ai turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
   ctas: [
     {
       label: "Start Creating",

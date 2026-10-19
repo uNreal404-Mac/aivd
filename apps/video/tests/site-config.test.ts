@@ -18,9 +18,9 @@ describe("preview site configuration", () => {
   });
 
   it("uses the localized preview title", () => {
-    expect(getSiteTitle("zh", true)).toBe("aidv.ai 预览站");
-    expect(getSiteTitle("en", true)).toBe("aidv.ai Preview");
-    expect(getSiteTitle("en", false)).toBe("aidv.ai");
+    expect(getSiteTitle("zh", true)).toBe("aivd.ai 预览站");
+    expect(getSiteTitle("en", true)).toBe("aivd.ai Preview");
+    expect(getSiteTitle("en", false)).toBe("aivd.ai");
   });
 
   it("only exposes a trimmed support email when the environment provides one", () => {

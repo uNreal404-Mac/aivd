@@ -59,10 +59,10 @@ export default async function LoginPage({
             className="mx-auto"
             width="64"
             height="64"
-            alt="aidv.ai Logo - AI Video Generation Platform"
+            alt="aivd.ai Logo - AI Video Generation Platform"
           />
           <div className="flex items-center justify-center gap-2 text-sm font-medium">
-            <span>aidv.ai</span>
+            <span>aivd.ai</span>
             <PreviewBadge />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
