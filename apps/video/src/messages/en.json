@@ -634,5 +634,28 @@
       "modelUnavailable": "The original model {model} is not available. Please choose an alternative model.",
       "needsOwnImage": "Upload your own image — the author's source image is private."
     }
+  },
+  "GenerationQueue": {
+    "title": "Generation queue",
+    "queued": "Queued",
+    "generating": "Generating",
+    "completed": "Completed",
+    "failed": "Failed",
+    "stalled": "Still generating",
+    "queuedHint": "Sending your request…",
+    "generatingPercent": "Generating {percent}%",
+    "etaEstimated": "Estimated ~{seconds}s left",
+    "almostDone": "Taking a little longer than estimated — almost done.",
+    "noEstimate": "No reliable time estimate for this model yet.",
+    "completedNoUrl": "Your video is ready, but the link is not available yet.",
+    "download": "Download",
+    "failedTitle": "Generation failed",
+    "creditsRefunded": "Credits returned",
+    "stalledHint": "Still generating — check My creations.",
+    "dismiss": "Dismiss",
+    "toastCompleted": "Your video is ready",
+    "toastFailed": "Generation failed",
+    "parallelHint": "{count} generations running",
+    "parallelLimit": "You can run up to {max} generations at once. Wait for one to finish."
   }
 }

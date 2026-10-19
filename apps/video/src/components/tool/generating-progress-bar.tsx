@@ -1,27 +1,51 @@
 /**
  * Generating Progress Bar
  *
- * 虚拟进度条组件（无百分比/时间显示）
- * - 无限循环动画
- * - 紫色主题
+ * - `percent` number  → determinate bar driven by the queue estimate
+ * - `percent` missing → looping indeterminate animation
  */
+
+"use client";
 
 import { cn } from "@/components/ui";
 
 export function GeneratingProgressBar({
   className,
+  percent,
+  label,
 }: {
   className?: string;
+  percent?: number | null;
+  label?: string;
 }) {
+  const value =
+    typeof percent === "number"
+      ? Math.min(100, Math.max(0, Math.round(percent)))
+      : null;
+
   return (
     <div className={cn("w-full", className)}>
-      {/* 进度条容器 */}
-      <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-        {/* 动画进度条 */}
-        <div className="h-full bg-purple-500 rounded-full animate-[loading_2s_ease-in-out_infinite]" />
+      {/* Native element for assistive tech; the styled bar below is visual. */}
+      <progress
+        className="sr-only"
+        max={100}
+        value={value ?? undefined}
+        aria-label={label}
+      />
+      <div
+        className="h-1 w-full overflow-hidden rounded-full bg-[var(--du-surface-2)]"
+        aria-hidden="true"
+      >
+        {value !== null ? (
+          <div
+            className="h-full rounded-full bg-[var(--du-accent)] transition-[width] duration-700"
+            style={{ width: `${value}%` }}
+          />
+        ) : (
+          <div className="h-full rounded-full bg-[var(--du-accent)] animate-[loading_2s_ease-in-out_infinite]" />
+        )}
       </div>
 
-      {/* CSS 动画定义 */}
       <style jsx>{`
         @keyframes loading {
           0% {

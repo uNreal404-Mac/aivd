@@ -634,5 +634,28 @@
       "modelUnavailable": "原模型 {model} 已不可用，请选择其他模型。",
       "needsOwnImage": "请上传你自己的图片 —— 作者的源图片是私密的。"
     }
+  },
+  "GenerationQueue": {
+    "title": "生成队列",
+    "queued": "排队中",
+    "generating": "生成中",
+    "completed": "已完成",
+    "failed": "失败",
+    "stalled": "仍在生成",
+    "queuedHint": "正在提交请求…",
+    "generatingPercent": "生成中 {percent}%",
+    "etaEstimated": "预计还需约 {seconds} 秒",
+    "almostDone": "比预计稍久一些，快好了。",
+    "noEstimate": "该模型暂无可用的时间预估。",
+    "completedNoUrl": "视频已完成，但链接暂不可用。",
+    "download": "下载",
+    "failedTitle": "生成失败",
+    "creditsRefunded": "积分已退回",
+    "stalledHint": "仍在生成——请到“我的作品”查看。",
+    "dismiss": "关闭",
+    "toastCompleted": "视频已生成",
+    "toastFailed": "生成失败",
+    "parallelHint": "正在生成 {count} 个任务",
+    "parallelLimit": "最多可同时生成 {max} 个任务，请等待其中一个完成。"
   }
 }

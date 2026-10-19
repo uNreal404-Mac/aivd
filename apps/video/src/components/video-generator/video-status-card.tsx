@@ -1,102 +1,245 @@
 "use client";
 
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Download,
+  Loader2,
+  X,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+
+import { GeneratingProgressBar } from "@/components/tool/generating-progress-bar";
 import { cn } from "@/components/ui";
+import { I2V_MODELS } from "@/lib/image-to-video";
+import {
+  estimateProgress,
+  taskPhase,
+  type QueuePhase,
+  type VideoTask,
+} from "@/lib/video-task-storage";
 
 interface VideoStatusCardProps {
-  status: string;
-  videoUrl?: string;
-  error?: string;
+  task: VideoTask;
+  now: number;
+  onDismiss?: (videoId: string) => void;
+  className?: string;
 }
 
+function modelLabel(model?: string): string | null {
+  if (!model) {
+    return null;
+  }
+  return I2V_MODELS.find((option) => option.id === model)?.label ?? model;
+}
+
+function aspectClass(aspectRatio?: string): string {
+  switch (aspectRatio) {
+    case "16:9":
+      return "aspect-video";
+    case "9:16":
+      return "aspect-[9/16] max-h-[420px] mx-auto";
+    case "1:1":
+      return "aspect-square";
+    default:
+      return "aspect-video";
+  }
+}
+
+const BADGE_CLASS: Record<QueuePhase, string> = {
+  queued: "text-[var(--du-text-muted)]",
+  generating:
+    "text-[var(--du-accent-text)] bg-[var(--du-accent-soft)]",
+  completed: "text-[var(--du-success)]",
+  failed: "text-[var(--du-danger)]",
+  stalled: "text-[var(--du-warning)]",
+};
+
+const CHIP_CLASS =
+  "rounded-full border border-[var(--du-border)] px-2.5 py-1 text-xs text-[var(--du-text-muted)]";
+
 export function VideoStatusCard({
-  status,
-  videoUrl,
-  error,
+  task,
+  now,
+  onDismiss,
+  className,
 }: VideoStatusCardProps) {
-  const statusConfig = {
-    PENDING: { label: "Pending", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-    GENERATING: { label: "Generating", color: "text-blue-500", bg: "bg-blue-500/10" },
-    UPLOADING: { label: "Uploading", color: "text-purple-500", bg: "bg-purple-500/10" },
-    COMPLETED: { label: "Completed", color: "text-green-500", bg: "bg-green-500/10" },
-    FAILED: { label: "Failed", color: "text-red-500", bg: "bg-red-500/10" },
+  const t = useTranslations("GenerationQueue");
+  const phase = taskPhase(task);
+
+  const badgeLabels: Record<QueuePhase, string> = {
+    queued: t("queued"),
+    generating: t("generating"),
+    completed: t("completed"),
+    failed: t("failed"),
+    stalled: t("stalled"),
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+  const terminal =
+    phase === "completed" || phase === "failed" || phase === "stalled";
+
+  const progress =
+    phase === "generating"
+      ? estimateProgress(
+          {
+            phase,
+            model: task.model,
+            duration: task.duration,
+            createdAt: task.createdAt,
+            startedAt: task.startedAt,
+          },
+          now,
+        )
+      : null;
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 bg-card rounded-xl border">
-      <div className="space-y-4">
-        {/* Status Badge */}
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium">Generation Status</h3>
-          <span
-            className={cn(
-              "px-3 py-1 rounded-full text-sm font-medium",
-              config.bg,
-              config.color
-            )}
-          >
-            {config.label}
-          </span>
-        </div>
+    <article
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-4 text-[var(--du-text)]",
+        className,
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+            BADGE_CLASS[phase],
+          )}
+        >
+          {phase === "generating" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : phase === "completed" ? (
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : phase === "failed" ? (
+            <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          <span aria-live="polite">{badgeLabels[phase]}</span>
+        </span>
 
-        {/* Progress Indicator */}
-        {(status === "PENDING" || status === "GENERATING" || status === "UPLOADING") && (
-          <div className="space-y-2">
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn(
-                  "h-full rounded-full animate-pulse",
-                  status === "PENDING" && "w-1/4 bg-yellow-500",
-                  status === "GENERATING" && "w-1/2 bg-blue-500",
-                  status === "UPLOADING" && "w-3/4 bg-purple-500"
-                )}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {status === "PENDING" && "Waiting in queue..."}
-              {status === "GENERATING" && "AI is generating your video..."}
-              {status === "UPLOADING" && "Uploading to storage..."}
-            </p>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {status === "FAILED" && error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-sm text-red-500">{error}</p>
-          </div>
-        )}
-
-        {/* Video Player */}
-        {status === "COMPLETED" && videoUrl && (
-          <div className="space-y-3">
-            <video
-              src={videoUrl}
-              controls
-              className="w-full rounded-lg bg-black"
-              autoPlay
-              loop
-            />
-            <div className="flex gap-2">
-              <a
-                href={videoUrl}
-                download
-                className="flex-1 py-2 text-center text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                Download Video
-              </a>
-              <button
-                type="button"
-                onClick={() => navigator.clipboard.writeText(videoUrl)}
-                className="px-4 py-2 text-sm font-medium rounded-lg border hover:bg-muted transition-colors"
-              >
-                Copy URL
-              </button>
-            </div>
-          </div>
-        )}
+        {modelLabel(task.model) ? (
+          <span className={CHIP_CLASS}>{modelLabel(task.model)}</span>
+        ) : null}
+        {typeof task.duration === "number" ? (
+          <span className={CHIP_CLASS}>{`${task.duration}s`}</span>
+        ) : null}
+        {task.aspectRatio ? (
+          <span className={CHIP_CLASS}>{task.aspectRatio}</span>
+        ) : null}
       </div>
-    </div>
+
+      {task.prompt ? (
+        <p className="line-clamp-2 text-sm text-[var(--du-text-muted)]">
+          {task.prompt}
+        </p>
+      ) : null}
+
+      {phase === "queued" ? (
+        <div className="flex flex-col gap-2">
+          <GeneratingProgressBar label={badgeLabels.queued} />
+          <p className="text-xs text-[var(--du-text-muted)]">
+            {t("queuedHint")}
+          </p>
+        </div>
+      ) : null}
+
+      {phase === "generating" ? (
+        <div className="flex flex-col gap-2">
+          {progress && progress.percent !== null ? (
+            <>
+              <GeneratingProgressBar
+                percent={progress.percent}
+                label={badgeLabels.generating}
+              />
+              <p className="text-xs text-[var(--du-text-muted)]">
+                {t("generatingPercent", { percent: progress.percent })}
+              </p>
+              <p className="text-xs text-[var(--du-text-muted)]">
+                {progress.overdue
+                  ? t("almostDone")
+                  : progress.remainingSeconds !== null
+                    ? t("etaEstimated", { seconds: progress.remainingSeconds })
+                    : null}
+              </p>
+            </>
+          ) : (
+            <>
+              <GeneratingProgressBar label={badgeLabels.generating} />
+              <p className="text-xs text-[var(--du-text-muted)]">
+                {t("generating")}
+              </p>
+              <p className="text-xs text-[var(--du-text-muted)]">
+                {t("noEstimate")}
+              </p>
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {phase === "completed" ? (
+        task.videoUrl ? (
+          <div className="flex flex-col gap-2">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              src={task.videoUrl}
+              className={cn(
+                "w-full rounded-lg bg-[var(--du-surface-2)]",
+                aspectClass(task.aspectRatio),
+              )}
+            />
+            <a
+              href={task.videoUrl}
+              download
+              className="inline-flex w-fit items-center gap-1.5 rounded-md border border-[var(--du-border)] px-3 py-1.5 text-xs font-medium text-[var(--du-text)] hover:bg-[var(--du-surface-2)]"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("download")}
+            </a>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--du-text-muted)]">
+            {t("completedNoUrl")}
+          </p>
+        )
+      ) : null}
+
+      {phase === "failed" ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-medium text-[var(--du-danger)]">
+            {t("failedTitle")}
+          </p>
+          {task.errorMessage ? (
+            <p className="line-clamp-3 text-xs text-[var(--du-text-muted)]">
+              {task.errorMessage}
+            </p>
+          ) : null}
+          {task.creditsRefunded ? (
+            <p className="flex items-center gap-1.5 text-xs text-[var(--du-success)]">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              {t("creditsRefunded")}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {phase === "stalled" ? (
+        <p className="text-sm text-[var(--du-warning)]">{t("stalledHint")}</p>
+      ) : null}
+
+      {terminal ? (
+        <button
+          type="button"
+          onClick={() => onDismiss?.(task.videoId)}
+          className="inline-flex w-fit items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--du-text-muted)] hover:bg-[var(--du-surface-2)]"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+          {t("dismiss")}
+        </button>
+      ) : null}
+    </article>
   );
 }

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
+import { VideoStatusCard } from "@/components/video-generator/video-status-card";
+import { markTabDone, useGenerationQueue } from "@/hooks/use-video-polling";
+import { authClient } from "@/lib/auth/client";
 import {
   ALLOWED_TYPES,
   I2V_MODELS,
@@ -11,8 +16,6 @@ import {
   canSubmit,
   durationsFor,
   extractVideoUuid,
-  fetchJobStatus,
-  isTerminalJobState,
   newIdempotencyKey,
   normalizeSettings,
   submitImageToVideo,
@@ -20,14 +23,14 @@ import {
   validateImageFile,
   type I2VModelId,
 } from "@/lib/image-to-video";
+import type { VideoTask } from "@/lib/video-task-storage";
 
 const EMPTY_PLACEHOLDER = "/images/placeholders/i2v-empty.svg";
 
 const MAX_MB = Math.round(MAX_BYTES / (1024 * 1024));
 
-const POLL_INTERVAL_MS = 5_000;
-const JOB_CAP_MS = 15 * 60 * 1_000;
 const NO_UUID_LOCK_MS = 10_000;
+const MAX_PARALLEL_JOBS = 3;
 
 const PROMPT_TIPS = [
   "Describe the camera move, not only the subject.",
@@ -39,16 +42,38 @@ interface I2VStudioProps {
   generationEnabled: boolean;
 }
 
-interface ActiveJob {
-  uuid: string;
-  status: string;
+interface FingerprintInput {
+  model: string;
+  duration: number;
+  aspectRatio: string;
+  imageKey: string | null;
+  prompt: string;
+}
+
+function buildFingerprint(input: FingerprintInput): string {
+  return [
+    input.model,
+    String(input.duration),
+    input.aspectRatio,
+    input.imageKey ?? "",
+    input.prompt.trim(),
+  ].join("|");
 }
 
 export function I2VStudio({ generationEnabled }: I2VStudioProps) {
+  const t = useTranslations("GenerationQueue");
+
   const inputRef = useRef<HTMLInputElement>(null);
-  const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+  const idempotencyKeyRef = useRef<{ fingerprint: string | null; key: string }>(
+    {
+      fingerprint: null,
+      key: newIdempotencyKey(),
+    },
+  );
   const submittingRef = useRef(false);
   const noUuidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
@@ -70,9 +95,28 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [pendingLock, setPendingLock] = useState(false);
   const [noUuidLock, setNoUuidLock] = useState(false);
-  const [activeJob, setActiveJob] = useState<ActiveJob | null>(null);
-  const [jobVideoUrl, setJobVideoUrl] = useState<string | null>(null);
-  const [jobError, setJobError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    authClient
+      .getSession()
+      .then((session) => {
+        if (!active) {
+          return;
+        }
+        setUserId(session?.data?.user?.id ?? null);
+      })
+      .catch(() => {
+        if (active) {
+          setUserId(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -83,98 +127,53 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const job = activeJob;
-    if (!job) {
+  function idempotencyKeyFor(fingerprint: string): string {
+    const current = idempotencyKeyRef.current;
+    if (current.fingerprint === fingerprint) {
+      return current.key;
+    }
+    const key = newIdempotencyKey();
+    idempotencyKeyRef.current = { fingerprint, key };
+    return key;
+  }
+
+  function renewIdempotencyKey(fingerprint?: string) {
+    if (!fingerprint) {
+      idempotencyKeyRef.current = {
+        fingerprint: null,
+        key: newIdempotencyKey(),
+      };
       return;
     }
-    if (isTerminalJobState(job.status)) {
-      return;
+    if (idempotencyKeyRef.current.fingerprint === fingerprint) {
+      idempotencyKeyRef.current = { fingerprint, key: newIdempotencyKey() };
     }
+  }
 
-    const uuid = job.uuid;
-    const startedAt = Date.now();
-    let cancelled = false;
-    let finished = false;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const stopInterval = () => {
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    };
-
-    const capJob = () => {
-      if (cancelled || finished) {
-        return;
-      }
-      finished = true;
-      stopInterval();
+  const queue = useGenerationQueue({
+    userId,
+    onCompleted: (task: VideoTask) => {
+      const preview = (task.prompt ?? "").trim().slice(0, 60);
+      toast.success(
+        t("toastCompleted"),
+        preview.length > 0 ? { description: preview } : undefined,
+      );
+      markTabDone();
+      renewIdempotencyKey(task.fingerprint);
+    },
+    onFailed: (task: VideoTask) => {
+      toast.error(
+        t("toastFailed"),
+        task.creditsRefunded ? { description: t("creditsRefunded") } : undefined,
+      );
+      markTabDone();
+      renewIdempotencyKey(task.fingerprint);
+    },
+    onStalled: (task: VideoTask) => {
       setSubmitNotice("Still generating — check My creations.");
-      setActiveJob(null);
-      idempotencyKeyRef.current = newIdempotencyKey();
-    };
-
-    const poll = async () => {
-      if (cancelled || finished) {
-        return;
-      }
-
-      if (Date.now() - startedAt >= JOB_CAP_MS) {
-        capJob();
-        return;
-      }
-
-      const result = await fetchJobStatus(uuid);
-
-      if (cancelled || finished) {
-        return;
-      }
-
-      const status = result?.status;
-
-      if (typeof status === "string") {
-        if (status === "COMPLETED") {
-          finished = true;
-          stopInterval();
-          setActiveJob({ uuid, status });
-          setSubmitNotice("Done.");
-          setJobVideoUrl(result?.videoUrl ?? null);
-          setJobError(null);
-          idempotencyKeyRef.current = newIdempotencyKey();
-          return;
-        }
-
-        if (status === "FAILED") {
-          finished = true;
-          stopInterval();
-          setActiveJob({ uuid, status });
-          setSubmitNotice(null);
-          setJobError(result?.errorMessage ?? "Generation failed.");
-          idempotencyKeyRef.current = newIdempotencyKey();
-          return;
-        }
-
-        setActiveJob({ uuid, status });
-        setSubmitNotice(`Generating… (${status})`);
-      }
-
-      if (Date.now() - startedAt >= JOB_CAP_MS) {
-        capJob();
-      }
-    };
-
-    intervalId = setInterval(() => {
-      void poll();
-    }, POLL_INTERVAL_MS);
-    void poll();
-
-    return () => {
-      cancelled = true;
-      stopInterval();
-    };
-  }, [activeJob?.uuid]);
+      renewIdempotencyKey(task.fingerprint);
+    },
+  });
 
   function openPicker() {
     inputRef.current?.click();
@@ -262,11 +261,24 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
       return;
     }
 
-    if (activeJob && !isTerminalJobState(activeJob.status)) {
+    if (generationEnabled !== true || !imageKey || pendingLock || noUuidLock) {
       return;
     }
 
-    if (generationEnabled !== true || !imageKey || pendingLock || noUuidLock) {
+    const trimmedPrompt = prompt.trim();
+    const fingerprint = buildFingerprint({
+      model,
+      duration,
+      aspectRatio,
+      imageKey,
+      prompt,
+    });
+
+    if (queue.hasActiveFingerprint(fingerprint)) {
+      return;
+    }
+
+    if (queue.activeCount >= MAX_PARALLEL_JOBS) {
       return;
     }
 
@@ -274,21 +286,30 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     setSubmitting(true);
     setSubmitError(null);
     setSubmitNotice(null);
-    setJobVideoUrl(null);
-    setJobError(null);
+
+    const idempotencyKey = idempotencyKeyFor(fingerprint);
+    const localId = queue.enqueue({
+      prompt: trimmedPrompt,
+      model,
+      duration,
+      aspectRatio,
+      imageKey,
+      fingerprint,
+      userId: userId ?? undefined,
+    });
 
     try {
       const result = await submitImageToVideo(
         {
           model,
-          prompt: prompt.trim(),
+          prompt: trimmedPrompt,
           duration,
           aspectRatio,
           imageKey,
         },
         {
           enabled: generationEnabled,
-          idempotencyKey: idempotencyKeyRef.current,
+          idempotencyKey,
         },
       );
 
@@ -296,11 +317,11 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
         const videoUuid = extractVideoUuid(result.data);
 
         if (videoUuid) {
-          setActiveJob({ uuid: videoUuid, status: "PENDING" });
-          setSubmitNotice("Generating… (PENDING)");
+          queue.attach(localId, videoUuid);
         } else {
+          queue.drop(localId);
           setSubmitNotice("Submitted — your video is being generated.");
-          idempotencyKeyRef.current = newIdempotencyKey();
+          renewIdempotencyKey(fingerprint);
           setNoUuidLock(true);
           if (noUuidTimerRef.current) {
             clearTimeout(noUuidTimerRef.current);
@@ -311,12 +332,18 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           }, NO_UUID_LOCK_MS);
         }
       } else if (result.reason === "pending") {
+        if (result.videoUuid) {
+          queue.attach(localId, result.videoUuid);
+        } else {
+          queue.drop(localId);
+        }
         setSubmitNotice(result.message);
         setPendingLock(true);
       } else if (result.reason === "error") {
+        queue.drop(localId);
         setSubmitError(result.message);
         if (!result.retryable) {
-          idempotencyKeyRef.current = newIdempotencyKey();
+          renewIdempotencyKey(fingerprint);
         }
       }
     } finally {
@@ -326,14 +353,24 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   }
 
   const formReady = canSubmit({ imageKey, prompt, uploading });
-  const jobRunning = activeJob !== null && !isTerminalJobState(activeJob.status);
+  const currentFingerprint = buildFingerprint({
+    model,
+    duration,
+    aspectRatio,
+    imageKey,
+    prompt,
+  });
+  const sameRunning =
+    formReady && queue.hasActiveFingerprint(currentFingerprint);
+  const atCapacity = queue.activeCount >= MAX_PARALLEL_JOBS;
   const generateDisabled =
     !generationEnabled ||
     !formReady ||
     submitting ||
     pendingLock ||
     noUuidLock ||
-    jobRunning;
+    sameRunning ||
+    atCapacity;
 
   const dropzoneClassName = [
     "i2v-dropzone",
@@ -537,15 +574,15 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             disabled={generateDisabled}
             onClick={() => void handleGenerate()}
           >
-            {jobRunning ? (
-              <>
-                <span className="i2v-spinner" aria-hidden="true" />
-                <span>Generating…</span>
-              </>
-            ) : submitting ? (
+            {submitting ? (
               <>
                 <span className="i2v-spinner" aria-hidden="true" />
                 <span>Sending…</span>
+              </>
+            ) : sameRunning ? (
+              <>
+                <span className="i2v-spinner" aria-hidden="true" />
+                <span>Generating…</span>
               </>
             ) : generationEnabled ? (
               "Generate video"
@@ -553,6 +590,16 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
               "Generation is paused"
             )}
           </button>
+
+          {atCapacity ? (
+            <p className="i2v-help">
+              {t("parallelLimit", { max: MAX_PARALLEL_JOBS })}
+            </p>
+          ) : queue.activeCount > 0 ? (
+            <p className="i2v-help">
+              {t("parallelHint", { count: queue.activeCount })}
+            </p>
+          ) : null}
 
           {!generationEnabled ? (
             <p className="i2v-help">Video generation is not open yet.</p>
@@ -562,12 +609,8 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             <output>{submitNotice ?? ""}</output>
           </p>
 
-          {activeJob?.status === "COMPLETED" && jobVideoUrl ? (
-            <video controls src={jobVideoUrl} className="i2v-result" />
-          ) : null}
-
           <p className="i2v-error" role="alert">
-            {submitError ?? jobError ?? ""}
+            {submitError ?? ""}
           </p>
         </section>
       </div>
@@ -600,6 +643,24 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             )}
           </div>
         </div>
+
+        {queue.tasks.length > 0 ? (
+          <section className="i2v-queue" aria-labelledby="i2v-queue-title">
+            <h2 className="i2v-tips__title" id="i2v-queue-title">
+              {t("title")}
+            </h2>
+            <div className="flex flex-col gap-3">
+              {queue.tasks.map((task) => (
+                <VideoStatusCard
+                  key={task.videoId}
+                  task={task}
+                  now={queue.now}
+                  onDismiss={queue.dismiss}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="i2v-tips" aria-labelledby="i2v-tips-title">
           <h2 className="i2v-tips__title" id="i2v-tips-title">
