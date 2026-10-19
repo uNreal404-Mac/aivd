@@ -9,6 +9,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
+import { LocaleChange } from "@/components/locale-change";
 
 interface HfTopNavProps {
   user?: {
@@ -141,6 +142,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Gem className="h-4 w-4" />
             Pricing
           </Link>
+
+          <LocaleChange />
 
           {user ? (
             <Link
