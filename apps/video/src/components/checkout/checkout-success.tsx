@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { LegalLinks } from "@/components/legal/legal-links";
 import {
   POLL_INTERVAL_MS,
   classifyStatusResponse,
@@ -158,6 +159,22 @@ const STYLES = `
     text-decoration: none;
   }
   .co-link:hover {
+    color: var(--co-text);
+  }
+  .co-legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .co-legal a {
+    color: var(--co-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .co-legal a:hover {
     color: var(--co-text);
   }
   .co-spinner {
@@ -375,6 +392,7 @@ export default function CheckoutSuccess({
           <p className="co-notice">{copy.testModeNotice}</p>
         ) : null}
         {content}
+        <LegalLinks locale={lang} className="co-legal" />
       </section>
     </main>
   );

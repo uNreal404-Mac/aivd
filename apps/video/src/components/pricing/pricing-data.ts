@@ -83,7 +83,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "credits",
     question: "What are credits and how are they used?",
     answer:
-      "Credits are the single currency for every generation on DreamUtopia. Each video model has a fixed cost per second, so the number of clips you can render depends on the model, the duration and the resolution you pick. Your remaining balance is always visible before you press generate.",
+      "Credits are the single currency for every generation on aidv.ai. Each video model has a fixed cost per second, so the number of clips you can render depends on the model, the duration and the resolution you pick. Your remaining balance is always visible before you press generate.",
   },
   {
     id: "expiry",
@@ -100,7 +100,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "refunds",
     question: "What happens if a generation fails?",
     answer:
-      "If a generation fails, the credits reserved for it are released back to your balance automatically.",
+      "If a generation fails, the credits reserved for it are released back to your balance automatically. Unused credit packs can be refunded in USD under the Refund Policy.",
   },
   {
     id: "payment",
@@ -122,7 +122,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
     id: "credits",
     question: "什么是积分，如何使用？",
     answer:
-      "积分是 DreamUtopia 上所有生成的统一货币。每个视频模型按秒固定计费，因此你能渲染的片段数量取决于所选的模型、时长和分辨率。生成前始终可以看到剩余余额。",
+      "积分是 aidv.ai 上所有生成的统一货币。每个视频模型按秒固定计费，因此你能渲染的片段数量取决于所选的模型、时长和分辨率。生成前始终可以看到剩余余额。",
   },
   {
     id: "expiry",
@@ -137,7 +137,8 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   {
     id: "refunds",
     question: "如果生成失败会怎样？",
-    answer: "如果生成失败，为其预留的积分会自动返还到你的余额。",
+    answer:
+      "如果生成失败，为其预留的积分会自动返还到你的余额。未使用的积分包可按退款政策以美元（USD）申请退款。",
   },
   {
     id: "payment",
@@ -194,6 +195,10 @@ export interface PricingCopy {
   tableCommercialUse: string;
   faqTitle: string;
   faqSubtitle: string;
+  /** Visible currency label, e.g. "All prices are in US dollars (USD)." */
+  currencyNote: string;
+  /** Shown when checkout is not configured. Does not change the payments flag. */
+  paymentsPreview: string;
   errorFallback: string;
 }
 
@@ -201,7 +206,7 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
   en: {
     heroTitle: "Plans & pricing",
     heroSubtitle:
-      "Choose how much you want to create. Every plan includes credits that work across text-to-video and image-to-video.",
+      "Choose how much you want to create on aidv.ai. Every plan includes credits that work across text-to-video and image-to-video.",
     billingPeriodLabel: "Billing period",
     monthly: "Monthly",
     yearly: "Yearly",
@@ -230,12 +235,15 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     tableCommercialUse: "Commercial use",
     faqTitle: "Frequently asked questions",
     faqSubtitle: "Still deciding? These are the questions we hear most.",
+    currencyNote: "All prices are in US dollars (USD).",
+    paymentsPreview:
+      "Checkout is not turned on in this environment. The amounts below are the current list prices in USD.",
     errorFallback: "Something went wrong. Please try again.",
   },
   zh: {
     heroTitle: "方案与价格",
     heroSubtitle:
-      "选择你想创作的数量。每个方案都包含可用于文生视频和图生视频的积分。",
+      "选择你在 aidv.ai 上想创作的数量。每个方案都包含可用于文生视频和图生视频的积分。",
     billingPeriodLabel: "计费周期",
     monthly: "按月",
     yearly: "按年",
@@ -263,6 +271,8 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     tableCommercialUse: "商业用途",
     faqTitle: "常见问题",
     faqSubtitle: "还在犹豫？这些是我们最常被问到的问题。",
+    currencyNote: "所有价格均以美元（USD）计价。",
+    paymentsPreview: "当前环境尚未开放结账。以下金额为现行美元（USD）标价。",
     errorFallback: "出错了，请重试。",
   },
 };

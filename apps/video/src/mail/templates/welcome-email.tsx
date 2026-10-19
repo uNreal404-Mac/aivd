@@ -62,9 +62,9 @@ WelcomeEmail.PreviewProps = {
       },
       welcome: {
         greeting: "Hi {name},",
-        title: "Welcome to DreamUtopia!",
-        body: "Thank you for joining DreamUtopia! We're thrilled to have you on board.",
-        features: "With DreamUtopia, you can:",
+        title: "Welcome to aidv.ai!",
+        body: "Thank you for joining aidv.ai! We're thrilled to have you on board.",
+        features: "With aidv.ai, you can:",
         featuresList: {
           generate: "Generate stunning AI videos in minutes",
           models: "Use multiple AI models like Sora 2, Veo 3.1, and more",

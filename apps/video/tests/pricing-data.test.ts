@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
+import { CREDIT_PACKAGES, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 import {
   FAQ_ITEMS,
   FAQ_ITEMS_ZH,
@@ -160,6 +162,42 @@ describe("pricingCopy", () => {
     for (const key of keys) {
       expect(typeof PRICING_COPY.zh[key]).toBe("string");
       expect(PRICING_COPY.zh[key].length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("public USD prices", () => {
+  it("names aidv.ai and states that prices are USD", () => {
+    expect(PRICING_COPY.en.heroSubtitle).toContain("aidv.ai");
+    expect(PRICING_COPY.zh.heroSubtitle).toContain("aidv.ai");
+    expect(PRICING_COPY.en.currencyNote).toContain("USD");
+    expect(PRICING_COPY.zh.currencyNote).toContain("USD");
+    expect(PRICING_COPY.en.paymentsPreview).toContain("USD");
+
+    const answers = [...FAQ_ITEMS, ...FAQ_ITEMS_ZH]
+      .map((item) => item.answer)
+      .join(" ");
+    expect(answers).toContain("aidv.ai");
+    expect(answers).not.toContain("DreamUtopia");
+  });
+
+  it("renders subscription and pack prices from pricing-user in USD cents", () => {
+    const subscriptions = getSubscriptionProducts();
+    for (const product of SUBSCRIPTION_PRODUCTS.filter((item) => item.enabled)) {
+      const rendered = subscriptions.find((item) => item.id === product.id);
+      expect(rendered?.name).toBe(product.name);
+      expect(rendered?.credits).toBe(product.credits);
+      expect(rendered?.price.currency).toBe("USD");
+      expect(rendered?.price.amount).toBe(Math.round(product.priceUsd * 100));
+    }
+
+    const packs = getOnetimeProducts();
+    for (const product of CREDIT_PACKAGES.filter((item) => item.enabled)) {
+      const rendered = packs.find((item) => item.id === product.id);
+      expect(rendered?.name).toBe(product.name);
+      expect(rendered?.credits).toBe(product.credits);
+      expect(rendered?.price.currency).toBe("USD");
+      expect(rendered?.price.amount).toBe(Math.round(product.priceUsd * 100));
     }
   });
 });

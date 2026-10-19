@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
+import { LegalLinks } from "@/components/legal/legal-links";
 import "@/styles/checkout-tokens.css";
 
 type CheckoutCancelPageProps = {
@@ -58,6 +59,14 @@ const textStyle: CSSProperties = {
   color: "var(--co-muted)",
 };
 
+const legalStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
+  gap: "12px",
+  fontSize: "13px",
+};
+
 const buttonStyle: CSSProperties = {
   display: "inline-block",
   marginTop: "4px",
@@ -84,6 +93,7 @@ export default async function CheckoutCancelPage({
         <Link style={buttonStyle} href={`/${locale}/pricing`}>
           {zh ? "返回定价页" : "Back to pricing"}
         </Link>
+        <LegalLinks locale={locale} className="co-legal" style={legalStyle} />
       </section>
     </main>
   );

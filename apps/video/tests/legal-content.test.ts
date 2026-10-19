@@ -113,4 +113,50 @@ describe("getLegalDoc", () => {
         expect(siteConfig.supportEmail).toBe(SUPPORT_EMAIL);
         expect(legalSupportEmail()).toBe(SUPPORT_EMAIL);
     });
+
+    it("brands every document as aidv.ai and prices refunds in USD", () => {
+        for (const kind of KINDS) {
+            for (const locale of LOCALES) {
+                const text = docToText(getLegalDoc(kind, locale, buildContext()));
+                expect(text).toContain("aidv.ai");
+                expect(text).not.toContain("DreamUtopia");
+                expect(text).not.toContain("aivd");
+                expect(text.toUpperCase()).toContain("USD");
+            }
+        }
+    });
+
+    it("marks an unknown legal entity and address instead of inventing them", () => {
+        const en = docToText(getLegalDoc("contact", "en", buildContext()));
+        expect(en).toContain("[Company legal name]");
+        expect(en).toContain("[Company address]");
+        expect(en).not.toMatch(/\d+\s+[A-Z][a-z]+ (Street|St|Road|Ave)/);
+
+        const zh = docToText(getLegalDoc("contact", "zh", buildContext()));
+        expect(zh).toContain("【公司法律主体名称】");
+        expect(zh).toContain("【公司地址】");
+    });
+
+    it("uses a contact-email placeholder when no email is configured", () => {
+        const en = docToText(
+            getLegalDoc("terms", "en", buildContext({ email: "  " })),
+        );
+        expect(en).toContain("[Contact email]");
+        expect(en).not.toContain(SUPPORT_EMAIL);
+    });
+
+    it("uses a configured legal entity when one is provided", () => {
+        const en = docToText(
+            getLegalDoc(
+                "terms",
+                "en",
+                buildContext({
+                    companyName: "Acme Co",
+                    companyAddress: "1 Example Plaza",
+                }),
+            ),
+        );
+        expect(en).toContain("Acme Co");
+        expect(en).not.toContain("[Company legal name]");
+    });
 });

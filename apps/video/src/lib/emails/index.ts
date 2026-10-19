@@ -1,7 +1,7 @@
 /**
  * Email Templates
  *
- * All email templates and utilities for DreamUtopia
+ * All email templates and utilities for aidv.ai
  */
 
 export { MagicLinkEmail } from "./magic-link-email";

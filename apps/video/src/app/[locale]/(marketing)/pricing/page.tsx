@@ -1,10 +1,15 @@
 import "@/styles/pricing-tokens.css";
 import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
-import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
+import {
+  getOnetimeProducts,
+  getSubscriptionProducts,
+  type CreditPackageConfig,
+} from "@/config/credits";
 import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({
   params,
@@ -45,19 +50,40 @@ export async function generateMetadata({
   };
 }
 
+function featureLabelsFor(
+  products: CreditPackageConfig[],
+  translate: { has: (key: string) => boolean; (key: string): string },
+): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const product of products) {
+    for (const key of product.features ?? []) {
+      if (labels[key]) continue;
+      labels[key] = translate.has(key) ? translate(key) : key;
+    }
+  }
+  return labels;
+}
+
 export default async function PricingPage({
   params,
 }: {
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
+  const subscriptions = getSubscriptionProducts();
+  const packs = getOnetimeProducts();
+  const features = await getTranslations({
+    locale,
+    namespace: "Credits.features",
+  });
 
   return (
     <PricingPageView
       locale={locale}
       paymentsEnabled={isPaymentsConfigured()}
-      subscriptions={getSubscriptionProducts()}
-      packs={getOnetimeProducts()}
+      subscriptions={subscriptions}
+      packs={packs}
+      featureLabels={featureLabelsFor([...subscriptions, ...packs], features)}
     />
   );
 }

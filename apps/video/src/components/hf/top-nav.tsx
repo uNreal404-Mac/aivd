@@ -114,7 +114,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
-              DreamUtopia
+              aidv.ai
             </span>
           </Link>
 

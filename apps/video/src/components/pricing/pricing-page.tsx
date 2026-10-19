@@ -13,6 +13,7 @@ import {
   pricingCopy,
   type BillingPeriod,
 } from "@/components/pricing/pricing-data";
+import { LegalLinks } from "@/components/legal/legal-links";
 import { startStripeCheckout } from "@/lib/stripe-checkout-client";
 
 export interface PricingPageProps {
@@ -20,12 +21,15 @@ export interface PricingPageProps {
   subscriptions: CreditPackageConfig[];
   packs: CreditPackageConfig[];
   locale: string;
+  /** Display labels for feature keys such as `hd_videos`. */
+  featureLabels?: Record<string, string>;
 }
 
-/** Formats a cent amount as a USD string, e.g. 2900 -> "$29". */
+/** Formats a cent amount as a USD string, e.g. 2900 -> "$29 USD". */
 function formatUsd(cents: number): string {
   const dollars = cents / 100;
-  return dollars % 1 === 0 ? `$${dollars.toFixed(0)}` : `$${dollars.toFixed(2)}`;
+  const amount = dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2);
+  return `$${amount} USD`;
 }
 
 function formatCredits(credits: number): string {
@@ -45,6 +49,7 @@ export function PricingPage({
   subscriptions,
   packs,
   locale,
+  featureLabels = {},
 }: PricingPageProps) {
   const copy = pricingCopy(locale);
   const faq = faqItemsFor(locale);
@@ -88,6 +93,10 @@ export function PricingPage({
         <header className="pr-hero">
           <h1 className="pr-hero__title">{copy.heroTitle}</h1>
           <p className="pr-hero__sub">{copy.heroSubtitle}</p>
+          <p className="pr-hero__currency">{copy.currencyNote}</p>
+          {paymentsEnabled ? null : (
+            <p className="pr-hero__note">{copy.paymentsPreview}</p>
+          )}
         </header>
 
         {/* ---------- billing toggle ---------- */}
@@ -160,7 +169,7 @@ export function PricingPage({
                 {features.length > 0 ? (
                   <ul className="pr-features">
                     {features.map((feature) => (
-                      <li key={feature}>{feature}</li>
+                      <li key={feature}>{featureLabels[feature] ?? feature}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -210,7 +219,7 @@ export function PricingPage({
                   {features.length > 0 ? (
                     <ul className="pr-features">
                       {features.map((feature) => (
-                        <li key={feature}>{feature}</li>
+                        <li key={feature}>{featureLabels[feature] ?? feature}</li>
                       ))}
                     </ul>
                   ) : null}
@@ -310,6 +319,8 @@ export function PricingPage({
             ))}
           </div>
         </section>
+
+        <LegalLinks locale={locale} className="pr-legal" />
       </div>
     </div>
   );

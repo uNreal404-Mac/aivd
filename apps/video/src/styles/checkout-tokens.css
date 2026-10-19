@@ -10,3 +10,13 @@
   --co-success: var(--du-success);
   --co-radius: 20px;
 }
+
+.co-legal a {
+  color: var(--co-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.co-legal a:hover {
+  color: var(--co-text);
+}
