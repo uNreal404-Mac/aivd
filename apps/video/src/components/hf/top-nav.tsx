@@ -8,6 +8,7 @@ import { cn } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
+import { PreviewBadge } from "@/components/layout/preview-badge";
 
 interface HfTopNavProps {
   user?: {
@@ -114,8 +115,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
-              DreamUtopia
+              aidv.ai
             </span>
+            <PreviewBadge />
           </Link>
 
           <nav className="hidden min-w-0 items-center gap-1 overflow-hidden lg:flex">

@@ -129,7 +129,7 @@ export function PricingCards({
         ))}
       </div>
 
-      <p className="mt-3 text-center text-base text-muted-foreground">
+      {siteConfig.supportEmail ? <p className="mt-3 text-center text-base text-muted-foreground">
         <Balancer>
           Email{" "}
           <a
@@ -142,7 +142,7 @@ export function PricingCards({
           <br />
           <strong>{t('contact_2')}</strong>
         </Balancer>
-      </p>
+      </p> : null}
     </section>
   );
 }

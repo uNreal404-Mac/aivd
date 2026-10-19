@@ -3,6 +3,8 @@
 
 import { hasDbBinding } from "@/db";
 import type { User } from "./auth";
+import { getLoginRedirectURL } from "./redirect";
+import { getRequestCallbackURL } from "./server-redirect";
 
 // Re-export auth instance (server-only)
 export { auth, type Session, type User } from "./auth";
@@ -48,7 +50,7 @@ export async function requireAuth(redirectTo = "/login"): Promise<User> {
   const { redirect } = await import("next/navigation");
   const user = await getCurrentUser();
   if (!user) {
-    redirect(redirectTo);
+    redirect(getLoginRedirectURL(redirectTo, await getRequestCallbackURL()));
   }
   return user as User;
 }

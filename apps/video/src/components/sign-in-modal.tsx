@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { authClient } from "@/lib/auth/client";
+import { getSafeCallbackURL } from "@/lib/auth/redirect";
 import { Button } from "@/components/ui/button";
 import * as Icons from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
-  const callbackURL = searchParams?.get("from") ?? `/${lang}${siteConfig.routes.defaultLoginRedirect}`;
+  const callbackURL = getSafeCallbackURL(searchParams?.get("callbackURL"));
 
   const handleSocialLogin = async (provider: "google") => {
     setSignInClicked(provider);

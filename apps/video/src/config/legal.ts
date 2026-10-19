@@ -43,6 +43,6 @@ export const LEGAL_CONFIG = {
  * Support inbox used across the legal pages. Backed by the single source of
  * truth in `@/config/site` (SUPPORT_EMAIL) so the address never diverges.
  */
-export function legalSupportEmail(): string {
+export function legalSupportEmail(): string | undefined {
   return siteConfig.supportEmail;
 }

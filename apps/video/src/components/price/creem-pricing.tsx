@@ -263,7 +263,7 @@ export function CreemPricing({
       </Tabs>
 
       {/* 底部联系信息 */}
-      <p className="mt-16 text-center text-base text-muted-foreground">
+      {siteConfig.supportEmail ? <p className="mt-16 text-center text-base text-muted-foreground">
         <Balancer>
           Email{" "}
           <a
@@ -276,7 +276,7 @@ export function CreemPricing({
           <br />
           <strong>{dictPrice.contact_2}</strong>
         </Balancer>
-      </p>
+      </p> : null}
     </section>
   );
 }

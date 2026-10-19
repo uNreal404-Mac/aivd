@@ -93,7 +93,14 @@ export default function middleware(request: NextRequest) {
     }
   }
 
-  const response = intlMiddleware(request);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(
+    "x-aidv-original-path",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  );
+  const response = intlMiddleware(
+    new NextRequest(request, { headers: requestHeaders }),
+  );
 
   // Add security headers
   response.headers.set("X-Frame-Options", "DENY");

@@ -83,7 +83,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "credits",
     question: "What are credits and how are they used?",
     answer:
-      "Credits are the single currency for every generation on DreamUtopia. Each video model has a fixed cost per second, so the number of clips you can render depends on the model, the duration and the resolution you pick. Your remaining balance is always visible before you press generate.",
+      "Credits are the single currency for every generation on aidv.ai. Each video model has a fixed cost per second, so the number of clips you can render depends on the model, the duration and the resolution you pick. Your remaining balance is always visible before you press generate.",
   },
   {
     id: "expiry",
@@ -122,7 +122,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
     id: "credits",
     question: "什么是积分，如何使用？",
     answer:
-      "积分是 DreamUtopia 上所有生成的统一货币。每个视频模型按秒固定计费，因此你能渲染的片段数量取决于所选的模型、时长和分辨率。生成前始终可以看到剩余余额。",
+      "积分是 aidv.ai 上所有生成的统一货币。每个视频模型按秒固定计费，因此你能渲染的片段数量取决于所选的模型、时长和分辨率。生成前始终可以看到剩余余额。",
   },
   {
     id: "expiry",

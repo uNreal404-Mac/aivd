@@ -1,6 +1,6 @@
 {
-  "name": "DreamUtopia",
-  "short_name": "DreamUtopia",
+  "name": "aidv.ai",
+  "short_name": "aidv.ai",
   "description": "AI-powered video generation platform",
   "start_url": "/",
   "display": "standalone",

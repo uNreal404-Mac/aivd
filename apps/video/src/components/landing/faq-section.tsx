@@ -46,17 +46,21 @@ const faqData: FAQItem[] = [
 
 export function FAQSection() {
   const t = useTranslations("FAQ");
+  const supportEmail = siteConfig.supportEmail;
+  const visibleFaqData = supportEmail
+    ? faqData
+    : faqData.filter((item) => item.questionKey !== "support.question");
 
   // Generate FAQPage JSON-LD for SEO/GEO (+40% AI search visibility)
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqData.map((item) => ({
+    mainEntity: visibleFaqData.map((item) => ({
       "@type": "Question",
       name: t(item.questionKey),
       acceptedAnswer: {
         "@type": "Answer",
-        text: t(item.answerKey, { email: siteConfig.supportEmail }),
+        text: t(item.answerKey, { email: supportEmail ?? "" }),
       },
     })),
   };
@@ -101,7 +105,7 @@ export function FAQSection() {
               transition={{ delay: 0.2 }}
             >
               <Accordion type="single" collapsible className="space-y-3">
-                {faqData.map((item, index) => (
+                {visibleFaqData.map((item, index) => (
                   <motion.div
                     key={item.questionKey}
                     initial={{ opacity: 0, y: 10 }}
@@ -122,7 +126,7 @@ export function FAQSection() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="pl-10 text-muted-foreground leading-relaxed">
-                        {t(item.answerKey, { email: siteConfig.supportEmail })}
+                        {t(item.answerKey, { email: supportEmail ?? "" })}
                       </AccordionContent>
                     </AccordionItem>
                   </motion.div>
@@ -132,25 +136,27 @@ export function FAQSection() {
           </BlurFade>
 
           {/* 底部提示 */}
-          <BlurFade delay={0.4} inView>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 }}
-              className="text-center mt-12 p-6 rounded-2xl bg-primary/10 border border-primary/20"
-            >
-              <p className="text-muted-foreground">
-                {t("contact")}
-                <a
-                  href={`mailto:${siteConfig.supportEmail}`}
-                  className="text-primary hover:underline mx-1"
-                >
-                  {siteConfig.supportEmail}
-                </a>
-              </p>
-            </motion.div>
-          </BlurFade>
+          {supportEmail ? (
+            <BlurFade delay={0.4} inView>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="text-center mt-12 p-6 rounded-2xl bg-primary/10 border border-primary/20"
+              >
+                <p className="text-muted-foreground">
+                  {t("contact")}
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="text-primary hover:underline mx-1"
+                  >
+                    {supportEmail}
+                  </a>
+                </p>
+              </motion.div>
+            </BlurFade>
+          ) : null}
         </div>
       </div>
     </section>

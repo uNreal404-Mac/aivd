@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { userMenuItems } from "@/config/navigation";
 import { i18n, localeMap } from "@/config/i18n-config";
+import { PreviewBadge } from "@/components/layout/preview-badge";
 
 interface HeaderSimpleProps {
   user?: Pick<User, "name" | "image" | "email"> | null;
@@ -67,7 +68,8 @@ export function HeaderSimple({
             <Menu className="h-5 w-5" />
           </button>
           <Link href={`/${lang}`} className="flex items-center gap-2">
-            <span className="text-xl font-semibold">DreamUtopia</span>
+            <span className="text-xl font-semibold">aidv.ai</span>
+            <PreviewBadge />
           </Link>
         </div>
 

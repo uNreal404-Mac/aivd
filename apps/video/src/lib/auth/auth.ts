@@ -87,43 +87,74 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
         return;
       }
 
-      // Dynamic import to avoid Edge Runtime issues in middleware
-      const { MagicLinkEmail } = await import(
-        "@/lib/emails/magic-link-email"
-      );
-      const { resend } = await import("@/lib/email");
-      const { siteConfig } = await import("@/config/site");
-
-      // Check if user exists to determine email type
-      const [existingUser] = await db
-        .select({ name: users.name, emailVerified: users.emailVerified })
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
-      const userVerified = !!existingUser?.emailVerified;
-      const authSubject = userVerified
-        ? `Sign-in link for ${(siteConfig as { name: string }).name}`
-        : "Activate your account";
-
+      // RESEND_FROM must be a Resend-verified address (set via
+      // `wrangler secret put RESEND_FROM --name dreamutopia-video-preview`).
+      // Never commit the value. Use plain HTML (no react-email render) so
+      // OpenNext Workers cannot fail during JSX email rendering.
       try {
-        const { error: sendError } = await resend.emails.send({
+        const { Resend } = await import("resend");
+        const { siteConfig } = await import("@/config/site");
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+          throw new Error("RESEND_API_KEY is not set on the Worker");
+        }
+        const resend = new Resend(apiKey);
+
+        const [existingUser] = await db
+          .select({ name: users.name, emailVerified: users.emailVerified })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        const userVerified = !!existingUser?.emailVerified;
+        const siteName = (siteConfig as { name: string }).name;
+        const authSubject = userVerified
+          ? `Sign-in link for ${siteName}`
+          : "Activate your account";
+        const firstName = existingUser?.name?.trim() || "there";
+        const actionLabel = userVerified ? "Sign in" : "Activate Account";
+        const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px">
+<h2>${siteName}</h2>
+<p>Hi ${firstName},</p>
+<p>Click the button below to ${userVerified ? "sign in to" : "activate"} your account.</p>
+<p><a href="${url}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#fff;border-radius:6px;text-decoration:none">${actionLabel}</a></p>
+<p>This link expires in 5 minutes and can only be used once.</p>
+<p style="color:#666;font-size:12px">${siteName}</p>
+</body></html>`;
+        const textBody = `Hi ${firstName},\n\n${actionLabel}: ${url}\n\nThis link expires in 5 minutes.\n\n${siteName}`;
+
+        const { error: sendError, data: sendData } = await resend.emails.send({
           from: resendFrom,
           to: email,
           subject: authSubject,
-          react: MagicLinkEmail({
-            firstName: existingUser?.name ?? "",
-            actionUrl: url,
-            mailType: userVerified ? "login" : "register",
-            siteName: (siteConfig as { name: string }).name,
-          }),
+          html,
+          text: textBody,
           headers: {
-            "X-Entity-Ref-ID": new Date().getTime() + "",
+            "X-Entity-Ref-ID": String(Date.now()),
           },
         });
         if (sendError) {
-          throw new Error(`Resend send failed: ${sendError.name ?? "error"}`);
+          const fromDomain = resendFrom.includes("@")
+            ? resendFrom.split("@").pop()
+            : "(unknown)";
+          const detail = [
+            sendError.name,
+            (sendError as { message?: string }).message,
+            (sendError as { statusCode?: number }).statusCode,
+          ]
+            .filter(Boolean)
+            .join(" | ");
+          console.error(
+            "Failed to send magic link email:",
+            detail,
+            "fromDomain=",
+            fromDomain,
+          );
+          throw new Error(
+            `Resend send failed (${detail || "error"}). Verify RESEND_FROM domain in Resend (from domain: ${fromDomain}).`,
+          );
         }
+        console.info("Magic link email sent:", sendData?.id ?? "ok");
       } catch (error) {
         console.error("Failed to send magic link email:", error);
         throw error;
@@ -265,10 +296,22 @@ if (env.CREEM_API_KEY) {
 }
 
 export const auth = betterAuth({
-  baseURL: env.NEXT_PUBLIC_APP_URL,
+  baseURL: env.BETTER_AUTH_URL ?? env.APP_URL ?? env.NEXT_PUBLIC_APP_URL,
+  trustedOrigins: [
+    ...new Set(
+      [
+        env.NEXT_PUBLIC_APP_URL,
+        "https://aivd-preview.pages.dev",
+        "https://dreamutopia-video.pages.dev",
+      ].filter((origin): origin is string => Boolean(origin)),
+    ),
+  ],
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
   logger: debugLogger,
+  onAPIError: {
+    errorURL: "/login",
+  },
 
   // Drizzle adapter with schema for Better Auth
   database: drizzleAdapter(db, {

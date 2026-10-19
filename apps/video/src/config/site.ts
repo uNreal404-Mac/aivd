@@ -7,7 +7,7 @@ export interface SiteConfig {
   description: string;
   url: string;
   ogImage: string;
-  supportEmail: string;
+  supportEmail?: string;
   links: {
     github?: string;
     twitter?: string;
@@ -23,15 +23,43 @@ export interface SiteConfig {
   };
 }
 
-// Single source of truth for the support address (bot inbox).
-export const SUPPORT_EMAIL = "tuapi@mail.grokbot.com";
+export function getSupportEmail(value = process.env.NEXT_PUBLIC_SUPPORT_EMAIL) {
+  const email = value?.trim();
+  return email || undefined;
+}
+
+const configuredAppUrl =
+  process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim() || "";
+
+export const SUPPORT_EMAIL = getSupportEmail();
+
+export function isPreviewSiteFor(
+  appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL,
+  previewFlag = process.env.NEXT_PUBLIC_IS_PREVIEW,
+) {
+  if (previewFlag === "true") return true;
+  if (!appUrl) return false;
+
+  try {
+    return new URL(appUrl).hostname.endsWith(".pages.dev");
+  } catch {
+    return false;
+  }
+}
+
+export const isPreviewSite = isPreviewSiteFor(configuredAppUrl);
+
+export function getSiteTitle(locale = "en", preview = isPreviewSite) {
+  if (!preview) return "aidv.ai";
+  return locale === "zh" ? "aidv.ai 预览站" : "aidv.ai Preview";
+}
 
 export const siteConfig: SiteConfig = {
   name: "aidv.ai",
   description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
-  url: process.env.NEXT_PUBLIC_APP_URL || "https://dreamutopia-video.pages.dev",
+  url: configuredAppUrl,
   ogImage: "/og.png",
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || SUPPORT_EMAIL,
+  supportEmail: SUPPORT_EMAIL,
   links: {},
   auth: {
     enableGoogleLogin: true,

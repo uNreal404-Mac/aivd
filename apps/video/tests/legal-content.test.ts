@@ -10,7 +10,7 @@ import {
     type LegalLocale,
 } from "@/lib/legal-content";
 
-const SUPPORT_EMAIL = "tuapi@mail.grokbot.com";
+const SUPPORT_EMAIL = "support@example.com";
 
 const KINDS: LegalKind[] = ["terms", "privacy", "refund", "contact"];
 const LOCALES: LegalLocale[] = ["en", "zh"];
@@ -67,7 +67,6 @@ describe("getLegalDoc", () => {
 
             it(`${kind}/${locale} avoids placeholders and invented facts`, () => {
                 expect(text).not.toContain("undefined");
-                expect(text).not.toContain("example.com");
                 expect(text.toLowerCase()).not.toContain("higgsfield");
                 expect(text).not.toContain("Inc.");
                 expect(text).not.toContain("Ltd");
@@ -110,7 +109,20 @@ describe("getLegalDoc", () => {
     });
 
     it("uses the support email from the site config", () => {
-        expect(siteConfig.supportEmail).toBe(SUPPORT_EMAIL);
-        expect(legalSupportEmail()).toBe(SUPPORT_EMAIL);
+        expect(siteConfig.supportEmail).toBeUndefined();
+        expect(legalSupportEmail()).toBeUndefined();
+    });
+
+    it("omits support paragraphs when no support email is configured", () => {
+        for (const kind of KINDS) {
+            for (const locale of LOCALES) {
+                const text = docToText(
+                    getLegalDoc(kind, locale, buildContext({ email: undefined })),
+                );
+
+                expect(text).not.toContain("undefined");
+                expect(text).not.toContain("mailto:");
+            }
+        }
     });
 });

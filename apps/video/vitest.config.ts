@@ -18,6 +18,7 @@ export default defineConfig({
     testTimeout: 30000,
     env: {
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+      NEXT_PUBLIC_SUPPORT_EMAIL: "",
       BETTER_AUTH_SECRET: "test-secret-not-real",
     },
   },

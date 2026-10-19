@@ -8,6 +8,7 @@ import * as z from "zod";
 import { useTranslations } from "next-intl";
 
 import { authClient } from "@/lib/auth/client";
+import { getSafeCallbackURL } from "@/lib/auth/redirect";
 import { cn } from "@/components/ui";
 import { buttonVariants } from "@/components/ui/button";
 import * as Icons from "@/components/ui/icons";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   lang: string;
+  callbackURL?: string;
   disabled?: boolean;
 }
 
@@ -29,6 +31,7 @@ type FormData = z.infer<typeof userAuthSchema>;
 export function UserAuthForm({
   className,
   lang,
+  callbackURL: callbackURLProp,
   disabled,
   ...props
 }: UserAuthFormProps) {
@@ -43,6 +46,9 @@ export function UserAuthForm({
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
+  const callbackURL = getSafeCallbackURL(
+    callbackURLProp ?? searchParams?.get("callbackURL"),
+  );
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
@@ -50,7 +56,7 @@ export function UserAuthForm({
     try {
       const { error } = await authClient.signIn.magicLink({
         email: data.email.toLowerCase(),
-        callbackURL: searchParams?.get("from") ?? `/${lang}/my-creations`,
+        callbackURL,
       });
 
       if (error) {
@@ -128,7 +134,7 @@ export function UserAuthForm({
           authClient.signIn
             .social({
               provider: "google",
-              callbackURL: searchParams?.get("from") ?? `/${lang}/my-creations`,
+              callbackURL,
             })
             .then(({ error }) => {
               if (error) {

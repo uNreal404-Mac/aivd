@@ -18,6 +18,8 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "./env.mjs";
+import { getLoginRedirectURL } from "./redirect";
+import { getRequestCallbackURL } from "./server-redirect";
 import type { Locale } from "@/config/i18n-config";
 
 /**
@@ -35,7 +37,12 @@ export async function requireAdmin(redirectTo?: string) {
   });
 
   if (!session?.user) {
-    redirect(redirectTo || "/login");
+    redirect(
+      getLoginRedirectURL(
+        redirectTo || "/login",
+        await getRequestCallbackURL(),
+      ),
+    );
   }
 
   // 自动设置管理员：如果邮箱匹配 ADMIN_EMAIL 且还不是管理员

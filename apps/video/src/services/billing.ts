@@ -37,8 +37,9 @@ export async function createStripeSession(userId: string, planId: string) {
     .where(eq(customers.authUserId, userId))
     .limit(1);
 
-  const returnUrl = process.env.NEXT_PUBLIC_APP_URL
-    ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+  const returnUrl = appUrl
+    ? `${appUrl}/dashboard`
     : "/dashboard";
 
   if (customer?.plan && customer.plan !== "FREE") {

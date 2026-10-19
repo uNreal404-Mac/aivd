@@ -24,14 +24,14 @@ export type LegalDoc = {
 export type LegalKind = "terms" | "privacy" | "refund" | "contact";
 
 export type LegalContext = {
-  email: string;
+  email?: string;
   companyName: string;
   companyAddress: string;
   governingLaw: string;
   refundWindowDays: number;
 };
 
-const FALLBACK_COMPANY_NAME = "DreamUtopia";
+const FALLBACK_COMPANY_NAME = "aidv.ai";
 
 /** Neutral fallbacks — used only when the operator has not configured a value. */
 function resolveCompanyName(companyName: string): string {
@@ -51,6 +51,23 @@ function resolveGoverningLaw(governingLaw: string, locale: LegalLocale): string 
     : "the laws applicable where the operator is established";
 }
 
+function supportParagraph(
+  email: string | undefined,
+  build: (email: string) => string,
+): string[] {
+  const normalized = email?.trim();
+  return normalized ? [build(normalized)] : [];
+}
+
+function omitEmptySections(doc: LegalDoc): LegalDoc {
+  return {
+    ...doc,
+    sections: doc.sections.filter(
+      (section) => section.paragraphs.length > 0 || (section.bullets?.length ?? 0) > 0,
+    ),
+  };
+}
+
 function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   const company = resolveCompanyName(ctx.companyName);
   const law = resolveGoverningLaw(ctx.governingLaw, locale);
@@ -59,7 +76,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
     return {
       title: "服务条款",
       description:
-        "使用 DreamUtopia 生成 AI 视频的规则，包括积分、计费、内容归属与可接受使用范围。",
+        "使用 aidv.ai 生成 AI 视频的规则，包括积分、计费、内容归属与可接受使用范围。",
       intro: `本条款说明 ${company} 的运作方式，以及你在使用本服务时享有的权利和需要承担的义务。`,
       sections: [
         {
@@ -131,7 +148,9 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "十、联系我们",
-          paragraphs: [`对本条款有疑问？请发送邮件至 ${ctx.email}。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `对本条款有疑问？请发送邮件至 ${email}。`,
+          ),
         },
       ],
     };
@@ -140,7 +159,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Terms of Service",
     description:
-      "The rules for using DreamUtopia to generate AI videos, including credits, billing, ownership, and acceptable use.",
+      "The rules for using aidv.ai to generate AI videos, including credits, billing, ownership, and acceptable use.",
     intro: `These terms explain how ${company} works and what you can expect from us, as well as what we expect from you.`,
     sections: [
       {
@@ -212,7 +231,10 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "10. Contact",
-        paragraphs: [`Questions about these terms? Email us at ${ctx.email}.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Questions about these terms? Email us at ${email}.`,
+        ),
       },
     ],
   };
@@ -268,9 +290,9 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "六、你的权利",
-          paragraphs: [
-            `你可以要求访问、删除或导出你的个人信息，也可以要求我们更正这些信息。请发送邮件至 ${ctx.email}，我们会协助你。如法律要求，部分信息可能会被保留。`,
-          ],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `你可以要求访问、删除或导出你的个人信息，也可以要求我们更正这些信息。请发送邮件至 ${email}，我们会协助你。如法律要求，部分信息可能会被保留。`,
+          ),
         },
         {
           heading: "七、Cookie 与分析",
@@ -292,7 +314,9 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "十、联系我们",
-          paragraphs: [`对隐私有疑问？请发送邮件至 ${ctx.email}。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `对隐私有疑问？请发送邮件至 ${email}。`,
+          ),
         },
       ],
     };
@@ -301,7 +325,7 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Privacy Policy",
     description:
-      "How DreamUtopia collects, uses, stores, and shares your information, and the choices and rights you have.",
+      "How aidv.ai collects, uses, stores, and shares your information, and the choices and rights you have.",
     intro: `${company} collects only what we need to run the service. This policy explains what we collect, why we collect it, how we store it, who we share it with, and the choices you have.`,
     sections: [
       {
@@ -346,9 +370,11 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "6. Your rights",
-        paragraphs: [
-          `You can ask to access, delete, or export your personal information, or ask us to correct it. Email us at ${ctx.email} and we will help. Some information may be kept where the law requires it.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `You can ask to access, delete, or export your personal information, or ask us to correct it. Email us at ${email} and we will help. Some information may be kept where the law requires it.`,
+        ),
       },
       {
         heading: "7. Cookies and analytics",
@@ -370,7 +396,10 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "10. Contact",
-        paragraphs: [`Questions about privacy? Email us at ${ctx.email}.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Questions about privacy? Email us at ${email}.`,
+        ),
       },
     ],
   };
@@ -410,13 +439,15 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         },
         {
           heading: "五、如何申请退款",
-          paragraphs: [
-            `请发送邮件至 ${ctx.email}，并提供账号邮箱和订单号，同时说明遇到的问题。申请通过后，我们会将退款退回原支付方式。`,
-          ],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `请发送邮件至 ${email}，并提供账号邮箱和订单号，同时说明遇到的问题。申请通过后，我们会将退款退回原支付方式。`,
+          ),
         },
         {
           heading: "六、联系我们",
-          paragraphs: [`如果对付款还有其他疑问，请发送邮件至 ${ctx.email}，我们会为你核实。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `如果对付款还有其他疑问，请发送邮件至 ${email}，我们会为你核实。`,
+          ),
         },
       ],
     };
@@ -455,15 +486,19 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       },
       {
         heading: "5. How to request a refund",
-        paragraphs: [
-          `Email us at ${ctx.email} with the email address on your account and your order ID, and tell us what went wrong. If your request is approved, we send the refund to the original payment method.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `Email us at ${email} with the email address on your account and your order ID, and tell us what went wrong. If your request is approved, we send the refund to the original payment method.`,
+        ),
       },
       {
         heading: "6. Contact",
-        paragraphs: [
-          `Still have a question about a payment? Email us at ${ctx.email} and we will look into it.`,
-        ],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) =>
+            `Still have a question about a payment? Email us at ${email} and we will look into it.`,
+        ),
       },
     ],
   };
@@ -481,12 +516,14 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
 
     return {
       title: "联系我们",
-      description: "如何就账号、付款、生成内容或相关政策联系 DreamUtopia 团队。",
+      description: "如何就账号、付款、生成内容或相关政策联系 aidv.ai 团队。",
       intro: "我们的团队规模不大，发送邮件是与我们联系最有效的方式。",
       sections: [
         {
           heading: "一、支持",
-          paragraphs: [`请发送邮件至 ${ctx.email}。我们会尽快回复。`],
+          paragraphs: supportParagraph(ctx.email, (email) =>
+            `请发送邮件至 ${email}。我们会尽快回复。`,
+          ),
         },
         {
           heading: "二、请提供以下信息",
@@ -514,12 +551,15 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Contact",
     description:
-      "How to reach the DreamUtopia team about your account, payments, generated content, or these policies.",
+      "How to reach the aidv.ai team about your account, payments, generated content, or these policies.",
     intro: "We are a small team, and email is the best way to reach us.",
     sections: [
       {
         heading: "1. Support",
-        paragraphs: [`Email us at ${ctx.email}. We reply as soon as we can.`],
+        paragraphs: supportParagraph(
+          ctx.email,
+          (email) => `Email us at ${email}. We reply as soon as we can.`,
+        ),
       },
       {
         heading: "2. What to include",
@@ -544,16 +584,24 @@ export function getLegalDoc(
   locale: LegalLocale,
   ctx: LegalContext,
 ): LegalDoc {
+  let doc: LegalDoc;
+
   switch (kind) {
     case "terms":
-      return termsDoc(locale, ctx);
+      doc = termsDoc(locale, ctx);
+      break;
     case "privacy":
-      return privacyDoc(locale, ctx);
+      doc = privacyDoc(locale, ctx);
+      break;
     case "refund":
-      return refundDoc(locale, ctx);
+      doc = refundDoc(locale, ctx);
+      break;
     case "contact":
-      return contactDoc(locale, ctx);
+      doc = contactDoc(locale, ctx);
+      break;
     default:
-      return termsDoc(locale, ctx);
+      doc = termsDoc(locale, ctx);
   }
+
+  return omitEmptySections(doc);
 }

@@ -221,27 +221,29 @@ export function AceternityPricing({
         </div>
 
         {/* 底部联系信息 */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="mt-8 text-center"
-        >
-          <p className="text-muted-foreground">
-            <Balancer>
-              Email{" "}
-              <a
-                className="font-medium text-primary hover:underline"
-                href={`mailto:${siteConfig.supportEmail}`}
-              >
-                {siteConfig.supportEmail}
-              </a>{" "}
-              {dictPrice.contact}
-              <br />
-              <strong>{dictPrice.contact_2}</strong>
-            </Balancer>
-          </p>
-        </motion.div>
+        {siteConfig.supportEmail ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-8 text-center"
+          >
+            <p className="text-muted-foreground">
+              <Balancer>
+                Email{" "}
+                <a
+                  className="font-medium text-primary hover:underline"
+                  href={`mailto:${siteConfig.supportEmail}`}
+                >
+                  {siteConfig.supportEmail}
+                </a>{" "}
+                {dictPrice.contact}
+                <br />
+                <strong>{dictPrice.contact_2}</strong>
+              </Balancer>
+            </p>
+          </motion.div>
+        ) : null}
       </div>
     </main>
   );
