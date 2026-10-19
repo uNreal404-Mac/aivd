@@ -97,9 +97,9 @@ export function ToolLandingPage({
             </motion.div>
 
             {/* 标题 */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">
               {landing.hero.title}
-            </h1>
+            </h2>
 
             {/* 描述 */}
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto" suppressHydrationWarning>
