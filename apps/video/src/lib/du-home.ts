@@ -1,5 +1,5 @@
 /**
- * Data for the DreamUtopia homepage (see spec.md, apps/video).
+ * Data for the aidv.ai homepage (see spec.md, apps/video).
  * Locale-free hrefs only (see "Allowed hrefs"); prefix with localizedHref().
  */
 
@@ -67,7 +67,7 @@ export const HERO = {
   titleLead: "Bring stories",
   titleAccent: "to life.",
   subtitle:
-    "DreamUtopia turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
+    "aidv.ai turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
   ctas: [
     {
       label: "Start Creating",
