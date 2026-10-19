@@ -27,7 +27,7 @@ export interface SiteConfig {
 export const SUPPORT_EMAIL = "tuapi@mail.grokbot.com";
 
 export const siteConfig: SiteConfig = {
-  name: "DreamUtopia",
+  name: "aidv.ai",
   description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
   url: process.env.NEXT_PUBLIC_APP_URL || "https://dreamutopia-video.pages.dev",
   ogImage: "/og.png",
