@@ -99,6 +99,8 @@ import {
 
 // Credit Calculator
 import { calculateVideoCredits } from "@/lib/credit-calculator";
+import { CameraPresetPicker } from "@/components/camera-presets/camera-preset-picker";
+import { containsCjk, type CameraPresetId } from "@/lib/camera-presets";
 
 // ============================================================================
 // Main Component
@@ -176,6 +178,7 @@ export function VideoGeneratorInput({
 
   // Advanced settings state
   const [generateAudio, setGenerateAudio] = useState(true);
+  const [cameraPreset, setCameraPreset] = useState<CameraPresetId | null>(null);
 
   // Video-specific state
   const [selectedVideoModel, setSelectedVideoModel] = useState<VideoModel | null>(
@@ -701,6 +704,8 @@ export function VideoGeneratorInput({
       outputNumber: currentOutputNumber,
       style: generationType === "image" && selectedStyle ? selectedStyle.id : undefined,
       generateAudio: modelSupportsAudio ? generateAudio : undefined,
+      cameraPreset:
+        generationType === "video" && cameraPreset ? cameraPreset : undefined,
       estimatedCredits: calculatedCredits,
     };
 
@@ -1218,6 +1223,20 @@ export function VideoGeneratorInput({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-fit bg-popover border-border p-4" align="start">
+                  {/* Camera motion preset (video only; does not change credits) */}
+                  {generationType === "video" && (
+                    <div className="mb-4 max-w-[360px]">
+                      <span className="text-xs text-muted-foreground mb-2 block">
+                        {containsCjk(texts.videoPlaceholder ?? "") ? "运镜" : "Camera motion"}
+                      </span>
+                      <CameraPresetPicker
+                        value={cameraPreset}
+                        onChange={setCameraPreset}
+                        locale={containsCjk(texts.videoPlaceholder ?? "") ? "zh" : "en"}
+                        disabled={disabled || isLoading}
+                      />
+                    </div>
+                  )}
                   {/* Aspect Ratio */}
                   <div className="mb-4">
                     <span className="text-xs text-muted-foreground mb-2 block">{texts.aspectRatio}</span>

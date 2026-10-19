@@ -253,6 +253,8 @@ export interface GenerateVideoBody {
   duration: number;
   aspectRatio: string;
   imageKey: string;
+  /** Optional camera motion preset id (src/lib/camera-presets.ts). */
+  cameraPreset?: string | null;
 }
 
 export type SubmitResult =
@@ -316,6 +318,7 @@ export async function submitImageToVideo(
         aspectRatio: body.aspectRatio,
         imageUrl: body.imageKey,
         mode: "image-to-video",
+        ...(body.cameraPreset ? { cameraPreset: body.cameraPreset } : {}),
       }),
     });
 

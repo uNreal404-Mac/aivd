@@ -7,6 +7,7 @@ import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { imageRefSchema } from "@/lib/image-ref-schema";
 import { resolveGenerateImageInputs } from "@/lib/generate-image-inputs";
 import { ProviderRejectedError } from "@/ai/types";
+import { CAMERA_PRESET_IDS } from "@/lib/camera-presets";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -23,6 +24,7 @@ const generateSchema = z.object({
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
+  cameraPreset: z.enum(CAMERA_PRESET_IDS).optional(),
   idempotencyKey: z.string().max(200).optional(),
 });
 
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest) {
       mode: data.mode,
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
+      cameraPreset: data.cameraPreset,
       idempotencyKey,
     });
 

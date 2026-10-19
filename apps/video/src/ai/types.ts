@@ -32,6 +32,8 @@ export interface VideoGenerationParams {
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;
+  /** Camera lock for providers that expose it (kie Seedance `fixed_lens`). */
+  fixedLens?: boolean;
   removeWatermark?: boolean;
   callbackUrl?: string;
 }

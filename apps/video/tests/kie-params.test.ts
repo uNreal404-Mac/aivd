@@ -18,6 +18,21 @@ describe("kieParamsTransformer", () => {
     expect(result.input.resolution).toBe("720p");
   });
 
+  it("maps camera presets to seedance fixed_lens (default stays locked)", () => {
+    const base = { prompt: "p", aspectRatio: "16:9", duration: 4 };
+    expect(
+      transformParamsForProvider("seedance-1.5-pro", "kie", base).input.fixed_lens
+    ).toBe(true);
+    expect(
+      transformParamsForProvider("seedance-1.5-pro", "kie", { ...base, fixedLens: false })
+        .input.fixed_lens
+    ).toBe(false);
+    expect(
+      transformParamsForProvider("seedance-1.5-pro", "kie", { ...base, fixedLens: true })
+        .input.fixed_lens
+    ).toBe(true);
+  });
+
   it("limits seedance input_urls to the first two images", () => {
     const result = transformParamsForProvider("seedance-1.5-pro", "kie", {
       prompt: "p",

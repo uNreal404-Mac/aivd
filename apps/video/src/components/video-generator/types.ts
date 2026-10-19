@@ -548,6 +548,8 @@ export interface SubmitData {
   style?: string;
   /** Whether to generate audio (for models that support it) */
   generateAudio?: boolean;
+  /** Camera motion preset id (video only, see src/lib/camera-presets.ts) */
+  cameraPreset?: string;
   /** Estimated credits to be consumed */
   estimatedCredits: number;
 }

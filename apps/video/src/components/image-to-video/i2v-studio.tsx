@@ -20,6 +20,8 @@ import {
   validateImageFile,
   type I2VModelId,
 } from "@/lib/image-to-video";
+import { CameraPresetPicker } from "@/components/camera-presets/camera-preset-picker";
+import type { CameraPresetId } from "@/lib/camera-presets";
 
 const EMPTY_PLACEHOLDER = "/images/placeholders/i2v-empty.svg";
 
@@ -58,6 +60,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   const [dragActive, setDragActive] = useState(false);
 
   const [prompt, setPrompt] = useState("");
+  const [cameraPreset, setCameraPreset] = useState<CameraPresetId | null>(null);
   const [model, setModel] = useState<I2VModelId>(I2V_MODELS[0].id);
   const [duration, setDuration] = useState<number>(
     durationsFor(I2V_MODELS[0].id)[0],
@@ -285,6 +288,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           duration,
           aspectRatio,
           imageKey,
+          cameraPreset,
         },
         {
           enabled: generationEnabled,
@@ -467,6 +471,16 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             <span className="i2v-counter" id="i2v-prompt-counter">
               {prompt.length}/{MAX_PROMPT_LENGTH}
             </span>
+          </div>
+
+          <div className="i2v-field">
+            <span className="i2v-label">Camera motion</span>
+            <CameraPresetPicker
+              value={cameraPreset}
+              onChange={setCameraPreset}
+              locale="en"
+              disabled={submitting}
+            />
           </div>
 
           <div className="i2v-field">

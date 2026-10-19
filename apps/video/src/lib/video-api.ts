@@ -12,6 +12,7 @@ export interface VideoGenerateRequest {
   imageUrl?: string;
   imageUrls?: string[];
   generateAudio?: boolean;
+  cameraPreset?: string;
 }
 
 /**
@@ -98,6 +99,7 @@ export async function transformSubmitData(
     imageUrl,
     imageUrls,
     generateAudio: data.generateAudio,
+    ...(data.cameraPreset ? { cameraPreset: data.cameraPreset } : {}),
   };
 }
 

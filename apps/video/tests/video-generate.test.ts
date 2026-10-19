@@ -548,4 +548,58 @@ describe("videoService.generate / creditService integration", () => {
     expect(getErrorCode(caught)).toBe("INVALID_IMAGE_REF");
     expect(fakeProvider.createTask).not.toHaveBeenCalled();
   });
+  it("camera preset augments the provider prompt, sets fixedLens, keeps credits", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+    const before = await getBalance(userId);
+
+    fakeProvider.createTask.mockResolvedValue({
+      taskId: "ext_camera",
+      provider: "evolink",
+      status: "pending",
+    });
+
+    const result = await videoService.generate({
+      ...baseParams(userId),
+      cameraPreset: "push-in",
+    });
+
+    expect(fakeProvider.createTask).toHaveBeenCalledTimes(1);
+    const sent = fakeProvider.createTask.mock.calls[0][0] as {
+      prompt: string;
+      fixedLens?: boolean;
+    };
+    expect(sent.prompt).toBe(
+      "a cat riding a skateboard. Slow, smooth dolly push-in toward the subject."
+    );
+    if (MODEL === "seedance-1.5-pro") {
+      expect(sent.fixedLens).toBe(false);
+    }
+
+    const row = await getVideoRow(result.videoUuid);
+    expect(row?.prompt).toBe("a cat riding a skateboard");
+    expect((row?.parameters as Record<string, unknown>).cameraPreset).toBe("push-in");
+
+    const after = await getBalance(userId);
+    expect(after.availableCredits).toBe(before.availableCredits - EXPECTED_COST);
+  });
+
+  it("no camera preset leaves prompt and fixedLens untouched", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+
+    fakeProvider.createTask.mockResolvedValue({
+      taskId: "ext_camera_none",
+      provider: "evolink",
+      status: "pending",
+    });
+
+    await videoService.generate(baseParams(userId));
+
+    const sent = fakeProvider.createTask.mock.calls[0][0] as Record<string, unknown>;
+    expect(sent.prompt).toBe("a cat riding a skateboard");
+    expect("fixedLens" in sent).toBe(false);
+  });
 });
+
+

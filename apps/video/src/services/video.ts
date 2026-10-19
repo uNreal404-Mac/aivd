@@ -25,6 +25,7 @@ import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { buildDedupeKey, DEDUPE_WINDOW_SECONDS } from "./video-dedupe";
+import { applyCameraPreset } from "@/lib/camera-presets";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -38,6 +39,8 @@ export interface GenerateVideoParams {
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;
+  /** Optional camera motion preset id (see src/lib/camera-presets.ts). */
+  cameraPreset?: string;
   idempotencyKey?: string;
 }
 
@@ -214,6 +217,15 @@ export class VideoService {
       );
     }
 
+    // Camera preset: appends a camera-direction fragment to the prompt sent to
+    // the provider and, where supported, sets the provider's camera lock.
+    // Pricing is unchanged. The user's own prompt is what we store.
+    const camera = applyCameraPreset({
+      prompt: params.prompt,
+      presetId: params.cameraPreset,
+      modelId: params.model,
+    });
+
     const idempotencyKey = params.idempotencyKey;
 
     // Idempotency: if a key is provided, look up an existing non-deleted
@@ -243,7 +255,7 @@ export class VideoService {
       userId: params.userId,
       model: params.model,
       mode: resolvedMode,
-      prompt: params.prompt,
+      prompt: camera.prompt,
       duration: effectiveDuration,
       aspectRatio: params.aspectRatio,
       quality: params.quality,
@@ -280,6 +292,9 @@ export class VideoService {
       generateAudio: params.generateAudio,
       dedupeKey,
     };
+    if (camera.presetId) {
+      parameters.cameraPreset = camera.presetId;
+    }
     if (idempotencyKey) {
       parameters.idempotencyKey = idempotencyKey;
     }
@@ -425,7 +440,7 @@ export class VideoService {
     try {
       providerResult = await provider.createTask({
         model: params.model,
-        prompt: params.prompt,
+        prompt: camera.prompt,
         duration: effectiveDuration,  // ✅ 使用计算后的时长
         aspectRatio: params.aspectRatio,
         quality: params.quality,
@@ -434,6 +449,7 @@ export class VideoService {
         mode: resolvedMode,
         outputNumber,
         generateAudio: params.generateAudio,
+        ...(camera.fixedLens !== undefined ? { fixedLens: camera.fixedLens } : {}),
         callbackUrl,
       });
     } catch (error) {
