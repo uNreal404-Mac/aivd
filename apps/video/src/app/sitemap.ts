@@ -113,6 +113,8 @@ async function scanPages(
         } else if (routePath.includes('privacy') || routePath.includes('terms')) {
           priority = 0.3;
           changeFrequency = 'monthly';
+        } else if (routePath === 'ai-video-generator') {
+          priority = 0.9; // keyword landing page (T5)
         } else if (routePath.includes('-to-') || /\d/.test(routePath)) {
           // 工具页面和模型页面
           priority = 0.7;
