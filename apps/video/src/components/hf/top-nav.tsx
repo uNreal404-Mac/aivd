@@ -8,6 +8,7 @@ import { cn } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
+import { isPreviewSite } from "@/config/site";
 
 interface HfTopNavProps {
   user?: {
@@ -116,6 +117,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
               aidv.ai
             </span>
+            {isPreviewSite && (
+              <span
+                data-testid="preview-badge"
+                className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300"
+              >
+                Preview
+              </span>
+            )}
           </Link>
 
           <nav className="hidden min-w-0 items-center gap-1 overflow-hidden lg:flex">

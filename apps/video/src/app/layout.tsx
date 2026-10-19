@@ -19,7 +19,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { PlausibleAnalytics } from "@/components/plausible-provider";
 import { AttributionCapture } from "@/components/attribution-capture";
 import { i18n } from "@/config/i18n-config";
-import { siteConfig } from "@/config/site";
+import { getSiteTitle, siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 
 const fontSans = FontSans({
@@ -39,7 +39,7 @@ const fontHeading = localFont({
   variable: "--font-heading",
 });
 
-
+const defaultSiteTitle = getSiteTitle();
 
 export function generateStaticParams() {
   return i18n.locales.map((locale) => ({ locale }));
@@ -47,8 +47,8 @@ export function generateStaticParams() {
 
 const baseMetadata = {
   title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
+    default: defaultSiteTitle,
+    template: `%s | ${defaultSiteTitle}`,
   },
   description: siteConfig.description,
   keywords: [
@@ -69,13 +69,13 @@ const baseMetadata = {
     type: "website",
     locale: "en_US",
     url: siteConfig.url,
-    title: siteConfig.name,
+    title: defaultSiteTitle,
     description: siteConfig.description,
-    siteName: siteConfig.name,
+    siteName: defaultSiteTitle,
   },
   twitter: {
     card: "summary_large_image",
-    title: siteConfig.name,
+    title: defaultSiteTitle,
     description: siteConfig.description,
   },
   icons: {
@@ -89,8 +89,24 @@ const baseMetadata = {
 };
 
 export async function generateMetadata() {
+  const locale = await getLocale();
+  const siteTitle = getSiteTitle(locale);
+
   return {
     ...baseMetadata,
+    title: {
+      default: siteTitle,
+      template: `%s | ${siteTitle}`,
+    },
+    openGraph: {
+      ...baseMetadata.openGraph,
+      title: siteTitle,
+      siteName: siteTitle,
+    },
+    twitter: {
+      ...baseMetadata.twitter,
+      title: siteTitle,
+    },
     robots: isNoIndexEnvironment()
       ? NOINDEX_ROBOTS
       : { index: true, follow: true },

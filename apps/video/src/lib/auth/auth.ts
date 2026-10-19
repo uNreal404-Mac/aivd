@@ -297,6 +297,15 @@ if (env.CREEM_API_KEY) {
 
 export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
+  trustedOrigins: [
+    ...new Set(
+      [
+        env.NEXT_PUBLIC_APP_URL,
+        "https://aivd-preview.pages.dev",
+        "https://dreamutopia-video.pages.dev",
+      ].filter((origin): origin is string => Boolean(origin)),
+    ),
+  ],
   basePath: "/api/auth",
   secret: env.BETTER_AUTH_SECRET,
   logger: debugLogger,

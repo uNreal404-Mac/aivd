@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { userMenuItems } from "@/config/navigation";
 import { i18n, localeMap } from "@/config/i18n-config";
+import { isPreviewSite } from "@/config/site";
 
 interface HeaderSimpleProps {
   user?: Pick<User, "name" | "image" | "email"> | null;
@@ -68,6 +69,14 @@ export function HeaderSimple({
           </button>
           <Link href={`/${lang}`} className="flex items-center gap-2">
             <span className="text-xl font-semibold">aidv.ai</span>
+            {isPreviewSite && (
+              <span
+                data-testid="preview-badge"
+                className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+              >
+                Preview
+              </span>
+            )}
           </Link>
         </div>
 
