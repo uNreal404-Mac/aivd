@@ -14,6 +14,14 @@ export function isValidSessionId(v: unknown): v is string {
 }
 
 /**
+ * Test-mode sessions never charge real money; the UI surfaces a notice.
+ * Purely prefix-based (session may not be validated yet by the caller).
+ */
+export function isTestModeSession(sessionId: string): boolean {
+  return sessionId.startsWith("cs_test_");
+}
+
+/**
  * Order number for a checkout session.
  *
  * MUST match the orderNo used by `stripe-webhook.ts` for
@@ -48,4 +56,11 @@ export function shouldKeepPolling(
   elapsedMs: number
 ): boolean {
   return status.status === "pending" && elapsedMs < POLL_TIMEOUT_MS;
+}
+
+export type CheckoutFetchOutcome = "unauthorized" | "failed";
+
+/** 401/403 mean "not signed in" (or no access) rather than a transient error. */
+export function classifyStatusResponse(status: number): CheckoutFetchOutcome {
+  return status === 401 || status === 403 ? "unauthorized" : "failed";
 }

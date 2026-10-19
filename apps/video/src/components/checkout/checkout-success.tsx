@@ -5,7 +5,9 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import {
   POLL_INTERVAL_MS,
+  classifyStatusResponse,
   isValidSessionId,
+  isTestModeSession,
   shouldKeepPolling,
   type CheckoutStatus,
 } from "@/lib/checkout-status";
@@ -19,6 +21,7 @@ type View =
   | { kind: "pending" }
   | { kind: "paid"; credits: number }
   | { kind: "timeout" }
+  | { kind: "unauthorized" }
   | { kind: "error" };
 
 type Copy = {
@@ -33,6 +36,10 @@ type Copy = {
   refresh: string;
   signInTitle: string;
   signIn: string;
+  errorTitle: string;
+  errorText: string;
+  viewCredits: string;
+  testModeNotice: string;
 };
 
 const COPY: Record<"en" | "zh", Copy> = {
@@ -49,6 +56,11 @@ const COPY: Record<"en" | "zh", Copy> = {
     refresh: "Refresh",
     signInTitle: "Please sign in to see your credits",
     signIn: "Sign in",
+    errorTitle: "We couldn't confirm your payment yet",
+    errorText:
+      "If you completed checkout, your credits will appear shortly. Refresh this page or check your credits.",
+    viewCredits: "View credits",
+    testModeNotice: "Test mode — no real money was charged.",
   },
   zh: {
     notFoundTitle: "我们找不到这笔付款",
@@ -63,6 +75,11 @@ const COPY: Record<"en" | "zh", Copy> = {
     refresh: "刷新",
     signInTitle: "请登录以查看你的积分",
     signIn: "登录",
+    errorTitle: "暂时无法确认你的付款",
+    errorText:
+      "如果你已完成支付，积分很快会到账。请刷新页面或查看积分。",
+    viewCredits: "查看积分",
+    testModeNotice: "测试模式——未产生真实扣款。",
   },
 };
 
@@ -89,6 +106,15 @@ const STYLES = `
     background: var(--co-surface);
     border: 1px solid var(--co-border);
     border-radius: var(--co-radius);
+  }
+  .co-notice {
+    margin: 0;
+    padding: 4px 12px;
+    border: 1px dashed var(--co-border);
+    border-radius: 999px;
+    color: var(--co-muted);
+    font-size: 13px;
+    line-height: 1.4;
   }
   .co-title {
     margin: 0;
@@ -187,6 +213,7 @@ export default function CheckoutSuccess({
   const copy = lang === "zh" ? COPY.zh : COPY.en;
   const [view, setView] = useState<View>({ kind: "pending" });
   const sessionValid = isValidSessionId(sessionId);
+  const testMode = isValidSessionId(sessionId) && isTestModeSession(sessionId);
 
   useEffect(() => {
     if (!isValidSessionId(sessionId)) {
@@ -207,9 +234,14 @@ export default function CheckoutSuccess({
         if (cancelled) {
           return;
         }
-        // Covers 401 (not signed in) as well as any other failure.
+        // 401/403 => not signed in; anything else is a transient failure.
         if (!res.ok) {
-          setView({ kind: "error" });
+          setView({
+            kind:
+              classifyStatusResponse(res.status) === "unauthorized"
+                ? "unauthorized"
+                : "error",
+          });
           return;
         }
 
@@ -296,13 +328,32 @@ export default function CheckoutSuccess({
         </div>
       </>
     );
-  } else if (view.kind === "error") {
+  } else if (view.kind === "unauthorized") {
     content = (
       <>
         <h1 className="co-title">{copy.signInTitle}</h1>
         <div className="co-actions">
           <Link className="co-btn" href={`/${lang}/login`}>
             {copy.signIn}
+          </Link>
+        </div>
+      </>
+    );
+  } else if (view.kind === "error") {
+    content = (
+      <>
+        <h1 className="co-title">{copy.errorTitle}</h1>
+        <p className="co-text">{copy.errorText}</p>
+        <div className="co-actions">
+          <button
+            type="button"
+            className="co-btn"
+            onClick={() => window.location.reload()}
+          >
+            {copy.refresh}
+          </button>
+          <Link className="co-link" href={`/${lang}/credits`}>
+            {copy.viewCredits}
           </Link>
         </div>
       </>
@@ -320,6 +371,9 @@ export default function CheckoutSuccess({
     <main className="co-page">
       <style>{STYLES}</style>
       <section className="co-card" aria-live="polite">
+        {sessionValid && testMode ? (
+          <p className="co-notice">{copy.testModeNotice}</p>
+        ) : null}
         {content}
       </section>
     </main>

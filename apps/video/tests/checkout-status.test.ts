@@ -7,6 +7,8 @@ import {
   POLL_INTERVAL_MS,
   POLL_TIMEOUT_MS,
   SESSION_ID_PATTERN,
+  classifyStatusResponse,
+  isTestModeSession,
   isValidSessionId,
   orderNoForSession,
   shouldKeepPolling,
@@ -33,6 +35,34 @@ describe("SESSION_ID_PATTERN / isValidSessionId", () => {
     expect(isValidSessionId("cs_test_abcdefghij1234' OR 1=1 --")).toBe(false);
     expect(isValidSessionId("cs_test_abcdefghij1234; DROP TABLE x")).toBe(false);
     expect(isValidSessionId("cs_test_abcdefghij1234\ncs_live_y")).toBe(false);
+  });
+});
+
+describe("isTestModeSession", () => {
+  it("returns true for cs_test_ session ids", () => {
+    expect(isTestModeSession("cs_test_0123456789")).toBe(true);
+    expect(isTestModeSession("cs_test_abcdefghij1234")).toBe(true);
+    expect(isTestModeSession("cs_test_")).toBe(true);
+  });
+
+  it("returns false for live ids and other values", () => {
+    expect(isTestModeSession("cs_live_abcdefghij1234")).toBe(false);
+    expect(isTestModeSession("")).toBe(false);
+    expect(isTestModeSession("test_cs_abcdefghij1234")).toBe(false);
+    expect(isTestModeSession("CS_TEST_abcdefghij1234")).toBe(false);
+  });
+});
+
+describe("classifyStatusResponse", () => {
+  it("maps 401 and 403 to unauthorized", () => {
+    expect(classifyStatusResponse(401)).toBe("unauthorized");
+    expect(classifyStatusResponse(403)).toBe("unauthorized");
+  });
+
+  it("maps other statuses to failed", () => {
+    expect(classifyStatusResponse(500)).toBe("failed");
+    expect(classifyStatusResponse(404)).toBe("failed");
+    expect(classifyStatusResponse(429)).toBe("failed");
   });
 });
 
