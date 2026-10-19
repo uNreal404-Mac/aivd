@@ -19,6 +19,12 @@ export interface HandleStripeWebhookArgs {
   webhookSecret: string;
   stripe: Stripe;
   grantCreditsOnce: GrantCreditsOnce;
+  /**
+   * When `true`, live-mode events are processed instead of being ignored.
+   * Defaults to `false` (test mode only). Callers should only set this when
+   * live mode has been explicitly enabled via `STRIPE_LIVE_MODE`.
+   */
+  allowLivemode?: boolean;
 }
 
 export interface StripeWebhookResult {
@@ -64,7 +70,10 @@ async function grantForCheckoutSession(
 /**
  * Pure, dependency-injected core for the Stripe webhook.
  *
- * TEST MODE ONLY: live mode events are acknowledged but never granted.
+ * Live mode is disabled by default: `livemode: true` events are acknowledged
+ * but never granted unless the caller passes `allowLivemode: true` (the route
+ * only does so when the configured key is a live key and `STRIPE_LIVE_MODE`
+ * is `"true"`).
  *
  * Checkout-session events are keyed by session id (`stripe_<session.id>`) so
  * that `checkout.session.completed` and
@@ -78,6 +87,7 @@ export async function handleStripeWebhook({
   webhookSecret,
   stripe,
   grantCreditsOnce,
+  allowLivemode = false,
 }: HandleStripeWebhookArgs): Promise<StripeWebhookResult> {
   if (!signature) {
     return { status: 400, body: { error: "missing_signature" } };
@@ -97,8 +107,8 @@ export async function handleStripeWebhook({
     return { status: 400, body: { error: "invalid_signature" } };
   }
 
-  // Test mode only — ignore live mode traffic entirely.
-  if (event.livemode === true) {
+  // Live mode is refused unless explicitly allowed by the caller.
+  if (event.livemode === true && !allowLivemode) {
     return { status: 200, body: { received: true, ignored: "livemode" } };
   }
 

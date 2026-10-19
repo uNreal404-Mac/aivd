@@ -34,7 +34,7 @@
 # 应用配置
 # ============================================
 NEXT_PUBLIC_APP_URL=https://videofly.app  # 生产环境域名
-NEXT_PUBLIC_BILLING_PROVIDER=creem        # 支付提供商
+NEXT_PUBLIC_BILLING_PROVIDER=stripe       # 支付提供商（默认 stripe，可选 creem）
 
 # ============================================
 # 认证配置
@@ -334,7 +334,7 @@ window.location.href = portalData.portalUrl;
 #### 环境变量
 
 ```bash
-STRIPE_API_KEY=sk_live_xxx
+STRIPE_SECRET_KEY=sk_test_xxx   # or rk_test_; live (sk_live_/rk_live_) only with STRIPE_LIVE_MODE=true
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 

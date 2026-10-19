@@ -12,8 +12,10 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     // Stripe (optional - only required if using Stripe as billing provider)
-    STRIPE_API_KEY: z.string().min(1).optional(),
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    // Live mode guard (must be "true" to allow sk_live_/rk_live_ keys)
+    STRIPE_LIVE_MODE: z.enum(["true", "false"]).optional(),
     // Creem
     CREEM_API_KEY: z.string().min(1).optional(),
     CREEM_WEBHOOK_SECRET: z.string().optional(),
@@ -34,8 +36,9 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    STRIPE_API_KEY: process.env.STRIPE_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_LIVE_MODE: process.env.STRIPE_LIVE_MODE,
     CREEM_API_KEY: process.env.CREEM_API_KEY,
     CREEM_WEBHOOK_SECRET: process.env.CREEM_WEBHOOK_SECRET,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

@@ -5,8 +5,9 @@ export const env = createEnv({
   server: {
     // Better Auth secret
     BETTER_AUTH_SECRET: z.string().min(1),
-    STRIPE_API_KEY: z.string().min(1).optional(),
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    STRIPE_LIVE_MODE: z.enum(["true", "false"]).optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().min(1),
@@ -21,8 +22,9 @@ export const env = createEnv({
   },
   runtimeEnv: {
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    STRIPE_API_KEY: process.env.STRIPE_API_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_LIVE_MODE: process.env.STRIPE_LIVE_MODE,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_PRO_PRODUCT_ID:
       process.env.NEXT_PUBLIC_STRIPE_PRO_PRODUCT_ID,

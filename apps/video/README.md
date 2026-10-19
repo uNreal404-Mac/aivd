@@ -149,7 +149,7 @@ CREEM_API_KEY='your-creem-key'
 CREEM_WEBHOOK_SECRET='your-creem-webhook-secret'
 
 # 支付 - Stripe (备用)
-STRIPE_API_KEY='your-stripe-key'
+STRIPE_SECRET_KEY='sk_test_or_rk_test_key'
 STRIPE_WEBHOOK_SECRET='your-stripe-webhook-secret'
 
 # 邮件

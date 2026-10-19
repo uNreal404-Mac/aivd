@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type Stripe from "stripe";
 
 import { getProductById } from "@/config/credits";
 import { getCurrentUser } from "@/lib/auth";
@@ -6,7 +7,7 @@ import { isPaymentsConfigured } from "@/lib/payments";
 import {
   buildCheckoutSessionParams,
   createStripeClient,
-  getStripeSecretKey,
+  getUsableStripeKey,
 } from "@/payment/stripe-checkout";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +20,9 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  const secretKey = getStripeSecretKey();
-  if (!secretKey || !secretKey.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "test_mode_only" }, { status: 503 });
+  const keyResult = getUsableStripeKey();
+  if (!keyResult.ok) {
+    return NextResponse.json({ error: keyResult.error }, { status: 503 });
   }
 
   const user = await getCurrentUser();
@@ -43,9 +44,17 @@ export const POST = async (req: NextRequest) => {
 
   const origin = new URL(req.url).origin;
 
-  const session = await createStripeClient(secretKey).checkout.sessions.create(
-    buildCheckoutSessionParams({ product, userId: user.id, origin })
-  );
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await createStripeClient(keyResult.key).checkout.sessions.create(
+      buildCheckoutSessionParams({ product, userId: user.id, origin })
+    );
+  } catch (error) {
+    // Never log the key or full error payload; keep the message short.
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(`❌ Stripe checkout session creation failed: ${message}`);
+    return NextResponse.json({ error: "checkout_failed" }, { status: 502 });
+  }
 
   return NextResponse.json({ url: session.url });
 };

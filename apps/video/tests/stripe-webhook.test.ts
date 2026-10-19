@@ -38,7 +38,8 @@ function createIdempotentGranter(creditsPerGrant = 100) {
 async function deliver(
   event: unknown,
   signature: string | null,
-  grantCreditsOnce: GrantCreditsOnce
+  grantCreditsOnce: GrantCreditsOnce,
+  options: { allowLivemode?: boolean } = {}
 ) {
   const payload = JSON.stringify(event);
   return handleStripeWebhook({
@@ -47,6 +48,7 @@ async function deliver(
     webhookSecret: WEBHOOK_SECRET,
     stripe,
     grantCreditsOnce,
+    allowLivemode: options.allowLivemode === true,
   });
 }
 
@@ -158,7 +160,7 @@ describe("handleStripeWebhook", () => {
     expect(state.calls).toBe(0);
   });
 
-  it("ignores livemode events", async () => {
+  it("ignores livemode events by default", async () => {
     const { grantCreditsOnce, state } = createIdempotentGranter();
     const event = checkoutSessionEvent("evt_live", { livemode: true });
     const payload = JSON.stringify(event);
@@ -168,6 +170,21 @@ describe("handleStripeWebhook", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: true, ignored: "livemode" });
     expect(state.calls).toBe(0);
+  });
+
+  it("processes livemode events when allowLivemode is true", async () => {
+    const { grantCreditsOnce, state } = createIdempotentGranter();
+    const event = checkoutSessionEvent("evt_live_allowed", { livemode: true });
+    const payload = JSON.stringify(event);
+
+    const res = await deliver(event, sign(payload), grantCreditsOnce, {
+      allowLivemode: true,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: true, result: "granted" });
+    expect(state.calls).toBe(1);
+    expect(state.credits).toBe(100);
   });
 
   it("ignores unpaid sessions", async () => {

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import {
   createStripeClient,
-  getStripeSecretKey,
+  getUsableStripeKey,
 } from "@/payment/stripe-checkout";
 import { grantCreditsOnce } from "@/payment/stripe-fulfillment";
 import { handleStripeWebhook } from "@/payment/stripe-webhook";
@@ -12,13 +12,12 @@ const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
 export const dynamic = "force-dynamic";
 
 export const POST = async (req: NextRequest) => {
-  const secretKey = getStripeSecretKey();
-  const webhookSecret = process.env[STRIPE_WEBHOOK_SECRET_VAR]?.trim();
-
-  // Test mode only — refuse live keys outright.
-  if (!secretKey || !secretKey.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "test_mode_only" }, { status: 503 });
+  const keyResult = getUsableStripeKey();
+  if (!keyResult.ok) {
+    return NextResponse.json({ error: keyResult.error }, { status: 503 });
   }
+
+  const webhookSecret = process.env[STRIPE_WEBHOOK_SECRET_VAR]?.trim();
 
   if (!webhookSecret) {
     return NextResponse.json(
@@ -35,7 +34,8 @@ export const POST = async (req: NextRequest) => {
       payload,
       signature,
       webhookSecret,
-      stripe: createStripeClient(secretKey),
+      stripe: createStripeClient(keyResult.key),
+      allowLivemode: keyResult.mode === "live",
       grantCreditsOnce,
     });
 
