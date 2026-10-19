@@ -35,6 +35,7 @@ interface I2VStudioProps {
 export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
+  const submittingRef = useRef(false);
 
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
@@ -53,6 +54,8 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
+  const [pendingLock, setPendingLock] = useState(false);
 
   function openPicker() {
     inputRef.current?.click();
@@ -64,6 +67,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     setPreviewUrl(null);
     setUploadError(null);
     setUploading(false);
+    setPendingLock(false);
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -84,6 +88,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
       return;
     }
 
+    setPendingLock(false);
     setUploadError(null);
     setFileName(file.name);
     setImageKey(null);
@@ -134,38 +139,55 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
   }
 
   async function handleGenerate() {
-    if (generationEnabled !== true || !imageKey) {
+    if (submittingRef.current) {
       return;
     }
 
+    if (generationEnabled !== true || !imageKey || pendingLock) {
+      return;
+    }
+
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
+    setSubmitNotice(null);
 
-    const result = await submitImageToVideo(
-      {
-        model,
-        prompt: prompt.trim(),
-        duration,
-        aspectRatio,
-        imageKey,
-      },
-      {
-        enabled: generationEnabled,
-        idempotencyKey: idempotencyKeyRef.current,
-      },
-    );
+    try {
+      const result = await submitImageToVideo(
+        {
+          model,
+          prompt: prompt.trim(),
+          duration,
+          aspectRatio,
+          imageKey,
+        },
+        {
+          enabled: generationEnabled,
+          idempotencyKey: idempotencyKeyRef.current,
+        },
+      );
 
-    idempotencyKeyRef.current = newIdempotencyKey();
-
-    setSubmitting(false);
-
-    if (!result.ok && result.reason === "error") {
-      setSubmitError(result.message);
+      if (result.ok) {
+        setSubmitNotice("Submitted — your video is being generated.");
+        idempotencyKeyRef.current = newIdempotencyKey();
+      } else if (result.reason === "pending") {
+        setSubmitNotice(result.message);
+        setPendingLock(true);
+      } else if (result.reason === "error") {
+        setSubmitError(result.message);
+        if (!result.retryable) {
+          idempotencyKeyRef.current = newIdempotencyKey();
+        }
+      }
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   }
 
   const formReady = canSubmit({ imageKey, prompt, uploading });
-  const generateDisabled = !generationEnabled || !formReady || submitting;
+  const generateDisabled =
+    !generationEnabled || !formReady || submitting || pendingLock;
 
   const dropzoneClassName = [
     "i2v-dropzone",
@@ -384,6 +406,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           {!generationEnabled ? (
             <p className="i2v-help">Video generation is not open yet.</p>
           ) : null}
+
+          <p className="i2v-help">
+            <output>{submitNotice ?? ""}</output>
+          </p>
 
           <p className="i2v-error" role="alert">
             {submitError ?? ""}

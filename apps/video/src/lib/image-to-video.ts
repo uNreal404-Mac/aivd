@@ -258,7 +258,11 @@ export interface GenerateVideoBody {
 export type SubmitResult =
   | { ok: true; status: number; data: unknown }
   | { ok: false; reason: "disabled" }
-  | { ok: false; reason: "error"; message: string };
+  | { ok: false; reason: "pending"; message: string; videoUuid?: string }
+  | { ok: false; reason: "error"; message: string; retryable: boolean };
+
+export const SUBMIT_PENDING_MESSAGE =
+  "Your request was sent but we could not confirm it yet. We will check it automatically — please don't submit again.";
 
 export interface SubmitOptions {
   enabled: boolean;
@@ -269,6 +273,14 @@ export interface SubmitOptions {
 /** Generates a fresh key so retries of the same submit stay unique. */
 export function newIdempotencyKey(): string {
   return crypto.randomUUID();
+}
+
+interface SubmitEnvelope {
+  success?: boolean;
+  error?: {
+    message?: string;
+    details?: { code?: string; videoUuid?: string };
+  };
 }
 
 export async function submitImageToVideo(
@@ -284,6 +296,7 @@ export async function submitImageToVideo(
       ok: false,
       reason: "error",
       message: "Please upload an image first.",
+      retryable: false,
     };
   }
 
@@ -307,13 +320,27 @@ export async function submitImageToVideo(
     });
 
     const data = await readJson(response);
+    const payload = (data ?? null) as SubmitEnvelope | null;
+    const isSuccessStatus = response.status >= 200 && response.status < 300;
 
-    if (response.status >= 200 && response.status < 300) {
+    if (isSuccessStatus && (!payload || payload.success !== false)) {
       return { ok: true, status: response.status, data };
     }
 
-    const message = (data as { error?: { message?: string } } | null)?.error
-      ?.message;
+    if (isSuccessStatus && payload && payload.success === false) {
+      const details = payload.error?.details;
+      if (details?.code === "SUBMIT_RESULT_UNKNOWN") {
+        return {
+          ok: false,
+          reason: "pending",
+          message: SUBMIT_PENDING_MESSAGE,
+          videoUuid: details.videoUuid,
+        };
+      }
+    }
+
+    const message = payload?.error?.message;
+    const retryable = !(response.status >= 400 && response.status < 500);
 
     return {
       ok: false,
@@ -322,12 +349,14 @@ export async function submitImageToVideo(
         typeof message === "string" && message.trim().length > 0
           ? message
           : "Generation request failed. Please try again.",
+      retryable,
     };
   } catch {
     return {
       ok: false,
       reason: "error",
       message: "Generation request failed. Please try again.",
+      retryable: true,
     };
   }
 }

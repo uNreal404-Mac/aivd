@@ -185,17 +185,25 @@ function kieParamsTransformer(
       ? [params.imageUrl]
       : undefined;
 
-  // Transform common parameters
-  if (params.aspectRatio) {
-    if (internalModelId === "veo-3.1") {
-      baseInput.aspect_ratio = params.aspectRatio;
-    } else {
+  // Aspect ratio: only sora-2 maps to landscape/portrait; wan2.6 has no
+  // such field; every other model (seedance, veo) passes the ratio string
+  // through unchanged.
+  if (internalModelId !== "wan2.6" && params.aspectRatio) {
+    if (internalModelId === "sora-2") {
       baseInput.aspect_ratio = transformAspectRatio(params.aspectRatio, "kie");
+    } else {
+      baseInput.aspect_ratio = params.aspectRatio;
     }
   }
 
+  // Duration: seedance uses a number (whole seconds); everything else keeps
+  // the string form KIE expects.
   if (params.duration) {
-    baseInput.duration = transformDuration(params.duration, "kie");
+    if (internalModelId === "seedance-1.5-pro") {
+      baseInput.duration = Number(params.duration);
+    } else {
+      baseInput.duration = transformDuration(params.duration, "kie");
+    }
   }
 
   if (imageUrls && imageUrls.length > 0) {
@@ -207,9 +215,9 @@ function kieParamsTransformer(
     else if (internalModelId === "wan2.6") {
       baseInput.image_urls = imageUrls;
     }
-    // Seedance uses input_urls
+    // Seedance uses input_urls (0-2 public image URLs)
     else if (internalModelId === "seedance-1.5-pro") {
-      baseInput.input_urls = imageUrls;
+      baseInput.input_urls = imageUrls.slice(0, 2);
     }
     // Veo 3.1 uses imageUrls (camelCase)
     else if (internalModelId === "veo-3.1") {

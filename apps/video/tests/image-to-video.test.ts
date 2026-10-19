@@ -320,6 +320,106 @@ describe("submitImageToVideo", () => {
       ok: false,
       reason: "error",
       message: "Please upload an image first.",
+      retryable: false,
+    });
+  });
+
+  it("treats 2xx with success:true as ok", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(200, { success: true, data: { id: "vid-1" } }),
+    );
+
+    const result = await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      status: 200,
+      data: { success: true, data: { id: "vid-1" } },
+    });
+  });
+
+  it("maps a 202 SUBMIT_RESULT_UNKNOWN onto a pending result", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(202, {
+        success: false,
+        error: {
+          message: "cannot confirm",
+          details: {
+            code: "SUBMIT_RESULT_UNKNOWN",
+            videoUuid: "vid-abc",
+          },
+        },
+      }),
+    );
+
+    const result = await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+      idempotencyKey: "key-123",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "pending",
+      message: expect.any(String),
+      videoUuid: "vid-abc",
+    });
+  });
+
+  it("marks 400 responses as non-retryable", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(400, { success: false, error: { message: "bad input" } }),
+    );
+
+    const result = await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "error",
+      message: "bad input",
+      retryable: false,
+    });
+  });
+
+  it("marks 500 responses as retryable", async () => {
+    const fetchFn = vi.fn(async () =>
+      stubResponse(500, { success: false, error: { message: "boom" } }),
+    );
+
+    const result = await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "error",
+      message: "boom",
+      retryable: true,
+    });
+  });
+
+  it("marks network errors as retryable", async () => {
+    const fetchFn = vi.fn(async () => {
+      throw new Error("offline");
+    });
+
+    const result = await submitImageToVideo(body, {
+      enabled: true,
+      fetchFn: fetchFn as FetchLike,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "error",
+      message: "Generation request failed. Please try again.",
+      retryable: true,
     });
   });
 });

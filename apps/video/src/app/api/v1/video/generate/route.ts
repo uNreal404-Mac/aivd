@@ -6,6 +6,7 @@ import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { imageRefSchema } from "@/lib/image-ref-schema";
 import { resolveGenerateImageInputs } from "@/lib/generate-image-inputs";
+import { ProviderRejectedError } from "@/ai/types";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -89,6 +90,13 @@ export async function POST(request: NextRequest) {
 
     return apiSuccess(result);
   } catch (error) {
+    if (error instanceof ProviderRejectedError) {
+      return apiError(
+        `The video provider rejected the request: ${error.message}`,
+        422,
+        { code: "PROVIDER_REJECTED" },
+      );
+    }
     return handleApiError(error);
   }
 }

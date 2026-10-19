@@ -1,3 +1,4 @@
+import { ProviderRejectedError } from "../types";
 import type {
   AIVideoProvider,
   VideoGenerationParams,
@@ -55,11 +56,50 @@ export class KieProvider implements AIVideoProvider {
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
-    if (result.code !== 200) throw new Error(result.msg || "API error");
+    if (!response.ok) {
+      const status = response.status;
+      if (status >= 400 && status < 500 && status !== 408) {
+        let message = response.statusText || `KIE HTTP ${status}`;
+        try {
+          const errJson = await response.json();
+          if (
+            errJson &&
+            typeof errJson.msg === "string" &&
+            errJson.msg.length > 0
+          ) {
+            message = errJson.msg;
+          }
+        } catch {
+          // fall back to status text
+        }
+        throw new ProviderRejectedError(message, status);
+      }
+      throw new Error(`KIE HTTP ${status}`);
+    }
+
+    let result: any;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error("Failed to parse KIE response");
+    }
+
+    const code = result?.code;
+    if (typeof code === "number" && code >= 400 && code < 500 && code !== 408) {
+      throw new ProviderRejectedError(result.msg || `KIE error ${code}`, code);
+    }
+
+    if (code !== 200) {
+      throw new Error(result?.msg || "API error");
+    }
+
+    const taskId = result?.data?.taskId;
+    if (!taskId) {
+      throw new Error("KIE response missing taskId");
+    }
 
     return {
-      taskId: result.data.taskId,
+      taskId,
       provider: "kie",
       status: "pending",
       raw: result,
