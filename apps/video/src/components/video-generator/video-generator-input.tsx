@@ -99,6 +99,7 @@ import {
 
 // Credit Calculator
 import { calculateVideoCredits } from "@/lib/credit-calculator";
+import { EnhancePromptButton } from "@/components/prompt-enhance/enhance-prompt-button";
 
 // ============================================================================
 // Main Component
@@ -983,6 +984,18 @@ export function VideoGeneratorInput({
                   (disabled || isLoading) && "opacity-50 cursor-not-allowed"
                 )}
                 rows={3}
+              />
+              {/* One-click prompt enhance (renders nothing while PROMPT_ENHANCE_ENABLED is off) */}
+              <EnhancePromptButton
+                className="mt-1"
+                prompt={prompt}
+                onEnhanced={(next) => {
+                  const value = next.slice(0, maxPromptLength);
+                  setPrompt(value);
+                  onPromptChange?.(value);
+                }}
+                locale={/[\u3400-\u9fff]/.test(texts.videoPlaceholder ?? "") ? "zh" : "en"}
+                disabled={disabled || isLoading}
               />
               {/* Character count and error */}
               {(showCharCount || promptError) && (
