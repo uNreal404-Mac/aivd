@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { creem } from "@creem_io/better-auth";
 import { magicLink } from "better-auth/plugins";
+import { MAGIC_LINK_OPTIONS } from "./magic-link-options";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 
@@ -160,7 +161,7 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
         throw error;
       }
     },
-    expiresIn: 300, // 5 minutes
+    ...MAGIC_LINK_OPTIONS,
   }));
 }
 
