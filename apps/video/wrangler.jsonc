@@ -20,8 +20,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "dreamutopia-db",
-      "database_id": "d7418d45-b49a-4d5a-9427-acdf639baa5a",
+      "database_name": "dreamutopia-video-preview",
+      "database_id": "2d38ed50-8b20-4d9e-bd2a-5b805762b8fa",
       "migrations_dir": "src/db/migrations"
     }
   ],
