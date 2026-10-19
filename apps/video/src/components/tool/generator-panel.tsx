@@ -15,15 +15,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { cn } from "@/components/ui";
 import { DEFAULT_VIDEO_MODELS } from "@/components/video-generator";
 import { getAvailableModels, calculateModelCredits } from "@/config/credits";
-import { ChevronDown, X, Sparkles, Image as ImageIcon, Clock, Check } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
+import { X, Sparkles, Image as ImageIcon, Check } from "lucide-react";
 
 // ============================================================================
 // Types
@@ -56,7 +48,11 @@ interface GeneratorPanelProps {
   initialAspectRatio?: string;
   initialQuality?: string;
   initialImageUrl?: string;
+  availableCredits?: number | null;
+  locale?: string;
 }
+
+const UNKNOWN_VALUE = "—";
 
 export interface GeneratorData {
   toolType: string;
@@ -84,6 +80,8 @@ export function GeneratorPanel({
   initialAspectRatio,
   initialQuality,
   initialImageUrl,
+  availableCredits,
+  locale = "en",
 }: GeneratorPanelProps) {
   const models = getAvailableModels();
   const [prompt, setPrompt] = useState(initialPrompt || "");
@@ -93,7 +91,6 @@ export function GeneratorPanel({
   const [quality, setQuality] = useState(initialQuality || "standard");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl || null);
-  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
   // Filter models based on tool type
   const availableModels = useMemo(() => {
@@ -213,13 +210,49 @@ export function GeneratorPanel({
     });
   }, [selectedModel, duration, quality, currentModel]);
 
+  const modelDetails = useMemo(() => {
+    return new Map(
+      availableModels.map((model) => {
+        const metadata = modelMetadata.get(model.id);
+        const configRecord = model as unknown as Record<string, unknown>;
+        const metadataRecord = (metadata?.metadata ?? {}) as Record<string, unknown>;
+        const speedValue =
+          configRecord.speed ??
+          configRecord.latency ??
+          configRecord.estimatedTime ??
+          configRecord.estimated_time ??
+          metadataRecord.speed ??
+          metadataRecord.latency ??
+          metadataRecord.estimatedTime ??
+          metadataRecord.estimated_time;
+        const speed = speedValue === undefined || speedValue === null || speedValue === ""
+          ? UNKNOWN_VALUE
+          : String(speedValue);
+        const qualities = model.qualities?.length ? model.qualities.join(" / ") : UNKNOWN_VALUE;
+        const audio = metadata?.supportsAudio === undefined
+          ? UNKNOWN_VALUE
+          : metadata.supportsAudio
+            ? "Yes"
+            : "No";
+        const unitPrice = model.creditCost?.perExtraSecond !== undefined
+          ? `${model.creditCost.perExtraSecond} cr/s`
+          : model.creditCost?.base !== undefined
+            ? `${model.creditCost.base} cr`
+            : UNKNOWN_VALUE;
+
+        return [model.id, { speed, qualities, audio, unitPrice }] as const;
+      })
+    );
+  }, [availableModels, modelMetadata]);
+
+  const canSubmit = hasAvailableModels &&
+    Boolean(currentModel) &&
+    prompt.trim().length > 0 &&
+    (!((toolType !== "text-to-video") && !imageFile && !imageUrl)) &&
+    !isLoading;
+
   const handleSubmit = useCallback(() => {
-    if (!currentModel) return;
-    const hasPrompt = prompt.trim().length > 0;
-    const requiresImage = toolType !== "text-to-video";
-    const hasImage = Boolean(imageFile || imageUrl);
-    if (!hasPrompt || isLoading) return;
-    if (requiresImage && !hasImage) return;
+    if (!canSubmit || !currentModel) return;
 
     const data: GeneratorData = {
       toolType,
@@ -248,7 +281,24 @@ export function GeneratorPanel({
     toolType,
     onSubmit,
     currentModel,
+    canSubmit,
   ]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.isComposing ||
+        event.key !== "Enter" ||
+        (!event.ctrlKey && !event.metaKey)
+      ) return;
+      event.preventDefault();
+      handleSubmit();
+    };
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [handleSubmit]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -263,13 +313,6 @@ export function GeneratorPanel({
     setImageUrl(null);
   };
 
-  const canSubmit = hasAvailableModels &&
-    Boolean(currentModel) &&
-    prompt.trim().length > 0 &&
-    (!((toolType !== "text-to-video") && !imageFile && !imageUrl)) &&
-    !isLoading;
-
-
   // Get page title
   const getPageTitle = () => {
     if (toolType === "image-to-video") return "IMAGE TO VIDEO";
@@ -278,10 +321,18 @@ export function GeneratorPanel({
     return "AI GENERATOR";
   };
 
+  const balanceLabel = availableCredits ?? UNKNOWN_VALUE;
+  const costText = locale.startsWith("zh")
+    ? `本次扣 ${estimatedCredits} 积分 · 余额 ${balanceLabel}`
+    : `This run: ${estimatedCredits} credits · Balance ${balanceLabel}`;
+  const loadingCostText = locale.startsWith("zh")
+    ? `生成中 · ${estimatedCredits} 积分 · 余额 ${balanceLabel}`
+    : `Generating · ${estimatedCredits} credits · Balance ${balanceLabel}`;
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Main Card - Pollo.ai Style */}
-      <div className="flex-1 flex flex-col rounded-[16px] bg-transparent overflow-hidden text-foreground">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-transparent text-foreground">
         {/* Header Bar */}
         <div className="px-1 pb-2 shrink-0">
           <h2 className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
@@ -290,7 +341,7 @@ export function GeneratorPanel({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 custom-scrollbar">
           {!hasAvailableModels && (
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
               No models are currently available for this tool under the active AI
@@ -301,65 +352,45 @@ export function GeneratorPanel({
           {hasAvailableModels && (
             <>
           {/* Model Selection */}
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              MODEL
-            </span>
-            {currentModel && (
-                <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
-                <DropdownMenuTrigger asChild disabled={isLoading}>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm text-white"
-                  >
-                    {renderModelIcon(currentModel.id, currentModel.name, "sm")}
-                    <span>{currentModel.name}</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-zinc-900 border-zinc-800 w-80 max-h-[400px] overflow-y-scroll custom-scrollbar">
-                  <DropdownMenuLabel className="text-zinc-400 text-xs">
-                    Video Models
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
-                  {availableModels.map((model) => (
-                    <DropdownMenuItem
-                      key={model.id}
-                      data-model-id={model.id}
-                      onClick={() => setSelectedModel(model.id)}
-                      className="text-white hover:bg-zinc-800 flex flex-col items-start py-3"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                          {renderModelIcon(model.id, model.name, "md")}
-                          <span className="font-medium">{model.name}</span>
-                        </div>
-                        {selectedModel === model.id && (
-                          <Check className="w-4 h-4 text-green-500" />
-                        )}
-                      </div>
-                      {model.description && (
-                        <div className="text-xs text-zinc-500 mt-1 ml-8">{model.description}</div>
-                      )}
-                      <div className="text-xs text-zinc-400 mt-1 ml-8 flex items-center gap-2">
-                        {model.maxDuration && (
-                          <>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {model.maxDuration}
-                            </span>
-                            <span>•</span>
-                          </>
-                        )}
-                        <span>{model.creditCost?.base ?? ""} credits</span>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+          <div>
+            <SectionLabel>MODEL</SectionLabel>
+            <div className="space-y-2">
+              {availableModels.map((model) => {
+                const details = modelDetails.get(model.id);
+                const selected = selectedModel === model.id;
 
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    data-model-id={model.id}
+                    onClick={() => setSelectedModel(model.id)}
+                    disabled={isLoading}
+                    className={cn(
+                      "w-full rounded-xl border p-3 text-left transition-all",
+                      selected
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-muted/30 hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {renderModelIcon(model.id, model.name, "md")}
+                        <span className="truncate text-sm font-semibold text-foreground">{model.name}</span>
+                      </div>
+                      {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] text-muted-foreground">
+                      <span>Speed <strong className="font-medium text-foreground">{details?.speed ?? UNKNOWN_VALUE}</strong></span>
+                      <span>Quality <strong className="font-medium text-foreground">{details?.qualities ?? UNKNOWN_VALUE}</strong></span>
+                      <span>Audio <strong className="font-medium text-foreground">{details?.audio ?? UNKNOWN_VALUE}</strong></span>
+                      <span>Price <strong className="font-medium text-foreground">{details?.unitPrice ?? UNKNOWN_VALUE}</strong></span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {/* Prompt Section */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -520,7 +551,7 @@ export function GeneratorPanel({
         </div>
 
         {/* Bottom Section - Credits + Generate Button */}
-        <div className="px-1 pt-3 pb-1 space-y-3 shrink-0 sticky bottom-0 bg-[#131517]">
+        <div className="sticky bottom-0 shrink-0 space-y-3 bg-[var(--du-surface)] px-1 pb-1 pt-3">
           {/* Credits Display */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Credits:</span>
@@ -545,12 +576,12 @@ export function GeneratorPanel({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
-                Generating...
+                {loadingCostText}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Generate Video
+                {costText}
               </>
             )}
           </button>

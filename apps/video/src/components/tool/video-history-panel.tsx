@@ -10,8 +10,8 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { Sparkles, ArrowRight, Clock } from "lucide-react";
 import { cn } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { VideoHistoryCard } from "./video-history-card";
@@ -32,6 +32,7 @@ export function VideoHistoryPanel({
   className,
 }: VideoHistoryPanelProps) {
   const t = useTranslations("VideoHistory");
+  const locale = useLocale();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +55,7 @@ export function VideoHistoryPanel({
     }
   }, [recentItems.length]);
 
-  const hasItems = historyItems.length > 0;
+  const hasItems = historyItems.length > 0 || generatingIds.length > 0;
 
   return (
     <div
@@ -92,6 +93,22 @@ export function VideoHistoryPanel({
         ) : (
           // 有历史记录：显示列表（最近10个）
           <div className="space-y-4">
+            {generatingIds.length > 0 && (
+              <div className="rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] p-3">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
+                  <Clock className="h-3.5 w-3.5 text-[var(--du-accent-text)]" />
+                  {locale.startsWith("zh") ? "队列" : "Queue"}
+                </div>
+                <div className="space-y-2">
+                  {generatingIds.map((id) => (
+                    <div key={id} className="flex items-center justify-between rounded-lg bg-[var(--du-surface)] px-3 py-2 text-xs">
+                      <span className="truncate text-[var(--du-text)]">{id.slice(0, 12)}…</span>
+                      <span className="text-[var(--du-text-muted)]">{t("generating")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {recentItems.map((video) => {
               const isGenerating = generatingIds.includes(video.uuid);
               return (

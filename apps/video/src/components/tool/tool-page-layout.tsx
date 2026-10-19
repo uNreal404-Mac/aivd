@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth/client";
 import { useCredits } from "@/stores/credits-store";
@@ -30,11 +31,17 @@ import { GeneratorPanel, type GeneratorData } from "@/components/tool/generator-
 import { uploadImage } from "@/lib/video-api";
 import { ToolLandingPage } from "@/components/tool/tool-landing-page";
 import { VideoHistoryPanel } from "@/components/tool/video-history-panel";
-import { HfWorkbenchShell } from "@/components/hf/workbench-shell";
+import { ResultPanelWrapper } from "@/components/tool/result-panel-wrapper";
 import { toast } from "sonner";
 
 const TOOL_PREFILL_KEY = "videofly_tool_prefill";
 const TOOL_PREFILL_NOTICE_KEY = "videofly_tool_prefill_notice";
+
+const MODE_TABS = [
+  { key: "text-to-video", label: "Text", slug: "text-to-video" },
+  { key: "image-to-video", label: "Image", slug: "image-to-video" },
+  { key: "reference-to-video", label: "Reference", slug: "reference-to-video" },
+] as const;
 
 // ============================================================================
 // Types
@@ -93,7 +100,6 @@ export function ToolPageLayout({
   const videoIdFromQuery = searchParams.get("id");
   const NOTIFICATION_ASKED_KEY = "videofly_notification_asked";
   const tNotify = useTranslations("Notifications");
-  const tTool = useTranslations("ToolPage");
   const tGallery = useTranslations("Gallery");
 
   // 状态
@@ -102,7 +108,6 @@ export function ToolPageLayout({
   const [currentVideos, setCurrentVideos] = useState<Video[]>([]);
   const [generatingIds, setGeneratingIds] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<VideoHistoryItem[]>([]);
-  const [activeTab, setActiveTab] = useState<"generator" | "result">("generator");
   const [prefillData, setPrefillData] = useState<{
     prompt?: string;
     model?: string;
@@ -358,7 +363,6 @@ export function ToolPageLayout({
       setHistoryItems(videoHistoryStorage.getHistory(user.id));
     }
 
-    setActiveTab("result");
     if (!isTerminalStatus) {
       addGeneratingId(videoIdFromQuery);
       if (!isPolling(videoIdFromQuery)) {
@@ -523,7 +527,6 @@ export function ToolPageLayout({
       });
       setHistoryItems(videoHistoryStorage.getHistory(user.id));
 
-      setActiveTab("result");
       addGeneratingId(videoUuid);
       startPolling(videoUuid);
 
@@ -565,7 +568,10 @@ export function ToolPageLayout({
 
   // 处理重新生成
   const handleRegenerate = useCallback(() => {
-    setActiveTab("generator");
+    document.getElementById("tool-generator-panel")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, []);
 
   // 处理删除视频
@@ -639,10 +645,6 @@ export function ToolPageLayout({
     toolRoute in heroCopy ? toolRoute : "text-to-video"
   ) as keyof typeof heroCopy;
 
-  void activeTab;
-  void setActiveTab;
-  void tTool;
-
   const showPrefillNotice =
     Boolean(prefillNotice) &&
     !noticeDismissed &&
@@ -694,63 +696,100 @@ export function ToolPageLayout({
         initialAspectRatio={prefillData?.aspectRatio}
         initialQuality={prefillData?.quality}
         initialImageUrl={prefillData?.imageUrl}
+        availableCredits={user ? balance?.availableCredits ?? null : null}
+        locale={locale}
       />
     </>
   );
 
-  // Unauthenticated Layout: Scrollable, Tool Area + Landing Page
-  if (!user) {
-    return (
-      <>
-        <div className="flex flex-1 min-w-0 flex-col lg:overflow-y-auto">
-          <HfWorkbenchShell
-            generator={generatorNode}
-            history={
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <h3 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
-                  Your history lives here
-                </h3>
-                <p className="mt-2 max-w-[320px] text-[14px] text-[#898A8B]">
-                  Sign in to generate videos and keep every result in one place.
-                </p>
-              </div>
-            }
-            heroTitle={heroCopy[mode].title}
-            heroDescription={heroCopy[mode].description}
-            activeMode={mode}
-            lang={locale}
-          />
-          <ToolLandingPage config={config} locale={locale} />
-        </div>
-
-        {/* 全局升级弹窗 */}
-        <UpgradeModal />
-      </>
-    );
-  }
-
-  // Authenticated Layout: Three-column application mode
   return (
     <>
-      <div className="flex flex-1 min-w-0 flex-col">
-        <HfWorkbenchShell
-          generator={generatorNode}
-          history={
-            <VideoHistoryPanel
-              historyItems={historyItems}
-              generatingIds={generatingIds}
-              onDelete={handleDelete}
-              className="h-full min-h-0"
-            />
-          }
-          heroTitle={heroCopy[mode].title}
-          heroDescription={heroCopy[mode].description}
-          activeMode={mode}
-          lang={locale}
-        />
-      </div>
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-3 py-4 sm:px-4 lg:h-[calc(100svh-52px)] lg:min-h-0">
+          <header className="shrink-0">
+            <h1 className="font-display text-[24px] font-bold uppercase leading-tight tracking-[-0.04em] text-[var(--du-text)] sm:text-[30px]">
+              {heroCopy[mode].title}
+            </h1>
+            <p className="mt-2 max-w-[680px] text-[14px] text-[var(--du-text-muted)]">
+              {heroCopy[mode].description}
+            </p>
+          </header>
 
-      {/* 全局升级弹窗 */}
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)_minmax(280px,320px)]">
+            <section
+              id="tool-generator-panel"
+              aria-label="Generation parameters"
+              className="min-h-[620px] min-w-0 rounded-[20px] border border-white/5 bg-[var(--du-surface)] p-3 lg:min-h-0"
+            >
+              <div className="flex items-center gap-4 border-b border-[var(--du-border)] px-1 pt-1">
+                {MODE_TABS.map((tab) => {
+                  const isActive = tab.key === mode;
+                  return (
+                    <Link
+                      key={tab.key}
+                      href={`/${locale}/${tab.slug}`}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`-mb-px border-b-2 pb-2 text-[14px] font-medium transition-colors ${
+                        isActive
+                          ? "border-[var(--du-text)] text-[var(--du-text)]"
+                          : "border-transparent text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
+                      }`}
+                    >
+                      {tab.label}
+                    </Link>
+                  );
+                })}
+              </div>
+              {generatorNode}
+            </section>
+
+            <section
+              aria-label="Current result"
+              className="min-h-[420px] min-w-0 lg:min-h-0"
+            >
+              <ResultPanelWrapper
+                currentVideos={currentVideos}
+                generatingIds={generatingIds}
+                onRegenerate={handleRegenerate}
+                onDelete={handleDelete}
+                onRetry={handleRetry}
+                className="h-full min-h-0"
+              />
+            </section>
+
+            <section
+              aria-label="History and queue"
+              className="min-h-[420px] min-w-0 lg:min-h-0"
+            >
+              {user ? (
+                <VideoHistoryPanel
+                  historyItems={historyItems}
+                  generatingIds={generatingIds}
+                  onDelete={handleDelete}
+                  className="h-full min-h-0"
+                />
+              ) : (
+                <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-2xl border border-white/5 bg-[var(--du-surface)] p-6 text-center">
+                  <h2 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
+                    Your history lives here
+                  </h2>
+                  <p className="mt-2 max-w-[260px] text-[14px] text-[var(--du-text-muted)]">
+                    Sign in to generate videos and keep every result in one place.
+                  </p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+        {!user ? (
+          <ToolLandingPage
+            config={config}
+            locale={locale}
+            className="!h-auto !overflow-visible"
+          />
+        ) : null}
+      </main>
+
       <UpgradeModal />
     </>
   );
