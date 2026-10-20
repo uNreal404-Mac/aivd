@@ -43,31 +43,31 @@ const statusConfig = {
     icon: Play,
     iconBg: "bg-primary",
     labelKey: "status.completed",
-    labelColor: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+    labelColor: "bg-[var(--du-surface)] text-[var(--du-accent-text)] border-[var(--du-border-strong)]",
   },
   pending: {
     icon: Clock,
     iconBg: "bg-muted",
     labelKey: "status.pending",
-    labelColor: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    labelColor: "bg-[var(--du-surface)] text-[var(--du-text-muted)] border-[var(--du-border)]",
   },
   generating: {
     icon: Clock,
     iconBg: "bg-muted",
     labelKey: "status.generating",
-    labelColor: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    labelColor: "bg-[var(--du-surface)] text-[var(--du-accent-text)] border-[var(--du-border)]",
   },
   uploading: {
     icon: Clock,
     iconBg: "bg-muted",
     labelKey: "status.uploading",
-    labelColor: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    labelColor: "bg-[var(--du-surface)] text-[var(--du-accent-text)] border-[var(--du-border)]",
   },
   failed: {
     icon: AlertCircle,
     iconBg: "bg-destructive/10",
     labelKey: "status.failed",
-    labelColor: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+    labelColor: "bg-[var(--du-surface)] text-[var(--du-text)] border-[var(--du-border)]",
   },
 };
 
@@ -132,7 +132,7 @@ export function CreationCard({
     <>
       <div
         className={cn(
-          "group relative cursor-pointer overflow-hidden rounded-xl bg-[#1c1d20] ring-1 ring-white/[0.06] transition hover:ring-white/[0.14]",
+          "group relative cursor-pointer overflow-hidden rounded-xl bg-[var(--du-surface)] ring-1 ring-[var(--du-border)] transition hover:ring-[var(--du-border-strong)]",
           isDeleting && "opacity-50 pointer-events-none"
         )}
         onClick={() => onClick(video.uuid)}
@@ -140,7 +140,7 @@ export function CreationCard({
         onMouseLeave={handlePreviewStop}
       >
         {/* Thumbnail / Preview */}
-        <div className="relative aspect-video w-full overflow-hidden bg-[#0f1113]">
+        <div className="relative aspect-video w-full overflow-hidden bg-[var(--du-bg-elev)]">
           {isCompleted && video.videoUrl ? (
             <video
               ref={videoRef}
@@ -160,7 +160,7 @@ export function CreationCard({
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center">
-              <StatusIcon className="h-12 w-12 text-[#9a9ba0]" />
+              <StatusIcon className="h-12 w-12 text-[var(--du-text-muted)]" />
               {isFailed && video.errorMessage && (
                 <p className="text-[11px] text-destructive line-clamp-3">
                   {(() => {
@@ -176,8 +176,7 @@ export function CreationCard({
             </div>
           )}
 
-          {/* Bottom gradient overlay */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-black/50" />
 
           {/* Overlay for completed videos */}
           {isCompleted && (
@@ -189,9 +188,9 @@ export function CreationCard({
                   e.stopPropagation();
                   onClick(video.uuid);
                 }}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--du-accent)] ring-1 ring-[var(--du-border-strong)] opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
               >
-                <Play className="ml-0.5 h-4 w-4 text-white fill-white" />
+                <Play className="ml-0.5 h-4 w-4 fill-[var(--du-on-accent)] text-[var(--du-on-accent)]" />
               </button>
             </div>
           )}
@@ -201,7 +200,7 @@ export function CreationCard({
             <Badge
               className={cn(
                 config.labelColor,
-                "rounded-md border-0 bg-black/60 text-[11px] text-white backdrop-blur"
+                "rounded-md border text-[11px]"
               )}
               variant="outline"
             >
@@ -227,7 +226,7 @@ export function CreationCard({
             <div className="absolute bottom-2 right-2">
               <Badge
                 variant="secondary"
-                className="rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white"
+                className="rounded-md bg-[var(--du-surface)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--du-text)]"
               >
                 {Math.floor(video.duration)}s
               </Badge>
@@ -245,7 +244,7 @@ export function CreationCard({
                   e.stopPropagation();
                   handleDownload();
                 }}
-                className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+                className="h-8 w-8 rounded-lg bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
               >
                 <Download className="h-4 w-4" />
               </Button>
@@ -255,7 +254,7 @@ export function CreationCard({
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-black/50 text-white backdrop-blur hover:bg-black/70 opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
+                  className="h-8 w-8 rounded-lg bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 focus-visible:opacity-100 transition-opacity"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -282,18 +281,18 @@ export function CreationCard({
         {/* Card info */}
         <div className="px-2.5 py-2 space-y-1">
           {/* Model & Aspect Ratio */}
-          <div className="flex items-center justify-between text-[11px] text-[#9a9ba0]">
+          <div className="flex items-center justify-between text-[11px] text-[var(--du-text-muted)]">
             <span className="font-medium capitalize">{video.model}</span>
             <span>{video.aspectRatio}</span>
           </div>
 
           {/* Prompt */}
-          <div className="text-xs text-[#f7f7f8] line-clamp-1">
+          <div className="line-clamp-1 text-xs text-[var(--du-text)]">
             {video.prompt}
           </div>
 
           {/* Date */}
-          <div className="text-[11px] text-[#9a9ba0]">
+          <div className="text-[11px] text-[var(--du-text-muted)]">
             {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
           </div>
 

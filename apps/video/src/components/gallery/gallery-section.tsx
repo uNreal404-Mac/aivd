@@ -86,7 +86,7 @@ function GalleryThumb({ item }: { item: GalleryItem }) {
     );
   }
 
-  return <span className="block h-full w-full bg-[image:var(--du-gradient)]" />;
+  return <span className="block h-full w-full bg-[var(--du-accent)]" />;
 }
 
 export function GallerySection({
@@ -229,7 +229,7 @@ export function GallerySection({
                 className="group relative block aspect-video w-full overflow-hidden border-b border-[var(--du-border)]"
               >
                 <GalleryThumb item={item} />
-                <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_60%)]" />
+                <span className="pointer-events-none absolute inset-0 bg-black/45" />
                 <span className="du-glass-btn du-glass-round du-glass-on-media pointer-events-none absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
                   <Play
                     className="h-4 w-4 text-[var(--du-on-accent)]"

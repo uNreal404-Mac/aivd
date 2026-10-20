@@ -46,7 +46,7 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Status Filter */}
-      <div className="flex items-center gap-1 rounded-xl bg-[#1c1d20] p-1">
+      <div className="flex items-center gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">
         {statusOptions.map((option) => {
           const isActive = (filter.status || "all") === option.value;
 
@@ -61,8 +61,8 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
               className={cn(
                 "h-8 rounded-lg px-3 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-[#26272b] text-[#f7f7f8]"
-                  : "text-[#9a9ba0] hover:text-[#f7f7f8]"
+                  ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
+                  : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
               )}
             >
               {t(option.value as any)}
@@ -76,7 +76,7 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
         value={filter.model || "all"}
         onValueChange={(value) => onFilterChange({ model: value as string | "all" })}
       >
-        <SelectTrigger className="h-10 w-[140px] rounded-xl border-0 bg-[#1c1d20] text-sm text-[#f7f7f8] hover:bg-[#26272b]">
+        <SelectTrigger className="h-10 w-[140px] rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] text-sm text-[var(--du-text)] hover:bg-[var(--du-surface-2)]">
           <SelectValue placeholder={t("allModels")} />
         </SelectTrigger>
         <SelectContent>
@@ -93,7 +93,7 @@ export function CreationFilter({ filter, onFilterChange }: CreationFilterProps) 
         value={filter.sortBy || "newest"}
         onValueChange={(value) => onFilterChange({ sortBy: value as "newest" | "oldest" })}
       >
-        <SelectTrigger className="h-10 w-[120px] rounded-xl border-0 bg-[#1c1d20] text-sm text-[#f7f7f8] hover:bg-[#26272b]">
+        <SelectTrigger className="h-10 w-[120px] rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] text-sm text-[var(--du-text)] hover:bg-[var(--du-surface-2)]">
           <SelectValue placeholder={t("newest")} />
         </SelectTrigger>
         <SelectContent>

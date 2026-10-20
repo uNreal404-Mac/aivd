@@ -141,9 +141,7 @@
 
 .pr-card--popular {
   border-color: var(--pr-accent);
-  background:
-    linear-gradient(180deg, var(--pr-accent-soft), transparent 45%),
-    var(--pr-surface);
+  background: var(--pr-surface);
   box-shadow: var(--pr-shadow);
 }
 

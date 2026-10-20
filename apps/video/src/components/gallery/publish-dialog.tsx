@@ -359,7 +359,7 @@ export function PublishDialog({
             type="button"
             onClick={handleSubmit}
             disabled={disabled}
-            className="rounded-[var(--du-glass-radius-btn)] bg-[var(--du-gradient)] px-4 py-2 text-sm font-medium text-[var(--du-on-accent)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-[var(--du-glass-radius-btn)] bg-[var(--du-accent)] px-4 py-2 text-sm font-medium text-[var(--du-on-accent)] transition-colors hover:bg-[var(--du-accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting
               ? t(mode === "edit" ? "saving" : "submitting")

@@ -215,7 +215,7 @@ export function AiVideoStudio({
           })}
         </div>
 
-        <div className="relative h-[112px] rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[radial-gradient(120%_140%_at_0%_0%,var(--hfv-accent-soft),var(--hfv-panel)_75%)] p-4">
+        <div className="relative h-[112px] rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)] p-4">
           <p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">
             {model.name}
           </p>
@@ -558,7 +558,7 @@ export function AiVideoStudio({
               Your clips land here.
             </p>
           </div>
-          <div className="flex aspect-video items-center justify-center rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[linear-gradient(135deg,var(--hfv-panel-3),var(--hfv-accent-soft))]">
+          <div className="flex aspect-video items-center justify-center rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
             <Film
               className="h-8 w-8 text-[var(--hfv-muted)]"
               aria-hidden="true"
@@ -597,9 +597,9 @@ export function AiVideoStudio({
               {LIBRARY_TILES.map((caption) => (
                 <div
                   key={caption}
-                  className="relative aspect-[3/4] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[linear-gradient(160deg,var(--hfv-panel-2),var(--hfv-panel-3))] transition-transform duration-300 hover:scale-[1.02]"
+                  className="relative aspect-[3/4] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] transition-transform duration-300 hover:scale-[1.02]"
                 >
-                  <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,var(--hfv-overlay),transparent)] px-3 pb-2 pt-8">
+                  <div className="absolute inset-x-0 bottom-0 bg-[var(--hfv-overlay)] px-3 py-2">
                     <span className="text-xs text-[var(--hfv-text)]">
                       {caption}
                     </span>
@@ -638,7 +638,7 @@ export function AiVideoStudio({
                 {results.map((result) => (
                   <div
                     key={result.id}
-                    className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[linear-gradient(160deg,var(--hfv-panel-2),var(--hfv-panel-3))]"
+                    className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)]"
                   >
                     <Clock
                       className="h-5 w-5 text-[var(--hfv-muted)]"

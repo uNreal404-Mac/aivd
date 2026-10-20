@@ -1,50 +1,45 @@
 :root {
-  --du-bg: #07060F;
-  --du-bg-elev: #0E0C1D;
-  --du-surface: #13112A;
-  --du-surface-2: #1A1736;
-  --du-border: rgba(139, 92, 246, 0.18);
-  --du-border-strong: rgba(139, 92, 246, 0.45);
-  --du-text: #F5F3FF;
-  --du-text-muted: #A5A1C2;
-  --du-text-dim: #6E6A8E;
-  --du-accent: #8B5CF6;
-  --du-accent-hover: #7C3AED;
-  --du-accent-soft: rgba(139, 92, 246, 0.14);
-  --du-accent-text: #A78BFA;
-  --du-accent-2: #C084FC;
-  --du-gradient: linear-gradient(90deg, #8B5CF6 0%, #C084FC 100%);
-  --du-glow: 0 0 32px rgba(139, 92, 246, 0.45);
-  --du-on-accent: #FFFFFF;
-  --du-success: #34D399;
-  --du-danger: #F87171;
-  --du-warning: #f59e0b;
+  --du-bg: #000000;
+  --du-bg-elev: #0B0C10;
+  --du-surface: #0B0C10;
+  --du-surface-2: #1F2833;
+  --du-border: rgba(31, 40, 51, 0.9);
+  --du-border-strong: #45A29E;
+  --du-text: #C5C6C7;
+  --du-text-muted: rgba(197, 198, 199, 0.78);
+  --du-text-dim: #45A29E;
+  --du-accent: #66FCF1;
+  --du-accent-hover: #45A29E;
+  --du-accent-soft: rgba(102, 252, 241, 0.12);
+  --du-accent-text: #66FCF1;
+  --du-accent-2: #45A29E;
+  --du-gradient: #66FCF1;
+  --du-glow: 0 0 28px rgba(102, 252, 241, 0.24);
+  --du-on-accent: #000000;
+  --du-success: #66FCF1;
+  --du-danger: #C5C6C7;
+  --du-warning: #45A29E;
 
   /* Frosted glass (Apple-style) */
   --du-glass-blur: 24px;
   --du-glass-saturate: 160%;
-  --du-glass-bg: rgba(255, 255, 255, 0.08);
-  --du-glass-bg-hover: rgba(255, 255, 255, 0.14);
-  --du-glass-bg-strong: rgba(255, 255, 255, 0.12);
-  --du-glass-sheen: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-  --du-glass-border: rgba(255, 255, 255, 0.18);
-  --du-glass-border-hover: rgba(255, 255, 255, 0.3);
-  --du-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  --du-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --du-glass-bg: rgba(11, 12, 16, 0.84);
+  --du-glass-bg-hover: rgba(31, 40, 51, 0.92);
+  --du-glass-bg-strong: rgba(31, 40, 51, 0.88);
+  --du-glass-border: #1F2833;
+  --du-glass-border-hover: #45A29E;
+  --du-glass-highlight: inset 0 1px 0 rgba(69, 162, 158, 0.32);
+  --du-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.46);
   --du-glass-radius-card: 20px;
   --du-glass-radius-btn: 12px;
   --du-glass-radius-round: 9999px;
-  --du-glass-fallback-bg: rgba(26, 23, 54, 0.92);
-  --du-glass-text: #FFFFFF;
-  --du-glass-overlay-scrim: rgba(7, 6, 15, 0.55);
+  --du-glass-fallback-bg: #0B0C10;
+  --du-glass-text: #C5C6C7;
+  --du-glass-overlay-scrim: rgba(0, 0, 0, 0.64);
 }
 
 .du-glass {
-  background: var(--du-glass-sheen), var(--du-glass-bg);
+  background: var(--du-glass-bg);
   backdrop-filter: blur(var(--du-glass-blur)) saturate(var(--du-glass-saturate));
   -webkit-backdrop-filter: blur(var(--du-glass-blur))
     saturate(var(--du-glass-saturate));
@@ -55,7 +50,7 @@
 }
 
 .du-glass-btn {
-  background: var(--du-glass-sheen), var(--du-glass-bg);
+  background: var(--du-glass-bg);
   backdrop-filter: blur(var(--du-glass-blur)) saturate(var(--du-glass-saturate));
   -webkit-backdrop-filter: blur(var(--du-glass-blur))
     saturate(var(--du-glass-saturate));
@@ -67,7 +62,7 @@
 }
 
 .du-glass-btn:hover {
-  background: var(--du-glass-sheen), var(--du-glass-bg-hover);
+  background: var(--du-glass-bg-hover);
   border-color: var(--du-glass-border-hover);
 }
 
@@ -81,7 +76,7 @@
 }
 
 .du-glass-on-media {
-  background: var(--du-glass-sheen), var(--du-glass-overlay-scrim);
+  background: var(--du-glass-overlay-scrim);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

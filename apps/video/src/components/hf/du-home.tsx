@@ -29,13 +29,10 @@ import {
   CREDITS_BANNER,
   EFFECT_CARDS,
   EFFECTS_HEADER,
-  HERO,
-  HERO_CARDS,
   MODEL_CARDS,
   MODELS_HEADER,
   STEPS,
   STEPS_HEADER,
-  TOOL_CHIPS,
   localizedHref,
   type Cta,
   type CtaVariant,
@@ -117,14 +114,29 @@ function SectionHeading({
 
 export function DuHome({ lang }: { lang: string }) {
   const [active, setActive] = useState("All");
+  const isChinese = lang.toLowerCase().startsWith("zh");
+  const heroCopy = isChinese
+    ? {
+        title: "AI 视频生成器。",
+        titleSecond: "电影级创作效果。",
+        subtitle: "从一句提示词到电影感视频，只需几秒。顶级模型，一个工作空间。让不可思议的镜头成为现实。",
+        cta: "立即创建视频",
+        placeholder: "描述你的视觉创意，我们将为你生成视频。",
+        generate: "生成",
+      }
+    : {
+        title: "AI VIDEO GENERATOR.",
+        titleSecond: "STUDIO-GRADE RESULTS.",
+        subtitle: "From prompt to cinematic video in seconds. Every top model, one workspace. Bring impossible shots to life.",
+        cta: "Create Video Now",
+        placeholder: "Describe any visual idea. We will generate a video.",
+        generate: "Generate",
+      };
 
   const visibleCategories =
     active === "All" || active === "More"
       ? CATEGORY_CARDS
       : CATEGORY_CARDS.filter((card) => card.category === active);
-
-  const largeCards = HERO_CARDS.filter((card) => card.size === "large");
-  const smallCards = HERO_CARDS.filter((card) => card.size === "small");
 
   const creditLead = CREDITS_BANNER.title.slice(
     0,
@@ -134,85 +146,74 @@ export function DuHome({ lang }: { lang: string }) {
   return (
     <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
       {/* 1. Hero */}
-      <section className="relative overflow-hidden pt-16 pb-12">
-        <span className="pointer-events-none absolute -top-24 right-0 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,var(--du-accent-soft),transparent_70%)]" />
-        <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 gap-12 px-6 lg:grid-cols-[55fr_45fr] lg:items-center">
-          <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--du-text-dim)]">
-              {HERO.eyebrow}
-            </p>
-            <h1 className="mt-4 text-5xl font-bold leading-[1.1] text-[var(--du-text)] sm:text-[64px]">
-              {HERO.titleLead}
-              <br />
-              <span className="inline-block bg-[image:var(--du-gradient)] bg-clip-text pb-2 text-transparent">
-                {HERO.titleAccent}
-              </span>
-            </h1>
-            <p className="mt-5 max-w-[480px] text-lg text-[var(--du-text-muted)]">
-              {HERO.subtitle}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              {HERO.ctas.map((cta) => (
-                <CtaButton key={cta.label} cta={cta} lang={lang} />
-              ))}
-            </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {TOOL_CHIPS.map((chip) => (
-                <Link
-                  key={chip.label}
-                  href={localizedHref(lang, chip.href)}
-                  className="du-glass-btn inline-flex h-9 items-center gap-2 px-3 text-[13px]"
-                >
-                  <Icon name={chip.icon} className="h-4 w-4" />
-                  {chip.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+      <section className="px-3 pb-12 pt-3 sm:px-5 lg:px-6">
+        <div className="relative mx-auto min-h-[700px] max-w-[1560px] overflow-hidden rounded-[30px] border border-[var(--du-border)] bg-[var(--du-surface)] lg:min-h-[calc(100svh-120px)]">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/home/hero-marina-poster.png"
+            className="absolute inset-0 h-full w-full object-cover"
+            aria-hidden="true"
+          >
+            <source src="/home/hero-marina-loop.mp4" type="video/mp4" />
+          </video>
+          <span className="pointer-events-none absolute inset-0 bg-black/50" />
 
-          <div className="relative flex items-center justify-center gap-4">
-            <span className="absolute -left-6 top-10 hidden h-[280px] w-[200px] rotate-[-8deg] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] opacity-40 lg:block" />
-            <div className="relative w-[220px] sm:w-[300px] lg:w-[340px]">
-              {largeCards.map((card) => (
-                <div
-                  key={card.caption}
-                  className="relative aspect-[3/4] w-full rotate-[-4deg] overflow-hidden rounded-2xl border border-[var(--du-border-strong)] shadow-[var(--du-glow)]"
-                >
-                  <img
-                    src={card.image}
-                    alt={card.alt}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
-                  <span className="du-glass-btn du-glass-round du-glass-on-media absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-                    <Icon name="Play" className="h-5 w-5 text-[var(--du-on-accent)]" />
-                  </span>
-                  <span className="absolute bottom-4 left-4 max-w-[200px] text-sm font-medium text-[var(--du-text)]">
-                    {card.caption}
-                  </span>
+          <div className="relative z-10 mx-auto flex min-h-[700px] max-w-[1180px] flex-col items-center px-5 pb-8 pt-20 text-center sm:px-8 sm:pt-24 lg:min-h-[calc(100svh-120px)] lg:pt-20">
+            <h1 className="max-w-[1160px] text-[clamp(2.7rem,6vw,6.2rem)] font-semibold uppercase leading-[0.98] tracking-[-0.055em] text-[var(--du-text)]">
+              {heroCopy.title}
+              <br />
+              {heroCopy.titleSecond}
+            </h1>
+            <p className="mt-7 max-w-[860px] text-base leading-relaxed text-[var(--du-text)] sm:text-xl">
+              {heroCopy.subtitle}
+            </p>
+            <Link
+              href={localizedHref(lang, "/text-to-video")}
+              className="mt-8 inline-flex min-h-14 items-center justify-center rounded-2xl bg-[var(--du-accent)] px-8 text-base font-semibold text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-16 sm:px-10 sm:text-lg"
+            >
+              {heroCopy.cta}
+            </Link>
+
+            <form
+              action={localizedHref(lang, "/text-to-video")}
+              method="get"
+              className="du-glass mt-auto w-full max-w-[920px] rounded-[24px] p-3 text-left sm:p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span className="du-glass-btn flex h-11 w-11 shrink-0 items-center justify-center text-2xl text-[var(--du-text)]">
+                  +
+                </span>
+                <label className="sr-only" htmlFor="hero-prompt">
+                  {heroCopy.placeholder}
+                </label>
+                <textarea
+                  id="hero-prompt"
+                  name="prompt"
+                  rows={2}
+                  placeholder={heroCopy.placeholder}
+                  className="min-h-16 flex-1 resize-none bg-transparent px-1 py-2 text-base text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-lg"
+                />
+              </div>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-wrap gap-2">
+                  {["Seedance 1.5", "10s", "Auto", isChinese ? "声音开启" : "Sound on"].map((item) => (
+                    <span key={item} className="du-glass-btn inline-flex h-9 items-center px-3 text-sm">
+                      {item}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="flex flex-col gap-3">
-              {smallCards.map((card) => (
-                <div
-                  key={card.caption}
-                  className="relative aspect-[3/4] w-[110px] overflow-hidden rounded-2xl border border-[var(--du-border)] sm:w-[130px]"
+                <button
+                  type="submit"
+                  className="min-h-12 rounded-xl bg-[var(--du-accent)] px-8 text-sm font-bold uppercase text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-14"
                 >
-                  <img
-                    src={card.image}
-                    alt={card.alt}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_55%)]" />
-                  <span className="du-glass-btn du-glass-on-media absolute bottom-3 left-3 px-2 py-1 text-xs font-medium">
-                    {card.caption}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  {heroCopy.generate}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </section>
@@ -332,7 +333,7 @@ export function DuHome({ lang }: { lang: string }) {
                 loading="lazy"
                 className="h-full w-full object-cover"
               />
-              <span className="absolute inset-0 bg-[linear-gradient(to_top,var(--du-bg),transparent_60%)]" />
+              <span className="absolute inset-0 bg-black/45" />
               <span className="absolute bottom-4 left-4 text-[15px] font-semibold text-[var(--du-text)]">
                 {effect.title}
               </span>
@@ -391,7 +392,7 @@ export function DuHome({ lang }: { lang: string }) {
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover"
           />
-          <span className="absolute inset-0 bg-[linear-gradient(to_right,var(--du-bg),transparent_70%)]" />
+          <span className="absolute inset-0 bg-black/60" />
           <div className="relative flex min-h-[220px] max-w-[560px] flex-col justify-center gap-4 p-8">
             <h2 className="text-[32px] font-bold text-[var(--du-text)]">
               {creditLead}

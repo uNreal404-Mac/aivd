@@ -86,29 +86,12 @@
 }
 
 .hfh-shimmer-border {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--hfh-panel), var(--hfh-panel)) padding-box,
-    linear-gradient(
-        90deg,
-        var(--hfh-accent) 0%,
-        var(--hfh-glow-b) 50%,
-        var(--hfh-accent) 100%
-      )
-      border-box;
-  background-size: 100% 100%, 200% 100%;
-  animation: hfh-shimmer 6s linear infinite;
+  border: 1px solid var(--hfh-accent);
+  background: var(--hfh-panel);
 }
 
 .hfh-heading-fade {
-  background-image: linear-gradient(
-    to bottom,
-    var(--hfh-text) 0%,
-    var(--hfh-heading-fade) 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  color: var(--hfh-text);
 }
 
 .hfh-reveal {

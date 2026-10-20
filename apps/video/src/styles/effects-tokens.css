@@ -8,11 +8,7 @@
   --fx-accent-hover: var(--du-accent-hover);
   --fx-on-accent: var(--du-on-accent);
   --fx-chip-bg: var(--du-glass-bg);
-  --fx-overlay: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 90%, transparent),
-    transparent 55%
-  );
+  --fx-overlay: rgba(0, 0, 0, 0.62);
   --fx-radius-card: 18px;
   --fx-radius-chip: 999px;
   --fx-gap: 16px;

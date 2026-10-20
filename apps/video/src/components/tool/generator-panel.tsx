@@ -310,7 +310,7 @@ export function GeneratorPanel({
                 <DropdownMenuTrigger asChild disabled={isLoading}>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm text-white"
+                    className="flex items-center gap-1.5 rounded-full bg-[var(--du-surface-2)] px-3 py-1.5 text-sm text-[var(--du-text)] transition-colors hover:bg-[var(--du-accent-hover)]"
                   >
                     {renderModelIcon(currentModel.id, currentModel.name, "sm")}
                     <span>{currentModel.name}</span>
@@ -327,7 +327,7 @@ export function GeneratorPanel({
                       key={model.id}
                       data-model-id={model.id}
                       onClick={() => setSelectedModel(model.id)}
-                      className="text-white hover:bg-zinc-800 flex flex-col items-start py-3"
+                      className="flex flex-col items-start py-3 text-[var(--du-text)] hover:bg-[var(--du-surface-2)]"
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
@@ -520,12 +520,12 @@ export function GeneratorPanel({
         </div>
 
         {/* Bottom Section - Credits + Generate Button */}
-        <div className="px-1 pt-3 pb-1 space-y-3 shrink-0 sticky bottom-0 bg-[#131517]">
+        <div className="sticky bottom-0 shrink-0 space-y-3 bg-[var(--du-surface)] px-1 pb-1 pt-3">
           {/* Credits Display */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Credits:</span>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+              <div className="h-1.5 w-1.5 rounded-full bg-[var(--du-accent)]" />
               <span className="text-foreground font-medium">{estimatedCredits} Credits</span>
             </div>
           </div>
@@ -538,8 +538,8 @@ export function GeneratorPanel({
             className={cn(
               "w-full h-14 flex items-center justify-center gap-2 px-4 rounded-[12px] text-base font-semibold transition-all shadow-[inset_0_-3px_0_rgba(0,0,0,0.15)]",
               canSubmit
-                ? "bg-[#D1FE17] hover:bg-[#D1FE17]/90 text-[#1A1A1A]"
-                : "bg-white/10 text-white/40 cursor-not-allowed"
+                ? "bg-[var(--du-accent)] text-[var(--du-on-accent)] hover:bg-[var(--du-accent-hover)]"
+                : "cursor-not-allowed bg-[var(--du-surface-2)] text-[var(--du-text-muted)]"
             )}
           >
             {isLoading ? (

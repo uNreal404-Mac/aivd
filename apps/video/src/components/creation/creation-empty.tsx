@@ -23,18 +23,18 @@ export function CreationEmpty({ className }: CreationEmptyProps) {
         className
       )}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-[#1c1d20]">
-        <Film className="h-6 w-6 text-[#9a9ba0]" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface-2)]">
+        <Film className="h-6 w-6 text-[var(--du-accent-text)]" />
       </div>
 
-      <h3 className="mt-5 text-lg font-semibold text-[#f7f7f8]">{t("title")}</h3>
-      <p className="mt-1.5 max-w-sm text-sm text-[#9a9ba0]">
+      <h3 className="mt-5 text-lg font-semibold text-[var(--du-text)]">{t("title")}</h3>
+      <p className="mt-1.5 max-w-sm text-sm text-[var(--du-text-muted)]">
         {t("description")}
       </p>
 
       <Link
         href="/text-to-video"
-        className="mt-6 inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-medium text-black hover:bg-white/90"
+        className="mt-6 inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--du-accent)] px-3.5 text-sm font-medium text-[var(--du-on-accent)] hover:bg-[var(--du-accent-hover)]"
       >
         <Sparkles className="h-4 w-4" />
         {t("cta")}

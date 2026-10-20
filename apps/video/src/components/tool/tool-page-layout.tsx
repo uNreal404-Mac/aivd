@@ -707,10 +707,10 @@ export function ToolPageLayout({
             generator={generatorNode}
             history={
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <h3 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[#F7F7F8]">
+                <h3 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
                   Your history lives here
                 </h3>
-                <p className="mt-2 max-w-[320px] text-[14px] text-[#898A8B]">
+                <p className="mt-2 max-w-[320px] text-[14px] text-[var(--du-text-muted)]">
                   Sign in to generate videos and keep every result in one place.
                 </p>
               </div>
