@@ -50,12 +50,12 @@ export function isPreviewSiteFor(
 export const isPreviewSite = isPreviewSiteFor(configuredAppUrl);
 
 export function getSiteTitle(locale = "en", preview = isPreviewSite) {
-  if (!preview) return "aidv.ai";
-  return locale === "zh" ? "aidv.ai 预览站" : "aidv.ai Preview";
+  if (!preview) return "aivd.ai";
+  return locale === "zh" ? "aivd.ai 预览站" : "aivd.ai Preview";
 }
 
 export const siteConfig: SiteConfig = {
-  name: "aidv.ai",
+  name: "aivd.ai",
   description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
   url: configuredAppUrl,
   ogImage: "/og.png",

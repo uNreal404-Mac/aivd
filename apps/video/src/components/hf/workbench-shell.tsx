@@ -117,7 +117,7 @@ export function HfWorkbenchShell({
         <div className="p-3">
           <div className="relative flex h-[104px] flex-col justify-center overflow-hidden rounded-[14px] bg-[var(--du-surface-2)] px-4">
             <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-accent-text)]">
-              aidv.ai Video
+              aivd.ai Video
             </span>
             <span className="mt-1 text-[12px] text-[var(--du-text-muted)]">
               Pick a model below

@@ -31,7 +31,7 @@ export type LegalContext = {
   refundWindowDays: number;
 };
 
-const FALLBACK_COMPANY_NAME = "aidv.ai";
+const FALLBACK_COMPANY_NAME = "aivd.ai";
 
 /** Neutral fallbacks — used only when the operator has not configured a value. */
 function resolveCompanyName(companyName: string): string {
@@ -76,7 +76,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
     return {
       title: "服务条款",
       description:
-        "使用 aidv.ai 生成 AI 视频的规则，包括积分、计费、内容归属与可接受使用范围。",
+        "使用 aivd.ai 生成 AI 视频的规则，包括积分、计费、内容归属与可接受使用范围。",
       intro: `本条款说明 ${company} 的运作方式，以及你在使用本服务时享有的权利和需要承担的义务。`,
       sections: [
         {
@@ -159,7 +159,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Terms of Service",
     description:
-      "The rules for using aidv.ai to generate AI videos, including credits, billing, ownership, and acceptable use.",
+      "The rules for using aivd.ai to generate AI videos, including credits, billing, ownership, and acceptable use.",
     intro: `These terms explain how ${company} works and what you can expect from us, as well as what we expect from you.`,
     sections: [
       {
@@ -325,7 +325,7 @@ function privacyDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Privacy Policy",
     description:
-      "How aidv.ai collects, uses, stores, and shares your information, and the choices and rights you have.",
+      "How aivd.ai collects, uses, stores, and shares your information, and the choices and rights you have.",
     intro: `${company} collects only what we need to run the service. This policy explains what we collect, why we collect it, how we store it, who we share it with, and the choices you have.`,
     sections: [
       {
@@ -516,7 +516,7 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
 
     return {
       title: "联系我们",
-      description: "如何就账号、付款、生成内容或相关政策联系 aidv.ai 团队。",
+      description: "如何就账号、付款、生成内容或相关政策联系 aivd.ai 团队。",
       intro: "我们的团队规模不大，发送邮件是与我们联系最有效的方式。",
       sections: [
         {
@@ -551,7 +551,7 @@ function contactDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
   return {
     title: "Contact",
     description:
-      "How to reach the aidv.ai team about your account, payments, generated content, or these policies.",
+      "How to reach the aivd.ai team about your account, payments, generated content, or these policies.",
     intro: "We are a small team, and email is the best way to reach us.",
     sections: [
       {

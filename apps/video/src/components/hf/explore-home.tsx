@@ -184,7 +184,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
     <div className="w-full px-4 pb-16">
       <header className="pt-4">
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold uppercase tracking-[-0.04em] text-[var(--du-text)] sm:text-[32px]">
-          Explore aidv.ai
+          Explore aivd.ai
         </h1>
         <p className="mt-1 text-sm text-[var(--du-text-muted)]">
           Generate, animate, and direct video with AI.

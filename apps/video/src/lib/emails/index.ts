@@ -1,7 +1,7 @@
 /**
  * Email Templates
  *
- * All email templates and utilities for aidv.ai
+ * All email templates and utilities for aivd.ai
  */
 
 export { MagicLinkEmail } from "./magic-link-email";
