@@ -9,16 +9,17 @@ import { LocaleLink } from "@/i18n/navigation";
 export function LandingFooter() {
   const t = useTranslations('Footer');
   const locale = useLocale();
+  const isChinese = locale === "zh";
   const currentYear = new Date().getFullYear();
 
   const footerSections = [
     {
       title: t('product'),
       links: [
-        { title: "Image to Video", href: "/image-to-video" },
-        { title: "Text to Video", href: "/text-to-video" },
-        { title: "Reference to Video", href: "/reference-to-video" },
-        { title: "Pricing", href: "/pricing" },
+        { title: isChinese ? "图片生成视频" : "Image to Video", href: "/image-to-video" },
+        { title: isChinese ? "文字生成视频" : "Text to Video", href: "/text-to-video" },
+        { title: isChinese ? "参考图生成视频" : "Reference to Video", href: "/reference-to-video" },
+        { title: isChinese ? "定价" : "Pricing", href: "/pricing" },
       ],
     },
     // {
@@ -57,7 +58,9 @@ export function LandingFooter() {
               🎬 aidv.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
-              Transform your ideas into stunning videos with AI.
+              {isChinese
+                ? "用 AI 将你的创意变成精彩视频。"
+                : "Transform your ideas into stunning videos with AI."}
             </p>
           </div>
 
@@ -89,9 +92,9 @@ export function LandingFooter() {
             {t('copyright', { year: currentYear })}
           </p>
           <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
-            Made with
+            {isChinese ? "由" : "Made with"}
             <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            by aidv.ai Team
+            {isChinese ? "aidv.ai 团队用心打造" : "by aidv.ai Team"}
           </p>
         </div>
       </div>

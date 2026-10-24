@@ -17,30 +17,30 @@ type HfWorkbenchShellProps = {
 
 type RightTab = "history" | "library" | "how";
 
-const MODE_TABS: { key: WorkbenchMode; label: string; slug: string }[] = [
-  { key: "text-to-video", label: "Text", slug: "text-to-video" },
-  { key: "image-to-video", label: "Image", slug: "image-to-video" },
-  { key: "reference-to-video", label: "Reference", slug: "reference-to-video" },
+const MODE_TABS: { key: WorkbenchMode; label: string; labelZh: string; slug: string }[] = [
+  { key: "text-to-video", label: "Text", labelZh: "文字", slug: "text-to-video" },
+  { key: "image-to-video", label: "Image", labelZh: "图片", slug: "image-to-video" },
+  { key: "reference-to-video", label: "Reference", labelZh: "参考", slug: "reference-to-video" },
 ];
 
-const RIGHT_TABS: { key: RightTab; label: string; Icon: typeof Clock }[] = [
-  { key: "history", label: "History", Icon: Clock },
-  { key: "library", label: "Library", Icon: Film },
-  { key: "how", label: "How it works", Icon: BookOpen },
+const RIGHT_TABS: { key: RightTab; label: string; labelZh: string; Icon: typeof Clock }[] = [
+  { key: "history", label: "History", labelZh: "历史记录", Icon: Clock },
+  { key: "library", label: "Library", labelZh: "灵感库", Icon: Film },
+  { key: "how", label: "How it works", labelZh: "使用方法", Icon: BookOpen },
 ];
 
 const FILTERS = ["Featured", "Trending", "Newest"] as const;
 
-const LIBRARY_TILES: { title: string; caption: string }[] = [
-  { title: "Neon skyline", caption: "City flythrough" },
-  { title: "Desert drift", caption: "Slow pan" },
-  { title: "Ocean bloom", caption: "Macro water" },
-  { title: "Paper craft", caption: "Stop motion" },
-  { title: "Aurora loop", caption: "Night sky" },
-  { title: "Studio light", caption: "Product spin" },
-  { title: "Forest mist", caption: "Morning haze" },
-  { title: "Retro grid", caption: "Synth horizon" },
-  { title: "Clay figures", caption: "Soft shadows" },
+const LIBRARY_TILES: { title: string; caption: string; captionZh: string }[] = [
+  { title: "Neon skyline", caption: "City flythrough", captionZh: "城市穿梭" },
+  { title: "Desert drift", caption: "Slow pan", captionZh: "沙漠慢摇" },
+  { title: "Ocean bloom", caption: "Macro water", captionZh: "水面微距" },
+  { title: "Paper craft", caption: "Stop motion", captionZh: "纸艺定格" },
+  { title: "Aurora loop", caption: "Night sky", captionZh: "极光夜空" },
+  { title: "Studio light", caption: "Product spin", captionZh: "产品环绕" },
+  { title: "Forest mist", caption: "Morning haze", captionZh: "森林晨雾" },
+  { title: "Retro grid", caption: "Synth horizon", captionZh: "复古地平线" },
+  { title: "Clay figures", caption: "Soft shadows", captionZh: "黏土柔光" },
 ];
 
 const HOW_STEPS: { title: string; body: string }[] = [
@@ -58,18 +58,18 @@ const HOW_STEPS: { title: string; body: string }[] = [
   },
 ];
 
-function DemoChip() {
+function DemoChip({ label = "Demo" }: { label?: string }) {
   return (
     <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
-      Demo
+      {label}
     </span>
   );
 }
 
-function SoonChip() {
+function SoonChip({ label = "Soon" }: { label?: string }) {
   return (
     <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
-      Soon
+      {label}
     </span>
   );
 }
@@ -84,6 +84,30 @@ export function HfWorkbenchShell({
 }: HfWorkbenchShellProps) {
   const [rightTab, setRightTab] = useState<RightTab>("library");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("Featured");
+  const isChinese = lang.toLowerCase().startsWith("zh");
+  const copy = isChinese
+    ? {
+        edit: "编辑",
+        soon: "即将开放",
+        demo: "演示",
+        pickModel: "请在下方选择模型",
+        filters: { Featured: "精选", Trending: "热门", Newest: "最新" } as Record<string, string>,
+        steps: [
+          { title: "输入提示词或上传图片", body: "描述你想要的场景，或从已有的静态画面开始。" },
+          { title: "选择模型、时长和比例", body: "选择适合画面风格的模型，再设置视频时长与画面比例。" },
+          { title: "生成并在历史记录中下载", body: "提交任务后，你可以在历史记录中查看和下载每次生成的结果。" },
+        ],
+        step: "步骤",
+      }
+    : {
+        edit: "Edit",
+        soon: "Soon",
+        demo: "Demo",
+        pickModel: "Pick a model below",
+        filters: Object.fromEntries(FILTERS.map((item) => [item, item])) as Record<string, string>,
+        steps: HOW_STEPS,
+        step: "Step",
+      };
 
   return (
     <div className="flex h-auto flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row">
@@ -101,7 +125,7 @@ export function HfWorkbenchShell({
                     : "border-transparent text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
                 }`}
               >
-                {tab.label}
+                {isChinese ? tab.labelZh : tab.label}
               </Link>
             );
           })}
@@ -109,8 +133,8 @@ export function HfWorkbenchShell({
             aria-disabled="true"
             className="-mb-px flex cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent pb-2 text-[14px] font-medium text-[var(--du-text-muted)] opacity-60"
           >
-            Edit
-            <SoonChip />
+            {copy.edit}
+            <SoonChip label={copy.soon} />
           </span>
         </div>
 
@@ -120,10 +144,10 @@ export function HfWorkbenchShell({
               aidv.ai Video
             </span>
             <span className="mt-1 text-[12px] text-[var(--du-text-muted)]">
-              Pick a model below
+              {copy.pickModel}
             </span>
             <span className="absolute right-3 top-3">
-              <DemoChip />
+              <DemoChip label={copy.demo} />
             </span>
           </div>
         </div>
@@ -133,7 +157,7 @@ export function HfWorkbenchShell({
 
       <section className="min-w-0 flex-1 rounded-[20px] border border-[var(--du-border)] bg-[var(--du-surface)] p-5 lg:overflow-y-auto">
         <div className="flex items-center gap-1">
-          {RIGHT_TABS.map(({ key, label, Icon }) => {
+          {RIGHT_TABS.map(({ key, label, labelZh, Icon }) => {
             const isActive = key === rightTab;
             return (
               <button
@@ -147,7 +171,7 @@ export function HfWorkbenchShell({
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {label}
+                {isChinese ? labelZh : label}
               </button>
             );
           })}
@@ -168,7 +192,7 @@ export function HfWorkbenchShell({
               </div>
               <div className="relative aspect-video w-full overflow-hidden rounded-[12px] bg-[var(--du-surface-2)] md:w-[44%]">
                 <span className="absolute right-3 top-3">
-                  <DemoChip />
+                  <DemoChip label={copy.demo} />
                 </span>
               </div>
             </div>
@@ -188,7 +212,7 @@ export function HfWorkbenchShell({
                           : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
                       }`}
                     >
-                      {item}
+                      {copy.filters[item] ?? item}
                     </button>
                   );
                 })}
@@ -202,11 +226,11 @@ export function HfWorkbenchShell({
                   className="relative aspect-[3/4] overflow-hidden rounded-[12px] bg-[var(--du-surface-2)]"
                 >
                   <span className="absolute right-2 top-2">
-                    <DemoChip />
+                    <DemoChip label={copy.demo} />
                   </span>
                   <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-3">
                     <span className="text-[12px] text-[var(--du-text)]">
-                      {tile.caption}
+                      {isChinese ? tile.captionZh : tile.caption}
                     </span>
                   </div>
                 </div>
@@ -217,13 +241,13 @@ export function HfWorkbenchShell({
 
         {rightTab === "how" ? (
           <div className="mt-6 flex flex-col gap-3">
-            {HOW_STEPS.map((step, index) => (
+            {copy.steps.map((step, index) => (
               <div
                 key={step.title}
                 className="rounded-[16px] bg-[var(--du-surface-2)] p-5"
               >
                 <span className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-accent-text)]">
-                  {`Step ${index + 1}`}
+                  {`${copy.step} ${index + 1}`}
                 </span>
                 <h3 className="mt-2 text-[16px] font-semibold text-[var(--du-text)]">
                   {step.title}

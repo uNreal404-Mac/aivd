@@ -41,6 +41,18 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
   const pathWithoutLang = pathname.replace(new RegExp(`^/${lang}`), "");
   const t = useTranslations("Sidebar");
   const { openModal } = useUpgradeModal();
+  const isChinese = lang.toLowerCase().startsWith("zh");
+  const navCopy: Record<string, string> = isChinese
+    ? {
+        video: "视频",
+        txt2vid: "文字生成视频",
+        img2vid: "图片生成视频",
+        ref2vid: "参考图生成视频",
+        creations: "我的作品",
+        credits: "积分",
+        settings: "账户设置",
+      }
+    : {};
 
   // 判断是否为免费用户（可根据实际业务调整）
   const isFreeUser = useMemo(() => true, []);
@@ -72,7 +84,7 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
-        <span className="truncate">{item.title}</span>
+        <span className="truncate">{navCopy[item.id] ?? item.title}</span>
       </Link>
     );
   };
@@ -86,7 +98,7 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
           <div key={group.id} className="space-y-1">
             {group.title && (
               <div className="px-2 mb-2 text-xs font-medium text-muted-foreground">
-                {group.title}
+                {navCopy[group.id] ?? group.title}
               </div>
             )}
             <div className="space-y-0.5">
@@ -138,7 +150,7 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
           <div key={group.id} className="space-y-1">
             {group.title && (
               <div className="px-2 mb-2 text-xs font-medium text-muted-foreground">
-                {group.title}
+                {navCopy[group.id] ?? group.title}
               </div>
             )}
             <div className="space-y-0.5">
@@ -160,7 +172,7 @@ export function Sidebar({ lang = "en", mobileOpen, onMobileClose }: SidebarProps
                         const Icon = iconMap[item.icon as keyof typeof iconMap];
                         return Icon && <Icon className="h-4 w-4 shrink-0" />;
                       })()}
-                      <span className="truncate">{item.title}</span>
+                      <span className="truncate">{navCopy[item.id] ?? item.title}</span>
                     </Link>
                   </SheetClose>
                 );

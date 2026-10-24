@@ -69,6 +69,89 @@ export function ToolLandingPage({
   className,
 }: ToolLandingPageProps) {
   const { landing, i18nPrefix } = config;
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const zhLanding = {
+    "text-to-video": {
+      hero: {
+        title: "用文字创作精彩视频",
+        description: "用自然语言描述你的创意，让 AI 将它变成生动影像。从电影场景到产品展示，灵感都能快速落地。",
+        ctaText: "开始创作",
+        ctaSubtext: "注册即可获得免费体验积分",
+      },
+      examples: [
+        { title: "电影感山景", prompt: "金色时刻的壮丽山脉，镜头缓缓飞过山谷" },
+        { title: "城市延时摄影", prompt: "纽约夜景延时，车流形成光轨，建筑闪耀" },
+        { title: "海上日落", prompt: "平静海浪与落日，镜头缓缓拉远，氛围安宁" },
+      ],
+      features: ["用自然语言描述想看的画面", "支持多种 Seedance AI 模型", "最高 1080p 的电影感画质", "可自动生成音频与音效", "适配各类平台的多种画面比例"],
+    },
+    "image-to-video": {
+      hero: {
+        title: "让静态图片变成精彩视频",
+        description: "上传任意照片，让 AI 以流畅自然的运动赋予它生命，适合社交媒体、营销和创意项目。",
+        ctaText: "免费开始",
+        ctaSubtext: "注册即可获得免费体验积分",
+      },
+      examples: [
+        { title: "照片变成鲜活场景", prompt: "女孩走在海滩上，发丝随风飘动，金色夕阳" },
+        { title: "产品动画", prompt: "智能手机在白色背景中旋转，粒子漂浮" },
+        { title: "抽象艺术动画", prompt: "色彩与形状平滑流动变换，迷幻风格" },
+      ],
+      features: ["支持 JPG、PNG、WEBP 图片", "多种模型适配不同动画风格", "最高 1080p 全高清输出", "通常数分钟内完成生成", "包含商业使用授权"],
+    },
+    "reference-to-video": {
+      hero: {
+        title: "用 AI 延展你的参考画面",
+        description: "上传参考素材，在保留核心内容的同时创建风格变化、视觉特效或新的镜头版本。",
+        ctaText: "立即体验",
+        ctaSubtext: "注册即可获得免费体验积分",
+      },
+      examples: [
+        { title: "风格转换", prompt: "转换为色彩鲜明的动漫风格" },
+        { title: "添加天气效果", prompt: "为场景加入雨雾氛围" },
+        { title: "改变季节", prompt: "把夏日场景变成飘雪的冬季" },
+      ],
+      features: ["上传参考素材开始创作", "AI 驱动的风格转换", "保持原有节奏与画面逻辑", "从同一参考生成多个版本", "支持多种艺术风格与特效"],
+    },
+  } as const;
+  const zhContent = config.generator.mode in zhLanding
+    ? zhLanding[config.generator.mode as keyof typeof zhLanding]
+    : undefined;
+  const content = isChinese && zhContent
+    ? {
+        ...landing,
+        hero: zhContent.hero,
+        examples: landing.examples.map((example, index) => ({
+          ...example,
+          ...(zhContent.examples[index] ?? {}),
+        })),
+        features: [...zhContent.features],
+      }
+    : landing;
+  void i18nPrefix;
+  const labels = isChinese
+    ? {
+        powered: "AI 智能驱动",
+        examples: "示例",
+        features: "功能亮点",
+        models: "由领先 AI 模型提供支持",
+        videos: "已生成视频",
+        users: "创作者",
+        rating: "平均评分",
+        ready: "准备好创作精彩视频了吗？立即注册并开始创作。",
+        start: "免费开始",
+      }
+    : {
+        powered: "AI-Powered",
+        examples: "Examples",
+        features: "Features",
+        models: "Powered by Leading AI Models",
+        videos: "Videos Generated",
+        users: "Happy Users",
+        rating: "Average Rating",
+        ready: "Ready to create amazing videos? Sign up now and get started!",
+        start: "Get Started Free",
+      };
 
   return (
     <div className={cn("h-full overflow-y-auto", className)}>
@@ -92,18 +175,18 @@ export function ToolLandingPage({
             >
               <Sparkles className="h-4 w-4 text-blue-500" />
               <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                AI-Powered
+                {labels.powered}
               </span>
             </motion.div>
 
             {/* 标题 */}
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold">
-              {landing.hero.title}
+              {content.hero.title}
             </h1>
 
             {/* 描述 */}
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto" suppressHydrationWarning>
-              {landing.hero.description}
+              {content.hero.description}
             </p>
 
             {/* CTA */}
@@ -117,13 +200,13 @@ export function ToolLandingPage({
                   background="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
                   className="px-8 py-3 text-base font-medium shadow-lg shadow-blue-500/25"
                 >
-                  {landing.hero.ctaText}
+                  {content.hero.ctaText}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </ShimmerButton>
               </Link>
-              {landing.hero.ctaSubtext && (
+              {content.hero.ctaSubtext && (
                 <span className="text-sm text-muted-foreground">
-                  {landing.hero.ctaSubtext}
+                  {content.hero.ctaSubtext}
                 </span>
               )}
             </div>
@@ -131,7 +214,7 @@ export function ToolLandingPage({
         </BlurFade>
 
         {/* Examples Section */}
-        {landing.examples.length > 0 && (
+        {content.examples.length > 0 && (
           <BlurFade delay={0.1} inView>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -140,9 +223,9 @@ export function ToolLandingPage({
               transition={{ duration: 0.5, delay: 0.1 }}
               className="space-y-4"
             >
-              <h2 className="text-xl font-semibold">Examples</h2>
+              <h2 className="text-xl font-semibold">{labels.examples}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {landing.examples.map((example, index: number) => (
+                {content.examples.map((example, index: number) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
@@ -173,7 +256,7 @@ export function ToolLandingPage({
         )}
 
         {/* Features Section */}
-        {landing.features.length > 0 && (
+        {content.features.length > 0 && (
           <BlurFade delay={0.2} inView>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -184,10 +267,10 @@ export function ToolLandingPage({
             >
               <h3 className="font-semibold flex items-center gap-2 text-lg">
                 <Sparkles className="h-5 w-5 text-purple-500" />
-                Features
+                {labels.features}
               </h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {landing.features.map((feature, index: number) => (
+                {content.features.map((feature, index: number) => (
                   <motion.li
                     key={index}
                     initial={{ opacity: 0, x: -10 }}
@@ -215,7 +298,7 @@ export function ToolLandingPage({
               transition={{ duration: 0.5, delay: 0.3 }}
               className="space-y-4"
             >
-              <h3 className="text-lg font-semibold text-center">Powered by Leading AI Models</h3>
+              <h3 className="text-lg font-semibold text-center">{labels.models}</h3>
               <div className="flex flex-wrap justify-center gap-3">
                 {landing.supportedModels.map((model, index: number) => (
                   <motion.div
@@ -262,7 +345,7 @@ export function ToolLandingPage({
                     <Video className="h-5 w-5 text-blue-500" />
                     {landing.stats.videosGenerated}
                   </div>
-                  <div className="text-xs text-muted-foreground">Videos Generated</div>
+                  <div className="text-xs text-muted-foreground">{labels.videos}</div>
                 </div>
               )}
               {landing.stats.usersCount && (
@@ -271,7 +354,7 @@ export function ToolLandingPage({
                     <Users className="h-5 w-5 text-purple-500" />
                     {landing.stats.usersCount}
                   </div>
-                  <div className="text-xs text-muted-foreground">Happy Users</div>
+                  <div className="text-xs text-muted-foreground">{labels.users}</div>
                 </div>
               )}
               {landing.stats.avgRating && (
@@ -279,7 +362,7 @@ export function ToolLandingPage({
                   <div className="text-2xl font-bold text-yellow-500">
                     {landing.stats.avgRating} ★
                   </div>
-                  <div className="text-xs text-muted-foreground">Average Rating</div>
+                  <div className="text-xs text-muted-foreground">{labels.rating}</div>
                 </div>
               )}
             </motion.div>
@@ -296,7 +379,7 @@ export function ToolLandingPage({
             className="text-center pt-8 border-t border-border"
           >
             <p className="text-muted-foreground mb-4">
-              Ready to create amazing videos? Sign up now and get started!
+              {labels.ready}
             </p>
             <Link href={`/${locale}/login`}>
               <ShimmerButton
@@ -307,7 +390,7 @@ export function ToolLandingPage({
                 background="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
                 className="px-8 py-3 text-base font-medium"
               >
-                Get Started Free
+                {labels.start}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </ShimmerButton>
             </Link>

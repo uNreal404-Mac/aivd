@@ -22,17 +22,66 @@ const EMPTY_PLACEHOLDER = "/images/placeholders/i2v-empty.svg";
 
 const MAX_MB = Math.round(MAX_BYTES / (1024 * 1024));
 
-const PROMPT_TIPS = [
-  "Describe the camera move, not only the subject.",
-  "Keep the motion small so the subject stays recognisable.",
-  "Name the light or mood to steer the final look.",
-];
-
 interface I2VStudioProps {
   generationEnabled: boolean;
+  locale: string;
 }
 
-export function I2VStudio({ generationEnabled }: I2VStudioProps) {
+export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const copy = isChinese
+    ? {
+        title: "图片生成视频",
+        subtitle: "用简洁明确的镜头指令，让静态画面自然动起来。",
+        sourceImage: "起始图片",
+        uploadedAlt: "你上传的关键帧",
+        uploaded: "已上传图片",
+        replace: "替换",
+        remove: "移除",
+        uploading: "上传中…",
+        drop: "拖入图片或点击浏览",
+        fileHint: `JPG、PNG、WEBP 或 GIF，最大 ${MAX_MB}MB`,
+        imageHelp: `每次上传一张图片，最大 ${MAX_MB}MB。横向或方形画面效果更佳。`,
+        motionSettings: "运动设置",
+        describeMotion: "描述运动方式",
+        promptPlaceholder: "镜头缓慢推进，同时主体转向光线",
+        model: "模型",
+        duration: "时长",
+        aspect: "画面比例",
+        sending: "提交中…",
+        generate: "生成视频",
+        paused: "生成已暂停",
+        notOpen: "视频生成功能暂未开放。",
+        result: "你的视频会显示在这里",
+        tipsTitle: "提示",
+        tips: ["描述镜头运动，而不只是主体。", "适度控制动作幅度，让主体保持清晰可辨。", "写明光线或氛围，引导最终画面效果。"],
+      }
+    : {
+        title: "Image to Video",
+        subtitle: "Bring a still frame to life with a short, directed camera move.",
+        sourceImage: "Source image",
+        uploadedAlt: "Your uploaded keyframe",
+        uploaded: "Uploaded image",
+        replace: "Replace",
+        remove: "Remove",
+        uploading: "Uploading…",
+        drop: "Drop an image or click to browse",
+        fileHint: `JPG, PNG, WEBP or GIF, up to ${MAX_MB}MB`,
+        imageHelp: `One image up to ${MAX_MB}MB. Wide or square frames work best.`,
+        motionSettings: "Motion settings",
+        describeMotion: "Describe the motion",
+        promptPlaceholder: "Slow push in while the subject turns toward the light",
+        model: "Model",
+        duration: "Duration",
+        aspect: "Aspect ratio",
+        sending: "Sending…",
+        generate: "Generate video",
+        paused: "Generation is paused",
+        notOpen: "Video generation is not open yet.",
+        result: "Your video will appear here",
+        tipsTitle: "Tips",
+        tips: ["Describe the camera move, not only the subject.", "Keep the motion small so the subject stays recognisable.", "Name the light or mood to steer the final look."],
+      };
   const inputRef = useRef<HTMLInputElement>(null);
   const idempotencyKeyRef = useRef<string>(newIdempotencyKey());
 
@@ -180,15 +229,15 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
     <div className="i2v-studio">
       <div className="i2v-studio__left">
         <header className="i2v-header">
-          <h1 className="i2v-title">Image to Video</h1>
+          <h1 className="i2v-title">{copy.title}</h1>
           <p className="i2v-subtitle">
-            Bring a still frame to life with a short, directed camera move.
+            {copy.subtitle}
           </p>
         </header>
 
         <section className="i2v-panel" aria-labelledby="i2v-image-label">
           <span className="i2v-label" id="i2v-image-label">
-            Source image
+            {copy.sourceImage}
           </span>
 
           <input
@@ -206,11 +255,11 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             <div className="i2v-preview">
               <div className="i2v-preview__thumb">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewUrl} alt="Your uploaded keyframe" />
+                <img src={previewUrl} alt={copy.uploadedAlt} />
               </div>
               <div className="i2v-preview__meta">
                 <span className="i2v-preview__name" title={fileName ?? undefined}>
-                  {fileName ?? "Uploaded image"}
+                  {fileName ?? copy.uploaded}
                 </span>
               </div>
               <div className="i2v-preview__actions">
@@ -219,14 +268,14 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                   className="i2v-button i2v-button--small"
                   onClick={openPicker}
                 >
-                  Replace
+                  {copy.replace}
                 </button>
                 <button
                   type="button"
                   className="i2v-button i2v-button--small i2v-button--ghost"
                   onClick={clearImage}
                 >
-                  Remove
+                  {copy.remove}
                 </button>
               </div>
             </div>
@@ -246,7 +295,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
               {uploading ? (
                 <>
                   <span className="i2v-spinner" aria-hidden="true" />
-                  <span className="i2v-dropzone__title">Uploading…</span>
+                  <span className="i2v-dropzone__title">{copy.uploading}</span>
                 </>
               ) : (
                 <>
@@ -263,10 +312,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                     <circle cx="8.5" cy="9" r="1.5" />
                   </svg>
                   <span className="i2v-dropzone__title">
-                    Drop an image or click to browse
+                    {copy.drop}
                   </span>
                   <span className="i2v-dropzone__hint">
-                    JPG, PNG, WEBP or GIF, up to {MAX_MB}MB
+                    {copy.fileHint}
                   </span>
                 </>
               )}
@@ -274,7 +323,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           )}
 
           <p className="i2v-help" id="i2v-image-help">
-            One image up to {MAX_MB}MB. Wide or square frames work best.
+            {copy.imageHelp}
           </p>
 
           <p className="i2v-error" id="i2v-image-error" role="alert">
@@ -282,10 +331,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           </p>
         </section>
 
-        <section className="i2v-panel" aria-label="Motion settings">
+        <section className="i2v-panel" aria-label={copy.motionSettings}>
           <div className="i2v-field">
             <label className="i2v-label" htmlFor="i2v-prompt">
-              Describe the motion
+              {copy.describeMotion}
             </label>
             <textarea
               id="i2v-prompt"
@@ -293,7 +342,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
               value={prompt}
               maxLength={MAX_PROMPT_LENGTH}
               onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Slow push in while the subject turns toward the light"
+              placeholder={copy.promptPlaceholder}
               aria-describedby="i2v-prompt-counter"
             />
             <span className="i2v-counter" id="i2v-prompt-counter">
@@ -303,7 +352,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
 
           <div className="i2v-field">
             <label className="i2v-label" htmlFor="i2v-model">
-              Model
+              {copy.model}
             </label>
             <select
               id="i2v-model"
@@ -322,7 +371,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           </div>
 
           <fieldset className="i2v-field">
-            <legend className="i2v-label">Duration</legend>
+            <legend className="i2v-label">{copy.duration}</legend>
             <div className="i2v-chips">
               {durationsFor(model).map((option) => (
                 <button
@@ -343,7 +392,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
           </fieldset>
 
           <fieldset className="i2v-field">
-            <legend className="i2v-label">Aspect ratio</legend>
+            <legend className="i2v-label">{copy.aspect}</legend>
             <div className="i2v-chips">
               {aspectRatiosFor(model).map((option) => (
                 <button
@@ -372,17 +421,17 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
             {submitting ? (
               <>
                 <span className="i2v-spinner" aria-hidden="true" />
-                <span>Sending…</span>
+                <span>{copy.sending}</span>
               </>
             ) : generationEnabled ? (
-              "Generate video"
+              copy.generate
             ) : (
-              "Generation is paused"
+              copy.paused
             )}
           </button>
 
           {!generationEnabled ? (
-            <p className="i2v-help">Video generation is not open yet.</p>
+            <p className="i2v-help">{copy.notOpen}</p>
           ) : null}
 
           <p className="i2v-error" role="alert">
@@ -400,7 +449,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                 <img
                   className="i2v-stage__media"
                   src={previewUrl}
-                  alt="Your uploaded keyframe"
+                  alt={copy.uploadedAlt}
                 />
               </>
             ) : (
@@ -413,7 +462,7 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
                   aria-hidden="true"
                 />
                 <p className="i2v-stage__emptyText">
-                  Your video will appear here
+                  {copy.result}
                 </p>
               </div>
             )}
@@ -422,10 +471,10 @@ export function I2VStudio({ generationEnabled }: I2VStudioProps) {
 
         <section className="i2v-tips" aria-labelledby="i2v-tips-title">
           <h2 className="i2v-tips__title" id="i2v-tips-title">
-            Tips
+            {copy.tipsTitle}
           </h2>
           <ul className="i2v-tips__list">
-            {PROMPT_TIPS.map((tip) => (
+            {copy.tips.map((tip) => (
               <li className="i2v-tips__item" key={tip}>
                 {tip}
               </li>

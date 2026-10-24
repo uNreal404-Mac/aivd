@@ -99,10 +99,100 @@ function ChipGroup({
 export function AiVideoStudio({
   generationEnabled,
   initialSettings,
+  locale,
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
+  locale: string;
 }) {
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const copy = isChinese
+    ? {
+        modes: { Create: "创作", Edit: "编辑", Motion: "运动" } as Record<string, string>,
+        tabs: { History: "历史记录", Library: "灵感库", "How it works": "使用方法" } as Record<string, string>,
+        filters: { All: "全部", Videos: "视频", Favorites: "收藏" } as Record<string, string>,
+        soon: "即将开放",
+        top: "热门",
+        new: "新品",
+        change: "更换",
+        startFrame: "添加起始帧（可选）",
+        fileTypes: "PNG、JPG 或 WebP",
+        prompt: "提示词",
+        promptPlaceholder: "描述镜头：主体、动作、镜头运动、光线……",
+        preset: "预设",
+        clearPreset: "清除预设",
+        model: "模型",
+        chooseModel: "选择模型",
+        closePicker: "关闭模型选择器",
+        unavailable: "暂不可用",
+        duration: "时长",
+        aspect: "画面比例",
+        resolution: "分辨率",
+        audio: "声音",
+        on: "开启",
+        off: "关闭",
+        submit: "提交中…",
+        generate: "生成",
+        credits: "积分",
+        settings: "视频设置",
+        results: "生成结果",
+        heroTitle: "掌控每一帧",
+        heroBody: "选择模型、描述镜头，并调整时长、比例与声音。生成结果会显示在这里。",
+        library: ["黄昏城市", "缓慢推进", "海岸漂移", "霓虹小巷", "清晨薄雾", "屋顶环绕", "沙漠穿行", "玻璃上的雨", "安静工坊"],
+        steps: [
+          { title: "选择模型", body: "每个模型在速度、细节和声音上各有特点，请选择适合镜头的模型。" },
+          { title: "描述镜头", body: "写清主体、动作、镜头运动和光线，也可以添加起始帧。" },
+          { title: "调整并生成", body: "设置时长、比例、分辨率和声音，然后生成。视频会集中显示在此页面。" },
+        ],
+        empty: "还没有视频，你生成的内容会显示在这里。",
+        queued: "排队中",
+        paused: "生成功能正在完成配置，当前设置已保留在此页面。",
+        modelTaglines: {
+          "seedance-1.5-pro": "适合日常短片的快速、自然运动。",
+          "wan2.6": "轻量高效，兼顾生成成本。",
+          "veo-3.1": "丰富场景、同步声音与空间层次。",
+          "sora-2": "富有想象力，适合醒目的创意画面。",
+          "kling-3": "电影感细节与稳定自然的运动。",
+        } as Record<string, string>,
+      }
+    : {
+        modes: Object.fromEntries(MODES.map((item) => [item, item])) as Record<string, string>,
+        tabs: Object.fromEntries(RIGHT_TABS.map((item) => [item, item])) as Record<string, string>,
+        filters: Object.fromEntries(RESULT_FILTERS.map((item) => [item, item])) as Record<string, string>,
+        soon: "Soon",
+        top: "Top",
+        new: "New",
+        change: "Change",
+        startFrame: "Add a start frame (optional)",
+        fileTypes: "PNG, JPG or WebP",
+        prompt: "Prompt",
+        promptPlaceholder: "Describe the shot: subject, motion, camera, light…",
+        preset: "Preset",
+        clearPreset: "Clear preset",
+        model: "Model",
+        chooseModel: "Choose a model",
+        closePicker: "Close model picker",
+        unavailable: "Unavailable",
+        duration: "Duration",
+        aspect: "Aspect",
+        resolution: "Resolution",
+        audio: "Audio",
+        on: "On",
+        off: "Off",
+        submit: "Submitting…",
+        generate: "Generate",
+        credits: "credits",
+        settings: "Video settings",
+        results: "Results",
+        heroTitle: "Direct every frame",
+        heroBody: "Pick a model, write the shot, and tune length, ratio and sound. Your clips land here.",
+        library: LIBRARY_TILES,
+        steps: HOW_IT_WORKS,
+        empty: "No clips yet. Your generations will show up here.",
+        queued: "queued",
+        paused: "Generation is paused while we finish setup. Your settings are saved on this page.",
+        modelTaglines: {} as Record<string, string>,
+      };
   const [settings, setSettings] = useState<StudioSettings>(
     () => initialSettings ?? defaultSettings(),
   );
@@ -144,7 +234,7 @@ export function AiVideoStudio({
 
     if (!generationEnabled) {
       setNotice(
-        "Generation is paused while we finish setup. Your settings are saved on this page.",
+        copy.paused,
       );
       return;
     }
@@ -184,7 +274,7 @@ export function AiVideoStudio({
   return (
     <div className="flex flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row bg-[var(--hfv-bg)] text-[var(--hfv-text)]">
       <aside
-        aria-label="Video settings"
+        aria-label={copy.settings}
         className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:overflow-y-auto"
       >
         <div className="flex items-center gap-1">
@@ -204,10 +294,10 @@ export function AiVideoStudio({
                     : "border-[var(--hfv-border)] text-[var(--hfv-muted)]",
                 ].join(" ")}
               >
-                {mode}
+                {copy.modes[mode] ?? mode}
                 {active ? null : (
                   <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                    Soon
+                    {copy.soon}
                   </span>
                 )}
               </button>
@@ -220,14 +310,14 @@ export function AiVideoStudio({
             {model.name}
           </p>
           <p className="mt-1 max-w-[72%] text-xs text-[var(--hfv-muted)]">
-            {model.tagline}
+            {copy.modelTaglines[model.id] ?? model.tagline}
           </p>
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
             className="absolute right-3 top-3 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] px-2.5 py-1 text-[10px] uppercase tracking-wide text-[var(--hfv-text)]"
           >
-            Change
+            {copy.change}
           </button>
         </div>
 
@@ -236,10 +326,10 @@ export function AiVideoStudio({
             <Upload className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="max-w-[11rem] text-sm font-bold leading-tight">
-            Add a start frame (optional)
+            {copy.startFrame}
           </span>
           <span className="text-xs text-[var(--hfv-muted)]">
-            PNG, JPG or WebP
+            {copy.fileTypes}
           </span>
           {fileName ? (
             <span className="max-w-full truncate text-xs text-[var(--hfv-accent)]">
@@ -262,14 +352,14 @@ export function AiVideoStudio({
             htmlFor="studio-prompt"
             className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]"
           >
-            Prompt
+            {copy.prompt}
           </label>
           <div className="relative">
             <textarea
               id="studio-prompt"
               value={settings.prompt}
               maxLength={PROMPT_MAX_LENGTH}
-              placeholder="Describe the shot: subject, motion, camera, light…"
+              placeholder={copy.promptPlaceholder}
               onChange={(event) =>
                 setSettings((previous) => ({
                   ...previous,
@@ -286,10 +376,10 @@ export function AiVideoStudio({
 
         {settings.preset ? (
           <span className="flex w-fit items-center gap-1.5 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] px-2.5 py-1 text-xs text-[var(--hfv-text)]">
-            Preset: {settings.preset}
+            {copy.preset}: {settings.preset}
             <button
               type="button"
-              aria-label="Clear preset"
+              aria-label={copy.clearPreset}
               onClick={() =>
                 setSettings((previous) => ({
                   ...previous,
@@ -310,7 +400,7 @@ export function AiVideoStudio({
           className="flex flex-col gap-1.5 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] px-3 py-2.5 text-left"
         >
           <span className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-            Model
+            {copy.model}
           </span>
           <span className="flex w-full items-center gap-2">
             <span className="text-sm font-semibold">{model.name}</span>
@@ -328,16 +418,16 @@ export function AiVideoStudio({
 
         {pickerOpen ? (
           <section
-            aria-label="Choose a model"
+            aria-label={copy.chooseModel}
             className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-2"
           >
             <div className="flex items-center justify-between gap-2 px-1 pb-1.5">
               <span className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                Choose a model
+                {copy.chooseModel}
               </span>
               <button
                 type="button"
-                aria-label="Close model picker"
+                aria-label={copy.closePicker}
                 onClick={() => setPickerOpen(false)}
                 className="rounded-[var(--hfv-radius-chip)] p-1 text-[var(--hfv-muted)]"
               >
@@ -376,11 +466,11 @@ export function AiVideoStudio({
                         </span>
                         {unavailable ? (
                           <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                            {UNAVAILABLE_LABEL}
+                            {isChinese ? UNAVAILABLE_LABEL : copy.unavailable}
                           </span>
                         ) : option.badge ? (
                           <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-accent)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-accent-text)]">
-                            {option.badge}
+                            {option.badge === "Top" ? copy.top : copy.new}
                           </span>
                         ) : null}
                       </span>
@@ -392,7 +482,7 @@ export function AiVideoStudio({
                             : "text-[var(--hfv-muted)]",
                         ].join(" ")}
                       >
-                        {option.tagline}
+                        {copy.modelTaglines[option.id] ?? option.tagline}
                       </span>
                     </span>
                     {selected ? (
@@ -408,7 +498,7 @@ export function AiVideoStudio({
           </section>
         ) : null}
 
-        <ChipGroup label="Duration">
+        <ChipGroup label={copy.duration}>
           {model.durations.map((duration) => {
             const active = duration === settings.duration;
 
@@ -428,7 +518,7 @@ export function AiVideoStudio({
           })}
         </ChipGroup>
 
-        <ChipGroup label="Aspect">
+        <ChipGroup label={copy.aspect}>
           {model.aspects.map((aspect) => {
             const active = aspect === settings.aspect;
 
@@ -448,7 +538,7 @@ export function AiVideoStudio({
           })}
         </ChipGroup>
 
-        <ChipGroup label="Resolution">
+        <ChipGroup label={copy.resolution}>
           {model.resolutions.map((resolution) => {
             const active = resolution === settings.resolution;
 
@@ -468,7 +558,7 @@ export function AiVideoStudio({
           })}
         </ChipGroup>
 
-        <ChipGroup label="Audio">
+        <ChipGroup label={copy.audio}>
           {(["On", "Off"] as const).map((option) => {
             const value = option === "On";
             const disabled = !model.audio;
@@ -485,7 +575,7 @@ export function AiVideoStudio({
                 }
                 className={chipClass(active, disabled)}
               >
-                {option}
+                {option === "On" ? copy.on : copy.off}
               </button>
             );
           })}
@@ -501,11 +591,11 @@ export function AiVideoStudio({
           ].join(" ")}
         >
           <span className="font-semibold">
-            {submitting ? "Submitting…" : "Generate"}
+            {submitting ? copy.submit : copy.generate}
           </span>
           <span className="flex items-center gap-1.5 text-xs font-semibold">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            {credits} credits
+            {credits} {copy.credits}
           </span>
         </button>
 
@@ -520,7 +610,7 @@ export function AiVideoStudio({
       </aside>
 
       <section
-        aria-label="Results"
+        aria-label={copy.results}
         className="flex-1 overflow-y-auto rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-4"
       >
         <div className="flex flex-wrap items-center gap-1.5">
@@ -542,7 +632,7 @@ export function AiVideoStudio({
                 ].join(" ")}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                {tab}
+                {copy.tabs[tab] ?? tab}
               </button>
             );
           })}
@@ -551,11 +641,10 @@ export function AiVideoStudio({
         <div className="grid items-center gap-6 py-8 lg:grid-cols-2">
           <div className="flex flex-col gap-3">
             <h2 className="font-display text-[40px] font-bold uppercase leading-none text-[var(--hfv-text)]">
-              Direct every frame
+              {copy.heroTitle}
             </h2>
             <p className="text-sm text-[var(--hfv-muted)]">
-              Pick a model, write the shot, and tune length, ratio and sound.
-              Your clips land here.
+              {copy.heroBody}
             </p>
           </div>
           <div className="flex aspect-video items-center justify-center rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
@@ -584,7 +673,7 @@ export function AiVideoStudio({
                       : "text-[var(--hfv-muted)]",
                   ].join(" ")}
                 >
-                  {filter}
+                  {copy.filters[filter] ?? filter}
                 </button>
               );
             })}
@@ -594,7 +683,7 @@ export function AiVideoStudio({
         <div className="pt-4">
           {activeTab === "Library" ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {LIBRARY_TILES.map((caption) => (
+              {copy.library.map((caption) => (
                 <div
                   key={caption}
                   className="relative aspect-[3/4] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] transition-transform duration-300 hover:scale-[1.02]"
@@ -611,7 +700,7 @@ export function AiVideoStudio({
 
           {activeTab === "How it works" ? (
             <div className="grid gap-3 md:grid-cols-3">
-              {HOW_IT_WORKS.map((step, index) => (
+              {copy.steps.map((step, index) => (
                 <div
                   key={step.title}
                   className="flex flex-col gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-4"
@@ -631,7 +720,7 @@ export function AiVideoStudio({
           {activeTab === "History" ? (
             results.length === 0 ? (
               <p className="py-10 text-center text-sm text-[var(--hfv-muted)]">
-                No clips yet. Your generations will show up here.
+                {copy.empty}
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -645,7 +734,7 @@ export function AiVideoStudio({
                       aria-hidden="true"
                     />
                     <span className="text-xs uppercase tracking-wide text-[var(--hfv-muted)]">
-                      {result.status}
+                      {result.status === "queued" ? copy.queued : result.status}
                     </span>
                   </div>
                 ))}

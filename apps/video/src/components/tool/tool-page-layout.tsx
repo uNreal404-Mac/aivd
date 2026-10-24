@@ -617,23 +617,36 @@ export function ToolPageLayout({
     }
   }, [addGeneratingId, startPolling, resetNotification]);
 
-  const heroCopy = {
-    "text-to-video": {
-      title: "Words in, motion out",
-      description:
-        "Describe a scene and get a short cinematic clip. Pick a model, set the length and ratio, then generate.",
-    },
-    "image-to-video": {
-      title: "Bring a still to life",
-      description:
-        "Upload one image and describe the movement you want. Camera moves and subject motion are guided by your prompt.",
-    },
-    "reference-to-video": {
-      title: "Keep your look consistent",
-      description:
-        "Use reference images to keep characters and products consistent across every clip you make.",
-    },
-  } as const;
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const heroCopy = isChinese
+    ? {
+        "text-to-video": {
+          title: "文字输入，画面动起来",
+          description: "描述一个场景即可生成电影感短片。选择模型、时长和比例，然后开始生成。",
+        },
+        "image-to-video": {
+          title: "让静态画面动起来",
+          description: "上传一张图片并描述希望的运动方式，提示词会引导镜头与主体动作。",
+        },
+        "reference-to-video": {
+          title: "保持一致的视觉风格",
+          description: "使用参考图片，让角色与产品在不同视频片段中保持一致。",
+        },
+      }
+    : {
+        "text-to-video": {
+          title: "Words in, motion out",
+          description: "Describe a scene and get a short cinematic clip. Pick a model, set the length and ratio, then generate.",
+        },
+        "image-to-video": {
+          title: "Bring a still to life",
+          description: "Upload one image and describe the movement you want. Camera moves and subject motion are guided by your prompt.",
+        },
+        "reference-to-video": {
+          title: "Keep your look consistent",
+          description: "Use reference images to keep characters and products consistent across every clip you make.",
+        },
+      };
 
   const mode = (
     toolRoute in heroCopy ? toolRoute : "text-to-video"
@@ -708,10 +721,12 @@ export function ToolPageLayout({
             history={
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <h3 className="font-display text-[16px] font-bold uppercase tracking-[-0.04em] text-[var(--du-text)]">
-                  Your history lives here
+                  {isChinese ? "你的历史记录会显示在这里" : "Your history lives here"}
                 </h3>
                 <p className="mt-2 max-w-[320px] text-[14px] text-[var(--du-text-muted)]">
-                  Sign in to generate videos and keep every result in one place.
+                  {isChinese
+                    ? "登录后即可生成视频，并在这里集中查看所有结果。"
+                    : "Sign in to generate videos and keep every result in one place."}
                 </p>
               </div>
             }

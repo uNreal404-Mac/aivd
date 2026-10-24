@@ -61,6 +61,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         pricing: "定价",
         login: "登录",
         signup: "注册",
+        top: "热门",
+        creationsAria: "我的作品",
+        openMenu: "打开菜单",
+        closeMenu: "关闭菜单",
       }
     : {
         reference: "Reference",
@@ -75,11 +79,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         pricing: "Pricing",
         login: "Login",
         signup: "Sign up",
+        top: "Top",
+        creationsAria: "My creations",
+        openMenu: "Open menu",
+        closeMenu: "Close menu",
       };
   const navItems: NavItem[] = [
     { label: copy.reference, href: "/explore" },
     { label: copy.create, href: "/text-to-video" },
-    { label: copy.video, href: "/gallery", badge: { label: "Top", tone: "lime" } },
+    { label: copy.video, href: "/gallery", badge: { label: copy.top, tone: "lime" } },
     { label: copy.image, href: "/image-to-video" },
     { label: copy.music, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
     { label: copy.effects, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
@@ -146,7 +154,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
               aidv.ai
             </span>
-            <PreviewBadge />
+            <PreviewBadge lang={lang} />
           </Link>
 
           <nav className="hidden min-w-0 items-center gap-1 overflow-hidden xl:flex">
@@ -177,7 +185,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link
               href={`/${lang}/my-creations`}
               className="flex h-9 shrink-0 items-center rounded-[10px] px-1"
-              aria-label="My creations"
+              aria-label={copy.creationsAria}
             >
               <UserAvatar
                 user={{ name: user.name ?? null, image: user.image ?? null }}
@@ -213,7 +221,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {/* Mobile menu toggle */}
           <button
             type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? copy.closeMenu : copy.openMenu}
             onClick={() => setMenuOpen((prev) => !prev)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:hidden"
           >

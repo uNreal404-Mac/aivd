@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { useLocale } from "next-intl";
 import { cn } from "@/components/ui";
 import { DEFAULT_VIDEO_MODELS } from "@/components/video-generator";
 import { getAvailableModels, calculateModelCredits } from "@/config/credits";
@@ -85,6 +86,57 @@ export function GeneratorPanel({
   initialQuality,
   initialImageUrl,
 }: GeneratorPanelProps) {
+  const locale = useLocale();
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const copy = isChinese
+    ? {
+        titles: {
+          "image-to-video": "图片生成视频",
+          "text-to-video": "文字生成视频",
+          "reference-to-video": "参考图生成视频",
+        } as Record<string, string>,
+        noModels: "当前 AI 服务配置下，暂时没有可用于此工具的模型。",
+        model: "模型",
+        videoModels: "视频模型",
+        prompt: "提示词",
+        promptPlaceholder: "描述你想创建的视频，例如：一只猫在阳光花园中玩耍，画面自然明亮、空气清新……",
+        referenceImage: "参考图片",
+        imageSource: "图片来源",
+        selected: "已选择",
+        uploadImage: "上传图片",
+        uploadHint: "JPG、PNG、WEBP · 最大 10MB",
+        aspectRatio: "画面比例",
+        videoLength: "视频时长",
+        resolution: "分辨率",
+        totalCredits: "所需积分：",
+        credits: "积分",
+        generating: "生成中…",
+        generate: "生成视频",
+      }
+    : {
+        titles: {
+          "image-to-video": "IMAGE TO VIDEO",
+          "text-to-video": "TEXT TO VIDEO",
+          "reference-to-video": "REFERENCE TO VIDEO",
+        } as Record<string, string>,
+        noModels: "No models are currently available for this tool under the active AI provider configuration.",
+        model: "MODEL",
+        videoModels: "Video Models",
+        prompt: "PROMPT",
+        promptPlaceholder: "Describe the video you want to create, e.g., A cat playing in a sunny garden with natural lighting and fresh atmosphere...",
+        referenceImage: "REFERENCE IMAGE",
+        imageSource: "IMAGE SOURCE",
+        selected: "Selected",
+        uploadImage: "Upload image",
+        uploadHint: "JPG, PNG, WEBP · Max 10MB",
+        aspectRatio: "ASPECT RATIO",
+        videoLength: "VIDEO LENGTH",
+        resolution: "RESOLUTION",
+        totalCredits: "Total Credits:",
+        credits: "Credits",
+        generating: "Generating...",
+        generate: "Generate Video",
+      };
   const models = getAvailableModels();
   const [prompt, setPrompt] = useState(initialPrompt || "");
   const [selectedModel, setSelectedModel] = useState(initialModelId || defaultModelId || models[0]?.id || "");
@@ -272,10 +324,7 @@ export function GeneratorPanel({
 
   // Get page title
   const getPageTitle = () => {
-    if (toolType === "image-to-video") return "IMAGE TO VIDEO";
-    if (toolType === "text-to-video") return "TEXT TO VIDEO";
-    if (toolType === "reference-to-video") return "REFERENCE TO VIDEO";
-    return "AI GENERATOR";
+    return copy.titles[toolType] ?? (isChinese ? "AI 生成器" : "AI GENERATOR");
   };
 
   return (
@@ -293,8 +342,7 @@ export function GeneratorPanel({
         <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
           {!hasAvailableModels && (
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-              No models are currently available for this tool under the active AI
-              provider configuration.
+              {copy.noModels}
             </div>
           )}
 
@@ -303,7 +351,7 @@ export function GeneratorPanel({
           {/* Model Selection */}
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-              MODEL
+              {copy.model}
             </span>
             {currentModel && (
                 <DropdownMenu open={isModelDropdownOpen} onOpenChange={setIsModelDropdownOpen}>
@@ -319,7 +367,7 @@ export function GeneratorPanel({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-zinc-900 border-zinc-800 w-80 max-h-[400px] overflow-y-scroll custom-scrollbar">
                   <DropdownMenuLabel className="text-zinc-400 text-xs">
-                    Video Models
+                    {copy.videoModels}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   {availableModels.map((model) => (
@@ -351,7 +399,7 @@ export function GeneratorPanel({
                             <span>•</span>
                           </>
                         )}
-                        <span>{model.creditCost?.base ?? ""} credits</span>
+                        <span>{model.creditCost?.base ?? ""} {copy.credits}</span>
                       </div>
                     </DropdownMenuItem>
                   ))}
@@ -363,12 +411,12 @@ export function GeneratorPanel({
           {/* Prompt Section */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <SectionLabel className="mb-0">PROMPT</SectionLabel>
+              <SectionLabel className="mb-0">{copy.prompt}</SectionLabel>
             </div>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the video you want to create, e.g., A cat playing in a sunny garden with natural lighting and fresh atmosphere..."
+              placeholder={copy.promptPlaceholder}
               disabled={isLoading}
               className="w-full min-h-[100px] max-h-[200px] px-4 py-3 rounded-lg bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground/70 resize-none focus:outline-none focus:border-primary transition-colors text-sm leading-relaxed"
               rows={4}
@@ -381,14 +429,14 @@ export function GeneratorPanel({
             currentModel?.supportImageToVideo && (
               <div>
                 <SectionLabel required={toolType === "image-to-video"}>
-                  {toolType === "reference-to-video" ? "REFERENCE IMAGE" : "IMAGE SOURCE"}
+                  {toolType === "reference-to-video" ? copy.referenceImage : copy.imageSource}
                 </SectionLabel>
                 {imageFile || imageUrl ? (
                   <div className="relative group h-32 rounded-lg overflow-hidden border-2 border-zinc-700">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
-                        alt="Selected"
+                        alt={copy.selected}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -411,8 +459,8 @@ export function GeneratorPanel({
                     <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted/60 group-hover:bg-muted transition-colors">
                       <ImageIcon className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3">Upload image</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">JPG, PNG, WEBP • Max 10MB</p>
+                    <p className="text-sm text-muted-foreground mt-3">{copy.uploadImage}</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">{copy.uploadHint}</p>
                     <input
                       type="file"
                       accept="image/*"
@@ -431,7 +479,7 @@ export function GeneratorPanel({
             {/* Aspect Ratio */}
             {currentModel?.aspectRatios && (
               <div>
-                <SectionLabel>ASPECT RATIO</SectionLabel>
+                <SectionLabel>{copy.aspectRatio}</SectionLabel>
                 <div className="grid grid-cols-3 gap-3">
                   {currentModel.aspectRatios.map((ar) => (
                     <button
@@ -468,7 +516,7 @@ export function GeneratorPanel({
             <div className="grid grid-cols-2 gap-4">
               {currentModel?.durations && (
                 <div>
-                  <SectionLabel>VIDEO LENGTH</SectionLabel>
+                  <SectionLabel>{copy.videoLength}</SectionLabel>
                   <div className="grid grid-cols-3 gap-2">
                     {currentModel.durations.map((d) => (
                       <button
@@ -492,7 +540,7 @@ export function GeneratorPanel({
 
               {currentModel?.qualities && (
                 <div>
-                  <SectionLabel>RESOLUTION</SectionLabel>
+                  <SectionLabel>{copy.resolution}</SectionLabel>
                   <div className="grid grid-cols-3 gap-2">
                     {currentModel.qualities.map((q) => (
                       <button
@@ -523,10 +571,10 @@ export function GeneratorPanel({
         <div className="sticky bottom-0 shrink-0 space-y-3 bg-[var(--du-surface)] px-1 pb-1 pt-3">
           {/* Credits Display */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Credits:</span>
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{copy.totalCredits}</span>
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-[var(--du-accent)]" />
-              <span className="text-foreground font-medium">{estimatedCredits} Credits</span>
+              <span className="text-foreground font-medium">{estimatedCredits} {copy.credits}</span>
             </div>
           </div>
 
@@ -545,12 +593,12 @@ export function GeneratorPanel({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
-                Generating...
+                {copy.generating}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Generate Video
+                {copy.generate}
               </>
             )}
           </button>

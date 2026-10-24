@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useLocalePathname, useLocaleRouter } from "@/i18n/navigation";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,12 +15,8 @@ import * as Icons from "@/components/ui/icons";
 import { i18n, localeMap } from "@/config/i18n-config";
 
 export function LocaleChange() {
-  const router = useLocaleRouter();
-  const pathname = useLocalePathname();
-
-  function onClick(locale: string) {
-    router.push(pathname, { locale });
-  }
+  const rawPathname = usePathname();
+  const pathname = rawPathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
 
   return (
     <DropdownMenu>
@@ -35,8 +31,14 @@ export function LocaleChange() {
           {i18n.locales.map((locale) => {
             return (
               // <Link href={redirectedPathName(locale)}>{locale}</Link>
-              <DropdownMenuItem key={locale} onClick={() => onClick(locale)}>
-                <span>{localeMap[locale]}</span>
+              <DropdownMenuItem key={locale} asChild>
+                <a
+                  href={locale === i18n.defaultLocale ? pathname : `/${locale}${pathname === "/" ? "" : pathname}`}
+                  hrefLang={locale}
+                  className="w-full"
+                >
+                  {localeMap[locale]}
+                </a>
               </DropdownMenuItem>
             );
           })}

@@ -10,6 +10,7 @@ interface HfPromoBarProps {
 
 export function HfPromoBar({ lang }: HfPromoBarProps) {
   const [visible, setVisible] = useState(true);
+  const isChinese = lang.toLowerCase().startsWith("zh");
 
   if (!visible) {
     return null;
@@ -19,19 +20,23 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
     <div className="relative flex h-[45px] items-center justify-center bg-[var(--du-accent)] px-4 text-[var(--du-on-accent)]">
       <div className="flex items-center gap-3 text-sm">
         <span className="hidden sm:inline">
-          New here? Get starter credits when you create an account
+          {isChinese
+            ? "首次使用？创建账户即可获得入门积分"
+            : "New here? Get starter credits when you create an account"}
         </span>
-        <span className="sm:hidden">Get starter credits on sign up</span>
+        <span className="sm:hidden">
+          {isChinese ? "注册即可获得入门积分" : "Get starter credits on sign up"}
+        </span>
         <Link
           href={`/${lang}/pricing`}
           className="inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
         >
-          See plans
+          {isChinese ? "查看套餐" : "See plans"}
         </Link>
       </div>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={isChinese ? "关闭" : "Dismiss"}
         onClick={() => setVisible(false)}
         className="absolute right-3 flex h-7 w-7 items-center justify-center rounded-md text-[var(--du-on-accent)] hover:bg-[var(--du-accent-hover)]"
       >

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -31,7 +31,6 @@ import {
   EFFECT_CARDS,
   MODEL_CARDS,
   MODELS_HEADER,
-  STEPS,
   localizedHref,
   type Cta,
   type CtaVariant,
@@ -274,15 +273,83 @@ export function DuHome({ lang }: { lang: string }) {
         },
       };
 
+  const homeCopy = isChinese
+    ? {
+        filters: {
+          All: "全部",
+          Cinematic: "电影感",
+          Anime: "动漫",
+          Portrait: "人像",
+          Fantasy: "幻想",
+          "Sci-Fi": "科幻",
+          Nature: "自然",
+          Stylize: "风格化",
+          More: "更多",
+        } as Record<string, string>,
+        categoryTitles: {
+          "golden-hour": "黄金时刻",
+          "neon-streets": "霓虹街景",
+          "liquid-light": "流光",
+          "coast-drive": "海岸公路",
+          "first-steps": "初次启程",
+          "silver-muse": "银色缪斯",
+          "glass-city": "玻璃之城",
+          "edge-of-space": "太空边缘",
+        } as Record<string, string>,
+        modelsHeader: {
+          eyebrow: "我们的模型",
+          title: "为每一帧选择合适的模型。",
+          accent: "合适的模型。",
+          desc: "无论写实还是风格化，都能找到适合你创意的生成引擎。",
+        },
+        modelTitles: {
+          "video-lite": "轻量视频",
+          "video-pro": "专业视频",
+          "image-studio": "图像工作室",
+          "anime-style": "动漫与风格",
+        } as Record<string, string>,
+        modelDescriptions: {
+          "video-lite": "快速生成日常短片，适合灵感草稿与即时创作。",
+          "video-pro": "为成片提供更具电影感的运动与画面细节。",
+          "image-studio": "根据文字或参考图生成细腻的静态画面。",
+          "anime-style": "用鲜明的风格与视觉语言打造出众画面。",
+        } as Record<string, string>,
+        effectTitles: {
+          "float-away": "轻盈漂浮",
+          "style-swap": "风格切换",
+          "fire-light": "火光",
+          "world-grow": "世界生长",
+          "orbit-360": "360° 环绕",
+          "slow-time": "慢时光",
+        } as Record<string, string>,
+        learnMore: "了解更多 →",
+        tryIt: "立即体验 →",
+        like: "喜欢",
+        creditsLead: "使用",
+        creditsAccent: "免费积分开始创作。",
+        creditsSubtitle: "无需信用卡，把你的下一个灵感变成真实作品。",
+        creditsCta: "领取免费积分 →",
+      }
+    : {
+        filters: Object.fromEntries(CATEGORY_FILTERS.map((item) => [item, item])) as Record<string, string>,
+        categoryTitles: {} as Record<string, string>,
+        modelsHeader: MODELS_HEADER,
+        modelTitles: {} as Record<string, string>,
+        modelDescriptions: {} as Record<string, string>,
+        effectTitles: {} as Record<string, string>,
+        learnMore: "Learn more →",
+        tryIt: "Try it →",
+        like: "Like",
+        creditsLead: "Start creating with ",
+        creditsAccent: "free credits.",
+        creditsSubtitle: CREDITS_BANNER.subtitle,
+        creditsCta: CREDITS_BANNER.cta.label,
+      };
+
   const visibleCategories =
     active === "All" || active === "More"
       ? CATEGORY_CARDS
       : CATEGORY_CARDS.filter((card) => card.category === active);
-
-  const creditLead = CREDITS_BANNER.title.slice(
-    0,
-    CREDITS_BANNER.title.length - CREDITS_BANNER.accent.length
-  );
 
   return (
     <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
@@ -443,7 +510,7 @@ export function DuHome({ lang }: { lang: string }) {
                     : "du-glass-btn h-9 px-4 text-sm"
                 }
               >
-                {filter}
+                {homeCopy.filters[filter] ?? filter}
               </button>
             );
           })}
@@ -454,7 +521,7 @@ export function DuHome({ lang }: { lang: string }) {
               <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[var(--du-border)]">
                 <img
                   src={card.image}
-                  alt={card.alt}
+                  alt={isChinese ? homeCopy.categoryTitles[card.id] ?? card.alt : card.alt}
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
@@ -463,9 +530,11 @@ export function DuHome({ lang }: { lang: string }) {
                 </span>
               </div>
               <div className="mt-3 flex items-center justify-between gap-2">
-                <span className="text-sm text-[var(--du-text)]">{card.title}</span>
+                <span className="text-sm text-[var(--du-text)]">
+                  {homeCopy.categoryTitles[card.id] ?? card.title}
+                </span>
                 <span
-                  aria-label="Like"
+                  aria-label={homeCopy.like}
                   className="du-glass-btn du-glass-on-media inline-flex items-center px-2 py-1 text-xs"
                 >
                   <Icon name="Heart" className="h-3 w-3" />
@@ -476,46 +545,7 @@ export function DuHome({ lang }: { lang: string }) {
         </div>
       </section>
 
-      {/* 3. Model cards */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
-        <SectionHeading header={MODELS_HEADER} />
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {MODEL_CARDS.map((model) => (
-            <div
-              key={model.id}
-              className="du-glass flex flex-col p-4"
-            >
-              <div className="flex items-center gap-2">
-                <Icon name={model.icon} className="h-5 w-5 text-[var(--du-accent-text)]" />
-                <h3 className="text-base font-semibold text-[var(--du-text)]">
-                  {model.title}
-                </h3>
-              </div>
-              <div className="mt-3 aspect-[16/10] overflow-hidden rounded-lg">
-                <img
-                  src={model.image}
-                  alt={model.alt}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <p className="mt-3 flex-1 text-sm text-[var(--du-text-muted)]">
-                {model.description}
-              </p>
-              <div className="mt-4 flex justify-end">
-                <Link
-                  href={localizedHref(lang, model.href)}
-                  className="du-glass-btn inline-flex h-9 items-center px-3 text-xs"
-                >
-                  Learn more →
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. Effect cards */}
+      {/* 3. Effect cards */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">
         <FeatureStrip
           {...featureCopy.image}
@@ -531,26 +561,26 @@ export function DuHome({ lang }: { lang: string }) {
             >
               <img
                 src={effect.image}
-                alt={effect.alt}
+                alt={isChinese ? homeCopy.effectTitles[effect.id] ?? effect.alt : effect.alt}
                 loading="lazy"
                 className="h-full w-full object-cover"
               />
               <span className="absolute inset-0 bg-black/45" />
               <span className="absolute bottom-4 left-4 text-[15px] font-semibold text-[var(--du-text)]">
-                {effect.title}
+                {homeCopy.effectTitles[effect.id] ?? effect.title}
               </span>
               <Link
                 href={localizedHref(lang, effect.href)}
                 className="du-glass-btn du-glass-on-media absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
               >
-                Try it →
+                {homeCopy.tryIt}
               </Link>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 5. Three steps */}
+      {/* 4. Model cards (moved from above) */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">
         <FeatureStrip
           {...featureCopy.cinema}
@@ -558,39 +588,46 @@ export function DuHome({ lang }: { lang: string }) {
           images={["/home/video-pro.webp", "/home/planet-horizon.webp", "/home/edge-of-space.webp"]}
           tone="violet"
         />
-        <div className="mt-10 flex flex-col items-stretch gap-4 lg:flex-row lg:items-center">
-          {STEPS.map((step, index) => (
-            <Fragment key={step.number}>
-              <div className="du-glass flex flex-1 gap-4 p-5">
-                <div className="flex items-center border-r border-[var(--du-border)] pr-4 text-[28px] font-bold text-[var(--du-text-dim)]">
-                  {step.number}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Icon name={step.icon} className="h-5 w-5 text-[var(--du-accent-text)]" />
-                    <h3 className="text-base font-semibold text-[var(--du-text)]">
-                      {step.title}
-                    </h3>
-                  </div>
-                  <p className="mt-2 text-sm text-[var(--du-text-muted)]">
-                    {step.description}
-                  </p>
-                </div>
+        <div className="mt-12">
+          <SectionHeading header={homeCopy.modelsHeader} />
+        </div>
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {MODEL_CARDS.map((model) => (
+            <div key={model.id} className="du-glass flex flex-col p-4">
+              <div className="flex items-center gap-2">
+                <Icon name={model.icon} className="h-5 w-5 text-[var(--du-accent-text)]" />
+                <h3 className="text-base font-semibold text-[var(--du-text)]">
+                  {homeCopy.modelTitles[model.id] ?? model.title}
+                </h3>
               </div>
-              {index < STEPS.length - 1 && (
-                <span className="hidden shrink-0 text-[var(--du-accent-text)] lg:inline-flex">
-                  <Icon name="ArrowRight" className="h-5 w-5" />
-                </span>
-              )}
-            </Fragment>
+              <div className="mt-3 aspect-[16/10] overflow-hidden rounded-lg">
+                <img
+                  src={model.image}
+                  alt={isChinese ? homeCopy.modelTitles[model.id] ?? model.alt : model.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <p className="mt-3 flex-1 text-sm text-[var(--du-text-muted)]">
+                {homeCopy.modelDescriptions[model.id] ?? model.description}
+              </p>
+              <div className="mt-4 flex justify-end">
+                <Link
+                  href={localizedHref(lang, model.href)}
+                  className="du-glass-btn inline-flex h-9 items-center px-3 text-xs"
+                >
+                  {homeCopy.learnMore}
+                </Link>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* 6. Gallery */}
+      {/* 5. Gallery */}
       <GallerySection />
 
-      {/* 7. Free credits banner */}
+      {/* 6. Free credits banner */}
       <section className="mx-auto max-w-[1680px] px-6 pb-16">
         <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[var(--du-border-strong)]">
           <img
@@ -602,16 +639,19 @@ export function DuHome({ lang }: { lang: string }) {
           <span className="absolute inset-0 bg-black/60" />
           <div className="relative flex min-h-[220px] max-w-[560px] flex-col justify-center gap-4 p-8">
             <h2 className="text-[32px] font-bold text-[var(--du-text)]">
-              {creditLead}
+              {homeCopy.creditsLead}
               <span className="text-[var(--du-accent-text)]">
-                {CREDITS_BANNER.accent}
+                {homeCopy.creditsAccent}
               </span>
             </h2>
             <p className="text-sm text-[var(--du-text-muted)]">
-              {CREDITS_BANNER.subtitle}
+              {homeCopy.creditsSubtitle}
             </p>
             <div>
-              <CtaButton cta={CREDITS_BANNER.cta} lang={lang} />
+              <CtaButton
+                cta={{ ...CREDITS_BANNER.cta, label: homeCopy.creditsCta }}
+                lang={lang}
+              />
             </div>
           </div>
         </div>

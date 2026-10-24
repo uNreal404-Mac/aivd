@@ -18,20 +18,25 @@ export async function generateMetadata({
 }: ImageToVideoPageProps) {
   const { locale } = await params;
   const config = getToolPageConfig("image-to-video");
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const title = isChinese ? "图片生成视频 - AI 动画工具" : config.seo?.title;
+  const description = isChinese
+    ? "上传照片并通过 AI 生成自然流畅的视频动画。"
+    : config.seo?.description;
   const alternates = buildAlternates("/image-to-video", locale);
   const ogImage = resolveOgImage(config.seo?.ogImage);
 
   return {
-    title: config.seo?.title,
-    description: config.seo?.description,
+    title,
+    description,
     keywords: config.seo?.keywords,
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,
     },
     openGraph: {
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title,
+      description,
       url: alternates.canonical,
       siteName: siteConfig.name,
       type: "website",
@@ -39,15 +44,16 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title,
+      description,
       images: ogImage ? [ogImage] : undefined,
     },
   };
 }
 
-export default function ImageToVideoPage() {
+export default async function ImageToVideoPage({ params }: ImageToVideoPageProps) {
   const generationEnabled = isI2VGenerationEnabled();
+  const { locale } = await params;
 
-  return <I2VStudio generationEnabled={generationEnabled} />;
+  return <I2VStudio generationEnabled={generationEnabled} locale={locale} />;
 }
