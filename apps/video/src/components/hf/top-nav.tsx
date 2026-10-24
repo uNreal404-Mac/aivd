@@ -27,17 +27,6 @@ interface NavItem {
   disabled?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Explore", href: "/explore" },
-  { label: "Video", href: "/text-to-video", badge: { label: "Top", tone: "lime" } },
-  { label: "Image to Video", href: "/image-to-video" },
-  { label: "Reference", href: "/reference-to-video", badge: { label: "New", tone: "lime" } },
-  { label: "My creations", href: "/my-creations" },
-  { label: "Image", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
-  { label: "Audio", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
-  { label: "Effects", href: "", badge: { label: "Soon", tone: "muted" }, disabled: true },
-];
-
 function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
   return (
     <span
@@ -57,6 +46,46 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const pathname = useLocalePathname();
   const signInModal = useSigninModal();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isChinese = lang.toLowerCase().startsWith("zh");
+  const copy = isChinese
+    ? {
+        reference: "参考",
+        create: "创作",
+        video: "视频",
+        image: "图片",
+        music: "音乐",
+        effects: "特效",
+        modeling: "3D 建模",
+        creations: "我的作品",
+        soon: "即将开放",
+        pricing: "定价",
+        login: "登录",
+        signup: "注册",
+      }
+    : {
+        reference: "Reference",
+        create: "Create",
+        video: "Video",
+        image: "Image",
+        music: "Music",
+        effects: "Effects",
+        modeling: "3D Modeling",
+        creations: "My creations",
+        soon: "Soon",
+        pricing: "Pricing",
+        login: "Login",
+        signup: "Sign up",
+      };
+  const navItems: NavItem[] = [
+    { label: copy.reference, href: "/explore" },
+    { label: copy.create, href: "/text-to-video" },
+    { label: copy.video, href: "/gallery", badge: { label: "Top", tone: "lime" } },
+    { label: copy.image, href: "/image-to-video" },
+    { label: copy.music, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
+    { label: copy.effects, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
+    { label: copy.modeling, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
+    { label: copy.creations, href: "/my-creations" },
+  ];
 
   const isActive = (href: string) => {
     if (href === "") {
@@ -81,7 +110,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           aria-disabled="true"
           className={cn(
             "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[var(--du-text-dim)] opacity-60",
-            mobile ? "px-3 py-2" : "hidden px-2 text-[14px] 2xl:flex"
+            mobile ? "px-3 py-2" : "px-2 text-[14px]"
           )}
         >
           {content}
@@ -113,7 +142,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         {/* Left: logo + desktop nav */}
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
-            {/* biome-ignore lint/nursery/noImgElement: small static svg */}
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
               aidv.ai
@@ -121,8 +149,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <PreviewBadge />
           </Link>
 
-          <nav className="hidden min-w-0 items-center gap-1 overflow-hidden lg:flex">
-            {NAV_ITEMS.map((item) => renderItem(item))}
+          <nav className="hidden min-w-0 items-center gap-1 overflow-hidden xl:flex">
+            {navItems.map((item) => renderItem(item))}
           </nav>
         </div>
 
@@ -130,17 +158,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div className="flex shrink-0 items-center gap-2">
           <Link
             href={`/${lang}/pricing`}
-            aria-label="Pricing"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] lg:hidden"
+            aria-label={copy.pricing}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:hidden"
           >
             <Gem className="h-4 w-4" />
           </Link>
           <Link
             href={`/${lang}/pricing`}
-            className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-[var(--du-surface)] px-3 text-sm font-medium text-[var(--du-text)] hover:bg-[var(--du-surface-2)] lg:flex"
+            className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-[var(--du-surface)] px-3 text-sm font-medium text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:flex"
           >
             <Gem className="h-4 w-4" />
-            Pricing
+            {copy.pricing}
           </Link>
 
           <LocaleChange />
@@ -161,23 +189,23 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-transparent bg-[var(--du-accent-soft)] px-3 text-sm font-medium text-[var(--du-accent-text)] hover:border-[var(--du-border-strong)] lg:flex"
+                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-transparent bg-[var(--du-accent-soft)] px-3 text-sm font-medium text-[var(--du-accent-text)] hover:border-[var(--du-border-strong)] xl:flex"
               >
-                Login
+                {copy.login}
               </button>
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:flex"
+                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] xl:flex"
               >
-                Sign up
+                {copy.signup}
               </button>
               <button
                 type="button"
                 onClick={() => signInModal.onOpen()}
-                className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] lg:hidden"
+                className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] xl:hidden"
               >
-                Sign up
+                {copy.signup}
               </button>
             </>
           )}
@@ -187,7 +215,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -196,16 +224,16 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
       {/* Mobile dropdown panel */}
       {menuOpen && (
-        <div className="absolute inset-x-0 top-[52px] border-b border-[var(--du-border)] bg-[var(--du-bg-elev)] py-2 lg:hidden">
+        <div className="absolute inset-x-0 top-[52px] border-b border-[var(--du-border)] bg-[var(--du-bg-elev)] py-2 xl:hidden">
           <nav className="flex flex-col">
-            {NAV_ITEMS.map((item) => renderItem(item, true))}
+            {navItems.map((item) => renderItem(item, true))}
             <Link
               href={`/${lang}/pricing`}
               onClick={() => setMenuOpen(false)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--du-text)] hover:text-[var(--du-accent-text)]"
             >
               <Gem className="h-4 w-4" />
-              Pricing
+              {copy.pricing}
             </Link>
             {!user && (
               <button
@@ -216,7 +244,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 }}
                 className="mt-1 mx-3 flex h-9 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
               >
-                Sign up
+                {copy.signup}
               </button>
             )}
           </nav>
