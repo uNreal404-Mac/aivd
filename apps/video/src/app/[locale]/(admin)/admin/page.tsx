@@ -1,7 +1,8 @@
 import { db } from "@/db";
-import { users, videos, creditPackages, creditTransactions, VideoStatus } from "@/db/schema";
-import { count, eq, and, sql, gt } from "drizzle-orm";
+import { users, videos, creditPackages, creditTransactions, sessions, VideoStatus } from "@/db/schema";
+import { count, eq, gte } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Users as UsersIcon,
   Video,
@@ -12,7 +13,12 @@ import {
   Clock,
 } from "@/components/ui/icons";
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   // 获取统计数据
   const [
     totalUsersResult,
@@ -21,6 +27,10 @@ export default async function AdminDashboardPage() {
     completedVideosResult,
     failedVideosResult,
     pendingVideosResult,
+    superAccountsResult,
+    bannedAccountsResult,
+    transactionCountResult,
+    activeSessionsResult,
   ] = await Promise.all([
     db.select({ count: count() }).from(users),
     db.select({ count: count() }).from(videos),
@@ -28,6 +38,10 @@ export default async function AdminDashboardPage() {
     db.select({ count: count() }).from(videos).where(eq(videos.status, VideoStatus.COMPLETED)),
     db.select({ count: count() }).from(videos).where(eq(videos.status, VideoStatus.FAILED)),
     db.select({ count: count() }).from(videos).where(eq(videos.status, VideoStatus.PENDING)),
+    db.select({ count: count() }).from(users).where(eq(users.isSuperAccount, true)),
+    db.select({ count: count() }).from(users).where(eq(users.isBanned, true)),
+    db.select({ count: count() }).from(creditTransactions),
+    db.select({ count: count() }).from(sessions),
   ]);
 
   const totalUsers = totalUsersResult[0]?.count || 0;
@@ -36,6 +50,10 @@ export default async function AdminDashboardPage() {
   const completedVideos = completedVideosResult[0]?.count || 0;
   const failedVideos = failedVideosResult[0]?.count || 0;
   const pendingVideos = pendingVideosResult[0]?.count || 0;
+  const superAccounts = superAccountsResult[0]?.count || 0;
+  const bannedAccounts = bannedAccountsResult[0]?.count || 0;
+  const transactionCount = transactionCountResult[0]?.count || 0;
+  const activeSessions = activeSessionsResult[0]?.count || 0;
 
   // 计算视频成功率
   const totalFinishedVideos = completedVideos + failedVideos;
@@ -46,18 +64,17 @@ export default async function AdminDashboardPage() {
   // 获取最近注册用户（最近7天）
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString();
   const recentUsersResult = await db
     .select({ count: count() })
     .from(users)
-    .where(sql`${users.createdAt} >= ${sevenDaysAgoStr}::timestamp`);
+    .where(gte(users.createdAt, sevenDaysAgo));
   const recentUsers = recentUsersResult[0]?.count || 0;
 
   // 获取最近视频生成（最近7天）
   const recentVideosResult = await db
     .select({ count: count() })
     .from(videos)
-    .where(sql`${videos.createdAt} >= ${sevenDaysAgoStr}::timestamp`);
+    .where(gte(videos.createdAt, sevenDaysAgo));
   const recentVideos = recentVideosResult[0]?.count || 0;
 
   return (
@@ -181,6 +198,46 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Cloudflare D1 实时数据</CardTitle>
+          <CardDescription>
+            此处直接读取 Worker 当前绑定的 D1，不是前端模拟数据。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">超级账号</p>
+            <p className="mt-1 text-2xl font-bold">{superAccounts}</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">已封禁账号</p>
+            <p className="mt-1 text-2xl font-bold">{bannedAccounts}</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">积分交易</p>
+            <p className="mt-1 text-2xl font-bold">{transactionCount}</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">数据库会话</p>
+            <p className="mt-1 text-2xl font-bold">{activeSessions}</p>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+            <div>
+              <p className="font-medium">Cloudflare 基础设施状态</p>
+              <p className="text-sm text-muted-foreground">
+                D1 已连接；R2、Worker 请求量和带宽等平台级指标继续由 Cloudflare Dashboard 提供。
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">
+                打开 Cloudflare Dashboard
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Links */}
       <Card>
         <CardHeader>
@@ -191,7 +248,7 @@ export default async function AdminDashboardPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <a
-            href="/admin/users"
+            href={`/${locale}/admin/users`}
             className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
           >
             <UsersIcon className="h-5 w-5 text-muted-foreground" />
@@ -202,7 +259,7 @@ export default async function AdminDashboardPage() {
           </a>
 
           <a
-            href="/admin/analytics"
+            href={`/${locale}/admin/analytics`}
             className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
           >
             <TrendingUp className="h-5 w-5 text-muted-foreground" />
@@ -213,7 +270,7 @@ export default async function AdminDashboardPage() {
           </a>
 
           <a
-            href="/admin/settings"
+            href={`/${locale}/admin/settings`}
             className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
           >
             <Coins className="h-5 w-5 text-muted-foreground" />

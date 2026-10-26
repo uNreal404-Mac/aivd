@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { videos, VideoStatus } from "@/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 
 export interface UserVideo {
   id: number;
@@ -54,7 +54,7 @@ export async function getUserVideos({
 
   // 并行查询总数和当前页数据
   const [totalResult, videosResult] = await Promise.all([
-    db.select({ count: sql<number>`count(*)::int` }).from(videos).where(conditions),
+    db.select({ count: count() }).from(videos).where(conditions),
     db
       .select({
         id: videos.id,
@@ -95,12 +95,12 @@ export async function getUserVideoStats(userId: string) {
   const [totalResult, completedResult, failedResult, generatingResult] =
     await Promise.all([
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: count() })
         .from(videos)
         .where(and(eq(videos.userId, userId), eq(videos.isDeleted, false))),
 
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: count() })
         .from(videos)
         .where(
           and(
@@ -111,7 +111,7 @@ export async function getUserVideoStats(userId: string) {
         ),
 
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: count() })
         .from(videos)
         .where(
           and(
@@ -122,7 +122,7 @@ export async function getUserVideoStats(userId: string) {
         ),
 
       db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: count() })
         .from(videos)
         .where(
           and(

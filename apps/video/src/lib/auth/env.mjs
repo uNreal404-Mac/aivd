@@ -27,6 +27,9 @@ export const env = createEnv({
     RESEND_FROM: z.string().min(1).optional(),
     // Admin
     ADMIN_EMAIL: z.string().optional(),
+    ADMIN_PANEL_USERNAME: z.string().min(1).optional(),
+    ADMIN_PANEL_PASSWORD_HASH: z.string().min(1).optional(),
+    ADMIN_PANEL_SESSION_SECRET: z.string().min(32).optional(),
     // Debug
     IS_DEBUG: z.string().optional(),
   },
@@ -53,6 +56,9 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     RESEND_FROM: process.env.RESEND_FROM,
     ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+    ADMIN_PANEL_USERNAME: process.env.ADMIN_PANEL_USERNAME,
+    ADMIN_PANEL_PASSWORD_HASH: process.env.ADMIN_PANEL_PASSWORD_HASH,
+    ADMIN_PANEL_SESSION_SECRET: process.env.ADMIN_PANEL_SESSION_SECRET,
     IS_DEBUG: process.env.IS_DEBUG,
   },
   skipValidation:

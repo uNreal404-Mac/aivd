@@ -23,7 +23,7 @@ applied migration is not run again.
 Run this only for a user who has already registered, replacing the email:
 
 ```bash
-pnpm exec wrangler d1 execute dreamutopia-db --remote --command \
+pnpm exec wrangler d1 execute dreamutopia-video-preview --remote --command \
   "UPDATE user SET isSuperAccount = 1 WHERE lower(email) = lower('user@example.com');"
 ```
 

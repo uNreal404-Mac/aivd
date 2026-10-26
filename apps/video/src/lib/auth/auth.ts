@@ -374,6 +374,12 @@ export const auth = betterAuth({
         defaultValue: false,
         input: false, // Granted only through trusted database/admin tooling
       },
+      isBanned: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
     },
   },
 
@@ -390,6 +396,7 @@ export const auth = betterAuth({
 export type User = typeof auth.$Infer.Session.user & {
   isAdmin?: boolean | null;
   isSuperAccount?: boolean | null;
+  isBanned?: boolean | null;
 };
 
 // Session type with extended user

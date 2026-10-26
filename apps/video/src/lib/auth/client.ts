@@ -14,6 +14,7 @@ export const authClient = createAuthClient({
       user: {
         isAdmin: { type: "boolean", required: false, input: false },
         isSuperAccount: { type: "boolean", required: false, input: false },
+        isBanned: { type: "boolean", required: false, input: false },
       },
     }),
     magicLinkClient(),
@@ -46,4 +47,5 @@ export type User = {
   updatedAt: Date;
   isAdmin?: boolean | null;
   isSuperAccount?: boolean | null;
+  isBanned?: boolean | null;
 };

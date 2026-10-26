@@ -21,6 +21,7 @@ import { env } from "./env.mjs";
 import { getLoginRedirectURL } from "./redirect";
 import { getRequestCallbackURL } from "./server-redirect";
 import type { Locale } from "@/config/i18n-config";
+import { getAdminPanelPrincipal } from "@/lib/admin/session";
 
 /**
  * 要求用户具有管理员权限
@@ -32,9 +33,11 @@ import type { Locale } from "@/config/i18n-config";
  * @throws 如果未登录或不是管理员，则重定向
  */
 export async function requireAdmin(redirectTo?: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const requestHeaders = await headers();
+  const panelAdmin = await getAdminPanelPrincipal(requestHeaders);
+  if (panelAdmin) return panelAdmin;
+
+  const session = await auth.api.getSession({ headers: requestHeaders });
 
   if (!session?.user) {
     redirect(
@@ -78,9 +81,10 @@ export async function requireAdmin(redirectTo?: string) {
  * @returns 是否是管理员
  */
 export async function isAdmin(): Promise<boolean> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const requestHeaders = await headers();
+  if (await getAdminPanelPrincipal(requestHeaders)) return true;
+
+  const session = await auth.api.getSession({ headers: requestHeaders });
 
   return !!session?.user?.isAdmin;
 }

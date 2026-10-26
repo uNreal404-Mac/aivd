@@ -23,7 +23,18 @@ export async function getCurrentUser(): Promise<User | null> {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  return (session?.user as User) ?? null;
+  if (!session?.user) return null;
+
+  const { db, users } = await import("@/db");
+  const { eq } = await import("drizzle-orm");
+  const [accountState] = await db
+    .select({ isBanned: users.isBanned })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+  if (!accountState || accountState.isBanned) return null;
+
+  return session.user as User;
 }
 
 /**

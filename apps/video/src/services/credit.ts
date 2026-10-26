@@ -390,6 +390,110 @@ export class CreditService {
   }
 
   /**
+   * Manual balance adjustment from the protected admin console.
+   * Positive adjustments create a normal SYSTEM_ADJUST package. Negative
+   * adjustments consume only currently available credits and never touch
+   * frozen credits held by an in-flight video task.
+   */
+  async adminAdjust(params: {
+    userId: string;
+    credits: number;
+    orderNo: string;
+    remark: string;
+  }): Promise<{ balanceAfter: number }> {
+    if (!Number.isInteger(params.credits) || params.credits === 0) {
+      throw new Error("Credit adjustment must be a non-zero integer");
+    }
+
+    if (params.credits > 0) {
+      await this.recharge({
+        userId: params.userId,
+        credits: params.credits,
+        orderNo: params.orderNo,
+        transType: CreditTransType.SYSTEM_ADJUST,
+        expiryDays: CREDITS_CONFIG.expiration.purchaseDays,
+        remark: params.remark,
+      });
+      const balance = await this.getBalance(params.userId);
+      return { balanceAfter: balance.availableCredits };
+    }
+
+    const amount = Math.abs(params.credits);
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const now = new Date();
+      const packages = await db
+        .select()
+        .from(creditPackages)
+        .where(
+          and(
+            eq(creditPackages.userId, params.userId),
+            eq(creditPackages.status, CreditPackageStatus.ACTIVE),
+            gt(creditPackages.remainingCredits, 0),
+            or(
+              isNull(creditPackages.expiredAt),
+              gt(creditPackages.expiredAt, now),
+            ),
+          ),
+        )
+        .orderBy(
+          sql`${creditPackages.expiredAt} is null`,
+          asc(creditPackages.expiredAt),
+          asc(creditPackages.createdAt),
+        );
+
+      const available = packages.reduce(
+        (sum, item) => sum + item.remainingCredits,
+        0,
+      );
+      if (available < amount) {
+        throw new Error(`Insufficient credits. Available: ${available}`);
+      }
+
+      const allocation: PackageAllocation[] = [];
+      let remaining = amount;
+      for (const item of packages) {
+        if (remaining <= 0) break;
+        const credits = Math.min(item.remainingCredits, remaining);
+        allocation.push({ packageId: item.id, credits });
+        remaining -= credits;
+      }
+
+      const updates = allocation.map(({ packageId, credits }) =>
+        db
+          .update(creditPackages)
+          .set({
+            remainingCredits: sql`${creditPackages.remainingCredits} - ${credits}`,
+            status: sql`case when ${creditPackages.remainingCredits} - ${credits} = 0 and ${creditPackages.frozenCredits} = 0 then 'DEPLETED' else ${creditPackages.status} end`,
+            updatedAt: now,
+          })
+          .where(eq(creditPackages.id, packageId)),
+      );
+
+      try {
+        await db.batch(
+          [
+            ...updates,
+            db.insert(creditTransactions).values({
+              transNo: `TXN${Date.now()}${nanoid(6)}`,
+              userId: params.userId,
+              transType: CreditTransType.SYSTEM_ADJUST,
+              credits: -amount,
+              balanceAfter: available - amount,
+              orderNo: params.orderNo,
+              remark: params.remark,
+            }),
+          ] as unknown as Parameters<typeof db.batch>[0],
+        );
+        return { balanceAfter: available - amount };
+      } catch (error) {
+        if (!isConstraintError(error) || attempt === 2) throw error;
+      }
+    }
+
+    throw new Error("Unable to adjust credits after concurrent updates");
+  }
+
+  /**
    * 撤销某个订单已发放的积分（Stripe 退款/拒付时调用）。
    *
    * 幂等键为 `revokeOrderNo`（每次退款/拒付事件唯一），重复调用返回

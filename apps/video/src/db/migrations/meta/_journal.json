@@ -15,6 +15,13 @@
       "when": 1792399779241,
       "tag": "0001_stripe_webhook_events",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793039546588,
+      "tag": "0002_windy_emma_frost",
+      "breakpoints": true
     }
   ]
 }

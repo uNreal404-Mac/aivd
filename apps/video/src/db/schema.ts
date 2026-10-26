@@ -69,7 +69,27 @@ export const users = sqliteTable("user", {
   updatedAt: timestamp("updatedAt").default(sql`(unixepoch())`).notNull(),
   isAdmin: boolean("isAdmin").default(false).notNull(),
   isSuperAccount: boolean("isSuperAccount").default(false).notNull(),
+  isBanned: boolean("isBanned").default(false).notNull(),
+  banReason: text("banReason"),
+  bannedAt: timestamp("bannedAt"),
 });
+
+export const adminAuditLogs = sqliteTable(
+  "admin_audit_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    actor: text("actor").notNull(),
+    action: text("action").notNull(),
+    targetUserId: text("target_user_id"),
+    details: text("details", { mode: "json" }).$type<Record<string, unknown> | null>(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+  },
+  (table) => [
+    index("admin_audit_log_actor_idx").on(table.actor),
+    index("admin_audit_log_target_user_id_idx").on(table.targetUserId),
+    index("admin_audit_log_created_at_idx").on(table.createdAt),
+  ]
+);
 
 export const creemSubscriptions = sqliteTable(
   "creem_subscriptions",
@@ -308,6 +328,7 @@ export const videos = sqliteTable(
 
 export type Customer = typeof customers.$inferSelect;
 export type BetterAuthUser = typeof users.$inferSelect;
+export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;
 export type CreditPackage = typeof creditPackages.$inferSelect;
 export type CreditHold = typeof creditHolds.$inferSelect;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;

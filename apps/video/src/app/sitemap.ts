@@ -31,6 +31,7 @@ const getLastModified = (filePath: string): Date => {
 const SKIP_SEGMENTS = [
   "dashboard",
   "admin",
+  "admin-login",
   "auth",
   "checkout",
   "login",

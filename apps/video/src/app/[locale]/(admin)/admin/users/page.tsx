@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { users, creditPackages, videos } from "@/db/schema";
-import { eq, count, sql, desc } from "drizzle-orm";
+import { eq, count, sql, desc, like, or } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -20,20 +20,30 @@ import {
   Shield,
 } from "@/components/ui/icons";
 import { UserVideosButton } from "@/components/admin/users/user-videos-button";
+import { UserAdminActions } from "@/components/admin/users/user-admin-actions";
 
 interface UsersPageProps {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     page?: string;
     search?: string;
   }>;
 }
 
-export default async function UsersPage({ searchParams }: UsersPageProps) {
-  const params = await searchParams;
-  const page = Math.max(1, Number(params.page) || 1);
-  const search = params.search || "";
+export default async function UsersPage({ params, searchParams }: UsersPageProps) {
+  const { locale } = await params;
+  const query = await searchParams;
+  const page = Math.max(1, Number(query.page) || 1);
+  const search = query.search || "";
   const limit = 20;
   const offset = (page - 1) * limit;
+
+  const searchCondition = search
+    ? or(
+        like(sql`lower(${users.email})`, `%${search.toLowerCase()}%`),
+        like(sql`lower(coalesce(${users.name}, ''))`, `%${search.toLowerCase()}%`),
+      )
+    : undefined;
 
   // 获取用户总数（带搜索）
   let totalUsersResult: { count: number }[];
@@ -41,7 +51,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     totalUsersResult = await db
       .select({ count: count() })
       .from(users)
-      .where(sql`${users.email} ILIKE ${`%${search}%`} OR ${users.name} ILIKE ${`%${search}%`}`);
+      .where(searchCondition);
   } else {
     totalUsersResult = await db.select({ count: count() }).from(users);
   }
@@ -54,7 +64,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     usersList = await db
       .select()
       .from(users)
-      .where(sql`${users.email} ILIKE ${`%${search}%`} OR ${users.name} ILIKE ${`%${search}%`}`)
+      .where(searchCondition)
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset);
@@ -180,10 +190,17 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                         <span className="font-medium">{user.totalCredits}</span>
                       </TableCell>
                       <TableCell>
-                        {user.isAdmin ? (
+                        {user.isBanned ? (
+                          <Badge variant="destructive">已封禁</Badge>
+                        ) : user.isAdmin ? (
                           <Badge variant="default" className="gap-1">
                             <Shield className="h-3 w-3" />
                             管理员
+                          </Badge>
+                        ) : user.isSuperAccount ? (
+                          <Badge variant="default" className="gap-1">
+                            <Shield className="h-3 w-3" />
+                            超级账号
                           </Badge>
                         ) : (
                           <Badge variant="outline">普通用户</Badge>
@@ -193,12 +210,23 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                         {new Date(user.createdAt).toLocaleDateString("zh-CN")}
                       </TableCell>
                       <TableCell>
-                        <UserVideosButton
-                          userId={user.id}
-                          userName={user.name}
-                          userEmail={user.email}
-                          videoCount={user.videoCount}
-                        />
+                        <div className="flex gap-2">
+                          <UserVideosButton
+                            userId={user.id}
+                            userName={user.name}
+                            userEmail={user.email}
+                            videoCount={user.videoCount}
+                          />
+                          <UserAdminActions
+                            userId={user.id}
+                            userName={user.name}
+                            userEmail={user.email}
+                            isAdmin={user.isAdmin}
+                            isSuperAccount={user.isSuperAccount}
+                            isBanned={user.isBanned}
+                            locale={locale}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

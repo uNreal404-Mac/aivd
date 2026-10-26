@@ -23,10 +23,12 @@ import { requireAdmin } from "@/lib/api/auth";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
 import { creditService } from "@/services/credit";
 import { CreditTransType } from "@/db/schema";
+import { assertSameOrigin } from "@/lib/admin/session";
 
 export async function POST(request: Request) {
   try {
-    const admin = await requireAdmin(request);
+    assertSameOrigin(request);
+    await requireAdmin(request);
 
     const body = await request.json();
     const { userId, credits, expiryDays, remark } = body;
@@ -35,9 +37,12 @@ export async function POST(request: Request) {
     if (typeof credits !== "number" || credits <= 0) {
       return apiSuccess({ error: "Invalid credits value" }, 400);
     }
+    if (typeof userId !== "string" || !userId) {
+      return apiSuccess({ error: "Target userId is required" }, 400);
+    }
 
     // 使用当前用户或指定的用户
-    const targetUserId = userId || admin.id;
+    const targetUserId = userId;
 
     // 添加积分
     const result = await creditService.recharge({
