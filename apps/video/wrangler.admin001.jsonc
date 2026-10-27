@@ -1,0 +1,39 @@
+{
+  // Isolated Cloudflare preview for the admin001 branch.
+  // Runtime secrets are configured with `wrangler secret put` and are never
+  // committed to this repository.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dreamutopia-admin001",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dreamutopia-video-preview",
+      "database_id": "2d38ed50-8b20-4d9e-bd2a-5b805762b8fa",
+      "migrations_dir": "src/db/migrations"
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://dreamutopia-admin-preview.pages.dev",
+    "APP_URL": "https://dreamutopia-admin-preview.pages.dev",
+    "BETTER_AUTH_URL": "https://dreamutopia-admin-preview.pages.dev",
+    "NEXT_PUBLIC_IS_PREVIEW": "true",
+    "NEXT_PUBLIC_NOINDEX": "true",
+    "VIDEO_GENERATION_ENABLED": "false",
+    "DEFAULT_AI_PROVIDER": "kie",
+    "NEXT_PUBLIC_BILLING_PROVIDER": "stripe",
+    "NEXT_PUBLIC_PAYMENTS_ENABLED": "false",
+    "STRIPE_LIVE_MODE": "false"
+  }
+}
