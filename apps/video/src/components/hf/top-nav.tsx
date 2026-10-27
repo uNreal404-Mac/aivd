@@ -51,6 +51,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     ? {
         reference: "参考",
         create: "创作",
+        creativeSpace: "创作空间",
         video: "视频",
         image: "图片",
         music: "音乐",
@@ -69,6 +70,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     : {
         reference: "Reference",
         create: "Create",
+        creativeSpace: "Creative Space",
         video: "Video",
         image: "Image",
         music: "Music",
@@ -87,6 +89,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const navItems: NavItem[] = [
     { label: copy.reference, href: "/explore" },
     { label: copy.create, href: "/text-to-video" },
+    { label: copy.creativeSpace, href: "/creative-space" },
     { label: copy.video, href: "/gallery", badge: { label: copy.top, tone: "lime" } },
     { label: copy.image, href: "/image-to-video" },
     { label: copy.music, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
