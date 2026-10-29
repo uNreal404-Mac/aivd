@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Gem, Menu, X } from "lucide-react";
+import { Gem, Menu, Sparkles, X } from "lucide-react";
 
 import { cn } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
@@ -25,6 +25,7 @@ interface NavItem {
   href: string;
   badge?: { label: string; tone: "lime" | "muted" };
   disabled?: boolean;
+  featured?: boolean;
 }
 
 function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
@@ -89,7 +90,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const navItems: NavItem[] = [
     { label: copy.reference, href: "/explore" },
     { label: copy.create, href: "/text-to-video" },
-    { label: copy.creativeSpace, href: "/creative-space" },
+    { label: copy.creativeSpace, href: "/creative-space", featured: true },
     { label: copy.video, href: "/gallery", badge: { label: copy.top, tone: "lime" } },
     { label: copy.image, href: "/image-to-video" },
     { label: copy.music, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
@@ -109,6 +110,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     const active = !item.disabled && isActive(item.href);
     const content = (
       <>
+        {item.featured && <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
         <span className="whitespace-nowrap">{item.label}</span>
         {item.badge && <Badge label={item.badge.label} tone={item.badge.tone} />}
       </>
@@ -136,10 +138,18 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         onClick={mobile ? () => setMenuOpen(false) : undefined}
         className={cn(
           "flex shrink-0 items-center gap-1.5 font-medium transition-colors",
-          active
-            ? "text-[var(--du-accent-text)]"
-            : "text-[var(--du-text)] hover:text-[var(--du-accent-text)]",
-          mobile ? "px-3 py-2 text-sm" : "px-2 text-[14px]"
+          item.featured
+            ? "rounded-full border border-[var(--du-border-strong)] bg-[var(--du-accent-soft)] font-semibold text-[var(--du-accent-text)] shadow-[var(--du-glow)] hover:border-[var(--du-accent)]"
+            : active
+              ? "text-[var(--du-accent-text)]"
+              : "text-[var(--du-text)] hover:text-[var(--du-accent-text)]",
+          mobile
+            ? item.featured
+              ? "mx-3 my-1 px-3 py-2 text-sm"
+              : "px-3 py-2 text-sm"
+            : item.featured
+              ? "px-3 py-1.5 text-[14px]"
+              : "px-2 text-[14px]"
         )}
       >
         {content}
@@ -155,7 +165,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
             <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
             <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
-              aidv.ai
+              aivd.ai
             </span>
             <PreviewBadge lang={lang} />
           </Link>

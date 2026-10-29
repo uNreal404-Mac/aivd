@@ -120,8 +120,8 @@ export function LandingHeader({ user }: { user?: User | null }) {
             href="/"
             className="flex items-center gap-2 text-xl font-semibold"
           >
-            <Image src="/logo.svg" alt="aidv.ai" width={28} height={28} className="rounded-md" />
-            aidv.ai
+            <Image src="/logo.svg" alt="aivd.ai" width={28} height={28} className="rounded-md" />
+            aivd.ai
           </LocaleLink>
 
           {/* Center Menu - NavigationMenu for better hover */}
@@ -328,8 +328,8 @@ export function LandingHeader({ user }: { user?: User | null }) {
             href="/"
             className="flex items-center gap-2 text-lg font-semibold"
           >
-            <Image src="/logo.svg" alt="aidv.ai" width={28} height={28} className="rounded-md" />
-            aidv.ai
+            <Image src="/logo.svg" alt="aivd.ai" width={28} height={28} className="rounded-md" />
+            aivd.ai
           </LocaleLink>
 
           {/* Mobile Menu */}
@@ -358,8 +358,8 @@ export function LandingHeader({ user }: { user?: User | null }) {
                       href="/"
                       className="flex items-center gap-2"
                     >
-                      <Image src="/logo.svg" alt="aidv.ai" width={28} height={28} className="rounded-md" />
-            aidv.ai
+                      <Image src="/logo.svg" alt="aivd.ai" width={28} height={28} className="rounded-md" />
+            aivd.ai
                     </LocaleLink>
                   </SheetTitle>
                 </SheetHeader>

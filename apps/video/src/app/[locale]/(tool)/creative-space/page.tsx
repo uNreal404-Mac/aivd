@@ -16,7 +16,7 @@ export async function generateMetadata({
   const alternates = buildAlternates("/creative-space", locale);
 
   return {
-    title: isChinese ? "创作空间 | aidv.ai" : "Creative Space | aidv.ai",
+    title: isChinese ? "创作空间 | aivd.ai" : "Creative Space | aivd.ai",
     description: isChinese
       ? "在无限画布中整理图片和视频，并通过 Agent 编排创意。"
       : "Arrange images and videos on an infinite canvas and plan with an Agent.",
