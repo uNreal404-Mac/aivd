@@ -9,7 +9,6 @@ import {
   CirclePlay,
   Clapperboard,
   Film,
-  Heart,
   Image as ImageIcon,
   ImagePlus,
   LayoutGrid,
@@ -25,7 +24,6 @@ import {
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import {
-  CATEGORY_CARDS,
   CATEGORY_FILTERS,
   CREDITS_BANNER,
   EFFECT_CARDS,
@@ -52,7 +50,6 @@ const ICONS: Record<string, LucideIcon> = {
   SlidersHorizontal,
   Share2,
   ArrowRight,
-  Heart,
 };
 
 function Icon({ name, className }: { name: string; className?: string }) {
@@ -213,24 +210,33 @@ const CATEGORY_DECK_IMAGES: Record<string, string> = {
   More: "/home/glass-city.webp",
 };
 
-function categoryCardTransform(index: number, hoveredIndex: number | null) {
-  if (hoveredIndex === null) return "translateY(0) scale(1) rotateZ(0deg)";
+function categoryCardTransform(index: number, count: number, hoveredIndex: number | null) {
+  const center = (count - 1) / 2;
+  const centerDistance = index - center;
+  const baseRotation = centerDistance * -2.6;
+  const baseDrop = Math.abs(centerDistance) * 15;
+  const baseScale = Math.max(0.9, 1 - Math.abs(centerDistance) * 0.026);
+
+  if (hoveredIndex === null) {
+    return `translateY(${baseDrop}px) scale(${baseScale}) rotateZ(${baseRotation}deg)`;
+  }
 
   const distance = index - hoveredIndex;
-  if (distance === 0) return "translateY(-28px) scale(1.09) rotateZ(0deg)";
+  if (distance === 0) return "translateY(-34px) scale(1.12) rotateZ(0deg)";
 
   const absoluteDistance = Math.abs(distance);
   const direction = distance < 0 ? -1 : 1;
-  const rotation = direction * Math.max(2, 11 - absoluteDistance * 2.25);
-  const horizontalShift = direction * Math.max(0, 14 - absoluteDistance * 2);
-  const verticalShift = Math.min(absoluteDistance * 4, 16);
-  const scale = Math.max(0.91, 1 - absoluteDistance * 0.025);
+  const dominoRotation = direction * -Math.max(2, 13 - absoluteDistance * 2.5);
+  const rotation = baseRotation + dominoRotation;
+  const horizontalShift = direction * Math.max(0, 24 - absoluteDistance * 3);
+  const verticalShift = baseDrop + Math.min(absoluteDistance * 4, 14);
+  const scale = Math.max(0.88, baseScale - absoluteDistance * 0.012);
 
   return `translateX(${horizontalShift}px) translateY(${verticalShift}px) scale(${scale}) rotateZ(${rotation}deg)`;
 }
 
 export function DuHome({ lang }: { lang: string }) {
-  const [active, setActive] = useState("Cinematic");
+  const [active, setActive] = useState("Fantasy");
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [heroIndex, setHeroIndex] = useState(0);
   const isChinese = lang.toLowerCase().startsWith("zh");
@@ -316,16 +322,6 @@ export function DuHome({ lang }: { lang: string }) {
           Stylize: "风格化",
           More: "更多",
         } as Record<string, string>,
-        categoryTitles: {
-          "golden-hour": "黄金时刻",
-          "neon-streets": "霓虹街景",
-          "liquid-light": "流光",
-          "coast-drive": "海岸公路",
-          "first-steps": "初次启程",
-          "silver-muse": "银色缪斯",
-          "glass-city": "玻璃之城",
-          "edge-of-space": "太空边缘",
-        } as Record<string, string>,
         modelsHeader: {
           eyebrow: "我们的模型",
           title: "为每一帧选择合适的模型。",
@@ -354,7 +350,6 @@ export function DuHome({ lang }: { lang: string }) {
         } as Record<string, string>,
         learnMore: "了解更多 →",
         tryIt: "立即体验 →",
-        like: "喜欢",
         creditsLead: "使用",
         creditsAccent: "免费积分开始创作。",
         creditsSubtitle: "无需信用卡，把你的下一个灵感变成真实作品。",
@@ -362,24 +357,17 @@ export function DuHome({ lang }: { lang: string }) {
       }
     : {
         filters: Object.fromEntries(CATEGORY_FILTERS.map((item) => [item, item])) as Record<string, string>,
-        categoryTitles: {} as Record<string, string>,
         modelsHeader: MODELS_HEADER,
         modelTitles: {} as Record<string, string>,
         modelDescriptions: {} as Record<string, string>,
         effectTitles: {} as Record<string, string>,
         learnMore: "Learn more →",
         tryIt: "Try it →",
-        like: "Like",
         creditsLead: "Start creating with ",
         creditsAccent: "free credits.",
         creditsSubtitle: CREDITS_BANNER.subtitle,
         creditsCta: CREDITS_BANNER.cta.label,
       };
-
-  const visibleCategories =
-    active === "All" || active === "More"
-      ? CATEGORY_CARDS
-      : CATEGORY_CARDS.filter((card) => card.category === active);
 
   return (
     <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
@@ -526,10 +514,11 @@ export function DuHome({ lang }: { lang: string }) {
           tone="cyan"
         />
         <div
-          className="relative mt-8 overflow-x-auto overflow-y-visible pb-10 pt-10 [perspective:1200px]"
+          className="relative mt-8 overflow-x-auto overflow-y-hidden pb-16 pt-20 [perspective:1400px]"
           onMouseLeave={() => setHoveredCategory(null)}
         >
-          <div className="mx-auto flex min-w-max items-end justify-center gap-3 px-5 sm:gap-4">
+          <span className="pointer-events-none absolute inset-x-[8%] bottom-7 h-24 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(102,252,241,0.16),rgba(99,65,255,0.1)_38%,transparent_72%)] blur-2xl" />
+          <div className="mx-auto flex min-w-max items-center justify-center px-14 sm:px-20">
             {CATEGORY_DECK_FILTERS.map((filter, index) => {
               const isActive = filter === active;
               const isHovered = index === hoveredCategory;
@@ -543,27 +532,34 @@ export function DuHome({ lang }: { lang: string }) {
                   onFocus={() => setHoveredCategory(index)}
                   onBlur={() => setHoveredCategory(null)}
                   style={{
-                    transform: categoryCardTransform(index, hoveredCategory),
-                    zIndex: isHovered ? 30 : Math.max(1, 20 - Math.abs(index - (hoveredCategory ?? index))),
+                    transform: categoryCardTransform(
+                      index,
+                      CATEGORY_DECK_FILTERS.length,
+                      hoveredCategory
+                    ),
+                    zIndex: isHovered
+                      ? 40
+                      : Math.max(1, 20 - Math.abs(index - (CATEGORY_DECK_FILTERS.length - 1) / 2)),
                   }}
-                  className={`group relative h-[245px] w-[164px] shrink-0 overflow-hidden rounded-[24px] border text-left shadow-[0_18px_50px_rgba(0,0,0,0.4)] transition-[transform,border-color,box-shadow,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform sm:h-[290px] sm:w-[194px] ${
+                  className={`group relative -ml-5 h-[260px] w-[176px] shrink-0 overflow-hidden rounded-[26px] border text-left shadow-[0_20px_55px_rgba(0,0,0,0.52)] transition-[transform,border-color,box-shadow,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] first:ml-0 will-change-transform sm:-ml-7 sm:h-[320px] sm:w-[218px] ${
                     isActive
-                      ? "border-[var(--du-accent)] shadow-[0_0_34px_rgba(102,252,241,0.3),0_24px_60px_rgba(0,0,0,0.48)]"
-                      : "border-white/15 hover:border-[var(--du-border-strong)]"
+                      ? "border-white/80 shadow-[0_0_18px_rgba(255,255,255,0.5),0_0_42px_rgba(127,92,255,0.72),0_26px_65px_rgba(0,0,0,0.58)]"
+                      : "border-white/25 hover:border-white/75 hover:shadow-[0_0_22px_rgba(102,252,241,0.4),0_0_52px_rgba(118,70,255,0.62),0_28px_70px_rgba(0,0,0,0.62)]"
                   }`}
                 >
                   <img
                     src={CATEGORY_DECK_IMAGES[filter]}
                     alt=""
                     loading="lazy"
-                    className="absolute inset-0 h-full w-full scale-105 object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                    className="absolute inset-0 h-full w-full scale-110 object-cover blur-[1px] saturate-125 transition-[transform,filter] duration-700 ease-out group-hover:scale-[1.2] group-hover:blur-0"
                   />
-                  <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/90" />
-                  <span className="absolute inset-[1px] rounded-[22px] border border-white/10 bg-gradient-to-br from-white/15 via-transparent to-cyan-300/10 backdrop-blur-[1px]" />
+                  <span className="absolute inset-0 bg-gradient-to-b from-indigo-950/5 via-black/10 to-black/80" />
+                  <span className="absolute inset-[1px] rounded-[24px] border border-white/20 bg-gradient-to-br from-white/20 via-transparent to-cyan-300/15 backdrop-blur-[2px]" />
+                  <span className="pointer-events-none absolute -left-1/2 top-0 h-full w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 blur-md transition-[left,opacity] duration-700 group-hover:left-[130%] group-hover:opacity-100" />
                   <span className="absolute left-4 top-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/65">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="absolute inset-x-4 bottom-5">
+                  <span className="absolute inset-x-4 bottom-5 pr-9">
                     <span className="block text-lg font-semibold tracking-[-0.02em] text-white sm:text-xl">
                       {homeCopy.filters[filter] ?? filter}
                     </span>
@@ -575,38 +571,13 @@ export function DuHome({ lang }: { lang: string }) {
                       }`}
                     />
                   </span>
+                  <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/55 bg-black/15 text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
+                    <Play className="ml-0.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                  </span>
                 </button>
               );
             })}
           </div>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {visibleCategories.map((card) => (
-            <div key={card.id} className="du-glass p-2">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[var(--du-border)]">
-                <img
-                  src={card.image}
-                  alt={isChinese ? homeCopy.categoryTitles[card.id] ?? card.alt : card.alt}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-                <span className="du-glass-btn du-glass-round du-glass-on-media absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center">
-                  <Icon name="Play" className="h-3.5 w-3.5 text-[var(--du-on-accent)]" />
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <span className="text-sm text-[var(--du-text)]">
-                  {homeCopy.categoryTitles[card.id] ?? card.title}
-                </span>
-                <span
-                  aria-label={homeCopy.like}
-                  className="du-glass-btn du-glass-on-media inline-flex items-center px-2 py-1 text-xs"
-                >
-                  <Icon name="Heart" className="h-3 w-3" />
-                </span>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
