@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -210,29 +210,85 @@ const CATEGORY_DECK_IMAGES: Record<string, string> = {
   More: "/home/glass-city.webp",
 };
 
-function categoryCardTransform(index: number, count: number, hoveredIndex: number | null) {
-  const center = (count - 1) / 2;
-  const centerDistance = index - center;
-  const baseRotation = centerDistance * -2.6;
-  const baseDrop = Math.abs(centerDistance) * 15;
-  const baseScale = Math.max(0.9, 1 - Math.abs(centerDistance) * 0.026);
+function circularCategoryOffset(index: number, activeIndex: number, count: number) {
+  let offset = (index - activeIndex + count) % count;
+  if (offset > count / 2) offset -= count;
+  return offset;
+}
 
-  if (hoveredIndex === null) {
-    return `translateY(${baseDrop}px) scale(${baseScale}) rotateZ(${baseRotation}deg)`;
+function categoryCardStyle(
+  index: number,
+  activeIndex: number,
+  count: number,
+  hoveredIndex: number | null
+): CSSProperties {
+  const offset = circularCategoryOffset(index, activeIndex, count);
+  const distance = Math.abs(offset);
+
+  if (distance >= 4) {
+    return {
+      left: "50%",
+      opacity: 0,
+      pointerEvents: "none",
+      transform: "translateX(-50%) translateY(96px) scale(0.5) rotateY(55deg)",
+      zIndex: 0,
+    };
   }
 
-  const distance = index - hoveredIndex;
-  if (distance === 0) return "translateY(-34px) scale(1.12) rotateZ(0deg)";
+  const direction = offset < 0 ? -1 : offset > 0 ? 1 : 0;
+  const horizontalPositions = [
+    "0px",
+    "clamp(118px,15vw,220px)",
+    "clamp(210px,27vw,400px)",
+    "clamp(285px,38vw,555px)",
+  ];
+  const verticalPositions = [-22, 10, 42, 72];
+  const scales = [1.08, 0.93, 0.79, 0.65];
+  const rotateY = [0, 18, 32, 44];
+  const rotateZ = [0, 4, 7, 10];
+  const opacities = [1, 0.94, 0.72, 0.42];
 
-  const absoluteDistance = Math.abs(distance);
-  const direction = distance < 0 ? -1 : 1;
-  const dominoRotation = direction * -Math.max(2, 13 - absoluteDistance * 2.5);
-  const rotation = baseRotation + dominoRotation;
-  const horizontalShift = direction * Math.max(0, 24 - absoluteDistance * 3);
-  const verticalShift = baseDrop + Math.min(absoluteDistance * 4, 14);
-  const scale = Math.max(0.88, baseScale - absoluteDistance * 0.012);
+  let y = verticalPositions[distance];
+  let scale = scales[distance];
+  let zRotation = direction * -rotateZ[distance];
+  let xNudge = 0;
+  let zIndex = 40 - distance * 10;
 
-  return `translateX(${horizontalShift}px) translateY(${verticalShift}px) scale(${scale}) rotateZ(${rotation}deg)`;
+  if (hoveredIndex !== null) {
+    const hoverOffset = circularCategoryOffset(index, hoveredIndex, count);
+    const hoverDistance = Math.abs(hoverOffset);
+    if (hoverDistance === 0) {
+      y -= 24;
+      scale += 0.055;
+      zRotation *= 0.3;
+      zIndex = 60;
+    } else if (hoverDistance <= 2) {
+      const hoverDirection = hoverOffset < 0 ? -1 : 1;
+      xNudge = hoverDirection * (18 - hoverDistance * 4);
+      zRotation += hoverDirection * -Math.max(4, 12 - hoverDistance * 3);
+      y += hoverDistance * 5;
+    }
+  }
+
+  const horizontalPosition = horizontalPositions[distance];
+  const xTransform =
+    direction === 0
+      ? "-50%"
+      : `calc(-50% ${direction > 0 ? "+" : "-"} ${horizontalPosition})`;
+
+  return {
+    filter:
+      distance >= 3
+        ? "brightness(0.64) blur(0.8px)"
+        : distance === 2
+          ? "brightness(0.8)"
+          : "none",
+    left: "50%",
+    opacity: opacities[distance],
+    pointerEvents: "auto",
+    transform: `translateX(${xTransform}) translateX(${xNudge}px) translateY(${y}px) scale(${scale}) rotateY(${direction * -rotateY[distance]}deg) rotateZ(${zRotation}deg)`,
+    zIndex,
+  };
 }
 
 export function DuHome({ lang }: { lang: string }) {
@@ -266,6 +322,15 @@ export function DuHome({ lang }: { lang: string }) {
   const nextHero = (heroIndex + 1) % HERO_SLIDES.length;
   const showPreviousHero = () => setHeroIndex(previousHero);
   const showNextHero = () => setHeroIndex(nextHero);
+  const activeCategoryIndex = Math.max(0, CATEGORY_DECK_FILTERS.indexOf(active));
+  const showPreviousCategory = () =>
+    setActive(
+      CATEGORY_DECK_FILTERS[
+        (activeCategoryIndex - 1 + CATEGORY_DECK_FILTERS.length) % CATEGORY_DECK_FILTERS.length
+      ]
+    );
+  const showNextCategory = () =>
+    setActive(CATEGORY_DECK_FILTERS[(activeCategoryIndex + 1) % CATEGORY_DECK_FILTERS.length]);
 
   const featureCopy = isChinese
     ? {
@@ -514,14 +579,14 @@ export function DuHome({ lang }: { lang: string }) {
           tone="cyan"
         />
         <div
-          className="relative mt-8 overflow-x-auto overflow-y-hidden pb-16 pt-20 [perspective:1400px]"
+          className="relative mt-8 h-[clamp(370px,42vw,610px)] overflow-hidden [perspective:1500px] [perspective-origin:50%_38%]"
           onMouseLeave={() => setHoveredCategory(null)}
         >
-          <span className="pointer-events-none absolute inset-x-[8%] bottom-7 h-24 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(102,252,241,0.16),rgba(99,65,255,0.1)_38%,transparent_72%)] blur-2xl" />
-          <div className="mx-auto flex min-w-max items-center justify-center px-14 sm:px-20">
+          <span className="pointer-events-none absolute inset-x-[5%] bottom-[7%] h-[30%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(118,70,255,0.25),rgba(102,252,241,0.1)_35%,transparent_72%)] blur-2xl" />
+          <span className="pointer-events-none absolute inset-x-[10%] bottom-[9%] h-px bg-gradient-to-r from-transparent via-white/35 to-transparent shadow-[0_0_28px_rgba(102,252,241,0.45)]" />
+          <div className="absolute inset-x-0 bottom-[15%] top-[8%] [transform-style:preserve-3d]">
             {CATEGORY_DECK_FILTERS.map((filter, index) => {
               const isActive = filter === active;
-              const isHovered = index === hoveredCategory;
               return (
                 <button
                   key={filter}
@@ -531,17 +596,13 @@ export function DuHome({ lang }: { lang: string }) {
                   onMouseEnter={() => setHoveredCategory(index)}
                   onFocus={() => setHoveredCategory(index)}
                   onBlur={() => setHoveredCategory(null)}
-                  style={{
-                    transform: categoryCardTransform(
-                      index,
-                      CATEGORY_DECK_FILTERS.length,
-                      hoveredCategory
-                    ),
-                    zIndex: isHovered
-                      ? 40
-                      : Math.max(1, 20 - Math.abs(index - (CATEGORY_DECK_FILTERS.length - 1) / 2)),
-                  }}
-                  className={`group relative -ml-5 h-[260px] w-[176px] shrink-0 overflow-hidden rounded-[26px] border text-left shadow-[0_20px_55px_rgba(0,0,0,0.52)] transition-[transform,border-color,box-shadow,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] first:ml-0 will-change-transform sm:-ml-7 sm:h-[320px] sm:w-[218px] ${
+                  style={categoryCardStyle(
+                    index,
+                    activeCategoryIndex,
+                    CATEGORY_DECK_FILTERS.length,
+                    hoveredCategory
+                  )}
+                  className={`group absolute top-0 h-[clamp(255px,29vw,430px)] w-[clamp(168px,19vw,286px)] overflow-hidden rounded-[26px] border text-left shadow-[0_24px_62px_rgba(0,0,0,0.68)] transition-[transform,opacity,border-color,box-shadow,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
                     isActive
                       ? "border-white/80 shadow-[0_0_18px_rgba(255,255,255,0.5),0_0_42px_rgba(127,92,255,0.72),0_26px_65px_rgba(0,0,0,0.58)]"
                       : "border-white/25 hover:border-white/75 hover:shadow-[0_0_22px_rgba(102,252,241,0.4),0_0_52px_rgba(118,70,255,0.62),0_28px_70px_rgba(0,0,0,0.62)]"
@@ -577,6 +638,28 @@ export function DuHome({ lang }: { lang: string }) {
                 </button>
               );
             })}
+          </div>
+          <div className="absolute inset-x-0 bottom-2 z-[70] flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={showPreviousCategory}
+              aria-label={isChinese ? "上一个分类" : "Previous category"}
+              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <span className="min-w-20 text-center text-xs font-medium tracking-[0.18em] text-[var(--du-text-muted)]">
+              {String(activeCategoryIndex + 1).padStart(2, "0")} /{" "}
+              {String(CATEGORY_DECK_FILTERS.length).padStart(2, "0")}
+            </span>
+            <button
+              type="button"
+              onClick={showNextCategory}
+              aria-label={isChinese ? "下一个分类" : "Next category"}
+              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </section>
