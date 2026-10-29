@@ -5,6 +5,12 @@ import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { imageRefSchema } from "@/lib/image-ref-schema";
+import { getStorage } from "@/lib/storage";
+import {
+  isSafetyApproved,
+  moderateContent,
+  safetyMessage,
+} from "@/lib/content-safety";
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
@@ -47,6 +53,26 @@ export async function POST(request: NextRequest) {
     ) {
       return apiError("Image URL host is not allowed.", 400, {
         code: "IMAGE_URL_NOT_ALLOWED",
+      });
+    }
+
+    const safetyImages = imageUrls.map((imageUrl, index) => ({
+      url: /^https?:\/\//i.test(imageUrl)
+        ? imageUrl
+        : getStorage().getSignedUrl(imageUrl),
+      label: `reference-${index + 1}`,
+    }));
+    const locale = request.headers.get("accept-language") ?? "en";
+    const safety = await moderateContent({
+      text: data.prompt,
+      images: safetyImages,
+      context: "generation",
+    });
+    if (!isSafetyApproved(safety)) {
+      return apiError(safetyMessage(safety, locale), 422, {
+        code: "CONTENT_BLOCKED",
+        decision: safety.decision,
+        categories: safety.categories,
       });
     }
 

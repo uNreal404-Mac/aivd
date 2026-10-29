@@ -30,7 +30,7 @@
   "observability": {
     "enabled": true
   },
-  // KIE_API_KEY, FAL_KEY, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY,
+  // DEEPSEEK_API_KEY, KIE_API_KEY, FAL_KEY, STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY,
   // CALLBACK_HMAC_SECRET, STRIPE_SECRET_KEY (sk_test_/rk_test_) and
   // STRIPE_WEBHOOK_SECRET are secrets.
   // Set them with `wrangler secret put <NAME>` — never commit them to this file.

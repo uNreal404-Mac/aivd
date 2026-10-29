@@ -2,6 +2,7 @@
 
 import {
   Bot,
+  CheckCircle2,
   Film,
   Image as ImageIcon,
   LoaderCircle,
@@ -29,9 +30,9 @@ import {
 } from "react";
 
 import {
-  buildLocalCreativePlan,
   type CreativePlan,
 } from "@/lib/creative-space/local-plan";
+import { generateVideo, uploadImage } from "@/lib/video-api";
 
 interface CreativeSpaceStudioProps {
   locale: string;
@@ -46,6 +47,13 @@ interface CanvasAsset {
   x: number;
   y: number;
   width: number;
+  file: File;
+  samples: File[];
+  safety: "checking" | "allowed";
+}
+
+interface AgentPlan extends CreativePlan {
+  generationPrompt: string;
 }
 
 interface Viewport {
@@ -55,37 +63,46 @@ interface Viewport {
 }
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 const copy = {
   zh: {
     eyebrow: "无限画布 · 试验版",
     title: "创作空间",
     subtitle: "把素材放进画布，用 @素材 告诉 Agent 如何组合。",
-    localOnly: "素材仅保存在当前浏览器",
-    apiPending: "DeepSeek 尚未接入",
+    localOnly: "审核通过前仅本地预览",
+    apiPending: "DeepSeek Agent 已连接",
     assets: "素材库",
     addAsset: "上传素材",
-    formats: "图片 / 视频，单个文件不超过 100 MB",
+    formats: "图片 ≤ 10 MB / 视频 ≤ 100 MB，上传后自动安全检查",
     emptyAssets: "上传第一份素材开始创作",
     canvasHint: "拖动画布移动 · 滚轮缩放 · 拖动素材调整位置",
     emptyCanvas: "把图片或视频拖进你的创作空间",
-    emptyCanvasSub: "素材不会上传到服务器，也不会触发模型调用。",
+    emptyCanvasSub: "上传后先进行安全检查，通过的素材才能进入 Agent。",
     agent: "创作 Agent",
-    agentSubtitle: "先在本地生成可核对的编排计划",
+    agentSubtitle: "理解 @素材，生成分镜和可执行提示词",
     inputPlaceholder: "例如：把 @A 放在片头，@B 放在片尾……",
-    createPlan: "整理计划",
-    generating: "整理中",
+    createPlan: "发送给 Agent",
+    generating: "Agent 思考中",
     quickStart: "试试：把 @A 放在片头",
     noPlan: "上传素材并输入指令后，分镜计划会显示在这里。",
-    plan: "本地分镜计划",
+    plan: "Agent 分镜计划",
     safetyTitle: "安全状态",
-    safetyBody: "已限制文件类型和大小。内容审核服务接入前，不会将素材发送给生成模型。",
-    generationDisabled: "生成暂未开放",
-    generationHelp: "接入 DeepSeek、内容审核和现有视频生成流程后启用。",
+    safetyBody: "Prompt 先经过敏感词规则，再由 DeepSeek 检查文字与视觉内容。可疑或违规内容不会进入生成模型，也不会扣除积分。",
+    generationDisabled: "生成视频",
+    generationHelp: "Agent 生成安全分镜后，复用现有视频生成、积分和作品库流程。",
     selected: "素材设置",
     size: "显示尺寸",
     remove: "从画布移除",
-    invalidFile: "仅支持常见图片或视频文件，且单个文件不能超过 100 MB。",
+    invalidFile: "仅支持常见图片或视频；图片不超过 10 MB，视频不超过 100 MB。",
+    checking: "安全检查中",
+    approved: "已通过安全检查",
+    blocked: "素材未通过安全检查，已从画布移除。",
+    signIn: "请先登录，再使用 Agent 和安全审核。",
+    agentError: "Agent 暂时不可用，请稍后重试。",
+    generatingVideo: "正在提交生成任务",
+    generationStarted: "生成任务已提交，可在“我的作品”查看进度。",
+    openCreations: "查看我的作品",
     resetView: "复位画布",
     uploadAria: "上传图片或视频",
     zoomIn: "放大",
@@ -97,31 +114,39 @@ const copy = {
     eyebrow: "INFINITE CANVAS · EXPERIMENTAL",
     title: "Creative Space",
     subtitle: "Place media on the canvas and tell the Agent what to do with @assets.",
-    localOnly: "Assets stay in this browser",
-    apiPending: "DeepSeek not connected",
+    localOnly: "Local preview until approved",
+    apiPending: "DeepSeek Agent connected",
     assets: "Assets",
     addAsset: "Upload assets",
-    formats: "Images / videos, up to 100 MB each",
+    formats: "Images ≤ 10 MB / videos ≤ 100 MB · automatic safety review",
     emptyAssets: "Upload your first asset to begin",
     canvasHint: "Drag to pan · scroll to zoom · drag assets to position",
     emptyCanvas: "Drop images or videos into your creative space",
-    emptyCanvasSub: "Nothing is uploaded and no model API is called.",
+    emptyCanvasSub: "Every upload is reviewed before the Agent can use it.",
     agent: "Creative Agent",
-    agentSubtitle: "Build a reviewable local sequence first",
+    agentSubtitle: "Understand @assets and build an executable storyboard",
     inputPlaceholder: "Example: use @A as the opening and @B as the ending…",
-    createPlan: "Build plan",
-    generating: "Planning",
+    createPlan: "Send to Agent",
+    generating: "Agent is thinking",
     quickStart: "Try: use @A as the opening",
     noPlan: "Upload assets and enter an instruction to see a storyboard plan here.",
-    plan: "Local storyboard plan",
+    plan: "Agent storyboard",
     safetyTitle: "Safety status",
-    safetyBody: "File type and size checks are active. Assets cannot reach a generation model until moderation is connected.",
-    generationDisabled: "Generation unavailable",
-    generationHelp: "Enabled after DeepSeek, moderation and the existing video pipeline are connected.",
+    safetyBody: "Prompts pass the local rule gate first, then DeepSeek reviews text and visual content. Uncertain or blocked content never reaches the generation provider and uses no credits.",
+    generationDisabled: "Generate video",
+    generationHelp: "After a safe Agent plan, this reuses the existing generation, credits and creations workflow.",
     selected: "Asset settings",
     size: "Display size",
     remove: "Remove from canvas",
-    invalidFile: "Use a common image or video file no larger than 100 MB.",
+    invalidFile: "Use a common image up to 10 MB or video up to 100 MB.",
+    checking: "Safety check",
+    approved: "Safety approved",
+    blocked: "The asset did not pass the safety check and was removed.",
+    signIn: "Sign in before using the Agent and safety review.",
+    agentError: "The Agent is temporarily unavailable. Please try again.",
+    generatingVideo: "Submitting generation",
+    generationStarted: "Generation started. Track it in My Creations.",
+    openCreations: "Open My Creations",
     resetView: "Reset canvas",
     uploadAria: "Upload images or videos",
     zoomIn: "Zoom in",
@@ -135,6 +160,71 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+async function waitForVideoEvent(video: HTMLVideoElement, event: string) {
+  await new Promise<void>((resolve, reject) => {
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Unable to read video"));
+    };
+    const cleanup = () => {
+      video.removeEventListener(event, onReady);
+      video.removeEventListener("error", onError);
+    };
+    video.addEventListener(event, onReady, { once: true });
+    video.addEventListener("error", onError, { once: true });
+  });
+}
+
+async function sampleVideo(file: File, label: string): Promise<File[]> {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.muted = true;
+  video.src = url;
+
+  try {
+    await waitForVideoEvent(video, "loadedmetadata");
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const times = duration > 0 ? [0.12, 0.5, 0.88].map((ratio) => duration * ratio) : [0];
+    const frames: File[] = [];
+
+    for (const [index, time] of times.entries()) {
+      if (duration > 0) {
+        video.currentTime = Math.min(Math.max(time, 0), Math.max(duration - 0.05, 0));
+        await waitForVideoEvent(video, "seeked");
+      }
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 960 / Math.max(video.videoWidth, video.videoHeight, 1));
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.82),
+      );
+      if (blob) {
+        frames.push(
+          new File([blob], `${label}__frame-${index + 1}.jpg`, {
+            type: "image/jpeg",
+          }),
+        );
+      }
+    }
+    return frames;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function parseApiError(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== "object") return fallback;
+  const error = (payload as { error?: { message?: unknown } }).error;
+  return typeof error?.message === "string" ? error.message : fallback;
+}
+
 export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
   const language = locale.toLowerCase().startsWith("zh") ? "zh" : "en";
   const t = copy[language];
@@ -142,9 +232,11 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ x: 56, y: 56, scale: 1 });
   const [prompt, setPrompt] = useState("");
-  const [plan, setPlan] = useState<CreativePlan | null>(null);
+  const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStarted, setGenerationStarted] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlsRef = useRef<string[]>([]);
@@ -177,11 +269,61 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
     };
   }, []);
 
-  const addFiles = (files: File[]) => {
+  const moderateAsset = async (asset: CanvasAsset) => {
+    const samples =
+      asset.type === "image"
+        ? [
+            new File([asset.file], `${asset.label}__${asset.file.name}`, {
+              type: asset.file.type,
+            }),
+          ]
+        : await sampleVideo(asset.file, asset.label);
+
+    if (samples.length === 0) {
+      throw new Error(t.agentError);
+    }
+
+    const formData = new FormData();
+    formData.set("action", "moderate");
+    formData.set("locale", locale);
+    formData.set(
+      "assets",
+      JSON.stringify([
+        {
+          id: asset.id,
+          label: asset.label,
+          name: asset.name,
+          type: asset.type,
+        },
+      ]),
+    );
+    for (const sample of samples) formData.append("visual", sample);
+
+    const response = await fetch("/api/v1/creative-space/agent", {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      if (response.status === 401) throw new Error(t.signIn);
+      throw new Error(parseApiError(payload, t.blocked));
+    }
+
+    setAssets((current) =>
+      current.map((item) =>
+        item.id === asset.id
+          ? { ...item, safety: "allowed", samples }
+          : item,
+      ),
+    );
+  };
+
+  const addFiles = async (files: File[]) => {
     const accepted = files.filter(
       (file) =>
         (file.type.startsWith("image/") || file.type.startsWith("video/")) &&
-        file.size <= MAX_FILE_SIZE
+        file.size <=
+          (file.type.startsWith("image/") ? MAX_IMAGE_SIZE : MAX_FILE_SIZE)
     );
 
     if (accepted.length !== files.length) {
@@ -205,16 +347,33 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
         x: 80 + (absoluteIndex % 3) * 300,
         y: 90 + Math.floor(absoluteIndex / 3) * 240,
         width: 260,
+        file,
+        samples: [],
+        safety: "checking" as const,
       };
     });
 
     setAssets((current) => [...current, ...nextAssets]);
     setSelectedId(nextAssets[0]?.id ?? null);
     setPlan(null);
+    setGenerationStarted(false);
+
+    for (const asset of nextAssets) {
+      try {
+        await moderateAsset(asset);
+      } catch (moderationError) {
+        URL.revokeObjectURL(asset.url);
+        setAssets((current) => current.filter((item) => item.id !== asset.id));
+        setSelectedId((current) => (current === asset.id ? null : current));
+        setError(
+          moderationError instanceof Error ? moderationError.message : t.blocked,
+        );
+      }
+    }
   };
 
   const handleUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    addFiles(Array.from(event.target.files ?? []));
+    void addFiles(Array.from(event.target.files ?? []));
     event.target.value = "";
   };
 
@@ -323,13 +482,96 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
     setPrompt((current) => `${current}${current.trim() ? " " : ""}@${label} `);
   };
 
-  const buildPlan = () => {
-    if (!prompt.trim() && assets.length === 0) return;
+  const buildPlan = async () => {
+    const approvedAssets = assets.filter((asset) => asset.safety === "allowed");
+    if (!prompt.trim()) return;
     setIsPlanning(true);
-    window.setTimeout(() => {
-      setPlan(buildLocalCreativePlan(prompt, assets, locale));
+    setError(null);
+    setGenerationStarted(false);
+
+    try {
+      const formData = new FormData();
+      formData.set("action", "plan");
+      formData.set("instruction", prompt.trim());
+      formData.set("locale", locale);
+      formData.set(
+        "assets",
+        JSON.stringify(
+          approvedAssets.map(({ id, label, name, type }) => ({
+            id,
+            label,
+            name,
+            type,
+          })),
+        ),
+      );
+      for (const asset of approvedAssets) {
+        for (const sample of asset.samples) formData.append("visual", sample);
+      }
+
+      const response = await fetch("/api/v1/creative-space/agent", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        if (response.status === 401) throw new Error(t.signIn);
+        throw new Error(parseApiError(payload, t.agentError));
+      }
+      const result = (payload as {
+        data: {
+          reply: string;
+          generationPrompt: string;
+          mentionedAssetIds: string[];
+          steps: CreativePlan["steps"];
+        };
+      }).data;
+      setPlan({
+        mentionedAssetIds: result.mentionedAssetIds,
+        steps: result.steps,
+        summary: result.reply,
+        generationPrompt: result.generationPrompt,
+      });
+    } catch (agentError) {
+      setPlan(null);
+      setError(agentError instanceof Error ? agentError.message : t.agentError);
+    } finally {
       setIsPlanning(false);
-    }, 220);
+    }
+  };
+
+  const startGeneration = async () => {
+    if (!plan?.generationPrompt || isGenerating) return;
+    setIsGenerating(true);
+    setError(null);
+    setGenerationStarted(false);
+
+    try {
+      const approvedAssets = assets.filter((asset) => asset.safety === "allowed");
+      const referenceFiles = approvedAssets
+        .flatMap((asset) =>
+          asset.type === "image" ? [asset.file] : asset.samples.slice(1, 2),
+        )
+        .slice(0, 3);
+      const uploaded = await Promise.all(referenceFiles.map(uploadImage));
+      await generateVideo({
+        prompt: plan.generationPrompt,
+        model: "sora-2",
+        duration: 10,
+        aspectRatio: "16:9",
+        quality: "720p",
+        imageUrl: uploaded.length === 1 ? uploaded[0] : undefined,
+        imageUrls: uploaded.length > 1 ? uploaded : undefined,
+        generateAudio: true,
+      });
+      setGenerationStarted(true);
+    } catch (generationError) {
+      setError(
+        generationError instanceof Error ? generationError.message : t.agentError,
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const setZoom = (next: number) => {
@@ -353,7 +595,7 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
             <ShieldCheck className="h-3.5 w-3.5" />
             {t.localOnly}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#343b45] bg-[#0b0c10] px-3 py-1.5 text-[#9aa2aa]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#214d4c] bg-[#0b1f20] px-3 py-1.5 text-[#66fcf1]">
             <Bot className="h-3.5 w-3.5" />
             {t.apiPending}
           </span>
@@ -411,6 +653,20 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
                 )}
                 <span className="absolute left-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded bg-black/75 px-1 text-[10px] font-bold text-[#66fcf1]">
                   {asset.label}
+                </span>
+                <span
+                  className={`absolute right-1.5 top-1.5 flex h-5 items-center gap-1 rounded px-1.5 text-[9px] font-semibold ${
+                    asset.safety === "allowed"
+                      ? "bg-emerald-950/90 text-emerald-300"
+                      : "bg-black/85 text-amber-300"
+                  }`}
+                >
+                  {asset.safety === "allowed" ? (
+                    <CheckCircle2 className="h-3 w-3" />
+                  ) : (
+                    <LoaderCircle className="h-3 w-3 animate-spin" />
+                  )}
+                  {asset.safety === "allowed" ? t.approved : t.checking}
                 </span>
                 <span className="absolute inset-x-0 bottom-0 truncate bg-black/70 px-1.5 py-1 text-[9px] text-white">
                   {asset.name}
@@ -481,7 +737,7 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               event.preventDefault();
-              addFiles(Array.from(event.dataTransfer.files));
+              void addFiles(Array.from(event.dataTransfer.files));
             }}
           >
             <div
@@ -494,16 +750,10 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
               {assets.map((asset) => (
                 <div
                   key={asset.id}
-                  role="button"
-                  tabIndex={0}
                   onPointerDown={(event) => startAssetDrag(event, asset)}
                   onPointerMove={moveAsset}
                   onPointerUp={endAssetDrag}
                   onPointerCancel={endAssetDrag}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSelectedId(asset.id);
-                  }}
                   className={`pointer-events-auto absolute select-none overflow-hidden rounded-2xl border-2 bg-[#0b0c10] shadow-2xl transition-[border-color] ${
                     selectedId === asset.id
                       ? "border-[#66fcf1]"
@@ -520,6 +770,12 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
                       )}
                       <span className="truncate">@{asset.label} · {asset.name}</span>
                     </span>
+                    {asset.safety === "checking" && (
+                      <span className="inline-flex items-center gap-1 text-[9px] text-amber-300">
+                        <LoaderCircle className="h-3 w-3 animate-spin" />
+                        {t.checking}
+                      </span>
+                    )}
                   </div>
                   {asset.type === "image" ? (
                     <img
@@ -655,7 +911,7 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                     event.preventDefault();
-                    buildPlan();
+                    void buildPlan();
                   }
                 }}
                 placeholder={t.inputPlaceholder}
@@ -672,8 +928,12 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={buildPlan}
-                  disabled={isPlanning || (!prompt.trim() && assets.length === 0)}
+                  onClick={() => void buildPlan()}
+                  disabled={
+                    isPlanning ||
+                    !prompt.trim() ||
+                    assets.some((asset) => asset.safety === "checking")
+                  }
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#66fcf1] px-3 py-2 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isPlanning ? (
@@ -687,13 +947,31 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
             </div>
             <button
               type="button"
-              disabled
-              className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#1f2833] bg-[#101318] px-3 py-2.5 text-xs font-semibold text-[#5d6670]"
+              onClick={() => void startGeneration()}
+              disabled={!plan?.generationPrompt || isGenerating}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#66fcf1] px-3 py-2.5 text-xs font-semibold text-black transition hover:bg-[#45a29e] disabled:cursor-not-allowed disabled:border disabled:border-[#1f2833] disabled:bg-[#101318] disabled:text-[#5d6670]"
             >
-              <Sparkles className="h-4 w-4" />
-              {t.generationDisabled}
+              {isGenerating ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isGenerating ? t.generatingVideo : t.generationDisabled}
             </button>
             <p className="mt-2 text-center text-[9px] leading-relaxed text-[#59616a]">{t.generationHelp}</p>
+            {generationStarted && (
+              <div className="mt-3 rounded-xl border border-emerald-900/70 bg-emerald-950/25 p-3 text-center">
+                <p className="text-[10px] leading-relaxed text-emerald-200">
+                  {t.generationStarted}
+                </p>
+                <a
+                  href={`/${language}/my-creations`}
+                  className="mt-2 inline-flex text-[10px] font-semibold text-[#66fcf1] hover:underline"
+                >
+                  {t.openCreations}
+                </a>
+              </div>
+            )}
           </div>
         </aside>
       </div>

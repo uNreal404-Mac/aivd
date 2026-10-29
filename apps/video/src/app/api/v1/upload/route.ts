@@ -8,6 +8,12 @@ import {
   getStorage,
   isStorageConfigured,
 } from "@/lib/storage";
+import {
+  fileToDataUrl,
+  isSafetyApproved,
+  moderateContent,
+  safetyMessage,
+} from "@/lib/content-safety";
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -42,6 +48,20 @@ export async function POST(request: Request) {
 
     if (file.size > MAX_FILE_SIZE) {
       throw new ApiError("File too large", 400);
+    }
+
+    const locale = request.headers.get("accept-language") ?? "en";
+    const safety = await moderateContent({
+      text: "",
+      images: [{ url: await fileToDataUrl(file), label: file.name }],
+      context: "upload",
+    });
+    if (!isSafetyApproved(safety)) {
+      throw new ApiError(safetyMessage(safety, locale), 422, {
+        code: "CONTENT_BLOCKED",
+        decision: safety.decision,
+        categories: safety.categories,
+      });
     }
 
     const ext = file.name.split(".").pop() || "jpg";
