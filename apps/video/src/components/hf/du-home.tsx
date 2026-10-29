@@ -200,8 +200,38 @@ const HERO_SLIDES = [
   },
 ];
 
+const CATEGORY_DECK_FILTERS = CATEGORY_FILTERS.filter((filter) => filter !== "All");
+
+const CATEGORY_DECK_IMAGES: Record<string, string> = {
+  Cinematic: "/home/golden-hour.webp",
+  Anime: "/home/first-steps.webp",
+  Portrait: "/home/silver-muse.webp",
+  Fantasy: "/home/edge-of-space.webp",
+  "Sci-Fi": "/home/neon-streets.webp",
+  Nature: "/home/coast-drive.webp",
+  Stylize: "/home/liquid-light.webp",
+  More: "/home/glass-city.webp",
+};
+
+function categoryCardTransform(index: number, hoveredIndex: number | null) {
+  if (hoveredIndex === null) return "translateY(0) scale(1) rotateZ(0deg)";
+
+  const distance = index - hoveredIndex;
+  if (distance === 0) return "translateY(-28px) scale(1.09) rotateZ(0deg)";
+
+  const absoluteDistance = Math.abs(distance);
+  const direction = distance < 0 ? -1 : 1;
+  const rotation = direction * Math.max(2, 11 - absoluteDistance * 2.25);
+  const horizontalShift = direction * Math.max(0, 14 - absoluteDistance * 2);
+  const verticalShift = Math.min(absoluteDistance * 4, 16);
+  const scale = Math.max(0.91, 1 - absoluteDistance * 0.025);
+
+  return `translateX(${horizontalShift}px) translateY(${verticalShift}px) scale(${scale}) rotateZ(${rotation}deg)`;
+}
+
 export function DuHome({ lang }: { lang: string }) {
-  const [active, setActive] = useState("All");
+  const [active, setActive] = useState("Cinematic");
+  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [heroIndex, setHeroIndex] = useState(0);
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
@@ -495,25 +525,60 @@ export function DuHome({ lang }: { lang: string }) {
           images={["/home/golden-hour.webp", "/home/neon-streets.webp", "/home/coast-drive.webp"]}
           tone="cyan"
         />
-        <div className="mt-8 flex flex-wrap gap-2">
-          {CATEGORY_FILTERS.map((filter) => {
-            const isActive = filter === active;
-            return (
-              <button
-                key={filter}
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => setActive(filter)}
-                className={
-                  isActive
-                    ? "h-9 rounded-lg bg-[var(--du-accent)] px-4 text-sm font-medium text-[var(--du-on-accent)]"
-                    : "du-glass-btn h-9 px-4 text-sm"
-                }
-              >
-                {homeCopy.filters[filter] ?? filter}
-              </button>
-            );
-          })}
+        <div
+          className="relative mt-8 overflow-x-auto overflow-y-visible pb-10 pt-10 [perspective:1200px]"
+          onMouseLeave={() => setHoveredCategory(null)}
+        >
+          <div className="mx-auto flex min-w-max items-end justify-center gap-3 px-5 sm:gap-4">
+            {CATEGORY_DECK_FILTERS.map((filter, index) => {
+              const isActive = filter === active;
+              const isHovered = index === hoveredCategory;
+              return (
+                <button
+                  key={filter}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => setActive(filter)}
+                  onMouseEnter={() => setHoveredCategory(index)}
+                  onFocus={() => setHoveredCategory(index)}
+                  onBlur={() => setHoveredCategory(null)}
+                  style={{
+                    transform: categoryCardTransform(index, hoveredCategory),
+                    zIndex: isHovered ? 30 : Math.max(1, 20 - Math.abs(index - (hoveredCategory ?? index))),
+                  }}
+                  className={`group relative h-[245px] w-[164px] shrink-0 overflow-hidden rounded-[24px] border text-left shadow-[0_18px_50px_rgba(0,0,0,0.4)] transition-[transform,border-color,box-shadow,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform sm:h-[290px] sm:w-[194px] ${
+                    isActive
+                      ? "border-[var(--du-accent)] shadow-[0_0_34px_rgba(102,252,241,0.3),0_24px_60px_rgba(0,0,0,0.48)]"
+                      : "border-white/15 hover:border-[var(--du-border-strong)]"
+                  }`}
+                >
+                  <img
+                    src={CATEGORY_DECK_IMAGES[filter]}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full scale-105 object-cover transition-transform duration-700 ease-out group-hover:scale-115"
+                  />
+                  <span className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/90" />
+                  <span className="absolute inset-[1px] rounded-[22px] border border-white/10 bg-gradient-to-br from-white/15 via-transparent to-cyan-300/10 backdrop-blur-[1px]" />
+                  <span className="absolute left-4 top-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/65">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="absolute inset-x-4 bottom-5">
+                    <span className="block text-lg font-semibold tracking-[-0.02em] text-white sm:text-xl">
+                      {homeCopy.filters[filter] ?? filter}
+                    </span>
+                    <span
+                      className={`mt-3 block h-[2px] rounded-full transition-all duration-500 ${
+                        isActive
+                          ? "w-full bg-[var(--du-accent)] shadow-[0_0_14px_var(--du-accent)]"
+                          : "w-9 bg-white/55 group-hover:w-full group-hover:bg-[var(--du-accent)]"
+                      }`}
+                    />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {visibleCategories.map((card) => (
