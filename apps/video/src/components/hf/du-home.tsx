@@ -291,9 +291,46 @@ function categoryCardStyle(
   };
 }
 
+function effectOrbitStyle(index: number, activeIndex: number, count: number): CSSProperties {
+  const offset = circularCategoryOffset(index, activeIndex, count);
+  const distance = Math.abs(offset);
+  const direction = offset < 0 ? -1 : offset > 0 ? 1 : 0;
+  const horizontalPositions = [
+    "0px",
+    "clamp(118px,18vw,275px)",
+    "clamp(205px,31vw,475px)",
+    "0px",
+  ];
+  const verticalPositions = [48, 30, -48, -138];
+  const scales = [1.08, 0.82, 0.62, 0.5];
+  const opacities = [1, 0.94, 0.67, 0.38];
+  const rotateY = [0, 23, 38, 0];
+  const rotateZ = [0, 2.5, 5, 0];
+  const xTransform =
+    direction === 0 || distance === 3
+      ? "-50%"
+      : `calc(-50% ${direction > 0 ? "+" : "-"} ${horizontalPositions[distance]})`;
+
+  return {
+    filter:
+      distance === 3
+        ? "brightness(0.52) blur(1.2px)"
+        : distance === 2
+          ? "brightness(0.72) blur(0.4px)"
+          : distance === 1
+            ? "brightness(0.88)"
+            : "none",
+    left: "50%",
+    opacity: opacities[distance],
+    transform: `translateX(${xTransform}) translateY(calc(-50% + ${verticalPositions[distance]}px)) scale(${scales[distance]}) rotateY(${direction * -rotateY[distance]}deg) rotateZ(${direction * -rotateZ[distance]}deg)`,
+    zIndex: 50 - distance * 12,
+  };
+}
+
 export function DuHome({ lang }: { lang: string }) {
   const [active, setActive] = useState("Fantasy");
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+  const [activeEffectIndex, setActiveEffectIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
@@ -331,6 +368,12 @@ export function DuHome({ lang }: { lang: string }) {
     );
   const showNextCategory = () =>
     setActive(CATEGORY_DECK_FILTERS[(activeCategoryIndex + 1) % CATEGORY_DECK_FILTERS.length]);
+  const showPreviousEffect = () =>
+    setActiveEffectIndex(
+      (current) => (current - 1 + EFFECT_CARDS.length) % EFFECT_CARDS.length
+    );
+  const showNextEffect = () =>
+    setActiveEffectIndex((current) => (current + 1) % EFFECT_CARDS.length);
 
   const featureCopy = isChinese
     ? {
@@ -672,30 +715,97 @@ export function DuHome({ lang }: { lang: string }) {
           images={["/home/silver-muse.webp", "/home/glass-city.webp", "/home/liquid-light.webp"]}
           tone="amber"
         />
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EFFECT_CARDS.map((effect) => (
-            <div
-              key={effect.id}
-              className="relative aspect-[16/9] overflow-hidden rounded-xl border border-[var(--du-border)]"
-            >
-              <img
-                src={effect.image}
-                alt={isChinese ? homeCopy.effectTitles[effect.id] ?? effect.alt : effect.alt}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-              <span className="absolute inset-0 bg-black/45" />
-              <span className="absolute bottom-4 left-4 text-[15px] font-semibold text-[var(--du-text)]">
-                {homeCopy.effectTitles[effect.id] ?? effect.title}
+        <div className="relative mt-8 h-[clamp(430px,55vw,760px)] overflow-hidden rounded-[32px] border border-[var(--du-border)] bg-[radial-gradient(circle_at_50%_45%,rgba(45,35,112,0.3),rgba(3,5,14,0.82)_48%,rgba(0,0,0,0.96)_78%)] [perspective:1500px] [perspective-origin:50%_42%]">
+          <span className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(102,252,241,0.25)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.25)_1px,transparent_1px)] [background-size:48px_48px]" />
+          <span className="pointer-events-none absolute left-1/2 top-[54%] h-[48%] w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-violet-400/55 shadow-[0_0_18px_rgba(111,88,255,0.55),inset_0_0_22px_rgba(87,202,255,0.18)] [transform:translate(-50%,-50%)_rotateX(67deg)]" />
+          <span className="pointer-events-none absolute left-[6%] top-[54%] h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_12px_4px_rgba(102,252,241,0.9)]" />
+          <span className="pointer-events-none absolute right-[6%] top-[54%] h-3 w-3 rounded-full bg-violet-200 shadow-[0_0_12px_4px_rgba(167,121,255,0.9)]" />
+          <span className="pointer-events-none absolute inset-x-[14%] bottom-[3%] h-[25%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(128,76,255,0.2),rgba(67,197,255,0.09)_38%,transparent_72%)] blur-2xl" />
+
+          <div className="pointer-events-none absolute left-1/2 top-[5%] z-[70] -translate-x-1/2">
+            <div className="relative rounded-full border border-cyan-200/70 bg-[#080b19]/80 px-6 py-3 text-center shadow-[0_0_18px_rgba(88,196,255,0.45),0_0_34px_rgba(132,80,255,0.3)] backdrop-blur-xl">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200/65">
+                {isChinese ? "当前特效" : "Selected effect"}
               </span>
-              <Link
-                href={localizedHref(lang, effect.href)}
-                className="du-glass-btn du-glass-on-media absolute bottom-4 right-4 inline-flex h-8 items-center px-3 text-xs"
-              >
-                {homeCopy.tryIt}
-              </Link>
+              <span className="mt-0.5 block whitespace-nowrap text-sm font-semibold text-white sm:text-base">
+                {homeCopy.effectTitles[EFFECT_CARDS[activeEffectIndex].id] ??
+                  EFFECT_CARDS[activeEffectIndex].title}
+              </span>
+              <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-cyan-200/70 bg-[#080b19]/90" />
             </div>
-          ))}
+          </div>
+
+          <div className="absolute inset-0 [transform-style:preserve-3d]">
+            {EFFECT_CARDS.map((effect, index) => {
+              const isActiveEffect = index === activeEffectIndex;
+              const effectTitle = homeCopy.effectTitles[effect.id] ?? effect.title;
+              return (
+                <div
+                  key={effect.id}
+                  style={effectOrbitStyle(index, activeEffectIndex, EFFECT_CARDS.length)}
+                  className={`group absolute top-1/2 h-[clamp(220px,25vw,380px)] w-[clamp(150px,19vw,290px)] overflow-hidden rounded-[28px] border transition-[transform,opacity,filter,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                    isActiveEffect
+                      ? "border-white/80 shadow-[0_0_18px_rgba(255,255,255,0.55),0_0_48px_rgba(96,107,255,0.72),0_30px_75px_rgba(0,0,0,0.75)]"
+                      : "border-white/25 shadow-[0_18px_50px_rgba(0,0,0,0.68)] hover:border-cyan-200/70"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActiveEffectIndex(index)}
+                    aria-pressed={isActiveEffect}
+                    aria-label={effectTitle}
+                    className="absolute inset-0 z-10 text-left"
+                  >
+                    <img
+                      src={effect.image}
+                      alt={isChinese ? effectTitle : effect.alt}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full scale-110 object-cover saturate-125 transition-transform duration-700 group-hover:scale-[1.18]"
+                    />
+                    <span className="absolute inset-0 bg-gradient-to-b from-indigo-950/5 via-black/5 to-black/80" />
+                    <span className="absolute inset-[1px] rounded-[26px] border border-white/20 bg-gradient-to-br from-cyan-200/20 via-transparent to-fuchsia-300/20 backdrop-blur-[1px]" />
+                    <span className="absolute inset-x-4 bottom-5 pr-8 text-base font-semibold text-white sm:text-lg">
+                      {effectTitle}
+                    </span>
+                    <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/65 bg-black/20 text-white backdrop-blur-md">
+                      <Play className="ml-0.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                    </span>
+                  </button>
+                  {isActiveEffect ? (
+                    <Link
+                      href={localizedHref(lang, effect.href)}
+                      className="du-glass-btn du-glass-on-media absolute bottom-16 left-4 z-20 inline-flex h-9 items-center rounded-full px-4 text-xs"
+                    >
+                      {homeCopy.tryIt}
+                    </Link>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="absolute inset-x-0 bottom-4 z-[80] flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={showPreviousEffect}
+              aria-label={isChinese ? "上一个特效" : "Previous effect"}
+              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <span className="min-w-20 text-center text-xs font-medium tracking-[0.18em] text-[var(--du-text-muted)]">
+              {String(activeEffectIndex + 1).padStart(2, "0")} /{" "}
+              {String(EFFECT_CARDS.length).padStart(2, "0")}
+            </span>
+            <button
+              type="button"
+              onClick={showNextEffect}
+              aria-label={isChinese ? "下一个特效" : "Next effect"}
+              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </section>
 
