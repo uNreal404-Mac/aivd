@@ -12,6 +12,8 @@ export const referenceToVideoConfig: ToolPageConfig = {
     keywords: [
       "reference to video",
       "video to video",
+      "ai video generator",
+      "seedance 2.0 mini",
       "ai video transformation",
       "video restyle",
       "video variation",

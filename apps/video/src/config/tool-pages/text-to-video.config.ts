@@ -8,13 +8,16 @@ export const textToVideoConfig: ToolPageConfig = {
   // SEO 配置
   seo: {
     title: "Text to Video - Create Videos from Text with AI",
-    description: "Transform your text descriptions into stunning videos using AI. Simply describe what you want, and watch Seedance AI models bring your vision to life.",
+    description: "Turn text into cinematic video on aivd.ai with Seedance. Seedance 2.0 mini is next. An AI video generator for prompts, stills, and sound.",
     keywords: [
       "text to video",
       "ai video generator",
+      "ai image generator",
+      "ai music generator",
       "video from text",
       "ai video creation",
       "seedance",
+      "seedance 2.0 mini",
       "seedance 1.5",
       "text to video ai",
     ],
@@ -87,7 +90,7 @@ export const textToVideoConfig: ToolPageConfig = {
 
     features: [
       "Simply describe what you want to see",
-      "Access to Seedance AI models (1.5 Pro, 1.0 Fast, 1.0 Quality)",
+      "Seedance 1.5 Pro is in the studio today. Seedance 2.0 mini is next; 1.5 Pro sunsets around November 11, 2026.",
       "Cinematic quality up to 1080p",
       "Generate audio and sound effects automatically",
       "Multiple aspect ratios for any platform",

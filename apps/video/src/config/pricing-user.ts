@@ -255,6 +255,12 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
  * - perSecond: 每秒积分（用于按秒计费的模型）
  * - qualityMultiplier: 画质乘数（1080p vs 720p）
  */
+/**
+ * Live model prices only.
+ * Seedance 2.0 mini is intentionally absent.
+ * Draft placeholders live in `seedance-2-mini-credits.draft.ts`.
+ * TODO(老板): do not add seedance-2.0-mini here until retail credits are set.
+ */
 export const VIDEO_MODEL_PRICING: Record<string, VideoModelPricing> = {
   /** Seedance 1.5 Pro - 按秒计费（默认有音频） */
   "seedance-1.5-pro": {

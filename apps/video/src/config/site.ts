@@ -56,7 +56,7 @@ export function getSiteTitle(locale = "en", preview = isPreviewSite) {
 
 export const siteConfig: SiteConfig = {
   name: "aivd.ai",
-  description: "AI Video Generation Platform - Create stunning videos with Sora 2, Veo 3.1, and more",
+  description: "aivd.ai — universe-level AI video generator, AI image generator, and AI music generator with Seedance and Seedance 2.0 mini.",
   url: configuredAppUrl,
   ogImage: "/og.png",
   supportEmail: SUPPORT_EMAIL,

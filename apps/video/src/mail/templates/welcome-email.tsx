@@ -67,7 +67,7 @@ WelcomeEmail.PreviewProps = {
         features: "With aivd.ai, you can:",
         featuresList: {
           generate: "Generate stunning AI videos in minutes",
-          models: "Use multiple AI models like Sora 2, Veo 3.1, and more",
+          models: "Create with Seedance and Seedance 2.0 mini — AI video, image, and music",
           share: "Download and share your creations anywhere",
         },
         cta: "Start Creating Videos",

@@ -53,11 +53,15 @@ const baseMetadata = {
   description: siteConfig.description,
   keywords: [
     "AI video generator",
+    "AI image generator",
+    "AI music generator",
+    "Seedance",
+    "Seedance 2.0 mini",
     "text to video",
     "image to video",
     "AI video",
     "video generation",
-    "AI tools",
+    "aivd.ai",
   ],
   authors: [
     {

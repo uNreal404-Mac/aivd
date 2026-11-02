@@ -19,14 +19,14 @@ export function HfPromoBar({ lang }: HfPromoBarProps) {
     <div className="relative flex h-[45px] items-center justify-center bg-[image:var(--du-gradient)] px-4 text-[var(--du-on-accent)]">
       <div className="flex items-center gap-3 text-sm">
         <span className="hidden sm:inline">
-          New here? Get starter credits when you create an account
+          Seedance 2.0 mini is next · 1.5 Pro sunsets Nov 11, 2026
         </span>
-        <span className="sm:hidden">Get starter credits on sign up</span>
+        <span className="sm:hidden">Seedance 2.0 mini is next</span>
         <Link
-          href={`/${lang}/pricing`}
+          href={`/${lang}/seedance-2-0-mini`}
           className="inline-flex h-7 items-center rounded-md bg-[var(--du-bg)] px-2 text-xs font-medium text-[var(--du-text)]"
         >
-          See plans
+          Learn more
         </Link>
       </div>
       <button

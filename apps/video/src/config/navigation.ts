@@ -86,12 +86,18 @@ export const sidebarNavigation: NavGroup[] = [
 
 // 落地页顶部导航 - Models 下拉菜单
 export const headerModels = [
+  {
+    id: "seedance-2-mini",
+    title: "Seedance 2.0 mini",
+    subtitle: "Next · 1.5 Pro sunsets Nov 11, 2026",
+    href: "/seedance-2-0-mini",
+  },
   { id: "sora", title: "Sora 2", subtitle: "by OpenAI", href: "/sora-2" },
   { id: "veo", title: "Veo 3.1", subtitle: "by Google", href: "/veo-3-1" },
   {
     id: "seedance",
     title: "Seedance 1.5",
-    subtitle: "by ByteDance",
+    subtitle: "Sunsetting · by ByteDance",
     href: "/seedance-1-5",
   },
   { id: "wan", title: "Wan 2.6", subtitle: "by Alibaba", href: "/wan-2-6" },

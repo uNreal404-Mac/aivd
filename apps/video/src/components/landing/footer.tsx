@@ -18,6 +18,7 @@ export function LandingFooter() {
         { title: "Image to Video", href: "/image-to-video" },
         { title: "Text to Video", href: "/text-to-video" },
         { title: "Reference to Video", href: "/reference-to-video" },
+        { title: "Seedance 2.0 mini", href: "/seedance-2-0-mini" },
         { title: "Pricing", href: "/pricing" },
       ],
     },
@@ -57,7 +58,7 @@ export function LandingFooter() {
               🎬 aivd.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
-              Transform your ideas into stunning videos with AI.
+              Universe-level AI video, image, and music with Seedance.
             </p>
           </div>
 

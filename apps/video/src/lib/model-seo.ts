@@ -95,9 +95,9 @@ export const MODEL_SEO: ModelSeoEntry[] = [
     name: "Seedance 1.5 Pro",
     title: "Seedance 1.5 Pro AI Video Generator",
     description:
-      "Generate short videos from text or a still image with Seedance 1.5 Pro. Compare durations, resolutions and aspect ratios, then start creating.",
+      "Seedance 1.5 Pro sunsets around Nov 11, 2026. aivd.ai is moving primary creation to Seedance and Seedance 2.0 mini.",
     intro:
-      "Turn a written prompt, or a single reference image, into a short finished clip.",
+      "Seedance 1.5 Pro still turns a prompt or a still into a short clip, and it sunsets around November 11, 2026.",
     useCases: [
       "Short social videos built from a single prompt",
       "Animating a still image into motion",
@@ -124,12 +124,16 @@ export const MODEL_SEO: ModelSeoEntry[] = [
         q: "What happens if a generation fails?",
         a: "A failed run does not produce a usable video. You can review the status of each generation in your account and start a new one from there.",
       },
+      {
+        q: "When does Seedance 1.5 Pro sunset?",
+        a: "Around November 11, 2026. aivd.ai is shifting new work toward Seedance and Seedance 2.0 mini. Retail credits for 2.0 mini are not published yet.",
+      },
     ],
     zh: {
       title: "Seedance 1.5 Pro AI 视频生成器",
       description:
-        "使用 Seedance 1.5 Pro 从文字或单张图片生成短视频。查看支持的时长、分辨率与画面比例，然后开始创作。",
-      intro: "把你的提示词或一张参考图，变成一段简短的成片。",
+        "Seedance 1.5 Pro 约于 2026 年 11 月 11 日停用。aivd.ai 正把主要创作转向 Seedance 与 Seedance 2.0 mini。",
+      intro: "Seedance 1.5 Pro 仍可把提示词或一张静图做成短片，并将于 2026 年 11 月 11 日前后停用。",
       useCases: [
         "根据一段提示词制作社交媒体短视频",
         "让一张静态图片动起来",
@@ -155,6 +159,10 @@ export const MODEL_SEO: ModelSeoEntry[] = [
         {
           q: "如果生成失败会怎样？",
           a: "失败的运行不会产出可用的视频。你可以在账户中查看每次生成的状态，并从那里重新发起一次。",
+        },
+        {
+          q: "Seedance 1.5 Pro 什么时候停用？",
+          a: "大约在 2026 年 11 月 11 日。aivd.ai 会把新的创作转向 Seedance 与 Seedance 2.0 mini。2.0 mini 的零售积分尚未公布。",
         },
       ],
     },

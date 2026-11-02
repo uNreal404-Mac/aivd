@@ -22,14 +22,23 @@ export async function generateMetadata({ params }: PageMetadataProps) {
   const { locale } = await params;
 
   const titles = {
-    en: "AI Video Generator - Create Stunning Videos with Sora 2 & Veo 3.1",
-    zh: "AI视频生成器 - 使用Sora 2和Veo 3.1创建精彩视频",
+    en: "AI Video Generator — Seedance & Seedance 2.0 mini",
+    zh: "AI视频生成器 — Seedance 与 Seedance 2.0 mini",
   };
 
   const descriptions = {
-    en: "Transform your ideas into stunning videos with AI. Access Sora 2, Veo 3.1, Wan 2.6, and more. Fast, easy, and professional quality video generation in minutes. Start creating today!",
-    zh: "用AI将您的想法转化为精彩视频。访问Sora 2、Veo 3.1、Wan 2.6等模型。快速、简单、专业品质的视频生成，几分钟内完成。立即开始创作！",
+    en: "aivd.ai is a universe-level AI video generator, AI image generator, and AI music generator on Seedance and Seedance 2.0 mini. Seedance 1.5 Pro sunsets around November 11, 2026.",
+    zh: "aivd.ai 用 Seedance 与 Seedance 2.0 mini 做宇宙级 AI 视频生成器、AI 图像生成器与 AI 音乐生成器。Seedance 1.5 Pro 约于 2026 年 11 月 11 日停用。",
   };
+
+  const keywords = [
+    "AI video generator",
+    "AI image generator",
+    "AI music generator",
+    "Seedance",
+    "Seedance 2.0 mini",
+    "aivd.ai",
+  ];
 
   const canonicalUrl = `${siteConfig.url}${locale === i18n.defaultLocale ? "" : `/${locale}`}`;
   const alternates = buildAlternates("/", locale);
@@ -38,6 +47,7 @@ export async function generateMetadata({ params }: PageMetadataProps) {
   return {
     title: titles[locale] || titles.en,
     description: descriptions[locale] || descriptions.en,
+    keywords,
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,

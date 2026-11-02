@@ -13,9 +13,11 @@ export const imageToVideoConfig: ToolPageConfig = {
       "image to video",
       "photo animation",
       "ai video generator",
+      "ai image generator",
       "picture to video",
       "image animation",
       "seedance",
+      "seedance 2.0 mini",
       "seedance 1.5",
     ],
     ogImage: "/og-image-to-video.jpg",
@@ -87,7 +89,7 @@ export const imageToVideoConfig: ToolPageConfig = {
 
     features: [
       "Upload any photo (JPG, PNG, WEBP up to 10MB)",
-      "Multiple AI models for different animation styles",
+      "Seedance today, with Seedance 2.0 mini next. 1.5 Pro sunsets around November 11, 2026.",
       "Full HD output up to 1080p resolution",
       "Fast generation in 2-5 minutes",
       "Commercial use rights included",

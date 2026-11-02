@@ -63,11 +63,11 @@ export interface Step {
 }
 
 export const HERO = {
-  eyebrow: "AI studio · Write · Animate · Discover",
-  titleLead: "Bring stories",
-  titleAccent: "to life.",
+  eyebrow: "Seedance · Seedance 2.0 mini",
+  titleLead: "Worlds in",
+  titleAccent: "motion.",
   subtitle:
-    "aivd.ai turns a single sentence into cinematic clips, pictures and whole worlds — no camera required.",
+    "aivd.ai is the universe-level studio for Seedance and Seedance 2.0 mini — an AI video generator, AI image generator, and AI music generator. Seedance 1.5 Pro sunsets around November 11, 2026.",
   ctas: [
     {
       label: "Start Creating",
@@ -76,15 +76,15 @@ export const HERO = {
       variant: "primary",
     },
     {
-      label: "Try a Sample",
-      href: "/image-to-video",
-      icon: "Play",
+      label: "Seedance 2.0 mini",
+      href: "/seedance-2-0-mini",
+      icon: "Film",
       variant: "outline",
     },
     {
-      label: "Watch Video",
-      href: "#",
-      icon: "CirclePlay",
+      label: "Try a Sample",
+      href: "/image-to-video",
+      icon: "Play",
       variant: "text",
     },
   ] as Cta[],
@@ -115,7 +115,7 @@ export const TOOL_CHIPS: Cta[] = [
   { label: "Text to Video", href: "/text-to-video", icon: "Clapperboard", variant: "outline" },
   { label: "Image to Video", href: "/image-to-video", icon: "ImagePlus", variant: "outline" },
   { label: "Image Generation", href: "#", icon: "Image", variant: "outline" },
-  { label: "More Tools", href: "#", icon: "LayoutGrid", variant: "outline" },
+  { label: "Seedance 2.0 mini", href: "/seedance-2-0-mini", icon: "Sparkles", variant: "outline" },
 ];
 
 export const CATEGORY_HEADER: SectionHeader = {
@@ -152,11 +152,11 @@ export const MODELS_HEADER: SectionHeader = {
   eyebrow: "Our models",
   title: "The right model for every frame.",
   accent: "every frame.",
-  desc: "Realistic or stylized — pick the engine that fits your idea.",
+  desc: "Seedance 2.0 mini is next. Seedance 1.5 Pro sunsets around November 11, 2026.",
 };
 
 export const MODEL_CARDS: ModelCard[] = [
-  { id: "video-lite", title: "Video Lite", icon: "Zap", description: "Fast everyday clips for quick ideas and drafts.", href: "/text-to-video", image: img("video-lite"), alt: "Quick draft clip preview" },
+  { id: "seedance-2-mini", title: "Seedance 2.0 mini", icon: "Zap", description: "The next Seedance model for everyday universe-level clips.", href: "/seedance-2-0-mini", image: img("video-lite"), alt: "Seedance 2.0 mini preview frame" },
   { id: "video-pro", title: "Video Pro", icon: "Film", description: "Cinematic motion and detail for finished shots.", href: "/image-to-video", image: img("video-pro"), alt: "Cinematic motion frame" },
   { id: "image-studio", title: "Image Studio", icon: "Image", description: "Detailed stills from text or reference.", href: "/reference-to-video", image: img("image-studio"), alt: "Detailed generated still" },
   { id: "anime-style", title: "Anime & Style", icon: "Palette", description: "Bold styles and looks for standout frames.", href: "/text-to-video", image: img("anime-style"), alt: "Stylized anime frame" },

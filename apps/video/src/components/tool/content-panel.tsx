@@ -44,7 +44,7 @@ export function ContentPanel({ lang = "en" }: ContentPanelProps) {
             Transform Your Images into Stunning Videos
           </h2>
           <p className="text-muted-foreground">
-            Powered by the latest AI models: Sora 2, Veo 3.1, Seedance 1.5, and Wan 2.6
+            Seedance leads the studio. Seedance 2.0 mini is next — 1.5 Pro sunsets around November 11, 2026.
           </p>
         </div>
 
