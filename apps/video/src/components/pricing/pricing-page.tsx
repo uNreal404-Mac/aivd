@@ -82,7 +82,6 @@ export function PricingPage({
   }
 
   function buttonLabel(productId: string, label: string): string {
-    if (!paymentsEnabled) return copy.comingSoon;
     if (pendingId === productId) return copy.redirecting;
     return label;
   }
@@ -93,7 +92,7 @@ export function PricingPage({
         {/* ---------- hero ---------- */}
         <header className="pr-hero">
           <h1 className="pr-hero__title">{copy.heroTitle}</h1>
-          <p className="pr-hero__sub">{copy.heroSubtitle}</p>
+          <p className="pr-hero__sub">{paymentsEnabled ? copy.heroSubtitle : copy.checkoutClosed}</p>
         </header>
 
         {/* ---------- billing toggle ---------- */}

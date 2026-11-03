@@ -187,7 +187,7 @@ export interface PricingCopy {
   /** Template, e.g. "{credits} credits per year". */
   creditsPerYear: string;
   mostPopular: string;
-  comingSoon: string;
+  checkoutClosed: string;
   redirecting: string;
   choosePlan: string;
   buyCredits: string;
@@ -227,7 +227,7 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     creditsPerMonth: "{credits} credits per month",
     creditsPerYear: "{credits} credits per year",
     mostPopular: "Most popular",
-    comingSoon: "Coming soon",
+    checkoutClosed: "Checkout is turned off on this site. You can compare plans and credit packs below.",
     redirecting: "Redirecting…",
     choosePlan: "Choose {plan}",
     buyCredits: "Buy {credits} credits",
@@ -263,7 +263,7 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     creditsPerMonth: "每月 {credits} 积分",
     creditsPerYear: "每年 {credits} 积分",
     mostPopular: "最受欢迎",
-    comingSoon: "即将推出",
+    checkoutClosed: "此站点当前未启用支付。你可以在下方比较订阅方案和积分包。",
     redirecting: "跳转中…",
     choosePlan: "选择 {plan} 方案",
     buyCredits: "购买 {credits} 积分",

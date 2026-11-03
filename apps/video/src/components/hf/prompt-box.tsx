@@ -43,7 +43,7 @@ export function PromptBox({lang, preferredModel, draft}: {lang:string; preferred
     <div className="du-prompt-settings">
       <label className="sr-only" htmlFor={id+"-model"}>{zh?"视频模型":"Video model"}</label>
       <select name="model" id={id+"-model"} value={model?.id ?? ""} onChange={e=>setSelected(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
-      {duration && <span className="du-shot-cost">{duration}{zh?" 秒":"s"}</span>}
+      {duration && <span className="du-shot-cost">{zh ? duration + " 秒短片" : duration + "s clip"}</span>}
       <button type="submit" className="du-primary" disabled={!model}>{zh?"生成":"Generate"}{cost !== null && <span> · {cost} {zh?"积分":"credits"}</span>}<ArrowUpRight size={15} aria-hidden="true"/></button>
     </div>
     {error && <p role="alert">{error} <a href={localizedHref(lang,"/"+mode)}>{zh?"打开工作台":"Open studio"}</a></p>}
