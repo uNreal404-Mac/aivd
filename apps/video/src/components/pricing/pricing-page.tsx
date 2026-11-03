@@ -106,7 +106,7 @@ export function PricingPage({
             </p>}
           </div>
           <figure className="pr-still">
-            <img src="/conversion/showcase/optics.webp" width={720} height={360} alt="" decoding="async" />
+            <img src="/conversion/showcase/optics.webp" width={720} height={360} alt="" loading="lazy" decoding="async" fetchPriority="low" />
             <figcaption>{zh ? "光学引擎" : "Optical Engine"}</figcaption>
           </figure>
         </header>
@@ -129,13 +129,15 @@ export function PricingPage({
             </fieldset>
           </div>
 
-          {sharedFeatures.length > 0 && <p className="pr-common">
-            {packsShareFeatures ? (zh ? "所有订阅和积分包均包含" : "All plans and packs include ") : (zh ? "所有订阅均包含" : "All plans include ")}
-            {sharedFeatures.map((key) => featureLabel(key)).join(zh ? "、" : " · ")}{zh ? "。" : "."}
-          </p>}
+          <p className="pr-quote-unit">
+            {zh ? "美元计价" : "Prices in USD"}
+            {referenceClip && (zh
+              ? ` · 按 ${referenceClip.duration} 秒 ${referenceClip.quality} 估算`
+              : ` · Estimates for ${referenceClip.duration}-second ${referenceClip.quality} clips`)}
+          </p>
           <div className="pr-ledger" data-estimate={!!referenceClip} data-checkout={paymentsEnabled}>
             <div className="pr-ledger__labels" aria-hidden="true">
-              <span>{zh ? "方案" : "Plan"}</span><span>{zh ? "月均价 / USD" : "Monthly rate / USD"}</span>
+              <span>{zh ? "方案" : "Plan"}</span><span>{zh ? "月均价" : "Monthly rate"}</span>
               <span>{zh ? "周期积分" : "Credit allowance"}</span>
               {referenceClip && <span>{zh ? "可生成片段" : "Complete clips"}</span>}
               <span>{zh ? "额外权益" : "Additional benefits"}</span>{paymentsEnabled && <span />}
@@ -161,7 +163,7 @@ export function PricingPage({
                   </div>
                   {referenceClip && <div className="pr-output">
                     <strong>{formatCredits(completeClipCount(plan, referenceClip.credits))}</strong>
-                    <span className="pr-meta">{isYearly ? (zh ? "段 / 年" : "clips / year") : (zh ? "段 / 月" : "clips / month")}</span>
+                    <span className="pr-meta">{isYearly ? (zh ? "段视频 / 年" : "video clips / year") : (zh ? "段视频 / 月" : "video clips / month")}</span>
                   </div>}
                   {extraFeatures.length > 0
                     ? <ul className="pr-features">{extraFeatures.map((key) => <li key={key}>{featureLabel(key)}</li>)}</ul>
@@ -179,11 +181,15 @@ export function PricingPage({
           </div>
           {referenceClip && <p className="pr-basis">
             {zh
-              ? `按 ${referenceClip.model}、${referenceClip.duration} 秒、${referenceClip.quality} 计算，每段 ${referenceClip.credits} 积分。`
-              : `Clip counts use ${referenceClip.model} at ${referenceClip.duration}s and ${referenceClip.quality}, billed at ${referenceClip.credits} credits per clip.`}
+              ? `${referenceClip.model} 每段 ${referenceClip.credits} 积分，片段数按完整视频计算。`
+              : `${referenceClip.model} is billed at ${referenceClip.credits} credits per clip. Counts include whole clips only.`}
           </p>}
           <details className="pr-plan-details">
-            <summary>{zh ? "比较每 100 积分的价格" : "Compare cost per 100 credits"}</summary>
+            <summary>{zh ? "比较单位价格与共有权益" : "Compare unit prices and shared benefits"}</summary>
+            {sharedFeatures.length > 0 && <p className="pr-common">
+            {packsShareFeatures ? (zh ? "所有订阅和积分包均包含" : "All plans and packs include ") : (zh ? "所有订阅均包含" : "All plans include ")}
+            {sharedFeatures.map((key) => featureLabel(key)).join(zh ? "、" : " · ")}{zh ? "。" : "."}
+          </p>}
             <dl>{plans.map((plan) => <div key={plan.id}><dt>{displayPlanName(plan.name)}</dt><dd>{formatUsd(costPer100Credits(plan))}</dd></div>)}</dl>
           </details>
         </section>

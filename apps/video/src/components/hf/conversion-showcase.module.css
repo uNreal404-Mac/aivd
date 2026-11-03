@@ -40,7 +40,8 @@
   color: var(--du-text);
   text-decoration: none;
 }
-.model:last-child { border-bottom: 1px solid var(--du-border); }
+.model:last-of-type { border-bottom: 1px solid var(--du-border); }
+.sharedSpec { margin: 0; padding-block: 12px; color: var(--du-text-muted); font-size: 13px; line-height: 18px; }
 .model > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .model h3, .galleryTile strong { margin: 0; font: 600 24px/28px var(--font-display),sans-serif; letter-spacing: -.025em; }
 .model p { margin: 0; font: 500 13px/16px var(--font-sans),sans-serif; color: var(--du-text-muted); }
@@ -61,7 +62,9 @@
 .reel .wall [data-order] { flex: 1; }
 .reel .wall [data-order="0"], .reel .wall [data-order="3"] { flex: 1.45; }
 .reel .wall [data-order="2"], .reel .wall [data-order="5"] { flex: .8; }
-.reel .wall .template { aspect-ratio: auto; height: clamp(152px, 15vw, 236px); }
+.reel .wall .template { height: auto; aspect-ratio: auto; background: transparent; border-radius: 0; }
+.templateFrame { display: block; position: relative; height: clamp(152px, 15vw, 236px); overflow: hidden; border-radius: 4px; }
+.templateName { display: block; padding: 8px 0; color: var(--du-text); font-size: 13px; line-height: 16px; }
 .template, .idea {
   display: block; position: relative; isolation: isolate; overflow: hidden; border-radius: 4px;
   background: var(--du-bg-elev); color: var(--du-text); text-decoration: none;
@@ -114,14 +117,14 @@ button.film { cursor: pointer; }
   .heading h2, .featureHeading h2, .final h2 { font-size: 32px; line-height: 36px; letter-spacing: -.03em; }
   .modelIndex { display: block; }
   .modelPlate { display: none; }
-  .models { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .models { display: block; }
   .model h3, .galleryTile strong { font-size: 20px; line-height: 24px; }
-  .model:first-child { grid-column: 1 / -1; }
-  .model:last-child { border-bottom: 0; }
+
   .model svg { top: 16px; right: 2px; }
   .section:has(.reel) .heading { padding-inline-end: 96px; }
   .reelControls { bottom: calc(100% + 20px); }
-  .reel .wall .template { height: auto; aspect-ratio: 1.8; }
+  .templateFrame { height: auto; aspect-ratio: 1.8; }
+  .reel .wall .template { aspect-ratio: auto; }
   .tileName { bottom: 8px; left: 8px; }
   .sectionCta { margin-top: 24px; }
   .film { aspect-ratio: 1.65; }

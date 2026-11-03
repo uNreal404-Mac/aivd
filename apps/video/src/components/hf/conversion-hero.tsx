@@ -3,7 +3,7 @@
 import { MotionTitle } from "@/components/motion/accents";
 import Image from "next/image";
 import { ChevronDown, Crosshair, Expand, Pause, Play, X } from "lucide-react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { PromptBox } from "@/components/hf/prompt-box";
 import s from "./conversion-hero.module.css";
 
@@ -29,15 +29,10 @@ function cueTime(seconds: number) {
   return clock(seconds) + "." + String(Math.round((seconds % 1) * 100)).padStart(2, "0");
 }
 
-function posterUrl({ src, width }: { src: string; width: number }) {
-  return src === films[0].poster && width <= 828 ? "/home/studio-prism-mobile.webp" : src;
-}
-
-export function ConversionHero({ lang }: { lang: string }) {
+export function ConversionHero({ lang, initialPoster }: { lang: string; initialPoster: ReactNode }) {
   const zh = lang.startsWith("zh");
   const l = zh ? 0 : 1;
   const [index, setIndex] = useState(0);
-  const [draft, setDraft] = useState<{ text: string; revision: number }>();
   const [elapsed, setElapsed] = useState(0);
   const [duration, setDuration] = useState(films[0].duration);
   const [autoAllowed, setAutoAllowed] = useState(false);
@@ -140,9 +135,9 @@ export function ConversionHero({ lang }: { lang: string }) {
     <div className={s.studio}>
       <div ref={stage} className={s.screen} data-film={film.key}>
         <div className={s.picture} key={film.video}>
-          <Image fill data-studio-poster="" priority={index === 0} fetchPriority={index === 0 ? "high" : undefined}
-            loading={index === 0 ? undefined : "eager"} src={still} loader={posterUrl}
-            sizes="(max-width: 919px) 100vw, (max-width: 1440px) 60vw, 840px" alt="" />
+          {index === 0 && still === films[0].poster ? initialPoster : (
+            <Image fill data-studio-poster="" unoptimized loading="eager" src={still} alt="" />
+          )}
           {mounted && !failed && <video ref={movie} src={film.video} poster={film.poster} muted loop playsInline preload="metadata" tabIndex={-1}
             aria-label={film.title[l]} onLoadedMetadata={(e) => {
               const v = e.currentTarget;
@@ -189,10 +184,7 @@ export function ConversionHero({ lang }: { lang: string }) {
       </fieldset>
       <div className={s.console}>
         <MotionTitle><span>{zh ? <>AI 视频<wbr/>生成器。</> : <>AI VIDEO <wbr/>GENERATOR.</>}</span>{" "}<small>{zh ? "电影级创作效果。" : "STUDIO-GRADE RESULTS."}</small></MotionTitle>
-        <PromptBox lang={lang} draft={draft} />
-        <button type="button" className={s.useShot} title={selectedCue.title[l]} onClick={() => {
-          setDraft((prior) => ({ text: selectedCue.prompt[l], revision: (prior?.revision ?? 0) + 1 }));
-        }}>{zh ? "套用当前分镜" : "Use this shot"}</button>
+        <PromptBox lang={lang} sourceShot={{title:selectedCue.title[l], prompt:selectedCue.prompt[l]}} />
       </div>
 
       {failed && <output className={s.notice}>{zh ? "暂时无法播放此短片。请选择其他影片。" : "This film could not load. Select another film."}</output>}

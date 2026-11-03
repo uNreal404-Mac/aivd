@@ -38,9 +38,11 @@ function TemplateTile({ item, slot, copy, selected, onPreview, zh }: {
     onPointerLeave={e => { if (e.pointerType === "mouse") onPreview(false); }}>
     <a href={item.href} aria-label={item.name} tabIndex={copy ? -1 : undefined} className={s.template}
       onFocus={e => { if (e.currentTarget.matches(":focus-visible")) preview(); }} onBlur={() => onPreview(false)}>
-      <img width={720} height={400} src={item.poster} loading="lazy" decoding="async" alt={item.alt}/>
-      {selected && <video src={item.video} poster={item.poster} autoPlay muted loop playsInline preload="none" aria-label={item.name} onError={() => onPreview(false)}/>}
-      <span className={s.tileName}>{item.name}</span>
+      <span className={s.templateFrame}>
+        <img width={720} height={400} src={item.poster} loading="lazy" decoding="async" alt={item.alt}/>
+        {selected && <video src={item.video} poster={item.poster} autoPlay muted loop playsInline preload="none" aria-label={item.name} onError={() => onPreview(false)}/>}
+      </span>
+      <span className={s.templateName}>{item.name}</span>
     </a>
     {!copy && <button type="button" className="motion-touch-preview" aria-pressed={selected}
       title={(selected ? (zh ? "暂停 " : "Pause ") : (zh ? "预览 " : "Preview ")) + item.name}

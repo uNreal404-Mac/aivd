@@ -4,6 +4,7 @@
 import { useTranslations, useLocale } from "next-intl";
 
 
+import { displayBrand } from "@/lib/display-brand";
 import { LocaleLink } from "@/i18n/navigation";
 
 export function LandingFooter() {
@@ -55,7 +56,7 @@ export function LandingFooter() {
               href="/"
               className="flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
             >
-              <img src="/logo.svg" width={28} height={28} alt="" /> aidv.ai
+              <img src="/logo.svg" width={28} height={28} alt="" /> {displayBrand}
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
               {isChinese
@@ -89,7 +90,7 @@ export function LandingFooter() {
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-[var(--du-border)]">
           <p className="text-sm text-[var(--du-text-dim)]">
-            {t('copyright', { year: currentYear })}
+            {t('copyright', { year: currentYear, brand: displayBrand })}
           </p>
           <LocaleLink href="/" locale={isChinese ? "en" : "zh"} hrefLang={isChinese ? "en" : "zh"} className="inline-flex min-h-11 items-center text-sm text-[var(--du-text)] hover:underline">{isChinese ? "English" : "简体中文"}</LocaleLink>
         </div>

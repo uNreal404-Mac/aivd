@@ -39,10 +39,8 @@
 .console h1 { margin:0 0 32px; }
 .console h1 > span { display:block; font:650 clamp(64px,6.12vw,88px)/.91 var(--font-display),sans-serif; letter-spacing:-.06em; }
 .console h1:lang(zh) > span { letter-spacing:-.025em; word-break:keep-all; }
-.console h1 > small { display:block; margin-top:16px; color:var(--du-text-muted); font:550 16px/24px var(--font-display),sans-serif; letter-spacing:.055em; }
+.console h1 > small { display:block; margin-top:6px; color:var(--du-text-muted); font:450 16px/24px var(--font-display),sans-serif; letter-spacing:.055em; }
 .console h1:lang(zh) > small { letter-spacing:.02em; }
-.useShot { display:inline-flex; flex-wrap:wrap; align-items:center; min-height:44px; max-width:100%; gap:8px; color:var(--du-text); font-size:13px; }
-.useShot:hover { text-decoration:underline; text-underline-offset:4px; }
 
 .caption { grid-area:caption; min-width:0; }
 .transport { display:flex; align-items:center; min-width:0; min-height:56px; gap:16px; }
@@ -94,7 +92,7 @@
   .console { padding-top:16px; }
   .console h1 { margin-bottom:16px; }
   .console h1 > span { font-size:clamp(44px,6.8vw,64px); line-height:1.045; }
-  .console h1 > small { margin-top:6px; font-size:14px; line-height:20px; }
+  .console h1 > small { margin-top:2px; font-size:14px; line-height:20px; }
   .shots { margin-top:8px; }
   .shots button { grid-template-columns:minmax(40px,40%) minmax(0,1fr); }
 }
@@ -116,6 +114,5 @@
   .shots img { height:auto; aspect-ratio:2.12; }
   .shots small { font-size:13px; line-height:16px; }
   .shots strong { font-size:13px; line-height:18px; }
-  .useShot { font-size:13px; }
   .guideMenu { right:4px; bottom:4px; }
 }

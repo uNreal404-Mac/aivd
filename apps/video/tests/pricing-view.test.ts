@@ -80,6 +80,13 @@ describe("pricing cards", () => {
     const html = renderPricing("en", false);
     expect([...html.matchAll(/class="pr-output"><strong>([\d,]+)<\/strong>/g)].map((m) => m[1])).toEqual(["17", "60", "178"]);
     expect(html.split("billed at 16 credits per clip")).toHaveLength(2);
+    expect(html.indexOf("Prices in USD")).toBeLessThan(html.indexOf('class="pr-ledger"'));
+    expect(html).toContain("Estimates for 4-second 720p clips");
+    expect(html).toContain("video clips / month");
+    const zh = renderPricing("zh", false);
+    expect(zh).toContain("按 4 秒 720p 估算");
+    expect(zh).toContain("段视频 / 月");
+    expect(zh).toMatch(/<details class="pr-plan-details">[\s\S]*?共有权益[\s\S]*?所有订阅和积分包均包含/);
   });
 
   it("hides estimates without a supported duration and quality", () => {
@@ -89,6 +96,9 @@ describe("pricing cards", () => {
     expect(getPricingReferenceClip([{ ...model, enabled: false }])).toBeNull();
     expect(getPricingReferenceClip([{ ...model, durations: [8] }])).toBeNull();
     expect(getPricingReferenceClip([{ ...model, qualities: ["1080P"] }])).toBeNull();
-    expect(renderPricing("en", true, null)).not.toContain('class="pr-output"');
+    const html = renderPricing("en", true, null);
+    expect(html).not.toContain('class="pr-output"');
+    expect(html).toContain("Prices in USD");
+    expect(html).not.toContain("Estimates for");
   });
 });

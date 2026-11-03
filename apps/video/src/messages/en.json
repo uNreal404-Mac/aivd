@@ -226,7 +226,7 @@
     "product": "Product",
     "company": "Company",
     "legal": "Legal",
-    "copyright": "© {year} aivd.ai. All rights reserved.",
+    "copyright": "© {year} {brand}. All rights reserved.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "cookie": "Cookie Policy"

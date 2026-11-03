@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { UserAvatar } from "@/components/user-avatar";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
+import { displayBrand } from "@/lib/display-brand";
 import { creationLabel } from "@/lib/creation-label";
 import { localizedHref } from "@/lib/du-home";
 import s from "./conversion-nav.module.css";
@@ -61,8 +62,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   return (
     <header ref={header} className={`du-nav ${s.header}`}>
       <div className={s.inner}>
-        <Link className={s.brand} href={href("/")} aria-label={zh ? "aidv.ai 首页" : "aidv.ai home"}>
-          <img src="/logo.svg" alt="" width={30} height={30} /><span>aidv.ai</span>
+        <Link className={s.brand} href={href("/")} aria-label={zh ? `${displayBrand} 首页` : `${displayBrand} home`}>
+          <img src="/logo.svg" alt="" width={30} height={30} /><span>{displayBrand}</span>
         </Link>
         <nav aria-label={zh ? "主导航" : "Main navigation"} className={`du-nav-links ${s.links}`}>{navItems}</nav>
         <div className={s.actions}>

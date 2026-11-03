@@ -25,6 +25,7 @@ import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 
 const fontSans = localFont({
   src: "../styles/fonts/Inter-Latin.woff2",
+  preload: false,
   weight: "100 900",
   display: "swap",
   variable: "--font-sans",

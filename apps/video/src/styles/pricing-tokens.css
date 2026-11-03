@@ -49,7 +49,8 @@
 .pr-page .pr-btn--primary:disabled { opacity: .84; }
 .pr-page .pr-status { margin-top: 16px; max-width: 66ch; padding-left: 12px; border-left: 2px solid var(--du-surface-2); color: var(--du-text); font-size: 14px; line-height: 20px; }
 .pr-error { color: var(--du-danger); font-size: 13px; line-height: 16px; margin-top: 8px; }
-.pr-page .pr-common { margin: 0 0 16px; color: var(--du-text-muted); font-size: 14px; line-height: 20px; }
+.pr-page .pr-quote-unit { margin: 0 0 12px; color: var(--du-text-muted); font-size: 13px; line-height: 18px; font-weight: 500; }
+.pr-page .pr-common { margin: 0 0 8px; color: var(--du-text-muted); font-size: 14px; line-height: 20px; }
 .pr-page .pr-basis { margin-top: 12px; color: var(--du-text-muted); font-size: 13px; line-height: 20px; }
 .pr-status a { display: inline-block; color: var(--du-text); text-decoration: underline; text-underline-offset: 3px; }
 .pr-status a:hover { color: var(--du-accent); }

@@ -71,6 +71,8 @@ Space Grotesk 标题、Inter 正文，沿用 next/font 自托管。中文使用�
 | PromptBox | 单层 `--du-surface`，圆角 8px，1px `--du-border`，内距 16px，分组 8/16px。输入框不再叠一张卡 | focus-within 强调边框；可操作控件另有 2px 焦点线。模型、实际片长和积分放在一组，首屏不装饰性发光 |
 | Nav | 桌面 64px、手机 56px，高度含 1px `--du-border` 分隔线，圆角 0，导航链接间距 32px，登录与主动作之间 24px。移动菜单为单层 `--du-bg-elev` | hover 用现有强调色或文字下划线，当前用 aria-current 和可视标识；菜单展开/关闭可用键盘，折叠按钮触区至少 44px |
 
+手机上的模型索引使用整宽 72px 行，型号与片长各一行，共用画质写一次。模板的动作名在影像下方 8px，以 13px/16px 显示。
+
 营销主 CTA 用 “Create Video Free” / “免费创作视频”。Hero 的表单按钮是唯一例外，用 “Generate · N credits” / “生成 · N 积分”。N 来自实际模型与时长。正文四处入口共同指向创作，导航入口用次级样式。
 
 ## 素材和运动

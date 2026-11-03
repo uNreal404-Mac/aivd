@@ -29,8 +29,7 @@
     scroll-snap-align: start;
   }
 
-  #image-ideas [data-showcase-ideas],
-  #models [data-showcase-models] {
+  #image-ideas [data-showcase-ideas] {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
@@ -54,8 +53,8 @@
 
   #models [data-showcase-models] > a {
     min-width: 0;
-    min-height: 0;
-    padding: 16px 24px 16px 0;
+    min-height: 72px;
+    padding: 12px 24px 12px 0;
   }
 
   #models [data-showcase-models] h3 {
@@ -63,9 +62,7 @@
     line-height: 24px;
   }
 
-  #models [data-showcase-models] p {
-    margin-top: 8px;
-  }
+
 
   body:has(.du-mobile-create) {
     padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
