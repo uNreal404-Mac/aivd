@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { ModelCreditTable } from "@/components/pricing/model-credit-table";
+import { pricingCopy } from "@/components/pricing/pricing-data";
 import { PricingPage } from "@/components/pricing/pricing-page";
 import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
 import en from "@/messages/en.json";
@@ -47,8 +48,16 @@ describe("pricing cards", () => {
     expect(html).not.toContain("Never expire");
   });
 
-  it("keeps unavailable checkout actions disabled", () => {
-    const html = renderPricing("en", false);
-    expect(html.match(/<button[^>]*disabled[^>]*>Coming soon<\/button>/g)).toHaveLength(6);
+  it.each(["en", "zh"] as const)("explains disabled checkout once and names each product in %s", (locale) => {
+    const html = renderPricing(locale, false);
+    const disabledLabels = Array.from(html.matchAll(/<button\b[^>]*\bdisabled[^>]*>([^<]+)<\/button>/g), match => match[1]);
+    const products = locale === "zh"
+      ? ["选择 Basic 方案", "选择 Pro 方案", "选择 Ultimate 方案", "购买 280 积分", "购买 960 积分", "购买 2,850 积分"]
+      : ["Choose Basic", "Choose Pro", "Choose Ultimate", "Buy 280 credits", "Buy 960 credits", "Buy 2,850 credits"];
+    expect(disabledLabels).toHaveLength(6);
+    expect(new Set(disabledLabels)).toEqual(new Set(products));
+    const notice = pricingCopy(locale).checkoutClosed;
+    expect(html.split(notice)).toHaveLength(2);
+    expect(renderPricing(locale, true)).not.toContain(notice);
   });
 });
