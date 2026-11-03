@@ -123,7 +123,7 @@ export function ConversionShowcase({ lang }: { lang: string }) {
     </section>
     <section id="long-film" className={s.featureSection} aria-labelledby="showcase-film-title">
       <div className={s.featureHeading}><h2 id="showcase-film-title">{zh ? "同一机位，三次试镜" : "One setup, three takes"}</h2></div>
-      <FeatureFilm src={media + "daylight-takes.mp4"} label={zh ? "同一机位，三次试镜" : "One setup, three takes"} playLabel={zh ? "播放三段试镜" : "Play the three takes"} />
+      <FeatureFilm zh={zh} src={media + "daylight-takes.mp4"} label={zh ? "同一机位，三次试镜" : "One setup, three takes"} playLabel={zh ? "播放三段试镜" : "Play the three takes"} />
       <div className={s.filmFooter}>
         <p>{zh ? "12 秒，同一个双人机位。前两条改变眼部光效，最后一条让小狗入画。" : "12 seconds from one camera position. Two takes change the light around the eyes. In the third, a dog enters the frame."}</p>
         <CreationCTA lang={lang} placement="long-film" />

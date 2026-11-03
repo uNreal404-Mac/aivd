@@ -130,13 +130,14 @@ export function TemplateWall({ items, zh }: { items: TemplateMedia[]; zh: boolea
 
 const ScrollFilmCues = lazy(() => import("./scroll-film-cues").then(module => ({ default: module.ScrollFilmCues })));
 const screenTestCuts = [
-  { poster: "/conversion/showcase/daylight-take-1.webp", at: 0 },
-  { poster: "/conversion/showcase/daylight-take-2.webp", at: 4 },
-  { poster: "/conversion/showcase/daylight-take-3.webp", at: 8 },
+  { poster: "/conversion/showcase/daylight-take-1.webp", at: 0, en: "Eye markings", zh: "眼部纹理" },
+  { poster: "/conversion/showcase/daylight-take-2.webp", at: 4, en: "Gold rim light", zh: "金色环光" },
+  { poster: "/conversion/showcase/daylight-take-3.webp", at: 8, en: "Dog enters", zh: "小狗入画" },
 ];
 
-export function FeatureFilm({ src, label, playLabel }: { src: string; label: string; playLabel: string }) {
+export function FeatureFilm({ src, label, playLabel, zh }: { src: string; label: string; playLabel: string; zh: boolean }) {
   const stage = useRef<HTMLDivElement>(null);
+  const player = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
   const [cut, setCut] = useState(0);
   const [followScroll, setFollowScroll] = useState(false);
@@ -158,11 +159,17 @@ export function FeatureFilm({ src, label, playLabel }: { src: string; label: str
     return () => { media.removeEventListener("change", sync); observer.disconnect(); };
   }, []);
   const cue = screenTestCuts[cut];
-  return <div ref={stage} className={s.filmStage}>
+  function selectTake(index: number) {
+    setCut(index);
+    if (player.current && player.current.readyState >= 1) player.current.currentTime = screenTestCuts[index].at;
+  }
+  return <>
+    <div data-screen-test="" ref={stage} className={s.filmStage}>
     {followScroll && !started && <Suspense fallback={null}><ScrollFilmCues film={stage} onCut={setCut} /></Suspense>}
     {started ? (
-      <video className={s.film} ref={player => { player?.focus({ preventScroll: true }); }} src={src} poster={cue.poster}
-        onLoadedMetadata={e => { e.currentTarget.currentTime = cue.at; }} controls autoPlay muted playsInline preload="metadata" aria-label={label} />
+      <video className={s.film} ref={player} src={src} poster={cue.poster}
+        onLoadedMetadata={e => { e.currentTarget.currentTime = cue.at; e.currentTarget.focus({ preventScroll: true }); }}
+        onTimeUpdate={e => { const time = e.currentTarget.currentTime; setCut(screenTestCuts.filter(take => time >= take.at).length - 1); }} controls autoPlay muted playsInline preload="metadata" aria-label={label} />
     ) : (
       <button className={s.film} type="button" onClick={() => setStarted(true)} aria-label={playLabel}>
         <img src={cue.poster} width={1600} height={736} loading="lazy" decoding="async" alt={label} />
@@ -170,7 +177,16 @@ export function FeatureFilm({ src, label, playLabel }: { src: string; label: str
         <span className={s.cutIndex} aria-hidden="true">{String(cut + 1).padStart(2, "0")} / 03</span>
       </button>
     )}
-  </div>;
+    </div>
+    <fieldset className={s.takeSelector} aria-label={zh ? "选择对照镜头" : "Compare takes"}>
+      {screenTestCuts.map((take, index) => (
+        <button type="button" key={take.at} aria-pressed={index === cut} onClick={() => selectTake(index)}>
+          <img src={take.poster} alt="" width={112} height={63} loading="lazy" decoding="async" />
+          <span>{zh ? take.zh : take.en}</span>
+        </button>
+      ))}
+    </fieldset>
+  </>;
 }
 
 export function EndFrame({ zh }: { zh: boolean }) {

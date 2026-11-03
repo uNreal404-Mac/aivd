@@ -91,6 +91,8 @@ export function PricingPage({
   }
 
   const zh = locale === "zh";
+  const currency = (plans[0] ?? packs[0])?.price.currency.toUpperCase();
+  const currencyLabel = currency && (zh ? `${new Intl.DisplayNames("zh", { type: "currency" }).of(currency)}计价` : `Prices in ${currency}`);
   const sharedFeatures = (plans[0]?.features ?? []).filter((key) => plans.every((plan) => plan.features?.includes(key)));
   const packsShareFeatures = packs.length > 0 && packs.every((pack) => sharedFeatures.every((key) => pack.features?.includes(key)));
 
@@ -98,17 +100,13 @@ export function PricingPage({
     <div className="pr-page" lang={locale}>
       <div className="pr-shell">
         <header className="pr-hero">
+          <h1 className="pr-hero__title">{copy.heroTitle}</h1>
           <div className="pr-hero__copy">
-            <h1 className="pr-hero__title">{copy.heroTitle}</h1>
             <p className="pr-hero__sub">{zh ? "按期订阅，或为单个项目补充积分。" : "Subscribe for ongoing work, or top up for a single project."}</p>
             {!paymentsEnabled && <p className="pr-status" role="note">
               {copy.checkoutClosed}{" "}<a href="#credit-costs">{zh ? "查看积分用量" : "View credit costs"} <span aria-hidden="true">↓</span></a>
             </p>}
           </div>
-          <figure className="pr-still">
-            <img src="/conversion/showcase/optics.webp" width={720} height={360} alt="" loading="lazy" decoding="async" fetchPriority="low" />
-            <figcaption>{zh ? "光学引擎" : "Optical Engine"}</figcaption>
-          </figure>
         </header>
 
         <section className="pr-subscriptions" aria-labelledby="pr-subscriptions">
@@ -129,12 +127,11 @@ export function PricingPage({
             </fieldset>
           </div>
 
-          <p className="pr-quote-unit">
-            {zh ? "美元计价" : "Prices in USD"}
-            {referenceClip && (zh
-              ? ` · 按 ${referenceClip.duration} 秒 ${referenceClip.quality} 估算`
-              : ` · Estimates for ${referenceClip.duration}-second ${referenceClip.quality} clips`)}
-          </p>
+          {currencyLabel && <p className="pr-quote-unit">
+            {currencyLabel}{referenceClip && (zh
+              ? ` · ${referenceClip.model}，${referenceClip.duration} 秒 / ${referenceClip.quality}，每段 ${referenceClip.credits} 积分。片段数向下取整。`
+              : ` · ${referenceClip.model}, ${referenceClip.duration}s / ${referenceClip.quality}, ${referenceClip.credits} credits per clip. Counts rounded down.`)}
+          </p>}
           <div className="pr-ledger" data-estimate={!!referenceClip} data-checkout={paymentsEnabled}>
             <div className="pr-ledger__labels" aria-hidden="true">
               <span>{zh ? "方案" : "Plan"}</span><span>{zh ? "月均价" : "Monthly rate"}</span>
@@ -179,11 +176,6 @@ export function PricingPage({
               );
             })}
           </div>
-          {referenceClip && <p className="pr-basis">
-            {zh
-              ? `${referenceClip.model} 每段 ${referenceClip.credits} 积分，片段数按完整视频计算。`
-              : `${referenceClip.model} is billed at ${referenceClip.credits} credits per clip. Counts include whole clips only.`}
-          </p>}
           <details className="pr-plan-details">
             <summary>{zh ? "比较单位价格与共有权益" : "Compare unit prices and shared benefits"}</summary>
             {sharedFeatures.length > 0 && <p className="pr-common">

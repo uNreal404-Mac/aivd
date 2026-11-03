@@ -1,20 +1,16 @@
 .pr-page { background: var(--du-bg); color: var(--du-text); padding-block: 48px var(--layout-section); }
 .pr-shell { max-width: var(--layout-content); padding-inline: var(--layout-gutter); margin-inline: auto; }
-.pr-page :is(h1,h2,h3,p,ul,figure,dl,dd) { margin: 0; }
+.pr-page :is(h1,h2,h3,p,ul,dl,dd) { margin: 0; }
 .pr-page ul { list-style: none; padding: 0; }
 .pr-page :is(h1,h2,h3,.pr-price,.pr-allowance strong,.pr-output strong,.pr-pack-price) { font-family: var(--font-display), sans-serif; }
 .pr-page h1 { font-size: clamp(64px,6.2vw,88px); line-height: .91; font-weight: 650; letter-spacing: -.06em; }
 .pr-page h2 { font-size: clamp(40px,4vw,56px); line-height: 1.0714; font-weight: 600; letter-spacing: -.045em; }
 .pr-page h3 { font-size: 24px; line-height: 28px; font-weight: 600; letter-spacing: -.025em; }
 .pr-page:lang(zh) :is(h1,h2,h3) { letter-spacing: -.025em; }
-.pr-page :is(.pr-meta,.pr-ledger__labels,.pr-still figcaption,.pr-recommended,.pr-toggle__badge,.pr-status,.pr-pack-info) { font-size: 13px; line-height: 16px; font-weight: 500; }
-.pr-ledger__labels,.pr-still figcaption { letter-spacing: .1em; text-transform: uppercase; color: var(--du-text-muted); }
-.pr-hero { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,35%); align-items: center; gap: 32px; padding-bottom: 40px; border-bottom: 1px solid var(--du-surface-2); }
-.pr-hero__copy h1 { margin: 0 0 16px; }
+.pr-page :is(.pr-meta,.pr-ledger__labels,.pr-recommended,.pr-toggle__badge,.pr-status,.pr-pack-info) { font-size: 13px; line-height: 16px; font-weight: 500; }
+.pr-ledger__labels { letter-spacing: .1em; text-transform: uppercase; color: var(--du-text-muted); }
+.pr-hero { position: relative; display: grid; grid-template-columns: 1.12fr 1fr; align-items: center; gap: 32px; padding-bottom: 40px; border-bottom: 1px solid var(--du-surface-2); }
 .pr-hero__sub,.pr-sidecopy,.pr-faq p { max-width: 56ch; color: var(--du-text-muted); font-size: 16px; line-height: 24px; }
-.pr-still { position: relative; justify-self: end; width: 100%; max-width: 432px; }
-.pr-still img { display: block; width: 100%; height: 152px; object-fit: cover; object-position: right 55%; border-radius: 8px; }
-.pr-still figcaption { margin-top: 8px; text-align: right; }
 .pr-subscriptions { padding-top: 40px; }
 .pr-page :is(.pr-packs-section,.pr-costs,.pr-faq-section) { margin-top: var(--layout-section); }
 .pr-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
@@ -51,7 +47,6 @@
 .pr-error { color: var(--du-danger); font-size: 13px; line-height: 16px; margin-top: 8px; }
 .pr-page .pr-quote-unit { margin: 0 0 12px; color: var(--du-text-muted); font-size: 13px; line-height: 18px; font-weight: 500; }
 .pr-page .pr-common { margin: 0 0 8px; color: var(--du-text-muted); font-size: 14px; line-height: 20px; }
-.pr-page .pr-basis { margin-top: 12px; color: var(--du-text-muted); font-size: 13px; line-height: 20px; }
 .pr-status a { display: inline-block; color: var(--du-text); text-decoration: underline; text-underline-offset: 3px; }
 .pr-status a:hover { color: var(--du-accent); }
 .pr-costs { scroll-margin-block-start: 24px; }
@@ -89,9 +84,7 @@
 @media (max-width: 767px) {
   .pr-page { padding-top: 32px; }
   .pr-hero { display: block; padding-bottom: 24px; }
-  .pr-hero__copy { position: relative; z-index: 1; }
-  .pr-hero__copy h1 { font-size: 44px; line-height: 46px; margin: 0 0 12px; }
-  .pr-still { display: none; }
+  .pr-hero h1 { font-size: 44px; line-height: 46px; margin: 0 0 12px; }
   .pr-page h2,.pr-costs h2 { font-size: 32px; line-height: 36px; }
   .pr-page h3 { font-size: 20px; line-height: 24px; }
   .pr-subscriptions { padding-top: 24px; }

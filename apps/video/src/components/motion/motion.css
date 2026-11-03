@@ -30,7 +30,7 @@
   #template-wall.motion-wall .motion-lane, #template-wall.motion-wall .motion-run { display:contents; }
   #template-wall.motion-wall .motion-run[data-copy="1"] { display:none; }
   .motion-tile[data-order="0"]{order:0}.motion-tile[data-order="1"]{order:1}.motion-tile[data-order="2"]{order:2}.motion-tile[data-order="3"]{order:3}.motion-tile[data-order="4"]{order:4}.motion-tile[data-order="5"]{order:5}
-  #template-wall.motion-wall .motion-tile a { aspect-ratio:1.8; }
+  #template-wall.motion-wall .motion-tile a { aspect-ratio:auto; height:auto; }
   #template-wall.motion-wall .motion-tile { scroll-snap-align:start; }
   .motion-touch-preview { display:grid; place-items:center; position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; color:var(--du-text); border:1px solid var(--du-border); background:var(--du-glass-bg); }
   button.motion-marquee-toggle { display:none; }

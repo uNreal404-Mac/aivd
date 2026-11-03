@@ -79,12 +79,12 @@ describe("pricing cards", () => {
     expect(plansForPeriod(products, "year").map((p) => completeClipCount(p, ref.credits))).toEqual([210, 720, 2137]);
     const html = renderPricing("en", false);
     expect([...html.matchAll(/class="pr-output"><strong>([\d,]+)<\/strong>/g)].map((m) => m[1])).toEqual(["17", "60", "178"]);
-    expect(html.split("billed at 16 credits per clip")).toHaveLength(2);
+    expect(html.split("16 credits per clip")).toHaveLength(2);
     expect(html.indexOf("Prices in USD")).toBeLessThan(html.indexOf('class="pr-ledger"'));
-    expect(html).toContain("Estimates for 4-second 720p clips");
+    expect(html).toContain("Seedance 1.5 Pro, 4s / 720p, 16 credits per clip. Counts rounded down.");
     expect(html).toContain("video clips / month");
     const zh = renderPricing("zh", false);
-    expect(zh).toContain("按 4 秒 720p 估算");
+    expect(zh).toContain("Seedance 1.5 Pro，4 秒 / 720p，每段 16 积分。片段数向下取整。");
     expect(zh).toContain("段视频 / 月");
     expect(zh).toMatch(/<details class="pr-plan-details">[\s\S]*?共有权益[\s\S]*?所有订阅和积分包均包含/);
   });
@@ -99,6 +99,7 @@ describe("pricing cards", () => {
     const html = renderPricing("en", true, null);
     expect(html).not.toContain('class="pr-output"');
     expect(html).toContain("Prices in USD");
-    expect(html).not.toContain("Estimates for");
+    expect(html).not.toContain("Counts rounded down");
+    expect(html).not.toContain("credits per clip.");
   });
 });

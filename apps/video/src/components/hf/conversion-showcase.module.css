@@ -87,6 +87,12 @@
 
 .featureSection { width: 100%; }
 .filmStage { position: relative; }
+.takeSelector { display: flex; gap: 8px; margin: 16px auto 0; max-width: var(--layout-content); padding-inline: var(--layout-gutter); }
+.takeSelector button { width: 112px; min-width: 0; padding-bottom: 4px; text-align: start; color: var(--du-text-muted); border-bottom: 2px solid transparent; }
+.takeSelector button[aria-pressed="true"] { color: var(--du-text); border-bottom-color: var(--du-accent); }
+.takeSelector button:hover { color: var(--du-text); }
+.takeSelector img { display: block; width: 100%; aspect-ratio: 16/9; height: auto; object-fit: cover; border-radius: 4px; }
+.takeSelector span { display: block; margin-top: 8px; font-size: 13px; line-height: 16px; }
 .cutIndex { position: absolute; right: var(--layout-gutter); bottom: 24px; color: var(--du-text); background: var(--du-glass-overlay-scrim); padding: 4px 8px; font: 500 13px/16px ui-monospace, monospace; }
 .film { display: block; position: relative; width: 100%; aspect-ratio: 2.39; border: 0; border-radius: 0; padding: 0; background: var(--du-bg-elev); color: var(--du-text); object-fit: cover; }
 button.film { cursor: pointer; }
@@ -128,6 +134,7 @@ button.film { cursor: pointer; }
   .tileName { bottom: 8px; left: 8px; }
   .sectionCta { margin-top: 24px; }
   .film { aspect-ratio: 1.65; }
+  .takeSelector button { width: min(104px, 30vw); }
   .filmPlay { bottom: 8px; left: 8px; }
   .filmFooter { align-items: start; flex-direction: column; gap: 16px; padding-top: 16px; }
   .gallery { grid-template-columns: 1.2fr 1fr; gap: 16px 8px; align-items: start; }

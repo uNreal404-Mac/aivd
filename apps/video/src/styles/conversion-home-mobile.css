@@ -25,7 +25,8 @@
 
   #template-wall a {
     width: 100%;
-    aspect-ratio: 1.8;
+    aspect-ratio: auto;
+    height: auto;
     scroll-snap-align: start;
   }
 
