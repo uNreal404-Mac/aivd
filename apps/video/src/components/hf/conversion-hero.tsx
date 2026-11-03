@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionTitle } from "@/components/motion/accents";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Crosshair, Expand, Film, Pause, Play, X } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
@@ -143,7 +144,7 @@ export function ConversionHero({ lang }: { lang: string }) {
           onTimeUpdate={(e) => setElapsed(e.currentTarget.currentTime)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
           onError={() => { setFailed(true); setPlaying(false); }} />}
       </div>
-      <div className={s.shade} />
+      <div className={s.shade} /><div className="motion-spotlight" aria-hidden="true" />
       {overlay === "thirds" && <div className={s.guides} aria-hidden="true"><i/><i/><b/><b/></div>}
       {(overlay === "vertical" || overlay === "scope") && <div className={s.safeArea} data-format={overlay} aria-hidden="true" />}
       <div className={s.stageTop}>
@@ -158,7 +159,7 @@ export function ConversionHero({ lang }: { lang: string }) {
       </fieldset>}
       <div className={s.content}>
         <p className={s.filmTitle}><span>{String(index + 1).padStart(2, "0")} / 05</span><strong>{film.title[l]}</strong><small>{film.kind[l]}</small></p>
-        <h1 id="creator-headline"><span>{zh ? "AI 视频生成器。" : "AI VIDEO GENERATOR."}</span>{" "}<small>{zh ? "电影级创作效果。" : "STUDIO-GRADE RESULTS."}</small></h1>
+        <MotionTitle><span>{zh ? "AI 视频生成器。" : "AI VIDEO GENERATOR."}</span>{" "}<small>{zh ? "电影级创作效果。" : "STUDIO-GRADE RESULTS."}</small></MotionTitle>
         <PromptBox lang={lang} draft={draft} />
       </div>
     </div>
@@ -175,7 +176,9 @@ export function ConversionHero({ lang }: { lang: string }) {
         <button type="button" className={s.play} disabled={failed} aria-label={playing ? (zh ? "暂停短片" : "Pause film") : (zh ? "播放短片" : "Play film")} onClick={toggle}>{playing ? <Pause size={16}/> : <Play size={16}/>}</button>
       </div>
       <div className={s.scrubber} style={{ "--playhead": (Math.max(0, Math.min(1, elapsed / duration)) * 100) + "%" } as CSSProperties}>
-        <div className={s.strip} style={{ backgroundImage: "url(" + film.strip + ")" }}/>
+        <div key={film.strip} className={s.strip + " motion-frames"} aria-hidden="true">
+          {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ "--frame-i": i, backgroundImage: "url(" + film.strip + ")", backgroundPosition: (i * 100 / 7) + "% center" } as CSSProperties} />)}
+        </div>
         <div className={s.playhead}/>
         <label className="sr-only" htmlFor="cut-seek">{zh ? "拖动查看短片画格" : "Scrub through film frames"}</label>
         <input id="cut-seek" type="range" min={0} max={duration} step={.04} value={Math.min(elapsed, duration)} onChange={(e) => seek(Number(e.target.value))} disabled={failed} aria-valuetext={elapsed.toFixed(2) + " / " + duration.toFixed(2) + (zh ? " 秒" : " seconds")}/>

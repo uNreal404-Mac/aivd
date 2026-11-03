@@ -1,3 +1,5 @@
+import { SiteMotion } from "@/components/motion/provider";
+import "@/components/motion/motion.css";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -167,7 +169,7 @@ export default async function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <NextIntlClientProvider messages={messages}>
+          <SiteMotion><NextIntlClientProvider messages={messages}>
             <QueryProvider>
               <PlausibleAnalytics />
               <AttributionCapture />
@@ -175,7 +177,7 @@ export default async function RootLayout({
               <Toaster richColors position="top-right" />
               <TailwindIndicator />
             </QueryProvider>
-          </NextIntlClientProvider>
+          </NextIntlClientProvider></SiteMotion>
         </ThemeProvider>
       </body>
     </html>

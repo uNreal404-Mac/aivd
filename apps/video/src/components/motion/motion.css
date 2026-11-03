@@ -1,0 +1,71 @@
+.motion-title { will-change: auto; }
+.motion-spotlight {
+  position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.6;
+  background:linear-gradient(120deg,transparent 55%,var(--du-accent-soft) 66%,transparent 75%);
+  animation:optical-spotlight 9s ease-in-out infinite alternate;
+}
+@keyframes optical-spotlight { from{transform:translateX(-2%);opacity:.2} to{transform:translateX(2%);opacity:.5} }
+.du-prompt-box:focus-within { box-shadow:0 0 0 1px var(--du-accent),0 0 20px var(--du-accent-soft); }
+.motion-frames { display:flex; }
+.motion-frames > i { flex:1; background-size:800% 100%; animation:frame-reveal .38s ease-out both; animation-delay:calc(var(--frame-i) * 25ms); }
+@keyframes frame-reveal { from {opacity:.68;transform:translateY(2px)} to {opacity:1;transform:none} }
+.motion-card { isolation:isolate; position:relative; overflow:hidden; }
+.motion-card::before {
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(175px circle at var(--spot-x,50%) var(--spot-y,50%),var(--du-accent-soft),transparent 80%);
+  opacity:0; transition:opacity .25s ease;
+}
+@media (hover:hover) and (pointer:fine) { .motion-card:hover::before { opacity:1; } }
+.motion-card:focus-visible { box-shadow:inset 0 0 0 1px var(--du-accent); }
+.motion-badge { position:relative; overflow:hidden; }
+.motion-badge::before { content:"";position:absolute;inset:-40% auto -40% -48%;width:30%;transform:skewX(-20deg);background:var(--du-accent-soft);animation:badge-shine 6s ease-in-out infinite; }
+@keyframes badge-shine { 0%,70% {left:-48%} 100% {left:138%} }
+.pr-card--popular.motion-recommended { box-shadow:0 0 18px var(--du-accent-soft); position:relative; }
+.pr-card--popular.motion-recommended:focus-within,.pr-card--popular.motion-recommended:hover { box-shadow:0 0 0 1px var(--du-accent),0 0 24px var(--du-accent-soft); }
+.pr-toggle.motion-billing { position:relative; isolation:isolate; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.motion-billing-indicator { position:absolute; z-index:-1; inset:4px auto 4px 4px; width:calc((100% - 8px)/2); border-radius:inherit; background:var(--du-accent); }
+.motion-billing .pr-toggle__btn--active,.motion-billing .pr-toggle__btn--active:hover { background:transparent; }
+.motion-endcap { position:relative; isolation:isolate; padding-block:48px; overflow:hidden; background:var(--du-bg-elev); }
+.motion-beams { position:absolute; inset:0; z-index:-1; width:100%; height:100%; pointer-events:none; }
+.motion-beams path { stroke:var(--du-accent); stroke-width:1.2; stroke-dasharray:150 940; opacity:.22; animation:beam-drift 10s linear infinite; }
+.motion-beams path:nth-child(2) { animation-delay:-4s; }
+.motion-beams path:nth-child(3) { animation-delay:-7s; }
+@keyframes beam-drift { to {stroke-dashoffset:-1090} }
+/* React Bits StarBorder adapts its two moving highlights to the existing button. */
+.motion-endcap .du-primary { position:relative; overflow:hidden; isolation:isolate; }
+.motion-endcap .du-primary::before,.motion-endcap .du-primary::after {
+  content:""; pointer-events:none; position:absolute; width:62%; height:2px;
+  background:radial-gradient(ellipse,var(--du-bg),transparent 72%); opacity:.8;
+  animation:star-trace 3.4s ease-in-out infinite alternate;
+}
+.motion-endcap .du-primary::before { top:0; left:0; }
+.motion-endcap .du-primary::after { bottom:0; right:0; animation-direction:alternate-reverse; }
+@keyframes star-trace { from{transform:translateX(-80%)} to{transform:translateX(110%)} }
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important; scroll-behavior:auto!important; }
+  .motion-title,.motion-card,.motion-frames > i { opacity:1!important; transform:none!important; filter:none!important; }
+  .motion-spotlight,.motion-card::before,.motion-badge::before,.motion-beams,.motion-endcap .du-primary::before,.motion-endcap .du-primary::after { display:none; }
+}
+
+#template-wall.motion-wall { display:block; overflow:hidden; }
+.motion-lane { display:flex; width:100%; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; }
+.motion-lane + .motion-lane { margin-top:12px; }
+.motion-run { display:flex; flex:none; width:122%; gap:16px; padding-right:16px; box-sizing:border-box; }
+.motion-tile { min-width:0; position:relative; isolation:isolate; flex:1; }
+.motion-tile a { height:100%; aspect-ratio:2.35; }
+.motion-lane:nth-child(2) .motion-tile a { aspect-ratio:2.75; }
+.motion-touch-preview { display:none; }
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+  .motion-wall:has(.motion-tile:hover) .motion-tile:not(:hover):not(:focus-within) a { filter:brightness(.85); }
+}
+@media(max-width:767px) {
+  #template-wall[data-showcase-wall].motion-wall { display:grid; grid-auto-flow:column; grid-auto-columns:min(78%,21rem); overflow-x:auto; }
+  #template-wall.motion-wall .motion-lane, #template-wall.motion-wall .motion-run { display:contents; }
+  #template-wall.motion-wall .motion-run[data-copy="1"] { display:none; }
+  .motion-tile[data-order="0"]{order:0}.motion-tile[data-order="1"]{order:1}.motion-tile[data-order="2"]{order:2}.motion-tile[data-order="3"]{order:3}.motion-tile[data-order="4"]{order:4}.motion-tile[data-order="5"]{order:5}
+  #template-wall.motion-wall .motion-tile a { aspect-ratio:1.8; }
+  #template-wall.motion-wall .motion-tile { scroll-snap-align:start; }
+  .motion-touch-preview { display:grid; place-items:center; position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; color:var(--du-text); border:1px solid var(--du-border); background:var(--du-glass-bg); }
+  button.motion-marquee-toggle { display:none; }
+}
+@media(prefers-reduced-motion:reduce) { button.motion-marquee-toggle { display:none; } }

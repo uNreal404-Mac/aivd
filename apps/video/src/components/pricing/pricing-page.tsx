@@ -1,4 +1,5 @@
 "use client";
+import { BillingMotion } from "@/components/motion/accents";
 
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -97,7 +98,8 @@ export function PricingPage({
 
         {/* ---------- billing toggle ---------- */}
         <div className="pr-toggle-wrap">
-          <fieldset className="pr-toggle" aria-label={copy.billingPeriodLabel}>
+          <fieldset className="pr-toggle motion-billing" aria-label={copy.billingPeriodLabel}>
+            <BillingMotion yearly={period === "year"} />
             <button
               type="button"
               className={`pr-toggle__btn${
@@ -136,7 +138,7 @@ export function PricingPage({
             return (
               <article
                 key={plan.id}
-                className={`pr-card${isPopular ? " pr-card--popular" : ""}`}
+                className={`pr-card${isPopular ? " pr-card--popular motion-recommended" : ""}`}
               >
                 {isPopular ? (
                   <span className="pr-card__ribbon">{copy.mostPopular}</span>
