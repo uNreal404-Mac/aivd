@@ -12,3 +12,5 @@ Before implementing a major new section, write the visual direction, content seq
 4. 评审 A 由 Claude 或 Gemini 在干净会话中完成。它只拿对应截图、DESIGN.md 和 2–4 张参考图，无仓库、实现历史、B 结果及往轮分数。保存原文、模型、分数。B 单独归档 AI 味脚本、Impeccable /audit、Vercel Web Interface Guidelines、移动 Lighthouse 及 build/lint/typecheck。B 不读 A 的反馈。开始前固定判分口径；默认 A ≥8/10 且 B 必检项全部通过。缺项为未评，不以自评分或其他 Codex 会话代替 A。
 5. 有硬约束冲突则停止相应改动，在 critique-log 写提案。不得改 --du-* 的值或增加颜色；依赖只允许新增 motion；不得动认证、支付、积分扣费、API 路由、env、密钥、title/meta/H1/hreflang 或路由。允许仅读取现有模型能力与价格用于展示。不得提交付款或扣费来验证展示层。
 6. 未过门槛不在 GitHub 创建 PR（包括 Draft）。每轮最大三处差距写入 critique-log，同一 section 最多三轮。第三轮仍未过线则保留原分、写提案。过线的 PR 附三段 thesis、前后截图、A 原文、B 输出、删减清单、Lighthouse 对照和预览链接。验收后将新学到的规则写回 DESIGN.md 或本文件；不自行合并。
+
+在 375×812 的实际首屏检查默认模型和最长可选模型的原生下拉宽度。桌面的默认下拉宽度可能由最长选项撑开，使手机端短选项也挤掉分辨率。参数标签与打开控件的触区至少 44px；展开的视频关联当前镜头的文字描述。
