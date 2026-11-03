@@ -65,6 +65,10 @@
 
 
 
+  html:has(.du-mobile-create) {
+    scroll-padding-block-end: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
   body:has(.du-mobile-create) {
     padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
   }
