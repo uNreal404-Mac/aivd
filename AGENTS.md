@@ -14,3 +14,4 @@ Before implementing a major new section, write the visual direction, content seq
 6. 未过门槛不在 GitHub 创建 PR（包括 Draft）。每轮最大三处差距写入 critique-log，同一 section 最多三轮。第三轮仍未过线则保留原分、写提案。过线的 PR 附三段 thesis、前后截图、A 原文、B 输出、删减清单、Lighthouse 对照和预览链接。验收后将新学到的规则写回 DESIGN.md 或本文件；不自行合并。
 
 在 375×812 的实际首屏检查默认模型和最长可选模型的原生下拉宽度。桌面的默认下拉宽度可能由最长选项撑开，使手机端短选项也挤掉分辨率。参数标签与打开控件的触区至少 44px；展开的视频关联当前镜头的文字描述。
+在延迟客户端脚本的浏览器中尝试提前提交。含私人草稿的表单要在处理器就绪后启用，并验证提示词不会落进 URL。
