@@ -11,6 +11,7 @@ import {
   monthlyEquivalentCents,
   plansForPeriod,
   pricingCopy,
+  yearlySavingsPercent,
   type BillingPeriod,
 } from "@/components/pricing/pricing-data";
 import { startStripeCheckout } from "@/lib/stripe-checkout-client";
@@ -20,6 +21,7 @@ export interface PricingPageProps {
   subscriptions: CreditPackageConfig[];
   packs: CreditPackageConfig[];
   locale: string;
+  modelCosts: React.ReactNode;
 }
 
 /** Formats a cent amount as a USD string, e.g. 2900 -> "$29". */
@@ -45,10 +47,12 @@ export function PricingPage({
   subscriptions,
   packs,
   locale,
+  modelCosts,
 }: PricingPageProps) {
   const copy = pricingCopy(locale);
   const featureLabel = useTranslations("Credits.features");
   const faq = faqItemsFor(locale);
+  const annualSaving = yearlySavingsPercent(subscriptions);
   const [period, setPeriod] = useState<BillingPeriod>("month");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
@@ -113,7 +117,9 @@ export function PricingPage({
               onClick={() => setPeriod("year")}
             >
               {copy.yearly}
-              <span className="pr-toggle__badge">{copy.saveBadge}</span>
+              {annualSaving !== undefined && (
+                <span className="pr-toggle__badge">{fill(copy.saveBadge, { percent: String(annualSaving) })}</span>
+              )}
             </button>
           </fieldset>
         </div>
@@ -189,63 +195,9 @@ export function PricingPage({
           })}
         </div>
 
-        {/* ---------- credit packs ---------- */}
-        <section className="pr-section">
-          <h2 className="pr-section__title">{copy.creditPacksTitle}</h2>
-          <p className="pr-section__sub">{copy.creditPacksSubtitle}</p>
-          <div className="pr-packs">
-            {packs.map((pack) => {
-              const features = pack.features ?? [];
-              const showError = errorId === pack.id;
-
-              return (
-                <article key={pack.id} className="pr-pack">
-                  <span className="pr-pack__credits">
-                    {fill(copy.packCredits, {
-                      credits: formatCredits(pack.credits),
-                    })}
-                  </span>
-                  <span className="pr-pack__meta">
-                    {fill(copy.packMeta, {
-                      price: formatUsd(pack.price.amount),
-                      per100: formatUsd(costPer100Credits(pack)),
-                    })}
-                  </span>
-
-                  {features.length > 0 ? (
-                    <ul className="pr-features">
-                      {features.map((feature) => (
-                        <li key={feature}>{featureLabel(feature)}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  <div className="pr-pack__spacer" />
-
-                  <button
-                    type="button"
-                    className="pr-btn du-secondary pr-btn--secondary pr-btn--sm"
-                    disabled={!paymentsEnabled || pendingId !== null}
-                    onClick={() => handleCheckout(pack.id)}
-                  >
-                    {buttonLabel(
-                      pack.id,
-                      fill(copy.buyCredits, { credits: formatCredits(pack.credits) })
-                    )}
-                  </button>
-
-                  {showError && errorMessage ? (
-                    <p className="pr-error">{errorMessage}</p>
-                  ) : null}
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
         {/* ---------- comparison table ---------- */}
-        <section className="pr-section">
-          <h2 className="pr-section__title">{copy.compareTitle}</h2>
+        <details className="pr-plan-details">
+          <summary>{copy.compareTitle}</summary>
           <p className="pr-section__sub">{copy.compareSubtitle}</p>
           <div className="pr-table-wrap">
             <table className="pr-table">
@@ -303,7 +255,66 @@ export function PricingPage({
               </tbody>
             </table>
           </div>
+        </details>
+
+        {/* ---------- credit packs ---------- */}
+        <section className="pr-section">
+          <h2 className="pr-section__title">{copy.creditPacksTitle}</h2>
+          <p className="pr-section__sub">{copy.creditPacksSubtitle}</p>
+          <div className="pr-packs">
+            {packs.map((pack) => {
+              const features = pack.features ?? [];
+              const showError = errorId === pack.id;
+
+              return (
+                <article key={pack.id} className="pr-pack">
+                  <span className="pr-pack__credits">
+                    {fill(copy.packCredits, {
+                      credits: formatCredits(pack.credits),
+                    })}
+                  </span>
+                  <span className="pr-pack__meta">
+                    {fill(copy.packMeta, {
+                      price: formatUsd(pack.price.amount),
+                      per100: formatUsd(costPer100Credits(pack)),
+                    })}
+                  </span>
+
+                  {typeof pack.expireDays === "number" && (
+                    <span className="pr-pack__meta">{fill(copy.packValidity, { days: String(pack.expireDays) })}</span>
+                  )}
+                  {features.length > 0 ? (
+                    <ul className="pr-features">
+                      {features.map((feature) => (
+                        <li key={feature}>{featureLabel(feature)}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  <div className="pr-pack__spacer" />
+
+                  <button
+                    type="button"
+                    className="pr-btn du-secondary pr-btn--secondary pr-btn--sm"
+                    disabled={!paymentsEnabled || pendingId !== null}
+                    onClick={() => handleCheckout(pack.id)}
+                  >
+                    {buttonLabel(
+                      pack.id,
+                      fill(copy.buyCredits, { credits: formatCredits(pack.credits) })
+                    )}
+                  </button>
+
+                  {showError && errorMessage ? (
+                    <p className="pr-error">{errorMessage}</p>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
         </section>
+
+        {modelCosts}
 
         {/* ---------- FAQ ---------- */}
         <section className="pr-section">

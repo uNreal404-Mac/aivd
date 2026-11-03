@@ -1,4 +1,5 @@
 import "@/styles/pricing-tokens.css";
+import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
 import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
 import { isPaymentsConfigured } from "@/lib/payments";
@@ -58,6 +59,7 @@ export default async function PricingPage({
       paymentsEnabled={isPaymentsConfigured()}
       subscriptions={getSubscriptionProducts()}
       packs={getOnetimeProducts()}
+      modelCosts={<ModelCreditTable lang={locale} />}
     />
   );
 }

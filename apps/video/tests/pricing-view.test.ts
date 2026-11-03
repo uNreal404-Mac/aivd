@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PricingPage } from "@/components/pricing/pricing-page";
 import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
 import en from "@/messages/en.json";
@@ -18,6 +19,7 @@ function renderPricing(locale: "en" | "zh", paymentsEnabled: boolean) {
       paymentsEnabled,
       subscriptions: getSubscriptionProducts(),
       packs: getOnetimeProducts(),
+      modelCosts: createElement(ModelCreditTable, { lang: locale }),
     }),
   };
   return renderToStaticMarkup(createElement(NextIntlClientProvider, providerProps));
@@ -34,6 +36,15 @@ describe("pricing cards", () => {
     }
     expect(html.match(/\bpr-btn--primary\b/g)).toHaveLength(1);
     expect(html.match(/\bpr-btn--secondary\b/g)).toHaveLength(5);
+  });
+
+  it("shows credit-pack expiry and configured costs for one clip", () => {
+    const html = renderPricing("en", true);
+    expect(html).toContain("Valid for 365 days after purchase");
+    expect(html).toContain("Seedance 1.5 Pro");
+    expect(html).toContain("1080p");
+    expect(html).toMatch(/<th scope="row">12 s<\/th><td>48<\/td><td>48<\/td><td>96<\/td>/);
+    expect(html).not.toContain("Never expire");
   });
 
   it("keeps unavailable checkout actions disabled", () => {

@@ -72,6 +72,19 @@ export function displayPlanName(name: string): string {
   return name.replace(/\s*\((?:yearly|annual|year)\)\s*$/i, "").trim();
 }
 
+/** The smallest annual discount available across the listed tiers. */
+export function yearlySavingsPercent(products: readonly PricingProduct[]): number | undefined {
+  const monthlyPrices = new Map(products
+    .filter((product) => product.billingPeriod === "month")
+    .map((product) => [displayPlanName(product.name), product.price.amount]));
+  const savings = products.filter((p) => p.billingPeriod === "year").map((year) => {
+    const monthly = monthlyPrices.get(displayPlanName(year.name));
+    return monthly && monthly > 0 ? Math.round(100 * (1 - year.price.amount / (monthly * 12))) : 0;
+  });
+  const percent = savings.length ? Math.min(...savings) : 0;
+  return percent > 0 ? percent : undefined;
+}
+
 export interface FaqItem {
   id: string;
   question: string;
@@ -83,13 +96,13 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "credits",
     question: "What are credits and how are they used?",
     answer:
-      "Credits are the single currency for every generation on aivd.ai. Each video model has a fixed cost per second, so the number of clips you can render depends on the model, the duration and the resolution you pick. Your remaining balance is always visible before you press generate.",
+      "The table above shows the credits needed for one clip at each supported duration and resolution. For example, a longer clip can cost more even when you use the same model.",
   },
   {
     id: "expiry",
     question: "Do my credits expire?",
     answer:
-      "Subscription credits are valid for the plan period; one-time pack credits are valid for the period shown at checkout.",
+      "Subscription credits are valid for the plan period; one-time pack credits expire after the number of days listed on the pack.",
   },
   {
     id: "switching",
@@ -122,12 +135,12 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
     id: "credits",
     question: "什么是积分，如何使用？",
     answer:
-      "积分是 aivd.ai 上所有生成的统一货币。每个视频模型按秒固定计费，因此你能渲染的片段数量取决于所选的模型、时长和分辨率。生成前始终可以看到剩余余额。",
+      "上表列出了每个可选模型生成一段视频所需的积分。选择时长和分辨率即可查到对应的用量。",
   },
   {
     id: "expiry",
     question: "我的积分会过期吗？",
-    answer: "订阅积分在方案周期内有效；一次性积分包的积分有效期以结账时显示的期限为准。",
+    answer: "订阅积分在方案周期内有效；一次性积分的有效天数见对应积分包。",
   },
   {
     id: "switching",
@@ -182,6 +195,7 @@ export interface PricingCopy {
   creditPacksSubtitle: string;
   /** Template, e.g. "{credits} credits". */
   packCredits: string;
+  packValidity: string;
   /** Template, e.g. "{price} · {per100} per 100 credits". */
   packMeta: string;
   compareTitle: string;
@@ -206,7 +220,7 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     billingPeriodLabel: "Billing period",
     monthly: "Monthly",
     yearly: "Yearly",
-    saveBadge: "Save ~17%",
+    saveBadge: "Save ~{percent}%",
     perMonth: "/ month",
     billedMonthly: "Billed monthly",
     billedYearly: "Billed {amount} yearly",
@@ -219,8 +233,9 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     buyCredits: "Buy {credits} credits",
     creditPacksTitle: "Credit packs",
     creditPacksSubtitle:
-      "Prefer to top up without a subscription? Buy credits once and spend them whenever inspiration strikes.",
+      "One-time credit purchases. Each pack shows its price and validity.",
     packCredits: "{credits} credits",
+    packValidity: "Valid for {days} days after purchase",
     packMeta: "{price} · {per100} per 100 credits",
     compareTitle: "Compare plans",
     compareSubtitle: "Everything each tier includes, side by side.",
@@ -241,7 +256,7 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     billingPeriodLabel: "计费周期",
     monthly: "按月",
     yearly: "按年",
-    saveBadge: "省约 17%",
+    saveBadge: "省约 {percent}%",
     perMonth: "/ 月",
     billedMonthly: "按月计费",
     billedYearly: "按年计费 {amount}",
@@ -253,8 +268,9 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     choosePlan: "选择 {plan} 方案",
     buyCredits: "购买 {credits} 积分",
     creditPacksTitle: "积分包",
-    creditPacksSubtitle: "不想订阅？一次性购买积分，灵感来时随时使用。",
+    creditPacksSubtitle: "积分包按次购买，价格和有效期见下方。",
     packCredits: "{credits} 积分",
+    packValidity: "购买后 {days} 天内有效",
     packMeta: "{price} · 每 100 积分 {per100}",
     compareTitle: "方案对比",
     compareSubtitle: "各档位包含的全部内容，一目了然。",
