@@ -3,6 +3,11 @@
 }
 
 @media (max-width: 767px) {
+  .du-hero form .du-primary {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
   #template-wall[data-showcase-wall] {
     display: grid;
     grid-template-columns: none;
