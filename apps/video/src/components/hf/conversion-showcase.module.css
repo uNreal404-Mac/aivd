@@ -81,7 +81,7 @@
   content: "";
   position: absolute;
   inset: 30% 0 0;
-  background: linear-gradient(to top, rgb(0 0 0 / 68%), transparent 58%);
+  background: linear-gradient(to top, var(--du-tile-scrim), transparent 58%);
   pointer-events: none;
 }
 .tileName {
@@ -96,7 +96,7 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 1.25;
-  text-shadow: 0 1px 6px rgb(0 0 0 / 60%);
+  text-shadow: 0 1px 6px var(--du-tile-shadow);
 }
 .tileName svg { fill: currentColor; flex: none; }
 .sectionCta { margin-top: 32px; }
@@ -135,8 +135,8 @@ button.film { cursor: pointer; }
   gap: 12px;
   padding: 12px 20px;
   white-space: nowrap;
-  background: rgb(0 0 0 / 72%);
-  border: 1px solid rgb(255 255 255 / 45%);
+  background: var(--du-control-bg);
+  border: 1px solid var(--du-field-border);
   border-radius: 40px;
   font-weight: 600;
 }

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { hasDbBinding } from "@/db";
 import { creationLabel } from "@/lib/creation-label";
@@ -130,7 +129,7 @@ export function ConversionShowcase({ lang }: { lang: string }) {
         </a>)}
       </div>
     </section>
-    <Suspense fallback={null}><ConversionGallery lang={lang} language={language} /></Suspense>
+    <ConversionGallery lang={lang} language={language} />
   </div>;
 }
 
