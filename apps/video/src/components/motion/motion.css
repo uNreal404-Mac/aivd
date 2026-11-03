@@ -59,6 +59,10 @@
   .motion-wall:has(.motion-tile:hover) .motion-tile:not(:hover):not(:focus-within) a { filter:brightness(.85); }
 }
 @media(max-width:767px) {
+  /* Keep the optical plate and one real strip on the first mobile paint. */
+  .motion-spotlight,.motion-frames > i { display:none; }
+  .motion-title { opacity:1!important; transform:none!important; filter:none!important; }
+
   #template-wall[data-showcase-wall].motion-wall { display:grid; grid-auto-flow:column; grid-auto-columns:min(78%,21rem); overflow-x:auto; }
   #template-wall.motion-wall .motion-lane, #template-wall.motion-wall .motion-run { display:contents; }
   #template-wall.motion-wall .motion-run[data-copy="1"] { display:none; }
