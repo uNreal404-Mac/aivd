@@ -1,0 +1,35 @@
+.page { max-width: 1280px; margin-inline: auto; padding-inline: var(--layout-gutter); color: var(--du-text); }
+.hero { padding-block: clamp(48px, 7vw, 104px) 0; }
+.kicker { margin: 0 0 16px; color: var(--du-accent); font-weight: 600; font-size: .82rem; }
+.hero h1, .page h2 { color: var(--du-text); font-family: var(--font-display), sans-serif; letter-spacing: -.045em; line-height: 1.04; text-wrap: balance; }
+.hero h1 { max-width: 17ch; margin: 0; font-weight: 650; font-size: clamp(3rem, 6vw, 5.5rem); }
+.lead { max-width: 68ch; margin: 24px 0 32px; font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.55; }
+.composer { max-width: 760px; scroll-margin: 24px; }
+.section { margin-top: var(--layout-section); }
+.page h2 { margin: 0 0 16px; font-size: clamp(2rem, 4vw, 3rem); font-weight: 650; }
+.section > p { max-width: 74ch; margin: 0 0 24px; line-height: 1.55; }
+.films { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+.films figure { min-width: 0; margin: 0; }
+.films video { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--du-surface); }
+.films figcaption { display: grid; gap: 8px; padding-top: 12px; line-height: 1.5; }
+.films strong { font-size: 1.1rem; color: var(--du-text); }
+.comparison { border-block: 1px solid var(--du-border); }
+.comparison table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.comparison th, .comparison td { padding: 14px 8px; text-align: left; border-bottom: 1px solid var(--du-border); overflow-wrap: anywhere; vertical-align: top; }
+.comparison tr > :nth-child(1) { width: 22%; } .comparison tr > :nth-child(2) { width: 22%; }
+.comparison th { color: var(--du-text); }
+.section .links { margin-top: 20px; }
+.links a { text-decoration: underline; text-underline-offset: .18em; }
+.steps { padding-inline-start: 1.5em; margin: 0; max-width: 72ch; list-style: decimal; }
+.steps li { padding: 8px 0 8px 8px; line-height: 1.5; }
+.steps li::marker { color: var(--du-accent); font-weight: 650; }
+.faq { border-top: 1px solid var(--du-border); }
+.faq details { border-bottom: 1px solid var(--du-border); }
+.faq summary { padding-block: 16px; cursor: pointer; color: var(--du-text); font-weight: 650; }
+.faq p { max-width: 75ch; margin: 0 0 20px; line-height: 1.55; }
+.end { margin-block: var(--layout-section); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.end h2 { margin: 0; }
+@media (max-width: 767px) {
+  .films { grid-template-columns: 1fr; row-gap: 24px; }
+  .comparison th, .comparison td { padding: 10px 4px; font-size: .84rem; }
+}

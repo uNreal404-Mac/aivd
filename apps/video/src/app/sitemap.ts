@@ -145,6 +145,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appDir = join(process.cwd(), 'src', 'app', '[locale]');
   const routes = await scanPages(appDir, appDir);
 
+  // A route bundle on Cloudflare may not contain the source directory being scanned.
+  for (const slug of ["seedance-2-5", "seedance-2"]) {
+    if (!routes.some((route) => route.path === slug)) {
+      routes.push({ path: slug, file: join(appDir, "(marketing)", slug, "page.tsx"), priority: 0.7, changeFrequency: "weekly" });
+    }
+  }
+
   // 动态路由页面需显式补充（scanPages 会跳过含 "[" 的页面）
   const modelsPageFile = join(appDir, '(marketing)', 'models', '[slug]', 'page.tsx');
   for (const slug of MODEL_SLUGS) {
