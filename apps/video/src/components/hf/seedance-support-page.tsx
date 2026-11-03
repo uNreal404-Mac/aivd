@@ -1,6 +1,7 @@
 import type { Locale } from "@/config/i18n-config";
 import { getModelConfig } from "@/config/credits";
 import { localizedHref } from "@/lib/du-home";
+import { creationLabel } from "@/lib/creation-label";
 import { fallbackModel, seedanceGuides, supportFaq, supportTitle, type SeedanceVersion } from "@/lib/seedance-support";
 import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PromptBox } from "@/components/hf/prompt-box";
@@ -33,7 +34,7 @@ export function SeedanceSupportPage({ version, lang }: { version: SeedanceVersio
     ["Seedance 2.0", zh ? "尚未接入" : "Not connected", zh ? "官方单次最长 15 秒，接受文字、图像、视频和音频参考。" : "ByteDance documents up to 15 seconds with text, image, video and audio references."],
     ["Seedance 1.5 Pro", zh ? "本站工具可选" : "Selectable here", zh ? `可用时长 ${durations} 秒；${qualities}。` : `${durations} seconds at ${qualities}.`],
     ["Kling 4.0", zh ? "尚未接入" : "Not connected", zh ? "此版本没有本站生成入口或积分价格。" : "No generation workflow or credit rate is listed for this version."],
-    ["Veo 3.1", zh ? "工作室目录" : "Studio listing", zh ? "工作室列有此模型，现有积分配置未启用它。" : "The studio lists this model; the current billing catalog has it disabled."],
+    ["Veo 3.1", zh ? "工作室目录" : "Studio listing", zh ? "工作室列有此模型，现有积分配置未启用它。" : "The studio lists this model. The current billing catalog has it disabled."],
   ];
   const steps = zh ? [
     "在上方选择文生视频或图生视频。确认模型显示 Seedance 1.5 Pro。",
@@ -101,8 +102,12 @@ export function SeedanceSupportPage({ version, lang }: { version: SeedanceVersio
         <div className={s.faq}>{faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div>
         <p className={s.links}><a href={localizedHref(lang, "/pricing")}>{zh ? "方案与积分包" : "Plans and credit packs"}</a> · <a href={localizedHref(lang, "/terms")}>{zh ? "服务条款" : "Terms of service"}</a> · <a href={localizedHref(lang, "/" + seedanceGuides[sibling].slug)}>{supportTitle(sibling, lang)}</a></p>
       </section>
-      <div className={s.end}><h2>{zh ? "为下一条短片写下镜头" : "Write your next shot"}</h2>
-        <a href={localizedHref(lang, "/text-to-video") + "?model=" + fallbackModel} className="du-primary">{zh ? "打开 1.5 Pro 工作台" : "Open the 1.5 Pro studio"}</a>
+      <div className={s.end}>
+        <div>
+          <h2>{zh ? "为下一条短片写下镜头" : "Write your next shot"}</h2>
+          <p id="seedance-studio-cost">{zh ? "免费打开 Seedance 1.5 Pro 工作台。提交生成时按积分计费。" : "Open the Seedance 1.5 Pro studio for free. Rendering a clip uses credits."}</p>
+        </div>
+        <a href={localizedHref(lang, "/text-to-video") + "?model=" + fallbackModel} className="du-primary" aria-describedby="seedance-studio-cost">{creationLabel(lang)}</a>
       </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
     </div>

@@ -29,6 +29,7 @@
 .faq p { max-width: 75ch; margin: 0 0 20px; line-height: 1.55; }
 .end { margin-block: var(--layout-section); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 .end h2 { margin: 0; }
+.end p { margin: 8px 0 0; color: var(--du-text-muted); }
 @media (max-width: 767px) {
   .films { grid-template-columns: 1fr; row-gap: 24px; }
   .comparison th, .comparison td { padding: 10px 4px; font-size: .84rem; }
