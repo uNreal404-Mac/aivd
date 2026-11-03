@@ -133,7 +133,7 @@ export function ConversionHero({ lang }: { lang: string }) {
   return <section id="conversion-hero" className={s.hero} aria-labelledby="creator-headline">
     <div ref={stage} className={s.stage} data-optics={index === 0}>
       <div className={s.picture} key={film.video}>
-        <Image fill priority={index === 0} loading={index === 0 ? undefined : "eager"} src={film.poster} loader={posterUrl} sizes="100vw" alt="" />
+        <Image fill priority={index === 0} fetchPriority={index === 0 ? "high" : undefined} loading={index === 0 ? undefined : "eager"} src={film.poster} loader={posterUrl} sizes="100vw" alt="" />
         {mounted && !failed && <video ref={movie} src={film.video} poster={film.poster} muted loop playsInline preload="metadata" tabIndex={-1}
           aria-label={film.title[l]} onLoadedMetadata={(e) => {
             const v = e.currentTarget;
