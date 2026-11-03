@@ -267,8 +267,12 @@ export function ToolPageLayout({
     if (typeof window === "undefined") return;
     try {
       const raw = sessionStorage.getItem(TOOL_PREFILL_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
+      const fromLink = new URLSearchParams(window.location.search);
+      if (!raw && !fromLink.has("model") && !fromLink.has("prompt")) return;
+      const parsed = raw ? JSON.parse(raw) : {
+        model: fromLink.get("model") ?? undefined,
+        prompt: fromLink.get("prompt")?.slice(0, 2000),
+      };
       setPrefillData({
         prompt: parsed?.prompt,
         model: parsed?.model,
@@ -691,6 +695,7 @@ export function ToolPageLayout({
     <>
       {prefillNoticeNode}
       <GeneratorPanel
+        key={prefillData ? "studio-draft" : "blank-studio"}
         toolType={
           toolRoute as
             | "image-to-video"

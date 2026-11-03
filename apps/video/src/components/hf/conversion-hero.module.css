@@ -1,0 +1,134 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--du-bg);
+  color: var(--du-text);
+}
+.stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-items: end;
+  min-height: clamp(548px, 68svh, 760px);
+  padding: 104px max(var(--layout-gutter), calc((100vw - 1312px) / 2)) 36px;
+  box-sizing: border-box;
+}
+.picture, .shade, .guides { position: absolute; inset: 0; pointer-events: none; }
+.picture { z-index: -3; overflow: hidden; background: var(--du-bg); }
+.picture img, .picture video { width: 100%; height: 100%; object-fit: cover; object-position: 50% 48%; }
+.picture video { position: absolute; inset: 0; }
+.shade { z-index: -2; background: linear-gradient(90deg, var(--du-glass-bg-strong), var(--du-glass-overlay-scrim) 37%, transparent 74%); }
+.stage[data-optics="true"] .shade { background: linear-gradient(90deg, var(--du-glass-overlay-scrim), transparent 64%); }
+.stageTop, .guideMenu { position: absolute; z-index: 3; right: max(var(--layout-gutter), calc((100vw - 1312px) / 2)); }
+.stageTop {
+  top: 20px;
+  left: max(var(--layout-gutter), calc((100vw - 1312px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.imprint, .filmTitle > span, .clock, .indexLabel, .films small {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.imprint { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 11px; letter-spacing: .12em; }
+.imprint::before { content: ""; width: 6px; height: 6px; background: var(--du-accent); }
+.imprint > span { color: var(--du-text-muted); }
+.viewTools, .guideMenu { display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--du-glass-border); background: var(--du-glass-bg); }
+.viewTools button, .guideMenu button, .arrows button, .play, .cinema button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 40px;
+  min-height: 40px;
+  padding-inline: 9px;
+  color: var(--du-text);
+}
+.hero :is(button, select, input):focus-visible { outline: 2px solid var(--du-accent); outline-offset: 2px; }
+.viewTools button, .guideMenu button { font-size: 12px; font-weight: 550; }
+.viewTools button[aria-pressed="true"], .guideMenu button[aria-pressed="true"] { color: var(--du-accent); background: var(--du-surface-2); }
+.guideMenu { top: 72px; }
+.guides { z-index: -1; }
+.guides i, .guides b { position: absolute; background: var(--du-text-muted); }
+.guides i { inset-block: 0; width: 1px; left: 33.333%; }
+.guides i + i { left: 66.667%; }
+.guides b { inset-inline: 0; height: 1px; top: 33.333%; }
+.guides b + b { top: 66.667%; }
+.safeArea { position: absolute; z-index: -1; left: 50%; top: 50%; translate: -50% -50%; border: 1px solid var(--du-text); box-shadow: 0 0 0 150vmax var(--du-glass-overlay-scrim); pointer-events: none; }
+.safeArea[data-format="vertical"] { height: 96%; max-width: 100%; aspect-ratio: 9/16; }
+.safeArea[data-format="scope"] { width: min(96%, 137svh); aspect-ratio: 2.39; }
+.content { width: min(100%, 624px); min-width: 0; }
+.filmTitle { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.filmTitle > span { color: var(--du-accent); font-size: 11px; font-weight: 650; letter-spacing: .12em; }
+.filmTitle > strong { font: italic 400 clamp(21px, 2.2vw, 34px)/1.05 Georgia, "Times New Roman", serif; }
+.filmTitle > small { color: var(--du-text-muted); font-size: 12px; }
+.content h1 { margin: 14px 0 24px; font-family: var(--font-display), sans-serif; }
+.content h1 span { display: block; font-weight: 650; font-size: clamp(40px, 5.4vw, 78px); letter-spacing: -.075em; line-height: .98; }
+.content h1 small { display: block; margin-top: 9px; font-size: clamp(14px, 1.35vw, 20px); font-weight: 550; line-height: 1.15; letter-spacing: .09em; }
+.deck { padding-inline: max(var(--layout-gutter), calc((100vw - 1312px) / 2)); border-block: 1px solid var(--du-glass-border); background: var(--du-bg-elev); }
+.transport, .index { display: flex; align-items: center; min-width: 0; gap: 16px; }
+.transport { min-height: 48px; }
+.transport > strong { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.shot { min-width: 0; max-width: 40%; }
+.shot select { max-width: 100%; min-height: 32px; padding-inline: 8px; border: 1px solid var(--du-glass-border); background: var(--du-bg-elev); color: var(--du-text); font-size: 12px; }
+.useShot { min-height: 40px; padding-inline: 4px; color: var(--du-text); font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+.clock { margin-left: auto; white-space: nowrap; font-size: 12px; }
+.clock span, .indexLabel, .films small { color: var(--du-text-muted); }
+.play { padding: 0; border: 1px solid var(--du-glass-border); border-radius: 50%; min-height: 36px; min-width: 36px; }
+.scrubber { position: relative; isolation: isolate; height: 44px; overflow: hidden; background: var(--du-bg); }
+.strip { position: absolute; inset: 0; background-size: 100% 100%; background-position: center; }
+.strip::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--du-bg) calc(10% - 2px) 10%); }
+.playhead { position: absolute; z-index: 1; top: 0; bottom: 0; left: clamp(0%, var(--playhead), calc(100% - 2px)); width: 2px; background: var(--du-accent); }
+.playhead::before { content: ""; display: block; height: 6px; width: 8px; transform: translateX(-3px); background: var(--du-accent); }
+.scrubber input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.scrubber:focus-within { outline: 2px solid var(--du-accent); outline-offset: 2px; }
+.index { min-height: 52px; }
+.indexLabel { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .13em; }
+.films { display: flex; min-width: 0; align-self: stretch; align-items: stretch; gap: clamp(8px, 2vw, 32px); overflow: auto hidden; scrollbar-width: none; }
+.films button { display: inline-flex; position: relative; align-items: center; flex: none; gap: 6px; min-height: 44px; padding: 2px; border-bottom: 2px solid transparent; font-size: 13px; white-space: nowrap; }
+.films button[aria-pressed="true"] { border-bottom-color: var(--du-accent); color: var(--du-accent); }
+.films button:focus-visible { outline-offset: -3px; }
+.films small { font-size: 9px; }
+.arrows { display: flex; margin-left: auto; }
+.cinema { width: min(95vw, 1180px); max-height: 94svh; padding: 12px; margin: auto; border: 1px solid var(--du-glass-border); background: var(--du-bg-elev); color: var(--du-text); }
+.cinema::backdrop { background: var(--du-glass-bg-strong); }
+.cinema > div { display: flex; align-items: center; justify-content: space-between; }
+.cinema h2 { margin: 0; padding-left: 8px; font: 600 18px/1.2 var(--font-display), sans-serif; }
+.cinema video { display: block; margin: 0 auto; width: 100%; max-height: 80svh; background: var(--du-bg); }
+
+@media (max-width: 767px) {
+  .stage { min-height: 0; padding: clamp(166px, 42vw, 214px) 16px 16px; }
+  .picture { bottom: auto; height: clamp(232px, 61vw, 320px); }
+  .picture img, .picture video { object-position: 74% 43%; }
+  .shade, .stage[data-optics="true"] .shade { background: linear-gradient(to bottom, transparent 100px, var(--du-glass-overlay-scrim) 168px, var(--du-bg) 270px); }
+  .stageTop { top: 8px; inset-inline: 16px; }
+  .imprint { font-size: 10px; }
+  .viewTools button, .guideMenu button, .arrows button { min-width: 40px; min-height: 40px; }
+  .viewTools button span { display: none; }
+  .guideMenu { top: 56px; right: 16px; }
+  .content { width: 100%; }
+  .filmTitle { gap: 8px; }
+  .filmTitle > strong { font-size: 22px; }
+  .filmTitle > small, .filmTitle > span { font-size: 10px; }
+  .content h1 { margin: 8px 0 14px; }
+  .content h1 span { font-size: clamp(32px, 9vw, 52px); }
+  .content h1 small { margin-top: 4px; font-size: 12px; }
+  .deck { padding-inline: 16px; }
+  .transport { min-height: 44px; gap: 8px; }
+  .transport > strong { gap: 4px; font-size: 11px; }
+  .transport > strong svg { width: 13px; }
+  .shot { max-width: 29%; }
+  .useShot { font-size: 11px; min-width: 0; padding: 0; }
+  .transport { gap: 5px; }
+  .shot select { font-size: 11px; padding-inline: 2px; }
+  .clock { font-size: 10px; }
+  .play { min-height: 36px; min-width: 36px; }
+  .scrubber { height: 36px; }
+  .index { gap: 6px; min-height: 44px; }
+  .indexLabel { display: none; }
+  .films { flex: 1; }
+  .films button { font-size: 12px; }
+  .arrows { gap: 0; }
+}
