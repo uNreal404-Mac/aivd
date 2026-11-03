@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { takePremiereImageDraft } from "@/lib/premiere-generator";
 
 import {
   ALLOWED_TYPES,
@@ -102,6 +104,17 @@ export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
   );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const draft = takePremiereImageDraft();
+    if (!draft) return;
+    const option = I2V_MODELS.find((item) => item.id === draft.model);
+    if (!option) return;
+    setModel(option.id);
+    setDuration(draft.duration);
+    setAspectRatio(draft.aspectRatio);
+    setPrompt(draft.prompt);
+  }, []);
 
   function openPicker() {
     inputRef.current?.click();

@@ -1,9 +1,10 @@
 "use client";
 
-import { Aperture, ArrowUpRight, Clapperboard, Expand, ImagePlus, Pause, Play, WandSparkles, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { TOOL_PREFILL_KEY } from "@/components/gallery/use-template";
-import { localizedHref } from "@/lib/du-home";
+import { ChevronDown, Expand, Pause, Play, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { ProviderType } from "@/ai/types";
+import { CREDITS_CONFIG } from "@/config/credits";
+import { PremiereComposer } from "./premiere-composer";
 import styles from "./premiere-hero.module.css";
 
 const films = [
@@ -29,116 +30,114 @@ const films = [
   },
 ];
 
+const durations = [13, 9.72, 5.04, 5.04];
 const words = {
-  zh: { showcase: "短片展映", h1: "AI 视频生成器。", h2: "电影级创作效果。", intro: "写下一幕，或从一张照片开始。", describe: "写下你的镜头", placeholder: "镜头从海面缓缓升起，穿过薄雾，靠近一艘游艇……", use: "用这段分镜", image: "从图片开始", create: "进入创作", watch: "观看样片", close: "关闭放映", films: "切换展映短片", pause: "暂停背景视频", play: "播放背景视频", unavailable: "此样片暂时无法播放。请选择另一部短片。", storage: "请允许站点存储，以便把你的提示词带到工作台。" },
-  en: { showcase: "Studio screenings", h1: "AI video generator.", h2: "Studio-grade results.", intro: "Describe a scene, or start with a photograph.", describe: "Describe your shot", placeholder: "A camera skims the water, rising through the mist toward a yacht…", use: "Use this shot", image: "Start with an image", create: "Open studio", watch: "Watch film", close: "Close screening", films: "Choose a film", pause: "Pause background film", play: "Play background film", unavailable: "This film is unavailable. Choose another screening.", storage: "Allow site storage to take your prompt into the studio." },
+  zh: { h1: "AI 视频生成器。", h2: "电影级创作效果。", watch: "观看样片", close: "关闭放映", films: "切换展映短片", pause: "暂停短片", play: "播放短片", unavailable: "这部样片暂时无法播放，可选另一部。" },
+  en: { h1: "AI video generator.", h2: "Studio-grade results.", watch: "Watch film", close: "Close screening", films: "Choose a film", pause: "Pause film", play: "Play film", unavailable: "This film could not load. Choose another screening." },
 };
 
-export function PremiereHero({ lang }: { lang: string }) {
-  const language = lang.toLowerCase().startsWith("zh") ? "zh" : "en";
+function timecode(seconds: number) {
+  const value = Math.max(0, Math.floor(seconds));
+  return String(Math.floor(value / 60)).padStart(2, "0") + ":" + String(value % 60).padStart(2, "0");
+}
+
+export function PremiereHero({ lang, provider }: { lang: string; provider?: ProviderType }) {
+  const language = lang.startsWith("zh") ? "zh" : "en";
+  const zh = language === "zh";
   const t = words[language];
   const [index, setIndex] = useState(0);
+  const [auto, setAuto] = useState(false);
+  const [intent, setIntent] = useState<"auto" | "play" | "pause">("auto");
   const [playing, setPlaying] = useState(false);
-  const [motionMode, setMotionMode] = useState<"auto" | "paused" | "playing">("auto");
-  const [prompt, setPrompt] = useState("");
-  const [error, setError] = useState("");
-  const [mediaError, setMediaError] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [screening, setScreening] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [duration, setDuration] = useState(durations[0]);
+  const stage = useRef<HTMLDivElement>(null);
   const background = useRef<HTMLVideoElement>(null);
   const cinema = useRef<HTMLDialogElement>(null);
-  const input = useRef<HTMLTextAreaElement>(null);
   const film = films[index];
+  const gift = CREDITS_CONFIG.registerGift;
+  const benefit = gift.enabled && gift.amount > 0
+    ? zh ? `注册获 ${gift.amount} 积分，提交前查看每段视频的用量。` : `Get ${gift.amount} starter credits. See each shot’s cost before you generate.`
+    : zh ? "先写分镜，生成前查看本次用量。" : "Draft a shot and see its cost before you generate.";
+  const loadFilm = !failed && (auto || intent === "play" || intent === "pause");
 
   useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const video = background.current;
-    if (!video) return;
-    function sync() {
-      if (motionMode === "paused" || (motionMode === "auto" && motion.matches) || screening || document.hidden) video?.pause();
-      else void video?.play().catch(() => {});
-    }
-    sync();
-    motion.addEventListener("change", sync);
-    document.addEventListener("visibilitychange", sync);
-    return () => { motion.removeEventListener("change", sync); document.removeEventListener("visibilitychange", sync); };
-  }, [index, screening, motionMode]);
+    const condition = matchMedia("(min-width: 768px) and (prefers-reduced-motion: no-preference)");
+    const update = () => setAuto(condition.matches);
+    update();
+    condition.addEventListener("change", update);
+    return () => condition.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    const player = background.current;
+    const node = stage.current;
+    if (!player || !node) return;
+    let visible = true;
+    const update = () => {
+      if (document.hidden || !visible || screening || intent === "pause") player.pause();
+      else void player.play().catch(() => {});
+    };
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); });
+    observer.observe(node);
+    document.addEventListener("visibilitychange", update);
+    update();
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); };
+  }, [index, intent, loadFilm, screening]);
 
-  function selectFilm(next: number) {
-    if (next === index) return;
-    setMediaError(false);
+  function chooseFilm(next: number) {
     setIndex(next);
+    setDuration(durations[next]);
+    setElapsed(0);
+    setPlaying(false);
+    setFailed(false);
+    setIntent("auto");
   }
-
-  function toggleMotion() {
-    const video = background.current;
-    if (!video) return;
-    if (!video.paused) { video.pause(); setMotionMode("paused"); }
-    else { setMotionMode("playing"); void video.play().catch(() => setMediaError(true)); }
+  function toggle() {
+    if (playing) { setIntent("pause"); background.current?.pause(); }
+    else { setFailed(false); setIntent("play"); void background.current?.play().catch(() => {}); }
   }
-
-  function usePrompt() {
-    setPrompt(film[language].prompt);
-    setError("");
-    input.current?.focus();
-  }
-
-  function openStudio(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const value = prompt.trim();
-    try {
-      if (value) sessionStorage.setItem(TOOL_PREFILL_KEY, JSON.stringify({ prompt: value }));
-      else sessionStorage.removeItem(TOOL_PREFILL_KEY);
-    } catch {
-      if (value) { setError(t.storage); return; }
-    }
-    window.location.assign(event.currentTarget.action);
-  }
-
+  const playLabel = playing ? t.pause : t.play;
   return (
     <section className={styles.premiere} aria-labelledby="premiere-title">
-      <div className={styles.frame}>
-        <div className={styles.picture} key={film.video}>
-          <video ref={background} muted loop playsInline preload="metadata" poster={film.poster} src={film.video}
-            aria-hidden="true" onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={() => { setPlaying(false); setMediaError(true); }} />
-        </div>
-        <div className={styles.shade} />
-        <div className={styles.stageTop}>
-          <span className={styles.kicker}><span className={styles.signal} />{t.showcase}</span>
-          <button className={styles.watch} type="button" onClick={() => { cinema.current?.showModal(); setScreening(true); }}><Expand size={14} />{t.watch}</button>
-        </div>
+      <div ref={stage} className={styles.frame}>
+        <picture>
+          {index === 0 && <source media="(max-width: 767px)" srcSet="/home/premiere-coast-small.webp" />}
+          <img className={styles.poster} src={film.poster} alt="" width={1600} height={736} loading="eager" fetchPriority="high" />
+        </picture>
+        {loadFilm && <video key={film.video} className={styles.plate} ref={background} muted loop playsInline preload="metadata" src={film.video}
+          aria-label={film[language].title} onLoadedMetadata={event => { const value=event.currentTarget.duration; if (Number.isFinite(value)) setDuration(value); }}
+          onTimeUpdate={event => setElapsed(Math.floor(event.currentTarget.currentTime))} onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)} onError={() => { setFailed(true); setPlaying(false); }} />}
         <div className={styles.headline}>
           <h1 id="premiere-title" lang={lang}><span>{t.h1}</span><em>{t.h2}</em></h1>
-          <p>{t.intro}</p>
+          <p>{benefit}</p>
         </div>
-        <form className={styles.composer} action={localizedHref(lang, "/text-to-video")} onSubmit={openStudio}>
-          <div className={styles.inputLine}>
-            <span className={styles.inputIcon} aria-hidden="true"><Clapperboard size={19} strokeWidth={1.5} /></span>
-            <label htmlFor="premiere-prompt" className="sr-only">{t.describe}</label>
-            <textarea id="premiere-prompt" ref={input} rows={2} maxLength={2000} value={prompt} placeholder={t.placeholder} onChange={event => { setPrompt(event.target.value); setError(""); }} />
-          </div>
-          <div className={styles.formActions}>
-            <button className={styles.promptAction} type="button" onClick={usePrompt}><WandSparkles size={15} />{t.use}</button>
-            <a className={styles.promptAction} href={localizedHref(lang, "/image-to-video")}><ImagePlus size={15} />{t.image}</a>
-            <button type="submit" className={styles.create}>{t.create}<ArrowUpRight size={18} strokeWidth={2} /></button>
-          </div>
-          {error && <p className={styles.error} role="alert">{error}</p>}
-        </form>
       </div>
-      <div className={styles.program}>
-        <span className={styles.stripName}><Aperture size={19} strokeWidth={1.4} />{language === "zh" ? "展映片单" : "The program"}</span>
-        <div className={styles.films} role="group" aria-label={t.films}>
-          {films.map((scene, i) => <button type="button" key={scene.video} aria-pressed={index === i} onClick={() => selectFilm(i)}>
-            <span className={styles.filmNo}>0{i + 1}</span><span>{scene[language].title}</span>
-          </button>)}
+      <div className={styles.work}>
+        <div className={styles.program}>
+          <div className={styles.filmInfo}>
+            <label className={styles.filmSelect}><span className="sr-only">{t.films}</span>
+              <select value={index} onChange={event => chooseFilm(Number(event.target.value))}>
+                {films.map((item,i) => <option key={item.video} value={i}>{item[language].title}</option>)}
+              </select><ChevronDown size={14} aria-hidden="true" />
+            </label>
+            <span className={styles.clock}>{String(index+1).padStart(2,"0")} / 04 · {timecode(elapsed)} / {timecode(duration)}</span>
+          </div>
+          <div className={styles.transport}>
+            <button type="button" onClick={toggle} aria-label={playLabel} title={playLabel}>{playing ? <Pause aria-hidden="true" size={16} /> : <Play aria-hidden="true" size={16} />}</button>
+            <button type="button" aria-label={t.watch} title={t.watch} onClick={() => { setScreening(true); cinema.current?.showModal(); }}><Expand aria-hidden="true" size={16}/></button>
+          </div>
+          {failed && <output className={styles.notice}>{t.unavailable}</output>}
         </div>
-        <button type="button" className={styles.toggle} onClick={toggleMotion} aria-label={playing ? t.pause : t.play} title={playing ? t.pause : t.play}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
+        <PremiereComposer lang={lang} provider={provider} shot={film[language].prompt} />
       </div>
-      {mediaError && <p className={styles.mediaError} role="status">{t.unavailable}</p>}
-      <dialog className={styles.cinema} ref={cinema} aria-label={film[language].title} onClose={() => setScreening(false)} onClick={event => { if (event.target === cinema.current) cinema.current?.close(); }}>
-        {screening && <div className={styles.projection}>
-          <div className={styles.modalTop}><span>{film[language].title}</span><button type="button" autoFocus onClick={() => cinema.current?.close()} aria-label={t.close}><X size={20} /></button></div>
-          <video controls autoPlay muted playsInline src={film.video} poster={film.poster} aria-label={film[language].title} />
-        </div>}
+      <dialog className={styles.cinema} ref={cinema} aria-label={film[language].title} onClose={() => setScreening(false)}
+        onClick={event => { if(event.target === cinema.current) cinema.current.close(); }}>
+        {screening && <><div className={styles.modalTop}><strong>{film[language].title}</strong>
+          <button type="button" title={t.close} aria-label={t.close} onClick={() => cinema.current?.close()}><X aria-hidden="true" size={18}/></button></div>
+          <video controls autoPlay muted playsInline src={film.video} poster={film.poster} aria-label={film[language].title} /></>}
       </dialog>
     </section>
   );

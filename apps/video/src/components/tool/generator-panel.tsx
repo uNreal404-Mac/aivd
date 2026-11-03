@@ -235,27 +235,16 @@ export function GeneratorPanel({
     }
   }, [availableModels, selectedModel, defaultModelId]);
 
+  // Session drafts arrive after hydration. Apply each draft once and keep
+  // the resulting fields editable, including clearing the prompt or image.
   useEffect(() => {
-    if (initialPrompt && !prompt) {
-      setPrompt(initialPrompt);
-    }
-    if (initialImageUrl && !imageFile && !imageUrl) {
-      setImageUrl(initialImageUrl);
-    }
-  }, [initialPrompt, initialImageUrl, prompt, imageFile, imageUrl]);
-
-  useEffect(() => {
-    if (!currentModel) return;
-    if (initialDuration && currentModel.durations?.includes(initialDuration)) {
-      setDuration(initialDuration);
-    }
-    if (initialAspectRatio && currentModel.aspectRatios?.includes(initialAspectRatio)) {
-      setAspectRatio(initialAspectRatio);
-    }
-    if (initialQuality && currentModel.qualities?.includes(initialQuality)) {
-      setQuality(initialQuality);
-    }
-  }, [currentModel, initialDuration, initialAspectRatio, initialQuality]);
+    if (initialModelId) setSelectedModel(initialModelId);
+    if (initialPrompt !== undefined) setPrompt(initialPrompt);
+    if (initialDuration !== undefined) setDuration(initialDuration);
+    if (initialAspectRatio) setAspectRatio(initialAspectRatio);
+    if (initialQuality) setQuality(initialQuality);
+    if (initialImageUrl) setImageUrl(initialImageUrl);
+  }, [initialModelId, initialPrompt, initialDuration, initialAspectRatio, initialQuality, initialImageUrl]);
 
   const estimatedCredits = useMemo(() => {
     if (!selectedModel) return 0;
