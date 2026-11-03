@@ -171,7 +171,7 @@ export function PremiereCollection({ lang }: { lang: string }) {
               </div>
             </Link>
           ))}
-        </fieldset>
+        </div>
       </section>
       <section className={styles.directory} aria-labelledby="studio-directory">
         <h2 id="studio-directory">{text.directory}</h2>
