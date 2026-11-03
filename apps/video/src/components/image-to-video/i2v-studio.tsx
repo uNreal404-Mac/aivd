@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   ALLOWED_TYPES,
@@ -102,6 +102,23 @@ export function I2VStudio({ generationEnabled, locale }: I2VStudioProps) {
   );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    try {
+      const stored = sessionStorage.getItem("aidv_image_draft");
+      if (!stored && !query.has("model") && !query.has("prompt")) return;
+      const data = stored ? JSON.parse(stored) : { model: query.get("model"), prompt: query.get("prompt") };
+      const matched = I2V_MODELS.find(item => item.id === data.model);
+      if (matched) {
+        setModel(matched.id);
+        setDuration(matched.durations[0]);
+        setAspectRatio(matched.aspectRatios[0]);
+      }
+      if (typeof data.prompt === "string") setPrompt(data.prompt.slice(0, MAX_PROMPT_LENGTH));
+      if (stored) sessionStorage.removeItem("aidv_image_draft");
+    } catch { /* A fresh tool remains usable when storage is unavailable. */ }
+  }, []);
 
   function openPicker() {
     inputRef.current?.click();

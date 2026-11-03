@@ -1,5 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { hasDbBinding } from "@/db";
+import { getAvailableModels } from "@/config/credits";
+import { STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { creationLabel } from "@/lib/creation-label";
 import { localizedHref } from "@/lib/du-home";
 import { galleryService } from "@/services/gallery";
@@ -33,13 +35,6 @@ const studioPicks: Scene[] = [
   { file: "coastal-portrait", name: { en: "Seaward", zh: "向海而坐" }, prompt: { en: "Hold a wide portrait of a woman seated on the coastal rocks. Catch the fabric moving in the wind against a grey-blue sky.", zh: "以远景拍坐在岸边岩石上的人物。让裙摆迎风飘动，灰蓝天空留在身后。" } },
   { file: "after-dark", name: { en: "After dark", zh: "暮色之间" }, prompt: { en: "Two people lean close in a dimly lit street. Hold the camera steady and let the reflections from passing lights cross their faces.", zh: "在昏暗的街灯下拍摄靠近的两个人，镜头固定，掠过的光斑扫过侧脸。" } },
   { file: "moon-impact", name: { en: "Impact", zh: "撞击瞬间" }, prompt: { en: "Watch a fiery celestial body descend through dust over a dark horizon. Keep the terrain in silhouette.", zh: "一颗燃烧的星体穿过尘云，落向暗色地平线。将前景的地形保留为剪影。" } },
-];
-
-const models = [
-  { name: "Sora 2", id: "sora-2", en: "Stage a scene from a written prompt.", zh: "从一段文字搭建镜头。" },
-  { name: "Veo 3.1", id: "veo-3.1", en: "Build a cinematic scene with sound.", zh: "创作带声音的电影感画面。" },
-  { name: "Wan 2.6", id: "wan2.6", en: "Bring motion to a product or portrait.", zh: "为产品或肖像画面加入动态。" },
-  { name: "Seedance 1.5 Pro", id: "seedance-1.5-pro", en: "Try a short shot from text or a still.", zh: "用文字或静帧尝试一条短片。" },
 ];
 
 function sceneHref(lang: string, shot: Scene, language: Language) {
@@ -92,7 +87,22 @@ async function ConversionGallery({ lang, language }: { lang: string; language: L
 export function ConversionShowcase({ lang }: { lang: string }) {
   const language = lang.startsWith("zh") ? "zh" : "en";
   const zh = language === "zh";
+  const models = getAvailableModels({ mode: "text-to-video" });
   return <div className={s.showcase}>
+    <section id="models" className={s.section} aria-labelledby="showcase-models-title">
+      <SectionHeading id="showcase-models-title" title={zh ? "视频模型" : "Video models"} />
+      <div className={s.models} data-showcase-models="">
+        {models.map((model) => {
+          const editorial = STUDIO_MODELS.find((item) => item.id === model.id)?.badge;
+          const badge = editorial === "Top" ? "HOT" : editorial === "New" ? "NEW" : undefined;
+          const seconds = model.durations?.length ? model.durations.join(" / ") + (zh ? " 秒" : " s") : undefined;
+          return <a key={model.id} className={s.model} href={localizedHref(lang, "/text-to-video") + "?model=" + encodeURIComponent(model.id)} aria-label={model.name}>
+            <div><h3>{model.name} {badge && <span className={s.modelBadge}>{badge}</span>}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
+            <p>{[seconds, model.qualities?.join(" · ")].filter(Boolean).join("  ·  ")}</p>
+          </a>;
+        })}
+      </div>
+    </section>
     <section id="templates" className={s.section} aria-labelledby="showcase-templates-title">
       <SectionHeading id="showcase-templates-title" title={zh ? "视频模板" : "Video templates"}
         note={zh ? "选一段你喜欢的运镜，在工作台改写它。" : "Pick a camera move and make the shot your own."} />
@@ -118,15 +128,6 @@ export function ConversionShowcase({ lang }: { lang: string }) {
       <div className={s.filmFooter}>
         <p>{zh ? "在《潮汐序曲》中，看海岸的广角、人物特写和远景如何剪成同一段故事。" : "See how Tidal Overture cuts from a coastal wide shot to a portrait and out to a sweeping final frame."}</p>
         <CreationCTA lang={lang} placement="long-film" />
-      </div>
-    </section>
-    <section id="models" className={s.section} aria-labelledby="showcase-models-title">
-      <SectionHeading id="showcase-models-title" title={zh ? "视频模型" : "Video models"} />
-      <div className={s.models} data-showcase-models="">
-        {models.map((model) => <a key={model.id} className={s.model} href={localizedHref(lang, "/ai/video") + "?model=" + model.id} aria-label={model.name}>
-          <div><h3>{model.name}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
-          <p>{model[language]}</p>
-        </a>)}
       </div>
     </section>
     <ConversionGallery lang={lang} language={language} />
