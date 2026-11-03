@@ -35,10 +35,10 @@
   .headline h1 em { margin-top:2px; font-size:14px; line-height:18px; }
   .headline p { margin-top:6px; font-size:13px; line-height:18px; }
   .work { display:block; margin-top:0; }
-  .program,.filmInfo { display:flex; flex-wrap:wrap; flex-direction:row; align-items:center; gap:8px; }
-  .program { margin-bottom:4px; }
+  .program { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; margin-bottom:4px; }
+  .filmInfo { flex-direction:row; flex-wrap:wrap; align-items:center; gap:0 8px; }
   .filmSelect select { font-size:16px; line-height:20px; }
   .clock { font-size:12px; }
   .transport { margin:0 0 0 auto; gap:0; }
-  .notice { width:100%; }
+  .notice { grid-column:1/-1; }
 }

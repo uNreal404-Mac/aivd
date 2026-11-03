@@ -33,7 +33,7 @@
   .modes { gap:12px; }
   .composer textarea { min-height:60px; padding-block:10px; }
   .settings { gap:0 4px; }
-  .choice select { font-size:12px; padding:7px 16px 7px 5px; }
+  .choice select { field-sizing:content; font-size:12px; padding:7px 16px 7px 5px; }
   .choice svg { right:3px; width:10px; }
   .primary { padding-inline:12px; font-size:14px; }
   .actions { margin-top:2px; }

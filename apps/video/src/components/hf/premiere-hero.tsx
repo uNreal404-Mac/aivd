@@ -137,7 +137,9 @@ export function PremiereHero({ lang, provider }: { lang: string; provider?: Prov
         onClick={event => { if(event.target === cinema.current) cinema.current.close(); }}>
         {screening && <><div className={styles.modalTop}><strong>{film[language].title}</strong>
           <button type="button" title={t.close} aria-label={t.close} onClick={() => cinema.current?.close()}><X aria-hidden="true" size={18}/></button></div>
-          <video controls autoPlay muted playsInline src={film.video} poster={film.poster} aria-label={film[language].title} /></>}
+          <p id="premiere-screening-description" className="sr-only">{film[language].prompt}</p>
+          <video controls autoPlay muted playsInline src={film.video} poster={film.poster}
+            aria-label={film[language].title} aria-describedby="premiere-screening-description" /></>}
       </dialog>
     </section>
   );

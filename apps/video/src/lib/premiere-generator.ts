@@ -1,5 +1,5 @@
 import type { ProviderType } from "@/ai/types";
-import { calculateModelCredits, getAvailableModels, type ModelConfig } from "@/config/credits";
+import { calculateModelCredits, getAvailableModels, getModelConfig, type ModelConfig } from "@/config/credits";
 import { textToVideoConfig } from "@/config/tool-pages/text-to-video.config";
 import { I2V_MODEL_IDS, MAX_PROMPT_LENGTH } from "@/lib/image-to-video";
 
@@ -48,7 +48,9 @@ export function resolvePremiereSettings(
 }
 
 export function estimatePremiereCredits(settings: PremiereSettings | null): number | null {
-  return settings ? calculateModelCredits(settings.model, settings) : null;
+  if (!settings || !getModelConfig(settings.model)?.creditCost) return null;
+  const amount = calculateModelCredits(settings.model, settings);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
 }
 
 export function savePremiereDraft(mode: PremiereMode, prompt: string, settings: PremiereSettings) {
