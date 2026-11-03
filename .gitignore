@@ -20,3 +20,6 @@ nohup.out
 # Python cache files
 __pycache__/
 *.py[cod]
+
+# Local UI review evidence
+.design/artifacts/

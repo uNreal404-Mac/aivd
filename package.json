@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "shots": "npm --prefix apps/video run shots --"
+  }
+}
