@@ -1,3 +1,4 @@
+import { MotionFeatures } from "@/components/motion/provider";
 import "@/styles/pricing-tokens.css";
 import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
@@ -54,12 +55,14 @@ export default async function PricingPage({
   const { locale } = await params;
 
   return (
-    <PricingPageView
-      locale={locale}
-      paymentsEnabled={isPaymentsConfigured()}
-      subscriptions={getSubscriptionProducts()}
-      packs={getOnetimeProducts()}
-      modelCosts={<ModelCreditTable lang={locale} />}
-    />
+    <MotionFeatures>
+      <PricingPageView
+        locale={locale}
+        paymentsEnabled={isPaymentsConfigured()}
+        subscriptions={getSubscriptionProducts()}
+        packs={getOnetimeProducts()}
+        modelCosts={<ModelCreditTable lang={locale} />}
+      />
+    </MotionFeatures>
   );
 }

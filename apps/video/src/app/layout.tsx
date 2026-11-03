@@ -40,6 +40,8 @@ const fontDisplay = localFont({
 // Font files can be colocated inside of `pages`
 const fontHeading = localFont({
   src: "../styles/fonts/CalSans-SemiBold.woff2",
+  preload: false,
+  display: "swap",
   variable: "--font-heading",
 });
 

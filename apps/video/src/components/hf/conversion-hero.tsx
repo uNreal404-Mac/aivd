@@ -134,7 +134,7 @@ export function ConversionHero({ lang }: { lang: string }) {
   return <section id="conversion-hero" className={s.hero} aria-labelledby="creator-headline">
     <div ref={stage} className={s.stage} data-optics={index === 0}>
       <div className={s.picture} key={film.video}>
-        <Image fill priority={index === 0} fetchPriority={index === 0 ? "high" : undefined} loading={index === 0 ? undefined : "eager"} src={film.poster} loader={posterUrl} sizes="100vw" alt="" />
+        <Image fill data-studio-poster="" priority={index === 0} fetchPriority={index === 0 ? "high" : undefined} loading={index === 0 ? undefined : "eager"} src={film.poster} loader={posterUrl} sizes="100vw" alt="" />
         {mounted && !failed && <video ref={movie} src={film.video} poster={film.poster} muted loop playsInline preload="metadata" tabIndex={-1}
           aria-label={film.title[l]} onLoadedMetadata={(e) => {
             const v = e.currentTarget;
@@ -176,7 +176,7 @@ export function ConversionHero({ lang }: { lang: string }) {
         <button type="button" className={s.play} disabled={failed} aria-label={playing ? (zh ? "暂停短片" : "Pause film") : (zh ? "播放短片" : "Play film")} onClick={toggle}>{playing ? <Pause size={16}/> : <Play size={16}/>}</button>
       </div>
       <div className={s.scrubber} style={{ "--playhead": (Math.max(0, Math.min(1, elapsed / duration)) * 100) + "%" } as CSSProperties}>
-        <div key={film.strip} className={s.strip + " motion-frames"} aria-hidden="true">
+        <div key={film.strip} className={s.strip + " motion-frames"} style={{ backgroundImage: "url(" + film.strip + ")" }} aria-hidden="true">
           {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ "--frame-i": i, backgroundImage: "url(" + film.strip + ")", backgroundPosition: (i * 100 / 7) + "% center" } as CSSProperties} />)}
         </div>
         <div className={s.playhead}/>
