@@ -97,23 +97,3 @@
     -webkit-backdrop-filter: none;
   }
 }
-
-:root {
-  --du-ink: #f5f6f6;
-  --du-rule: #303638;
-  --du-content: 1440px;
-  --du-gutter: clamp(16px, 4.45vw, 64px);
-  --du-section-gap: 120px;
-}
-@media (max-width: 767px) { :root { --du-section-gap: 64px; --du-gutter: 16px; } }
-
-:root {
-  --du-field-border: #727b7c;
-  --du-entry-bg: rgba(8,11,13,.92);
-  --du-control-bg: rgba(0,0,0,.72);
-  --du-tile-scrim: rgba(0,0,0,.68);
-  --du-tile-shadow: rgba(0,0,0,.60);
-  --du-film-scrim: linear-gradient(90deg,rgba(0,0,0,.83),rgba(0,0,0,.57) 31%,transparent 74%),linear-gradient(0deg,rgba(0,0,0,.66),transparent 54%);
-  --du-film-scrim-mobile: linear-gradient(0deg,#020504 0%,rgba(0,0,0,.85) 18%,rgba(0,0,0,.43) 56%,rgba(0,0,0,.03) 85%);
-  --du-glass-sheen: var(--du-glass-highlight);
-}
