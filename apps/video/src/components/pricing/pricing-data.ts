@@ -176,7 +176,8 @@ export interface PricingCopy {
   mostPopular: string;
   comingSoon: string;
   redirecting: string;
-  getStarted: string;
+  choosePlan: string;
+  buyCredits: string;
   creditPacksTitle: string;
   creditPacksSubtitle: string;
   /** Template, e.g. "{credits} credits". */
@@ -214,7 +215,8 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     mostPopular: "Most popular",
     comingSoon: "Coming soon",
     redirecting: "Redirecting…",
-    getStarted: "Get started",
+    choosePlan: "Choose {plan}",
+    buyCredits: "Buy {credits} credits",
     creditPacksTitle: "Credit packs",
     creditPacksSubtitle:
       "Prefer to top up without a subscription? Buy credits once and spend them whenever inspiration strikes.",
@@ -248,7 +250,8 @@ export const PRICING_COPY: { en: PricingCopy; zh: PricingCopy } = {
     mostPopular: "最受欢迎",
     comingSoon: "即将推出",
     redirecting: "跳转中…",
-    getStarted: "立即开始",
+    choosePlan: "选择 {plan} 方案",
+    buyCredits: "购买 {credits} 积分",
     creditPacksTitle: "积分包",
     creditPacksSubtitle: "不想订阅？一次性购买积分，灵感来时随时使用。",
     packCredits: "{credits} 积分",

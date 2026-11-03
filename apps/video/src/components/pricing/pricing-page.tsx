@@ -1,7 +1,7 @@
-// placeholder: replace this line
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import type { CreditPackageConfig } from "@/config/credits";
 import {
@@ -47,6 +47,7 @@ export function PricingPage({
   locale,
 }: PricingPageProps) {
   const copy = pricingCopy(locale);
+  const featureLabel = useTranslations("Credits.features");
   const faq = faqItemsFor(locale);
   const [period, setPeriod] = useState<BillingPeriod>("month");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -75,10 +76,10 @@ export function PricingPage({
     setPendingId(null);
   }
 
-  function buttonLabel(productId: string): string {
+  function buttonLabel(productId: string, label: string): string {
     if (!paymentsEnabled) return copy.comingSoon;
     if (pendingId === productId) return copy.redirecting;
-    return copy.getStarted;
+    return label;
   }
 
   return (
@@ -112,9 +113,9 @@ export function PricingPage({
               onClick={() => setPeriod("year")}
             >
               {copy.yearly}
+              <span className="pr-toggle__badge">{copy.saveBadge}</span>
             </button>
           </fieldset>
-          <span className="pr-toggle__badge">{copy.saveBadge}</span>
         </div>
 
         {/* ---------- plan cards ---------- */}
@@ -123,6 +124,7 @@ export function PricingPage({
             const isPopular = plan.popular === true;
             const isYearly = plan.billingPeriod === "year";
             const features = plan.features ?? [];
+            const planName = displayPlanName(plan.name);
             const showError = errorId === plan.id;
 
             return (
@@ -134,7 +136,7 @@ export function PricingPage({
                   <span className="pr-card__ribbon">{copy.mostPopular}</span>
                 ) : null}
 
-                <h2 className="pr-card__name">{displayPlanName(plan.name)}</h2>
+                <h2 className="pr-card__name">{planName}</h2>
 
                 <div className="pr-price">
                   <span className="pr-price__amount">
@@ -160,7 +162,7 @@ export function PricingPage({
                 {features.length > 0 ? (
                   <ul className="pr-features">
                     {features.map((feature) => (
-                      <li key={feature}>{feature}</li>
+                      <li key={feature}>{featureLabel(feature)}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -169,11 +171,14 @@ export function PricingPage({
 
                 <button
                   type="button"
-                  className={`pr-btn${isPopular ? " pr-btn--primary" : ""}`}
+                  className={`pr-btn ${isPopular ? "du-primary pr-btn--primary" : "du-secondary pr-btn--secondary"}`}
                   disabled={!paymentsEnabled || pendingId !== null}
                   onClick={() => handleCheckout(plan.id)}
                 >
-                  {buttonLabel(plan.id)}
+                  {buttonLabel(
+                    plan.id,
+                    fill(copy.choosePlan, { plan: planName.replace(/ Plan$/, "") })
+                  )}
                 </button>
 
                 {showError && errorMessage ? (
@@ -210,7 +215,7 @@ export function PricingPage({
                   {features.length > 0 ? (
                     <ul className="pr-features">
                       {features.map((feature) => (
-                        <li key={feature}>{feature}</li>
+                        <li key={feature}>{featureLabel(feature)}</li>
                       ))}
                     </ul>
                   ) : null}
@@ -219,11 +224,14 @@ export function PricingPage({
 
                   <button
                     type="button"
-                    className="pr-btn pr-btn--sm"
+                    className="pr-btn du-secondary pr-btn--secondary pr-btn--sm"
                     disabled={!paymentsEnabled || pendingId !== null}
                     onClick={() => handleCheckout(pack.id)}
                   >
-                    {buttonLabel(pack.id)}
+                    {buttonLabel(
+                      pack.id,
+                      fill(copy.buyCredits, { credits: formatCredits(pack.credits) })
+                    )}
                   </button>
 
                   {showError && errorMessage ? (

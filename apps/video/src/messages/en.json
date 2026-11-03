@@ -263,9 +263,9 @@
       }
     },
     "features": {
-      "hd_videos": "HD video generation",
-      "fast_generation": "Fast generation speed",
-      "commercial_use": "Commercial use license",
+      "hd_videos": "HD videos",
+      "fast_generation": "Fast generation",
+      "commercial_use": "Commercial use",
       "custom_models": "Custom AI models"
     }
   },

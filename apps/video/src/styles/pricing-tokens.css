@@ -83,6 +83,11 @@
 }
 
 .pr-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
   appearance: none;
   border: 0;
   background: transparent;
@@ -108,15 +113,21 @@
 .pr-toggle__badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border: 1px solid var(--pr-border);
+  padding: 4px 9px;
+  border: 1px solid var(--pr-accent);
   border-radius: 999px;
   background: var(--pr-accent-soft);
   color: var(--pr-accent-2);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.pr-toggle__btn--active .pr-toggle__badge {
+  border-color: var(--pr-bg);
+  background: var(--pr-bg);
+  color: var(--pr-accent);
 }
 
 /* ---------- plan grid & cards ---------- */
@@ -125,7 +136,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .pr-card {
@@ -253,6 +264,11 @@
   border-color: var(--pr-accent-2);
 }
 
+.pr-btn--secondary {
+  border-color: color-mix(in srgb, var(--pr-text) 48%, var(--pr-bg));
+  background: transparent;
+}
+
 .pr-btn--primary {
   border-color: var(--pr-accent);
   background: var(--pr-accent);
@@ -260,8 +276,8 @@
 }
 
 .pr-btn--primary:hover:not(:disabled) {
-  border-color: var(--pr-accent-2);
-  background: var(--pr-accent-2);
+  border-color: var(--du-accent-hover);
+  background: var(--du-accent-hover);
 }
 
 .pr-btn:disabled {
