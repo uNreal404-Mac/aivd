@@ -37,10 +37,10 @@ const studioPicks: Scene[] = [
 ];
 
 const models = [
-  { name: "Sora 2", href: "/sora-2", en: "Stage a scene from a written prompt.", zh: "从一段文字搭建镜头。" },
-  { name: "Veo 3.1", href: "/veo-3-1", en: "Build a cinematic scene with sound.", zh: "创作带声音的电影感画面。" },
-  { name: "Wan 2.6", href: "/wan-2-6", en: "Bring motion to a product or portrait.", zh: "为产品或肖像画面加入动态。" },
-  { name: "Seedance 1.5 Pro", href: "/seedance-1-5", en: "Try a short shot from text or a still.", zh: "用文字或静帧尝试一条短片。" },
+  { name: "Sora 2", id: "sora-2", en: "Stage a scene from a written prompt.", zh: "从一段文字搭建镜头。" },
+  { name: "Veo 3.1", id: "veo-3.1", en: "Build a cinematic scene with sound.", zh: "创作带声音的电影感画面。" },
+  { name: "Wan 2.6", id: "wan2.6", en: "Bring motion to a product or portrait.", zh: "为产品或肖像画面加入动态。" },
+  { name: "Seedance 1.5 Pro", id: "seedance-1.5-pro", en: "Try a short shot from text or a still.", zh: "用文字或静帧尝试一条短片。" },
 ];
 
 function sceneHref(lang: string, shot: Scene, language: Language) {
@@ -124,7 +124,7 @@ export function ConversionShowcase({ lang }: { lang: string }) {
     <section id="models" className={s.section} aria-labelledby="showcase-models-title">
       <SectionHeading id="showcase-models-title" title={zh ? "视频模型" : "Video models"} />
       <div className={s.models} data-showcase-models="">
-        {models.map((model) => <a key={model.href} className={s.model} href={localizedHref(lang, model.href)} aria-label={model.name}>
+        {models.map((model) => <a key={model.id} className={s.model} href={localizedHref(lang, "/ai/video") + "?model=" + model.id} aria-label={model.name}>
           <div><h3>{model.name}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
           <p>{model[language]}</p>
         </a>)}
