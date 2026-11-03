@@ -122,13 +122,13 @@ function PresetPicker({ group, lang }: { group: PresetGroup; lang: string }) {
         <ChevronDown size={19} aria-hidden="true" />
       </summary>
       <div className={styles.pickerBody}>
-        <div className={styles.options} role="group" aria-label={group.title}>
+        <fieldset className={styles.options} aria-label={group.title}>
           {group.presets.map((preset, i) => (
             <button key={preset.name} type="button" aria-pressed={i === index} onClick={() => { setIndex(i); setStorageError(false); }}>
               {language === "zh" ? preset.zhName : preset.name}
             </button>
           ))}
-        </div>
+        </fieldset>
         <p className={styles.shot} aria-live="polite">{prompt}</p>
         <div className={styles.pickerActions}>
           <button className={styles.studio} type="button" onClick={openShot}>
@@ -171,7 +171,7 @@ export function PremiereCollection({ lang }: { lang: string }) {
               </div>
             </Link>
           ))}
-        </div>
+        </fieldset>
       </section>
       <section className={styles.directory} aria-labelledby="studio-directory">
         <h2 id="studio-directory">{text.directory}</h2>

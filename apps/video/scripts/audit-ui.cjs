@@ -47,13 +47,14 @@ const jsx=[...changed].filter(n=>n.startsWith('apps/video/src/')&&/\.[jt]sx$/.te
 if(jsx.length){
   const ts=require(require.resolve('typescript',{paths:[path.join(root,'apps/video')]}));
   for(const name of jsx){
-    const content=fs.readFileSync(name,'utf8'), source=ts.createSourceFile(name,content,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-    function visit(node,inside){
+    const content=fs.readFileSync(name,'utf8');
+    const source=ts.createSourceFile(name,content,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+    const visit = (node,inside) => {
       const open=ts.isJsxElement(node)?node.openingElement:ts.isJsxSelfClosingElement(node)?node:null;
       const card=open && (open.tagName.getText(source).split('.').pop()==='Card' || open.attributes.properties.some(p=>ts.isJsxAttribute(p)&&p.name.getText(source)==='className'&&p.initializer&&/\b(?:du-card|pr-card|s\.card|styles\.card)\b/.test(p.initializer.getText(source))));
       if(card&&inside)findings.push({file:name,line:source.getLineAndCharacterOfPosition(open.getStart(source)).line+1,rule:'nested-card-in-changed-file'});
       ts.forEachChild(node,c=>visit(c,inside||card));
-    }
+    };
     visit(source,false);
   }
 }
