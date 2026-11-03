@@ -5,6 +5,7 @@ import { creationLabel } from "@/lib/creation-label";
 import { fallbackModel, seedanceGuides, supportFaq, supportTitle, type SeedanceVersion } from "@/lib/seedance-support";
 import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PromptBox } from "@/components/hf/prompt-box";
+import { SeedanceFilmPreview } from "./seedance-film-preview";
 import s from "./seedance-support-page.module.css";
 
 const exercises = {
@@ -70,7 +71,8 @@ export function SeedanceSupportPage({ version, lang }: { version: SeedanceVersio
         <p>{zh ? "以下为工作室参考片和配套练习提示词。点击播放后，按自己的项目调整镜头描述。" : "These studio reference films accompany the prompt exercises. Play a clip, then adapt its direction to your own scene."}</p>
         <div className={s.films}>{exercises[version].map(([file, en, cn, prompt, promptZh]) => (
           <figure key={file}>
-            <video controls playsInline preload="none" poster={`/conversion/showcase/${file}.webp`} src={`/conversion/showcase/${file}.mp4`} aria-label={zh ? cn : en} />
+            <SeedanceFilmPreview src={`/conversion/showcase/${file}.mp4`} poster={`/conversion/showcase/${file}.webp`}
+              name={zh ? cn : en} playLabel={zh ? `播放：${cn}` : `Play ${en}`} />
             <figcaption><strong>{zh ? cn : en}</strong><span>{zh ? promptZh : prompt}</span></figcaption>
           </figure>
         ))}</div>

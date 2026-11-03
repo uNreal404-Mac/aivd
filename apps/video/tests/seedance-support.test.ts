@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { SeedanceFilmPreview } from "@/components/hf/seedance-film-preview";
 import sitemap from "@/app/sitemap";
 import { getAvailableModels } from "@/config/credits";
 import { buildAlternates } from "@/lib/seo";
@@ -25,6 +28,19 @@ describe("Seedance support pages", () => {
         expect(paths.filter((path) => path === prefix + "/" + slug)).toHaveLength(1);
       }
     }
+  });
+
+  it("provides a lazy poster and a working native play action before hydration", () => {
+    const html = renderToStaticMarkup(createElement(SeedanceFilmPreview, {
+      src: "/conversion/showcase/shore.mp4", poster: "/conversion/showcase/shore.webp",
+      name: "Coastline", playLabel: "Play Coastline",
+    }));
+    expect(html).not.toContain("<video");
+    expect(html).toContain('action="/conversion/showcase/shore.mp4"');
+    expect(html).toContain('aria-label="Play Coastline"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('decoding="async"');
+    expect(html.toLowerCase()).toContain('fetchpriority="low"');
   });
 
   it("hands off to a configured text-to-video model", () => {
