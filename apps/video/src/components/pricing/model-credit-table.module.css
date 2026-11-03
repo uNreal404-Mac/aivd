@@ -1,9 +1,9 @@
 .section { margin-block: 64px; color: var(--du-text); }
-.section h2 { margin: 0 0 8px; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; line-height: 1.12; color: var(--du-ink); }
+.section h2 { margin: 0 0 8px; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; line-height: 1.12; color: var(--du-text); }
 .section p { margin: 0 0 24px; line-height: 1.5; color: var(--du-text-muted); }
-.model { margin-top: 8px; border: 1px solid var(--du-rule); border-radius: 8px; overflow: hidden; background: var(--du-surface); }
-.model summary { padding: 16px; cursor: pointer; color: var(--du-ink); font-weight: 650; }
+.model { margin-top: 8px; border: 1px solid var(--du-border); border-radius: 8px; overflow: hidden; background: var(--du-surface); }
+.model summary { padding: 16px; cursor: pointer; color: var(--du-text); font-weight: 650; }
 .model summary:focus-visible { outline: 2px solid var(--du-accent); outline-offset: -3px; }
 .model table { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
-.model th, .model td { padding: 8px 12px; border-top: 1px solid var(--du-rule); text-align: right; font-size: .9rem; }
+.model th, .model td { padding: 8px 12px; border-top: 1px solid var(--du-border); text-align: right; font-size: .9rem; }
 .model th:first-child { text-align: left; }

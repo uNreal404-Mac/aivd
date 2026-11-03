@@ -75,7 +75,7 @@
     inset: auto 0 0;
     display: block;
     padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--du-rule);
+    border-top: 1px solid var(--du-border);
     background: var(--du-bg);
   }
 
