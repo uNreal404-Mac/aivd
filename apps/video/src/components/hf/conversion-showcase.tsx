@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import { hasDbBinding } from "@/db";
+import { BeamBackdrop, SpotlightLink } from "@/components/motion/accents";
 import { getAvailableModels } from "@/config/credits";
 import { STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { creationLabel } from "@/lib/creation-label";
@@ -96,10 +97,10 @@ export function ConversionShowcase({ lang }: { lang: string }) {
           const editorial = STUDIO_MODELS.find((item) => item.id === model.id)?.badge;
           const badge = editorial === "Top" ? "HOT" : editorial === "New" ? "NEW" : undefined;
           const seconds = model.durations?.length ? model.durations.join(" / ") + (zh ? " 秒" : " s") : undefined;
-          return <a key={model.id} className={s.model} href={localizedHref(lang, "/text-to-video") + "?model=" + encodeURIComponent(model.id)} aria-label={model.name}>
-            <div><h3>{model.name} {badge && <span className={s.modelBadge}>{badge}</span>}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
+          return <SpotlightLink key={model.id} className={s.model} href={localizedHref(lang, "/text-to-video") + "?model=" + encodeURIComponent(model.id)} label={model.name}>
+            <div><h3>{model.name} {badge && <span className={s.modelBadge + " motion-badge"}>{badge}</span>}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
             <p>{[seconds, model.qualities?.join(" · ")].filter(Boolean).join("  ·  ")}</p>
-          </a>;
+          </SpotlightLink>;
         })}
       </div>
     </section>
@@ -136,7 +137,8 @@ export function ConversionShowcase({ lang }: { lang: string }) {
 
 export function ConversionFinalCTA({ lang }: { lang: string }) {
   const zh = lang.startsWith("zh");
-  return <section className={s.final} aria-labelledby="showcase-final-title">
+  return <section className={s.final + " motion-endcap"} aria-labelledby="showcase-final-title">
+    <BeamBackdrop />
     <div className={s.finalInner}>
       <h2 id="showcase-final-title">{zh ? "下一幕，由你开拍。" : "Make your next shot."}</h2>
       <CreationCTA lang={lang} placement="final" />
