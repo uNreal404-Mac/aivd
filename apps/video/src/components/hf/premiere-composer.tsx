@@ -39,6 +39,7 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
   const [prompt, setPrompt] = useState("");
   const [choice, setChoice] = useState<Partial<PremiereSettings>>({ quality: "720p" });
   const [error, setError] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const models = getPremiereModels(mode, provider);
@@ -50,6 +51,7 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
   const destination = localizedHref(lang, "/" + mode);
   const max = isImage ? MAX_PROMPT_LENGTH : 2000;
   useEffect(() => {
+    setHydrated(true);
     const ready = () => setLeaving(false);
     window.addEventListener("pageshow", ready);
     return () => window.removeEventListener("pageshow", ready);
@@ -70,7 +72,7 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
   }
   function openStudio(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!settings || leaving) return;
+    if (!hydrated || !settings || leaving) return;
     const draft = prompt.trim();
     if (!draft || draft.length > max) {
       setError(!draft ? (zh ? "写一句镜头描述，或选择下方示例。" : "Describe a shot or choose a sample below.")
@@ -88,7 +90,7 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
     }
   }
   return <div className={s.group}>
-    <form className={s.composer} action={destination} method="get" onSubmit={openStudio} aria-busy={leaving} aria-label={zh ? "视频生成器" : "Video composer"}>
+    <form className={s.composer} action={destination} method="get" onSubmit={openStudio} aria-busy={!hydrated || leaving} aria-label={zh ? "视频生成器" : "Video composer"}>
       <div className={s.top}>
         <fieldset className={s.modes} aria-label={zh ? "生成方式" : "Generation mode"}>
           <button type="button" aria-pressed={!isImage} onClick={() => switchMode("text-to-video")}>{zh ? "文生视频" : "Text to video"}</button>
@@ -97,7 +99,7 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
         <button className={s.ghost} type="button" onClick={() => fill(shot)}>{zh ? "用这段分镜" : "Use this shot"}</button>
       </div>
       <label className="sr-only" htmlFor="premiere-prompt">{zh ? "镜头描述" : "Shot description"}</label>
-      <textarea id="premiere-prompt" ref={input} name="prompt" value={prompt} maxLength={max} rows={2} autoComplete="off"
+      <textarea id="premiere-prompt" ref={input} value={prompt} maxLength={max} rows={2} autoComplete="off"
         aria-invalid={error ? true : undefined} aria-describedby={error ? "premiere-error" : undefined}
         placeholder={zh ? samples[0][1] : samples[0][3]} onChange={event => { setPrompt(event.target.value); setError(""); }} />
       {active && settings ? <fieldset className={s.settings} aria-label={zh ? "镜头参数" : "Shot settings"}>
@@ -111,12 +113,13 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
       <div className={s.actions}>
         {isImage ? <span className={s.hint}>{zh ? "下一步添加图片" : "Add an image in the studio"}</span> :
           <button className={s.ghost} type="button" onClick={() => {switchMode("image-to-video");input.current?.focus({ preventScroll:true });}}>{zh ? "从图片开始" : "Start with an image"}</button>}
-        <button className={s.primary} type="submit" disabled={!settings || leaving}>
+        <button className={s.primary} type="submit" disabled={!hydrated || !settings || leaving}>
           {leaving ? (zh ? "进入工作台…" : "Opening studio…") : (zh ? "免费生成视频" : "Generate Video Free")}
           {!leaving && estimate !== null && <span> · {estimate} {zh ? "积分" : "credits"}</span>}
           <ArrowUpRight size={16} aria-hidden="true" />
         </button>
       </div>
+      <noscript><p className={s.message}>{zh ? "请启用 JavaScript，以将镜头设置带入工作台。" : "Enable JavaScript to transfer your shot settings to the studio."}</p></noscript>
       {error && <p id="premiere-error" role="alert" className={s.message}>{error}</p>}
     </form>
     <fieldset className={s.samples} aria-label={zh ? "使用示例提示词" : "Use a sample prompt"}>
