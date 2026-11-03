@@ -1,4 +1,3 @@
-import { Inter as FontSans, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -22,14 +21,17 @@ import { i18n } from "@/config/i18n-config";
 import { getSiteTitle, siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 
-const fontSans = FontSans({
-  subsets: ["latin"],
+const fontSans = localFont({
+  src: "../styles/fonts/Inter-Latin.woff2",
+  weight: "100 900",
+  display: "swap",
   variable: "--font-sans",
 });
 
-const fontDisplay = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["500", "700"],
+const fontDisplay = localFont({
+  src: "../styles/fonts/SpaceGrotesk-Latin.woff2",
+  weight: "300 700",
+  display: "swap",
   variable: "--font-display",
 });
 

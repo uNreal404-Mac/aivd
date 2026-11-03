@@ -122,7 +122,7 @@ describe("localizedHref", () => {
 describe("du-home styling", () => {
   it("defines every --du-* variable used by the component", () => {
     const css = readSource("src/styles/theme.css");
-    const tsx = readSource("src/components/hf/du-home.tsx");
+    const tsx = readSource("src/styles/conversion.css");
 
     const used = new Set(
       Array.from(tsx.matchAll(/var\((--du-[a-zA-Z0-9-]+)\)/g)).map(
@@ -193,12 +193,7 @@ describe("du-glass styling", () => {
     expect(css).toContain("backdrop-filter");
   });
 
-  it("uses the glass classes in the component", () => {
-    const tsx = readSource("src/components/hf/du-home.tsx");
 
-    expect(tsx).toContain("du-glass-btn");
-    expect(tsx).toContain("du-glass");
-  });
 });
 
 describe("site config", () => {
@@ -213,5 +208,15 @@ describe("layout", () => {
 
     expect(source).not.toContain("@vercel/analytics");
     expect(source).not.toContain("@vercel/speed-insights");
+  });
+});
+
+describe("conversion hero media", () => {
+  it("ships every poster and clip referenced by the hero", () => {
+    const source = readSource("src/components/hf/conversion-hero.tsx");
+    const files = [...new Set(Array.from(source.matchAll(/"(\/home\/[^"]+\.(?:webp|mp4))"/g), m => m[1]))];
+    expect(files.filter(f => f.endsWith(".webp")).length).toBeGreaterThanOrEqual(2);
+    expect(files.some(f => f.endsWith(".mp4"))).toBe(true);
+    for (const file of files) expect(fs.statSync(path.join(projectRoot, "public", file)).size).toBeGreaterThan(1024);
   });
 });

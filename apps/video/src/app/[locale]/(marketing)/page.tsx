@@ -1,4 +1,5 @@
 import { FAQSection } from "@/components/landing/faq-section";
+import { ConversionFinalCTA } from "@/components/hf/conversion-showcase";
 import { DuHome } from "@/components/hf/du-home";
 
 import type { Locale } from "@/config/i18n-config";
@@ -67,6 +68,7 @@ export default async function HomePage({ params }: HomePageProps) {
     <>
       <DuHome lang={locale} />
       <FAQSection />
+      <ConversionFinalCTA lang={locale} />
     </>
   );
 }

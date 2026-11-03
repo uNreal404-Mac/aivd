@@ -1,23 +1,7 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
-
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { BlurFade } from "@/components/magicui/blur-fade";
+import { getTranslations } from "next-intl/server";
 import { siteConfig } from "@/config/site";
 
-interface FAQItem {
-  questionKey: string;
-  answerKey: string;
-}
-
-const faqData: FAQItem[] = [
+const faqData = [
   {
     questionKey: "general.question",
     answerKey: "general.answer",
@@ -44,8 +28,8 @@ const faqData: FAQItem[] = [
   },
 ];
 
-export function FAQSection() {
-  const t = useTranslations("FAQ");
+export async function FAQSection() {
+  const t = await getTranslations("FAQ");
   const supportEmail = siteConfig.supportEmail;
   const visibleFaqData = supportEmail
     ? faqData
@@ -65,100 +49,12 @@ export function FAQSection() {
     })),
   };
 
-  return (
-    <section className="py-24 md:py-32 bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* 标题 */}
-          <BlurFade inView>
-            <div className="text-center mb-12">
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="text-3xl md:text-4xl font-bold mb-4"
-              >
-                {t("title")}
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="text-lg text-muted-foreground"
-              >
-                {t("subtitle")}
-              </motion.p>
-            </div>
-          </BlurFade>
-
-          {/* FAQ 列表 */}
-          <BlurFade delay={0.2} inView>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-            >
-              <Accordion type="single" collapsible className="space-y-3">
-                {visibleFaqData.map((item, index) => (
-                  <motion.div
-                    key={item.questionKey}
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.1 * index }}
-                  >
-                    <AccordionItem
-                      value={`faq-${index}`}
-                      className="px-6 rounded-2xl border border-border bg-background/50 backdrop-blur-sm hover:border-primary/30 transition-colors"
-                    >
-                      <AccordionTrigger className="text-left hover:no-underline cursor-pointer py-4">
-                        <span className="flex items-center gap-3">
-                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
-                            {index + 1}
-                          </span>
-                          <span className="font-medium">{t(item.questionKey)}</span>
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-10 text-muted-foreground leading-relaxed">
-                        {t(item.answerKey, { email: supportEmail ?? "" })}
-                      </AccordionContent>
-                    </AccordionItem>
-                  </motion.div>
-                ))}
-              </Accordion>
-            </motion.div>
-          </BlurFade>
-
-          {/* 底部提示 */}
-          {supportEmail ? (
-            <BlurFade delay={0.4} inView>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
-                className="text-center mt-12 p-6 rounded-2xl bg-primary/10 border border-primary/20"
-              >
-                <p className="text-muted-foreground">
-                  {t("contact")}
-                  <a
-                    href={`mailto:${supportEmail}`}
-                    className="text-primary hover:underline mx-1"
-                  >
-                    {supportEmail}
-                  </a>
-                </p>
-              </motion.div>
-            </BlurFade>
-          ) : null}
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="du-faq du-frame" aria-labelledby="du-faq-heading">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}/>
+    <div><h2 id="du-faq-heading">{t("title")}</h2><p>{t("subtitle")}</p></div>
+    <div>{visibleFaqData.map(item => <details key={item.questionKey}>
+      <summary>{t(item.questionKey)}</summary><p>{t(item.answerKey, { email: supportEmail ?? "" })}</p>
+    </details>)}
+    {supportEmail && <p>{t("contact")} <a href={`mailto:${supportEmail}`}>{supportEmail}</a></p>}</div>
+  </section>;
 }

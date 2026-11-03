@@ -1,9 +1,9 @@
 "use client";
 
-import { Heart } from "lucide-react";
+
 import { useTranslations, useLocale } from "next-intl";
 
-import { cn } from "@/components/ui";
+
 import { LocaleLink } from "@/i18n/navigation";
 
 export function LandingFooter() {
@@ -46,7 +46,7 @@ export function LandingFooter() {
 
   return (
     <footer className="border-t border-[var(--du-border)] bg-[var(--du-bg-elev)]">
-      <div className="container mx-auto px-4 py-12">
+      <div className="du-frame py-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand Column */}
@@ -55,7 +55,7 @@ export function LandingFooter() {
               href="/"
               className="flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
             >
-              🎬 aivd.ai
+              <img src="/logo.svg" width={28} height={28} alt="" /> aidv.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
               {isChinese
@@ -91,11 +91,7 @@ export function LandingFooter() {
           <p className="text-sm text-[var(--du-text-dim)]">
             {t('copyright', { year: currentYear })}
           </p>
-          <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
-            {isChinese ? "由" : "Made with"}
-            <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            {isChinese ? "aivd.ai 团队用心打造" : "by aivd.ai Team"}
-          </p>
+          <LocaleLink href="/" locale={isChinese ? "en" : "zh"} hrefLang={isChinese ? "en" : "zh"} className="inline-flex min-h-11 items-center text-sm text-[var(--du-text)] hover:underline">{isChinese ? "English" : "简体中文"}</LocaleLink>
         </div>
       </div>
     </footer>

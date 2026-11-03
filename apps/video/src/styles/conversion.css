@@ -1,0 +1,29 @@
+.du-frame{width:100%;max-width:var(--du-content);margin-inline:auto;padding-inline:var(--du-gutter)}
+.du-primary,.du-secondary,.du-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 24px;border-radius:8px;font-weight:650;font-size:15px;line-height:1.2;text-decoration:none;cursor:pointer}
+.du-primary{color:var(--du-on-accent);background:var(--du-accent);border:1px solid transparent}
+.du-primary:hover{color:var(--du-on-accent);background:var(--du-accent-hover)}
+.du-secondary{background:transparent;color:var(--du-ink);border:1px solid var(--du-rule)}
+.du-ghost{background:none;color:var(--du-ink);border:0}
+:is(.du-nav,.du-hero,.du-faq) :is(button,a,input,summary):focus-visible,.du-primary:focus-visible{outline:2px solid var(--du-accent);outline-offset:3px}
+.du-nav{position:relative;z-index:12;background:var(--du-bg);color:var(--du-ink);border-bottom:1px solid var(--du-rule)}
+.du-nav-inner,.du-nav-actions,.du-nav-links,.du-nav-create,.du-brand{display:flex;align-items:center}
+.du-nav-inner{height:64px;gap:clamp(24px,4vw,72px)}
+.du-brand{gap:8px;font:700 23px/1 var(--font-display),sans-serif;letter-spacing:-.06em;white-space:nowrap}
+.du-nav-links{gap:clamp(16px,2.2vw,40px)}.du-nav-links a,.du-login,.du-mobile-menu a{font-size:14px;font-weight:550;color:var(--du-text);cursor:pointer}.du-nav-links a,.du-login{display:inline-flex;align-items:center;min-height:44px}.du-nav a:hover,.du-login:hover{color:var(--du-accent)}
+.du-nav-actions{margin-left:auto;gap:24px}.du-nav-create{gap:8px;padding:0 16px;min-height:40px;border:1px solid var(--du-rule);border-radius:8px;color:var(--du-ink);font-size:14px;font-weight:600}
+.du-menu,.du-mobile-menu{display:none}
+.du-hero{position:relative;isolation:isolate;overflow:hidden;background:#090d0c;color:white;display:grid;align-content:end;min-height:520px;height:clamp(520px,72svh,800px)}
+.du-hero-media,.du-hero-media img,.du-hero-scrim{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.du-hero-media{z-index:-3;object-fit:cover;object-position:center}.du-hero-media img{object-fit:cover;object-position:center}
+.du-hero-scrim{z-index:-1;background:linear-gradient(90deg,rgba(0,0,0,.83),rgba(0,0,0,.57) 31%,transparent 74%),linear-gradient(0deg,rgba(0,0,0,.66),transparent 54%)}
+.du-hero-content{padding-bottom:clamp(40px,5vw,80px)}
+.du-eyebrow{display:flex;align-items:center;gap:10px;font:650 12px/1.4 var(--font-display),sans-serif;letter-spacing:.14em;text-transform:uppercase}.du-eyebrow span{width:24px;height:2px;background:var(--du-accent)}
+.du-hero h1{margin:24px 0 12px;max-width:780px;font-family:var(--font-display),Arial,sans-serif;font-weight:700;letter-spacing:-.072em;line-height:.94}
+.du-hero h1 span,.du-hero h1 small{display:block}.du-hero h1 span{max-width:11ch;font-size:clamp(58px,6.4vw,92px);text-wrap:balance}
+.du-hero h1 small{margin-top:16px;font-size:clamp(14px,1.5vw,23px);letter-spacing:.11em;font-weight:550;line-height:1.15}
+.du-hero-content>p{margin:0 0 24px;max-width:470px;color:#e6ebe9;font-size:16px;line-height:1.5}
+.du-hero form{width:min(100%,620px);padding:6px;display:flex;align-items:center;gap:8px;background:rgba(8,11,13,.92);border:1px solid #687173;border-radius:12px}
+.du-hero input{background:transparent;color:white;padding:10px 12px;flex:1;min-width:0;font-size:15px}.du-hero input::placeholder{color:#b5bcbc}
+.du-hero form button{flex:none}.du-film-toggle{position:absolute;bottom:32px;right:var(--du-gutter);width:44px;height:44px;display:grid;place-items:center;background:#101416b3;border:1px solid #788181;color:white;border-radius:50%;cursor:pointer}
+.du-faq{margin-top:var(--du-section-gap);display:grid;grid-template-columns:1fr 1.2fr;gap:64px;color:var(--du-ink)}.du-faq h2{margin:0 0 16px;font:650 clamp(32px,4vw,56px)/1.05 var(--font-display),sans-serif;letter-spacing:-.05em}.du-faq p{margin:8px 0 16px;color:var(--du-text);line-height:1.5}.du-faq details{border-top:1px solid var(--du-rule)}.du-faq summary{cursor:pointer;padding:16px 0;font-size:16px;font-weight:550}.du-faq details p{font-size:15px}
+@media(max-width:767px){.du-nav-inner{height:56px;gap:16px}.du-brand{font-size:21px}.du-brand img{width:26px;height:26px}.du-nav-links,.du-nav-create{display:none}.du-nav-actions{gap:12px}.du-menu{display:grid;place-items:center;height:44px;width:44px;color:var(--du-ink)}.du-mobile-menu:not([hidden]){position:absolute;top:100%;left:0;right:0;display:grid;padding:8px 16px 16px;background:var(--du-bg-elev);border-bottom:1px solid var(--du-rule)}.du-mobile-menu a{min-height:44px;padding:12px}
+.du-hero{height:clamp(480px,66svh,610px);min-height:0}.du-hero-media img{object-position:50% 28%}.du-hero-scrim{background:linear-gradient(0deg,#020504 0%,rgba(0,0,0,.85) 18%,rgba(0,0,0,.43) 56%,rgba(0,0,0,.03) 85%)}.du-hero-content{padding-bottom:24px}.du-eyebrow{font-size:11px}.du-hero h1{margin:16px 0 8px}.du-hero h1 span{font-size:clamp(44px,12.3vw,66px)}.du-hero h1 small{margin-top:8px;font-size:13px}.du-hero-content>p{font-size:14px;margin-bottom:16px;max-width:320px}.du-hero form{flex-wrap:wrap;gap:0;padding:4px}.du-hero input{font-size:16px;padding:8px}.du-hero form button{min-height:44px;font-size:13px;padding-inline:12px}.du-faq{grid-template-columns:1fr;gap:16px}}
