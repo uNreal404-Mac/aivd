@@ -1,0 +1,433 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        margin: 0;
+      }
+      body {
+        background: black;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as T from "./three.js";
+      const W = 1600,
+        H = 800,
+        TAU = Math.PI * 2;
+      const r = new T.WebGLRenderer({
+        antialias: true,
+        preserveDrawingBuffer: true,
+        powerPreference: "high-performance",
+      });
+      r.setSize(W, H);
+      r.setPixelRatio(1);
+      r.toneMapping = T.ACESFilmicToneMapping;
+      r.toneMappingExposure = 0.84;
+      r.outputColorSpace = T.SRGBColorSpace;
+      document.body.append(r.domElement);
+      const world = new T.Scene();
+      world.background = new T.Color(0x010304);
+      const camera = new T.PerspectiveCamera(31, W / H, 0.1, 100);
+      camera.position.set(0, 0, 9.2);
+      // Procedural HDR studio with independent softbox, strip, and cyan edge reflections.
+      const w = 768,
+        h = 384,
+        d = new Float32Array(w * h * 4);
+      const boxes = [
+        [-0.82, 0.57, 0.46, 0.23, [7.4, 8, 8.5]],
+        [-1.62, 0.13, 0.125, 0.56, [4.7, 5, 5.7]],
+        [1.03, 0.83, 0.72, 0.1, [3.8, 4.5, 5.1]],
+        [2.43, 0.03, 0.105, 0.55, [0.28, 4.6, 5.5]],
+        [2.71, 0.22, 0.07, 0.61, [2.8, 5.2, 5.4]],
+        [-2.67, 0.24, 0.42, 0.23, [3.6, 3.8, 3.9]],
+        [0.24, -0.37, 0.43, 0.15, [1.2, 1.5, 1.85]],
+        [2.0, -0.53, 0.45, 0.18, [0.18, 1.04, 1.0]],
+        [-2.27, -0.53, 0.18, 0.3, [0.95, 1.03, 1.12]],
+        [0.34, 0.14, 0.115, 0.55, [2.2, 2.4, 2.45]],
+      ];
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+          const yaw = (x / w - 0.5) * TAU,
+            pitch = (y / h - 0.5) * Math.PI;
+          let c = [0.014, 0.021, 0.03];
+          for (const [a, b, sx, sy, v] of boxes) {
+            const dx = Math.atan2(Math.sin(yaw - a), Math.cos(yaw - a)),
+              dy = pitch - b;
+            const val = Math.exp(
+              -Math.pow(Math.abs(dx / sx), 6) - Math.pow(Math.abs(dy / sy), 6),
+            );
+            for (let k = 0; k < 3; k++) c[k] += v[k] * val;
+          }
+          const p = (y * w + x) * 4;
+          d[p] = c[0];
+          d[p + 1] = c[1];
+          d[p + 2] = c[2];
+          d[p + 3] = 1;
+        }
+      const envTex = new T.DataTexture(d, w, h, T.RGBAFormat, T.FloatType);
+      envTex.mapping = T.EquirectangularReflectionMapping;
+      envTex.needsUpdate = true;
+      const pmrem = new T.PMREMGenerator(r);
+      world.environment = pmrem.fromEquirectangular(envTex).texture;
+      envTex.dispose();
+      pmrem.dispose();
+      function metal(hex, rough = 0.22, metalness = 1) {
+        const m = new T.MeshStandardMaterial({
+          color: hex,
+          roughness: rough,
+          metalness,
+        });
+        m.onBeforeCompile = (sh) => {
+          sh.vertexShader =
+            "varying vec3 vTurned;\n" +
+            sh.vertexShader.replace(
+              "#include <begin_vertex>",
+              "#include <begin_vertex>\n vTurned=position;",
+            );
+          sh.fragmentShader =
+            "varying vec3 vTurned;\n" +
+            sh.fragmentShader.replace(
+              "#include <roughnessmap_fragment>",
+              "#include <roughnessmap_fragment>\n float sr=length(vTurned.xy); float kerf=sin(sr*650.)*sin(sr*146.); float aa=1.-smoothstep(.001,.013,fwidth(sr)); roughnessFactor=clamp(roughnessFactor+.040*kerf*aa,.062,.95); diffuseColor.rgb*=1.+.029*kerf*aa;",
+            );
+        };
+        return m;
+      }
+      const chrome = metal(0xe0e8ec, 0.115),
+        satin = metal(0xc6d1d2, 0.25),
+        smoked = metal(0x67777b, 0.17),
+        iron = metal(0x29343a, 0.24),
+        black = metal(0x141a20, 0.25),
+        dark = metal(0x11171b, 0.36),
+        gun = metal(0x454c55, 0.22),
+        etch = metal(0x04080b, 0.32),
+        teal = metal(0x268486, 0.17);
+      const glass = new T.MeshPhysicalMaterial({
+        color: 0x72dedd,
+        metalness: 0.1,
+        roughness: 0.09,
+        transmission: 0.72,
+        thickness: 0.55,
+        ior: 1.52,
+        attenuationDistance: 0.72,
+        attenuationColor: new T.Color(0x53bdc1),
+        clearcoat: 1,
+        clearcoatRoughness: 0.06,
+        envMapIntensity: 1.4,
+      });
+      const lens = new T.MeshPhysicalMaterial({
+        color: 0x123e45,
+        metalness: 0.33,
+        roughness: 0.095,
+        transmission: 0.14,
+        thickness: 0.38,
+        ior: 1.55,
+        clearcoat: 1,
+        clearcoatRoughness: 0.06,
+        envMapIntensity: 1.6,
+      });
+      function grp(parent) {
+        const g = new T.Group();
+        parent.add(g);
+        return g;
+      }
+      function mesh(parent, geo, mat) {
+        const m = new T.Mesh(geo, mat);
+        parent.add(m);
+        return m;
+      }
+      function ring(parent, points, mat, segments = 220) {
+        const p = [...points, points[0]].map(
+          ([rad, z]) => new T.Vector2(rad, z),
+        );
+        const g = new T.LatheGeometry(p, segments);
+        g.rotateX(Math.PI / 2);
+        return mesh(parent, g, mat);
+      }
+      function band(parent, ri, ro, z, th, b, material) {
+        b = Math.min(b, (ro - ri) / 3, th / 3);
+        return ring(
+          parent,
+          [
+            [ri + b, z - th / 2],
+            [ro - b, z - th / 2],
+            [ro, z - th / 2 + b],
+            [ro, z + th / 2 - b],
+            [ro - b, z + th / 2],
+            [ri + b, z + th / 2],
+            [ri, z + th / 2 - b],
+            [ri, z - th / 2 + b],
+          ],
+          material,
+        );
+      }
+      function tor(parent, rad, th, z, mat) {
+        const m = mesh(parent, new T.TorusGeometry(rad, th, 14, 200), mat);
+        m.position.z = z;
+        return m;
+      }
+      function latcap(parent, size, z, depth, mat) {
+        const m = mesh(parent, new T.SphereGeometry(size, 120, 42), mat);
+        m.scale.z = depth;
+        m.position.z = z;
+        return m;
+      }
+      function instances(parent, geo, mat, n, pos) {
+        const m = new T.InstancedMesh(geo, mat, n),
+          obj = new T.Object3D();
+        for (let i = 0; i < n; i++) {
+          obj.position.set(0, 0, 0);
+          obj.rotation.set(0, 0, 0);
+          obj.scale.set(1, 1, 1);
+          pos(obj, i);
+          obj.updateMatrix();
+          m.setMatrixAt(i, obj.matrix);
+        }
+        parent.add(m);
+        return m;
+      }
+      function ticks(g, n, rad, z, len, width, mat, short = false) {
+        return instances(
+          g,
+          new T.BoxGeometry(width, len, 0.012),
+          mat,
+          n,
+          (o, i) => {
+            let a = (TAU * i) / n;
+            o.rotation.z = a - Math.PI / 2;
+            o.position.set(rad * Math.cos(a), rad * Math.sin(a), z);
+            if (short && i % 5 !== 0) o.scale.y = 0.45;
+          },
+        );
+      }
+      function wedges(parent, count, ri, ro, z, span, material, bevel = 0.014) {
+        const end = span / 2,
+          shape = new T.Shape();
+        shape.absarc(0, 0, ro, -end, end, false);
+        shape.lineTo(ri * Math.cos(end - 0.045), ri * Math.sin(end - 0.045));
+        shape.absarc(0, 0, ri, end - 0.045, -end + 0.045, true);
+        shape.closePath();
+        const g = new T.ExtrudeGeometry(shape, {
+          depth: 0.066,
+          bevelEnabled: true,
+          bevelSegments: 2,
+          steps: 1,
+          bevelSize: bevel,
+          bevelThickness: bevel,
+          curveSegments: 40,
+        });
+        for (let i = 0; i < count; i++) {
+          const m = mesh(parent, g, material);
+          m.position.z = z;
+          m.rotation.z = (i * TAU) / count;
+        }
+      }
+      const machine = grp(world);
+      machine.position.set(1.66, 0.07, 0);
+      const rear = grp(machine),
+        carrier = grp(machine),
+        optic = grp(machine),
+        shutter = grp(machine),
+        front = grp(machine);
+      // The back shell is continuous; radial grooves, knurling and seal rings break up the highlights.
+      ring(
+        rear,
+        [
+          [0.67, -1.05],
+          [1.55, -1.05],
+          [1.65, -0.98],
+          [1.71, -0.74],
+          [1.86, -0.67],
+          [1.91, -0.58],
+          [1.91, -0.43],
+          [1.8, -0.39],
+          [0.67, -0.39],
+        ],
+        black,
+      );
+      band(rear, 1.58, 1.69, -0.91, 0.1, 0.013, smoked);
+      band(rear, 1.66, 1.75, -0.75, 0.09, 0.015, chrome);
+      const grip = band(rear, 1.72, 1.91, -0.5, 0.28, 0.026, iron);
+      instances(
+        rear,
+        new T.BoxGeometry(0.037, 0.045, 0.2),
+        gun,
+        112,
+        (o, i) => {
+          const a = (TAU * i) / 112;
+          o.rotation.set(0.16, 0, a - Math.PI / 2);
+          o.position.set(1.913 * Math.cos(a), 1.913 * Math.sin(a), -0.51);
+        },
+      );
+      for (let i = 0; i < 4; i++)
+        tor(rear, 1.79 - i * 0.008, 0.012, -0.75 - i * 0.043, gun);
+      band(rear, 1.42, 1.87, -0.28, 0.16, 0.03, satin);
+      tor(rear, 1.83, 0.018, -0.171, chrome);
+      band(carrier, 1.45, 1.9, -0.07, 0.37, 0.045, glass);
+      band(carrier, 1.58, 1.88, 0.102, 0.075, 0.012, smoked);
+      band(carrier, 1.61, 1.91, 0.185, 0.07, 0.014, chrome);
+      // Front plate: interlocking chamfered metal sectors and a recessed glass raceway.
+      band(front, 1.49, 1.9, 0.49, 0.18, 0.035, iron);
+      band(front, 1.56, 1.845, 0.595, 0.07, 0.013, smoked);
+      wedges(
+        front,
+        6,
+        1.63,
+        1.915,
+        0.65,
+        TAU / 6 - 0.09,
+        metal(0x79868a, 0.19),
+        0.027,
+      );
+      tor(front, 1.93, 0.022, 0.637, chrome);
+      tor(front, 1.54, 0.022, 0.64, chrome);
+      ticks(front, 90, 1.605, 0.666, 0.061, 0.012, chrome, true);
+      for (let i = 0; i < 6; i++) {
+        const a = (TAU * i) / 6 + 0.14;
+        let x = 1.77 * Math.cos(a),
+          y = 1.77 * Math.sin(a);
+        const m = mesh(
+          front,
+          new T.CylinderGeometry(0.04, 0.035, 0.011, 20),
+          iron,
+        );
+        m.rotation.x = Math.PI / 2;
+        m.position.set(x, y, 0.723);
+        const sl = mesh(front, new T.BoxGeometry(0.037, 0.009, 0.006), etch);
+        sl.position.set(x, y, 0.733);
+        sl.rotation.z = a + 0.2;
+      }
+      band(optic, 0.51, 1.47, 0.06, 0.18, 0.035, black);
+      latcap(optic, 1.41, 0.18, 0.17, lens);
+      band(optic, 1.34, 1.48, 0.25, 0.075, 0.014, chrome);
+      tor(optic, 1.29, 0.037, 0.295, glass);
+      // Nine wedge-shaped, asymmetric iris leaves. The silver leading edges follow the blade curvature.
+      const angle = (r, a) => new T.Vector2(r * Math.cos(a), r * Math.sin(a));
+      const turn = TAU / 9;
+      const lead = [
+        angle(0.64, 0.02),
+        angle(0.83, 0.06),
+        angle(1.17, 0.3),
+        angle(1.5, 0.65),
+      ];
+      const tail = lead.map((p) =>
+        p.clone().rotateAround(new T.Vector2(), turn + 0.008),
+      );
+      const blade = new T.Shape();
+      blade.moveTo(...lead[0]);
+      blade.bezierCurveTo(...lead[1], ...lead[2], ...lead[3]);
+      blade.absarc(0, 0, 1.5, 0.65, 0.65 + turn + 0.008, false);
+      blade.bezierCurveTo(...tail[2], ...tail[1], ...tail[0]);
+      blade.lineTo(...lead[0]);
+      blade.closePath();
+      const bladeGeo = new T.ExtrudeGeometry(blade, {
+        depth: 0.018,
+        bevelEnabled: true,
+        bevelSize: 0.008,
+        bevelThickness: 0.009,
+        bevelSegments: 2,
+        curveSegments: 42,
+      });
+      const bladeColors = [
+        0x161d22, 0x192028, 0x222b31, 0x171d20, 0x21262b, 0x171b20, 0x273036,
+        0x1f282c, 0x1b2226,
+      ];
+      const leaves = [];
+      for (let i = 0; i < 9; i++) {
+        const base = grp(shutter);
+        base.rotation.z = (i * TAU) / 9;
+        const m = mesh(base, bladeGeo, metal(bladeColors[i], 0.28));
+        m.rotation.x = 0.043;
+        const curve = new T.CubicBezierCurve3(
+          ...lead.map((v) => new T.Vector3(v.x, v.y, 0.025)),
+        );
+        const bevel = mesh(
+          base,
+          new T.TubeGeometry(curve, 45, 0.008, 6, false),
+          chrome,
+        );
+        bevel.rotation.copy(m.rotation);
+        base.position.z = 0.455 + i * 0.0008;
+        leaves.push(base);
+      }
+      tor(shutter, 1.49, 0.035, 0.51, gun);
+      // Black glass throat with a real domed specular reflection visible through the moving leaves.
+      latcap(optic, 0.81, 0.25, 0.38, lens);
+      band(optic, 0.58, 0.68, 0.36, 0.09, 0.015, gun);
+      const clearWindow = new T.MeshPhysicalMaterial({
+        color: 0x5ca7ab,
+        metalness: 0.01,
+        roughness: 0.065,
+        transmission: 0.82,
+        thickness: 0.26,
+        ior: 1.46,
+        clearcoat: 0.15,
+        clearcoatRoughness: 0.09,
+        attenuationColor: new T.Color(0x4a8c90),
+        attenuationDistance: 1,
+        transparent: true,
+        opacity: 0.15,
+        envMapIntensity: 0.8,
+      });
+      latcap(front, 1.515, 0.59, 0.13, clearWindow);
+      // Offset floating race ring passing the machined front, with recessed witness marks.
+      const halo = grp(machine);
+      band(halo, 1.948, 2.025, 0.03, 0.095, 0.018, smoked);
+      tor(halo, 2.023, 0.014, 0.055, chrome);
+      wedges(halo, 3, 1.95, 2.018, 0.115, 0.72, glass, 0.012);
+      function lamp(x, y, z, color, intensity) {
+        const l = new T.DirectionalLight(color, intensity);
+        l.position.set(x, y, z);
+        world.add(l);
+      }
+      lamp(-3.4, 5.6, 5, 0xecf7fa, 1.3);
+      lamp(5, 2, -3, 0x5de1df, 2.4);
+      lamp(0.5, -4, 3, 0x93a9c8, 0.38);
+      window.frameAt = (fraction) => {
+        const a = TAU * fraction;
+        machine.rotation.set(
+          -0.34 + 0.13 * Math.sin(a + 0.4),
+          -0.99 + 0.16 * Math.sin(a - 0.35),
+          -0.32 + 0.08 * Math.sin(a),
+        );
+        rear.rotation.z = -a / 112;
+        rear.position.z = -0.4;
+        shutter.position.z = 0.12;
+        carrier.rotation.set(0.07 * Math.cos(a), -0.1 * Math.sin(a), a);
+        front.rotation.set(
+          0.035 * Math.cos(a - 0.3),
+          -0.035 * Math.sin(a),
+          -0.23 + a / 6 + 0.09 * Math.sin(a - 0.18),
+        );
+        front.position.z = 0.37 + 0.095 * Math.sin(a);
+        shutter.rotation.z = 0.23 + 0.28 * Math.sin(a - 0.27);
+        for (let i = 0; i < leaves.length; i++) {
+          const leaf = leaves[i],
+            offset = 0.085 * Math.sin(a - 0.24);
+          leaf.rotation.z = (i * TAU) / 9 + offset;
+          leaf.position.x =
+            0.028 * Math.sin(a - 0.35) * Math.cos((i * TAU) / 9);
+          leaf.position.y =
+            0.028 * Math.sin(a - 0.35) * Math.sin((i * TAU) / 9);
+        }
+        optic.rotation.z = 0.08 * Math.sin(a);
+        halo.scale.setScalar(1.08);
+        halo.position.z = -0.08;
+        halo.rotation.set(
+          0.35 + 0.28 * Math.sin(a),
+          0.18 + 0.38 * Math.cos(a),
+          0.15 + a / 3,
+        );
+        r.render(world, camera);
+      };
+      window.frameAt(0);
+      window.ready = true;
+    </script>
+  </body>
+</html>
