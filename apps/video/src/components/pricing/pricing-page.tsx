@@ -4,8 +4,10 @@ import { BillingMotion } from "@/components/motion/accents";
 import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import type { PricingReferenceClip } from "@/components/pricing/reference-clip";
 import type { CreditPackageConfig } from "@/config/credits";
 import {
+  completeClipCount,
   costPer100Credits,
   displayPlanName,
   faqItemsFor,
@@ -23,6 +25,7 @@ export interface PricingPageProps {
   packs: CreditPackageConfig[];
   locale: string;
   modelCosts: React.ReactNode;
+  referenceClip: PricingReferenceClip | null;
 }
 
 /** Formats a cent amount as a USD string, e.g. 2900 -> "$29". */
@@ -49,6 +52,7 @@ export function PricingPage({
   packs,
   locale,
   modelCosts,
+  referenceClip,
 }: PricingPageProps) {
   const copy = pricingCopy(locale);
   const featureLabel = useTranslations("Credits.features");
@@ -86,249 +90,133 @@ export function PricingPage({
     return label;
   }
 
+  const zh = locale === "zh";
+  const sharedFeatures = (plans[0]?.features ?? []).filter((key) => plans.every((plan) => plan.features?.includes(key)));
+  const packsShareFeatures = packs.length > 0 && packs.every((pack) => sharedFeatures.every((key) => pack.features?.includes(key)));
+
   return (
-    <div className="pr-page">
+    <div className="pr-page" lang={locale}>
       <div className="pr-shell">
-        {/* ---------- hero ---------- */}
         <header className="pr-hero">
-          <h1 className="pr-hero__title">{copy.heroTitle}</h1>
-          <p className="pr-hero__sub">{paymentsEnabled ? copy.heroSubtitle : copy.checkoutClosed}</p>
+          <div className="pr-hero__copy">
+            <h1 className="pr-hero__title">{copy.heroTitle}</h1>
+            <p className="pr-hero__sub">{zh ? "按期订阅，或为单个项目补充积分。" : "Subscribe for ongoing work, or top up for a single project."}</p>
+            {!paymentsEnabled && <p className="pr-status" role="note">
+              {copy.checkoutClosed}{" "}<a href="#credit-costs">{zh ? "查看积分用量" : "View credit costs"} <span aria-hidden="true">↓</span></a>
+            </p>}
+          </div>
+          <figure className="pr-still">
+            <img src="/conversion/showcase/optics.webp" width={720} height={360} alt="" decoding="async" />
+            <figcaption>{zh ? "光学引擎" : "Optical Engine"}</figcaption>
+          </figure>
         </header>
 
-        {/* ---------- billing toggle ---------- */}
-        <div className="pr-toggle-wrap">
-          <fieldset className="pr-toggle motion-billing" aria-label={copy.billingPeriodLabel}>
-            <BillingMotion yearly={period === "year"} />
-            <button
-              type="button"
-              className={`pr-toggle__btn${
-                period === "month" ? " pr-toggle__btn--active" : ""
-              }`}
-              aria-pressed={period === "month"}
-              onClick={() => setPeriod("month")}
-            >
-              {copy.monthly}
-            </button>
-            <button
-              type="button"
-              className={`pr-toggle__btn${
-                period === "year" ? " pr-toggle__btn--active" : ""
-              }`}
-              aria-pressed={period === "year"}
-              onClick={() => setPeriod("year")}
-            >
-              {copy.yearly}
-              {annualSaving !== undefined && (
-                <span className="pr-toggle__badge">{fill(copy.saveBadge, { percent: String(annualSaving) })}</span>
-              )}
-            </button>
-          </fieldset>
-        </div>
-
-        {/* ---------- plan cards ---------- */}
-        <div className="pr-grid">
-          {plans.map((plan) => {
-            const isPopular = plan.popular === true;
-            const isYearly = plan.billingPeriod === "year";
-            const features = plan.features ?? [];
-            const planName = displayPlanName(plan.name);
-            const showError = errorId === plan.id;
-
-            return (
-              <article
-                key={plan.id}
-                className={`pr-card${isPopular ? " pr-card--popular motion-recommended" : ""}`}
-              >
-                {isPopular ? (
-                  <span className="pr-card__ribbon">{copy.mostPopular}</span>
-                ) : null}
-
-                <h2 className="pr-card__name">{planName}</h2>
-
-                <div className="pr-price">
-                  <span className="pr-price__amount">
-                    {formatUsd(monthlyEquivalentCents(plan))}
-                  </span>
-                  <span className="pr-price__period">{copy.perMonth}</span>
-                </div>
-                <span className="pr-price__note">
-                  {isYearly
-                    ? fill(copy.billedYearly, {
-                        amount: formatUsd(plan.price.amount),
-                      })
-                    : copy.billedMonthly}
-                </span>
-
-                <p className="pr-card__credits">
-                  {fill(
-                    isYearly ? copy.creditsPerYear : copy.creditsPerMonth,
-                    { credits: formatCredits(plan.credits) }
-                  )}
-                </p>
-
-                {features.length > 0 ? (
-                  <ul className="pr-features">
-                    {features.map((feature) => (
-                      <li key={feature}>{featureLabel(feature)}</li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <div className="pr-card__spacer" />
-
-                <button
-                  type="button"
-                  className={`pr-btn ${isPopular ? "du-primary pr-btn--primary" : "du-secondary pr-btn--secondary"}`}
-                  disabled={!paymentsEnabled || pendingId !== null}
-                  onClick={() => handleCheckout(plan.id)}
-                >
-                  {buttonLabel(
-                    plan.id,
-                    fill(copy.choosePlan, { plan: planName.replace(/ Plan$/, "") })
-                  )}
+        <section className="pr-subscriptions" aria-labelledby="pr-subscriptions">
+          <div className="pr-section-head">
+            <div>
+              <h2 id="pr-subscriptions">{zh ? "订阅方案" : "Subscriptions"}</h2>
+            </div>
+            <fieldset className="pr-toggle motion-billing" aria-label={copy.billingPeriodLabel}>
+              <BillingMotion yearly={period === "year"} />
+              {(["month", "year"] as const).map((value) => (
+                <button key={value} type="button" className={`pr-toggle__btn${period === value ? " pr-toggle__btn--active" : ""}`}
+                  aria-pressed={period === value} onClick={() => setPeriod(value)}>
+                  {value === "month" ? copy.monthly : copy.yearly}
+                  {value === "year" && annualSaving !== undefined &&
+                    <span className="pr-toggle__badge">{fill(copy.saveBadge, { percent: String(annualSaving) })}</span>}
                 </button>
-
-                {showError && errorMessage ? (
-                  <p className="pr-error">{errorMessage}</p>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
-
-        {/* ---------- comparison table ---------- */}
-        <details className="pr-plan-details">
-          <summary>{copy.compareTitle}</summary>
-          <p className="pr-section__sub">{copy.compareSubtitle}</p>
-          <div className="pr-table-wrap">
-            <table className="pr-table">
-              <thead>
-                <tr>
-                  <th scope="col">{copy.tableFeature}</th>
-                  {plans.map((plan) => (
-                    <th scope="col" key={plan.id}>
-                      {displayPlanName(plan.name)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row">{copy.tableMonthlyCredits}</th>
-                  {plans.map((plan) => (
-                    <td key={plan.id}>
-                      {formatCredits(
-                        plan.billingPeriod === "year"
-                          ? Math.round(plan.credits / 12)
-                          : plan.credits
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row">{copy.tablePrice}</th>
-                  {plans.map((plan) => (
-                    <td key={plan.id}>
-                      {fill(copy.tablePricePerMonth, {
-                        price: formatUsd(monthlyEquivalentCents(plan)),
-                      })}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row">{copy.tableCostPer100}</th>
-                  {plans.map((plan) => (
-                    <td key={plan.id}>{formatUsd(costPer100Credits(plan))}</td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row">{copy.tableCommercialUse}</th>
-                  {plans.map((plan) => (
-                    <td key={plan.id}>
-                      {(plan.features ?? []).includes("commercial_use") ? (
-                        <span className="pr-table__yes">✓</span>
-                      ) : (
-                        <span className="pr-table__no">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
+              ))}
+            </fieldset>
           </div>
-        </details>
 
-        {/* ---------- credit packs ---------- */}
-        <section className="pr-section">
-          <h2 className="pr-section__title">{copy.creditPacksTitle}</h2>
-          <p className="pr-section__sub">{copy.creditPacksSubtitle}</p>
-          <div className="pr-packs">
-            {packs.map((pack) => {
-              const features = pack.features ?? [];
-              const showError = errorId === pack.id;
-
+          {sharedFeatures.length > 0 && <p className="pr-common">
+            {packsShareFeatures ? (zh ? "所有订阅和积分包均包含" : "All plans and packs include ") : (zh ? "所有订阅均包含" : "All plans include ")}
+            {sharedFeatures.map((key) => featureLabel(key)).join(zh ? "、" : " · ")}{zh ? "。" : "."}
+          </p>}
+          <div className="pr-ledger" data-estimate={!!referenceClip} data-checkout={paymentsEnabled}>
+            <div className="pr-ledger__labels" aria-hidden="true">
+              <span>{zh ? "方案" : "Plan"}</span><span>{zh ? "月均价 / USD" : "Monthly rate / USD"}</span>
+              <span>{zh ? "周期积分" : "Credit allowance"}</span>
+              {referenceClip && <span>{zh ? "可生成片段" : "Complete clips"}</span>}
+              <span>{zh ? "额外权益" : "Additional benefits"}</span>{paymentsEnabled && <span />}
+            </div>
+            {plans.map((plan) => {
+              const isPopular = plan.popular === true;
+              const isYearly = plan.billingPeriod === "year";
+              const planName = displayPlanName(plan.name).replace(/ Plan$/, "");
+              const extraFeatures = (plan.features ?? []).filter((key) => !sharedFeatures.includes(key));
               return (
-                <article key={pack.id} className="pr-pack">
-                  <span className="pr-pack__credits">
-                    {fill(copy.packCredits, {
-                      credits: formatCredits(pack.credits),
-                    })}
-                  </span>
-                  <span className="pr-pack__meta">
-                    {fill(copy.packMeta, {
-                      price: formatUsd(pack.price.amount),
-                      per100: formatUsd(costPer100Credits(pack)),
-                    })}
-                  </span>
-
-                  {typeof pack.expireDays === "number" && (
-                    <span className="pr-pack__meta">{fill(copy.packValidity, { days: String(pack.expireDays) })}</span>
-                  )}
-                  {features.length > 0 ? (
-                    <ul className="pr-features">
-                      {features.map((feature) => (
-                        <li key={feature}>{featureLabel(feature)}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  <div className="pr-pack__spacer" />
-
-                  <button
-                    type="button"
-                    className="pr-btn du-secondary pr-btn--secondary pr-btn--sm"
-                    disabled={!paymentsEnabled || pendingId !== null}
-                    onClick={() => handleCheckout(pack.id)}
-                  >
-                    {buttonLabel(
-                      pack.id,
-                      fill(copy.buyCredits, { credits: formatCredits(pack.credits) })
-                    )}
-                  </button>
-
-                  {showError && errorMessage ? (
-                    <p className="pr-error">{errorMessage}</p>
-                  ) : null}
+                <article key={plan.id} className={`pr-card${isPopular ? " pr-card--popular motion-recommended" : ""}`} aria-label={planName}>
+                  <div className="pr-name">
+                    <h3>{planName}</h3>
+                    {isPopular && <span className="pr-recommended">{copy.mostPopular}</span>}
+                  </div>
+                  <div className="pr-rate">
+                    <p className="pr-price">{formatUsd(monthlyEquivalentCents(plan))}<small>{copy.perMonth}</small></p>
+                    <span className="pr-meta">{isYearly ? fill(copy.billedYearly, { amount: formatUsd(plan.price.amount) }) : copy.billedMonthly}</span>
+                  </div>
+                  <div className="pr-allowance">
+                    <strong>{formatCredits(plan.credits)}</strong>
+                    <span className="pr-meta">{isYearly ? (zh ? "积分 / 年" : "credits / year") : (zh ? "积分 / 月" : "credits / month")}</span>
+                  </div>
+                  {referenceClip && <div className="pr-output">
+                    <strong>{formatCredits(completeClipCount(plan, referenceClip.credits))}</strong>
+                    <span className="pr-meta">{isYearly ? (zh ? "段 / 年" : "clips / year") : (zh ? "段 / 月" : "clips / month")}</span>
+                  </div>}
+                  {extraFeatures.length > 0
+                    ? <ul className="pr-features">{extraFeatures.map((key) => <li key={key}>{featureLabel(key)}</li>)}</ul>
+                    : <span className="pr-features pr-features--none" aria-label={zh ? "无额外权益" : "No additional benefits"}>—</span>}
+                  {paymentsEnabled && <div className="pr-action">
+                    <button type="button" className={`pr-btn ${isPopular ? "du-primary pr-btn--primary" : "du-secondary pr-btn--secondary"}`}
+                      disabled={!paymentsEnabled || pendingId !== null} onClick={() => handleCheckout(plan.id)}>
+                      {buttonLabel(plan.id, fill(copy.choosePlan, { plan: planName }))}
+                    </button>
+                    {errorId === plan.id && errorMessage && <p className="pr-error" role="alert">{errorMessage}</p>}
+                  </div>}
                 </article>
               );
             })}
           </div>
+          {referenceClip && <p className="pr-basis">
+            {zh
+              ? `按 ${referenceClip.model}、${referenceClip.duration} 秒、${referenceClip.quality} 计算，每段 ${referenceClip.credits} 积分。`
+              : `Clip counts use ${referenceClip.model} at ${referenceClip.duration}s and ${referenceClip.quality}, billed at ${referenceClip.credits} credits per clip.`}
+          </p>}
+          <details className="pr-plan-details">
+            <summary>{zh ? "比较每 100 积分的价格" : "Compare cost per 100 credits"}</summary>
+            <dl>{plans.map((plan) => <div key={plan.id}><dt>{displayPlanName(plan.name)}</dt><dd>{formatUsd(costPer100Credits(plan))}</dd></div>)}</dl>
+          </details>
         </section>
 
-        {modelCosts}
-
-        {/* ---------- FAQ ---------- */}
-        <section className="pr-section">
-          <h2 className="pr-section__title">{copy.faqTitle}</h2>
-          <p className="pr-section__sub">{copy.faqSubtitle}</p>
-          <div className="pr-faq">
-            {faq.map((item) => (
-              <details key={item.id}>
-                <summary>{item.question}</summary>
-                <p>{item.answer}</p>
-              </details>
-            ))}
+        <section className="pr-packs-section" id="credit-packs" aria-labelledby="pr-packs-title">
+          <div className="pr-section-head">
+            <div><h2 id="pr-packs-title">{copy.creditPacksTitle}</h2></div>
+            <p className="pr-sidecopy">{copy.creditPacksSubtitle}</p>
           </div>
+          <ul className="pr-packs" data-checkout={paymentsEnabled}>
+            {packs.map((pack) => (
+              <li key={pack.id} className="pr-pack">
+                <h3>{fill(copy.packCredits, { credits: formatCredits(pack.credits) })}</h3>
+                <span className="pr-pack-price">{formatUsd(pack.price.amount)}<small>{fill(copy.tableCostPer100 + " · {price}", { price: formatUsd(costPer100Credits(pack)) })}</small></span>
+                <div className="pr-pack-info">
+                  {typeof pack.expireDays === "number" && <span>{fill(copy.packValidity, { days: String(pack.expireDays) })}</span>}
+                  <ul>{(pack.features ?? []).filter((key) => !packsShareFeatures || !sharedFeatures.includes(key)).map((key) => <li key={key}>{featureLabel(key)}</li>)}</ul>
+                </div>
+                {paymentsEnabled && <div className="pr-action">
+                  <button type="button" className="pr-btn du-secondary pr-btn--secondary" disabled={!paymentsEnabled || pendingId !== null} onClick={() => handleCheckout(pack.id)}>
+                    {buttonLabel(pack.id, fill(copy.buyCredits, { credits: formatCredits(pack.credits) }))}
+                  </button>
+                  {errorId === pack.id && errorMessage && <p className="pr-error" role="alert">{errorMessage}</p>}
+                </div>}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="pr-costs" id="credit-costs">{modelCosts}</div>
+        <section className="pr-faq-section" aria-labelledby="pr-faq-title">
+          <div><h2 id="pr-faq-title">{copy.faqTitle}</h2></div>
+          <div className="pr-faq">{faq.map((item) => <details key={item.id}><summary>{item.question}</summary><p>{item.answer}</p></details>)}</div>
         </section>
       </div>
     </div>

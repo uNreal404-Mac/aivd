@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { calculateModelCredits, getAvailableModels } from "@/config/credits";
 import { TOOL_PREFILL_KEY } from "@/components/gallery/use-template";
 import { I2V_MODELS } from "@/lib/image-to-video";
@@ -15,6 +15,7 @@ function choices(mode: Mode) {
 export function PromptBox({lang, preferredModel, draft}: {lang:string; preferredModel?:string; draft?:{ text:string; revision:number }}) {
   const zh=lang.startsWith("zh");
   const id=useId();
+  const field=useRef<HTMLTextAreaElement>(null);
   const [mode,setMode]=useState<Mode>("text-to-video");
   const [selected,setSelected]=useState(preferredModel ?? choices("text-to-video")[0]?.id ?? "");
   const [prompt,setPrompt]=useState("");
@@ -24,7 +25,7 @@ export function PromptBox({lang, preferredModel, draft}: {lang:string; preferred
   const duration=model?.durations[0];
   const quality=mode==="text-to-video" ? model?.qualities?.[0] : undefined;
   const cost=model && duration ? calculateModelCredits(model.id,{duration,quality}) : null;
-  useEffect(()=>{ if(draft) {setPrompt(draft.text);setError("");} },[draft]);
+  useEffect(()=>{ if(draft) {setPrompt(draft.text);setError("");field.current?.focus({preventScroll:true});} },[draft]);
   return <form className="du-prompt-box" action={localizedHref(lang,"/"+mode)} method="get" onSubmit={event=>{
     if (!model) return;
     event.preventDefault();
@@ -38,8 +39,8 @@ export function PromptBox({lang, preferredModel, draft}: {lang:string; preferred
       {(["text-to-video","image-to-video"] as const).map((m,i)=><button type="button" key={m} aria-pressed={m===mode} onClick={()=>{setMode(m);setError("");}}>{zh ? ["文生视频","图生视频"][i] : ["Text → Video","Image → Video"][i]}</button>)}
     </fieldset>
     <label className="sr-only" htmlFor={id}>{zh?"镜头提示词":"Shot prompt"}</label>
-    <textarea id={id} name="prompt" value={prompt} maxLength={2000} onChange={e=>setPrompt(e.target.value)} rows={2}
-      placeholder={zh ? "今天，你想创作什么画面？" : "What will you create today?"}/>
+    <textarea ref={field} id={id} name="prompt" value={prompt} maxLength={2000} onChange={e=>setPrompt(e.target.value)} rows={2}
+      placeholder={zh ? "描述镜头里的主体、动作和光线…" : "Describe the subject, its movement and the light…"}/>
     <div className="du-prompt-settings">
       <label className="sr-only" htmlFor={id+"-model"}>{zh?"视频模型":"Video model"}</label>
       <select name="model" id={id+"-model"} value={model?.id ?? ""} onChange={e=>setSelected(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>

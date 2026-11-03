@@ -37,6 +37,8 @@
   }
 
   #image-ideas [data-showcase-ideas] {
+    grid-template-areas: none;
+    grid-template-rows: auto;
     grid-auto-rows: auto;
   }
 
@@ -53,12 +55,12 @@
   #models [data-showcase-models] > a {
     min-width: 0;
     min-height: 0;
-    padding: 16px 12px;
+    padding: 16px 24px 16px 0;
   }
 
   #models [data-showcase-models] h3 {
-    font-size: clamp(1rem, 4.8vw, 1.25rem);
-    line-height: 1.15;
+    font-size: 20px;
+    line-height: 24px;
   }
 
   #models [data-showcase-models] p {

@@ -1,12 +1,11 @@
 import { ArrowUpRight } from "lucide-react";
 import { hasDbBinding } from "@/db";
-import { BeamBackdrop, SpotlightLink } from "@/components/motion/accents";
 import { getAvailableModels } from "@/config/credits";
 import { STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { creationLabel } from "@/lib/creation-label";
 import { localizedHref } from "@/lib/du-home";
 import { galleryService } from "@/services/gallery";
-import { FeatureFilm, TemplateWall } from "./conversion-media-tile";
+import { EndFrame, FeatureFilm, TemplateWall } from "./conversion-media-tile";
 import s from "./conversion-showcase.module.css";
 
 const media = "/conversion/showcase/";
@@ -24,12 +23,11 @@ const templates: Scene[] = [
 ];
 
 const ideas: Scene[] = [
-  { file: "basalt-coast", name: { en: "Black sand", zh: "玄武海岸" }, prompt: { en: "Look straight down as turquoise waves sweep diagonally across black sand. Hold a lone walker near the edge of the frame.", zh: "从正上方拍摄黑沙海岸，让青色泡沫斜穿画面，一名独行的人停在岸边。" } },
-  { file: "glass-portrait", name: { en: "Through glass", zh: "玻璃之后" }, prompt: { en: "Place a pane of faceted glass in front of a fashion portrait. Move the glass slightly so the light shifts without changing the framing.", zh: "把一块多切面玻璃放在肖像前，轻轻转动玻璃，让面部光影变化而构图不动。" } },
+  { file: "shadow-portrait", name: { en: "Portrait in shadow", zh: "暗处的侧脸" }, prompt: { en: "Frame the face in profile. Let one narrow patch of daylight skim the cheek while the rest of the room stays in shadow.", zh: "用近景取侧脸，让一小束日光擦过面颊，房间其余部分留在阴影里。" } },
+  { file: "poolside", name: { en: "Pool reflections", zh: "池边反光" }, prompt: { en: "Hold a woman at the edge of a swimming pool in a medium shot. Catch the light reflected from the water on her shoulders.", zh: "用中景拍摄坐在泳池边的人物，让水面反射的日光落在肩膀上。" } },
   { file: "sunlit-room", name: { en: "Window light", zh: "窗下光束" }, prompt: { en: "In a still room, let a shaft of sunlight catch floating dust. Push slowly toward the illuminated wall.", zh: "在静室内拍摄一道斜射的窗光，看尘埃在光束中漂浮，镜头慢慢推向墙面。" } },
   { file: "autumn-road", name: { en: "Autumn walk", zh: "秋日小径" }, prompt: { en: "Track two people walking under autumn maples. Let fallen leaves cross the foreground as the path recedes.", zh: "跟拍两个人走在秋日枫林，落叶从前景飞过，小径延伸向远处。" } },
   { file: "ember-dragon", name: { en: "Dragon rider", zh: "龙背骑手" }, prompt: { en: "Follow a rider on a rust-red dragon, then tilt up along the scales as the creature turns toward the light.", zh: "跟随红色巨龙背上的骑手，再沿鳞片缓缓仰拍，让巨龙转向光源。" } },
-  { file: "stone-arch", name: { en: "Beyond the arch", zh: "石拱之外" }, prompt: { en: "Keep the astronaut small beneath a monumental stone arch. Backlight the drifting fog to reveal the opening.", zh: "让宇航员在巨石拱门下显得渺小，用逆光照亮移过的薄雾，露出拱门后的空间。" } },
 ];
 
 const studioPicks: Scene[] = [
@@ -48,11 +46,15 @@ function CreationCTA({ lang, placement }: { lang: string; placement: string }) {
   </a>;
 }
 
-function SectionHeading({ title, note, id }: { title: string; note?: string; id: string }) {
-  return <header className={s.heading}>
-    <h2 id={id}>{title}</h2>
-    {note && <p>{note}</p>}
-  </header>;
+function SectionHeading({ title, id }: { title: string; id: string }) {
+  return <header className={s.heading}><h2 id={id}>{title}</h2></header>;
+}
+
+function durationList(values: number[], zh: boolean) {
+  if (!values.length) return "";
+  const continuous = values.length > 2 && values.every((value, i) => !i || value === values[i - 1] + 1);
+  const range = continuous ? values[0] + "–" + values[values.length - 1] : values.join(" / ");
+  return range + (zh ? " 秒" : " s");
 }
 
 type GalleryTile = { name: string; image: string; href: string; credit?: string };
@@ -91,22 +93,30 @@ export function ConversionShowcase({ lang }: { lang: string }) {
   const models = getAvailableModels({ mode: "text-to-video" });
   return <div className={s.showcase}>
     <section id="models" className={s.section} aria-labelledby="showcase-models-title">
-      <SectionHeading id="showcase-models-title" title={zh ? "视频模型" : "Video models"} />
-      <div className={s.models} data-showcase-models="">
-        {models.map((model) => {
-          const editorial = STUDIO_MODELS.find((item) => item.id === model.id)?.badge;
-          const badge = editorial === "Top" ? "HOT" : editorial === "New" ? "NEW" : undefined;
-          const seconds = model.durations?.length ? model.durations.join(" / ") + (zh ? " 秒" : " s") : undefined;
-          return <SpotlightLink key={model.id} className={s.model} href={localizedHref(lang, "/text-to-video") + "?model=" + encodeURIComponent(model.id)} label={model.name}>
-            <div><h3>{model.name} {badge && <span className={s.modelBadge + " motion-badge"}>{badge}</span>}</h3><ArrowUpRight aria-hidden="true" size={18} /></div>
-            <p>{[seconds, model.qualities?.join(" · ")].filter(Boolean).join("  ·  ")}</p>
-          </SpotlightLink>;
-        })}
+      <SectionHeading id="showcase-models-title" title={zh ? "选择视频模型" : "Choose a video model"} />
+      <div className={s.modelIndex}>
+        <figure className={s.modelPlate}>
+          <img src={media + "cloud-ridge.webp"} width={720} height={420} loading="lazy" decoding="async" alt={zh ? "白色云雾沿山脊爬升" : "Clouds rising along a mountain ridge"} />
+          <figcaption>{zh ? "山脊云海" : "Cloud ridge"}</figcaption>
+        </figure>
+        <div className={s.models} data-showcase-models="">
+          {models.map((model) => {
+            const editorial = STUDIO_MODELS.find((item) => item.id === model.id)?.badge;
+            const badge = editorial === "Top" ? "HOT" : editorial === "New" ? "NEW" : undefined;
+            const specs = [durationList(model.durations ?? [], zh), model.qualities?.join(" / ")].filter(Boolean);
+            return (
+              <a key={model.id} className={s.model} href={localizedHref(lang, "/text-to-video") + "?model=" + encodeURIComponent(model.id)}>
+                <div><h3>{model.name}</h3>{badge && <span className={s.modelBadge}>{badge}</span>}</div>
+                <p>{specs.join(" · ")}</p>
+                <ArrowUpRight aria-hidden="true" size={16} />
+              </a>
+            );
+          })}
+        </div>
       </div>
     </section>
     <section id="templates" className={s.section} aria-labelledby="showcase-templates-title">
-      <SectionHeading id="showcase-templates-title" title={zh ? "视频模板" : "Video templates"}
-        note={zh ? "选一段你喜欢的运镜，在工作台改写它。" : "Pick a camera move and make the shot your own."} />
+      <SectionHeading id="showcase-templates-title" title={zh ? "镜头模板" : "Camera moves"} />
       <TemplateWall zh={zh} items={templates.map((shot) => ({
         name: shot.name[language], href: sceneHref(lang, shot, language), alt: "",
         video: media + shot.file + ".mp4", poster: media + shot.file + ".webp",
@@ -114,8 +124,7 @@ export function ConversionShowcase({ lang }: { lang: string }) {
       <div className={s.sectionCta}><CreationCTA lang={lang} placement="templates" /></div>
     </section>
     <section id="image-ideas" className={s.section} aria-labelledby="showcase-ideas-title">
-      <SectionHeading id="showcase-ideas-title" title={zh ? "图片灵感" : "Image inspiration"}
-        note={zh ? "从构图和光线开始，把一张静帧发展成一幕。" : "Start with the framing or the light, then turn it into a scene."} />
+      <SectionHeading id="showcase-ideas-title" title={zh ? "画面参考" : "Frame studies"} />
       <div className={s.ideas} data-showcase-ideas="">
         {ideas.map((shot) => <a key={shot.file} className={s.idea} href={sceneHref(lang, shot, language)} aria-label={shot.name[language]}>
           <img width={720} height={720} src={media + shot.file + ".webp"} loading="lazy" decoding="async" alt="" />
@@ -124,10 +133,10 @@ export function ConversionShowcase({ lang }: { lang: string }) {
       </div>
     </section>
     <section id="long-film" className={s.featureSection} aria-labelledby="showcase-film-title">
-      <div className={s.featureHeading}><h2 id="showcase-film-title">{zh ? "从镜头到长片" : "From shot to sequence"}</h2></div>
-      <FeatureFilm poster={media + "tidal-overture.webp"} src={media + "tidal-overture.mp4"} label={zh ? "潮汐序曲" : "Tidal Overture"} playLabel={zh ? "播放《潮汐序曲》" : "Play Tidal Overture"} />
+      <div className={s.featureHeading}><h2 id="showcase-film-title">{zh ? "同一机位，三次试镜" : "One setup, three takes"}</h2></div>
+      <FeatureFilm src={media + "daylight-takes.mp4"} label={zh ? "同一机位，三次试镜" : "One setup, three takes"} playLabel={zh ? "播放三段试镜" : "Play the three takes"} />
       <div className={s.filmFooter}>
-        <p>{zh ? "在《潮汐序曲》中，看海岸的广角、人物特写和远景如何剪成同一段故事。" : "See how Tidal Overture cuts from a coastal wide shot to a portrait and out to a sweeping final frame."}</p>
+        <p>{zh ? "12 秒，同一个双人机位。前两条改变眼部光效，最后一条让小狗入画。" : "12 seconds from one camera position. Two takes change the light around the eyes. In the third, a dog enters the frame."}</p>
         <CreationCTA lang={lang} placement="long-film" />
       </div>
     </section>
@@ -137,11 +146,15 @@ export function ConversionShowcase({ lang }: { lang: string }) {
 
 export function ConversionFinalCTA({ lang }: { lang: string }) {
   const zh = lang.startsWith("zh");
-  return <section className={s.final + " motion-endcap"} aria-labelledby="showcase-final-title">
-    <BeamBackdrop />
-    <div className={s.finalInner}>
-      <h2 id="showcase-final-title">{zh ? "下一幕，由你开拍。" : "Make your next shot."}</h2>
-      <CreationCTA lang={lang} placement="final" />
-    </div>
-  </section>;
+  return (
+    <section className={s.final} aria-labelledby="showcase-final-title">
+      <div className={s.finalInner}>
+        <EndFrame zh={zh} />
+        <div className={s.finalContent}>
+          <h2 id="showcase-final-title">{zh ? "写下你的第一个分镜" : "Write your first shot"}</h2>
+          <CreationCTA lang={lang} placement="final" />
+        </div>
+      </div>
+    </section>
+  );
 }

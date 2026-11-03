@@ -61,6 +61,11 @@ export function monthlyEquivalentCents(product: PricingProduct): number {
   return Math.round(product.price.amount / 12);
 }
 
+/** Number of full clips one billing period can fund at the quoted reference cost. */
+export function completeClipCount(product: PricingProduct, creditsPerClip: number): number {
+  return Math.floor(product.credits / creditsPerClip);
+}
+
 /** Effective cost of 100 credits, in cents. Returns 0 when credits is 0. */
 export function costPer100Credits(product: PricingProduct): number {
   if (!product.credits || product.credits <= 0) return 0;

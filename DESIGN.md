@@ -1,33 +1,96 @@
-# aidv.ai · Interface design
+# aidv.ai 影像界面设计规范
 
-Read this before changing a screen. Show the footage first. A visitor should be able to write a shot, inspect real examples, and enter the existing studio without choosing between competing signup offers.
+每个 UI PR 开工前读本文件。继续使用现有依赖和品牌配色。视觉规则改变时，在同一 PR 修改对应数值。先确认创作者能看清镜头、找到输入位置、理解时长和积分，再处理动效。首页保留 Optical Engine 放映、分镜和可带入工作台的提示词。影片可以有自己的颜色，界面只用现有黑、灰和青绿色。
 
-## Colour and type
+## 现有 token
 
-| Role | Token | Value |
+来源为 `apps/video/src/styles/theme.css`。下表完整记录既有变量，包括历史别名和非颜色变量。不得新增、改值或把历史装饰用到新的营销表面。
+
+| 变量 | 仓库值 | 用途 |
 |---|---|---|
-| Canvas / elevated canvas | `--du-bg` / `--du-bg-elev` | #000000 / #0B0C10 |
-| Surface | `--du-surface` | #0B0C10; use spacing or a single thin border to separate it |
-| Primary / secondary text | `--du-text` / `--du-text-muted` | #C5C6C7 / existing muted variant |
-| Primary action / hover | `--du-accent` / `--du-accent-hover` | #66FCF1 / #45A29E; black label |
-| Dividers | `--du-surface-2` / `--du-border` | existing #1F2833 family |
+| `--du-bg` | `#000000` | 页面画布和实心主按钮文字 |
+| `--du-bg-elev` | `#0B0C10` | 抬高一级的剪辑台底色 |
+| `--du-surface` | `#0B0C10` | 单层表面 |
+| `--du-surface-2` | `#1F2833` | 中性分割线、选中底色 |
+| `--du-border` | `rgba(31, 40, 51, 0.9)` | 静止表面与控件的细边 |
+| `--du-border-strong` | `#45A29E` | 强调状态边框 |
+| `--du-text` | `#C5C6C7` | 主要标题与正文 |
+| `--du-text-muted` | `rgba(197, 198, 199, 0.78)` | 标签、说明、片长 |
+| `--du-text-dim` | `#45A29E` | 辅助标识 |
+| `--du-accent` | `#66FCF1` | 唯一主操作、焦点、选中标记 |
+| `--du-accent-hover` | `#45A29E` | 主按钮指针悬停 |
+| `--du-accent-soft` | `rgba(102, 252, 241, 0.12)` | 选中项的弱底色 |
+| `--du-accent-text` | `#66FCF1` | 强调文字 |
+| `--du-accent-2` | `#45A29E` | 次级强调别名 |
+| `--du-gradient` | `#66FCF1` | 历史平面青色别名 |
+| `--du-glow` | `0 0 28px rgba(102, 252, 241, 0.24)` | 历史外发光，不用于营销装饰 |
+| `--du-on-accent` | `#000000` | 青底文字 |
+| `--du-success` | `#66FCF1` | 成功文字，须同时写出状态 |
+| `--du-danger` | `#C5C6C7` | 错误文字，须同时写出错误 |
+| `--du-warning` | `#45A29E` | 警示文字，须同时写出原因 |
+| `--du-glass-blur` | `24px` | 历史玻璃模糊量 |
+| `--du-glass-saturate` | `160%` | 历史玻璃饱和度 |
+| `--du-glass-bg` | `rgba(11, 12, 16, 0.84)` | 覆盖影片的片控底色 |
+| `--du-glass-bg-hover` | `rgba(31, 40, 51, 0.92)` | 片控悬停底色 |
+| `--du-glass-bg-strong` | `rgba(31, 40, 51, 0.88)` | 片控加深底色 |
+| `--du-glass-border` | `#1F2833` | 玻璃表面边框 |
+| `--du-glass-border-hover` | `#45A29E` | 玻璃控件悬停边框 |
+| `--du-glass-highlight` | `inset 0 1px 0 rgba(69, 162, 158, 0.32)` | 历史内高光 |
+| `--du-glass-shadow` | `0 8px 32px rgba(0, 0, 0, 0.46)` | 悬浮弹层阴影 |
+| `--du-glass-radius-card` | `20px` | 历史产品卡片圆角 |
+| `--du-glass-radius-btn` | `12px` | 历史产品按钮圆角 |
+| `--du-glass-radius-round` | `9999px` | 圆形播放键、胶囊标签 |
+| `--du-glass-fallback-bg` | `#0B0C10` | 无透明支持时的底色 |
+| `--du-glass-text` | `#C5C6C7` | 浮层文字 |
+| `--du-glass-overlay-scrim` | `rgba(0, 0, 0, 0.64)` | 覆盖真实画面的中性遮罩 |
 
-Accent is reserved for the primary action, keyboard focus and selected states. Do not introduce or recolor a palette variable. Only layout dimensions may use new tokens. Video and photography retain their original colour. Never mock a missing thumbnail with a purple or blue gradient. A neutral scrim over real footage may protect text contrast.
+## 字体与网格
 
-Use Space Grotesk for display headings and Inter for body, served by Next Font from the site origin. CJK uses the native system sans fallback. Type sizes are desktop / mobile: H1 88 / 48 px (fluid), H2 56 / 32 px, H3 24 / 20 px, body 16 / 16 px, caption 13 / 13 px. Body leading is 1.5; display leading is 0.98–1.08. Preserve the existing localized H1, document titles, descriptions and language alternates.
+Space Grotesk 标题、Inter 正文，沿用 next/font 自托管。中文使用系统无衬线；标题字距最紧 −0.025em，正文正常。时间码用等宽数字。以下为 1440 和 390 的设计值，768–1439 之间可流体过渡。每格依次是字号 / 字重 / 行高 / 字距。
 
-## Layout
+| 层级 | 1440px | 390px |
+|---|---|---|
+| H1 主标题 | 88px / 650 / 80px / −0.06em | 44px / 650 / 46px / −0.04em |
+| H2 分节标题 | 56px / 600 / 60px / −0.045em | 32px / 600 / 36px / −0.03em |
+| H3 名称 | 24px / 600 / 28px / −0.025em | 20px / 600 / 24px / −0.02em |
+| Body | 16px / 400 / 24px / 0 | 16px / 400 / 24px / 0 |
+| Caption | 13px / 500 / 16px / 0 | 13px / 500 / 16px / 0 |
 
-Work on an 8px grid. Limit the content container to 1440px including gutters (desktop 64px, mobile 16px). Footage may bleed to the viewport. Separate peer sections with 120px on desktop and 64px on mobile; use one shared gap so adjacent sections never double it. Leave room for safe areas. Never cause document-level horizontal scrolling: horizontal reels scroll inside their own labelled region.
+8px 网格。4px 只给图标或文字的光学微调，8px 用于图文，16px 用于组内，24px 用于控件组，32px 用于标题到内容，48px 和 64px 用于较大的分组。容器最多 1440px，含左右各 64px 边距，手机各 16px。同行模块统一对齐到容器，影片允许满幅。相邻 section 共用桌面 120px、手机 64px 的一个间距。表格必须让数字与列名对齐，手机可在表格内滚动，页面本身不得溢出。
 
-## Components and copy
+## 组件
 
-* **Button:** primary is the solid teal, black-label `.du-primary`, minimum height 48px, consistent radius and visible focus. Secondary is a neutral outline; ghost is text with an underline or subtle hover. Do not style incidental links as primary. Use semantic links for navigation, buttons for local state.
-* **Card:** one surface, one destination and one accessible name. No card inside card, nested links, repeated “Try it” or “Learn more”. Arrange dense model cards in mobile pairs.
-* **MediaTile:** deliver a real local WebP poster with explicit aspect ratio. Images below the fold load lazily. Optional muted video loads on deliberate hover/focus on a fine pointer; stop on exit and respect reduced motion. On touch the tile itself opens its destination. Omit unavailable work; do not print an empty loading section.
-* **Badge:** small, readable text with a restrained border; for useful information like billing savings. HOT is an editorial designation for an existing featured model; NEW requires an available model actually marked new. No decorative Preview/Soon labels in the navigation.
-* **Primary action:** always “Create Video Free” / “免费创作视频”. It opens the existing text-to-video flow; a prompt is carried there without submitting a generation. The PromptBox submit uses the specific exception “Generate · N credits” / “生成 · N 积分”, with the existing billing calculator for the matching model, duration and quality. The home content has four placements: hero form submit, after templates, long-form film, final invitation. The nav CTA uses the same words as a ghost link; mobile sticky is a contextual substitute for the hero action, not a second sticky header CTA. Product-specific checkout labels describe the actual purchase; only Pro gets the primary treatment.
+所有可操作元素允许键盘操作。焦点为 2px solid `--du-accent`，常规偏移 2px；贴边影像在内侧绘制。禁用状态保持说明可读。除弹出的菜单可用已有 `--du-glass-shadow` 外，以下静止表面阴影均为 none。
 
-The marketing header is Create, Templates, Gallery, Pricing, Login and the creation action. Use the official logo asset in the header and footer. Showcase photography, not gradients or decorative editing interfaces. Report before/after evidence at 1440 and 390 pixels.
+| 组件 | 形状与边框 | 悬停、焦点与交互 |
+|---|---|---|
+| Button | primary 高 48px、水平 24px、圆角 8px、1px transparent、青底黑字；secondary 同尺寸、1px `--du-border`、透明底；ghost 无边 | primary hover 用 `--du-accent-hover`；secondary 边框变 `--du-text-muted`；ghost 文字下划线。图标触区至少 44×44px，有本地化的可访问名称与 tooltip |
+| Card | 单一表面，圆角 8px、1px `--du-border` 或共享的 1px 行分隔线，行布局圆角 0。桌面 24px、手机 16px 内距 | 整项点击，hover 用中性表面或文字下划线，键盘显示统一焦点。一个单元只表达一个选择 |
+| MediaTile | 图片使用真实 WebP，预留画幅，圆角 4px，不描边，不加阴影；大银幕与出血画幅圆角 0。台标、片名放在图下或单独图注条 | 鼠标悬停或键盘聚焦预览，移动端明确点播。离屏停播。焦点向内 2px。暂停与播放有文字可访问名称 |
+| Badge | 只用于推荐、实际版本状态、价格折扣。水平 8px、垂直 4px，圆角 4px，边框 0 或 1px `--du-border` | 非交互标签不切换状态，不播放扫光。文本表达含义，不依赖颜色 |
+| PromptBox | 单层 `--du-surface`，圆角 8px，1px `--du-border`，内距 16px，分组 8/16px。输入框不再叠一张卡 | focus-within 强调边框；可操作控件另有 2px 焦点线。模型、实际片长和积分放在一组，首屏不装饰性发光 |
+| Nav | 桌面 64px、手机 56px，高度含 1px `--du-border` 分隔线，圆角 0，导航链接间距 32px，登录与主动作之间 24px。移动菜单为单层 `--du-bg-elev` | hover 用现有强调色或文字下划线，当前用 aria-current 和可视标识；菜单展开/关闭可用键盘，折叠按钮触区至少 44px |
 
-**PromptBox / Optical Engine:** keep the optical film monitor and real storyboard above the fold. The multiline editor sits after the preserved H1 and before the timeline. Text and image modes hand drafts to the matching existing tool. Show no anonymous/free-render promise. On small screens load the priority poster only; playing the film requires a deliberate action.
+营销主 CTA 用 “Create Video Free” / “免费创作视频”。Hero 的表单按钮是唯一例外，用 “Generate · N credits” / “生成 · N 积分”。N 来自实际模型与时长。正文四处入口共同指向创作，导航入口用次级样式。
+
+## 素材和运动
+
+影片库须能追溯到仓库素材、站内输出或已获授权的成片。视频是否模型原生生成需有来源依据。首屏影片必须有对应帧 poster；桌面静音循环，手机首屏只显示 poster；尊重减少动态。需要悬浮物时从真实纯色底素材离线制作带 alpha 的 WebM；保留原画幅，不在客户浏览器跑三维渲染。滚动与片段时间或帧号联动只用现有 motion 的 useScroll。缩略视频按可视范围或明确操作加载。缺片时在 PR 列镜头、画幅、时长与用途，省略没有素材的卡片。
+
+## AI 味禁止清单
+
+- 紫蓝渐变占位或新增颜色；用 emoji 代替图标或 logo。
+- 每节都是左文右图；一排等宽、内容雷同的卡；卡片里面再套一张卡。
+- 无交互意义的光晕、渐变描边、循环扫光与层层叠光。
+- “释放想象力”之类没有具体操作的文案。写出镜头、操作、时长或积分。
+- 每个模块都有 eyebrow 和解释。能由片名、画面或控件本身表达的行、标签、边框应删去。图标按钮用原生 title 或仓库已有 Tooltip，保留 accessible name。
+
+## 每个 UI PR 的验收
+
+1. 改动前对照真实参考截图，按配色、字体层级、间距留白、组件和布局分别写一行差距放进 PR，说明来源。只借参考的构图和节奏。
+2. 保留 1440×900、390×844 的改前、改后首屏与长图。申明拍摄的页面、语言和构建版本。
+3. 独立新会话只收到截图和本文件。请顶级设计工作室评审指出与顶尖 AI 视频产品最大的 3–5 个差距，专门对 AI 模式扣分，每条给出元素、属性和改动数值，最后打 1–10 分。
+4. 按反馈修订并再次独立评审，最多三轮，目标至少 8/10。每轮保留原图、分数与具体反馈，达不到则写明遗留项。
+5. PR 明列删去的文案、容器、装饰及素材来源/缺口；逐项打勾禁止清单，校验窄屏、键盘、减少动态、LCP、build/lint/types。保持价格、权限、SEO 字段与路由的既有约束。
+
+报价表只在实际开放支付时渲染购买按钮。只读预览用一条可读的状态说明与真实的用量链接，推荐方案由 3px 青色左边线标识。按默认可用模型的画质和时长计算完整视频条数，向下取整，在表旁注明计算条件。

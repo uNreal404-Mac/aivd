@@ -26,7 +26,7 @@ export async function FAQSection() {
   const schema={"@context":"https://schema.org","@type":"FAQPage",mainEntity:items.map(([q,a])=>({"@type":"Question",name:q,acceptedAnswer:{"@type":"Answer",text:a}}))};
   return <section className="du-faq du-frame" aria-labelledby="du-faq-heading">
     <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema).replace(/</g,"\\u003c")}}/>
-    <div><h2 id="du-faq-heading">{w("常见问题","Frequently Asked Questions")}</h2><p>{w("从第一帧到最终导出。","From your first frame to your final export.")}</p>
+    <div><h2 id="du-faq-heading">{w("常见问题","Frequently Asked Questions")}</h2>
     <a href={localizedHref(lang,"/pricing")}>{w("查看套餐和积分","See plans and credits")} ↗</a></div>
     <Accordion type="single" collapsible>{items.map(([q,a],i)=><AccordionItem key={q} value={"q"+i}>
       <AccordionTrigger>{q}</AccordionTrigger><AccordionContent>{a}{i===8 && <a href={localizedHref(lang,"/refund-policy")}>{w("退款政策","Refund policy")} ↗</a>}</AccordionContent>
