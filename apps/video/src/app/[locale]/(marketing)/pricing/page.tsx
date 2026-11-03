@@ -1,5 +1,6 @@
 import { MotionFeatures } from "@/components/motion/provider";
 import "@/styles/pricing-tokens.css";
+import { getPricingReferenceClip } from "@/components/pricing/reference-clip";
 import { ModelCreditTable } from "@/components/pricing/model-credit-table";
 import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
 import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
@@ -61,6 +62,7 @@ export default async function PricingPage({
         paymentsEnabled={isPaymentsConfigured()}
         subscriptions={getSubscriptionProducts()}
         packs={getOnetimeProducts()}
+        referenceClip={getPricingReferenceClip()}
         modelCosts={<ModelCreditTable lang={locale} />}
       />
     </MotionFeatures>
