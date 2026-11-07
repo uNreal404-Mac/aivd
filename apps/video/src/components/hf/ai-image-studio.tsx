@@ -21,7 +21,7 @@ export function AiImageStudio({ locale }: { locale: string }) {
   const [menu, setMenu] = useState<"aspect" | "quality" | null>(null);
   const [notice, setNotice] = useState(false);
 
-  return <main className="min-h-[calc(100svh-80px)] w-full min-w-0 flex-1 bg-[var(--du-bg)] px-4 pb-8 pt-8 text-[var(--du-text)] sm:px-8">
+  return <main className="min-h-[calc(100svh-80px)] w-full min-w-0 flex-1 bg-[var(--du-bg)] px-4 pb-8 pt-8 text-[var(--du-text)] sm:px-8 lg:h-full lg:min-h-0 lg:overflow-y-auto">
     <div className="mx-auto flex min-h-[calc(100svh-140px)] w-full flex-col">
       <div className="flex justify-end"><span className="rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] px-4 py-2 text-xs text-[var(--du-text-muted)]">{zh ? "图片模型待接入" : "Image model coming soon"}</span></div>
 
