@@ -14,10 +14,12 @@ export async function GET(request: NextRequest) {
         ? parsedLimit
         : undefined;
 
-    const result = await galleryService.listPublic({
-      limit,
-      cursor: searchParams.get("cursor") ?? undefined,
-    });
+    const result = searchParams.get("sort") === "rating"
+      ? await galleryService.listPopular(limit)
+      : await galleryService.listPublic({
+          limit,
+          cursor: searchParams.get("cursor") ?? undefined,
+        });
 
     return apiSuccess(result);
   } catch (error) {

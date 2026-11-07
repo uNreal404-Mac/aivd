@@ -306,6 +306,22 @@ export const videos = sqliteTable(
   ]
 );
 
+/** One score per account and published video; never exposed in public API rows. */
+export const videoRatings = sqliteTable(
+  "video_ratings",
+  {
+    videoUuid: text("video_uuid").notNull(),
+    userId: text("user_id").notNull(),
+    score: integer("score").notNull(),
+    createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+    updatedAt: timestamp("updated_at").default(sql`(unixepoch())`).notNull(),
+  },
+  (table) => [
+    uniqueIndex("video_ratings_video_user_unique").on(table.videoUuid, table.userId),
+    index("video_ratings_video_uuid_idx").on(table.videoUuid),
+  ]
+);
+
 export type Customer = typeof customers.$inferSelect;
 export type BetterAuthUser = typeof users.$inferSelect;
 export type CreditPackage = typeof creditPackages.$inferSelect;

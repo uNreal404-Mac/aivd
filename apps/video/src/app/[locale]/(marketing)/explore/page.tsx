@@ -57,12 +57,11 @@ export default async function ExplorePage({
       className="min-h-screen w-full bg-[var(--ex-bg)]"
       data-explore-heading={EXPLORE_COPY.en.heading}
     >
-      <div className="mx-auto flex max-w-[1400px] flex-col px-4 py-10">
-        <h1 className="text-3xl font-semibold text-[var(--ex-text)] sm:text-4xl">
+      <div className="mx-auto flex max-w-[1600px] flex-col px-4 py-8">
+        <h1 className="sr-only">
           {copy.heading}
         </h1>
-        <p className="mt-3 max-w-2xl text-[var(--ex-muted)]">{copy.sub}</p>
-        <div className="mt-8">
+        <div>
           <ExploreGallery lang={locale} />
         </div>
       </div>

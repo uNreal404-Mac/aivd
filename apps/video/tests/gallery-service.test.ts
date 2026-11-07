@@ -163,3 +163,25 @@ describe("GalleryService.publish authorization", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 });
+
+describe("GalleryService.ratePublic authorization", () => {
+  beforeEach(() => {
+    selectMock.mockReset();
+    updateMock.mockReset();
+  });
+
+  it("rejects scores outside the 1–5 range before querying the database", async () => {
+    await expect(galleryService.ratePublic("user-1", "video-1", 6)).rejects.toMatchObject({ status: 400 });
+    expect(selectMock).not.toHaveBeenCalled();
+  });
+
+  it("does not allow an author to rate their own public video", async () => {
+    selectMock.mockReturnValue(makeChain(Promise.resolve([{ userId: "user-1" }])));
+    await expect(galleryService.ratePublic("user-1", "video-1", 5)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("does not allow a rating on an unpublished or missing video", async () => {
+    selectMock.mockReturnValue(makeChain(Promise.resolve([])));
+    await expect(galleryService.ratePublic("user-1", "video-1", 5)).rejects.toMatchObject({ status: 404 });
+  });
+});

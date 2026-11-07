@@ -25,7 +25,7 @@ import type { StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { GallerySection } from "@/components/gallery/gallery-section";
 
-const MODES = ["Create"] as const;
+const MODES = ["Create", "Edit"] as const;
 
 const TAB_ICONS = {
   History: Clock,
@@ -34,6 +34,14 @@ const TAB_ICONS = {
 } as const;
 
 const PROMPT_MAX_LENGTH = 1500;
+const EDIT_TOOLS = [
+  { zh: "编辑视频", en: "Edit video", descZh: "精确修改视频中的区域", descEn: "Refine a selected part of a video" },
+  { zh: "延长视频", en: "Extend video", descZh: "为片段生成后续画面", descEn: "Continue a clip with new footage" },
+  { zh: "重构画幅", en: "Reframe", descZh: "调整尺寸与画面位置", descEn: "Adapt a clip to another aspect ratio" },
+  { zh: "高清放大", en: "Upscale", descZh: "提高输出分辨率", descEn: "Increase output resolution" },
+  { zh: "移除背景", en: "Remove background", descZh: "分离主体与背景", descEn: "Separate subject from background" },
+  { zh: "帧率增强", en: "FPS boost", descZh: "提升播放流畅度", descEn: "Increase playback smoothness" },
+];
 
 const HOW_IT_WORKS = [
   {
@@ -98,7 +106,7 @@ export function AiVideoStudio({
   const isChinese = locale.toLowerCase().startsWith("zh");
   const copy = isChinese
     ? {
-        modes: { Create: "创作", Edit: "编辑", Motion: "运动" } as Record<string, string>,
+        modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
         tabs: { History: "历史记录", Library: "灵感库", "How it works": "使用方法" } as Record<string, string>,
         soon: "即将开放",
         top: "热门",
@@ -194,6 +202,8 @@ export function AiVideoStudio({
   const [results, setResults] = useState<ResultItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[1]);
+  const [mode, setMode] = useState<(typeof MODES)[number]>("Create");
+  const [editTool, setEditTool] = useState(0);
 
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
@@ -268,15 +278,15 @@ export function AiVideoStudio({
         className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:overflow-y-auto"
       >
         <div className="flex items-center gap-1">
-          {MODES.map((mode) => {
-            const active = mode === "Create";
+          {MODES.map((option) => {
+            const active = option === mode;
 
             return (
               <button
-                key={mode}
+                key={option}
                 type="button"
-                aria-disabled={!active}
                 aria-pressed={active}
+                onClick={() => setMode(option)}
                 className={[
                   "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
                   active
@@ -284,24 +294,24 @@ export function AiVideoStudio({
                     : "border-[var(--hfv-border)] text-[var(--hfv-muted)]",
                 ].join(" ")}
               >
-                {copy.modes[mode] ?? mode}
-                {active ? null : (
-                  <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                    {copy.soon}
-                  </span>
-                )}
+                {copy.modes[option] ?? option}
               </button>
             );
           })}
         </div>
 
-        <div className="relative h-[112px] rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)] p-4">
+        {mode === "Create" ? <>
+        <div className="relative h-[112px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)] p-4">
+          <img src="/home/hero-marina-poster.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+          <div className="relative">
           <p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">
             {model.name}
           </p>
           <p className="mt-1 max-w-[72%] text-xs text-[var(--hfv-muted)]">
             {copy.modelTaglines[model.id] ?? model.tagline}
           </p>
+          </div>
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -608,12 +618,38 @@ export function AiVideoStudio({
             {notice}
           </output>
         ) : null}
+        </> : <div className="flex flex-col gap-3">
+          <div className="relative h-[126px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)]">
+            <img src="/home/hero-marina-poster.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute bottom-3 left-4"><p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">{isChinese ? "编辑工具" : "Edit tools"}</p><p className="text-xs text-white/80">{isChinese ? "修饰、扩展并重新构想视频" : "Refine, extend and reshape your video"}</p></div>
+          </div>
+          <p className="text-xs text-[var(--hfv-muted)]">{isChinese ? "选择一个编辑工具，查看其用途。编辑生成接口尚未接入。" : "Choose an edit tool to see what it does. The editing API is not connected yet."}</p>
+          {EDIT_TOOLS.map((tool, index) => <button key={tool.en} type="button" aria-pressed={editTool === index} onClick={() => setEditTool(index)} className={`flex items-center gap-3 rounded-[var(--hfv-radius-card)] border px-4 py-3 text-left ${editTool === index ? "border-[var(--hfv-accent)] bg-[var(--hfv-panel-3)]" : "border-[var(--hfv-border)] bg-[var(--hfv-panel-2)]"}`}>
+            <Film size={18} className="shrink-0 text-[var(--hfv-muted)]" /><span className="flex-1"><span className="block text-sm font-medium">{isChinese ? tool.zh : tool.en}</span><span className="block text-xs text-[var(--hfv-muted)]">{isChinese ? tool.descZh : tool.descEn}</span></span><ChevronRight size={16} className="text-[var(--hfv-muted)]" />
+          </button>)}
+          <div className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-4 text-sm text-[var(--hfv-muted)]">{isChinese ? "视频编辑功能待接入模型接口。创建视频仍可在“创建视频”中使用。" : "Video editing awaits a model API. You can still generate clips in Create video."}</div>
+        </div>}
       </aside>
 
       <section
         aria-label={copy.results}
         className="flex-1 overflow-y-auto rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-4"
       >
+        {mode === "Edit" ? (
+          <div className="flex min-h-full flex-col items-center justify-center gap-5 py-6 text-center">
+            <div className="w-full max-w-[850px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
+              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" className="aspect-video w-full object-cover" />
+            </div>
+            <h2 className="font-display text-3xl font-bold uppercase text-[var(--hfv-text)] md:text-5xl">
+              {isChinese ? EDIT_TOOLS[editTool].zh : EDIT_TOOLS[editTool].en}
+            </h2>
+            <p className="max-w-lg text-sm text-[var(--hfv-muted)]">
+              {isChinese ? EDIT_TOOLS[editTool].descZh : EDIT_TOOLS[editTool].descEn}
+              {isChinese ? "。编辑模型接口待接入。" : ". The editing model API is coming soon."}
+            </p>
+          </div>
+        ) : <>
         <div className="flex flex-wrap items-center gap-1.5">
           {RIGHT_TABS.map((tab) => {
             const active = tab === activeTab;
@@ -702,6 +738,7 @@ export function AiVideoStudio({
             )
           ) : null}
         </div>
+        </>}
       </section>
     </div>
   );

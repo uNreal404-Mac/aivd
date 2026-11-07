@@ -1,7 +1,7 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { users, videos } from "@/db/schema";
+import { users, videos, videoRatings } from "@/db/schema";
 import { ApiError } from "@/lib/api/error";
 import {
   buildTemplate,
@@ -68,6 +68,52 @@ export interface GalleryListResult {
 }
 
 export class GalleryService {
+  /** Average scores of publicly listed videos, with no voter identities exposed. */
+  async listPopular(limit = DEFAULT_LIMIT): Promise<GalleryListResult> {
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), MAX_LIMIT);
+    const average = sql<number>`coalesce(avg(${videoRatings.score}), 0)`;
+    const count = sql<number>`count(${videoRatings.userId})`;
+    const rows = await db
+      .select({ video: videos, authorName: users.name, ratingAverage: average, ratingCount: count })
+      .from(videos)
+      .innerJoin(users, eq(users.id, videos.userId))
+      .leftJoin(videoRatings, eq(videoRatings.videoUuid, videos.uuid))
+      .where(and(eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED")))
+      .groupBy(videos.id, users.name)
+      .orderBy(desc(average), desc(count), desc(videos.publishedAt))
+      .limit(safeLimit);
+
+    return {
+      items: rows.map((row) => ({
+        ...this.signItem(toGalleryItem({ ...row.video, authorName: row.authorName })),
+        ratingAverage: Number(row.ratingAverage),
+        ratingCount: Number(row.ratingCount),
+      })),
+      nextCursor: null,
+    };
+  }
+
+  /** Upsert one authenticated user's score for a public video. */
+  async ratePublic(userId: string, uuid: string, score: number) {
+    if (!Number.isInteger(score) || score < 1 || score > 5) {
+      throw new ApiError("Rating must be an integer from 1 to 5", 400);
+    }
+    const [video] = await db.select({ userId: videos.userId }).from(videos)
+      .where(and(eq(videos.uuid, uuid), eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED"))).limit(1);
+    if (!video) throw new ApiError("Gallery item not found", 404);
+    if (video.userId === userId) throw new ApiError("You cannot rate your own video", 403);
+
+    await db.insert(videoRatings).values({ videoUuid: uuid, userId, score })
+      .onConflictDoUpdate({ target: [videoRatings.videoUuid, videoRatings.userId], set: { score, updatedAt: new Date() } });
+    return this.getRating(uuid);
+  }
+
+  async getRating(uuid: string) {
+    const [row] = await db.select({ average: sql<number>`coalesce(avg(${videoRatings.score}), 0)`, count: sql<number>`count(*)` })
+      .from(videoRatings).where(eq(videoRatings.videoUuid, uuid));
+    return { ratingAverage: Number(row?.average ?? 0), ratingCount: Number(row?.count ?? 0) };
+  }
+
   /**
    * Publish a completed, owned, private video to the public gallery.
    * The write is a single conditional UPDATE so concurrent publishes are

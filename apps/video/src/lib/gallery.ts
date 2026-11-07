@@ -97,6 +97,9 @@ export interface GalleryItem {
   hasStartImage: boolean;
   /** Only populated when the author allowed reuse. */
   startImageUrl: string | null;
+  /** Aggregate community score; the rating rows and user identities stay private. */
+  ratingAverage?: number;
+  ratingCount?: number;
 }
 
 export interface ResolvePublishFieldsParams {

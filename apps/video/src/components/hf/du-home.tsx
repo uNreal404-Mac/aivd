@@ -5,13 +5,16 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
+  Clock3,
   CirclePlay,
   Clapperboard,
   Film,
   Image as ImageIcon,
   ImagePlus,
   LayoutGrid,
+  Maximize,
   Palette,
   PenLine,
   Play,
@@ -181,6 +184,34 @@ function FeatureStrip({
       </div>
     </Link>
   );
+}
+
+function HeroChoice({
+  label,
+  name,
+  value,
+  options,
+  onChange,
+  icon: ChoiceIcon,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  icon: LucideIcon;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value);
+  return <div className="relative">
+    <input type="hidden" name={name} value={value} />
+    <button type="button" aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)} className="flex h-9 max-w-[190px] items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-xs text-[var(--du-text)] transition-colors hover:bg-[var(--du-border-strong)] xl:h-10 xl:text-sm">
+      <ChoiceIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" aria-hidden="true" /><span className="truncate">{selected?.label ?? value}</span><ChevronDown className="h-3 w-3 shrink-0 text-[var(--du-text-muted)]" aria-hidden="true" />
+    </button>
+    {open ? <div className="absolute bottom-11 left-0 z-30 max-h-56 min-w-[160px] overflow-y-auto rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-1.5 shadow-2xl">
+      {options.map((option) => <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${option.value === value ? "text-[var(--du-accent-text)]" : "text-[var(--du-text)]"}`}>{option.label}</button>)}
+    </div> : null}
+  </div>;
 }
 
 const HERO_SLIDES = [
@@ -524,7 +555,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <span className="pointer-events-none absolute inset-0 bg-black/50" />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="relative z-10 flex min-h-[640px] flex-col items-center px-5 pb-12 pt-[6%] text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:pt-[5%]">
+            <div className="relative z-10 flex min-h-[640px] flex-col items-center justify-center px-5 py-12 text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:px-[8%] md:py-[4%]">
               <h1 className="max-w-[1600px] text-[clamp(2rem,4.5vw,6rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
                 {heroCopy.title}
                 <br />
@@ -543,7 +574,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
               <form
                 action={localizedHref(lang, "/ai/video")}
                 method="get"
-                className="du-glass relative z-20 mt-6 w-full max-w-[1080px] rounded-[22px] p-3 text-left sm:w-[85%] md:mt-[3%] xl:p-4"
+                className="du-glass relative z-20 mt-6 w-full max-w-[1080px] rounded-[22px] p-3 text-left sm:w-[85%] md:mt-[4%] xl:p-4"
               >
                 <div className="flex items-start gap-3">
                   <span className="du-glass-btn flex h-10 w-10 shrink-0 items-center justify-center text-xl text-[var(--du-text)] xl:h-11 xl:w-11 xl:text-2xl">
@@ -562,31 +593,16 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
                 </div>
                 <div className="mt-2 flex items-end justify-between gap-3 xl:mt-3">
                   <div className="flex flex-wrap gap-2">
-                    <label className="sr-only" htmlFor="hero-model">{isChinese ? "模型" : "Model"}</label>
-                    <select
-                      id="hero-model"
-                      name="model"
-                      value={heroModelId}
-                      onChange={(event) => {
-                        const next = models.find((item) => item.id === event.target.value);
+                    <HeroChoice label={isChinese ? "模型" : "Model"} name="model" value={heroModelId} icon={Film} options={models.map((item) => ({ value: item.id, label: item.name }))} onChange={(value) => {
+                        const next = models.find((item) => item.id === value);
                         if (next) {
                           setHeroModelId(next.id);
                           setHeroDuration(next.durations[0]);
                           setHeroAspect(next.aspects[0]);
                         }
-                      }}
-                      className="du-glass-btn h-9 max-w-[180px] px-2 text-xs text-[var(--du-text)] xl:text-sm"
-                    >
-                      {models.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                    </select>
-                    <label className="sr-only" htmlFor="hero-duration">{isChinese ? "时长" : "Duration"}</label>
-                    <select id="hero-duration" name="duration" value={heroDuration} onChange={(event) => setHeroDuration(Number(event.target.value))} className="du-glass-btn h-9 px-2 text-xs text-[var(--du-text)] xl:text-sm">
-                      {(heroModel?.durations ?? []).map((duration) => <option key={duration} value={duration}>{duration}s</option>)}
-                    </select>
-                    <label className="sr-only" htmlFor="hero-aspect">{isChinese ? "画面比例" : "Aspect ratio"}</label>
-                    <select id="hero-aspect" name="aspect" value={heroAspect} onChange={(event) => setHeroAspect(event.target.value)} className="du-glass-btn h-9 px-2 text-xs text-[var(--du-text)] xl:text-sm">
-                      {(heroModel?.aspects ?? []).map((aspect) => <option key={aspect} value={aspect}>{aspect}</option>)}
-                    </select>
+                      }} />
+                    <HeroChoice label={isChinese ? "时长" : "Duration"} name="duration" value={String(heroDuration)} icon={Clock3} options={(heroModel?.durations ?? []).map((duration) => ({ value: String(duration), label: `${duration}s` }))} onChange={(value) => setHeroDuration(Number(value))} />
+                    <HeroChoice label={isChinese ? "画面比例" : "Aspect ratio"} name="aspect" value={heroAspect} icon={Maximize} options={(heroModel?.aspects ?? []).map((aspect) => ({ value: aspect, label: aspect }))} onChange={setHeroAspect} />
                   </div>
                   <button
                     type="submit"

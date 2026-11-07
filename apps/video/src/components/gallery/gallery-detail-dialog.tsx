@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { GalleryItem } from "@/lib/gallery";
+import { localizedHref } from "@/lib/du-home";
+import Link from "next/link";
 
 export interface GalleryDetailDialogProps {
   item: GalleryItem | null;
@@ -33,11 +35,25 @@ export function GalleryDetailDialog({
 
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [rating, setRating] = useState<{ ratingAverage: number; ratingCount: number } | null>(null);
+  const [ratingStatus, setRatingStatus] = useState<"idle" | "sending" | "login" | "error" | "saved">("idle");
+
+  useEffect(() => {
+    if (!open || !item) return;
+    let active = true;
+    fetch(`/api/v1/gallery/${encodeURIComponent(item.uuid)}/rating`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (active && payload) setRating(payload.data ?? payload); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [open, item]);
 
   useEffect(() => {
     if (!open) {
       setPending(false);
       setFailed(false);
+      setRating(null);
+      setRatingStatus("idle");
     }
   }, [open]);
 
@@ -49,6 +65,19 @@ export function GalleryDetailDialog({
     setPending(false);
     if (!ok) setFailed(true);
   }, [item, locale, pending, router]);
+
+  const handleRate = useCallback(async (score: number) => {
+    if (!item || ratingStatus === "sending") return;
+    setRatingStatus("sending");
+    try {
+      const response = await fetch(`/api/v1/gallery/${encodeURIComponent(item.uuid)}/rating`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ score }) });
+      if (response.status === 401) { setRatingStatus("login"); return; }
+      if (!response.ok) { setRatingStatus("error"); return; }
+      const payload = await response.json();
+      setRating(payload.data ?? payload);
+      setRatingStatus("saved");
+    } catch { setRatingStatus("error"); }
+  }, [item, ratingStatus]);
 
   if (!item) return null;
 
@@ -112,6 +141,14 @@ export function GalleryDetailDialog({
                 </p>
               </div>
             ) : null}
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-[var(--du-border)] pt-4">
+              <span className="text-xs text-[var(--du-text-muted)]">{locale === "zh" ? "社区评分" : "Community rating"}{rating?.ratingCount ? ` · ${rating.ratingAverage.toFixed(1)} / 5 (${rating.ratingCount})` : ""}</span>
+              <div className="flex gap-1" role="group" aria-label={locale === "zh" ? "给作品评分" : "Rate this creation"}>{[1, 2, 3, 4, 5].map((score) => <button key={score} type="button" disabled={ratingStatus === "sending"} onClick={() => void handleRate(score)} aria-label={`${score} / 5`} className="text-lg text-[var(--du-accent)] transition-transform hover:scale-125 disabled:opacity-50">★</button>)}</div>
+              {ratingStatus === "login" ? <Link href={localizedHref(locale, "/login")} className="text-xs text-[var(--du-accent-text)] underline">{locale === "zh" ? "登录后评分" : "Sign in to rate"}</Link> : null}
+              {ratingStatus === "error" ? <span role="status" className="text-xs text-[var(--du-text-muted)]">{locale === "zh" ? "暂时无法评分，或不能评价自己的作品。" : "Rating unavailable, or you cannot rate your own creation."}</span> : null}
+              {ratingStatus === "saved" ? <span role="status" className="text-xs text-[var(--du-text-muted)]">{locale === "zh" ? "已保存评分" : "Rating saved"}</span> : null}
+            </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
               {failed ? (
