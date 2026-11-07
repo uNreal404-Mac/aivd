@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { authClient } from "@/lib/auth/client";
@@ -22,12 +22,15 @@ interface SignInModalContentProps {
 export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
   const t = useTranslations("SignInModal");
   const signInModal = useSigninModal();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [signInClicked, setSignInClicked] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
-  const callbackURL = getSafeCallbackURL(searchParams?.get("callbackURL"));
+  const callbackURL = getSafeCallbackURL(
+    signInModal.callbackURL ?? searchParams?.get("callbackURL") ?? pathname,
+  );
 
   const handleSocialLogin = async (provider: "google") => {
     setSignInClicked(provider);

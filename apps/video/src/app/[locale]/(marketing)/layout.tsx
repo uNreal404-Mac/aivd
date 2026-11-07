@@ -1,6 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
 
-import { ModalProvider } from "@/components/modal-provider";
 import { HfPromoBar } from "@/components/hf/promo-bar";
 import { HfTopNav } from "@/components/hf/top-nav";
 import { LandingFooter } from "@/components/landing/footer";
@@ -27,9 +26,7 @@ export default async function MarketingLayout({
         lang={locale}
       />
 
-      <ModalProvider>
-        <main className="flex-1">{children}</main>
-      </ModalProvider>
+      <main className="flex-1">{children}</main>
 
       <LandingFooter />
     </div>

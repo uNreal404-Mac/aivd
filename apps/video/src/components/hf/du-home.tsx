@@ -539,7 +539,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <span className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
           </button>
 
-          <div className="relative z-10 min-h-[640px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:aspect-video md:min-h-0">
+          <div className="relative z-10 min-h-[640px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:h-[min(calc(100svh-10.5rem),1440px)] md:min-h-0">
             <video
               key={HERO_SLIDES[heroIndex].video}
               autoPlay
@@ -555,8 +555,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <span className="pointer-events-none absolute inset-0 bg-black/50" />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="relative z-10 flex min-h-[640px] flex-col items-center justify-center px-5 py-12 text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:px-[8%] md:py-[4%]">
-              <h1 className="max-w-[1600px] text-[clamp(2rem,4.5vw,6rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
+            <div className="relative z-10 flex min-h-[640px] flex-col items-center justify-center px-5 py-12 text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:px-[8%] md:py-[clamp(1rem,3vh,3rem)]">
+              <h1 className="max-w-[1600px] text-[clamp(2rem,min(4.5vw,6.5vh),6rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
                 {heroCopy.title}
                 <br />
                 {heroCopy.titleSecond}

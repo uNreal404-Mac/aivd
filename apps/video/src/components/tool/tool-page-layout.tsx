@@ -13,7 +13,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth/client";
 import { useCredits } from "@/stores/credits-store";
@@ -22,6 +22,7 @@ import { useNotificationDeduplication } from "@/hooks/use-notification-deduplica
 import { videoTaskStorage } from "@/lib/video-task-storage";
 import { videoHistoryStorage, type VideoHistoryItem } from "@/lib/video-history-storage";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
+import { useSigninModal } from "@/hooks/use-signin-modal";
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
 import { siteConfig } from "@/config/site";
 import type { Video } from "@/db";
@@ -85,7 +86,7 @@ export function ToolPageLayout({
   toolRoute,
   locale,
 }: ToolPageLayoutProps) {
-  const router = useRouter();
+  const signInModal = useSigninModal();
   const searchParams = useSearchParams();
   const { balance, optimisticFreeze, optimisticRelease, invalidate } = useCredits();
   const { openModal } = useUpgradeModal();
@@ -417,7 +418,7 @@ export function ToolPageLayout({
   const handleSubmit = useCallback(async (data: GeneratorData) => {
     // 检查登录
     if (!user) {
-      router.push(`/${locale}/login`);
+      signInModal.onOpenWithRedirect(`/${locale}/${toolRoute}`);
       return;
     }
 
@@ -552,7 +553,7 @@ export function ToolPageLayout({
   }, [
     user,
     locale,
-    router,
+    signInModal,
     balance,
     config.generator.mode,
     toolRoute,

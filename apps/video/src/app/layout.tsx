@@ -13,6 +13,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { cn } from "@/components/ui";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
+import { ModalProvider } from "@/components/modal-provider";
 
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -169,7 +170,7 @@ export default async function RootLayout({
             <QueryProvider>
               <PlausibleAnalytics />
               <AttributionCapture />
-              {children}
+              <ModalProvider>{children}</ModalProvider>
               <Toaster richColors position="top-right" />
               <TailwindIndicator />
             </QueryProvider>

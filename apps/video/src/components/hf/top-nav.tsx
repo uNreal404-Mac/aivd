@@ -132,7 +132,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       <Link
         key={item.label}
         href={`/${lang}${item.href}`}
-        onClick={mobile ? () => setMenuOpen(false) : undefined}
+        onClick={(event) => {
+          if (mobile) setMenuOpen(false);
+          if (!user && item.href === "/my-creations") {
+            event.preventDefault();
+            signInModal.onOpenWithRedirect(`/${lang}/my-creations`);
+          }
+        }}
         className={cn(
           "flex shrink-0 items-center gap-1.5 font-medium transition-colors",
           item.featured
