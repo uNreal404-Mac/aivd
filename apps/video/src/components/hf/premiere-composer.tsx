@@ -102,22 +102,24 @@ export function PremiereComposer({ lang, provider, shot }: { lang: string; provi
       <textarea id="premiere-prompt" ref={input} value={prompt} maxLength={max} rows={2} autoComplete="off"
         aria-invalid={error ? true : undefined} aria-describedby={error ? "premiere-error" : undefined}
         placeholder={zh ? samples[0][1] : samples[0][3]} onChange={event => { setPrompt(event.target.value); setError(""); }} />
-      {active && settings ? <fieldset className={s.settings} aria-label={zh ? "镜头参数" : "Shot settings"}>
-        <Choice label={zh ? "模型" : "Model"} name="model" options={models.map(m => ({ value:m.id, text:m.name }))} value={active.id} onChange={model => change({ model })} />
-        <Choice label={zh ? "画幅比例" : "Aspect ratio"} name="aspectRatio" options={active.aspectRatios.map(value => ({value, text:value}))} value={settings.aspectRatio} onChange={aspectRatio => change({aspectRatio})} />
-        <Choice label={zh ? "时长" : "Duration"} name="duration" options={active.durations.map(n => ({value:String(n), text:zh ? n+" 秒" : n+" s"}))} value={String(settings.duration)} onChange={n => change({duration:Number(n)})} />
-        {active.qualities?.length && settings.quality ? <Choice label={zh ? "分辨率" : "Resolution"} name="quality"
-          options={active.qualities.map(value => ({value, text:value}))} value={settings.quality} onChange={quality => change({quality})} />
-          : <span className={s.fixed}>{zh ? "画质随模型" : "Model quality"}</span>}
-      </fieldset> : <output className={s.message}>{zh ? "此模式暂无可用模型，可切换生成方式。" : "No models are available in this mode. Choose another mode."}</output>}
-      <div className={s.actions}>
-        {isImage ? <span className={s.hint}>{zh ? "下一步添加图片" : "Add an image in the studio"}</span> :
-          <button className={s.ghost} type="button" onClick={() => {switchMode("image-to-video");input.current?.focus({ preventScroll:true });}}>{zh ? "从图片开始" : "Start with an image"}</button>}
-        <button className={s.primary} type="submit" disabled={!hydrated || !settings || leaving}>
-          {leaving ? (zh ? "进入工作台…" : "Opening studio…") : (zh ? "免费生成视频" : "Generate Video Free")}
-          {!leaving && estimate !== null && <span> · {estimate} {zh ? "积分" : "credits"}</span>}
-          <ArrowUpRight size={16} aria-hidden="true" />
-        </button>
+      <div className={s.toolbar}>
+        {active && settings ? <fieldset className={s.settings} aria-label={zh ? "镜头参数" : "Shot settings"}>
+          <Choice label={zh ? "模型" : "Model"} name="model" options={models.map(m => ({ value:m.id, text:m.name }))} value={active.id} onChange={model => change({ model })} />
+          <Choice label={zh ? "画幅比例" : "Aspect ratio"} name="aspectRatio" options={active.aspectRatios.map(value => ({value, text:value}))} value={settings.aspectRatio} onChange={aspectRatio => change({aspectRatio})} />
+          <Choice label={zh ? "时长" : "Duration"} name="duration" options={active.durations.map(n => ({value:String(n), text:zh ? n+" 秒" : n+" s"}))} value={String(settings.duration)} onChange={n => change({duration:Number(n)})} />
+          {active.qualities?.length && settings.quality ? <Choice label={zh ? "分辨率" : "Resolution"} name="quality"
+            options={active.qualities.map(value => ({value, text:value}))} value={settings.quality} onChange={quality => change({quality})} />
+            : <span className={s.fixed}>{zh ? "画质随模型" : "Model quality"}</span>}
+        </fieldset> : <output className={s.message}>{zh ? "此模式暂无可用模型，可切换生成方式。" : "No models are available in this mode. Choose another mode."}</output>}
+        <div className={s.actions}>
+          {isImage ? <span className={s.hint}>{zh ? "下一步添加图片" : "Add an image in the studio"}</span> :
+            <button className={s.ghost} type="button" onClick={() => {switchMode("image-to-video");input.current?.focus({ preventScroll:true });}}>{zh ? "从图片开始" : "Start with an image"}</button>}
+          <button className={s.primary} type="submit" disabled={!hydrated || !settings || leaving}>
+            {leaving ? (zh ? "进入工作台…" : "Opening studio…") : (zh ? "免费生成视频" : "Generate Video Free")}
+            {!leaving && estimate !== null && <span> · {estimate} {zh ? "积分" : "credits"}</span>}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       <noscript><p className={s.message}>{zh ? "请启用 JavaScript，以将镜头设置带入工作台。" : "Enable JavaScript to transfer your shot settings to the studio."}</p></noscript>
       {error && <p id="premiere-error" role="alert" className={s.message}>{error}</p>}
