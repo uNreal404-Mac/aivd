@@ -50,10 +50,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const isChinese = lang.toLowerCase().startsWith("zh");
   const copy = isChinese
     ? {
-        reference: "参考",
-        create: "创作",
+        reference: "探索",
+        create: "视频",
         creativeSpace: "创作空间",
-        video: "视频",
+        video: "一键模版",
         image: "图片",
         music: "音乐",
         effects: "特效",
@@ -69,10 +69,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         closeMenu: "关闭菜单",
       }
     : {
-        reference: "Reference",
-        create: "Create",
+        reference: "Explore",
+        create: "Video",
         creativeSpace: "Creative Space",
-        video: "Video",
+        video: "One-click Templates",
         image: "Image",
         music: "Music",
         effects: "Effects",
@@ -89,14 +89,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       };
   const navItems: NavItem[] = [
     { label: copy.reference, href: "/explore" },
-    { label: copy.create, href: "/text-to-video" },
-    { label: copy.creativeSpace, href: "/creative-space", featured: true },
+    { label: copy.create, href: "/ai/video" },
+    { label: copy.image, href: "/ai/image" },
     { label: copy.video, href: "/gallery", badge: { label: copy.top, tone: "lime" } },
-    { label: copy.image, href: "/image-to-video" },
-    { label: copy.music, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
-    { label: copy.effects, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
-    { label: copy.modeling, href: "", badge: { label: copy.soon, tone: "muted" }, disabled: true },
     { label: copy.creations, href: "/my-creations" },
+    { label: copy.creativeSpace, href: "/creative-space", featured: true },
   ];
 
   const isActive = (href: string) => {

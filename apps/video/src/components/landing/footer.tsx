@@ -1,9 +1,7 @@
 "use client";
 
-import { Heart } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 
-import { cn } from "@/components/ui";
 import { LocaleLink } from "@/i18n/navigation";
 
 export function LandingFooter() {
@@ -16,9 +14,11 @@ export function LandingFooter() {
     {
       title: t('product'),
       links: [
+        { title: isChinese ? "视频生成" : "Video generation", href: "/ai/video" },
+        { title: isChinese ? "图片生成" : "Image generation", href: "/ai/image" },
         { title: isChinese ? "图片生成视频" : "Image to Video", href: "/image-to-video" },
-        { title: isChinese ? "文字生成视频" : "Text to Video", href: "/text-to-video" },
-        { title: isChinese ? "参考图生成视频" : "Reference to Video", href: "/reference-to-video" },
+        { title: isChinese ? "一键模版" : "One-click Templates", href: "/gallery" },
+        { title: isChinese ? "创作空间" : "Creative Space", href: "/creative-space" },
         { title: isChinese ? "定价" : "Pricing", href: "/pricing" },
       ],
     },
@@ -46,21 +46,21 @@ export function LandingFooter() {
 
   return (
     <footer className="border-t border-[var(--du-border)] bg-[var(--du-bg-elev)]">
-      <div className="container mx-auto px-4 py-12">
+      <div className="mx-auto max-w-[1680px] px-6 py-16">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="mb-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:gap-20">
           {/* Brand Column */}
-          <div className="col-span-2 md:col-span-1">
+          <div>
             <LocaleLink
               href="/"
               className="flex items-center gap-2 text-xl font-semibold mb-4 text-[var(--du-text)]"
             >
-              🎬 aivd.ai
+              <img src="/logo.svg" alt="" className="h-9 w-9 rounded-lg" /> aivd.ai
             </LocaleLink>
             <p className="text-sm text-[var(--du-text-muted)] mb-4">
               {isChinese
-                ? "用 AI 将你的创意变成精彩视频。"
-                : "Transform your ideas into stunning videos with AI."}
+                ? "从灵感到画面，在一个工作空间完成创作。"
+                : "From idea to frame, create in one workspace."}
             </p>
           </div>
 
@@ -87,15 +87,11 @@ export function LandingFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-[var(--du-border)]">
+        <div className="flex flex-col gap-3 border-t border-[var(--du-border)] pt-7 text-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[var(--du-text-dim)]">
             {t('copyright', { year: currentYear })}
           </p>
-          <p className="text-sm text-[var(--du-text-muted)] flex items-center gap-1">
-            {isChinese ? "由" : "Made with"}
-            <Heart className="h-4 w-4 fill-[var(--du-accent-2)] text-[var(--du-accent-2)]" />
-            {isChinese ? "aivd.ai 团队用心打造" : "by aivd.ai Team"}
-          </p>
+          <p className="text-[var(--du-text-muted)]">{isChinese ? "探索灵感，创作属于你的作品。" : "Explore ideas and make them yours."}</p>
         </div>
       </div>
     </footer>

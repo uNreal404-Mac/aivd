@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { GallerySection } from "@/components/gallery/gallery-section";
+import { HomeStudioStory } from "@/components/hf/home-studio-story";
 import {
   CATEGORY_FILTERS,
   CREDITS_BANNER,
@@ -327,11 +328,22 @@ function effectOrbitStyle(index: number, activeIndex: number, count: number): CS
   };
 }
 
-export function DuHome({ lang }: { lang: string }) {
+type HomeVideoModel = {
+  id: string;
+  name: string;
+  durations: number[];
+  aspects: string[];
+};
+
+export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[] }) {
   const [active, setActive] = useState("Fantasy");
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [activeEffectIndex, setActiveEffectIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
+  const [heroDuration, setHeroDuration] = useState(models[0]?.durations[0] ?? 4);
+  const [heroAspect, setHeroAspect] = useState(models[0]?.aspects[0] ?? "16:9");
+  const heroModel = models.find((item) => item.id === heroModelId) ?? models[0];
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
     ? {
@@ -480,7 +492,7 @@ export function DuHome({ lang }: { lang: string }) {
   return (
     <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
       {/* 1. Hero */}
-      <section className="overflow-hidden pb-14 pt-3">
+      <section className="overflow-hidden pb-10 pt-3">
         <div className="relative mx-auto flex w-full items-center justify-center px-4 sm:px-8 lg:px-12">
           <button
             type="button"
@@ -496,7 +508,7 @@ export function DuHome({ lang }: { lang: string }) {
             <span className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
           </button>
 
-          <div className="relative z-10 aspect-video w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px]">
+          <div className="relative z-10 min-h-[640px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:aspect-video md:min-h-0">
             <video
               key={HERO_SLIDES[heroIndex].video}
               autoPlay
@@ -512,26 +524,26 @@ export function DuHome({ lang }: { lang: string }) {
             <span className="pointer-events-none absolute inset-0 bg-black/50" />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="relative z-10 flex h-full flex-col items-center px-5 pt-[8%] text-center sm:px-8 lg:pt-[7%]">
-              <h1 className="max-w-[1600px] text-[clamp(1.75rem,5vw,7.25rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
+            <div className="relative z-10 flex min-h-[640px] flex-col items-center px-5 pb-12 pt-[6%] text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:pt-[5%]">
+              <h1 className="max-w-[1600px] text-[clamp(2rem,4.5vw,6rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
                 {heroCopy.title}
                 <br />
                 {heroCopy.titleSecond}
               </h1>
-              <p className="mt-[2.4%] hidden max-w-[980px] text-[clamp(0.8rem,1.4vw,1.5rem)] leading-relaxed text-white/90 sm:block">
+              <p className="mt-[2%] max-w-[980px] text-[clamp(0.85rem,1.25vw,1.35rem)] leading-relaxed text-white/90">
                 {heroCopy.subtitle}
               </p>
               <Link
-                href={localizedHref(lang, "/text-to-video")}
-                className="mt-[3%] inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--du-accent)] px-5 text-sm font-semibold text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-12 sm:px-8 sm:text-base xl:min-h-16 xl:rounded-2xl xl:px-12 xl:text-lg"
+                href={localizedHref(lang, "/ai/video")}
+                className="mt-[2.5%] inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--du-accent)] px-5 text-sm font-semibold text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-12 sm:px-8 sm:text-base xl:min-h-14 xl:rounded-2xl xl:px-10 xl:text-lg"
               >
                 {heroCopy.cta}
               </Link>
 
               <form
-                action={localizedHref(lang, "/text-to-video")}
+                action={localizedHref(lang, "/ai/video")}
                 method="get"
-                className="du-glass absolute bottom-[4%] left-1/2 hidden w-[min(72%,1080px)] -translate-x-1/2 rounded-[22px] p-3 text-left md:block xl:p-4"
+                className="du-glass relative z-20 mt-6 w-full max-w-[1080px] rounded-[22px] p-3 text-left sm:w-[85%] md:mt-[3%] xl:p-4"
               >
                 <div className="flex items-start gap-3">
                   <span className="du-glass-btn flex h-10 w-10 shrink-0 items-center justify-center text-xl text-[var(--du-text)] xl:h-11 xl:w-11 xl:text-2xl">
@@ -550,14 +562,35 @@ export function DuHome({ lang }: { lang: string }) {
                 </div>
                 <div className="mt-2 flex items-end justify-between gap-3 xl:mt-3">
                   <div className="flex flex-wrap gap-2">
-                    {["Seedance 1.5", "10s", "Auto", isChinese ? "声音开启" : "Sound on"].map((item) => (
-                      <span key={item} className="du-glass-btn inline-flex h-8 items-center px-3 text-xs xl:h-9 xl:text-sm">
-                        {item}
-                      </span>
-                    ))}
+                    <label className="sr-only" htmlFor="hero-model">{isChinese ? "模型" : "Model"}</label>
+                    <select
+                      id="hero-model"
+                      name="model"
+                      value={heroModelId}
+                      onChange={(event) => {
+                        const next = models.find((item) => item.id === event.target.value);
+                        if (next) {
+                          setHeroModelId(next.id);
+                          setHeroDuration(next.durations[0]);
+                          setHeroAspect(next.aspects[0]);
+                        }
+                      }}
+                      className="du-glass-btn h-9 max-w-[180px] px-2 text-xs text-[var(--du-text)] xl:text-sm"
+                    >
+                      {models.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                    <label className="sr-only" htmlFor="hero-duration">{isChinese ? "时长" : "Duration"}</label>
+                    <select id="hero-duration" name="duration" value={heroDuration} onChange={(event) => setHeroDuration(Number(event.target.value))} className="du-glass-btn h-9 px-2 text-xs text-[var(--du-text)] xl:text-sm">
+                      {(heroModel?.durations ?? []).map((duration) => <option key={duration} value={duration}>{duration}s</option>)}
+                    </select>
+                    <label className="sr-only" htmlFor="hero-aspect">{isChinese ? "画面比例" : "Aspect ratio"}</label>
+                    <select id="hero-aspect" name="aspect" value={heroAspect} onChange={(event) => setHeroAspect(event.target.value)} className="du-glass-btn h-9 px-2 text-xs text-[var(--du-text)] xl:text-sm">
+                      {(heroModel?.aspects ?? []).map((aspect) => <option key={aspect} value={aspect}>{aspect}</option>)}
+                    </select>
                   </div>
                   <button
                     type="submit"
+                    disabled={!heroModel}
                     className="min-h-10 shrink-0 rounded-xl bg-[var(--du-accent)] px-6 text-xs font-bold uppercase text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] xl:min-h-14 xl:px-10 xl:text-sm"
                   >
                     {heroCopy.generate}
@@ -612,6 +645,8 @@ export function DuHome({ lang }: { lang: string }) {
           </button>
         </div>
       </section>
+
+      <HomeStudioStory lang={lang} modelName={heroModel?.name ?? (isChinese ? "视频模型" : "Video model")} />
 
       {/* 2. Category wall */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">

@@ -158,6 +158,22 @@ export function settingsFromSearchParams(
   const promptParam = firstParam(params.prompt) ?? "";
   const prompt = promptParam.trim().slice(0, PROMPT_PARAM_MAX);
 
+  const durationParam = Number(firstParam(params.duration));
+  if (settings.modelId && Number.isInteger(durationParam)) {
+    const model = STUDIO_MODELS.find((item) => item.id === settings.modelId);
+    if (model?.durations.includes(durationParam)) {
+      settings = { ...settings, duration: durationParam };
+    }
+  }
+
+  const aspectParam = firstParam(params.aspect);
+  if (aspectParam) {
+    const model = STUDIO_MODELS.find((item) => item.id === settings.modelId);
+    if (model?.aspects.includes(aspectParam) && aspectParam !== "Auto") {
+      settings = { ...settings, aspect: aspectParam };
+    }
+  }
+
   const presetParam = firstParam(params.preset);
   const preset = presetParam ? presetParam.toLowerCase().trim() : undefined;
 
@@ -215,6 +231,8 @@ export type GenerateRequestBody = {
   quality: string;
   generateAudio: boolean;
   idempotencyKey: string;
+  imageUrl?: string;
+  mode?: "text-to-video" | "image-to-video";
 };
 
 export type BuildGenerateRequestResult =
@@ -224,6 +242,7 @@ export type BuildGenerateRequestResult =
 export function buildGenerateRequest(
   settings: StudioSettings,
   idempotencyKey: string,
+  imageKey?: string | null,
 ): BuildGenerateRequestResult {
   const prompt = settings.prompt.trim();
 
@@ -247,6 +266,7 @@ export function buildGenerateRequest(
       quality: settings.resolution,
       generateAudio: settings.audio,
       idempotencyKey,
+      ...(imageKey ? { imageUrl: imageKey, mode: "image-to-video" as const } : {}),
     },
   };
 }
@@ -271,8 +291,9 @@ export async function submitGeneration(
   settings: StudioSettings,
   idempotencyKey: string,
   fetchImpl: typeof fetch = fetch,
+  imageKey?: string | null,
 ): Promise<SubmitGenerationResult> {
-  const request = buildGenerateRequest(settings, idempotencyKey);
+  const request = buildGenerateRequest(settings, idempotencyKey, imageKey);
 
   if (!request.ok) {
     return {

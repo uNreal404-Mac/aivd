@@ -1,10 +1,14 @@
 import { FAQSection } from "@/components/landing/faq-section";
 import { DuHome } from "@/components/hf/du-home";
+import { HomePricingPreview } from "@/components/hf/home-pricing-preview";
 
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { i18n } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { getAvailableModels } from "@/config/credits";
+import { getConfiguredAIProvider } from "@/ai/provider-config";
+import { SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 
 interface HomePageProps {
   params: Promise<{
@@ -62,10 +66,27 @@ export async function generateMetadata({ params }: PageMetadataProps) {
 
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
+  const models = getAvailableModels({
+    provider: getConfiguredAIProvider() ?? "kie",
+    mode: "text-to-video",
+  });
 
   return (
     <>
-      <DuHome lang={locale} />
+      <DuHome
+        lang={locale}
+        models={models.map(({ id, name, durations, aspectRatios }) => ({
+          id,
+          name,
+          durations: durations.filter((duration) => duration >= 4 && duration <= 15),
+          aspects: aspectRatios.filter((aspect) => aspect !== "Auto"),
+        }))}
+      />
+      <HomePricingPreview
+        lang={locale}
+        plans={SUBSCRIPTION_PRODUCTS.filter((plan) => plan.enabled).map(({ name, priceUsd, credits, period, popular }) => ({ name, priceUsd, credits, period, popular }))}
+        models={models.map((model) => model.name)}
+      />
       <FAQSection />
     </>
   );

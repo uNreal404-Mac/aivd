@@ -3,6 +3,8 @@ import { AiVideoStudio } from "@/components/hf/ai-video-studio";
 import type { Locale } from "@/config/i18n-config";
 import { settingsFromSearchParams } from "@/lib/ai-video-studio";
 import { buildAlternates } from "@/lib/seo";
+import { getAvailableModels } from "@/config/credits";
+import { getConfiguredAIProvider } from "@/ai/provider-config";
 
 type PageParams = {
   locale: Locale;
@@ -39,6 +41,10 @@ export default async function AiVideoPage({
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={settingsFromSearchParams(sp)}
       locale={locale}
+      availableModelIds={getAvailableModels({
+        provider: getConfiguredAIProvider() ?? "kie",
+        mode: "text-to-video",
+      }).map((model) => model.id)}
     />
   );
 }

@@ -13,19 +13,19 @@ import {
   X,
 } from "lucide-react";
 import {
-  RESULT_FILTERS,
   RIGHT_TABS,
   STUDIO_MODELS,
   UNAVAILABLE_LABEL,
   canGenerate,
   defaultSettings,
-  estimateCredits,
   selectModel,
   submitGeneration,
 } from "@/lib/ai-video-studio";
 import type { StudioSettings } from "@/lib/ai-video-studio";
+import { uploadImage, validateImageFile } from "@/lib/image-to-video";
+import { GallerySection } from "@/components/gallery/gallery-section";
 
-const MODES = ["Create", "Edit", "Motion"] as const;
+const MODES = ["Create"] as const;
 
 const TAB_ICONS = {
   History: Clock,
@@ -34,18 +34,6 @@ const TAB_ICONS = {
 } as const;
 
 const PROMPT_MAX_LENGTH = 1500;
-
-const LIBRARY_TILES = [
-  "City at dusk",
-  "Slow push-in",
-  "Coastal drift",
-  "Neon alley",
-  "Morning fog",
-  "Rooftop orbit",
-  "Desert pass",
-  "Rain on glass",
-  "Quiet workshop",
-];
 
 const HOW_IT_WORKS = [
   {
@@ -100,17 +88,18 @@ export function AiVideoStudio({
   generationEnabled,
   initialSettings,
   locale,
+  availableModelIds,
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
   locale: string;
+  availableModelIds: string[];
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
   const copy = isChinese
     ? {
         modes: { Create: "创作", Edit: "编辑", Motion: "运动" } as Record<string, string>,
         tabs: { History: "历史记录", Library: "灵感库", "How it works": "使用方法" } as Record<string, string>,
-        filters: { All: "全部", Videos: "视频", Favorites: "收藏" } as Record<string, string>,
         soon: "即将开放",
         top: "热门",
         new: "新品",
@@ -138,7 +127,6 @@ export function AiVideoStudio({
         results: "生成结果",
         heroTitle: "掌控每一帧",
         heroBody: "选择模型、描述镜头，并调整时长、比例与声音。生成结果会显示在这里。",
-        library: ["黄昏城市", "缓慢推进", "海岸漂移", "霓虹小巷", "清晨薄雾", "屋顶环绕", "沙漠穿行", "玻璃上的雨", "安静工坊"],
         steps: [
           { title: "选择模型", body: "每个模型在速度、细节和声音上各有特点，请选择适合镜头的模型。" },
           { title: "描述镜头", body: "写清主体、动作、镜头运动和光线，也可以添加起始帧。" },
@@ -158,7 +146,6 @@ export function AiVideoStudio({
     : {
         modes: Object.fromEntries(MODES.map((item) => [item, item])) as Record<string, string>,
         tabs: Object.fromEntries(RIGHT_TABS.map((item) => [item, item])) as Record<string, string>,
-        filters: Object.fromEntries(RESULT_FILTERS.map((item) => [item, item])) as Record<string, string>,
         soon: "Soon",
         top: "Top",
         new: "New",
@@ -186,30 +173,33 @@ export function AiVideoStudio({
         results: "Results",
         heroTitle: "Direct every frame",
         heroBody: "Pick a model, write the shot, and tune length, ratio and sound. Your clips land here.",
-        library: LIBRARY_TILES,
         steps: HOW_IT_WORKS,
         empty: "No clips yet. Your generations will show up here.",
         queued: "queued",
         paused: "Generation is paused while we finish setup. Your settings are saved on this page.",
         modelTaglines: {} as Record<string, string>,
       };
-  const [settings, setSettings] = useState<StudioSettings>(
-    () => initialSettings ?? defaultSettings(),
-  );
+  const availableModels = STUDIO_MODELS.filter((item) => item.available && availableModelIds.includes(item.id));
+  const [settings, setSettings] = useState<StudioSettings>(() => {
+    const initial = initialSettings ?? defaultSettings();
+    return availableModelIds.includes(initial.modelId)
+      ? initial
+      : defaultSettings(availableModels[0]);
+  });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [imageKey, setImageKey] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[0]);
-  const [activeFilter, setActiveFilter] = useState<string>(RESULT_FILTERS[0]);
+  const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[1]);
 
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
     STUDIO_MODELS[0];
 
   const check = canGenerate(settings, generationEnabled);
-  const credits = estimateCredits(settings);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
   useEffect(() => {
@@ -249,7 +239,7 @@ export function AiVideoStudio({
         : String(Date.now());
 
     try {
-      const result = await submitGeneration(settings, idempotencyKey);
+      const result = await submitGeneration(settings, idempotencyKey, fetch, imageKey);
 
       if (!result.ok) {
         setNotice(result.message);
@@ -338,14 +328,28 @@ export function AiVideoStudio({
           ) : null}
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
-            onChange={(event) => {
+            onChange={async (event) => {
               const file = event.target.files?.[0];
-              setFileName(file ? file.name : null);
+              if (!file) return;
+              const error = validateImageFile(file);
+              if (error) { setNotice(error); return; }
+              setUploading(true);
+              setNotice(null);
+              const result = await uploadImage(file);
+              setUploading(false);
+              if (result.ok) {
+                setFileName(file.name);
+                setImageKey(result.key);
+              } else {
+                setNotice(result.message);
+              }
             }}
           />
         </label>
+        {uploading ? <span className="text-xs text-[var(--hfv-muted)]">{isChinese ? "上传中…" : "Uploading…"}</span> : null}
+        {imageKey ? <button type="button" onClick={() => { setImageKey(null); setFileName(null); }} className="text-left text-xs text-[var(--hfv-accent)]">{isChinese ? "移除起始帧" : "Remove start frame"}</button> : null}
 
         <div className="flex flex-col gap-1.5">
           <label
@@ -435,7 +439,7 @@ export function AiVideoStudio({
               </button>
             </div>
             <div className="flex flex-col gap-1">
-              {STUDIO_MODELS.map((option) => {
+              {availableModels.map((option) => {
                 const selected = option.id === settings.modelId;
                 const unavailable = !option.available;
 
@@ -583,20 +587,17 @@ export function AiVideoStudio({
 
         <button
           type="button"
-          disabled={promptEmpty || submitting}
+          disabled={promptEmpty || submitting || uploading || availableModels.length === 0}
           onClick={handleGenerate}
           className={[
             "flex h-12 w-full items-center justify-between rounded-[var(--hfv-radius-btn)] bg-[var(--hfv-accent)] px-4 text-[var(--hfv-accent-text)]",
-            promptEmpty || submitting ? "cursor-not-allowed opacity-50" : "",
+            promptEmpty || submitting || uploading || availableModels.length === 0 ? "cursor-not-allowed opacity-50" : "",
           ].join(" ")}
         >
           <span className="font-semibold">
             {submitting ? copy.submit : copy.generate}
           </span>
-          <span className="flex items-center gap-1.5 text-xs font-semibold">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            {credits} {copy.credits}
-          </span>
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
         </button>
 
         {notice ? (
@@ -647,55 +648,14 @@ export function AiVideoStudio({
               {copy.heroBody}
             </p>
           </div>
-          <div className="flex aspect-video items-center justify-center rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
-            <Film
-              className="h-8 w-8 text-[var(--hfv-muted)]"
-              aria-hidden="true"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-center py-2">
-          <div className="flex items-center gap-1 rounded-full border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-1">
-            {RESULT_FILTERS.map((filter) => {
-              const active = filter === activeFilter;
-
-              return (
-                <button
-                  key={filter}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setActiveFilter(filter)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs transition-colors",
-                    active
-                      ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-                      : "text-[var(--hfv-muted)]",
-                  ].join(" ")}
-                >
-                  {copy.filters[filter] ?? filter}
-                </button>
-              );
-            })}
+          <div className="aspect-video overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
+            <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" className="h-full w-full object-cover" />
           </div>
         </div>
 
         <div className="pt-4">
           {activeTab === "Library" ? (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {copy.library.map((caption) => (
-                <div
-                  key={caption}
-                  className="relative aspect-[3/4] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] transition-transform duration-300 hover:scale-[1.02]"
-                >
-                  <div className="absolute inset-x-0 bottom-0 bg-[var(--hfv-overlay)] px-3 py-2">
-                    <span className="text-xs text-[var(--hfv-text)]">
-                      {caption}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <GallerySection />
           ) : null}
 
           {activeTab === "How it works" ? (
