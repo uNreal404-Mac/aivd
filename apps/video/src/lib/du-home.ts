@@ -170,12 +170,12 @@ export const EFFECTS_HEADER: SectionHeader = {
 };
 
 export const EFFECT_CARDS: EffectCard[] = [
-  { id: "float-away", title: "Float Away", image: img("float-away"), alt: "Figure floating above the ground", href: "#" },
-  { id: "style-swap", title: "Style Swap", image: img("style-swap"), alt: "Scene changing visual style", href: "#" },
-  { id: "fire-light", title: "Fire Light", image: img("fire-light"), alt: "Warm fire light on a face", href: "#" },
-  { id: "world-grow", title: "World Grow", image: img("world-grow"), alt: "Landscape growing outward", href: "#" },
-  { id: "orbit-360", title: "360 Orbit", image: img("orbit-360"), alt: "Camera orbiting a subject", href: "#" },
-  { id: "slow-time", title: "Slow Time", image: img("slow-time"), alt: "Slow motion water splash", href: "#" },
+  { id: "float-away", title: "Float Away", image: img("float-away"), alt: "Figure floating above the ground", href: "/effects" },
+  { id: "style-swap", title: "Style Swap", image: img("style-swap"), alt: "Scene changing visual style", href: "/effects" },
+  { id: "fire-light", title: "Fire Light", image: img("fire-light"), alt: "Warm fire light on a face", href: "/effects" },
+  { id: "world-grow", title: "World Grow", image: img("world-grow"), alt: "Landscape growing outward", href: "/effects" },
+  { id: "orbit-360", title: "360 Orbit", image: img("orbit-360"), alt: "Camera orbiting a subject", href: "/effects" },
+  { id: "slow-time", title: "Slow Time", image: img("slow-time"), alt: "Slow motion water splash", href: "/effects" },
 ];
 
 export const STEPS_HEADER: SectionHeader = {

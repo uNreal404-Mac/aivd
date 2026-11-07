@@ -1,0 +1,162 @@
+.home {
+  --gutter: clamp(20px, 4.45vw, 76px);
+  background: var(--du-bg);
+  color: var(--du-text);
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(44px, 4.45vw, 72px) var(--gutter);
+  color: var(--du-text);
+  background: var(--du-bg);
+  border-bottom: 1px solid var(--du-border);
+}
+
+.layout {
+  width: 100%;
+  max-width: 1512px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, .83fr) minmax(0, 1.17fr);
+  gap: clamp(28px, 3.34vw, 56px);
+  align-items: center;
+}
+
+.desk, .screen { min-width: 0; }
+.desk { container-type: inline-size; }
+.featureLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--du-text-dim);
+}
+
+.headline {
+  margin: 0 0 18px;
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-size: clamp(27px, 8.5cqi, 64px);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  line-height: 1.06;
+  color: var(--du-text);
+}
+.headline:lang(zh) {
+  font-size: clamp(30px, 11.65cqi, 64px);
+  letter-spacing: -.035em;
+}
+.intro {
+  max-width: 40ch;
+  margin: 0;
+  color: var(--du-text-muted);
+  font-size: clamp(16px, 1.18vw, 19px);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.composer {
+  margin-top: clamp(22px, 2.5vw, 39px);
+  max-width: 535px;
+}
+.composer label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.composer textarea {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  max-height: 260px;
+  resize: vertical;
+  padding: 13px 15px;
+  border: 1px solid var(--du-surface-2);
+  border-radius: var(--du-glass-radius-btn);
+  background: var(--du-surface);
+  color: var(--du-text);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.48;
+}
+.composer textarea::placeholder { color: var(--du-text-muted); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 21px; margin-top: 13px; }
+.primary, .fromImage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.primary {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  border-radius: var(--du-glass-radius-btn);
+  padding-inline: 17px;
+  cursor: pointer;
+}
+.primary:hover { background: var(--du-accent-hover); }
+.fromImage { color: var(--du-text-muted); }
+.fromImage:hover { color: var(--du-text); text-decoration: underline; text-underline-offset: .23em; }
+.error { margin: 7px 0 0; font-size: 13px; color: var(--du-danger); }
+.home :is(a, button, textarea):focus-visible { outline: 2px solid var(--du-accent); outline-offset: 3px; }
+
+.section {
+  width: 100%;
+  max-width: calc(1512px + 2 * var(--gutter));
+  padding: clamp(36px, 4vw, 66px) var(--gutter);
+  margin-inline: auto;
+}
+.feature {
+  display: grid;
+  grid-template-columns: 1fr minmax(200px, .76fr);
+  gap: clamp(26px, 6vw, 112px);
+  align-items: center;
+}
+.feature h2 {
+  margin: 9px 0;
+  color: var(--du-text);
+  font-family: var(--font-heading), ui-sans-serif, sans-serif;
+  font-size: clamp(31px, 3.2vw, 56px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -.04em;
+}
+.feature p { color: var(--du-text-muted); max-width: 52ch; font-size: 15px; line-height: 1.55; }
+.featureAction { display: inline-flex; align-items: center; gap: 7px; padding-block: 10px 2px; color: var(--du-accent); font-size: 14px; font-weight: 600; }
+.feature:hover .featureAction { text-decoration: underline; text-underline-offset: .22em; }
+.contactSheet {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr .8fr;
+  gap: 5px;
+  height: clamp(100px, 9vw, 150px);
+  overflow: hidden;
+  border-radius: 5px;
+}
+.contactSheet img { width: 100%; height: 100%; min-width: 0; object-fit: cover; }
+
+@media (max-width: 900px) {
+  .hero { padding-block: 36px 40px; }
+  .layout { grid-template-columns: minmax(0, 1fr); max-width: 690px; gap: 28px; }
+  .composer { max-width: none; }
+  .intro { max-width: 52ch; }
+}
+@media (max-width: 600px) {
+  .hero { padding-block: 28px; }
+  .headline { margin-bottom: 12px; }
+  .composer { margin-top: 20px; }
+  .composer textarea { font-size: 16px; min-height: 88px; }
+  .feature { grid-template-columns: minmax(0, 1fr); gap: 17px; }
+  .contactSheet { height: 84px; }
+  .actions { gap: 4px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home *, .home *::before, .home *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

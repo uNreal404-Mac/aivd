@@ -138,7 +138,8 @@ export function GeneratorPanel({
         generate: "Generate Video",
       };
   const models = getAvailableModels();
-  const [prompt, setPrompt] = useState(initialPrompt || "");
+  const [editedPrompt, setPrompt] = useState<string>();
+  const prompt = editedPrompt ?? initialPrompt ?? "";
   const [selectedModel, setSelectedModel] = useState(initialModelId || defaultModelId || models[0]?.id || "");
   const [duration, setDuration] = useState(initialDuration || 10);
   const [aspectRatio, setAspectRatio] = useState(initialAspectRatio || "16:9");
@@ -236,13 +237,10 @@ export function GeneratorPanel({
   }, [availableModels, selectedModel, defaultModelId]);
 
   useEffect(() => {
-    if (initialPrompt && !prompt) {
-      setPrompt(initialPrompt);
-    }
     if (initialImageUrl && !imageFile && !imageUrl) {
       setImageUrl(initialImageUrl);
     }
-  }, [initialPrompt, initialImageUrl, prompt, imageFile, imageUrl]);
+  }, [initialImageUrl, imageFile, imageUrl]);
 
   useEffect(() => {
     if (!currentModel) return;

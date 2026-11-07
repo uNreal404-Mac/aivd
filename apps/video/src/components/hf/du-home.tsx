@@ -22,6 +22,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { StudioHero } from "./studio-hero";
+import studio from "./studio-hero.module.css";
 import { GallerySection } from "@/components/gallery/gallery-section";
 import {
   CATEGORY_FILTERS,
@@ -114,7 +116,6 @@ interface FeatureStripProps {
   cta: string;
   href: string;
   images: string[];
-  tone: "cyan" | "amber" | "violet";
 }
 
 function FeatureStrip({
@@ -124,78 +125,23 @@ function FeatureStrip({
   cta,
   href,
   images,
-  tone,
 }: FeatureStripProps) {
-  const glow =
-    tone === "cyan"
-      ? "from-cyan-400/25 via-transparent to-transparent"
-      : tone === "amber"
-        ? "from-amber-400/25 via-transparent to-transparent"
-        : "from-violet-400/25 via-transparent to-transparent";
-
   return (
-    <Link
-      href={href}
-      className="group relative block min-h-[280px] overflow-hidden rounded-[28px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] sm:min-h-[320px] lg:min-h-[360px]"
-    >
-      <span className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${glow}`} />
-      <span className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(var(--du-border-strong)_1px,transparent_1px),linear-gradient(90deg,var(--du-border-strong)_1px,transparent_1px)] [background-size:44px_44px]" />
-
-      <div className="absolute inset-y-0 right-0 w-[58%] overflow-hidden sm:w-[62%]">
-        <div className="absolute inset-0 grid grid-cols-3 gap-2 p-4 pl-0 sm:gap-3 sm:p-6 sm:pl-0">
-          {images.slice(0, 3).map((image, index) => (
-            <div
-              key={image}
-              className={`relative overflow-hidden rounded-2xl border border-white/10 ${
-                index === 1 ? "translate-y-5" : index === 2 ? "-translate-y-3" : "translate-y-1"
-              }`}
-            >
-              <img
-                src={image}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
-            </div>
-          ))}
-        </div>
-        <span className="absolute inset-0 bg-gradient-to-r from-[var(--du-surface)] via-[var(--du-surface)]/60 to-transparent" />
+    <Link href={href} className={studio.feature}>
+      <div>
+        <span className={studio.featureLabel}>{eyebrow}</span>
+        <h2>{title}</h2>
+        <p>{description}</p>
+        <span className={studio.featureAction}>
+          {cta} <ArrowRight size={15} aria-hidden="true" />
+        </span>
       </div>
-
-      <div className="relative z-10 flex min-h-[280px] max-w-[620px] flex-col justify-center p-7 sm:min-h-[320px] sm:p-10 lg:min-h-[360px] lg:p-12">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--du-accent-text)]">
-          {eyebrow}
-        </span>
-        <h2 className="mt-4 max-w-[560px] text-[clamp(2rem,4vw,4.75rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--du-text)]">
-          {title}
-        </h2>
-        <p className="mt-5 max-w-[480px] text-sm leading-relaxed text-[var(--du-text-muted)] sm:text-base">
-          {description}
-        </p>
-        <span className="mt-7 inline-flex w-fit items-center gap-2 border-b border-[var(--du-text)] pb-1 text-sm font-semibold text-[var(--du-text)] transition-colors group-hover:text-[var(--du-accent-text)]">
-          {cta}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </span>
+      <div className={studio.contactSheet} aria-hidden="true">
+        {images.map((image) => <img key={image} src={image} alt="" loading="lazy" />)}
       </div>
     </Link>
   );
 }
-
-const HERO_SLIDES = [
-  {
-    video: "/home/hero-marina-loop.mp4",
-    poster: "/home/hero-marina-poster.png",
-  },
-  {
-    video: "/home/hero-showcase-02.mp4",
-    poster: "/home/video-pro.webp",
-  },
-  {
-    video: "/home/hero-showcase-03.mp4",
-    poster: "/home/coast-drive.webp",
-  },
-];
 
 const CATEGORY_DECK_FILTERS = CATEGORY_FILTERS.filter((filter) => filter !== "All");
 
@@ -331,34 +277,7 @@ export function DuHome({ lang }: { lang: string }) {
   const [active, setActive] = useState("Fantasy");
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [activeEffectIndex, setActiveEffectIndex] = useState(0);
-  const [heroIndex, setHeroIndex] = useState(0);
   const isChinese = lang.toLowerCase().startsWith("zh");
-  const heroCopy = isChinese
-    ? {
-        title: "AI 视频生成器。",
-        titleSecond: "电影级创作效果。",
-        subtitle: "从一句提示词到电影感视频，只需几秒。顶级模型，一个工作空间。让不可思议的镜头成为现实。",
-        cta: "立即创建视频",
-        placeholder: "描述你的视觉创意，我们将为你生成视频。",
-        generate: "生成",
-        previous: "上一个示例",
-        next: "下一个示例",
-      }
-    : {
-        title: "AI VIDEO GENERATOR.",
-        titleSecond: "STUDIO-GRADE RESULTS.",
-        subtitle: "From prompt to cinematic video in seconds. Every top model, one workspace. Bring impossible shots to life.",
-        cta: "Create Video Now",
-        placeholder: "Describe any visual idea. We will generate a video.",
-        generate: "Generate",
-        previous: "Previous example",
-        next: "Next example",
-      };
-
-  const previousHero = (heroIndex - 1 + HERO_SLIDES.length) % HERO_SLIDES.length;
-  const nextHero = (heroIndex + 1) % HERO_SLIDES.length;
-  const showPreviousHero = () => setHeroIndex(previousHero);
-  const showNextHero = () => setHeroIndex(nextHero);
   const activeCategoryIndex = Math.max(0, CATEGORY_DECK_FILTERS.indexOf(active));
   const showPreviousCategory = () =>
     setActive(
@@ -379,7 +298,7 @@ export function DuHome({ lang }: { lang: string }) {
     ? {
         social: {
           eyebrow: "热门视频模板",
-          title: "让你的生活更加有趣",
+          title: "挑一种镜头风格。",
           description: "从社区热门短片中挑选灵感，一键带入模板，再换成你自己的画面。",
           cta: "探索视频模板",
         },
@@ -391,7 +310,7 @@ export function DuHome({ lang }: { lang: string }) {
         },
         cinema: {
           eyebrow: "影视级长视频",
-          title: "为你的梦找到合适的枕头",
+          title: "在工作台里编排镜头。",
           description: "进入专业创作工作台，把更完整的故事发展成有电影感的画面。",
           cta: "进入视频工作台",
         },
@@ -399,7 +318,7 @@ export function DuHome({ lang }: { lang: string }) {
     : {
         social: {
           eyebrow: "Trending video templates",
-          title: "Make everyday life more fun",
+          title: "Find a visual style.",
           description: "Start from community favorites, bring a template into the studio, then make every frame your own.",
           cta: "Explore video templates",
         },
@@ -457,7 +376,7 @@ export function DuHome({ lang }: { lang: string }) {
           "slow-time": "慢时光",
         } as Record<string, string>,
         learnMore: "了解更多 →",
-        tryIt: "立即体验 →",
+        browseEffects: "查看特效库",
         creditsLead: "使用",
         creditsAccent: "免费积分开始创作。",
         creditsSubtitle: "无需信用卡，把你的下一个灵感变成真实作品。",
@@ -470,7 +389,7 @@ export function DuHome({ lang }: { lang: string }) {
         modelDescriptions: {} as Record<string, string>,
         effectTitles: {} as Record<string, string>,
         learnMore: "Learn more →",
-        tryIt: "Try it →",
+        browseEffects: "Browse effects",
         creditsLead: "Start creating with ",
         creditsAccent: "free credits.",
         creditsSubtitle: CREDITS_BANNER.subtitle,
@@ -478,148 +397,15 @@ export function DuHome({ lang }: { lang: string }) {
       };
 
   return (
-    <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
-      {/* 1. Hero */}
-      <section className="overflow-hidden pb-14 pt-3">
-        <div className="relative mx-auto flex w-full items-center justify-center px-4 sm:px-8 lg:px-12">
-          <button
-            type="button"
-            onClick={showPreviousHero}
-            aria-label={heroCopy.previous}
-            className="group absolute left-[-30%] z-0 hidden aspect-video w-[60%] overflow-hidden rounded-[28px] border border-white/10 bg-[var(--du-surface)] opacity-55 transition-all duration-500 hover:opacity-75 md:block lg:left-[-24%] xl:left-[-19%]"
-          >
-            <img
-              src={HERO_SLIDES[previousHero].poster}
-              alt=""
-              className="h-full w-full scale-105 object-cover blur-[5px] transition-transform duration-500 group-hover:scale-110"
-            />
-            <span className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-          </button>
-
-          <div className="relative z-10 aspect-video w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px]">
-            <video
-              key={HERO_SLIDES[heroIndex].video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={HERO_SLIDES[heroIndex].poster}
-              className="absolute inset-0 h-full w-full object-cover"
-            >
-              <source src={HERO_SLIDES[heroIndex].video} type="video/mp4" />
-            </video>
-            <span className="pointer-events-none absolute inset-0 bg-black/50" />
-            <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-            <div className="relative z-10 flex h-full flex-col items-center px-5 pt-[8%] text-center sm:px-8 lg:pt-[7%]">
-              <h1 className="max-w-[1600px] text-[clamp(1.75rem,5vw,7.25rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
-                {heroCopy.title}
-                <br />
-                {heroCopy.titleSecond}
-              </h1>
-              <p className="mt-[2.4%] hidden max-w-[980px] text-[clamp(0.8rem,1.4vw,1.5rem)] leading-relaxed text-white/90 sm:block">
-                {heroCopy.subtitle}
-              </p>
-              <Link
-                href={localizedHref(lang, "/text-to-video")}
-                className="mt-[3%] inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--du-accent)] px-5 text-sm font-semibold text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-12 sm:px-8 sm:text-base xl:min-h-16 xl:rounded-2xl xl:px-12 xl:text-lg"
-              >
-                {heroCopy.cta}
-              </Link>
-
-              <form
-                action={localizedHref(lang, "/text-to-video")}
-                method="get"
-                className="du-glass absolute bottom-[4%] left-1/2 hidden w-[min(72%,1080px)] -translate-x-1/2 rounded-[22px] p-3 text-left md:block xl:p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="du-glass-btn flex h-10 w-10 shrink-0 items-center justify-center text-xl text-[var(--du-text)] xl:h-11 xl:w-11 xl:text-2xl">
-                    +
-                  </span>
-                  <label className="sr-only" htmlFor="hero-prompt">
-                    {heroCopy.placeholder}
-                  </label>
-                  <textarea
-                    id="hero-prompt"
-                    name="prompt"
-                    rows={1}
-                    placeholder={heroCopy.placeholder}
-                    className="min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] xl:text-lg"
-                  />
-                </div>
-                <div className="mt-2 flex items-end justify-between gap-3 xl:mt-3">
-                  <div className="flex flex-wrap gap-2">
-                    {["Seedance 1.5", "10s", "Auto", isChinese ? "声音开启" : "Sound on"].map((item) => (
-                      <span key={item} className="du-glass-btn inline-flex h-8 items-center px-3 text-xs xl:h-9 xl:text-sm">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    type="submit"
-                    className="min-h-10 shrink-0 rounded-xl bg-[var(--du-accent)] px-6 text-xs font-bold uppercase text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] xl:min-h-14 xl:px-10 xl:text-sm"
-                  >
-                    {heroCopy.generate}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <button
-              type="button"
-              onClick={showPreviousHero}
-              aria-label={heroCopy.previous}
-              className="du-glass-btn du-glass-on-media absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full sm:left-5 sm:h-12 sm:w-12"
-            >
-              <ChevronLeft className="h-5 w-5 text-white" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={showNextHero}
-              aria-label={heroCopy.next}
-              className="du-glass-btn du-glass-on-media absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full sm:right-5 sm:h-12 sm:w-12"
-            >
-              <ChevronRight className="h-5 w-5 text-white" aria-hidden="true" />
-            </button>
-
-            <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 md:bottom-[1.5%]">
-              {HERO_SLIDES.map((slide, index) => (
-                <button
-                  key={slide.video}
-                  type="button"
-                  onClick={() => setHeroIndex(index)}
-                  aria-label={`${index + 1}`}
-                  aria-current={index === heroIndex ? "true" : undefined}
-                  className={index === heroIndex ? "h-1.5 w-7 rounded-full bg-[var(--du-accent)]" : "h-1.5 w-2.5 rounded-full bg-white/45 hover:bg-white/70"}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={showNextHero}
-            aria-label={heroCopy.next}
-            className="group absolute right-[-30%] z-0 hidden aspect-video w-[60%] overflow-hidden rounded-[28px] border border-white/10 bg-[var(--du-surface)] opacity-55 transition-all duration-500 hover:opacity-75 md:block lg:right-[-24%] xl:right-[-19%]"
-          >
-            <img
-              src={HERO_SLIDES[nextHero].poster}
-              alt=""
-              className="h-full w-full scale-105 object-cover blur-[5px] transition-transform duration-500 group-hover:scale-110"
-            />
-            <span className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-          </button>
-        </div>
-      </section>
+    <div className={studio.home}>
+      <StudioHero lang={lang} />
 
       {/* 2. Category wall */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
+      <section className={studio.section}>
         <FeatureStrip
           {...featureCopy.social}
           href={localizedHref(lang, "/gallery")}
           images={["/home/golden-hour.webp", "/home/neon-streets.webp", "/home/coast-drive.webp"]}
-          tone="cyan"
         />
         <div
           className="relative mt-8 h-[clamp(370px,42vw,610px)] overflow-hidden [perspective:1500px] [perspective-origin:50%_38%]"
@@ -708,12 +494,11 @@ export function DuHome({ lang }: { lang: string }) {
       </section>
 
       {/* 3. Effect cards */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
+      <section className={studio.section}>
         <FeatureStrip
           {...featureCopy.image}
           href={localizedHref(lang, "/explore")}
           images={["/home/silver-muse.webp", "/home/glass-city.webp", "/home/liquid-light.webp"]}
-          tone="amber"
         />
         <div className="relative mt-8 h-[clamp(430px,55vw,760px)] overflow-hidden rounded-[32px] border border-[var(--du-border)] bg-[radial-gradient(circle_at_50%_45%,rgba(45,35,112,0.3),rgba(3,5,14,0.82)_48%,rgba(0,0,0,0.96)_78%)] [perspective:1500px] [perspective-origin:50%_42%]">
           <span className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(102,252,241,0.25)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.25)_1px,transparent_1px)] [background-size:48px_48px]" />
@@ -723,7 +508,7 @@ export function DuHome({ lang }: { lang: string }) {
           <span className="pointer-events-none absolute inset-x-[14%] bottom-[3%] h-[25%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(128,76,255,0.2),rgba(67,197,255,0.09)_38%,transparent_72%)] blur-2xl" />
 
           <div className="pointer-events-none absolute left-1/2 top-[5%] z-[70] -translate-x-1/2">
-            <div className="relative rounded-full border border-cyan-200/70 bg-[#080b19]/80 px-6 py-3 text-center shadow-[0_0_18px_rgba(88,196,255,0.45),0_0_34px_rgba(132,80,255,0.3)] backdrop-blur-xl">
+            <div className="relative rounded-full border border-cyan-200/70 bg-[var(--du-surface)]/80 px-6 py-3 text-center shadow-[0_0_18px_rgba(88,196,255,0.45),0_0_34px_rgba(132,80,255,0.3)] backdrop-blur-xl">
               <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200/65">
                 {isChinese ? "当前特效" : "Selected effect"}
               </span>
@@ -731,7 +516,7 @@ export function DuHome({ lang }: { lang: string }) {
                 {homeCopy.effectTitles[EFFECT_CARDS[activeEffectIndex].id] ??
                   EFFECT_CARDS[activeEffectIndex].title}
               </span>
-              <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-cyan-200/70 bg-[#080b19]/90" />
+              <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-cyan-200/70 bg-[var(--du-surface)]/90" />
             </div>
           </div>
 
@@ -776,7 +561,7 @@ export function DuHome({ lang }: { lang: string }) {
                       href={localizedHref(lang, effect.href)}
                       className="du-glass-btn du-glass-on-media absolute bottom-16 left-4 z-20 inline-flex h-9 items-center rounded-full px-4 text-xs"
                     >
-                      {homeCopy.tryIt}
+                      {homeCopy.browseEffects}
                     </Link>
                   ) : null}
                 </div>
@@ -810,12 +595,11 @@ export function DuHome({ lang }: { lang: string }) {
       </section>
 
       {/* 4. Model cards (moved from above) */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
+      <section className={studio.section}>
         <FeatureStrip
           {...featureCopy.cinema}
           href={localizedHref(lang, "/ai/video")}
           images={["/home/video-pro.webp", "/home/planet-horizon.webp", "/home/edge-of-space.webp"]}
-          tone="violet"
         />
         <div className="mt-12">
           <SectionHeading header={homeCopy.modelsHeader} />
