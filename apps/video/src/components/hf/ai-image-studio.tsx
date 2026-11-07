@@ -21,8 +21,8 @@ export function AiImageStudio({ locale }: { locale: string }) {
   const [menu, setMenu] = useState<"aspect" | "quality" | null>(null);
   const [notice, setNotice] = useState(false);
 
-  return <main className="min-h-[calc(100svh-80px)] bg-[var(--du-bg)] px-4 pb-8 pt-8 text-[var(--du-text)] sm:px-8">
-    <div className="mx-auto flex min-h-[calc(100svh-140px)] max-w-[1500px] flex-col">
+  return <main className="min-h-[calc(100svh-80px)] w-full min-w-0 flex-1 bg-[var(--du-bg)] px-4 pb-8 pt-8 text-[var(--du-text)] sm:px-8">
+    <div className="mx-auto flex min-h-[calc(100svh-140px)] w-full flex-col">
       <div className="flex justify-end"><span className="rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] px-4 py-2 text-xs text-[var(--du-text-muted)]">{zh ? "图片模型待接入" : "Image model coming soon"}</span></div>
 
       <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
@@ -35,7 +35,7 @@ export function AiImageStudio({ locale }: { locale: string }) {
         {prompt.trim() ? <div className="mt-8 rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] px-5 py-3 text-sm text-[var(--du-text-muted)]">{zh ? "你的创意已就绪 · 图片模型待接入" : "Your idea is ready · Image model coming soon"}</div> : null}
       </div>
 
-      <div className="relative mx-auto w-full max-w-[1040px] rounded-[28px] border border-[var(--du-border)] bg-[var(--du-surface)] p-3 shadow-[0_20px_70px_rgba(0,0,0,.28)] sm:p-5">
+      <div className="relative mx-auto w-full rounded-[28px] border border-[var(--du-border)] bg-[var(--du-surface)] p-3 shadow-[0_20px_70px_rgba(0,0,0,.28)] sm:p-5 lg:w-4/5 2xl:max-w-[2200px]">
         <label htmlFor="image-prompt" className="sr-only">{zh ? "图片提示词" : "Image prompt"}</label>
         <textarea id="image-prompt" value={prompt} maxLength={2000} onChange={(event) => { setPrompt(event.target.value); setNotice(false); }} placeholder={zh ? "描述一个场景、角色、氛围或风格……" : "Describe a scene, character, mood or style…"} rows={3} className="min-h-20 w-full resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

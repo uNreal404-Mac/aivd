@@ -272,10 +272,10 @@ export function AiVideoStudio({
   }
 
   return (
-    <div className="flex flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row bg-[var(--hfv-bg)] text-[var(--hfv-text)]">
+    <div className="flex w-full min-w-0 flex-1 flex-col gap-3 bg-[var(--hfv-bg)] p-3 text-[var(--hfv-text)] lg:h-[calc(100svh-52px)] lg:flex-row">
       <aside
         aria-label={copy.settings}
-        className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:overflow-y-auto"
+        className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:shrink-0 lg:overflow-y-auto"
       >
         <div className="flex items-center gap-1">
           {MODES.map((option) => {
@@ -634,7 +634,7 @@ export function AiVideoStudio({
 
       <section
         aria-label={copy.results}
-        className="flex-1 overflow-y-auto rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-4"
+        className="min-w-0 flex-1 overflow-y-auto rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-4"
       >
         {mode === "Edit" ? (
           <div className="flex min-h-full flex-col items-center justify-center gap-5 py-6 text-center">
