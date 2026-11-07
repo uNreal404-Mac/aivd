@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ImagePlus, Maximize, Plus, Sparkles } from "lucide-react";
+import { ChevronDown, Maximize, Plus, Sparkles } from "lucide-react";
+import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { IMAGE_CATALOG } from "@/lib/kie-model-catalog";
 
 const EXAMPLES = [
   { src: "/home/hero-marina-poster.png", rotate: "-rotate-6", shape: "rounded-[22px]" },
@@ -18,6 +20,7 @@ export function AiImageStudio({ locale }: { locale: string }) {
   const [aspect, setAspect] = useState("1:1");
   const [quality, setQuality] = useState("Standard");
   const [count, setCount] = useState(1);
+  const [modelId, setModelId] = useState(IMAGE_CATALOG[0].id);
   const [menu, setMenu] = useState<"aspect" | "quality" | null>(null);
   const [notice, setNotice] = useState(false);
 
@@ -41,7 +44,7 @@ export function AiImageStudio({ locale }: { locale: string }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" disabled title={zh ? "参考图上传待接入" : "Reference upload coming soon"} className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-text-muted)] opacity-60"><Plus size={19} /></button>
-            <button type="button" disabled className="flex h-10 cursor-not-allowed items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-sm text-[var(--du-text-muted)] opacity-70"><ImagePlus size={17} />{zh ? "模型待接入" : "Model coming soon"}</button>
+            <div className="min-w-[180px] max-w-[260px]"><KieModelPicker kind="image" locale={locale} value={modelId} onChange={setModelId} placement="top" /></div>
             <div className="relative"><button type="button" aria-expanded={menu === "aspect"} onClick={() => setMenu(menu === "aspect" ? null : "aspect")} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-sm"><Maximize size={16} />{aspect}<ChevronDown size={14} /></button>{menu === "aspect" ? <div className="absolute bottom-12 left-0 z-20 grid w-36 gap-1 rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-xl">{ASPECTS.map((value) => <button key={value} type="button" onClick={() => { setAspect(value); setMenu(null); }} className={`rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${value === aspect ? "text-[var(--du-accent-text)]" : ""}`}>{value}</button>)}</div> : null}</div>
             <div className="relative"><button type="button" aria-expanded={menu === "quality"} onClick={() => setMenu(menu === "quality" ? null : "quality")} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-sm"><Sparkles size={16} />{quality}<ChevronDown size={14} /></button>{menu === "quality" ? <div className="absolute bottom-12 left-0 z-20 grid w-36 gap-1 rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-xl">{QUALITIES.map((value) => <button key={value} type="button" onClick={() => { setQuality(value); setMenu(null); }} className={`rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${value === quality ? "text-[var(--du-accent-text)]" : ""}`}>{zh ? (value === "High" ? "高质量" : "标准") : value}</button>)}</div> : null}</div>
             <div className="flex h-10 items-center rounded-xl bg-[var(--du-surface-2)] text-sm"><button type="button" aria-label={zh ? "减少图片数量" : "Fewer images"} disabled={count <= 1} onClick={() => setCount(count - 1)} className="px-3 disabled:opacity-40">−</button><span>{count}/4</span><button type="button" aria-label={zh ? "增加图片数量" : "More images"} disabled={count >= 4} onClick={() => setCount(count + 1)} className="px-3 disabled:opacity-40">+</button></div>

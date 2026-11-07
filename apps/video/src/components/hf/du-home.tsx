@@ -27,6 +27,7 @@ import {
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeStudioStory } from "@/components/hf/home-studio-story";
+import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import {
   CATEGORY_FILTERS,
   CREDITS_BANNER,
@@ -374,7 +375,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
   const [heroDuration, setHeroDuration] = useState(models[0]?.durations[0] ?? 4);
   const [heroAspect, setHeroAspect] = useState(models[0]?.aspects[0] ?? "16:9");
-  const heroModel = models.find((item) => item.id === heroModelId) ?? models[0];
+  const heroModel = models.find((item) => item.id === heroModelId);
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
     ? {
@@ -593,14 +594,15 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
                 </div>
                 <div className="mt-2 flex items-end justify-between gap-3 xl:mt-3">
                   <div className="flex flex-wrap gap-2">
-                    <HeroChoice label={isChinese ? "模型" : "Model"} name="model" value={heroModelId} icon={Film} options={models.map((item) => ({ value: item.id, label: item.name }))} onChange={(value) => {
-                        const next = models.find((item) => item.id === value);
-                        if (next) {
-                          setHeroModelId(next.id);
-                          setHeroDuration(next.durations[0]);
-                          setHeroAspect(next.aspects[0]);
-                        }
-                      }} />
+                    <input type="hidden" name="model" value={heroModelId} />
+                    <KieModelPicker kind="video" locale={lang} value={heroModelId} placement="top" connectedIds={models.map((item) => item.id)} onChange={(value) => {
+                      setHeroModelId(value);
+                      const next = models.find((item) => item.id === value);
+                      if (next) {
+                        setHeroDuration(next.durations[0]);
+                        setHeroAspect(next.aspects[0]);
+                      }
+                    }} />
                     <HeroChoice label={isChinese ? "时长" : "Duration"} name="duration" value={String(heroDuration)} icon={Clock3} options={(heroModel?.durations ?? []).map((duration) => ({ value: String(duration), label: `${duration}s` }))} onChange={(value) => setHeroDuration(Number(value))} />
                     <HeroChoice label={isChinese ? "画面比例" : "Aspect ratio"} name="aspect" value={heroAspect} icon={Maximize} options={(heroModel?.aspects ?? []).map((aspect) => ({ value: aspect, label: aspect }))} onChange={setHeroAspect} />
                   </div>

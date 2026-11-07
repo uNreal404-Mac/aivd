@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
   BookOpen,
-  Check,
   ChevronRight,
   Clock,
   Film,
@@ -15,7 +14,6 @@ import {
 import {
   RIGHT_TABS,
   STUDIO_MODELS,
-  UNAVAILABLE_LABEL,
   canGenerate,
   defaultSettings,
   selectModel,
@@ -24,6 +22,8 @@ import {
 import type { StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { GallerySection } from "@/components/gallery/gallery-section";
+import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 
 const MODES = ["Create", "Edit"] as const;
 
@@ -195,6 +195,7 @@ export function AiVideoStudio({
       : defaultSettings(availableModels[0]);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [catalogModelId, setCatalogModelId] = useState(initialSettings?.modelId ?? availableModels[0]?.id ?? "");
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -208,6 +209,8 @@ export function AiVideoStudio({
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
     STUDIO_MODELS[0];
+  const selectedCatalogModel = VIDEO_CATALOG.find((item) => item.id === catalogModelId);
+  const selectedModelConnected = availableModelIds.includes(catalogModelId);
 
   const check = canGenerate(settings, generationEnabled);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
@@ -228,7 +231,7 @@ export function AiVideoStudio({
   }, [pickerOpen]);
 
   async function handleGenerate() {
-    if (promptEmpty || submitting) {
+    if (promptEmpty || submitting || !availableModelIds.includes(catalogModelId)) {
       return;
     }
 
@@ -306,10 +309,10 @@ export function AiVideoStudio({
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
           <div className="relative">
           <p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">
-            {model.name}
+            {selectedCatalogModel?.name ?? model.name}
           </p>
           <p className="mt-1 max-w-[72%] text-xs text-[var(--hfv-muted)]">
-            {copy.modelTaglines[model.id] ?? model.tagline}
+            {selectedModelConnected ? (copy.modelTaglines[model.id] ?? model.tagline) : (isChinese ? "接口待接入" : "Integration pending")}
           </p>
           </div>
           <button
@@ -407,110 +410,13 @@ export function AiVideoStudio({
           </span>
         ) : null}
 
-        <button
-          type="button"
-          aria-expanded={pickerOpen}
-          onClick={() => setPickerOpen((open) => !open)}
-          className="flex flex-col gap-1.5 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] px-3 py-2.5 text-left"
-        >
-          <span className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-            {copy.model}
-          </span>
-          <span className="flex w-full items-center gap-2">
-            <span className="text-sm font-semibold">{model.name}</span>
-            {model.badge ? (
-              <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-accent)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-accent-text)]">
-                {model.badge}
-              </span>
-            ) : null}
-            <ChevronRight
-              className="ml-auto h-4 w-4 text-[var(--hfv-muted)]"
-              aria-hidden="true"
-            />
-          </span>
-        </button>
-
-        {pickerOpen ? (
-          <section
-            aria-label={copy.chooseModel}
-            className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-2"
-          >
-            <div className="flex items-center justify-between gap-2 px-1 pb-1.5">
-              <span className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                {copy.chooseModel}
-              </span>
-              <button
-                type="button"
-                aria-label={copy.closePicker}
-                onClick={() => setPickerOpen(false)}
-                className="rounded-[var(--hfv-radius-chip)] p-1 text-[var(--hfv-muted)]"
-              >
-                <X className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-1">
-              {availableModels.map((option) => {
-                const selected = option.id === settings.modelId;
-                const unavailable = !option.available;
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    aria-pressed={selected}
-                    aria-disabled={unavailable}
-                    disabled={unavailable}
-                    onClick={() => {
-                      setSettings((previous) => selectModel(previous, option.id));
-                      setPickerOpen(false);
-                    }}
-                    className={[
-                      "flex items-start gap-2 rounded-[var(--hfv-radius-chip)] px-2.5 py-2 text-left transition-colors",
-                      unavailable
-                        ? "cursor-not-allowed opacity-50"
-                        : selected
-                          ? "bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-                          : "text-[var(--hfv-text)] hover:bg-[var(--hfv-panel-3)]",
-                    ].join(" ")}
-                  >
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">
-                          {option.name}
-                        </span>
-                        {unavailable ? (
-                          <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip-bg)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-                            {isChinese ? UNAVAILABLE_LABEL : copy.unavailable}
-                          </span>
-                        ) : option.badge ? (
-                          <span className="rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-accent)] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[var(--hfv-accent-text)]">
-                            {option.badge === "Top" ? copy.top : copy.new}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span
-                        className={[
-                          "text-xs",
-                          selected
-                            ? "text-[var(--hfv-chip-active-text)] opacity-80"
-                            : "text-[var(--hfv-muted)]",
-                        ].join(" ")}
-                      >
-                        {copy.modelTaglines[option.id] ?? option.tagline}
-                      </span>
-                    </span>
-                    {selected ? (
-                      <Check
-                        className="mt-0.5 h-4 w-4 shrink-0"
-                        aria-hidden="true"
-                      />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
+        <KieModelPicker kind="video" locale={locale} value={catalogModelId}
+          connectedIds={availableModelIds} open={pickerOpen} onOpenChange={setPickerOpen}
+          onChange={(id) => {
+            setCatalogModelId(id);
+            if (availableModelIds.includes(id)) setSettings((previous) => selectModel(previous, id));
+          }} />
+        {!availableModelIds.includes(catalogModelId) ? <p role="status" className="text-xs text-[var(--hfv-muted)]">{isChinese ? "此模型已列入 KIE 目录，本站生成接口尚未接入。" : "Listed by KIE; generation is not connected on this site yet."}</p> : null}
 
         <ChipGroup label={copy.duration}>
           {model.durations.map((duration) => {
@@ -597,11 +503,11 @@ export function AiVideoStudio({
 
         <button
           type="button"
-          disabled={promptEmpty || submitting || uploading || availableModels.length === 0}
+          disabled={promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId)}
           onClick={handleGenerate}
           className={[
             "flex h-12 w-full items-center justify-between rounded-[var(--hfv-radius-btn)] bg-[var(--hfv-accent)] px-4 text-[var(--hfv-accent-text)]",
-            promptEmpty || submitting || uploading || availableModels.length === 0 ? "cursor-not-allowed opacity-50" : "",
+            promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId) ? "cursor-not-allowed opacity-50" : "",
           ].join(" ")}
         >
           <span className="font-semibold">
