@@ -280,26 +280,26 @@ export const VIDEO_MODEL_PRICING: Record<string, VideoModelPricing> = {
     enabled: true,
   },
 
-  /** Veo 3.1 Fast Lite - Google (暂时隐藏) */
+  /** Veo 3.1 Fast Lite - Google */
   "veo-3.1": {
     baseCredits: 10,
     perSecond: 0,
-    enabled: false,
+    enabled: true,
   },
 
-  /** Sora 2 Lite - OpenAI (暂时隐藏) */
+  /** Sora 2 Lite - OpenAI */
   "sora-2": {
     baseCredits: 2,
     perSecond: 0,
-    enabled: false,
+    enabled: true,
   },
 
-  /** Wan 2.6 (暂时隐藏) */
+  /** Wan 2.6 */
   "wan2.6": {
     baseCredits: 25,
     perSecond: 5,
     qualityMultiplier: 1.67,
-    enabled: false,
+    enabled: true,
   },
 };
 
