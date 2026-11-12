@@ -14,13 +14,13 @@ const EXAMPLES = [
 const ASPECTS = ["1:1", "16:9", "9:16", "4:3", "3:4"];
 const QUALITIES = ["Standard", "High"];
 
-export function AiImageStudio({ locale }: { locale: string }) {
+export function AiImageStudio({ locale, initialPrompt = "", initialModel = "", initialAspect = "" }: { locale: string; initialPrompt?: string; initialModel?: string; initialAspect?: string }) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const [prompt, setPrompt] = useState("");
-  const [aspect, setAspect] = useState("1:1");
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [aspect, setAspect] = useState(ASPECTS.includes(initialAspect) ? initialAspect : "1:1");
   const [quality, setQuality] = useState("Standard");
   const [count, setCount] = useState(1);
-  const [modelId, setModelId] = useState(IMAGE_CATALOG[0].id);
+  const [modelId, setModelId] = useState(IMAGE_CATALOG.some((item) => item.id === initialModel) ? initialModel : IMAGE_CATALOG[0].id);
   const [menu, setMenu] = useState<"aspect" | "quality" | null>(null);
   const [notice, setNotice] = useState(false);
 

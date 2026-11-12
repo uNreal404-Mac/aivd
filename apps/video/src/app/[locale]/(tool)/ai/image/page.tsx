@@ -13,7 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   };
 }
 
-export default async function AiImagePage({ params }: { params: Promise<{ locale: Locale }> }) {
+export default async function AiImagePage({ params, searchParams }: { params: Promise<{ locale: Locale }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { locale } = await params;
-  return <AiImageStudio locale={locale} />;
+  const query = await searchParams;
+  return <AiImageStudio locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} />;
 }

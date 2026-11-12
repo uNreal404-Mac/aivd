@@ -5,16 +5,13 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   ChevronLeft,
-  ChevronDown,
   ChevronRight,
-  Clock3,
   CirclePlay,
   Clapperboard,
   Film,
   Image as ImageIcon,
   ImagePlus,
   LayoutGrid,
-  Maximize,
   Palette,
   PenLine,
   Play,
@@ -27,7 +24,7 @@ import {
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeStudioStory } from "@/components/hf/home-studio-story";
-import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { HomeGenerator } from "@/components/hf/home-generator";
 import {
   CATEGORY_FILTERS,
   CREDITS_BANNER,
@@ -185,34 +182,6 @@ function FeatureStrip({
       </div>
     </Link>
   );
-}
-
-function HeroChoice({
-  label,
-  name,
-  value,
-  options,
-  onChange,
-  icon: ChoiceIcon,
-}: {
-  label: string;
-  name: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-  icon: LucideIcon;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((option) => option.value === value);
-  return <div className="relative">
-    <input type="hidden" name={name} value={value} />
-    <button type="button" aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)} className="flex h-9 max-w-[190px] items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-xs text-[var(--du-text)] transition-colors hover:bg-[var(--du-border-strong)] xl:h-10 xl:text-sm">
-      <ChoiceIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" aria-hidden="true" /><span className="truncate">{selected?.label ?? value}</span><ChevronDown className="h-3 w-3 shrink-0 text-[var(--du-text-muted)]" aria-hidden="true" />
-    </button>
-    {open ? <div className="absolute bottom-11 left-0 z-30 max-h-56 min-w-[160px] overflow-y-auto rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-1.5 shadow-2xl">
-      {options.map((option) => <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false); }} className={`block w-full rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${option.value === value ? "text-[var(--du-accent-text)]" : "text-[var(--du-text)]"}`}>{option.label}</button>)}
-    </div> : null}
-  </div>;
 }
 
 const HERO_SLIDES = [
@@ -373,28 +342,20 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const [activeEffectIndex, setActiveEffectIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
-  const [heroDuration, setHeroDuration] = useState(models[0]?.durations[0] ?? 4);
-  const [heroAspect, setHeroAspect] = useState(models[0]?.aspects[0] ?? "16:9");
   const heroModel = models.find((item) => item.id === heroModelId);
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
     ? {
         title: "AI 视频生成器。",
-        titleSecond: "电影级创作效果。",
-        subtitle: "从一句提示词到电影感视频，只需几秒。顶级模型，一个工作空间。让不可思议的镜头成为现实。",
-        cta: "立即创建视频",
-        placeholder: "描述你的视觉创意，我们将为你生成视频。",
-        generate: "生成",
+        titleSecond: "从创意开始创作。",
+        subtitle: "写下你的视频想法，探索脚本、视觉、配音、字幕与音乐的创作方向，选择模型开始生成。",
         previous: "上一个示例",
         next: "下一个示例",
       }
     : {
         title: "AI VIDEO GENERATOR.",
-        titleSecond: "STUDIO-GRADE RESULTS.",
-        subtitle: "From prompt to cinematic video in seconds. Every top model, one workspace. Bring impossible shots to life.",
-        cta: "Create Video Now",
-        placeholder: "Describe any visual idea. We will generate a video.",
-        generate: "Generate",
+        titleSecond: "START WITH AN IDEA.",
+        subtitle: "Describe your video idea, explore directions for script, visuals, voiceover, subtitles and music, then choose a model to generate.",
         previous: "Previous example",
         next: "Next example",
       };
@@ -540,7 +501,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <span className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
           </button>
 
-          <div className="relative z-10 min-h-[640px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:h-[min(calc(100svh-10.5rem),1440px)] md:min-h-0">
+          <div className="relative z-10 min-h-[690px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:h-[min(calc(100svh-9rem),960px)] md:min-h-[530px]">
             <video
               key={HERO_SLIDES[heroIndex].video}
               autoPlay
@@ -556,7 +517,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <span className="pointer-events-none absolute inset-0 bg-black/50" />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-            <div className="relative z-10 flex min-h-[640px] flex-col items-center justify-center px-5 py-12 text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:px-[8%] md:py-[clamp(1rem,3vh,3rem)]">
+            <div className="relative z-10 flex min-h-[690px] flex-col items-center justify-center px-5 py-12 text-center sm:px-8 md:absolute md:inset-0 md:min-h-0 md:px-[8%] md:py-[clamp(1rem,3vh,3rem)]">
               <h1 className="max-w-[1600px] text-[clamp(2rem,min(4.5vw,6.5vh),6rem)] font-semibold uppercase leading-[0.95] tracking-[-0.055em] text-white">
                 {heroCopy.title}
                 <br />
@@ -565,56 +526,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
               <p className="mt-[2%] max-w-[980px] text-[clamp(0.85rem,1.25vw,1.35rem)] leading-relaxed text-white/90">
                 {heroCopy.subtitle}
               </p>
-              <Link
-                href={localizedHref(lang, "/ai/video")}
-                className="mt-[2.5%] inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--du-accent)] px-5 text-sm font-semibold text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] sm:min-h-12 sm:px-8 sm:text-base xl:min-h-14 xl:rounded-2xl xl:px-10 xl:text-lg"
-              >
-                {heroCopy.cta}
-              </Link>
-
-              <form
-                action={localizedHref(lang, "/ai/video")}
-                method="get"
-                className="du-glass relative z-20 mt-6 w-full max-w-[1080px] rounded-[22px] p-3 text-left sm:w-[85%] md:mt-[4%] xl:p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="du-glass-btn flex h-10 w-10 shrink-0 items-center justify-center text-xl text-[var(--du-text)] xl:h-11 xl:w-11 xl:text-2xl">
-                    +
-                  </span>
-                  <label className="sr-only" htmlFor="hero-prompt">
-                    {heroCopy.placeholder}
-                  </label>
-                  <textarea
-                    id="hero-prompt"
-                    name="prompt"
-                    rows={1}
-                    placeholder={heroCopy.placeholder}
-                    className="min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] xl:text-lg"
-                  />
-                </div>
-                <div className="mt-2 flex items-end justify-between gap-3 xl:mt-3">
-                  <div className="flex flex-wrap gap-2">
-                    <input type="hidden" name="model" value={heroModelId} />
-                    <KieModelPicker kind="video" locale={lang} value={heroModelId} placement="top" connectedIds={models.map((item) => item.id)} onChange={(value) => {
-                      setHeroModelId(value);
-                      const next = models.find((item) => item.id === value);
-                      if (next) {
-                        setHeroDuration(next.durations[0]);
-                        setHeroAspect(next.aspects[0]);
-                      }
-                    }} />
-                    <HeroChoice label={isChinese ? "时长" : "Duration"} name="duration" value={String(heroDuration)} icon={Clock3} options={(heroModel?.durations ?? []).map((duration) => ({ value: String(duration), label: `${duration}s` }))} onChange={(value) => setHeroDuration(Number(value))} />
-                    <HeroChoice label={isChinese ? "画面比例" : "Aspect ratio"} name="aspect" value={heroAspect} icon={Maximize} options={(heroModel?.aspects ?? []).map((aspect) => ({ value: aspect, label: aspect }))} onChange={setHeroAspect} />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!heroModel}
-                    className="min-h-10 shrink-0 rounded-xl bg-[var(--du-accent)] px-6 text-xs font-bold uppercase text-[var(--du-on-accent)] shadow-[var(--du-glow)] transition-colors hover:bg-[var(--du-accent-hover)] xl:min-h-14 xl:px-10 xl:text-sm"
-                  >
-                    {heroCopy.generate}
-                  </button>
-                </div>
-              </form>
+              <HomeGenerator lang={lang} models={models} onModelChange={setHeroModelId} />
             </div>
 
             <button

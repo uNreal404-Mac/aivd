@@ -216,6 +216,15 @@ export function AiVideoStudio({
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
   useEffect(() => {
+    const key = sessionStorage.getItem("aivd:home-start-image");
+    if (!key) return;
+    setImageKey(key);
+    setFileName(sessionStorage.getItem("aivd:home-start-image-name"));
+    sessionStorage.removeItem("aivd:home-start-image");
+    sessionStorage.removeItem("aivd:home-start-image-name");
+  }, []);
+
+  useEffect(() => {
     if (!pickerOpen) {
       return;
     }

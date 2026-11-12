@@ -16,6 +16,7 @@ type Props = {
   placement?: "top" | "inline";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  showConnectionStatus?: boolean;
 };
 
 function ModelIcon({ family }: { family: string }) {
@@ -29,7 +30,7 @@ function ModelIcon({ family }: { family: string }) {
   return <Icon aria-hidden="true" className="h-5 w-5" />;
 }
 
-export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [], placement = "inline", open: controlledOpen, onOpenChange }: Props) {
+export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [], placement = "inline", open: controlledOpen, onOpenChange, showConnectionStatus = true }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const catalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const featuredIds = kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
@@ -49,7 +50,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
       <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={item.family} /></span>
       <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2 text-sm font-medium text-[var(--du-text)]">{item.name}
         {item.badge ? <span className="rounded-md bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--du-on-accent)]">{item.badge === "Top" ? (zh ? "精选" : "Top") : (zh ? "新" : "New")}</span> : null}
-      </span><span className="mt-0.5 block text-xs text-[var(--du-text-muted)]">{item.detail} · {connected ? (zh ? "可生成" : "Ready") : (zh ? "接口待接入" : "Integration pending")}</span></span>
+      </span><span className="mt-0.5 block text-xs text-[var(--du-text-muted)]">{item.detail}{showConnectionStatus ? ` · ${connected ? (zh ? "可生成" : "Ready") : (zh ? "接口待接入" : "Integration pending")}` : ""}</span></span>
       {selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-accent-text)]" /> : null}
     </button>;
   };
@@ -61,7 +62,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
       <span className="truncate text-[var(--du-text)]">{current?.name ?? (zh ? "选择模型" : "Choose model")}</span>
       <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
     </button>
-    {open ? <div className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : "mt-2"} z-50 w-[min(92vw,620px)] max-w-full rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}>
+    {open ? <div className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : "mt-2"} z-50 w-[min(92vw,620px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}>
       <div className="flex items-center justify-between border-b border-[var(--du-border)] px-4 py-3"><span className="text-sm font-semibold text-[var(--du-text)]">{family ?? (zh ? "选择模型" : "Choose a model")}</span><button type="button" aria-label={zh ? "关闭" : "Close"} onClick={() => { setOpen(false); setFamily(null); }}><X className="h-4 w-4 text-[var(--du-text-muted)]" /></button></div>
       <div className="max-h-[min(65vh,520px)] overflow-y-auto p-2">
         {family ? <><button type="button" onClick={() => setFamily(null)} className="mb-2 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{zh ? "全部模型" : "All models"}</button>{catalog.filter((item) => item.family === family).map(row)}</> : <>

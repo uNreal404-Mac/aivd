@@ -174,6 +174,16 @@ export function settingsFromSearchParams(
     }
   }
 
+  const selectedModel = STUDIO_MODELS.find((item) => item.id === settings.modelId);
+  const resolutionParam = firstParam(params.resolution);
+  if (resolutionParam && selectedModel?.resolutions.includes(resolutionParam)) {
+    settings = { ...settings, resolution: resolutionParam };
+  }
+  const audioParam = firstParam(params.audio);
+  if (selectedModel?.audio && (audioParam === "true" || audioParam === "false")) {
+    settings = { ...settings, audio: audioParam === "true" };
+  }
+
   const presetParam = firstParam(params.preset);
   const preset = presetParam ? presetParam.toLowerCase().trim() : undefined;
 
