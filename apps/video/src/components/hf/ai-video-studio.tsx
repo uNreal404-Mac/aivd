@@ -198,7 +198,6 @@ export function AiVideoStudio({
   const [catalogModelId, setCatalogModelId] = useState(initialSettings?.modelId ?? availableModels[0]?.id ?? "");
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
-  const [referenceImages, setReferenceImages] = useState<{ key: string; name: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -218,20 +217,11 @@ export function AiVideoStudio({
 
   useEffect(() => {
     const key = sessionStorage.getItem("aivd:home-start-image");
-    if (key) {
-      setImageKey(key);
-      setFileName(sessionStorage.getItem("aivd:home-start-image-name"));
-      sessionStorage.removeItem("aivd:home-start-image");
-      sessionStorage.removeItem("aivd:home-start-image-name");
-    }
-    const storedReferences = sessionStorage.getItem("aivd:home-reference-images");
-    if (storedReferences) {
-      try {
-        const references = JSON.parse(storedReferences) as { key: string; name: string }[];
-        setReferenceImages(references.filter((item) => item && typeof item.key === "string").slice(0, 5));
-      } catch { /* Ignore stale browser data. */ }
-      sessionStorage.removeItem("aivd:home-reference-images");
-    }
+    if (!key) return;
+    setImageKey(key);
+    setFileName(sessionStorage.getItem("aivd:home-start-image-name"));
+    sessionStorage.removeItem("aivd:home-start-image");
+    sessionStorage.removeItem("aivd:home-start-image-name");
   }, []);
 
   useEffect(() => {
@@ -271,7 +261,7 @@ export function AiVideoStudio({
         : String(Date.now());
 
     try {
-      const result = await submitGeneration(settings, idempotencyKey, fetch, imageKey, referenceImages.map((item) => item.key));
+      const result = await submitGeneration(settings, idempotencyKey, fetch, imageKey);
 
       if (!result.ok) {
         setNotice(result.message);
@@ -382,14 +372,6 @@ export function AiVideoStudio({
         </label>
         {uploading ? <span className="text-xs text-[var(--hfv-muted)]">{isChinese ? "上传中…" : "Uploading…"}</span> : null}
         {imageKey ? <button type="button" onClick={() => { setImageKey(null); setFileName(null); }} className="text-left text-xs text-[var(--hfv-accent)]">{isChinese ? "移除起始帧" : "Remove start frame"}</button> : null}
-
-        {referenceImages.length ? <div className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-3">
-          <p className="mb-2 text-xs text-[var(--hfv-muted)]">{isChinese ? "参考图片 · 可在提示词中使用 @编号" : "Reference images · use @number in your prompt"}</p>
-          <div className="flex flex-wrap gap-2">{referenceImages.map((item, index) => <span key={item.key} className="inline-flex max-w-full items-center gap-1 rounded-[var(--hfv-radius-chip)] bg-[var(--hfv-chip)] px-2 py-1 text-xs">
-            <button type="button" title={item.name} onClick={() => setSettings((previous) => ({ ...previous, prompt: `${previous.prompt}${previous.prompt && !/\s$/.test(previous.prompt) ? " " : ""}@${index + 1} ` }))} className="max-w-[160px] truncate text-left">@{index + 1} {item.name}</button>
-            <button type="button" aria-label={isChinese ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`} onClick={() => setReferenceImages((previous) => previous.filter((_, position) => position !== index))}><X className="h-3 w-3" /></button>
-          </span>)}</div>
-        </div> : null}
 
         <div className="flex flex-col gap-1.5">
           <label

@@ -242,7 +242,6 @@ export type GenerateRequestBody = {
   generateAudio: boolean;
   idempotencyKey: string;
   imageUrl?: string;
-  imageUrls?: string[];
   mode?: "text-to-video" | "image-to-video";
 };
 
@@ -254,7 +253,6 @@ export function buildGenerateRequest(
   settings: StudioSettings,
   idempotencyKey: string,
   imageKey?: string | null,
-  referenceKeys: string[] = [],
 ): BuildGenerateRequestResult {
   const prompt = settings.prompt.trim();
 
@@ -278,9 +276,7 @@ export function buildGenerateRequest(
       quality: settings.resolution,
       generateAudio: settings.audio,
       idempotencyKey,
-      ...(referenceKeys.length
-        ? { imageUrls: [...(imageKey ? [imageKey] : []), ...referenceKeys], mode: "image-to-video" as const }
-        : imageKey ? { imageUrl: imageKey, mode: "image-to-video" as const } : {}),
+      ...(imageKey ? { imageUrl: imageKey, mode: "image-to-video" as const } : {}),
     },
   };
 }
@@ -306,9 +302,8 @@ export async function submitGeneration(
   idempotencyKey: string,
   fetchImpl: typeof fetch = fetch,
   imageKey?: string | null,
-  referenceKeys: string[] = [],
 ): Promise<SubmitGenerationResult> {
-  const request = buildGenerateRequest(settings, idempotencyKey, imageKey, referenceKeys);
+  const request = buildGenerateRequest(settings, idempotencyKey, imageKey);
 
   if (!request.ok) {
     return {

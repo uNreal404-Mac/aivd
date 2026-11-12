@@ -17,6 +17,7 @@ type Props = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   showConnectionStatus?: boolean;
+  compact?: boolean;
 };
 
 function ModelIcon({ family }: { family: string }) {
@@ -30,7 +31,7 @@ function ModelIcon({ family }: { family: string }) {
   return <Icon aria-hidden="true" className="h-5 w-5" />;
 }
 
-export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [], placement = "inline", open: controlledOpen, onOpenChange, showConnectionStatus = true }: Props) {
+export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [], placement = "inline", open: controlledOpen, onOpenChange, showConnectionStatus = true, compact = false }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const catalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const featuredIds = kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
@@ -70,7 +71,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
 
   return <div ref={pickerRef} className={`relative ${placement === "inline" ? "w-full" : ""}`}>
     <button type="button" aria-label={zh ? "选择模型" : "Choose model"} aria-expanded={open} onClick={() => setOpen(!open)}
-      className={`flex items-center gap-2 text-left ${placement === "inline" ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3" : "h-9 w-full rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm"}`}>
+      className={`flex items-center gap-2 text-left ${placement === "inline" ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3" : compact ? "h-9 max-w-[min(46vw,230px)] px-1 text-xs hover:text-[var(--du-accent-text)] sm:text-sm" : "h-9 w-full rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm"}`}>
       {kind === "video" ? <Film className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" /> : <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />}
       <span className="truncate text-[var(--du-text)]">{current?.name ?? (zh ? "选择模型" : "Choose model")}</span>
       <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
