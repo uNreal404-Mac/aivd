@@ -70,7 +70,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
 
   return <div ref={pickerRef} className={`relative ${placement === "inline" ? "w-full" : ""}`}>
     <button type="button" aria-label={zh ? "选择模型" : "Choose model"} aria-expanded={open} onClick={() => setOpen(!open)}
-      className={`flex items-center gap-2 text-left ${placement === "inline" ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3" : "h-9 max-w-[210px] rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm"}`}>
+      className={`flex items-center gap-2 text-left ${placement === "inline" ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3" : "h-9 w-full rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm"}`}>
       {kind === "video" ? <Film className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" /> : <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />}
       <span className="truncate text-[var(--du-text)]">{current?.name ?? (zh ? "选择模型" : "Choose model")}</span>
       <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
