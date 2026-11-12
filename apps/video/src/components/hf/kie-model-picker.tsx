@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Aperture, AudioLines, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Film, Image as ImageIcon, Orbit, Sparkles, X } from "lucide-react";
 import {
   IMAGE_CATALOG, IMAGE_FEATURED_IDS, VIDEO_CATALOG, VIDEO_FEATURED_IDS,
@@ -41,6 +41,19 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const [family, setFamily] = useState<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!pickerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setFamily(null);
+      }
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [open, setOpen]);
 
   const row = (item: CatalogModel) => {
     const connected = connectedIds.includes(item.id);
@@ -55,7 +68,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
     </button>;
   };
 
-  return <div className={`relative ${placement === "inline" ? "w-full" : ""}`}>
+  return <div ref={pickerRef} className={`relative ${placement === "inline" ? "w-full" : ""}`}>
     <button type="button" aria-label={zh ? "选择模型" : "Choose model"} aria-expanded={open} onClick={() => setOpen(!open)}
       className={`flex items-center gap-2 text-left ${placement === "inline" ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3" : "h-9 max-w-[210px] rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm"}`}>
       {kind === "video" ? <Film className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" /> : <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />}
@@ -64,7 +77,7 @@ export function KieModelPicker({ kind, locale, value, onChange, connectedIds = [
     </button>
     {open ? <div className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : "mt-2"} z-50 w-[min(92vw,620px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}>
       <div className="flex items-center justify-between border-b border-[var(--du-border)] px-4 py-3"><span className="text-sm font-semibold text-[var(--du-text)]">{family ?? (zh ? "选择模型" : "Choose a model")}</span><button type="button" aria-label={zh ? "关闭" : "Close"} onClick={() => { setOpen(false); setFamily(null); }}><X className="h-4 w-4 text-[var(--du-text-muted)]" /></button></div>
-      <div className="max-h-[min(65vh,520px)] overflow-y-auto p-2">
+      <div className="max-h-[min(42vh,340px)] overflow-y-auto p-2">
         {family ? <><button type="button" onClick={() => setFamily(null)} className="mb-2 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{zh ? "全部模型" : "All models"}</button>{catalog.filter((item) => item.family === family).map(row)}</> : <>
           <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[var(--du-text-muted)]"><Sparkles className="h-3.5 w-3.5" />{zh ? "精选模型" : "Featured models"}</div>
           {featured.map(row)}
