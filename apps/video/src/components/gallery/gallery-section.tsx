@@ -9,7 +9,8 @@ import {
 } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, Play } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Lock, Play } from "lucide-react";
 
 import { GalleryDetailDialog } from "@/components/gallery/gallery-detail-dialog";
 import {
@@ -17,8 +18,19 @@ import {
   unwrapApiData,
 } from "@/components/gallery/use-template";
 import type { GalleryItem } from "@/lib/gallery";
+import { localizedHref } from "@/lib/du-home";
+import "./home-gallery.css";
 
 const PAGE_SIZE = 20;
+
+const HOME_SAMPLES = [
+  { image: "/home/hero-marina-poster.png", zh: "海边的一刻", en: "A Moment by the Sea" },
+  { image: "/home/gallery-sample-journey.jpg", zh: "共同旅程", en: "The Journey Together" },
+  { image: "/home/neon-streets.webp", zh: "霓虹漫游", en: "Neon Wanderings" },
+  { image: "/home/planet-horizon.webp", zh: "远方星球", en: "A Distant World" },
+  { image: "/home/golden-hour.webp", zh: "落日光影", en: "Golden Hour" },
+  { image: "/home/coast-drive.webp", zh: "沿海公路", en: "The Coastal Road" },
+] as const;
 
 interface GalleryListResponse {
   items: GalleryItem[];
@@ -91,8 +103,10 @@ function GalleryThumb({ item }: { item: GalleryItem }) {
 
 export function GallerySection({
   initialItemUuid,
+  variant = "default",
 }: {
   initialItemUuid?: string;
+  variant?: "default" | "home";
 } = {}) {
   const t = useTranslations("Gallery");
   const tc = useTranslations("Common");
@@ -106,6 +120,40 @@ export function GallerySection({
   const [activeItem, setActiveItem] = useState<GalleryItem | null>(null);
   const [pendingUuid, setPendingUuid] = useState<string | null>(null);
   const [actionFailed, setActionFailed] = useState(false);
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(true);
+
+  const updateScrollButtons = useCallback(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    setCanScrollPrev(rail.scrollLeft > 2);
+    setCanScrollNext(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    if (variant !== "home") return;
+    const rail = railRef.current;
+    if (!rail) return;
+    const observer = new ResizeObserver(updateScrollButtons);
+    observer.observe(rail);
+    const frame = requestAnimationFrame(updateScrollButtons);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [items.length, status, updateScrollButtons, variant]);
+
+  const scrollHome = (direction: -1 | 1) => {
+    const rail = railRef.current;
+    const card = rail?.querySelector<HTMLElement>(".home-gallery-card");
+    if (!rail || !card) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rail.scrollBy({
+      left: direction * (card.offsetWidth + 18),
+      behavior: reducedMotion ? "instant" : "smooth",
+    });
+  };
 
   const fetchPage = useCallback(async (cursor: string | null) => {
     const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
@@ -184,6 +232,100 @@ export function GallerySection({
     },
     [locale, pendingUuid, router]
   );
+
+  if (variant === "home") {
+    const isChinese = locale.toLowerCase().startsWith("zh");
+    const showSamples = status !== "ready" || items.length === 0;
+
+    return (
+      <section className="home-gallery-section mx-auto max-w-[1680px] px-4 py-16 sm:px-6" aria-label={isChinese ? "作品画廊" : "Community gallery"}>
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--du-accent-text)]">
+              {isChinese ? "作品画廊" : "COMMUNITY GALLERY"}
+            </p>
+            <h2 className="mt-3 text-[clamp(1.9rem,3.4vw,3.5rem)] font-semibold leading-tight tracking-[-0.035em] text-[var(--du-text)]">
+              {isChinese ? "探索每一种创作可能" : "Explore what we can create"}
+            </h2>
+            <p className="mt-2 text-sm text-[var(--du-text-muted)] sm:text-base">
+              {isChinese ? "横向滑动，发现社区作品与灵感。" : "Slide through community creations and find your next idea."}
+            </p>
+          </div>
+          <Link
+            href={localizedHref(locale, "/gallery")}
+            className="inline-flex w-fit items-center gap-2 border-b border-[var(--du-border-strong)] pb-1 text-sm font-semibold text-[var(--du-accent-text)] transition-colors hover:text-[var(--du-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--du-accent)]"
+          >
+            {isChinese ? "查看完整画廊" : "View the full gallery"}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="home-gallery-film relative overflow-hidden rounded-[24px] border border-[var(--du-border-strong)] sm:rounded-[30px]">
+          <div className="home-gallery-perforation" aria-hidden="true" />
+          <div className="relative px-4 py-5 sm:px-12 sm:py-7">
+            <div
+              ref={railRef}
+              onScroll={updateScrollButtons}
+              className="home-gallery-rail flex gap-[18px] overflow-x-auto overscroll-x-contain pb-1"
+            >
+              {showSamples
+                ? HOME_SAMPLES.map((sample, index) => (
+                    <article key={sample.image} className="home-gallery-card overflow-hidden rounded-[20px] border border-[var(--du-border-strong)] bg-[var(--du-surface)]">
+                      <div className="relative aspect-[16/9] overflow-hidden">
+                        <img src={sample.image} alt="" loading={index < 3 ? "eager" : "lazy"} className="h-full w-full object-cover" />
+                        <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--du-accent-text)]">
+                          {isChinese ? "示例" : "SAMPLE"}
+                        </span>
+                      </div>
+                      <div className="home-gallery-card-copy p-4 sm:p-5">
+                        <h3 className="truncate text-base font-semibold text-[var(--du-text)] sm:text-lg">
+                          {isChinese ? sample.zh : sample.en}
+                        </h3>
+                        <p className="mt-1 text-xs text-[var(--du-text-muted)] sm:text-sm">
+                          {isChinese ? "站内画面示例 · 真实作品发布后自动更新" : "Site visual sample · Replaced when creators publish"}
+                        </p>
+                      </div>
+                    </article>
+                  ))
+                : items.map((item) => (
+                    <article key={item.uuid} className="home-gallery-card overflow-hidden rounded-[20px] border border-[var(--du-border-strong)] bg-[var(--du-surface)]">
+                      <button
+                        type="button"
+                        onClick={() => setActiveItem(item)}
+                        aria-label={isChinese ? `查看作品：${item.title}` : `View creation: ${item.title}`}
+                        className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--du-accent)]"
+                      >
+                        <div className="relative aspect-[16/9] overflow-hidden">
+                          <GalleryThumb item={item} />
+                          <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+                          <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/80 text-[var(--du-accent-text)] transition-transform group-hover:scale-110">
+                            <Play className="h-4 w-4 fill-current" aria-hidden="true" />
+                          </span>
+                        </div>
+                        <div className="home-gallery-card-copy p-4 sm:p-5">
+                          <h3 className="truncate text-base font-semibold text-[var(--du-text)] sm:text-lg">{item.title}</h3>
+                          <p className="mt-1 truncate text-xs text-[var(--du-text-muted)] sm:text-sm">{item.authorName} · {item.modelLabel}</p>
+                        </div>
+                      </button>
+                    </article>
+                  ))}
+            </div>
+
+            <button type="button" onClick={() => scrollHome(-1)} disabled={!canScrollPrev} aria-label={isChinese ? "向左滑动画廊" : "Scroll gallery left"} className="home-gallery-arrow home-gallery-arrow-left" >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => scrollHome(1)} disabled={!canScrollNext} aria-label={isChinese ? "向右滑动画廊" : "Scroll gallery right"} className="home-gallery-arrow home-gallery-arrow-right" >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+          <div className="home-gallery-perforation" aria-hidden="true" />
+        </div>
+
+        {status === "error" ? <p className="mt-3 text-xs text-[var(--du-text-muted)]">{isChinese ? "画廊暂时无法加载，当前展示站内示例。" : "The gallery is temporarily unavailable. Showing site samples."}</p> : null}
+        <GalleryDetailDialog item={activeItem} open={activeItem !== null} onOpenChange={(next) => { if (!next) setActiveItem(null); }} />
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-16">

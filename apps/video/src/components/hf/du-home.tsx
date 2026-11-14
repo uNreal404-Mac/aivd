@@ -26,7 +26,6 @@ import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeStudioStory } from "@/components/hf/home-studio-story";
 import { HomeGenerator } from "@/components/hf/home-generator";
 import {
-  CATEGORY_FILTERS,
   CREDITS_BANNER,
   EFFECT_CARDS,
   MODEL_CARDS,
@@ -199,98 +198,10 @@ const HERO_SLIDES = [
   },
 ];
 
-const CATEGORY_DECK_FILTERS = CATEGORY_FILTERS.filter((filter) => filter !== "All");
-
-const CATEGORY_DECK_IMAGES: Record<string, string> = {
-  Cinematic: "/home/golden-hour.webp",
-  Anime: "/home/first-steps.webp",
-  Portrait: "/home/silver-muse.webp",
-  Fantasy: "/home/edge-of-space.webp",
-  "Sci-Fi": "/home/neon-streets.webp",
-  Nature: "/home/coast-drive.webp",
-  Stylize: "/home/liquid-light.webp",
-  More: "/home/glass-city.webp",
-};
-
 function circularCategoryOffset(index: number, activeIndex: number, count: number) {
   let offset = (index - activeIndex + count) % count;
   if (offset > count / 2) offset -= count;
   return offset;
-}
-
-function categoryCardStyle(
-  index: number,
-  activeIndex: number,
-  count: number,
-  hoveredIndex: number | null
-): CSSProperties {
-  const offset = circularCategoryOffset(index, activeIndex, count);
-  const distance = Math.abs(offset);
-
-  if (distance >= 4) {
-    return {
-      left: "50%",
-      opacity: 0,
-      pointerEvents: "none",
-      transform: "translateX(-50%) translateY(96px) scale(0.5) rotateY(55deg)",
-      zIndex: 0,
-    };
-  }
-
-  const direction = offset < 0 ? -1 : offset > 0 ? 1 : 0;
-  const horizontalPositions = [
-    "0px",
-    "clamp(118px,15vw,220px)",
-    "clamp(210px,27vw,400px)",
-    "clamp(285px,38vw,555px)",
-  ];
-  const verticalPositions = [-22, 10, 42, 72];
-  const scales = [1.08, 0.93, 0.79, 0.65];
-  const rotateY = [0, 18, 32, 44];
-  const rotateZ = [0, 4, 7, 10];
-  const opacities = [1, 0.94, 0.72, 0.42];
-
-  let y = verticalPositions[distance];
-  let scale = scales[distance];
-  let zRotation = direction * -rotateZ[distance];
-  let xNudge = 0;
-  let zIndex = 40 - distance * 10;
-
-  if (hoveredIndex !== null) {
-    const hoverOffset = circularCategoryOffset(index, hoveredIndex, count);
-    const hoverDistance = Math.abs(hoverOffset);
-    if (hoverDistance === 0) {
-      y -= 24;
-      scale += 0.055;
-      zRotation *= 0.3;
-      zIndex = 60;
-    } else if (hoverDistance <= 2) {
-      const hoverDirection = hoverOffset < 0 ? -1 : 1;
-      xNudge = hoverDirection * (18 - hoverDistance * 4);
-      zRotation += hoverDirection * -Math.max(4, 12 - hoverDistance * 3);
-      y += hoverDistance * 5;
-    }
-  }
-
-  const horizontalPosition = horizontalPositions[distance];
-  const xTransform =
-    direction === 0
-      ? "-50%"
-      : `calc(-50% ${direction > 0 ? "+" : "-"} ${horizontalPosition})`;
-
-  return {
-    filter:
-      distance >= 3
-        ? "brightness(0.64) blur(0.8px)"
-        : distance === 2
-          ? "brightness(0.8)"
-          : "none",
-    left: "50%",
-    opacity: opacities[distance],
-    pointerEvents: "auto",
-    transform: `translateX(${xTransform}) translateX(${xNudge}px) translateY(${y}px) scale(${scale}) rotateY(${direction * -rotateY[distance]}deg) rotateZ(${zRotation}deg)`,
-    zIndex,
-  };
 }
 
 function effectOrbitStyle(index: number, activeIndex: number, count: number): CSSProperties {
@@ -337,8 +248,6 @@ type HomeVideoModel = {
 };
 
 export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[] }) {
-  const [active, setActive] = useState("Fantasy");
-  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [activeEffectIndex, setActiveEffectIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
@@ -364,15 +273,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const nextHero = (heroIndex + 1) % HERO_SLIDES.length;
   const showPreviousHero = () => setHeroIndex(previousHero);
   const showNextHero = () => setHeroIndex(nextHero);
-  const activeCategoryIndex = Math.max(0, CATEGORY_DECK_FILTERS.indexOf(active));
-  const showPreviousCategory = () =>
-    setActive(
-      CATEGORY_DECK_FILTERS[
-        (activeCategoryIndex - 1 + CATEGORY_DECK_FILTERS.length) % CATEGORY_DECK_FILTERS.length
-      ]
-    );
-  const showNextCategory = () =>
-    setActive(CATEGORY_DECK_FILTERS[(activeCategoryIndex + 1) % CATEGORY_DECK_FILTERS.length]);
   const showPreviousEffect = () =>
     setActiveEffectIndex(
       (current) => (current - 1 + EFFECT_CARDS.length) % EFFECT_CARDS.length
@@ -382,12 +282,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
 
   const featureCopy = isChinese
     ? {
-        social: {
-          eyebrow: "热门视频模板",
-          title: "让你的生活更加有趣",
-          description: "从社区热门短片中挑选灵感，一键带入模板，再换成你自己的画面。",
-          cta: "探索视频模板",
-        },
         image: {
           eyebrow: "热门图片灵感",
           title: "定格你的幻想时刻",
@@ -402,12 +296,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         },
       }
     : {
-        social: {
-          eyebrow: "Trending video templates",
-          title: "Make everyday life more fun",
-          description: "Start from community favorites, bring a template into the studio, then make every frame your own.",
-          cta: "Explore video templates",
-        },
         image: {
           eyebrow: "Trending image ideas",
           title: "Frame the moments you imagine",
@@ -424,17 +312,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
 
   const homeCopy = isChinese
     ? {
-        filters: {
-          All: "全部",
-          Cinematic: "电影感",
-          Anime: "动漫",
-          Portrait: "人像",
-          Fantasy: "幻想",
-          "Sci-Fi": "科幻",
-          Nature: "自然",
-          Stylize: "风格化",
-          More: "更多",
-        } as Record<string, string>,
         modelsHeader: {
           eyebrow: "我们的模型",
           title: "为每一帧选择合适的模型。",
@@ -469,7 +346,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         creditsCta: "领取免费积分 →",
       }
     : {
-        filters: Object.fromEntries(CATEGORY_FILTERS.map((item) => [item, item])) as Record<string, string>,
         modelsHeader: MODELS_HEADER,
         modelTitles: {} as Record<string, string>,
         modelDescriptions: {} as Record<string, string>,
@@ -578,99 +454,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
 
       <HomeStudioStory lang={lang} modelName={heroModel?.name ?? (isChinese ? "视频模型" : "Video model")} />
 
-      {/* 2. Category wall */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
-        <FeatureStrip
-          {...featureCopy.social}
-          href={localizedHref(lang, "/gallery")}
-          images={["/home/golden-hour.webp", "/home/neon-streets.webp", "/home/coast-drive.webp"]}
-          tone="cyan"
-        />
-        <div
-          className="relative mt-8 h-[clamp(370px,42vw,610px)] overflow-hidden [perspective:1500px] [perspective-origin:50%_38%]"
-          onMouseLeave={() => setHoveredCategory(null)}
-        >
-          <span className="pointer-events-none absolute inset-x-[5%] bottom-[7%] h-[30%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(118,70,255,0.25),rgba(102,252,241,0.1)_35%,transparent_72%)] blur-2xl" />
-          <span className="pointer-events-none absolute inset-x-[10%] bottom-[9%] h-px bg-gradient-to-r from-transparent via-white/35 to-transparent shadow-[0_0_28px_rgba(102,252,241,0.45)]" />
-          <div className="absolute inset-x-0 bottom-[15%] top-[8%] [transform-style:preserve-3d]">
-            {CATEGORY_DECK_FILTERS.map((filter, index) => {
-              const isActive = filter === active;
-              return (
-                <button
-                  key={filter}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setActive(filter)}
-                  onMouseEnter={() => setHoveredCategory(index)}
-                  onFocus={() => setHoveredCategory(index)}
-                  onBlur={() => setHoveredCategory(null)}
-                  style={categoryCardStyle(
-                    index,
-                    activeCategoryIndex,
-                    CATEGORY_DECK_FILTERS.length,
-                    hoveredCategory
-                  )}
-                  className={`group absolute top-0 h-[clamp(255px,29vw,430px)] w-[clamp(168px,19vw,286px)] overflow-hidden rounded-[26px] border text-left shadow-[0_24px_62px_rgba(0,0,0,0.68)] transition-[transform,opacity,border-color,box-shadow,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
-                    isActive
-                      ? "border-white/80 shadow-[0_0_18px_rgba(255,255,255,0.5),0_0_42px_rgba(127,92,255,0.72),0_26px_65px_rgba(0,0,0,0.58)]"
-                      : "border-white/25 hover:border-white/75 hover:shadow-[0_0_22px_rgba(102,252,241,0.4),0_0_52px_rgba(118,70,255,0.62),0_28px_70px_rgba(0,0,0,0.62)]"
-                  }`}
-                >
-                  <img
-                    src={CATEGORY_DECK_IMAGES[filter]}
-                    alt=""
-                    loading="lazy"
-                    className="absolute inset-0 h-full w-full scale-110 object-cover blur-[1px] saturate-125 transition-[transform,filter] duration-700 ease-out group-hover:scale-[1.2] group-hover:blur-0"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-b from-indigo-950/5 via-black/10 to-black/80" />
-                  <span className="absolute inset-[1px] rounded-[24px] border border-white/20 bg-gradient-to-br from-white/20 via-transparent to-cyan-300/15 backdrop-blur-[2px]" />
-                  <span className="pointer-events-none absolute -left-1/2 top-0 h-full w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 blur-md transition-[left,opacity] duration-700 group-hover:left-[130%] group-hover:opacity-100" />
-                  <span className="absolute left-4 top-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/65">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="absolute inset-x-4 bottom-5 pr-9">
-                    <span className="block text-lg font-semibold tracking-[-0.02em] text-white sm:text-xl">
-                      {homeCopy.filters[filter] ?? filter}
-                    </span>
-                    <span
-                      className={`mt-3 block h-[2px] rounded-full transition-all duration-500 ${
-                        isActive
-                          ? "w-full bg-[var(--du-accent)] shadow-[0_0_14px_var(--du-accent)]"
-                          : "w-9 bg-white/55 group-hover:w-full group-hover:bg-[var(--du-accent)]"
-                      }`}
-                    />
-                  </span>
-                  <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/55 bg-black/15 text-white shadow-[0_0_18px_rgba(255,255,255,0.18)] backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
-                    <Play className="ml-0.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="absolute inset-x-0 bottom-2 z-[70] flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={showPreviousCategory}
-              aria-label={isChinese ? "上一个分类" : "Previous category"}
-              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
-            >
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <span className="min-w-20 text-center text-xs font-medium tracking-[0.18em] text-[var(--du-text-muted)]">
-              {String(activeCategoryIndex + 1).padStart(2, "0")} /{" "}
-              {String(CATEGORY_DECK_FILTERS.length).padStart(2, "0")}
-            </span>
-            <button
-              type="button"
-              onClick={showNextCategory}
-              aria-label={isChinese ? "下一个分类" : "Next category"}
-              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
-            >
-              <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* 2. Community gallery */}
+      <GallerySection variant="home" />
 
       {/* 3. Effect cards */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">
@@ -817,9 +602,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           ))}
         </div>
       </section>
-
-      {/* 5. Gallery */}
-      <GallerySection />
 
       {/* 6. Free credits banner */}
       <section className="mx-auto max-w-[1680px] px-6 pb-16">

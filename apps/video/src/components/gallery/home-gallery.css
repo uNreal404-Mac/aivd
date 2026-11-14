@@ -1,0 +1,112 @@
+.home-gallery-film {
+  background:
+    radial-gradient(ellipse at 18% 55%, rgba(69, 162, 158, 0.19), transparent 48%),
+    linear-gradient(115deg, var(--du-bg-elev) 0%, var(--du-surface-2) 52%, var(--du-bg-elev) 100%);
+  box-shadow: inset 0 0 72px rgba(0, 0, 0, 0.55);
+}
+
+.home-gallery-perforation {
+  height: 18px;
+  background-color: rgba(69, 162, 158, 0.2);
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--du-bg) 0,
+    var(--du-bg) 18px,
+    transparent 18px,
+    transparent 40px
+  );
+  box-shadow: 0 1px 0 var(--du-border-strong), 0 -1px 0 var(--du-border-strong);
+}
+
+.home-gallery-rail {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.home-gallery-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.home-gallery-card {
+  flex: 0 0 calc((100% - 36px) / 3);
+  min-width: 0;
+  scroll-snap-align: start;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+}
+
+.home-gallery-card-copy {
+  background: linear-gradient(180deg, var(--du-surface-2), var(--du-bg-elev));
+}
+
+.home-gallery-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px solid var(--du-border-strong);
+  border-radius: 50%;
+  background: var(--du-glass-bg-strong);
+  color: var(--du-text);
+  box-shadow: var(--du-glass-shadow);
+  transition: background 180ms ease, opacity 180ms ease;
+}
+
+.home-gallery-arrow:hover:not(:disabled) {
+  background: var(--du-accent-hover);
+  color: var(--du-on-accent);
+}
+
+.home-gallery-arrow:focus-visible {
+  outline: 2px solid var(--du-accent);
+  outline-offset: 3px;
+}
+
+.home-gallery-arrow:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
+.home-gallery-arrow-left {
+  left: 6px;
+}
+
+.home-gallery-arrow-right {
+  right: 6px;
+}
+
+@media (max-width: 900px) {
+  .home-gallery-card {
+    flex-basis: calc((100% - 18px) / 2);
+  }
+}
+
+@media (max-width: 600px) {
+  .home-gallery-card {
+    flex-basis: 86%;
+  }
+
+  .home-gallery-arrow {
+    top: auto;
+    bottom: 16px;
+    width: 36px;
+    height: 36px;
+    transform: none;
+  }
+
+  .home-gallery-film > div:nth-child(2) {
+    padding-bottom: 60px;
+  }
+
+  .home-gallery-arrow-left {
+    left: calc(50% - 46px);
+  }
+
+  .home-gallery-arrow-right {
+    right: calc(50% - 46px);
+  }
+}
