@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Maximize, Plus, Sparkles } from "lucide-react";
+import { ChevronDown, Settings2, Shield } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { IMAGE_CATALOG } from "@/lib/kie-model-catalog";
 
@@ -21,8 +21,11 @@ export function AiImageStudio({ locale, initialPrompt = "", initialModel = "", i
   const [quality, setQuality] = useState("Standard");
   const [count, setCount] = useState(1);
   const [modelId, setModelId] = useState(IMAGE_CATALOG.some((item) => item.id === initialModel) ? initialModel : IMAGE_CATALOG[0].id);
-  const [menu, setMenu] = useState<"aspect" | "quality" | null>(null);
+  const [menu, setMenu] = useState<"settings" | "publish" | null>(null);
   const [notice, setNotice] = useState(false);
+  const settingButton = (label: string, selected: boolean, onClick: () => void) => (
+    <button key={label} type="button" aria-pressed={selected} onClick={onClick} className={`min-h-10 rounded-xl px-3 text-sm transition-colors ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{label}</button>
+  );
 
   return <main className="min-h-[calc(100svh-80px)] w-full min-w-0 flex-1 bg-[var(--du-bg)] px-4 pb-8 pt-8 text-[var(--du-text)] sm:px-8 lg:h-full lg:min-h-0 lg:overflow-y-auto">
     <div className="mx-auto flex min-h-[calc(100svh-140px)] w-full flex-col">
@@ -38,20 +41,33 @@ export function AiImageStudio({ locale, initialPrompt = "", initialModel = "", i
         {prompt.trim() ? <div className="mt-8 rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] px-5 py-3 text-sm text-[var(--du-text-muted)]">{zh ? "你的创意已就绪 · 图片模型待接入" : "Your idea is ready · Image model coming soon"}</div> : null}
       </div>
 
-      <div className="relative mx-auto w-full rounded-[28px] border border-[var(--du-border)] bg-[var(--du-surface)] p-3 shadow-[0_20px_70px_rgba(0,0,0,.28)] sm:p-5 lg:w-4/5 2xl:max-w-[2200px]">
-        <label htmlFor="image-prompt" className="sr-only">{zh ? "图片提示词" : "Image prompt"}</label>
-        <textarea id="image-prompt" value={prompt} maxLength={2000} onChange={(event) => { setPrompt(event.target.value); setNotice(false); }} placeholder={zh ? "描述一个场景、角色、氛围或风格……" : "Describe a scene, character, mood or style…"} rows={3} className="min-h-20 w-full resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" disabled title={zh ? "参考图上传待接入" : "Reference upload coming soon"} className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-text-muted)] opacity-60"><Plus size={19} /></button>
-            <div className="min-w-[180px] max-w-[260px]"><KieModelPicker kind="image" locale={locale} value={modelId} onChange={setModelId} placement="top" /></div>
-            <div className="relative"><button type="button" aria-expanded={menu === "aspect"} onClick={() => setMenu(menu === "aspect" ? null : "aspect")} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-sm"><Maximize size={16} />{aspect}<ChevronDown size={14} /></button>{menu === "aspect" ? <div className="absolute bottom-12 left-0 z-20 grid w-36 gap-1 rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-xl">{ASPECTS.map((value) => <button key={value} type="button" onClick={() => { setAspect(value); setMenu(null); }} className={`rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${value === aspect ? "text-[var(--du-accent-text)]" : ""}`}>{value}</button>)}</div> : null}</div>
-            <div className="relative"><button type="button" aria-expanded={menu === "quality"} onClick={() => setMenu(menu === "quality" ? null : "quality")} className="flex h-10 items-center gap-2 rounded-xl bg-[var(--du-surface-2)] px-3 text-sm"><Sparkles size={16} />{quality}<ChevronDown size={14} /></button>{menu === "quality" ? <div className="absolute bottom-12 left-0 z-20 grid w-36 gap-1 rounded-xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-xl">{QUALITIES.map((value) => <button key={value} type="button" onClick={() => { setQuality(value); setMenu(null); }} className={`rounded-lg px-3 py-2 text-left text-xs hover:bg-[var(--du-surface-2)] ${value === quality ? "text-[var(--du-accent-text)]" : ""}`}>{zh ? (value === "High" ? "高质量" : "标准") : value}</button>)}</div> : null}</div>
-            <div className="flex h-10 items-center rounded-xl bg-[var(--du-surface-2)] text-sm"><button type="button" aria-label={zh ? "减少图片数量" : "Fewer images"} disabled={count <= 1} onClick={() => setCount(count - 1)} className="px-3 disabled:opacity-40">−</button><span>{count}/4</span><button type="button" aria-label={zh ? "增加图片数量" : "More images"} disabled={count >= 4} onClick={() => setCount(count + 1)} className="px-3 disabled:opacity-40">+</button></div>
-          </div>
-          <button type="button" onClick={() => setNotice(true)} className="min-h-12 rounded-xl bg-[var(--du-accent)] px-8 text-sm font-semibold text-[var(--du-on-accent)] hover:bg-[var(--du-accent-hover)]">{zh ? "生成图片" : "Generate image"}</button>
+      <div className="du-glass relative mx-auto w-full rounded-[22px] p-3 text-left shadow-[0_20px_60px_rgba(0,0,0,.35)] sm:p-4 lg:w-4/5 2xl:max-w-[2200px]">
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
+          <button type="button" disabled title={zh ? "参考图上传待接入" : "Reference upload coming soon"} aria-label={zh ? "添加参考图片（待接入）" : "Add reference images (coming soon)"} className="flex h-14 w-14 shrink-0 cursor-not-allowed flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 opacity-60"><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
+          <span className="text-xs text-white/55">{zh ? "参考图上传待接入" : "Reference image upload coming soon"}</span>
         </div>
-        {notice ? <p role="status" className="mt-3 text-xs text-[var(--du-text-muted)]">{zh ? "图片生成接口尚未接入，因此没有提交任务或扣除积分。" : "No image API is connected, so no task was submitted and no credits were charged."}</p> : null}
+        <label htmlFor="image-prompt" className="sr-only">{zh ? "图片提示词" : "Image prompt"}</label>
+        <textarea id="image-prompt" value={prompt} maxLength={2000} onChange={(event) => { setPrompt(event.target.value); setNotice(false); }} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} rows={3} className="min-h-[100px] w-full resize-none bg-transparent px-2 py-2 text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--du-border)] pb-3 sm:gap-x-3">
+          <div className="relative min-w-0 rounded-xl bg-[var(--du-surface-2)] px-2"><KieModelPicker kind="image" locale={locale} value={modelId} onChange={setModelId} placement="top" showConnectionStatus={false} compact /></div>
+          <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />
+          <div className="relative">
+            <button type="button" aria-expanded={menu === "settings"} onClick={() => setMenu(menu === "settings" ? null : "settings")} className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap px-1 text-xs text-[var(--du-text)] hover:text-[var(--du-accent-text)] sm:text-sm"><Settings2 className="h-4 w-4" />{aspect} / {quality === "High" ? "2K" : "1K"} / {count}</button>
+            {menu === "settings" ? <div className="fixed bottom-28 left-4 right-4 z-50 max-h-[min(42vh,320px)] overflow-y-auto rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-4 shadow-2xl sm:absolute sm:bottom-11 sm:left-auto sm:right-0 sm:w-[min(92vw,420px)]">
+              <p className="text-sm font-semibold">{zh ? "生成设置" : "Generation settings"}</p>
+              <p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "画面比例" : "Aspect ratio"}</p>
+              <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">{ASPECTS.map((value) => settingButton(value, aspect === value, () => setAspect(value)))}</div>
+              <p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "清晰度" : "Quality"}</p>
+              <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">{QUALITIES.map((value) => settingButton(value === "High" ? "2K" : "1K", quality === value, () => setQuality(value)))}</div>
+              <p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "生成数量" : "Output count"}</p>
+              <div className="mt-2 grid grid-cols-4 gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">{[1, 2, 3, 4].map((value) => settingButton(String(value), count === value, () => setCount(value)))}</div>
+            </div> : null}
+          </div>
+          <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />
+          <div className="relative"><button type="button" aria-expanded={menu === "publish"} onClick={() => setMenu(menu === "publish" ? null : "publish")} className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap px-1 text-xs text-[var(--du-text)] hover:text-[var(--du-accent-text)] sm:text-sm"><Shield className="h-4 w-4" />{zh ? "发布设置" : "Publish settings"}<ChevronDown className="h-3 w-3" /></button>{menu === "publish" ? <div className="fixed bottom-28 left-4 right-4 z-50 rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-4 text-xs text-[var(--du-text-muted)] shadow-2xl sm:absolute sm:bottom-11 sm:left-auto sm:right-0 sm:w-[min(92vw,350px)]">{zh ? "图片模型接入后，可在发布作品时设置公开展示。" : "Public sharing options will be available when image generation is connected."}</div> : null}</div>
+        </div>
+        <div className="mt-3 flex w-full flex-wrap items-center justify-end gap-2"><span className="text-xs text-[var(--du-text-muted)]">{zh ? "积分待模型接入后显示" : "Credits available after model connection"}</span><button type="button" onClick={() => setNotice(true)} className="min-h-10 rounded-xl bg-[var(--du-accent)] px-6 text-sm font-bold text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)]">{zh ? "继续创建图片" : "Continue to image"}</button></div>
+        {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{zh ? "图片生成接口尚未接入，因此没有提交任务或扣除积分。" : "No image API is connected, so no task was submitted and no credits were charged."}</output> : null}
       </div>
     </div>
   </main>;
