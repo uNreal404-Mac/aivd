@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -27,7 +27,6 @@ import { HomeStudioStory } from "@/components/hf/home-studio-story";
 import { HomeGenerator } from "@/components/hf/home-generator";
 import {
   CREDITS_BANNER,
-  EFFECT_CARDS,
   MODEL_CARDS,
   MODELS_HEADER,
   localizedHref,
@@ -108,81 +107,6 @@ function SectionHeading({
   );
 }
 
-interface FeatureStripProps {
-  eyebrow: string;
-  title: string;
-  description: string;
-  cta: string;
-  href: string;
-  images: string[];
-  tone: "cyan" | "amber" | "violet";
-}
-
-function FeatureStrip({
-  eyebrow,
-  title,
-  description,
-  cta,
-  href,
-  images,
-  tone,
-}: FeatureStripProps) {
-  const glow =
-    tone === "cyan"
-      ? "from-cyan-400/25 via-transparent to-transparent"
-      : tone === "amber"
-        ? "from-amber-400/25 via-transparent to-transparent"
-        : "from-violet-400/25 via-transparent to-transparent";
-
-  return (
-    <Link
-      href={href}
-      className="group relative block min-h-[280px] overflow-hidden rounded-[28px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] sm:min-h-[320px] lg:min-h-[360px]"
-    >
-      <span className={`pointer-events-none absolute inset-0 bg-gradient-to-r ${glow}`} />
-      <span className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(var(--du-border-strong)_1px,transparent_1px),linear-gradient(90deg,var(--du-border-strong)_1px,transparent_1px)] [background-size:44px_44px]" />
-
-      <div className="absolute inset-y-0 right-0 w-[58%] overflow-hidden sm:w-[62%]">
-        <div className="absolute inset-0 grid grid-cols-3 gap-2 p-4 pl-0 sm:gap-3 sm:p-6 sm:pl-0">
-          {images.slice(0, 3).map((image, index) => (
-            <div
-              key={image}
-              className={`relative overflow-hidden rounded-2xl border border-white/10 ${
-                index === 1 ? "translate-y-5" : index === 2 ? "-translate-y-3" : "translate-y-1"
-              }`}
-            >
-              <img
-                src={image}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
-            </div>
-          ))}
-        </div>
-        <span className="absolute inset-0 bg-gradient-to-r from-[var(--du-surface)] via-[var(--du-surface)]/60 to-transparent" />
-      </div>
-
-      <div className="relative z-10 flex min-h-[280px] max-w-[620px] flex-col justify-center p-7 sm:min-h-[320px] sm:p-10 lg:min-h-[360px] lg:p-12">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--du-accent-text)]">
-          {eyebrow}
-        </span>
-        <h2 className="mt-4 max-w-[560px] text-[clamp(2rem,4vw,4.75rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--du-text)]">
-          {title}
-        </h2>
-        <p className="mt-5 max-w-[480px] text-sm leading-relaxed text-[var(--du-text-muted)] sm:text-base">
-          {description}
-        </p>
-        <span className="mt-7 inline-flex w-fit items-center gap-2 border-b border-[var(--du-text)] pb-1 text-sm font-semibold text-[var(--du-text)] transition-colors group-hover:text-[var(--du-accent-text)]">
-          {cta}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 const HERO_SLIDES = [
   {
     video: "/home/hero-marina-loop.mp4",
@@ -198,48 +122,6 @@ const HERO_SLIDES = [
   },
 ];
 
-function circularCategoryOffset(index: number, activeIndex: number, count: number) {
-  let offset = (index - activeIndex + count) % count;
-  if (offset > count / 2) offset -= count;
-  return offset;
-}
-
-function effectOrbitStyle(index: number, activeIndex: number, count: number): CSSProperties {
-  const offset = circularCategoryOffset(index, activeIndex, count);
-  const distance = Math.abs(offset);
-  const direction = offset < 0 ? -1 : offset > 0 ? 1 : 0;
-  const horizontalPositions = [
-    "0px",
-    "clamp(118px,18vw,275px)",
-    "clamp(205px,31vw,475px)",
-    "0px",
-  ];
-  const verticalPositions = [48, 30, -48, -138];
-  const scales = [1.08, 0.82, 0.62, 0.5];
-  const opacities = [1, 0.94, 0.67, 0.38];
-  const rotateY = [0, 23, 38, 0];
-  const rotateZ = [0, 2.5, 5, 0];
-  const xTransform =
-    direction === 0 || distance === 3
-      ? "-50%"
-      : `calc(-50% ${direction > 0 ? "+" : "-"} ${horizontalPositions[distance]})`;
-
-  return {
-    filter:
-      distance === 3
-        ? "brightness(0.52) blur(1.2px)"
-        : distance === 2
-          ? "brightness(0.72) blur(0.4px)"
-          : distance === 1
-            ? "brightness(0.88)"
-            : "none",
-    left: "50%",
-    opacity: opacities[distance],
-    transform: `translateX(${xTransform}) translateY(calc(-50% + ${verticalPositions[distance]}px)) scale(${scales[distance]}) rotateY(${direction * -rotateY[distance]}deg) rotateZ(${direction * -rotateZ[distance]}deg)`,
-    zIndex: 50 - distance * 12,
-  };
-}
-
 type HomeVideoModel = {
   id: string;
   name: string;
@@ -248,7 +130,6 @@ type HomeVideoModel = {
 };
 
 export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[] }) {
-  const [activeEffectIndex, setActiveEffectIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
   const heroModel = models.find((item) => item.id === heroModelId);
@@ -273,43 +154,6 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const nextHero = (heroIndex + 1) % HERO_SLIDES.length;
   const showPreviousHero = () => setHeroIndex(previousHero);
   const showNextHero = () => setHeroIndex(nextHero);
-  const showPreviousEffect = () =>
-    setActiveEffectIndex(
-      (current) => (current - 1 + EFFECT_CARDS.length) % EFFECT_CARDS.length
-    );
-  const showNextEffect = () =>
-    setActiveEffectIndex((current) => (current + 1) % EFFECT_CARDS.length);
-
-  const featureCopy = isChinese
-    ? {
-        image: {
-          eyebrow: "热门图片灵感",
-          title: "定格你的幻想时刻",
-          description: "浏览适合社交媒体的视觉风格，为下一张作品找到构图与氛围。",
-          cta: "探索图片灵感",
-        },
-        cinema: {
-          eyebrow: "影视级长视频",
-          title: "为你的梦找到合适的枕头",
-          description: "进入专业创作工作台，把更完整的故事发展成有电影感的画面。",
-          cta: "进入视频工作台",
-        },
-      }
-    : {
-        image: {
-          eyebrow: "Trending image ideas",
-          title: "Frame the moments you imagine",
-          description: "Explore social-ready visual directions and find the composition and mood for your next image.",
-          cta: "Explore image ideas",
-        },
-        cinema: {
-          eyebrow: "Cinematic long-form video",
-          title: "Give your dreams a bigger screen",
-          description: "Move into the full studio and shape a longer idea into a more cinematic visual story.",
-          cta: "Open the video studio",
-        },
-      };
-
   const homeCopy = isChinese
     ? {
         modelsHeader: {
@@ -330,16 +174,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           "image-studio": "根据文字或参考图生成细腻的静态画面。",
           "anime-style": "用鲜明的风格与视觉语言打造出众画面。",
         } as Record<string, string>,
-        effectTitles: {
-          "float-away": "轻盈漂浮",
-          "style-swap": "风格切换",
-          "fire-light": "火光",
-          "world-grow": "世界生长",
-          "orbit-360": "360° 环绕",
-          "slow-time": "慢时光",
-        } as Record<string, string>,
         learnMore: "了解更多 →",
-        tryIt: "立即体验 →",
         creditsLead: "使用",
         creditsAccent: "免费积分开始创作。",
         creditsSubtitle: "无需信用卡，把你的下一个灵感变成真实作品。",
@@ -349,9 +184,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         modelsHeader: MODELS_HEADER,
         modelTitles: {} as Record<string, string>,
         modelDescriptions: {} as Record<string, string>,
-        effectTitles: {} as Record<string, string>,
         learnMore: "Learn more →",
-        tryIt: "Try it →",
         creditsLead: "Start creating with ",
         creditsAccent: "free credits.",
         creditsSubtitle: CREDITS_BANNER.subtitle,
@@ -457,119 +290,9 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       {/* 2. Community gallery */}
       <GallerySection variant="home" />
 
-      {/* 3. Effect cards */}
+      {/* 3. Model cards */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">
-        <FeatureStrip
-          {...featureCopy.image}
-          href={localizedHref(lang, "/explore")}
-          images={["/home/silver-muse.webp", "/home/glass-city.webp", "/home/liquid-light.webp"]}
-          tone="amber"
-        />
-        <div className="relative mt-8 h-[clamp(430px,55vw,760px)] overflow-hidden rounded-[32px] border border-[var(--du-border)] bg-[radial-gradient(circle_at_50%_45%,rgba(45,35,112,0.3),rgba(3,5,14,0.82)_48%,rgba(0,0,0,0.96)_78%)] [perspective:1500px] [perspective-origin:50%_42%]">
-          <span className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(102,252,241,0.25)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.25)_1px,transparent_1px)] [background-size:48px_48px]" />
-          <span className="pointer-events-none absolute left-1/2 top-[54%] h-[48%] w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-violet-400/55 shadow-[0_0_18px_rgba(111,88,255,0.55),inset_0_0_22px_rgba(87,202,255,0.18)] [transform:translate(-50%,-50%)_rotateX(67deg)]" />
-          <span className="pointer-events-none absolute left-[6%] top-[54%] h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_12px_4px_rgba(102,252,241,0.9)]" />
-          <span className="pointer-events-none absolute right-[6%] top-[54%] h-3 w-3 rounded-full bg-violet-200 shadow-[0_0_12px_4px_rgba(167,121,255,0.9)]" />
-          <span className="pointer-events-none absolute inset-x-[14%] bottom-[3%] h-[25%] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(128,76,255,0.2),rgba(67,197,255,0.09)_38%,transparent_72%)] blur-2xl" />
-
-          <div className="pointer-events-none absolute left-1/2 top-[5%] z-[70] -translate-x-1/2">
-            <div className="relative rounded-full border border-cyan-200/70 bg-[#080b19]/80 px-6 py-3 text-center shadow-[0_0_18px_rgba(88,196,255,0.45),0_0_34px_rgba(132,80,255,0.3)] backdrop-blur-xl">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-200/65">
-                {isChinese ? "当前特效" : "Selected effect"}
-              </span>
-              <span className="mt-0.5 block whitespace-nowrap text-sm font-semibold text-white sm:text-base">
-                {homeCopy.effectTitles[EFFECT_CARDS[activeEffectIndex].id] ??
-                  EFFECT_CARDS[activeEffectIndex].title}
-              </span>
-              <span className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-cyan-200/70 bg-[#080b19]/90" />
-            </div>
-          </div>
-
-          <div className="absolute inset-0 [transform-style:preserve-3d]">
-            {EFFECT_CARDS.map((effect, index) => {
-              const isActiveEffect = index === activeEffectIndex;
-              const effectTitle = homeCopy.effectTitles[effect.id] ?? effect.title;
-              return (
-                <div
-                  key={effect.id}
-                  style={effectOrbitStyle(index, activeEffectIndex, EFFECT_CARDS.length)}
-                  className={`group absolute top-1/2 h-[clamp(220px,25vw,380px)] w-[clamp(150px,19vw,290px)] overflow-hidden rounded-[28px] border transition-[transform,opacity,filter,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
-                    isActiveEffect
-                      ? "border-white/80 shadow-[0_0_18px_rgba(255,255,255,0.55),0_0_48px_rgba(96,107,255,0.72),0_30px_75px_rgba(0,0,0,0.75)]"
-                      : "border-white/25 shadow-[0_18px_50px_rgba(0,0,0,0.68)] hover:border-cyan-200/70"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setActiveEffectIndex(index)}
-                    aria-pressed={isActiveEffect}
-                    aria-label={effectTitle}
-                    className="absolute inset-0 z-10 text-left"
-                  >
-                    <img
-                      src={effect.image}
-                      alt={isChinese ? effectTitle : effect.alt}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full scale-110 object-cover saturate-125 transition-transform duration-700 group-hover:scale-[1.18]"
-                    />
-                    <span className="absolute inset-0 bg-gradient-to-b from-indigo-950/5 via-black/5 to-black/80" />
-                    <span className="absolute inset-[1px] rounded-[26px] border border-white/20 bg-gradient-to-br from-cyan-200/20 via-transparent to-fuchsia-300/20 backdrop-blur-[1px]" />
-                    <span className="absolute inset-x-4 bottom-5 pr-8 text-base font-semibold text-white sm:text-lg">
-                      {effectTitle}
-                    </span>
-                    <span className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/65 bg-black/20 text-white backdrop-blur-md">
-                      <Play className="ml-0.5 h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                    </span>
-                  </button>
-                  {isActiveEffect ? (
-                    <Link
-                      href={localizedHref(lang, effect.href)}
-                      className="du-glass-btn du-glass-on-media absolute bottom-16 left-4 z-20 inline-flex h-9 items-center rounded-full px-4 text-xs"
-                    >
-                      {homeCopy.tryIt}
-                    </Link>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="absolute inset-x-0 bottom-4 z-[80] flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={showPreviousEffect}
-              aria-label={isChinese ? "上一个特效" : "Previous effect"}
-              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
-            >
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <span className="min-w-20 text-center text-xs font-medium tracking-[0.18em] text-[var(--du-text-muted)]">
-              {String(activeEffectIndex + 1).padStart(2, "0")} /{" "}
-              {String(EFFECT_CARDS.length).padStart(2, "0")}
-            </span>
-            <button
-              type="button"
-              onClick={showNextEffect}
-              aria-label={isChinese ? "下一个特效" : "Next effect"}
-              className="du-glass-btn flex h-11 w-11 items-center justify-center rounded-full"
-            >
-              <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Model cards (moved from above) */}
-      <section className="mx-auto max-w-[1680px] px-6 py-16">
-        <FeatureStrip
-          {...featureCopy.cinema}
-          href={localizedHref(lang, "/ai/video")}
-          images={["/home/video-pro.webp", "/home/planet-horizon.webp", "/home/edge-of-space.webp"]}
-          tone="violet"
-        />
-        <div className="mt-12">
-          <SectionHeading header={homeCopy.modelsHeader} />
-        </div>
+        <SectionHeading header={homeCopy.modelsHeader} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {MODEL_CARDS.map((model) => (
             <div key={model.id} className="du-glass flex flex-col p-4">
@@ -603,7 +326,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         </div>
       </section>
 
-      {/* 6. Free credits banner */}
+      {/* 4. Free credits banner */}
       <section className="mx-auto max-w-[1680px] px-6 pb-16">
         <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[var(--du-border-strong)]">
           <img
