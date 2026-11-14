@@ -24,6 +24,7 @@ import {
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeStudioStory } from "@/components/hf/home-studio-story";
+import { HomeShowcaseSections } from "@/components/hf/home-showcase-sections";
 import { HomeGenerator } from "@/components/hf/home-generator";
 import {
   CREDITS_BANNER,
@@ -290,7 +291,10 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       {/* 2. Community gallery */}
       <GallerySection variant="home" />
 
-      {/* 3. Model cards */}
+      {/* 3–6. Video and Creative Space previews */}
+      <HomeShowcaseSections lang={lang} />
+
+      {/* 7. Model cards */}
       <section className="mx-auto max-w-[1680px] px-6 py-16">
         <SectionHeading header={homeCopy.modelsHeader} />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -326,7 +330,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         </div>
       </section>
 
-      {/* 4. Free credits banner */}
+      {/* 8. Free credits banner */}
       <section className="mx-auto max-w-[1680px] px-6 pb-16">
         <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[var(--du-border-strong)]">
           <img
