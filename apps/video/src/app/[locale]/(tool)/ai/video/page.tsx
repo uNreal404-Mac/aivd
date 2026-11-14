@@ -40,6 +40,7 @@ export default async function AiVideoPage({
     <AiVideoStudio
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={settingsFromSearchParams(sp)}
+      initialCatalogModelId={Array.isArray(sp.model) ? sp.model[0] : sp.model}
       locale={locale}
       availableModelIds={getAvailableModels({
         provider: getConfiguredAIProvider() ?? "kie",

@@ -16,6 +16,7 @@ import {
   STUDIO_MODELS,
   canGenerate,
   defaultSettings,
+  estimateCredits,
   selectModel,
   submitGeneration,
 } from "@/lib/ai-video-studio";
@@ -24,6 +25,7 @@ import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
+import "./ai-video-studio.css";
 
 const MODES = ["Create", "Edit"] as const;
 
@@ -97,11 +99,13 @@ export function AiVideoStudio({
   initialSettings,
   locale,
   availableModelIds,
+  initialCatalogModelId,
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
   locale: string;
   availableModelIds: string[];
+  initialCatalogModelId?: string;
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
   const copy = isChinese
@@ -131,6 +135,8 @@ export function AiVideoStudio({
         submit: "提交中…",
         generate: "生成",
         credits: "积分",
+        creditEstimate: "预计消耗积分 · 示例",
+        creditEstimateNote: "示例估算，实际消耗以正式计费规则为准。",
         settings: "视频设置",
         results: "生成结果",
         heroTitle: "掌控每一帧",
@@ -177,6 +183,8 @@ export function AiVideoStudio({
         submit: "Submitting…",
         generate: "Generate",
         credits: "credits",
+        creditEstimate: "Estimated credits · example",
+        creditEstimateNote: "Example estimate only. Actual credits follow the published pricing.",
         settings: "Video settings",
         results: "Results",
         heroTitle: "Direct every frame",
@@ -195,7 +203,11 @@ export function AiVideoStudio({
       : defaultSettings(availableModels[0]);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [catalogModelId, setCatalogModelId] = useState(initialSettings?.modelId ?? availableModels[0]?.id ?? "");
+  const [catalogModelId, setCatalogModelId] = useState(() =>
+    VIDEO_CATALOG.some((item) => item.id === initialCatalogModelId)
+      ? initialCatalogModelId as string
+      : VIDEO_CATALOG[0].id,
+  );
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -209,8 +221,14 @@ export function AiVideoStudio({
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
     STUDIO_MODELS[0];
-  const selectedCatalogModel = VIDEO_CATALOG.find((item) => item.id === catalogModelId);
   const selectedModelConnected = availableModelIds.includes(catalogModelId);
+  const durationOptions = selectedModelConnected
+    ? model.durations
+    : [4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const durationIndex = Math.max(0, durationOptions.indexOf(settings.duration));
+  const exampleCredits = selectedModelConnected
+    ? estimateCredits(settings)
+    : Math.ceil(settings.duration * 5 * (settings.resolution === "1080p" ? 1.5 : settings.resolution === "720p" ? 1.25 : 1));
 
   const check = canGenerate(settings, generationEnabled);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
@@ -313,26 +331,6 @@ export function AiVideoStudio({
         </div>
 
         {mode === "Create" ? <>
-        <div className="relative h-[112px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)] p-4">
-          <img src="/home/hero-marina-poster.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
-          <div className="relative">
-          <p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">
-            {selectedCatalogModel?.name ?? model.name}
-          </p>
-          <p className="mt-1 max-w-[72%] text-xs text-[var(--hfv-muted)]">
-            {selectedModelConnected ? (copy.modelTaglines[model.id] ?? model.tagline) : (isChinese ? "接口待接入" : "Integration pending")}
-          </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="absolute right-3 top-3 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] px-2.5 py-1 text-[10px] uppercase tracking-wide text-[var(--hfv-text)]"
-          >
-            {copy.change}
-          </button>
-        </div>
-
         <label className="flex cursor-pointer flex-col items-center gap-2 rounded-[var(--hfv-radius-card)] border border-dashed border-[var(--hfv-border-strong)] bg-[var(--hfv-panel-2)] px-4 py-5 text-center">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hfv-chip-bg)] text-[var(--hfv-muted)]">
             <Upload className="h-4 w-4" aria-hidden="true" />
@@ -423,29 +421,34 @@ export function AiVideoStudio({
           connectedIds={availableModelIds} open={pickerOpen} onOpenChange={setPickerOpen}
           onChange={(id) => {
             setCatalogModelId(id);
-            if (availableModelIds.includes(id)) setSettings((previous) => selectModel(previous, id));
+            if (availableModelIds.includes(id)) {
+              setSettings((previous) => selectModel(previous, id));
+            } else if (![4, 5, 6, 7, 8, 9, 10, 11, 12].includes(settings.duration)) {
+              setSettings((previous) => ({ ...previous, duration: 4 }));
+            }
           }} />
-        {!availableModelIds.includes(catalogModelId) ? <p role="status" className="text-xs text-[var(--hfv-muted)]">{isChinese ? "此模型已列入 KIE 目录，本站生成接口尚未接入。" : "Listed by KIE; generation is not connected on this site yet."}</p> : null}
+        {!availableModelIds.includes(catalogModelId) ? <output className="text-xs text-[var(--hfv-muted)]">{isChinese ? "此模型已列入 KIE 目录，本站生成接口尚未接入。" : "Listed by KIE; generation is not connected on this site yet."}</output> : null}
 
-        <ChipGroup label={copy.duration}>
-          {model.durations.map((duration) => {
-            const active = duration === settings.duration;
-
-            return (
-              <button
-                key={duration}
-                type="button"
-                aria-pressed={active}
-                onClick={() =>
-                  setSettings((previous) => ({ ...previous, duration }))
-                }
-                className={chipClass(active)}
-              >
-                {duration}s
-              </button>
-            );
-          })}
-        </ChipGroup>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="studio-duration" className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">{copy.duration}</label>
+          <div className="studio-duration-control">
+            <span className="studio-duration-value" aria-hidden="true">{settings.duration}s</span>
+            <input
+              id="studio-duration"
+              className="studio-duration-range"
+              type="range"
+              min={0}
+              max={durationOptions.length - 1}
+              step={1}
+              value={durationIndex}
+              aria-valuetext={`${settings.duration}s`}
+              onChange={(event) => {
+                const duration = durationOptions[Number(event.target.value)];
+                setSettings((previous) => ({ ...previous, duration }));
+              }}
+            />
+          </div>
+        </div>
 
         <ChipGroup label={copy.aspect}>
           {model.aspects.map((aspect) => {
@@ -510,6 +513,12 @@ export function AiVideoStudio({
           })}
         </ChipGroup>
 
+        <div className="studio-generation-footer">
+          <output className="studio-credit-estimate" aria-live="polite">
+            <span><span className="block text-xs text-[var(--hfv-muted)]">{copy.creditEstimate}</span><span className="mt-1 block text-[11px] text-[var(--hfv-muted)]">{settings.duration}s · {settings.resolution}{settings.audio ? ` · ${copy.on}` : ""}</span></span>
+            <strong className="text-lg text-[var(--hfv-text)]">≈ {exampleCredits} <span className="text-xs font-medium">{copy.credits}</span></strong>
+          </output>
+          <p className="text-[10px] leading-relaxed text-[var(--hfv-muted)]">{copy.creditEstimateNote}</p>
         <button
           type="button"
           disabled={promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId)}
@@ -524,6 +533,7 @@ export function AiVideoStudio({
           </span>
           <Sparkles className="h-4 w-4" aria-hidden="true" />
         </button>
+        </div>
 
         {notice ? (
           <output
