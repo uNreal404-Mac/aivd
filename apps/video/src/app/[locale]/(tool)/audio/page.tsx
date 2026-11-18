@@ -15,7 +15,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   };
 }
 
-export default async function AudioPage({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params;
-  return <AiAudioStudio locale={locale} />;
+export default async function AudioPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: Locale }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
+  const mode = typeof query.voiceMode === "string" ? query.voiceMode : "";
+  const model = typeof query.audioModel === "string" ? query.audioModel : "";
+  return <AiAudioStudio key={`${mode}:${model}`} locale={locale} initialVoiceMode={mode} initialModelId={model} />;
 }

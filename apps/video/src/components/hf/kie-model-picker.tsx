@@ -36,6 +36,8 @@ type Props = {
   placement?: "top" | "inline" | "card";
   /** Label shown above the name when placement is "card". */
   label?: string;
+  /** Name to show on the trigger instead of the selected catalogue entry. */
+  valueLabel?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /** Kept for callers; availability is now always shown by section. */
@@ -95,6 +97,7 @@ export function KieModelPicker({
   onOpenChange,
   compact = false,
   label,
+  valueLabel,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const catalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
@@ -153,7 +156,9 @@ export function KieModelPicker({
   const current = catalog.find((item) => item.id === value);
   const currentIsAvailable = current ? connectedIds.includes(current.id) : false;
   const hasAnyAvailable = catalog.some((item) => connectedIds.includes(item.id));
-  const triggerLabel = currentIsAvailable
+  const triggerLabel = valueLabel
+    ? valueLabel
+    : currentIsAvailable
     ? current?.name
     : hasAnyAvailable
       ? (current?.name ?? copy.choose)

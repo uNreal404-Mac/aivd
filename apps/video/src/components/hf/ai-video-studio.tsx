@@ -32,6 +32,7 @@ import {
 import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import "./ai-video-studio.css";
 
 const MODES = ["Create", "Edit"] as const;
@@ -130,19 +131,22 @@ export function AiVideoStudio({
   locale,
   availableModelIds,
   initialCatalogModelId,
+  upcomingModel,
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
   locale: string;
   availableModelIds: string[];
   initialCatalogModelId?: string;
+  /** A model picked from the nav that is not connected or catalogued yet. */
+  upcomingModel?: { name: string; desc: string };
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
   const copy = isChinese
     ? {
         modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
         tabs: { History: "历史记录", Library: "灵感库", "How it works": "工作原理" } as Record<string, string>,
-        soon: "即将开放",
+        soon: "即将上线",
         top: "热门",
         new: "新品",
         change: "更换",
@@ -243,11 +247,14 @@ export function AiVideoStudio({
   const [pickerOpen, setPickerOpen] = useState(false);
   // Start on a model that can generate: the one in the URL when it is on sale,
   // otherwise whatever the settings resolved to.
+  // Models from the catalogue open selected even when they cannot generate
+  // yet, so a click in the nav lands on that model, as on the reference.
   const [catalogModelId, setCatalogModelId] = useState(() =>
-    initialCatalogModelId && availableModelIds.includes(initialCatalogModelId)
+    initialCatalogModelId && VIDEO_CATALOG.some((item) => item.id === initialCatalogModelId)
       ? initialCatalogModelId
       : settings.modelId,
   );
+  const [upcoming, setUpcoming] = useState(upcomingModel);
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -261,7 +268,8 @@ export function AiVideoStudio({
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
     STUDIO_MODELS[0];
-  const selectedModelConnected = availableModelIds.includes(catalogModelId);
+  const selectedModelConnected = !upcoming && availableModelIds.includes(catalogModelId);
+  const catalogEntry = VIDEO_CATALOG.find((item) => item.id === catalogModelId);
   const durationOptions = selectedModelConnected
     ? model.durations
     : [4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -395,10 +403,12 @@ export function AiVideoStudio({
     }
   }
 
-  const coverModelId = availableModelIds.includes(catalogModelId) ? catalogModelId : settings.modelId;
+  const coverModelId = selectedModelConnected ? catalogModelId : "";
+  const bannerName = upcoming?.name ?? (selectedModelConnected ? model.name : (catalogEntry?.name ?? model.name));
+  const bannerSub = upcoming?.desc ?? (selectedModelConnected ? (copy.modelTaglines[model.id] ?? model.tagline) : (catalogEntry?.detail ?? ""));
   const cover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
   const generateDisabled =
-    promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId);
+    promptEmpty || submitting || uploading || availableModels.length === 0 || !selectedModelConnected;
   const stepCopy = isChinese
     ? [
         { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
@@ -439,8 +449,8 @@ export function AiVideoStudio({
                 {copy.change}
               </span>
               <span className="vs-banner-text">
-                <span className="vs-banner-title">{model.name}</span>
-                <span className="vs-banner-sub">{copy.modelTaglines[model.id] ?? model.tagline}</span>
+                <span className="vs-banner-title">{bannerName}</span>
+                <span className="vs-banner-sub">{bannerSub}</span>
               </span>
             </button>
 
@@ -531,7 +541,9 @@ export function AiVideoStudio({
               onOpenChange={setPickerOpen}
               placement="card"
               label={copy.model}
+              valueLabel={upcoming?.name}
               onChange={(id) => {
+                setUpcoming(undefined);
                 setCatalogModelId(id);
                 // The picker only offers models that can generate.
                 setSettings((previous) => selectModel(previous, id));
@@ -582,10 +594,16 @@ export function AiVideoStudio({
               {submitting ? copy.submit : copy.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {selectedModelConnected ? "" : "≈"}
-                {exampleCredits}
+                {selectedModelConnected ? exampleCredits : copy.soon}
               </span>
             </button>
+            {selectedModelConnected ? null : (
+              <output className="vs-notice">
+                {isChinese
+                  ? `${bannerName} 即将上线。现在可以用 ${availableModels.map((item) => item.name).join(" 或 ")} 生成。`
+                  : `${bannerName} is coming soon. You can generate with ${availableModels.map((item) => item.name).join(" or ")} today.`}
+              </output>
+            )}
 
             {notice ? <output aria-live="polite" className="vs-notice">{notice}</output> : null}
           </>

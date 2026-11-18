@@ -53,11 +53,14 @@ export function AiImageStudio({
   initialPrompt = "",
   initialModel = "",
   initialAspect = "",
+  upcomingName,
 }: {
   locale: string;
   initialPrompt?: string;
   initialModel?: string;
   initialAspect?: string;
+  /** A model picked from the nav that is not in our catalogue yet. */
+  upcomingName?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -71,7 +74,9 @@ export function AiImageStudio({
     IMAGE_CATALOG.some((item) => item.id === initialModel) ? initialModel : IMAGE_CATALOG[0].id,
   );
   const [notice, setNotice] = useState(false);
+  const [upcoming, setUpcoming] = useState(upcomingName);
   const model = IMAGE_CATALOG.find((item) => item.id === modelId) ?? IMAGE_CATALOG[0];
+  const modelName = upcoming ?? model.name;
 
   return (
     <main className="is-root">
@@ -83,7 +88,7 @@ export function AiImageStudio({
         </div>
         <h1 className="is-title">
           <span>{zh ? "用" : "Create with"}</span>
-          <span className="is-title-model">{model.name}</span>
+          <span className="is-title-model">{modelName}</span>
           <span>{zh ? "开始创作" : "today"}</span>
         </h1>
         <p className="is-sub">
@@ -124,7 +129,18 @@ export function AiImageStudio({
               </button>
             </span>
             <div className="is-model">
-              <KieModelPicker kind="image" locale={locale} value={modelId} onChange={setModelId} placement="top" compact />
+              <KieModelPicker
+                kind="image"
+                locale={locale}
+                value={modelId}
+                valueLabel={upcoming}
+                onChange={(id) => {
+                  setUpcoming(undefined);
+                  setModelId(id);
+                }}
+                placement="top"
+                compact
+              />
               <ChevronRight className="is-model-chevron" aria-hidden="true" />
             </div>
             <CycleChip
@@ -175,8 +191,8 @@ export function AiImageStudio({
       {notice ? (
         <output className="is-notice">
           {zh
-            ? "图片模型还在接入中，这次没有提交任务，也没有扣积分。"
-            : "Image models are still being connected, so nothing was submitted and no credits were used."}
+            ? `${modelName} 即将上线，这次没有提交任务，也没有扣积分。`
+            : `${modelName} is coming soon, so nothing was submitted and no credits were used.`}
         </output>
       ) : null}
     </main>

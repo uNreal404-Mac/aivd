@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Minus, Music, Plus, SlidersHorizontal } from "lucide-react";
+import { NAV_AUDIO_MODELS, findNavModel } from "@/lib/nav-models";
 import "./ai-video-studio.css";
 
 const MODES = ["tts", "voice", "translate"] as const;
 type Mode = (typeof MODES)[number];
+// URL values used by the reference site's audio page.
+const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", "change-voice": "voice", translate: "translate" };
 const MAX_BATCH = 4;
 const SCRIPT_MAX = 5000;
 const DETAIL_MAX = 500;
@@ -15,9 +18,19 @@ const DETAIL_MAX = 500;
  * are not connected yet, so the controls work but generation is marked as
  * coming soon and nothing is submitted.
  */
-export function AiAudioStudio({ locale }: { locale: string }) {
+export function AiAudioStudio({
+  locale,
+  initialVoiceMode = "",
+  initialModelId = "",
+}: {
+  locale: string;
+  initialVoiceMode?: string;
+  initialModelId?: string;
+}) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const [mode, setMode] = useState<Mode>("tts");
+  const [mode, setMode] = useState<Mode>(MODE_PARAMS[initialVoiceMode] ?? "tts");
+  const [modelId, setModelId] = useState(findNavModel("audio", initialModelId)?.id ?? NAV_AUDIO_MODELS[0].id);
+  const selectedModel = findNavModel("audio", modelId) ?? NAV_AUDIO_MODELS[0];
   const [script, setScript] = useState("");
   const [detail, setDetail] = useState("");
   const [batch, setBatch] = useState(1);
@@ -33,7 +46,6 @@ export function AiAudioStudio({ locale }: { locale: string }) {
         script: "脚本",
         scriptHint: "逐字写下要朗读的内容。",
         model: "模型",
-        modelName: "语音模型即将上线",
         batch: "批量大小",
         detail: "声音详情",
         detailHint: "例如：年轻女声，英式口音，柔和而洪亮，兴奋，略带笑意",
@@ -67,7 +79,6 @@ export function AiAudioStudio({ locale }: { locale: string }) {
         script: "Script",
         scriptHint: "Write exactly what the voice should read.",
         model: "Model",
-        modelName: "Voice models coming soon",
         batch: "Batch size",
         detail: "Voice details",
         detailHint: "e.g. young female voice, British accent, soft but bright, excited, a slight laugh",
@@ -137,13 +148,22 @@ export function AiAudioStudio({ locale }: { locale: string }) {
           />
         </div>
 
-        <div className="vs-card vs-card-off">
+        <label htmlFor="audio-model" className="vs-card vs-select">
           <span className="min-w-0 flex-1">
             <span className="vs-card-label">{t.model}</span>
-            <span className="vs-card-value">{t.modelName}</span>
+            <span className="vs-card-value">
+              {selectedModel.name} <span className="vs-soon">{t.soon}</span>
+            </span>
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-        </div>
+          <select id="audio-model" value={modelId} onChange={(event) => setModelId(event.target.value)}>
+            {NAV_AUDIO_MODELS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="vs-card">
           <span className="vs-card-value flex-1">{t.batch}</span>

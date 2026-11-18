@@ -432,6 +432,18 @@ a.hf-dd-row:active {
   white-space: nowrap;
 }
 
+/* Slanted label after a model name, e.g. "4K". */
+.hf-dd-4k {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--du-accent-hover), var(--du-accent));
+  color: var(--du-on-accent);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  transform: skewX(-12deg);
+}
+
 .hf-dd-desc {
   color: color-mix(in srgb, white 54%, transparent);
   font-size: 14px;

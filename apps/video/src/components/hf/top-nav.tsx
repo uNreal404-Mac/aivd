@@ -55,6 +55,7 @@ import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
 import { LocaleChange } from "@/components/locale-change";
 import { authClient } from "@/lib/auth/client";
+import { NAV_AUDIO_MODELS, NAV_IMAGE_MODELS, NAV_VIDEO_MODELS, navModelHref, type NavModelKind } from "@/lib/nav-models";
 import { useCreditsStore } from "@/stores/credits-store";
 import "./top-nav.css";
 
@@ -75,6 +76,10 @@ type DropItem = {
   /** Omitted for features that are not live yet; those render greyed out. */
   href?: string;
   badge?: "hot" | "new";
+  /** Linked, but generation is not connected yet: show a small tag. */
+  soon?: boolean;
+  /** Extra label after the title, e.g. "4K". */
+  tag?: string;
 };
 type DropColumn = { title: string; items: DropItem[] };
 type Dropdown = {
@@ -86,6 +91,19 @@ type Dropdown = {
   routes: string[];
   columns: DropColumn[];
 };
+
+// Models that can generate today; every other listed model is coming soon.
+const LIVE_MODEL_IDS = ["veo-3.1", "wan2.6"];
+
+function modelIcon(name: string): LucideIcon {
+  const n = name.toLowerCase();
+  if (n.startsWith("seedance") || n.startsWith("minimax")) return Clapperboard;
+  if (n.startsWith("kling") || n.startsWith("happyhorse")) return Film;
+  if (n.startsWith("wan") || n.startsWith("flux") || n.startsWith("recraft")) return Orbit;
+  if (n.startsWith("gpt") || n.startsWith("nano") || n.startsWith("seedream")) return ImageIcon;
+  if (n.startsWith("eleven") || n.startsWith("seed ") || n.startsWith("qwen") || n.includes("speech")) return AudioLines;
+  return Sparkles;
+}
 
 export function HfTopNav({ user, lang }: HfTopNavProps) {
   const pathname = useLocalePathname();
@@ -202,6 +220,18 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         plans: { FREE: "Free plan", PRO: "Pro plan", BUSINESS: "Business plan" },
       };
 
+  // Model rows: every model links to its studio with the model selected.
+  const modelItems = (kind: NavModelKind): DropItem[] =>
+    (kind === "image" ? NAV_IMAGE_MODELS : kind === "video" ? NAV_VIDEO_MODELS : NAV_AUDIO_MODELS).map((model) => ({
+      title: model.name,
+      desc: zh ? model.desc.zh : model.desc.en,
+      icon: modelIcon(model.name),
+      href: navModelHref(kind, model.id),
+      badge: model.badge,
+      tag: model.tag,
+      soon: !LIVE_MODEL_IDS.includes(model.id),
+    }));
+
   // Only pages that exist get a link. Everything else is listed so visitors
   // can see what is coming, but it is greyed out and not clickable.
   const dropdowns: Dropdown[] = [
@@ -226,14 +256,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         },
         {
           title: zh ? "模型" : "Models",
-          items: [
-            { title: "Seedream 5 Pro", desc: zh ? "细节丰富的高质量图像" : "Detailed, high-quality images", icon: Sparkles, badge: "new" },
-            { title: "FLUX.3 Klein", desc: zh ? "Black Forest Labs 新一代模型" : "Black Forest Labs' latest model", icon: Orbit, badge: "new" },
-            { title: "Grok Imagine Image 2.0", desc: zh ? "xAI 出品的高分辨率图像生成" : "High-resolution images from xAI", icon: Sparkles },
-            { title: "Imagen 4", desc: zh ? "Google 旗舰图像模型" : "Google's flagship image model", icon: ImageIcon },
-            { title: "FLUX.2 Pro", desc: zh ? "稳定可靠的写实风格" : "Dependable photoreal output", icon: Orbit },
-            { title: "Seedream 5 Flash", desc: zh ? "快速出图，适合批量尝试" : "Fast images for quick iterations", icon: Sparkles },
-          ],
+          items: modelItems("image"),
         },
       ],
     },
@@ -259,15 +282,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         },
         {
           title: zh ? "模型" : "Models",
-          items: [
-            { title: "Veo 3.1", desc: zh ? "Google 出品，带同步声音的电影级短片" : "Google's cinematic clips with synced sound", icon: Sparkles, href: "/veo-3-1", badge: "hot" },
-            { title: "Wan 2.6", desc: zh ? "5–15 秒，720p 与 1080p，性价比高" : "5–15s at 720p or 1080p, good value", icon: Orbit, href: "/wan-2-6" },
-            { title: "Seedance 2.5", desc: zh ? "字节跳动多模态视频模型" : "ByteDance's multimodal video model", icon: Clapperboard, badge: "new" },
-            { title: "Kling 4.0", desc: zh ? "参考图生成，人物一致性强" : "Reference-driven, consistent characters", icon: Film, badge: "new" },
-            { title: "Gemini Omni Flash 1.1", desc: zh ? "Google 多模态视频生成" : "Google's multimodal video generation", icon: Sparkles },
-            { title: "Wan 3.0", desc: zh ? "通义万相新一代视频模型" : "The next Wan video model", icon: Orbit },
-            { title: "MiniMax H3", desc: zh ? "海螺文生视频" : "Hailuo text to video", icon: Film },
-          ],
+          items: modelItems("video"),
         },
       ],
     },
@@ -280,21 +295,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         {
           title: zh ? "功能" : "Features",
           items: [
+            { title: zh ? "文本转语音" : "Text to speech", desc: zh ? "把脚本读成自然的人声" : "Turn a script into a natural voice", icon: AudioLines, href: "/audio?voiceMode=voiceover", soon: true },
+            { title: zh ? "变声" : "Voice changer", desc: zh ? "把一段声音换成另一种音色" : "Swap a recording into another voice", icon: Mic, href: "/audio?voiceMode=change-voice", soon: true },
+            { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Music, href: "/audio?voiceMode=translate", soon: true },
             { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/veo-3-1", badge: "hot" },
-            { title: zh ? "文字转语音" : "Text to speech", desc: zh ? "把文字读成自然的人声" : "Turn text into a natural voice", icon: AudioLines, href: "/audio" },
-            { title: zh ? "AI 配音" : "AI voiceover", desc: zh ? "给视频配上旁白" : "Add narration to a video", icon: Mic },
-            { title: zh ? "AI 音乐" : "AI music", desc: zh ? "按风格生成背景音乐" : "Generate background music by style", icon: Music },
-            { title: zh ? "音效生成" : "Sound effects", desc: zh ? "用文字生成环境声和音效" : "Create ambience and effects from text", icon: Volume2 },
-            { title: zh ? "口型同步" : "Lip sync", desc: zh ? "让人物口型对上配音" : "Match mouths to the voiceover", icon: ScanFace },
           ],
         },
         {
           title: zh ? "模型" : "Models",
-          items: [
-            { title: "Veo 3.1", desc: zh ? "画面和声音一起生成" : "Picture and sound in one pass", icon: Sparkles, href: "/veo-3-1" },
-            { title: "ElevenLabs", desc: zh ? "多语言语音合成" : "Multilingual speech synthesis", icon: AudioLines },
-            { title: "Suno", desc: zh ? "完整歌曲和配乐生成" : "Full songs and scores", icon: Music },
-          ],
+          items: modelItems("audio"),
         },
       ],
     },
@@ -401,7 +410,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <span className="hf-dd-text">
           <span className="hf-dd-title">
             {item.title}
-            {item.href ? null : <span className="hf-tag">{soonLabel}</span>}
+            {item.tag ? <span className="hf-dd-4k">{item.tag}</span> : null}
+            {!item.href || item.soon ? <span className="hf-tag">{soonLabel}</span> : null}
           </span>
           <span className="hf-dd-desc">{item.desc}</span>
         </span>
