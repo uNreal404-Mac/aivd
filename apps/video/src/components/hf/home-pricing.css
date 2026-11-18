@@ -585,3 +585,36 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Pricing page mode */
+.hp-page {
+  padding-top: 56px;
+}
+
+.hp-note {
+  margin-top: 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 8%, transparent);
+  color: var(--hp-muted);
+  font-size: 13px;
+}
+
+.hp-error {
+  align-self: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--du-accent) 12%, transparent);
+  color: var(--du-accent-text);
+  font-size: 14px;
+}
+
+button.hp-cta:disabled,
+button.hp-pack:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.hp-pack {
+  text-align: left;
+}

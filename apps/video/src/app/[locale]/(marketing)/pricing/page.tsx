@@ -1,6 +1,6 @@
 import "@/styles/pricing-tokens.css";
-import { PricingPage as PricingPageView } from "@/components/pricing/pricing-page";
-import { getOnetimeProducts, getSubscriptionProducts } from "@/config/credits";
+import { HomePricing } from "@/components/hf/home-pricing";
+import { PricingFaq } from "@/components/pricing/pricing-page";
 import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
@@ -52,12 +52,11 @@ export default async function PricingPage({
 }) {
   const { locale } = await params;
 
+  // Same pricing block as the homepage, buying in place, then the FAQ.
   return (
-    <PricingPageView
-      locale={locale}
-      paymentsEnabled={isPaymentsConfigured()}
-      subscriptions={getSubscriptionProducts()}
-      packs={getOnetimeProducts()}
-    />
+    <div className="bg-[var(--du-bg)]">
+      <HomePricing lang={locale} asPage checkout={{ enabled: isPaymentsConfigured() }} />
+      <PricingFaq locale={locale} />
+    </div>
   );
 }

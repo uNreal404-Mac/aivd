@@ -8,6 +8,7 @@ import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { calculateModelCredits } from "@/config/credits";
 import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 import { localizedHref } from "@/lib/du-home";
+import { startStripeCheckout } from "@/lib/stripe-checkout-client";
 import "./home-pricing.css";
 
 type Period = "month" | "year";
@@ -41,8 +42,24 @@ const TIERS = ["basic", "pro", "ultimate"] as const;
 type Tier = (typeof TIERS)[number];
 const TIER_OF = (name: string): Tier => (name.toLowerCase().startsWith("pro") ? "pro" : name.toLowerCase().startsWith("ultimate") ? "ultimate" : "basic");
 
-export function HomePricing({ lang }: { lang: string }) {
+/**
+ * Pricing block. On the homepage its buttons lead to /pricing; on the pricing
+ * page (`checkout` set) they start checkout for the exact product shown.
+ */
+export function HomePricing({
+  lang,
+  asPage = false,
+  checkout,
+}: {
+  lang: string;
+  /** Render the title as the page's h1. */
+  asPage?: boolean;
+  /** Buy in place. `enabled` is false when payments are not configured. */
+  checkout?: { enabled: boolean };
+}) {
   const zh = lang.toLowerCase().startsWith("zh");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>("year");
   const [videoModel, setVideoModel] = useState("veo-3.1");
   const [imageModel, setImageModel] = useState("nano-banana-pro");
@@ -109,6 +126,10 @@ export function HomePricing({ lang }: { lang: string }) {
         packs: "积分包",
         packsSub: "订阅积分不够用时随时加购，不会过期",
         viewPricing: "查看完整定价",
+        comingSoon: "即将开放购买",
+        redirecting: "正在跳转…",
+        checkoutError: "暂时无法跳转到支付页面，请稍后再试。",
+        buyPack: "购买",
       }
     : {
         kicker: "PRICING",
@@ -150,9 +171,37 @@ export function HomePricing({ lang }: { lang: string }) {
         packs: "Credit packs",
         packsSub: "Top up whenever your plan runs low; packs do not expire",
         viewPricing: "See full pricing",
+        comingSoon: "Coming soon",
+        redirecting: "Redirecting…",
+        checkoutError: "We could not open checkout. Please try again.",
+        buyPack: "Buy",
       };
 
   const href = (path: string) => localizedHref(lang, path);
+
+  const buy = async (productId: string) => {
+    if (!checkout?.enabled || pendingId) return;
+    setCheckoutError(null);
+    setPendingId(productId);
+    const result = await startStripeCheckout(productId);
+    if (!result.ok) setCheckoutError(result.error || copy.checkoutError);
+    setPendingId(null);
+  };
+
+  /** A plan or pack button: checkout on the pricing page, a link elsewhere. */
+  const action = ({ productId, label, className, extra }: { productId: string; label: string; className: string; extra?: React.ReactNode }) =>
+    checkout ? (
+      <button type="button" className={className} disabled={!checkout.enabled || pendingId !== null} onClick={() => void buy(productId)}>
+        {!checkout.enabled ? copy.comingSoon : pendingId === productId ? copy.redirecting : label}
+        {checkout.enabled && pendingId !== productId ? extra : null}
+      </button>
+    ) : (
+      <Link href={href("/pricing")} className={className}>
+        {label}
+        {extra}
+      </Link>
+    );
+
   const fmt = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
   const count = (credits: number, cost: number) => (cost > 0 ? Math.floor(credits / cost) : 0);
   const visibleUnits = (kind: Kind) => UNITS.filter((item) => item.kind === kind).slice(0, showAll ? undefined : kind === "audio" ? 1 : 3);
@@ -160,11 +209,16 @@ export function HomePricing({ lang }: { lang: string }) {
   const filled = Math.min(dots, Math.round((need / (plans.find((plan) => plan.tier === recommended)?.credits ?? 1)) * dots));
 
   return (
-    <section className="hp" aria-labelledby="hp-title">
+    <section className={asPage ? "hp hp-page" : "hp"} aria-labelledby="hp-title">
       <div className="hp-head">
         <p className="hp-kicker">{copy.kicker}</p>
-        <h2 id="hp-title" className="hp-title">{copy.title}</h2>
+        {asPage ? (
+          <h1 id="hp-title" className="hp-title">{copy.title}</h1>
+        ) : (
+          <h2 id="hp-title" className="hp-title">{copy.title}</h2>
+        )}
         <p className="hp-sub">{copy.sub}</p>
+        {checkout && !checkout.enabled ? <p className="hp-note">{copy.comingSoon}</p> : null}
         <fieldset className="hp-toggle">
           <legend className="sr-only">{zh ? "计费周期" : "Billing period"}</legend>
           <button type="button" aria-pressed={period === "month"} onClick={() => setPeriod("month")}>
@@ -202,10 +256,12 @@ export function HomePricing({ lang }: { lang: string }) {
                   <span className="hp-price-unit">{copy.perMonth}</span>
                 </p>
                 <p className="hp-billing">{period === "year" ? copy.billedYearly(plan.yearly.priceUsd) : copy.billedMonthly}</p>
-                <Link href={href("/pricing")} className="hp-cta">
-                  {copy.cta(name)}
-                  {period === "year" && plan.saving > 0 ? <span className="hp-cta-save">-{plan.saving}%</span> : null}
-                </Link>
+                {action({
+                  productId: period === "year" ? plan.yearly.id : plan.monthly.id,
+                  label: copy.cta(name),
+                  className: "hp-cta",
+                  extra: period === "year" && plan.saving > 0 ? <span className="hp-cta-save">-{plan.saving}%</span> : null,
+                })}
               </div>
               <div className="hp-plan-body">
                 <p className="hp-credits">
@@ -235,6 +291,12 @@ export function HomePricing({ lang }: { lang: string }) {
           );
         })}
       </div>
+
+      {checkoutError ? (
+        <output className="hp-error" aria-live="polite">
+          {checkoutError}
+        </output>
+      ) : null}
 
       {/* Usage estimator */}
       <div className="hp-estimator">
@@ -301,9 +363,14 @@ export function HomePricing({ lang }: { lang: string }) {
             {copy.fits(copy.names[recommended])}
           </p>
           {overflow > 0 ? <p className="hp-overflow">{copy.overflow(overflow)}</p> : null}
-          <Link href={href("/pricing")} className="hp-cta hp-cta-accent">
-            {copy.cta(copy.names[recommended])}
-          </Link>
+          {(() => {
+            const pick = plans.find((plan) => plan.tier === recommended)!;
+            return action({
+                productId: period === "year" ? pick.yearly.id : pick.monthly.id,
+                label: copy.cta(copy.names[recommended]),
+                className: "hp-cta hp-cta-accent",
+              });
+          })()}
         </div>
       </div>
 
@@ -367,18 +434,35 @@ export function HomePricing({ lang }: { lang: string }) {
           <p className="hp-sub-sm">{copy.packsSub}</p>
         </div>
         <div className="hp-packs-list">
-          {CREDIT_PACKAGES.filter((pack) => pack.enabled !== false).map((pack) => (
-            <Link key={pack.id} href={href("/pricing")} className="hp-pack">
-              <strong>US${pack.priceUsd}</strong>
-              <span>
-                {pack.credits.toLocaleString()} {zh ? "积分" : "credits"}
-              </span>
-            </Link>
-          ))}
+          {CREDIT_PACKAGES.filter((pack) => pack.enabled !== false).map((pack) =>
+            checkout ? (
+              <button
+                key={pack.id}
+                type="button"
+                className="hp-pack"
+                disabled={!checkout.enabled || pendingId !== null}
+                onClick={() => void buy(pack.id)}
+              >
+                <strong>US${pack.priceUsd}</strong>
+                <span>
+                  {pendingId === pack.id ? copy.redirecting : `${pack.credits.toLocaleString()} ${zh ? "积分" : "credits"}`}
+                </span>
+              </button>
+            ) : (
+              <Link key={pack.id} href={href("/pricing")} className="hp-pack">
+                <strong>US${pack.priceUsd}</strong>
+                <span>
+                  {pack.credits.toLocaleString()} {zh ? "积分" : "credits"}
+                </span>
+              </Link>
+            ),
+          )}
         </div>
-        <Link href={href("/pricing")} className="hp-cta hp-cta-ghost">
-          {copy.viewPricing}
-        </Link>
+        {checkout ? null : (
+          <Link href={href("/pricing")} className="hp-cta hp-cta-ghost">
+            {copy.viewPricing}
+          </Link>
+        )}
       </div>
     </section>
   );
