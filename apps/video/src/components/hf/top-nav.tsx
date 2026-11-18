@@ -4,7 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   ChevronDown,
+  Code2,
+  Eraser,
+  Expand,
+  FastForward,
+  Layers,
+  Mic,
+  ScanFace,
+  Smartphone,
+  UserRound,
+  ZoomIn,
   Clapperboard,
   Compass,
   Crown,
@@ -67,8 +78,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpenMega(null);
     };
+    const onPointer = (event: PointerEvent) => {
+      if (!(event.target as Element).closest(".hf-nav")) setOpenMega(null);
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
   }, [openMega]);
 
   // Close menus when the route changes.
@@ -128,6 +146,12 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             { label: zh ? "图生视频" : "Image to Video", href: "/image-to-video", icon: ImagePlus },
             { label: zh ? "参考生视频" : "Reference to Video", href: "/reference-to-video", icon: Clapperboard },
             { label: zh ? "AI 视频特效" : "AI Video Effects", href: "/effects", icon: Wand2 },
+            { label: zh ? "AI 视频编辑" : "AI Video Editor", icon: Layers, soon: true },
+            { label: zh ? "视频生视频" : "Video to Video", icon: Film, soon: true },
+            { label: zh ? "AI 数字人" : "AI Avatar", icon: UserRound, soon: true },
+            { label: zh ? "视频画质提升" : "Video Upscaler", icon: ZoomIn, soon: true },
+            { label: zh ? "动作模仿" : "Motion Mimic", icon: ScanFace, soon: true },
+            { label: zh ? "视频延长" : "Video Extender", icon: FastForward, soon: true },
           ],
           more: { label: zh ? "打开视频工作室" : "Open video studio", href: "/ai/video" },
         },
@@ -139,6 +163,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             { label: "Seedance 2.0", icon: Clapperboard, soon: true },
             { label: "Kling 4.0", icon: Orbit, soon: true },
             { label: "MiniMax H3", icon: Film, soon: true },
+            { label: "Seedance 2.5", icon: Clapperboard, soon: true },
+            { label: "Wan 3.0", icon: Orbit, soon: true },
+            { label: "Grok Imagine", icon: Sparkles, soon: true },
           ],
         },
         {
@@ -166,7 +193,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       columns: [
         {
           title: zh ? "图片" : "Image",
-          links: [{ label: zh ? "AI 图片生成器" : "AI Image Generator", href: "/ai/image", icon: ImageIcon }],
+          links: [
+            { label: zh ? "AI 图片生成器" : "AI Image Generator", href: "/ai/image", icon: ImageIcon },
+            { label: zh ? "图生图" : "Image to Image", icon: ImagePlus, soon: true },
+            { label: zh ? "AI 图片编辑" : "AI Photo Editor", icon: Wand2, soon: true },
+            { label: zh ? "图片高清放大" : "Image Upscaler", icon: ZoomIn, soon: true },
+            { label: zh ? "背景去除" : "Background Remover", icon: Eraser, soon: true },
+            { label: zh ? "图片扩展" : "Image Extender", icon: Expand, soon: true },
+          ],
         },
         {
           title: zh ? "图片模型" : "Image models",
@@ -175,22 +209,116 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             { label: "Seedream 5.5", icon: ImageIcon, soon: true },
             { label: "GPT Image 2.5", icon: ImageIcon, soon: true },
             { label: "FLUX.3", icon: ImageIcon, soon: true },
+            { label: "Z-Image", icon: ImageIcon, soon: true },
+          ],
+        },
+        {
+          title: zh ? "图片转视频" : "Image to video",
+          links: [
+            { label: zh ? "图生视频" : "Image to Video", href: "/image-to-video", icon: ImagePlus },
+            { label: zh ? "社区画廊" : "Community gallery", href: "/gallery", icon: LayoutGrid },
+          ],
+        },
+      ],
+    },
+    {
+      id: "creative",
+      label: t.creative,
+      intro: {
+        title: t.creative,
+        body: zh
+          ? "在画布上整理素材，和 Agent 对话，把一个想法拆成分镜和可执行的提示词。"
+          : "Arrange assets on a canvas, talk to an agent, and turn an idea into shots and usable prompts.",
+        cta: zh ? "进入创作空间" : "Open Creative Space",
+        href: "/creative-space",
+        image: "/home/samples/cosmic-bloom.webp",
+      },
+      columns: [
+        {
+          title: zh ? "创作" : "Create",
+          links: [
+            { label: zh ? "创作空间" : "Creative Space", href: "/creative-space", icon: Sparkles },
+            { label: zh ? "视频工作室" : "Video studio", href: "/ai/video", icon: Film },
+            { label: zh ? "我的作品" : "My creations", href: "/my-creations", icon: Layers },
+          ],
+        },
+        {
+          title: zh ? "即将推出" : "Coming next",
+          links: [
+            { label: zh ? "AI 故事视频" : "AI Story Video", icon: BookOpen, soon: true },
+            { label: zh ? "AI 配音" : "AI Voiceover", icon: Mic, soon: true },
+          ],
+        },
+      ],
+    },
+    {
+      id: "templates",
+      label: t.templates,
+      intro: {
+        title: t.templates,
+        body: zh
+          ? "选一个创意模板，提示词会直接填进首页的生成器，改完就能生成。"
+          : "Pick an idea template and its prompt loads into the homepage generator, ready to edit and generate.",
+        cta: zh ? "浏览全部模板" : "Browse all templates",
+        href: "/#home-templates",
+        image: "/home/samples/boy-and-dog.webp",
+      },
+      columns: [
+        {
+          title: zh ? "模板分类" : "Categories",
+          links: [
+            { label: zh ? "故事视频" : "Story video", href: "/#home-templates-story", icon: BookOpen },
+            { label: zh ? "动态创作" : "Motion", href: "/#home-templates-motion", icon: Orbit },
+            { label: zh ? "创意重构" : "Recast", href: "/#home-templates-recast", icon: Wand2 },
+          ],
+        },
+        {
+          title: zh ? "灵感" : "Inspiration",
+          links: [
+            { label: zh ? "社区画廊" : "Community gallery", href: "/gallery", icon: LayoutGrid },
+            { label: zh ? "灵感探索" : "Explore", href: "/explore", icon: Compass },
+            { label: zh ? "AI 视频特效" : "AI Video Effects", href: "/effects", icon: Wand2 },
+          ],
+        },
+      ],
+    },
+    {
+      id: "developers",
+      label: zh ? "开发者" : "Developers",
+      intro: {
+        title: zh ? "开发者" : "Developers",
+        body: zh
+          ? "API 和 MCP 接入正在准备中，上线后可在你自己的产品里调用视频生成。"
+          : "API and MCP access are in preparation. Once live, you can call video generation from your own product.",
+        cta: zh ? "查看价格" : "See pricing",
+        href: "/pricing",
+        image: "/home/samples/studio-room.webp",
+      },
+      columns: [
+        {
+          title: zh ? "接入方式" : "Integrations",
+          links: [
+            { label: "aivd API", icon: Code2, soon: true },
+            { label: "MCP", icon: Code2, soon: true },
+            { label: zh ? "移动端 App" : "Mobile app", icon: Smartphone, soon: true },
           ],
         },
       ],
     },
   ];
 
-  const href = (path: string) => `/${lang}${path === "/" ? "" : path}`;
+  const href = (path: string) => (path.startsWith("/#") ? `/${lang}${path.slice(1)}` : `/${lang}${path === "/" ? "" : path}`);
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
 
   const openNow = (id: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setOpenMega(id);
   };
-  const closeSoon = () => {
+  // Only close the menu that was left; moving straight onto another menu
+  // must not be undone by the previous menu's timer.
+  const closeSoon = (id: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setOpenMega(null), 120);
+    closeTimer.current = setTimeout(() => setOpenMega((current) => (current === id ? null : current)), 140);
   };
 
   const plainLink = (path: string, label: string) => (
@@ -231,11 +359,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
           {plainLink("/", t.home)}
           {megaMenus.map((menu) => (
-            <div key={menu.id} className="relative" onMouseEnter={() => openNow(menu.id)} onMouseLeave={closeSoon}>
+            <div key={menu.id} className="relative" onMouseEnter={() => openNow(menu.id)} onMouseLeave={() => closeSoon(menu.id)}>
               <button
                 type="button"
                 aria-expanded={openMega === menu.id}
-                onClick={() => (openMega === menu.id ? setOpenMega(null) : openNow(menu.id))}
+                onClick={() => openNow(menu.id)}
                 onFocus={() => openNow(menu.id)}
                 className={cn("hf-nav-link", openMega === menu.id && "hf-nav-link-active")}
               >
@@ -244,8 +372,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               </button>
             </div>
           ))}
-          {plainLink("/creative-space", t.creative)}
-          {plainLink("/gallery", t.templates)}
           {plainLink("/pricing", t.pricing)}
         </nav>
 
@@ -286,7 +412,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             key={menu.id}
             className="hf-mega"
             onMouseEnter={() => openNow(menu.id)}
-            onMouseLeave={closeSoon}
+            onMouseLeave={() => closeSoon(menu.id)}
           >
             <div className="hf-mega-intro">
               <p className="hf-mega-intro-title">{menu.intro.title}</p>
@@ -317,8 +443,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div className="hf-nav-mobile xl:hidden">
           {plainLink("/", t.home)}
           {megaMenus.map((menu) => plainLink(menu.intro.href, menu.label))}
-          {plainLink("/creative-space", t.creative)}
-          {plainLink("/gallery", t.templates)}
           {plainLink("/pricing", t.pricing)}
         </div>
       ) : null}

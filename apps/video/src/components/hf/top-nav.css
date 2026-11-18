@@ -174,7 +174,7 @@
 
 .hf-mega-col {
   display: flex;
-  width: 210px;
+  width: 236px;
   flex-direction: column;
   padding: 12px 8px;
 }
@@ -209,7 +209,9 @@ a.hf-mega-row:hover {
 }
 
 .hf-mega-soon {
+  flex-shrink: 0;
   margin-left: auto;
+  white-space: nowrap;
   padding: 1px 6px;
   border: 1px solid color-mix(in srgb, white 12%, transparent);
   border-radius: 6px;
@@ -240,4 +242,10 @@ a.hf-mega-row:hover {
 
 .hf-nav-mobile .hf-nav-link {
   height: 40px;
+}
+
+@media (min-width: 1280px) {
+  .hf-nav-mobile {
+    display: none;
+  }
 }
