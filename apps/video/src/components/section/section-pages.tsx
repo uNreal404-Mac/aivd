@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Image as ImageIcon, Search, Sparkles } from "lucide-react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
+import { ImageShowcase } from "@/components/hf/image-showcase";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
 import {
@@ -171,7 +172,7 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
 
 export function ImageSectionPage({ lang, models, initialPrompt }: { lang: string; models: ComposerModel[]; initialPrompt: string }) {
   const zh = isZh(lang);
-  const { preset, useTemplate } = useComposerPreset(lang);
+  const { preset } = useComposerPreset(lang);
   return (
     <div className="sp-page">
       <div className="sp-glow" aria-hidden="true" />
@@ -179,8 +180,8 @@ export function ImageSectionPage({ lang, models, initialPrompt }: { lang: string
         <h1 className="sp-title">{zh ? "打造你梦寐以求的每一个画面" : "Create every image you have imagined"}</h1>
         <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} initialKind="image" initialPrompt={initialPrompt} hideKindTabs />
       </section>
-      <TemplateRow lang={lang} onUse={useTemplate} />
-      <ModelGrid lang={lang} kind="image" connectedIds={[]} />
+      {/* Below the composer: the shared homepage-style image showcase */}
+      <ImageShowcase lang={lang} />
     </div>
   );
 }

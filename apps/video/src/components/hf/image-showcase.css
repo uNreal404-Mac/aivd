@@ -1,0 +1,26 @@
+/* Image showcase: reuses the homepage (hs-*) and pricing (hp-*) styles. */
+.is-showcase {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.is-step-card {
+  position: relative;
+  min-height: 220px;
+  justify-content: flex-end;
+}
+
+.is-step-card .hp-plan-name {
+  font-size: 30px;
+}
+
+.is-step-n {
+  position: absolute;
+  top: 18px;
+  right: 26px;
+  font-size: 84px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.18;
+}

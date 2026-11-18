@@ -7,6 +7,7 @@ import { useSigninModal } from "@/hooks/use-signin-modal";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
+import { ImageShowcase } from "@/components/hf/image-showcase";
 import "./ai-image-studio.css";
 
 // Tilted photo stack above the title, as on the reference image page.
@@ -148,6 +149,7 @@ export function AiImageStudio({
 
   return (
     <main className="is-root">
+      <div className="is-first">
       {jobs.length === 0 ? (
         <section className="is-hero">
           <div className="is-collage" aria-hidden="true">
@@ -306,6 +308,12 @@ export function AiImageStudio({
           {notice}
         </output>
       ) : null}
+      </div>
+
+      {/* Scrolling past the first screen: the shared homepage-style showcase */}
+      <div className="is-below">
+        <ImageShowcase lang={locale} />
+      </div>
     </main>
   );
 }
