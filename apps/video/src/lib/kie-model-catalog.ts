@@ -31,15 +31,18 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "grok-imagine/text-to-video", name: "Grok Imagine", family: "Grok Imagine", icon: "X", detail: "Text to video" },
   { id: "happyhorse/text-to-video", name: "HappyHorse", family: "HappyHorse", icon: "H", detail: "Text to video" },
   { id: "sora-2", name: "Sora 2", family: "Sora", icon: "O", detail: "10–15s · sound" },
+  { id: "seedance-2-5-flash", name: "Seedance 2.5 Flash", family: "Seedance", icon: "S", detail: "Fast · 480p–720p", badge: "New" },
+  { id: "gemini-omni-flash-1-2", name: "Gemini Omni Flash 1.2", family: "Gemini Omni Flash", icon: "G", detail: "Multimodal video · up to 4K", badge: "New" },
+  { id: "grok-imagine-1-5", name: "Grok Imagine 1.5", family: "Grok Imagine", icon: "X", detail: "Image to video · sound" },
+  { id: "happyhorse-1-1", name: "HappyHorse 1.1", family: "HappyHorse", icon: "H", detail: "Text · image to video" },
 ];
 
 export const VIDEO_FEATURED_IDS = [
-  // On sale today, so they lead the list.
+  // Ready to generate, in menu order.
   "veo-3.1", "wan2.6",
-  "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "kling/v4-reference-to-video",
-  "kling/v4-flash-reference-to-video", "wan/3-0-video-prime",
-  "bytedance/seedance-2", "minimax-h3/text-to-video",
-  "google/gemini-omni-flash-1-1", "seedance-1.5-pro",
+  "bytedance/seedance-2-5", "seedance-2-5-flash", "kling/v4-reference-to-video",
+  "kling/v4-flash-reference-to-video", "gemini-omni-flash-1-2", "minimax-h3/text-to-video",
+  "wan/3-0-video", "grok-imagine/text-to-video", "grok-imagine-1-5", "happyhorse-1-1",
 ];
 
 export const IMAGE_CATALOG: CatalogModel[] = [
@@ -54,10 +57,18 @@ export const IMAGE_CATALOG: CatalogModel[] = [
   { id: "ideogram/v3-text-to-image", name: "Ideogram V3", family: "Ideogram", icon: "I", detail: "Text to image" },
   { id: "qwen3/text-to-image", name: "Qwen3", family: "Qwen", icon: "Q", detail: "Text to image" },
   { id: "z-image/z-image", name: "Z-Image", family: "Z-Image", icon: "Z", detail: "Text to image" },
+  { id: "seedream-5-5", name: "Seedream 5.5", family: "Seedream", icon: "S", detail: "Text · image to image", badge: "New" },
+  { id: "gpt-image-2-6-sunburst", name: "GPT Image 2.6 Sunburst", family: "GPT Image", icon: "O", detail: "Text · image to image", badge: "New" },
+  { id: "gpt-image-2-6-flare", name: "GPT Image 2.6 Flare", family: "GPT Image", icon: "O", detail: "Text · image to image", badge: "New" },
+  { id: "nano-banana-2-1", name: "Nano Banana 2.1", family: "Nano Banana", icon: "G", detail: "Text · image to image" },
+  { id: "nano-banana-pro", name: "Nano Banana Pro", family: "Nano Banana", icon: "G", detail: "Up to 4K" },
+  { id: "kling-image-4", name: "Kling Image 4.0", family: "Kling", icon: "K", detail: "Up to 8K · up to 9 images", badge: "New" },
+  { id: "minimax-h3-image", name: "MiniMax H3 Image", family: "MiniMax Hailuo", icon: "M", detail: "Text · image to image" },
 ];
 
 export const IMAGE_FEATURED_IDS = [
-  "grok-imagine-image-2-0/text-to-image", "flux3/klein-text-to-image",
-  "flux2/pro-text-to-image", "seedream/5-pro-text-to-image",
-  "google/imagen4", "qwen3/text-to-image",
+  // Ready to generate, in menu order.
+  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2-1",
+  "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
+  "grok-imagine-image-2-0/text-to-image",
 ];

@@ -33,13 +33,11 @@ export const NAV_VIDEO_MODELS: NavModel[] = [
   m("kling/v4-reference-to-video", "Kling 4.0", "从任意输入创建和编辑长达 30 秒的视频", "Create and edit video up to 30s from any input"),
   m("kling/v4-flash-reference-to-video", "Kling 4.0 Flash", "用任意输入快速创建最长 20 秒的 720p 视频", "Fast 720p video up to 20s from any input", "new"),
   m("gemini-omni-flash-1-2", "Gemini Omni Flash 1.2", "从任意输入生成并编辑视频", "Generate and edit video from any input", "new"),
-  m("flux-3-video", "FLUX.3 Video", "支持文本、图像和视频生成，并同步音频", "Text, image and video to video with synced audio"),
-  m("flux-3-upscale", "FLUX.3 Upscale", "保留原貌或创意增强细节", "Keep the original or enhance detail"),
   m("minimax-h3/text-to-video", "MiniMax H3", "通过文本、关键帧或多模态参考创建 2K 视频", "2K video from text, keyframes or references"),
   m("wan/3-0-video", "Wan 3.0", "用文本、关键帧或多模态参考生成视频", "Video from text, keyframes or references"),
-  m("grok-imagine-1-5-lite", "Grok Imagine 1.5 Lite", "从文字或图片快速生成实惠视频", "Fast, affordable video from text or an image"),
-  m("grok-imagine/text-to-video", "Grok Imagine 1.5", "音画同步的电影级视频", "Cinematic video with synced sound"),
-  m("happyhorse/text-to-video", "HappyHorse", "风格鲜明的趣味短视频", "Playful short clips with a strong style"),
+  m("grok-imagine/text-to-video", "Grok Imagine", "从文字或图片快速生成实惠视频", "Fast, affordable video from text or an image"),
+  m("grok-imagine-1-5", "Grok Imagine 1.5", "以一张图片为起点，音画同步的电影级视频", "Cinematic video with synced sound from a start image"),
+  m("happyhorse-1-1", "HappyHorse 1.1", "风格鲜明的趣味短视频", "Playful short clips with a strong style"),
 ];
 
 export const NAV_IMAGE_MODELS: NavModel[] = [
@@ -51,18 +49,17 @@ export const NAV_IMAGE_MODELS: NavModel[] = [
   m("minimax-h3-image", "MiniMax H3 Image", "用 MiniMax H3 生成图像", "Images from MiniMax H3", "new"),
   m("nano-banana-pro", "Nano Banana Pro", "出色的 4K 图像模型", "An excellent 4K image model", "hot"),
   m("flux3/klein-text-to-image", "FLUX 3 Image", "Black Forest Labs 打造的新一代图片生成与编辑", "Black Forest Labs' latest generation and editing"),
-  m("recraft-v4-1", "Recraft V4.1", "逼真且富有表现力的图像生成", "Lifelike, expressive image generation"),
   m("grok-imagine-image-2-0/text-to-image", "Grok Imagine 2.0", "xAI 出品的高分辨率图像生成", "High-resolution images from xAI"),
 ];
 
 export const NAV_AUDIO_MODELS: NavModel[] = [
-  m("seed_audio", "Seed Audio 1.0", "自然流畅的多语种语音", "Natural multilingual speech"),
-  m("elevenlabs_v4", "Eleven v4", "ElevenLabs 最新一代语音合成", "ElevenLabs' latest speech model", "new"),
-  m("elevenlabs_v4_turbo", "Eleven v4 Turbo", "低延迟、速度更快的语音", "Faster, low-latency speech"),
-  m("elevenlabs", "Eleven v3", "富有表现力的情绪化配音", "Expressive, emotional voiceover"),
-  m("qwen_audio", "Qwen Audio 3.0", "通义千问语音生成", "Speech from Qwen"),
-  m("minimax", "MiniMax Speech 2.8 HD", "高保真中英文配音", "High-fidelity Chinese and English voice"),
-  m("seed_speech", "Seed Speech", "字节跳动语音合成", "Speech synthesis from ByteDance"),
+  m("elevenlabs-v3", "Eleven v3", "富有表现力的情绪化配音", "Expressive, emotional voiceover", "new"),
+  m("elevenlabs-multilingual-v2", "Eleven Multilingual v2", "自然流畅的多语种语音", "Natural multilingual speech"),
+  m("elevenlabs-turbo-2-5", "Eleven Turbo 2.5", "低延迟、速度更快的语音", "Faster, low-latency speech"),
+  m("gemini-3-8-flash-tts", "Gemini 3.8 Flash TTS", "Google 语音合成，支持 100 多种语言", "Google speech in 100+ languages", "new"),
+  m("suno-music", "Suno V6", "一句话生成完整歌曲", "A full song from one line", "hot"),
+  m("suno-sounds", "Suno Sounds", "用文字生成音效和氛围声", "Sound effects and ambience from text"),
+  m("suno-speech", "Suno Speech", "描述场景，生成带情绪的人声", "Describe a scene, get an expressive voice"),
 ];
 
 const LISTS: Record<NavModelKind, NavModel[]> = {

@@ -1,0 +1,81 @@
+import { NextRequest } from "next/server";
+import { z } from "zod";
+
+import { getMarketModel } from "@/ai/kie-market";
+import { requireAuth } from "@/lib/api/auth";
+import { apiError, apiSuccess, handleApiError } from "@/lib/api/response";
+import { isSafetyApproved, moderateContent, safetyMessage } from "@/lib/content-safety";
+import { imageRefSchema } from "@/lib/image-ref-schema";
+import { isAllowedImageInput } from "@/lib/image-url-allowlist";
+import { getStorage } from "@/lib/storage";
+import { videoService } from "@/services/video";
+import "@/lib/proxy-config";
+
+// Image and audio generation through KIE market models. Video market models
+// go through /api/v1/video/generate, which delegates to the same service.
+const schema = z.object({
+  model: z.string().min(1),
+  prompt: z.string().min(1).max(5000),
+  aspectRatio: z.string().max(10).optional(),
+  resolution: z.string().max(10).optional(),
+  count: z.number().int().min(1).max(9).optional(),
+  imageUrls: z.array(imageRefSchema).max(16).optional(),
+  voice: z.string().max(64).optional(),
+  style: z.string().max(1000).optional(),
+  idempotencyKey: z.string().max(200).optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    if (process.env.VIDEO_GENERATION_ENABLED !== "true") {
+      return apiError("Generation is coming soon on this preview. No credits were used.", 503, {
+        code: "GENERATION_DISABLED",
+      });
+    }
+
+    const user = await requireAuth(request);
+    const data = schema.parse(await request.json());
+    const model = getMarketModel(data.model);
+    if (!model || model.kind === "video") {
+      return apiError("Unsupported model", 400, { code: "UNSUPPORTED_MODEL" });
+    }
+
+    const imageUrls = data.imageUrls ?? [];
+    if (imageUrls.some((url) => !isAllowedImageInput(url, { userId: user.id }))) {
+      return apiError("Image URL host is not allowed.", 400, { code: "IMAGE_URL_NOT_ALLOWED" });
+    }
+
+    const safety = await moderateContent({
+      text: [data.prompt, data.style].filter(Boolean).join("\n"),
+      images: imageUrls.map((url, index) => ({
+        url: /^https?:\/\//i.test(url) ? url : getStorage().getSignedUrl(url),
+        label: `reference-${index + 1}`,
+      })),
+      context: "generation",
+    });
+    if (!isSafetyApproved(safety)) {
+      return apiError(safetyMessage(safety, request.headers.get("accept-language") ?? "en"), 422, {
+        code: "CONTENT_BLOCKED",
+        decision: safety.decision,
+        categories: safety.categories,
+      });
+    }
+
+    const headerKey = request.headers.get("Idempotency-Key");
+    const result = await videoService.generateMedia({
+      userId: user.id,
+      model: model.id,
+      prompt: data.prompt,
+      aspectRatio: data.aspectRatio,
+      resolution: data.resolution,
+      count: data.count,
+      imageUrls,
+      voice: data.voice,
+      style: data.style,
+      idempotencyKey: headerKey ? headerKey.slice(0, 200) : data.idempotencyKey,
+    });
+    return apiSuccess(result);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}

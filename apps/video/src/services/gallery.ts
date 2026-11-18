@@ -78,7 +78,7 @@ export class GalleryService {
       .from(videos)
       .innerJoin(users, eq(users.id, videos.userId))
       .leftJoin(videoRatings, eq(videoRatings.videoUuid, videos.uuid))
-      .where(and(eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED")))
+      .where(and(eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED"), eq(videos.mediaType, "video")))
       .groupBy(videos.id, users.name)
       .orderBy(desc(average), desc(count), desc(videos.publishedAt))
       .limit(safeLimit);
@@ -99,7 +99,7 @@ export class GalleryService {
       throw new ApiError("Rating must be an integer from 1 to 5", 400);
     }
     const [video] = await db.select({ userId: videos.userId }).from(videos)
-      .where(and(eq(videos.uuid, uuid), eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED"))).limit(1);
+      .where(and(eq(videos.uuid, uuid), eq(videos.visibility, "public"), eq(videos.isDeleted, false), eq(videos.status, "COMPLETED"), eq(videos.mediaType, "video"))).limit(1);
     if (!video) throw new ApiError("Gallery item not found", 404);
     if (video.userId === userId) throw new ApiError("You cannot rate your own video", 403);
 

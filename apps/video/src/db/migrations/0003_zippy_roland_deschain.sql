@@ -1,0 +1,1 @@
+ALTER TABLE `videos` ADD `media_type` text DEFAULT 'video' NOT NULL;

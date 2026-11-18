@@ -44,6 +44,8 @@ export interface VideoTaskResponse {
   progress?: number;
   estimatedTime?: number;
   videoUrl?: string;
+  /** Every output URL, for tasks that return more than one (image sets). */
+  resultUrls?: string[];
   thumbnailUrl?: string;
   error?: {
     code: string;

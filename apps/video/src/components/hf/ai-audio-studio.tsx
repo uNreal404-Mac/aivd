@@ -1,23 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Minus, Music, Plus, SlidersHorizontal } from "lucide-react";
-import { NAV_AUDIO_MODELS, findNavModel } from "@/lib/nav-models";
+import { useMemo, useState } from "react";
+import { AudioLines, BookOpen, ChevronRight, Clock, Download, Image as ImageIcon, Music, Sparkles, X } from "lucide-react";
+import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { useSigninModal } from "@/hooks/use-signin-modal";
+import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import "./ai-video-studio.css";
 
-const MODES = ["tts", "voice", "translate"] as const;
+const MODES = ["tts", "music", "voice", "translate"] as const;
 type Mode = (typeof MODES)[number];
-// URL values used by the reference site's audio page.
-const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", "change-voice": "voice", translate: "translate" };
-const MAX_BATCH = 4;
-const SCRIPT_MAX = 5000;
+// URL values used by the reference site's audio page, plus our music tab.
+const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", music: "music", "change-voice": "voice", translate: "translate" };
+// Which models each tab offers. Voice changing and translation need an audio
+// upload that no connected model accepts yet.
+const MODE_MODELS: Record<Mode, string[]> = {
+  tts: ["elevenlabs-v3", "elevenlabs-multilingual-v2", "elevenlabs-turbo-2-5", "gemini-3-8-flash-tts", "suno-speech"],
+  music: ["suno-music", "suno-sounds"],
+  voice: [],
+  translate: [],
+};
 const DETAIL_MAX = 500;
+const AUDIO_MODELS = marketModelsOf("audio");
 
-/**
- * Audio studio, laid out after the reference site's audio page. Audio models
- * are not connected yet, so the controls work but generation is marked as
- * coming soon and nothing is submitted.
- */
+/** Audio studio, laid out after the reference site's audio page. */
 export function AiAudioStudio({
   locale,
   initialVoiceMode = "",
@@ -28,82 +33,133 @@ export function AiAudioStudio({
   initialModelId?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const [mode, setMode] = useState<Mode>(MODE_PARAMS[initialVoiceMode] ?? "tts");
-  const [modelId, setModelId] = useState(findNavModel("audio", initialModelId)?.id ?? NAV_AUDIO_MODELS[0].id);
-  const selectedModel = findNavModel("audio", modelId) ?? NAV_AUDIO_MODELS[0];
+  const signIn = useSigninModal();
+  const initialModel = getMarketModel(initialModelId);
+  // A model link opens the tab that offers that model.
+  const startMode: Mode =
+    initialModel?.kind === "audio"
+      ? ((Object.keys(MODE_MODELS) as Mode[]).find((key) => MODE_MODELS[key].includes(initialModel.id)) ?? "tts")
+      : (MODE_PARAMS[initialVoiceMode] ?? "tts");
+  const [mode, setMode] = useState<Mode>(startMode);
+  const [modelId, setModelId] = useState(
+    initialModel?.kind === "audio" ? initialModel.id : (MODE_MODELS[startMode][0] ?? AUDIO_MODELS[0].id),
+  );
+  const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
+  const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
   const [script, setScript] = useState("");
   const [detail, setDetail] = useState("");
-  const [batch, setBatch] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const { jobs, add } = useMediaJobs("audio");
   const [tab, setTab] = useState<"history" | "how">("how");
-  const [notice, setNotice] = useState(false);
+  const shownTab = tab;
+
+  const modeModels = MODE_MODELS[mode]
+    .map((id) => getMarketModel(id))
+    .filter((item): item is NonNullable<typeof item> => item !== undefined);
+  const available = modeModels.length > 0;
+  const maxScript = model.options.maxPromptLength ?? 5000;
+  const credits = useMemo(() => marketCredits(model, { prompt: script, voice, style: detail }), [model, script, voice, detail]);
+
+  const chooseModel = (id: string) => {
+    const next = getMarketModel(id);
+    if (!next) return;
+    setModelId(id);
+    setVoice((current) => (next.options.voices?.some((item) => item.id === current) ? current : (next.options.voices?.[0]?.id ?? "")));
+  };
+
+  const chooseMode = (next: Mode) => {
+    setMode(next);
+    setNotice(null);
+    const first = MODE_MODELS[next][0];
+    if (first && !MODE_MODELS[next].includes(modelId)) chooseModel(first);
+  };
 
   const t = zh
     ? {
-        modes: { tts: "文本转语音", voice: "变声", translate: "翻译" } as Record<Mode, string>,
+        modes: { tts: "文本转语音", music: "音乐与音效", voice: "变声", translate: "翻译" } as Record<Mode, string>,
         upload: "上传媒体",
-        uploadSub: "最多 3 段声音或音频，或 1 张图片",
+        uploadSub: "变声和翻译需要上传音频，即将上线",
         optional: "可选",
-        script: "脚本",
-        scriptHint: "逐字写下要朗读的内容。",
+        script: mode === "music" ? "描述" : "脚本",
+        scriptHint: mode === "music" ? "描述想要的歌曲或音效，例如：雨夜城市的慢节奏爵士。" : "逐字写下要朗读的内容。",
         model: "模型",
-        batch: "批量大小",
-        detail: "声音详情",
-        detailHint: "例如：年轻女声，英式口音，柔和而洪亮，兴奋，略带笑意",
-        advanced: "高级设置",
+        voice: "音色",
+        detail: mode === "music" ? "曲风" : "声音详情",
+        detailHint: mode === "music" ? "例如：爵士、钢琴、慢节奏、温暖" : "例如：语速放慢，带一点笑意（Gemini 支持）",
         generate: "生成",
+        submitting: "提交中…",
         soon: "即将上线",
-        notice: "语音模型还在接入中，这次没有提交任务，也没有扣积分。",
+        soonNote: "变声和翻译需要上传音频，目前接入的模型还不支持，即将上线。",
         history: "历史记录",
         how: "工作原理",
         empty: "还没有音频，生成的内容会显示在这里。",
+        generating: "生成中…",
+        failed: "生成失败，积分已退回",
         heroTitle: "将文字变成语音",
-        heroSub: "任意脚本都能生成逼真语音，随时用于你的视频和项目",
-        card1: "挑选或克隆声音",
-        card1Sub: "选择预设声音，克隆自己的声音，或挑选模型",
+        heroSub: "任意脚本都能生成逼真语音，也能一句话生成歌曲和音效",
+        card1: "挑选声音",
+        card1Sub: "选择 ElevenLabs 或 Gemini 的预设音色",
         card2: "撰写、描述并生成",
         card2Sub: "输入脚本，描述想要的声音，开始创作",
-        voices: [
-          { name: "温暖男声", tag: "旁白" },
-          { name: "清亮女声", tag: "广告" },
-          { name: "少年音", tag: "动画" },
+        demoVoices: [
+          { name: "James", tag: "ElevenLabs" },
+          { name: "Bella", tag: "ElevenLabs" },
+          { name: "Kore", tag: "Gemini" },
         ],
         demoPrompt: "温暖、沉稳的男声，语速从容，略带沙哑，像深夜的自然纪录片旁白。",
-        speed: "语速",
-        pitch: "音调",
       }
     : {
-        modes: { tts: "Text to speech", voice: "Voice changer", translate: "Translate" } as Record<Mode, string>,
+        modes: { tts: "Text to speech", music: "Music & sound", voice: "Voice changer", translate: "Translate" } as Record<Mode, string>,
         upload: "Upload media",
-        uploadSub: "Up to 3 voices or audio clips, or 1 image",
+        uploadSub: "Voice changing and translation need an audio upload; coming soon",
         optional: "Optional",
-        script: "Script",
-        scriptHint: "Write exactly what the voice should read.",
+        script: mode === "music" ? "Description" : "Script",
+        scriptHint: mode === "music" ? "Describe the song or sound, e.g. slow jazz for a rainy city night." : "Write exactly what the voice should read.",
         model: "Model",
-        batch: "Batch size",
-        detail: "Voice details",
-        detailHint: "e.g. young female voice, British accent, soft but bright, excited, a slight laugh",
-        advanced: "Advanced settings",
+        voice: "Voice",
+        detail: mode === "music" ? "Style" : "Voice details",
+        detailHint: mode === "music" ? "e.g. jazz, piano, slow, warm" : "e.g. slower, with a smile (Gemini)",
         generate: "Generate",
+        submitting: "Submitting…",
         soon: "Coming soon",
-        notice: "Voice models are still being connected, so nothing was submitted and no credits were used.",
+        soonNote: "Voice changing and translation need an audio upload that the connected models do not take yet.",
         history: "History",
         how: "How it works",
         empty: "No audio yet. Your generations will show up here.",
+        generating: "Generating…",
+        failed: "Failed, credits returned",
         heroTitle: "Turn text into speech",
-        heroSub: "Lifelike voices for any script, ready for your videos and projects",
-        card1: "Pick or clone a voice",
-        card1Sub: "Choose a preset, clone your own voice, or pick a model",
+        heroSub: "Lifelike voices for any script, plus songs and sound effects from one line",
+        card1: "Pick a voice",
+        card1Sub: "Choose a preset voice from ElevenLabs or Gemini",
         card2: "Write, describe and generate",
         card2Sub: "Enter a script, describe the voice and create",
-        voices: [
-          { name: "Warm narrator", tag: "Narration" },
-          { name: "Bright voice", tag: "Ads" },
-          { name: "Young voice", tag: "Animation" },
+        demoVoices: [
+          { name: "James", tag: "ElevenLabs" },
+          { name: "Bella", tag: "ElevenLabs" },
+          { name: "Kore", tag: "Gemini" },
         ],
         demoPrompt: "Warm, calm male voice, unhurried pace, a little gravel, like a late-night nature documentary narrator.",
-        speed: "Speed",
-        pitch: "Pitch",
       };
+
+  const generate = async () => {
+    if (!available || !script.trim() || submitting) return;
+    setSubmitting(true);
+    setNotice(null);
+    const result = await submitMedia(
+      { model: model.id, prompt: script.trim(), voice: voice || undefined, style: detail.trim() || undefined },
+      zh,
+    );
+    setSubmitting(false);
+    if (!result.ok) {
+      setNotice(result.message);
+      if (result.needsLogin) signIn.onOpen();
+      return;
+    }
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id });
+    setTab("history");
+  };
 
   return (
     <div className="vs-root">
@@ -115,7 +171,7 @@ export function AiAudioStudio({
               type="button"
               role="tab"
               aria-selected={option === mode}
-              onClick={() => setMode(option)}
+              onClick={() => chooseMode(option)}
               className={option === mode ? "vs-mode vs-mode-on" : "vs-mode"}
             >
               {t.modes[option]}
@@ -123,111 +179,147 @@ export function AiAudioStudio({
           ))}
         </div>
 
-        <div className="vs-upload vs-upload-off" aria-disabled="true">
-          <span className="vs-upload-tag">{t.optional}</span>
-          <span className="vs-upload-icons" aria-hidden="true">
-            <span><AudioLines className="h-4 w-4" /></span>
-            <span><Music className="h-4 w-4" /></span>
-            <span><ImageIcon className="h-4 w-4" /></span>
-          </span>
-          <span className="vs-upload-title">{t.upload}</span>
-          <span className="vs-upload-sub">{t.uploadSub}</span>
-        </div>
+        {!available ? (
+          <>
+            <div className="vs-upload vs-upload-off" aria-disabled="true">
+              <span className="vs-upload-tag">{t.soon}</span>
+              <span className="vs-upload-icons" aria-hidden="true">
+                <span><AudioLines className="h-4 w-4" /></span>
+                <span><Music className="h-4 w-4" /></span>
+                <span><ImageIcon className="h-4 w-4" /></span>
+              </span>
+              <span className="vs-upload-title">{t.upload}</span>
+              <span className="vs-upload-sub">{t.uploadSub}</span>
+            </div>
+            <p className="vs-hint">{t.soonNote}</p>
+          </>
+        ) : (
+          <>
+            <div className="vs-card vs-prompt">
+              <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
+              <textarea
+                id="audio-script"
+                value={script}
+                maxLength={maxScript}
+                placeholder={t.scriptHint}
+                onChange={(event) => {
+                  setScript(event.target.value);
+                  setNotice(null);
+                }}
+              />
+              <span className="vs-count">
+                {script.length}/{maxScript}
+              </span>
+            </div>
 
-        <div className="vs-card vs-prompt">
-          <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
-          <textarea
-            id="audio-script"
-            value={script}
-            maxLength={SCRIPT_MAX}
-            placeholder={t.scriptHint}
-            onChange={(event) => {
-              setScript(event.target.value);
-              setNotice(false);
-            }}
-          />
-        </div>
+            <label htmlFor="audio-model" className="vs-card vs-select">
+              <span className="min-w-0 flex-1">
+                <span className="vs-card-label">{t.model}</span>
+                <span className="vs-card-value">{model.name}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
+              <select id="audio-model" value={modelId} onChange={(event) => chooseModel(event.target.value)}>
+                {modeModels.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label htmlFor="audio-model" className="vs-card vs-select">
-          <span className="min-w-0 flex-1">
-            <span className="vs-card-label">{t.model}</span>
-            <span className="vs-card-value">
-              {selectedModel.name} <span className="vs-soon">{t.soon}</span>
-            </span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-          <select id="audio-model" value={modelId} onChange={(event) => setModelId(event.target.value)}>
-            {NAV_AUDIO_MODELS.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            {model.options.voices?.length ? (
+              <label htmlFor="audio-voice" className="vs-card vs-select">
+                <span className="min-w-0 flex-1">
+                  <span className="vs-card-label">{t.voice}</span>
+                  <span className="vs-card-value">{model.options.voices.find((item) => item.id === voice)?.name ?? voice}</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
+                <select id="audio-voice" value={voice} onChange={(event) => setVoice(event.target.value)}>
+                  {model.options.voices.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
-        <div className="vs-card">
-          <span className="vs-card-value flex-1">{t.batch}</span>
-          <span className="vs-stepper">
-            <button type="button" aria-label={zh ? "减少" : "Fewer"} disabled={batch <= 1} onClick={() => setBatch((value) => Math.max(1, value - 1))}>
-              <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+            {model.id === "gemini-3-8-flash-tts" || model.id === "suno-music" ? (
+              <div className="vs-card vs-prompt">
+                <span className="flex items-center justify-between">
+                  <label htmlFor="audio-detail" className="vs-prompt-label vs-prompt-label-muted">{t.detail}</label>
+                  <span className="vs-soon">{t.optional}</span>
+                </span>
+                <textarea
+                  id="audio-detail"
+                  className="vs-textarea-short"
+                  value={detail}
+                  maxLength={DETAIL_MAX}
+                  placeholder={t.detailHint}
+                  onChange={(event) => setDetail(event.target.value)}
+                />
+              </div>
+            ) : null}
+
+            <button type="button" className="vs-generate" disabled={!script.trim() || submitting} onClick={() => void generate()}>
+              {submitting ? t.submitting : t.generate}
+              <span className="vs-generate-cost">
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                {credits}
+              </span>
             </button>
-            <span>
-              {batch}/{MAX_BATCH}
-            </span>
-            <button type="button" aria-label={zh ? "增加" : "More"} disabled={batch >= MAX_BATCH} onClick={() => setBatch((value) => Math.min(MAX_BATCH, value + 1))}>
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
-          </span>
-        </div>
-
-        <div className="vs-card vs-prompt">
-          <span className="flex items-center justify-between">
-            <label htmlFor="audio-detail" className="vs-prompt-label vs-prompt-label-muted">{t.detail}</label>
-            <span className="vs-soon">{t.optional}</span>
-          </span>
-          <textarea
-            id="audio-detail"
-            className="vs-textarea-short"
-            value={detail}
-            maxLength={DETAIL_MAX}
-            placeholder={t.detailHint}
-            onChange={(event) => setDetail(event.target.value)}
-          />
-          <span className="vs-count">
-            {detail.length}/{DETAIL_MAX}
-          </span>
-        </div>
-
-        <div className="vs-card vs-card-off">
-          <SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="vs-card-value flex-1">{t.advanced}</span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-        </div>
-
-        <button type="button" className="vs-generate vs-generate-soon" onClick={() => setNotice(true)}>
-          {t.generate}
-          <span className="vs-generate-cost">{t.soon}</span>
-        </button>
-        {notice ? <output aria-live="polite" className="vs-notice">{t.notice}</output> : null}
+          </>
+        )}
+        {notice ? <output aria-live="polite" className="vs-notice">{notice}</output> : null}
       </aside>
 
       <section aria-label={t.heroTitle} className="vs-stage">
         <div className="vs-stage-tabs">
-          <button type="button" aria-pressed={tab === "history"} onClick={() => setTab("history")} className={tab === "history" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
+          <button type="button" aria-pressed={shownTab === "history"} onClick={() => setTab("history")} className={shownTab === "history" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {t.history}
+            {jobs.length > 0 ? <span className="vs-stage-count">{jobs.length}</span> : null}
           </button>
-          <button type="button" aria-pressed={tab === "how"} onClick={() => setTab("how")} className={tab === "how" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
+          <button type="button" aria-pressed={shownTab === "how"} onClick={() => setTab("how")} className={shownTab === "how" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             {t.how}
           </button>
         </div>
 
-        {tab === "history" ? (
-          <div className="vs-empty">
-            <Clock className="h-6 w-6" aria-hidden="true" />
-            <p>{t.empty}</p>
-          </div>
+        {shownTab === "history" ? (
+          jobs.length === 0 ? (
+            <div className="vs-empty">
+              <Clock className="h-6 w-6" aria-hidden="true" />
+              <p>{t.empty}</p>
+            </div>
+          ) : (
+            <div className="as-list">
+              {jobs.map((job) => (
+                <div key={job.uuid} className="as-item">
+                  <div className="as-item-head">
+                    <span className="as-item-model">{getMarketModel(job.model)?.name ?? job.model}</span>
+                    <span className="as-item-prompt">{job.prompt}</span>
+                  </div>
+                  {job.status === "completed" && job.urls.length > 0 ? (
+                    job.urls.map((url, index) => (
+                      <div key={`${job.uuid}-${index}`} className="as-item-player">
+                        {/* biome-ignore lint/a11y/useMediaCaption: generated speech and music have no caption track */}
+                        <audio src={url} controls preload="none" />
+                        <a href={url} download target="_blank" rel="noreferrer" aria-label={zh ? "下载" : "Download"} className="as-item-dl">
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                        </a>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="as-item-status">
+                      {job.status === "failed" ? <X className="h-4 w-4" aria-hidden="true" /> : <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" />}
+                      {job.status === "failed" ? t.failed : t.generating}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <div className="vs-howto vs-howto-center">
             <h2 className="vs-howto-title">{t.heroTitle}</h2>
@@ -237,14 +329,14 @@ export function AiAudioStudio({
                 <h3 className="vs-step-title">{t.card1}</h3>
                 <p className="vs-step-body">{t.card1Sub}</p>
                 <div className="as-voices">
-                  {t.voices.map((voice, index) => (
-                    <div key={voice.name} className={index === 0 ? "as-voice as-voice-main" : "as-voice"}>
+                  {t.demoVoices.map((item, index) => (
+                    <div key={item.name} className={index === 0 ? "as-voice as-voice-main" : "as-voice"}>
                       <span className="as-voice-wave" aria-hidden="true">
                         <AudioLines className="h-5 w-5" />
                       </span>
                       <span>
-                        <span className="as-voice-name">{voice.name}</span>
-                        <span className="as-voice-tag">{voice.tag}</span>
+                        <span className="as-voice-name">{item.name}</span>
+                        <span className="as-voice-tag">{item.tag}</span>
                       </span>
                     </div>
                   ))}
@@ -257,18 +349,6 @@ export function AiAudioStudio({
                   <div className="as-mock-box">
                     <span className="vs-card-label">Prompt</span>
                     <p className="as-mock-text">{t.demoPrompt}</p>
-                  </div>
-                  <div className="as-mock-row">
-                    <span className="as-mock-box as-mock-slider">
-                      {t.speed}
-                      <span className="as-mock-track" aria-hidden="true" />
-                      1.0
-                    </span>
-                    <span className="as-mock-box as-mock-slider">
-                      {t.pitch}
-                      <span className="as-mock-track" aria-hidden="true" />
-                      1.0
-                    </span>
                   </div>
                 </div>
               </div>

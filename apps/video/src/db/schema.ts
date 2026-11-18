@@ -260,6 +260,10 @@ export const videos = sqliteTable(
     userId: text("user_id").notNull(),
     prompt: text("prompt").notNull(),
     model: text("model").notNull(),
+    /** What the row holds: a video, an image set or an audio clip. */
+    mediaType: text("media_type", { enum: ["video", "image", "audio"] })
+      .default("video")
+      .notNull(),
     parameters: text("parameters", { mode: "json" })
       .$type<Record<string, unknown> | null>(),
     idempotencyKey: text("idempotency_key"),

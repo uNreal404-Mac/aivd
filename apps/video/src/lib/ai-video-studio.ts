@@ -1,4 +1,5 @@
 import { calculateModelCredits } from "@/config/credits";
+import { marketModelsOf } from "@/ai/kie-market";
 
 export type StudioModel = {
   id: string;
@@ -69,6 +70,22 @@ export const STUDIO_MODELS: StudioModel[] = [
     available: false,
   },
 ];
+
+// KIE market video models, with the options each one accepts.
+STUDIO_MODELS.push(
+  ...marketModelsOf("video").map(
+    (model): StudioModel => ({
+      id: model.id,
+      name: model.name,
+      tagline: "",
+      durations: model.options.durations ?? [5],
+      aspects: model.options.aspects ?? ["16:9"],
+      resolutions: model.options.resolutions ?? ["720p"],
+      audio: Boolean(model.options.audioToggle),
+      available: true,
+    }),
+  ),
+);
 
 export const UNAVAILABLE_LABEL = "暂不可用";
 

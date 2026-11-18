@@ -31,6 +31,12 @@ export function videoCreditsFromCost(kieUsd: number): number {
   return Math.ceil(videoBudgetUsd(kieUsd) / CREDIT_BUDGET_USD / 5 - EPSILON) * 5;
 }
 
+/** Credits for one audio clip that costs `kieUsd` on KIE (minimum 2). */
+export function audioCreditsFromCost(kieUsd: number): number {
+  const budget = kieUsd * EXTRA_CALL_FACTOR + IMAGE_DELIVERY_USD;
+  return Math.max(2, Math.ceil(budget / CREDIT_BUDGET_USD - EPSILON));
+}
+
 /** Credits for one image that costs `kieUsd` on KIE (minimum 2). */
 export function imageCreditsFromCost(kieUsd: number): number {
   const budget = kieUsd * EXTRA_CALL_FACTOR + IMAGE_DELIVERY_USD;

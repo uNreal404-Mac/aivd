@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       limit: Number.parseInt(searchParams.get("limit") || "20"),
       cursor: searchParams.get("cursor") || undefined,
       status: searchParams.get("status") || undefined,
+      mediaType: (["video", "image", "audio"] as const).find((type) => type === searchParams.get("type")),
     });
 
     return apiSuccess(result);

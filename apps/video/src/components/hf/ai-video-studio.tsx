@@ -33,6 +33,8 @@ import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
+import { getMarketModel } from "@/ai/kie-market";
+import { findNavModel } from "@/lib/nav-models";
 import "./ai-video-studio.css";
 
 const MODES = ["Create", "Edit"] as const;
@@ -405,10 +407,17 @@ export function AiVideoStudio({
 
   const coverModelId = selectedModelConnected ? catalogModelId : "";
   const bannerName = upcoming?.name ?? (selectedModelConnected ? model.name : (catalogEntry?.name ?? model.name));
-  const bannerSub = upcoming?.desc ?? (selectedModelConnected ? (copy.modelTaglines[model.id] ?? model.tagline) : (catalogEntry?.detail ?? ""));
+  const navEntry = findNavModel("video", catalogModelId);
+  const bannerSub =
+    upcoming?.desc ??
+    (selectedModelConnected
+      ? (copy.modelTaglines[model.id] ?? (model.tagline || (navEntry ? (isChinese ? navEntry.desc.zh : navEntry.desc.en) : "")))
+      : (catalogEntry?.detail ?? ""));
+  // Some models (Grok Imagine 1.5 on KIE) only run from a start image.
+  const needsStartImage = Boolean(getMarketModel(catalogModelId)?.options.requiresImage) && !imageKey;
   const cover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
   const generateDisabled =
-    promptEmpty || submitting || uploading || availableModels.length === 0 || !selectedModelConnected;
+    promptEmpty || submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage;
   const stepCopy = isChinese
     ? [
         { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
@@ -597,6 +606,11 @@ export function AiVideoStudio({
                 {selectedModelConnected ? exampleCredits : copy.soon}
               </span>
             </button>
+            {needsStartImage ? (
+              <output className="vs-notice">
+                {isChinese ? `${bannerName} 需要先上传一张起始帧。` : `${bannerName} needs a start frame. Upload one above.`}
+              </output>
+            ) : null}
             {selectedModelConnected ? null : (
               <output className="vs-notice">
                 {isChinese

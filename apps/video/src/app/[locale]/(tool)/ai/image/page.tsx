@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/config/i18n-config";
-import { findNavModel } from "@/lib/nav-models";
 import { buildAlternates } from "@/lib/seo";
 import { AiImageStudio } from "@/components/hf/ai-image-studio";
 
@@ -18,8 +17,6 @@ export default async function AiImagePage({ params, searchParams }: { params: Pr
   const { locale } = await params;
   const query = await searchParams;
   const modelParam = typeof query.model === "string" ? query.model : "";
-  // A nav model we do not have in the KIE catalogue yet opens as coming soon.
-  // No image model can generate yet, so a nav pick always shows its menu name.
-  const upcoming = findNavModel("image", modelParam);
-  return <AiImageStudio key={modelParam || "default"} upcomingName={upcoming?.name} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} />;
+  // Remount when the nav switches models, so the new choice is applied.
+  return <AiImageStudio key={modelParam || "default"} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} />;
 }

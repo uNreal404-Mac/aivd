@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AiVideoStudio } from "@/components/hf/ai-video-studio";
 import type { Locale } from "@/config/i18n-config";
 import { settingsFromSearchParams } from "@/lib/ai-video-studio";
+import { marketModelsOf } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { buildAlternates } from "@/lib/seo";
 import { getAvailableModels } from "@/config/credits";
@@ -37,10 +38,13 @@ export default async function AiVideoPage({
 }) {
   const [sp, { locale }] = await Promise.all([searchParams, params]);
   const modelParam = Array.isArray(sp.model) ? sp.model[0] : sp.model;
-  const availableModelIds = getAvailableModels({
-    provider: getConfiguredAIProvider() ?? "kie",
-    mode: "text-to-video",
-  }).map((model) => model.id);
+  const availableModelIds = [
+    ...getAvailableModels({
+      provider: getConfiguredAIProvider() ?? "kie",
+      mode: "text-to-video",
+    }).map((model) => model.id),
+    ...marketModelsOf("video").map((model) => model.id),
+  ];
   // A nav model that cannot generate yet opens as coming soon, under the
   // same name the menu shows.
   const upcoming =

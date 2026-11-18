@@ -24,6 +24,7 @@ function makeVideo(overrides: Partial<Video> = {}): Video {
     userId: OWNER,
     prompt: "A cat surfing a wave at sunset",
     model: "kling-v1",
+    mediaType: "video",
     parameters: null,
     idempotencyKey: null,
     status: "COMPLETED",

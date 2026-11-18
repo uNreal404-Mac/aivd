@@ -112,22 +112,15 @@ export class KieProvider implements AIVideoProvider {
     if (result.code !== 200) throw new Error(result.msg);
 
     const data = result.data;
-    let videoUrl: string | undefined;
-
-    if (data.state === "success" && data.resultJson) {
-      try {
-        const parsed = JSON.parse(data.resultJson);
-        videoUrl = this.pickFirstUrl(parsed?.resultUrls);
-      } catch (error) {
-        console.error("Failed to parse KIE resultJson:", error);
-      }
-    }
+    const resultUrls =
+      data.state === "success" ? this.parseResultUrls(data.resultJson, data.response) : [];
 
     return {
       taskId: data.taskId,
       provider: "kie",
       status: this.mapStatus(data.state),
-      videoUrl,
+      videoUrl: resultUrls[0],
+      resultUrls,
       error: data.failCode
         ? { code: data.failCode, message: data.failMsg }
         : undefined,
@@ -139,26 +132,24 @@ export class KieProvider implements AIVideoProvider {
   parseCallback(payload: any): VideoTaskResponse {
     const data = payload.data || payload;
 
+    // Suno music/sound/speech callbacks: {code, data:{callbackType, task_id, data:[tracks]}}.
+    if (data && typeof data.callbackType === "string") {
+      return this.parseSunoCallback(payload);
+    }
+
     if (data?.info?.resultUrls || payload?.data?.info?.resultUrls) {
       return this.parseVeoCallback(payload);
     }
 
-    let videoUrl: string | undefined;
-
-    if (data.state === "success" && data.resultJson) {
-      try {
-        const parsed = JSON.parse(data.resultJson);
-        videoUrl = this.pickFirstUrl(parsed?.resultUrls);
-      } catch (error) {
-        console.error("Failed to parse KIE resultJson:", error);
-      }
-    }
+    const resultUrls =
+      data.state === "success" ? this.parseResultUrls(data.resultJson, data.response) : [];
 
     return {
       taskId: data.taskId,
       provider: "kie",
       status: this.mapStatus(data.state),
-      videoUrl,
+      videoUrl: resultUrls[0],
+      resultUrls,
       error: data.failCode
         ? { code: data.failCode, message: data.failMsg }
         : undefined,
@@ -177,6 +168,54 @@ export class KieProvider implements AIVideoProvider {
 
   private isVeoTaskId(taskId: string): boolean {
     return taskId.startsWith("veo_task_");
+  }
+
+  /**
+   * All output URLs from a market task (image sets can return several).
+   * Most models put them in resultJson.resultUrls; Suno lists tracks with an
+   * audio_url under response.data (or resultJson.data).
+   */
+  private parseResultUrls(resultJson: unknown, response?: unknown): string[] {
+    const strings = (list: unknown): string[] =>
+      Array.isArray(list) ? list.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
+    const tracks = (value: unknown): string[] => {
+      const list = (value as { data?: unknown })?.data;
+      return Array.isArray(list)
+        ? list
+            .map((track) => (track as { audio_url?: unknown })?.audio_url)
+            .filter((url): url is string => typeof url === "string" && url.length > 0)
+        : [];
+    };
+    try {
+      const parsed = typeof resultJson === "string" ? JSON.parse(resultJson) : resultJson;
+      const urls = (parsed as { resultUrls?: unknown })?.resultUrls;
+      const list = strings(typeof urls === "string" ? JSON.parse(urls) : urls);
+      if (list.length > 0) return list;
+      const fromTracks = tracks(parsed);
+      if (fromTracks.length > 0) return fromTracks;
+    } catch (error) {
+      console.error("Failed to parse KIE resultJson:", error);
+    }
+    const fromResponse = strings((response as { resultUrls?: unknown })?.resultUrls);
+    return fromResponse.length > 0 ? fromResponse : tracks(response);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private parseSunoCallback(payload: any): VideoTaskResponse {
+    const data = payload.data || {};
+    const urls = this.parseResultUrls(null, data);
+    const failed = payload.code !== 200;
+    // "text" and "first" are progress updates; only "complete" carries every track.
+    const done = data.callbackType === "complete" && urls.length > 0;
+    return {
+      taskId: data.task_id || data.taskId,
+      provider: "kie",
+      status: failed ? "failed" : done ? "completed" : "processing",
+      videoUrl: done ? urls[0] : undefined,
+      resultUrls: done ? urls : undefined,
+      error: failed ? { code: String(payload.code), message: payload.msg || "Generation failed" } : undefined,
+      raw: payload,
+    };
   }
 
   private pickFirstUrl(value: unknown): string | undefined {

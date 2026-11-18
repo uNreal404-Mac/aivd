@@ -55,6 +55,7 @@ import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
 import { LocaleChange } from "@/components/locale-change";
 import { authClient } from "@/lib/auth/client";
+import { MARKET_MODELS } from "@/ai/kie-market";
 import { NAV_AUDIO_MODELS, NAV_IMAGE_MODELS, NAV_VIDEO_MODELS, navModelHref, type NavModelKind } from "@/lib/nav-models";
 import { useCreditsStore } from "@/stores/credits-store";
 import "./top-nav.css";
@@ -93,7 +94,7 @@ type Dropdown = {
 };
 
 // Models that can generate today; every other listed model is coming soon.
-const LIVE_MODEL_IDS = ["veo-3.1", "wan2.6"];
+const LIVE_MODEL_IDS = ["veo-3.1", "wan2.6", ...MARKET_MODELS.map((model) => model.id)];
 
 function modelIcon(name: string): LucideIcon {
   const n = name.toLowerCase();
@@ -295,9 +296,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         {
           title: zh ? "功能" : "Features",
           items: [
-            { title: zh ? "文本转语音" : "Text to speech", desc: zh ? "把脚本读成自然的人声" : "Turn a script into a natural voice", icon: AudioLines, href: "/audio?voiceMode=voiceover", soon: true },
+            { title: zh ? "文本转语音" : "Text to speech", desc: zh ? "把脚本读成自然的人声" : "Turn a script into a natural voice", icon: AudioLines, href: "/audio?voiceMode=voiceover", badge: "new" },
+            { title: zh ? "音乐与音效" : "Music & sound", desc: zh ? "一句话生成歌曲和音效" : "Songs and sound effects from one line", icon: Music, href: "/audio?voiceMode=music", badge: "new" },
             { title: zh ? "变声" : "Voice changer", desc: zh ? "把一段声音换成另一种音色" : "Swap a recording into another voice", icon: Mic, href: "/audio?voiceMode=change-voice", soon: true },
-            { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Music, href: "/audio?voiceMode=translate", soon: true },
+            { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Languages, href: "/audio?voiceMode=translate", soon: true },
             { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/veo-3-1", badge: "hot" },
           ],
         },
