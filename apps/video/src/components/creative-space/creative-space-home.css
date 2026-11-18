@@ -1,0 +1,432 @@
+/* Creative Space entry page, laid out after the reference site's agent page. */
+
+.cs-page {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 96px;
+}
+
+.cs-glow {
+  position: absolute;
+  inset: -120px 0 auto 0;
+  height: 760px;
+  background: radial-gradient(
+    560px 360px at 50% 40%,
+    color-mix(in srgb, var(--du-accent) 18%, transparent) 0%,
+    color-mix(in srgb, var(--du-accent) 6%, transparent) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.cs-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 820px;
+  padding: 56px 24px 32px;
+  text-align: center;
+}
+
+.cs-title {
+  color: white;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.cs-sub {
+  margin-top: 10px;
+  max-width: 640px;
+  color: var(--du-text-muted);
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.cs-composer {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px 14px 10px;
+  border: 1px solid color-mix(in srgb, white 9%, transparent);
+  border-top-color: color-mix(in srgb, var(--du-accent) 50%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--du-bg) 78%, transparent);
+  box-shadow: 0 -20px 56px -24px color-mix(in srgb, var(--du-accent) 65%, transparent);
+  text-align: left;
+  backdrop-filter: blur(18px);
+}
+
+.cs-input {
+  display: block;
+  width: 100%;
+  min-height: 84px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.6;
+  outline: none;
+}
+
+.cs-input::placeholder {
+  color: color-mix(in srgb, white 35%, transparent);
+}
+
+.cs-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.cs-chip-btn {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 6%, transparent);
+  color: color-mix(in srgb, white 85%, transparent);
+  font-size: 12px;
+  transition: background 150ms ease;
+}
+
+.cs-chip-btn:hover {
+  background: color-mix(in srgb, white 10%, transparent);
+}
+
+.cs-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.cs-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--du-text-muted);
+  font-size: 12px;
+}
+
+.cs-send {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  transition: background 150ms ease;
+}
+
+.cs-send:hover {
+  background: var(--du-accent-hover);
+}
+
+.cs-send:disabled {
+  background: color-mix(in srgb, white 6%, transparent);
+  color: color-mix(in srgb, white 30%, transparent);
+  cursor: not-allowed;
+}
+
+.cs-quick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cs-quick-chip {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, white 75%, transparent);
+  font-size: 12px;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.cs-quick-chip:hover {
+  border-color: var(--du-accent);
+  color: var(--du-accent-text);
+}
+
+/* Skills / templates library */
+.cs-library {
+  position: relative;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 24px 24px 0;
+}
+
+.cs-switch {
+  display: flex;
+  width: fit-content;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 5%, transparent);
+}
+
+.cs-switch button {
+  padding: 5px 16px;
+  border-radius: 999px;
+  color: var(--du-text-muted);
+  font-size: 13px;
+}
+
+.cs-switch .cs-switch-on {
+  background: color-mix(in srgb, var(--du-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 60%, transparent);
+  color: white;
+}
+
+.cs-cats {
+  display: flex;
+  gap: 24px;
+  margin-top: 18px;
+  border-bottom: 1px solid color-mix(in srgb, white 6%, transparent);
+}
+
+.cs-cat {
+  padding: 8px 0 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--du-text-muted);
+  font-size: 14px;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.cs-cat:hover {
+  color: white;
+}
+
+.cs-cat-on {
+  border-bottom-color: var(--du-accent);
+  color: white;
+}
+
+.cs-h2 {
+  margin: 28px 0 16px;
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cs-h3 {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cs-body {
+  margin-top: 10px;
+  color: var(--du-text-muted);
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.cs-center {
+  text-align: center;
+}
+
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cs-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  background: color-mix(in srgb, white 4%, transparent);
+  text-align: left;
+}
+
+.cs-card-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease;
+}
+
+.cs-card:hover .cs-card-img {
+  transform: scale(1.04);
+}
+
+.cs-card-shade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent);
+}
+
+.cs-card-title {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cs-card-hover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
+  opacity: 0;
+  text-align: center;
+  transition: opacity 200ms ease;
+}
+
+.cs-card:hover .cs-card-hover,
+.cs-card:focus-visible .cs-card-hover {
+  opacity: 1;
+}
+
+.cs-card-desc {
+  color: color-mix(in srgb, white 88%, transparent);
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.cs-card-use {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Why section */
+.cs-why {
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 72px 24px 0;
+}
+
+.cs-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 56px;
+  margin-top: 48px;
+}
+
+.cs-feature-reverse .cs-feature-img {
+  order: 2;
+}
+
+.cs-feature-img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.cs-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  padding: 8px 18px;
+  border: 1px solid color-mix(in srgb, white 25%, transparent);
+  border-radius: 999px;
+  color: white;
+  font-size: 13px;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.cs-outline:hover {
+  border-color: var(--du-accent);
+  color: var(--du-accent-text);
+}
+
+/* Steps */
+.cs-steps {
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 88px 24px 0;
+}
+
+.cs-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.cs-step {
+  position: relative;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, white 7%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, white 3%, transparent);
+}
+
+.cs-step-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
+  color: var(--du-accent-text);
+}
+
+.cs-step-n {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  color: color-mix(in srgb, white 12%, transparent);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cs-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 150ms ease;
+}
+
+.cs-cta:hover {
+  background: var(--du-accent-hover);
+}

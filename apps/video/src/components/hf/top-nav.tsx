@@ -248,6 +248,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           title: zh ? "创作" : "Create",
           links: [
             { label: zh ? "创作空间" : "Creative Space", href: "/creative-space", icon: Sparkles },
+            { label: zh ? "打开画布" : "Open the canvas", href: "/creative-space/canvas", icon: LayoutGrid },
             { label: zh ? "视频工作室" : "Video studio", href: "/ai/video", icon: Film },
             { label: zh ? "我的作品" : "My creations", href: "/my-creations", icon: Layers },
           ],
@@ -341,6 +342,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       { label: zh ? "图片高清放大" : "Image Upscaler", path: "", soon: true },
       { label: zh ? "背景去除" : "Background Remover", path: "", soon: true },
     ],
+    creative: [
+      { label: zh ? "创作空间" : "Creative Space", path: "/creative-space" },
+      { label: zh ? "画布" : "Canvas", path: "/creative-space/canvas" },
+      { label: zh ? "我的作品" : "My creations", path: "/my-creations" },
+      { label: zh ? "AI 故事视频" : "AI Story Video", path: "", soon: true },
+      { label: zh ? "AI 配音" : "AI Voiceover", path: "", soon: true },
+    ],
     templates: [
       { label: zh ? "全部模板" : "All templates", path: "/templates" },
       { label: zh ? "特效模板" : "Effect templates", path: "/effects" },
@@ -363,6 +371,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   }, [tabs?.length]);
 
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
+  // Highlight only the most specific matching tab, so /creative-space/canvas
+  // lights "Canvas" and not "Creative Space" as well.
+  const activeTabPath = tabs
+    ?.filter((tab) => !tab.soon && isActive(tab.path))
+    .reduce<string | undefined>((best, tab) => (!best || tab.path.length > best.length ? tab.path : best), undefined);
 
   const openNow = (id: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -473,8 +486,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <Link
                 key={tab.label}
                 href={href(tab.path)}
-                aria-current={isActive(tab.path) ? "page" : undefined}
-                className={cn("hf-tab", isActive(tab.path) && "hf-tab-active")}
+                aria-current={tab.path === activeTabPath ? "page" : undefined}
+                className={cn("hf-tab", tab.path === activeTabPath && "hf-tab-active")}
               >
                 {tab.label}
               </Link>

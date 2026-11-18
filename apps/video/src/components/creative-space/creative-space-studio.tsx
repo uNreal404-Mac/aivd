@@ -36,6 +36,7 @@ import { generateVideo, uploadImage } from "@/lib/video-api";
 
 interface CreativeSpaceStudioProps {
   locale: string;
+  initialPrompt?: string;
 }
 
 interface CanvasAsset {
@@ -225,13 +226,13 @@ function parseApiError(payload: unknown, fallback: string) {
   return typeof error?.message === "string" ? error.message : fallback;
 }
 
-export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
+export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpaceStudioProps) {
   const language = locale.toLowerCase().startsWith("zh") ? "zh" : "en";
   const t = copy[language];
   const [assets, setAssets] = useState<CanvasAsset[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ x: 56, y: 56, scale: 1 });
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
@@ -556,8 +557,9 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
       const uploaded = await Promise.all(referenceFiles.map(uploadImage));
       await generateVideo({
         prompt: plan.generationPrompt,
-        model: "sora-2",
-        duration: 10,
+        // Veo 3.1 is enabled and priced (see kie-pricing.ts); Sora 2 is off sale.
+        model: "veo-3.1",
+        duration: 8,
         aspectRatio: "16:9",
         quality: "720p",
         imageUrl: uploaded.length === 1 ? uploaded[0] : undefined,
