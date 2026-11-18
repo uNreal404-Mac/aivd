@@ -1,80 +1,719 @@
-.studio-duration-control {
-  position: relative;
-  height: 64px;
-  overflow: hidden;
-  border: 1px solid var(--hfv-border-strong);
-  border-radius: 11px;
-  background: var(--hfv-panel-2);
+/* Video studio, laid out after the reference site's video page: a settings
+   column on the left, a stage with history and how-it-works on the right. */
+.vs-root {
+  --vs-panel: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
+  --vs-card: color-mix(in srgb, var(--du-surface-2) 60%, var(--du-bg-elev));
+  --vs-card-hover: var(--du-surface-2);
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--du-bg);
+  color: white;
 }
 
-.studio-duration-value {
-  position: absolute;
-  top: 50%;
-  left: 20px;
-  color: var(--hfv-text);
-  font-size: 18px;
-  font-weight: 600;
-  transform: translateY(-50%);
+@media (min-width: 1024px) {
+  .vs-root {
+    height: calc(100svh - var(--hf-header-h, 52px));
+    flex-direction: row;
+  }
 }
 
-.studio-duration-range {
-  position: absolute;
-  top: 0;
-  right: 14px;
-  width: calc(100% - 105px);
-  height: 100%;
-  margin: 0;
-  appearance: none;
-  background: transparent;
-  cursor: ew-resize;
-}
-
-.studio-duration-range::-webkit-slider-runnable-track {
-  height: 100%;
-  background: transparent;
-}
-
-.studio-duration-range::-webkit-slider-thumb {
-  width: 8px;
-  height: 62px;
-  border: 0;
-  border-radius: 6px;
-  appearance: none;
-  background: var(--hfv-text);
-}
-
-.studio-duration-range::-moz-range-track {
-  height: 100%;
-  background: transparent;
-}
-
-.studio-duration-range::-moz-range-thumb {
-  width: 8px;
-  height: 62px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--hfv-text);
-}
-
-.studio-duration-range:focus-visible {
-  outline: 2px solid var(--hfv-accent);
-  outline-offset: -3px;
-}
-
-.studio-generation-footer {
+.vs-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 14px;
+  padding: 10px;
+  border-radius: 20px;
+  background: var(--vs-panel);
 }
 
-.studio-credit-estimate {
+@media (min-width: 1024px) {
+  .vs-panel {
+    width: 360px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+}
+
+.vs-modes {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.vs-mode {
+  padding: 10px 6px 12px;
+  border-bottom: 2px solid transparent;
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.vs-mode:hover {
+  color: white;
+}
+
+.vs-mode-on {
+  border-bottom-color: white;
+  color: white;
+}
+
+.vs-banner {
+  position: relative;
+  display: block;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.vs-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 400ms ease;
+}
+
+.vs-banner:hover .vs-banner-img {
+  transform: scale(1.04);
+}
+
+.vs-banner-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent 70%);
+}
+
+.vs-banner-change {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
+  color: white;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.vs-banner-text {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  display: grid;
+  gap: 2px;
+}
+
+.vs-banner-title {
+  color: var(--du-accent-text);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.vs-banner-sub {
+  overflow: hidden;
+  color: color-mix(in srgb, white 80%, transparent);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-upload {
+  display: flex;
+  min-height: 170px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px dashed color-mix(in srgb, white 12%, transparent);
+  border-radius: 16px;
+  background: var(--vs-card);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 150ms ease;
+}
+
+.vs-upload:hover {
+  border-color: color-mix(in srgb, var(--du-accent) 50%, transparent);
+}
+
+.vs-upload-icons {
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.vs-upload-icons span {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  margin-left: -6px;
+  border: 2px solid var(--vs-card);
+  border-radius: 999px;
+  background: var(--du-surface-2);
+  color: white;
+}
+
+.vs-upload-icons span:first-child {
+  margin-left: 0;
+}
+
+.vs-upload-title {
+  max-width: 100%;
+  overflow: hidden;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-upload-sub {
+  color: color-mix(in srgb, white 50%, transparent);
+  font-size: 12px;
+}
+
+.vs-link {
+  align-self: flex-start;
+  padding: 0 4px;
+  color: var(--du-accent-text);
+  font-size: 12px;
+}
+
+.vs-card {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  border: 1px solid var(--hfv-border);
-  border-radius: var(--hfv-radius-card);
-  background: var(--hfv-panel-2);
   padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--vs-card);
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+button.vs-card:hover,
+label.vs-select:hover {
+  background: var(--vs-card-hover);
+}
+
+.vs-card-label {
+  display: block;
+  overflow: hidden;
+  color: color-mix(in srgb, white 50%, transparent);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-card-value {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-card-off {
+  opacity: 0.5;
+}
+
+.vs-select {
+  cursor: pointer;
+}
+
+.vs-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.vs-select select:disabled {
+  cursor: not-allowed;
+}
+
+.vs-select:has(select:focus-visible) {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: 2px;
+}
+
+.vs-prompt {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 12px 14px 10px;
+}
+
+.vs-prompt-label {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.vs-prompt textarea {
+  min-height: 110px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: white;
+  font-size: 14px;
+  line-height: 1.6;
+  outline: none;
+}
+
+.vs-prompt textarea::placeholder {
+  color: color-mix(in srgb, white 35%, transparent);
+}
+
+.vs-prompt-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vs-chip {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, white 7%, transparent);
+  color: white;
+  font-size: 12px;
+  transition: background-color 150ms ease;
+}
+
+button.vs-chip:hover {
+  background: color-mix(in srgb, white 12%, transparent);
+}
+
+button.vs-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.vs-chip-static {
+  color: color-mix(in srgb, white 70%, transparent);
+}
+
+.vs-count {
+  margin-left: auto;
+  color: color-mix(in srgb, white 35%, transparent);
+  font-size: 11px;
+}
+
+.vs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vs-generate {
+  display: flex;
+  height: 52px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+  border-radius: 14px;
+  background: var(--du-accent);
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
+  color: var(--du-on-accent);
+  font-size: 16px;
+  font-weight: 700;
+  transition: filter 150ms ease;
+}
+
+.vs-generate:hover {
+  filter: brightness(1.05);
+}
+
+.vs-generate:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.vs-generate-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vs-notice,
+.vs-hint {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--vs-card);
+  color: color-mix(in srgb, white 60%, transparent);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.vs-tool {
+  width: 100%;
+}
+
+.vs-tool-on {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 60%, transparent);
+}
+
+.vs-soon {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, white 8%, transparent);
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 10px;
+}
+
+/* Stage */
+.vs-stage {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 20px 28px;
+  border-radius: 20px;
+  background: var(--vs-panel);
+  scrollbar-width: thin;
+}
+
+.vs-stage-tabs {
+  display: flex;
+  width: fit-content;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, white 4%, transparent);
+}
+
+.vs-stage-tab {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 9px;
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 13px;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.vs-stage-tab:hover {
+  color: white;
+}
+
+.vs-stage-tab-on {
+  background: var(--vs-card-hover);
+  color: white;
+}
+
+.vs-stage-count {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vs-howto {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 64px 36px 24px;
+}
+
+.vs-howto-title {
+  color: white;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.vs-howto-sub {
+  margin-top: 14px;
+  color: color-mix(in srgb, white 60%, transparent);
+  font-size: 15px;
+}
+
+.vs-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin-top: 44px;
+}
+
+.vs-howto-media {
+  overflow: hidden;
+  aspect-ratio: 16 / 12;
+  border-radius: 20px;
+  background: var(--vs-card);
+}
+
+.vs-howto-wide {
+  max-width: 900px;
+  margin-top: 36px;
+  aspect-ratio: 16 / 9;
+}
+
+.vs-howto-media img,
+.vs-howto-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vs-step-title {
+  margin-top: 18px;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.vs-step-body {
+  margin-top: 8px;
+  color: color-mix(in srgb, white 60%, transparent);
+  font-size: 14px;
+}
+
+.vs-empty {
+  display: flex;
+  min-height: 60%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 80px 0;
+  color: color-mix(in srgb, white 45%, transparent);
+  font-size: 14px;
+}
+
+.vs-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vs-result {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background: var(--du-bg);
+  object-fit: contain;
+}
+
+.vs-result-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: var(--vs-card);
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Extras shared with the audio studio */
+.vs-upload-off {
+  position: relative;
+  cursor: default;
+}
+
+.vs-upload-off:hover {
+  border-color: color-mix(in srgb, white 12%, transparent);
+}
+
+.vs-upload-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, white 8%, transparent);
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 11px;
+}
+
+.vs-prompt-label-muted {
+  color: color-mix(in srgb, white 60%, transparent);
+  font-weight: 400;
+}
+
+.vs-textarea-short {
+  min-height: 72px !important;
+}
+
+.vs-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.vs-stepper button {
+  display: inline-flex;
+  color: color-mix(in srgb, white 60%, transparent);
+}
+
+.vs-stepper button:disabled {
+  opacity: 0.35;
+}
+
+.vs-generate-soon {
+  background: color-mix(in srgb, var(--du-accent) 55%, var(--du-bg-elev));
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 50%, transparent);
+}
+
+.vs-howto-center {
+  text-align: center;
+}
+
+.as-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 40px;
+  text-align: left;
+}
+
+.as-card {
+  overflow: hidden;
+  padding: 28px 28px 0;
+  border: 1px solid color-mix(in srgb, white 5%, transparent);
+  border-radius: 22px;
+  background: var(--vs-card);
+}
+
+.as-voices {
+  position: relative;
+  display: flex;
+  height: 300px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 24px -28px 0;
+  background:
+    radial-gradient(60% 70% at 50% 55%, color-mix(in srgb, var(--du-accent) 22%, transparent), transparent 75%),
+    color-mix(in srgb, var(--du-bg) 50%, transparent);
+}
+
+.as-voice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px 8px 8px;
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
+  backdrop-filter: blur(10px);
+  opacity: 0.7;
+}
+
+.as-voice-main {
+  padding: 12px 28px 12px 12px;
+  border-color: color-mix(in srgb, white 25%, transparent);
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.as-voice-wave {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.as-voice-name {
+  display: block;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.as-voice-tag {
+  display: block;
+  color: color-mix(in srgb, white 60%, transparent);
+  font-size: 12px;
+}
+
+.as-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px -28px 0;
+  padding: 24px;
+  background: color-mix(in srgb, var(--du-bg) 50%, transparent);
+}
+
+.as-mock-box {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, white 6%, transparent);
+  border-radius: 14px;
+  background: var(--vs-panel);
+}
+
+.as-mock-text {
+  margin-top: 6px;
+  color: white;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.as-mock-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.as-mock-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 14px;
+}
+
+.as-mock-track {
+  height: 4px;
+  flex: 1;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--du-accent) 50%, color-mix(in srgb, white 12%, transparent) 50%);
 }

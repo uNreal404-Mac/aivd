@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import {
+  AtSign,
   BookOpen,
   ChevronRight,
   Clock,
   Film,
+  ImagePlus,
+  Pencil,
   Sparkles,
-  Upload,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import {
@@ -28,7 +31,6 @@ import {
 } from "@/lib/ai-video-studio";
 import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
-import { GallerySection } from "@/components/gallery/gallery-section";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import "./ai-video-studio.css";
 
@@ -39,6 +41,62 @@ const TAB_ICONS = {
   Library: Film,
   "How it works": BookOpen,
 } as const;
+// The reference shows only history and how-it-works next to the stage.
+const STAGE_TABS = RIGHT_TABS.filter((tab) => tab !== "Library");
+
+// Cover art for the model banner at the top of the settings panel.
+const MODEL_COVERS: Record<string, string> = {
+  "veo-3.1": "/home/samples/mountain-valley.webp",
+  "wan2.6": "/home/samples/storm-sea.webp",
+};
+
+const STEP_IMAGES = ["/home/samples/boy-and-dog.webp", "/home/samples/dancer.webp", "/home/samples/rain-couple.webp"];
+
+/** A settings card: small label, current value and a chevron. A native select
+ *  sits on top so it stays keyboard and screen-reader friendly. */
+function SelectCard<T extends string | number>({
+  id,
+  label,
+  value,
+  options,
+  format,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  value: T;
+  options: readonly T[];
+  format?: (option: T) => string;
+  onChange: (option: T) => void;
+  disabled?: boolean;
+}) {
+  const show = format ?? ((option: T) => String(option));
+  return (
+    <label htmlFor={id} className={`vs-card vs-select ${disabled ? "vs-card-off" : ""}`}>
+      <span className="min-w-0 flex-1">
+        <span className="vs-card-label">{label}</span>
+        <span className="vs-card-value">{show(value)}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
+      <select
+        id={id}
+        value={String(value)}
+        disabled={disabled}
+        onChange={(event) => {
+          const next = options.find((option) => String(option) === event.target.value);
+          if (next !== undefined) onChange(next);
+        }}
+      >
+        {options.map((option) => (
+          <option key={String(option)} value={String(option)}>
+            {show(option)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 const PROMPT_MAX_LENGTH = 1500;
 const EDIT_TOOLS = [
@@ -66,33 +124,6 @@ const HOW_IT_WORKS = [
 ];
 
 
-function chipClass(active: boolean, disabled = false): string {
-  return [
-    "rounded-[var(--hfv-radius-chip)] border px-3 py-1.5 text-xs transition-colors",
-    active
-      ? "border-[var(--hfv-chip-active-bg)] bg-[var(--hfv-chip-active-bg)] text-[var(--hfv-chip-active-text)]"
-      : "border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] text-[var(--hfv-text)]",
-    disabled ? "cursor-not-allowed opacity-60" : "hover:opacity-80",
-  ].join(" ");
-}
-
-function ChipGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
 export function AiVideoStudio({
   generationEnabled,
   initialSettings,
@@ -110,7 +141,7 @@ export function AiVideoStudio({
   const copy = isChinese
     ? {
         modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
-        tabs: { History: "历史记录", Library: "灵感库", "How it works": "使用方法" } as Record<string, string>,
+        tabs: { History: "历史记录", Library: "灵感库", "How it works": "工作原理" } as Record<string, string>,
         soon: "即将开放",
         top: "热门",
         new: "新品",
@@ -223,7 +254,7 @@ export function AiVideoStudio({
   const [notice, setNotice] = useState<string | null>(null);
   const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[1]);
+  const [activeTab, setActiveTab] = useState<string>("How it works");
   const [mode, setMode] = useState<(typeof MODES)[number]>("Create");
   const [editTool, setEditTool] = useState(0);
 
@@ -364,395 +395,310 @@ export function AiVideoStudio({
     }
   }
 
+  const coverModelId = availableModelIds.includes(catalogModelId) ? catalogModelId : settings.modelId;
+  const cover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
+  const generateDisabled =
+    promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId);
+  const stepCopy = isChinese
+    ? [
+        { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
+        { title: "选择模型", body: "挑一个模型，设置时长、画面比例、画质和声音。" },
+        { title: "获取视频", body: "点击生成，完成后在历史记录里播放和下载。" },
+      ]
+    : [
+        { title: "Add an image", body: "Upload a start frame, or just write a prompt and start from scratch." },
+        { title: "Pick a model", body: "Choose a model and set length, ratio, quality and sound." },
+        { title: "Get the video", body: "Hit generate, then play and download it from history." },
+      ];
+
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col gap-3 bg-[var(--hfv-bg)] p-3 text-[var(--hfv-text)] lg:h-[calc(100svh-var(--hf-header-h,56px))] lg:flex-row">
-      <aside
-        aria-label={copy.settings}
-        className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:shrink-0 lg:overflow-y-auto"
-      >
-        <div className="flex items-center gap-1">
-          {MODES.map((option) => {
-            const active = option === mode;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setMode(option)}
-                className={[
-                  "flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "border-[var(--hfv-text)] text-[var(--hfv-text)]"
-                    : "border-[var(--hfv-border)] text-[var(--hfv-muted)]",
-                ].join(" ")}
-              >
-                {copy.modes[option] ?? option}
-              </button>
-            );
-          })}
-        </div>
-
-        {mode === "Create" ? <>
-        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-[var(--hfv-radius-card)] border border-dashed border-[var(--hfv-border-strong)] bg-[var(--hfv-panel-2)] px-4 py-5 text-center">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--hfv-chip-bg)] text-[var(--hfv-muted)]">
-            <Upload className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <span className="max-w-[11rem] text-sm font-bold leading-tight">
-            {copy.startFrame}
-          </span>
-          <span className="text-xs text-[var(--hfv-muted)]">
-            {copy.fileTypes}
-          </span>
-          {fileName ? (
-            <span className="max-w-full truncate text-xs text-[var(--hfv-accent)]">
-              {fileName}
-            </span>
-          ) : null}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="hidden"
-            onChange={async (event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const error = validateImageFile(file);
-              if (error) { setNotice(error); return; }
-              setUploading(true);
-              setNotice(null);
-              const result = await uploadImage(file);
-              setUploading(false);
-              if (result.ok) {
-                setFileName(file.name);
-                setImageKey(result.key);
-              } else {
-                setNotice(result.message);
-              }
-            }}
-          />
-        </label>
-        {uploading ? <span className="text-xs text-[var(--hfv-muted)]">{isChinese ? "上传中…" : "Uploading…"}</span> : null}
-        {imageKey ? <button type="button" onClick={() => { setImageKey(null); setFileName(null); }} className="text-left text-xs text-[var(--hfv-accent)]">{isChinese ? "移除起始帧" : "Remove start frame"}</button> : null}
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="studio-prompt"
-            className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]"
-          >
-            {copy.prompt}
-          </label>
-          <div className="relative">
-            <textarea
-              id="studio-prompt"
-              value={settings.prompt}
-              maxLength={PROMPT_MAX_LENGTH}
-              placeholder={copy.promptPlaceholder}
-              onChange={(event) =>
-                setSettings((previous) => ({
-                  ...previous,
-                  prompt: event.target.value,
-                }))
-              }
-              className="min-h-[112px] w-full resize-none rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-field)] px-3 py-3 pb-7 text-sm text-[var(--hfv-text)] outline-none placeholder:text-[var(--hfv-muted)]"
-            />
-            <span className="pointer-events-none absolute bottom-2 right-3 text-[10px] text-[var(--hfv-muted)]">
-              {settings.prompt.length}/{PROMPT_MAX_LENGTH}
-            </span>
-          </div>
-        </div>
-
-        {settings.preset ? (
-          <span className="flex w-fit items-center gap-1.5 rounded-[var(--hfv-radius-chip)] border border-[var(--hfv-border-strong)] bg-[var(--hfv-chip)] px-2.5 py-1 text-xs text-[var(--hfv-text)]">
-            {copy.preset}: {settings.preset}
+    <div className="vs-root">
+      <aside aria-label={copy.settings} className="vs-panel">
+        <div className="vs-modes" role="tablist">
+          {MODES.map((option) => (
             <button
+              key={option}
               type="button"
-              aria-label={copy.clearPreset}
-              onClick={() =>
-                setSettings((previous) => ({
-                  ...previous,
-                  preset: undefined,
-                }))
-              }
-              className="text-[var(--hfv-muted)]"
+              role="tab"
+              aria-selected={option === mode}
+              onClick={() => setMode(option)}
+              className={option === mode ? "vs-mode vs-mode-on" : "vs-mode"}
             >
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
+              {copy.modes[option] ?? option}
             </button>
-          </span>
-        ) : null}
+          ))}
+        </div>
 
-        <KieModelPicker kind="video" locale={locale} value={catalogModelId}
-          connectedIds={availableModelIds} open={pickerOpen} onOpenChange={setPickerOpen}
-          onChange={(id) => {
-            setCatalogModelId(id);
-            // The picker only offers models that can generate.
-            setSettings((previous) => selectModel(previous, id));
-          }} />
-        {!availableModelIds.includes(catalogModelId) ? <output className="text-xs text-[var(--hfv-muted)]">{isChinese ? "此模型已列入 KIE 目录，本站生成接口尚未接入。" : "Listed by KIE; generation is not connected on this site yet."}</output> : null}
+        {mode === "Create" ? (
+          <>
+            <button type="button" className="vs-banner" onClick={() => setPickerOpen(true)} aria-label={copy.chooseModel}>
+              <img src={cover} alt="" className="vs-banner-img" />
+              <span className="vs-banner-shade" aria-hidden="true" />
+              <span className="vs-banner-change">
+                <Pencil className="h-3 w-3" aria-hidden="true" />
+                {copy.change}
+              </span>
+              <span className="vs-banner-text">
+                <span className="vs-banner-title">{model.name}</span>
+                <span className="vs-banner-sub">{copy.modelTaglines[model.id] ?? model.tagline}</span>
+              </span>
+            </button>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="studio-duration" className="text-[10px] uppercase tracking-wide text-[var(--hfv-muted)]">{copy.duration}</label>
-          <div className="studio-duration-control">
-            <span className="studio-duration-value" aria-hidden="true">{settings.duration}s</span>
-            <input
-              id="studio-duration"
-              className="studio-duration-range"
-              type="range"
-              min={0}
-              max={durationOptions.length - 1}
-              step={1}
-              value={durationIndex}
-              aria-valuetext={`${settings.duration}s`}
-              onChange={(event) => {
-                const duration = durationOptions[Number(event.target.value)];
-                setSettings((previous) => ({ ...previous, duration }));
+            <label className="vs-upload">
+              <span className="vs-upload-icons" aria-hidden="true">
+                <span><ImagePlus className="h-4 w-4" /></span>
+                <span><Film className="h-4 w-4" /></span>
+                <span><Sparkles className="h-4 w-4" /></span>
+              </span>
+              <span className="vs-upload-title">{fileName ?? (isChinese ? "上传起始帧" : "Upload a start frame")}</span>
+              <span className="vs-upload-sub">
+                {uploading ? (isChinese ? "上传中…" : "Uploading…") : `${copy.fileTypes} · ${isChinese ? "可选" : "optional"}`}
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  const error = validateImageFile(file);
+                  if (error) {
+                    setNotice(error);
+                    return;
+                  }
+                  setUploading(true);
+                  setNotice(null);
+                  const result = await uploadImage(file);
+                  setUploading(false);
+                  if (result.ok) {
+                    setFileName(file.name);
+                    setImageKey(result.key);
+                  } else {
+                    setNotice(result.message);
+                  }
+                }}
+              />
+            </label>
+            {imageKey ? (
+              <button type="button" onClick={() => { setImageKey(null); setFileName(null); }} className="vs-link">
+                {isChinese ? "移除起始帧" : "Remove start frame"}
+              </button>
+            ) : null}
+
+            <div className="vs-card vs-prompt">
+              <label htmlFor="studio-prompt" className="vs-prompt-label">{copy.prompt}</label>
+              <textarea
+                id="studio-prompt"
+                value={settings.prompt}
+                maxLength={PROMPT_MAX_LENGTH}
+                placeholder={copy.promptPlaceholder}
+                onChange={(event) => setSettings((previous) => ({ ...previous, prompt: event.target.value }))}
+              />
+              <div className="vs-prompt-foot">
+                <span className="vs-chip vs-chip-static">
+                  <AtSign className="h-3.5 w-3.5" aria-hidden="true" />
+                  {isChinese ? "元素" : "Elements"}
+                </span>
+                <button
+                  type="button"
+                  className="vs-chip"
+                  disabled={!model.audio}
+                  aria-pressed={model.audio && settings.audio}
+                  onClick={() => setSettings((previous) => ({ ...previous, audio: !previous.audio }))}
+                >
+                  {model.audio && settings.audio ? <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> : <VolumeX className="h-3.5 w-3.5" aria-hidden="true" />}
+                  {model.audio && settings.audio ? copy.on : copy.off}
+                </button>
+                <span className="vs-count">{settings.prompt.length}/{PROMPT_MAX_LENGTH}</span>
+              </div>
+            </div>
+
+            {settings.preset ? (
+              <span className="vs-chip w-fit">
+                {copy.preset}: {settings.preset}
+                <button type="button" aria-label={copy.clearPreset} onClick={() => setSettings((previous) => ({ ...previous, preset: undefined }))}>
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </span>
+            ) : null}
+
+            <KieModelPicker
+              kind="video"
+              locale={locale}
+              value={catalogModelId}
+              connectedIds={availableModelIds}
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
+              placement="card"
+              label={copy.model}
+              onChange={(id) => {
+                setCatalogModelId(id);
+                // The picker only offers models that can generate.
+                setSettings((previous) => selectModel(previous, id));
               }}
             />
+
+            <div className="vs-grid">
+              <SelectCard
+                id="studio-duration"
+                label={copy.duration}
+                value={settings.duration}
+                options={durationOptions}
+                format={(option) => `${option}s`}
+                onChange={(duration) => setSettings((previous) => ({ ...previous, duration }))}
+              />
+              <SelectCard
+                id="studio-aspect"
+                label={copy.aspect}
+                value={settings.aspect}
+                options={model.aspects}
+                onChange={(aspect) => setSettings((previous) => ({ ...previous, aspect }))}
+              />
+              <SelectCard
+                id="studio-resolution"
+                label={isChinese ? "画质" : "Quality"}
+                value={settings.resolution}
+                options={model.resolutions}
+                onChange={(resolution) => setSettings((previous) => ({ ...previous, resolution }))}
+              />
+              <SelectCard
+                id="studio-audio"
+                label={copy.audio}
+                value={model.audio && settings.audio ? "on" : "off"}
+                options={["on", "off"] as const}
+                format={(option) => (option === "on" ? copy.on : copy.off)}
+                disabled={!model.audio}
+                onChange={(option) => setSettings((previous) => ({ ...previous, audio: option === "on" }))}
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={generateDisabled}
+              onClick={handleGenerate}
+              className="vs-generate"
+              title={selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}
+            >
+              {submitting ? copy.submit : copy.generate}
+              <span className="vs-generate-cost">
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                {selectedModelConnected ? "" : "≈"}
+                {exampleCredits}
+              </span>
+            </button>
+
+            {notice ? <output aria-live="polite" className="vs-notice">{notice}</output> : null}
+          </>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className="vs-hint">
+              {isChinese ? "选择一个编辑工具查看用途。视频编辑接口尚未接入。" : "Pick an edit tool to see what it does. The editing API is not connected yet."}
+            </p>
+            {EDIT_TOOLS.map((tool, index) => (
+              <button
+                key={tool.en}
+                type="button"
+                aria-pressed={editTool === index}
+                onClick={() => setEditTool(index)}
+                className={editTool === index ? "vs-card vs-tool vs-tool-on" : "vs-card vs-tool"}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="vs-card-value">{isChinese ? tool.zh : tool.en}</span>
+                  <span className="vs-card-label">{isChinese ? tool.descZh : tool.descEn}</span>
+                </span>
+                <span className="vs-soon">{copy.soon}</span>
+              </button>
+            ))}
           </div>
-        </div>
-
-        <ChipGroup label={copy.aspect}>
-          {model.aspects.map((aspect) => {
-            const active = aspect === settings.aspect;
-
-            return (
-              <button
-                key={aspect}
-                type="button"
-                aria-pressed={active}
-                onClick={() =>
-                  setSettings((previous) => ({ ...previous, aspect }))
-                }
-                className={chipClass(active)}
-              >
-                {aspect}
-              </button>
-            );
-          })}
-        </ChipGroup>
-
-        <ChipGroup label={copy.resolution}>
-          {model.resolutions.map((resolution) => {
-            const active = resolution === settings.resolution;
-
-            return (
-              <button
-                key={resolution}
-                type="button"
-                aria-pressed={active}
-                onClick={() =>
-                  setSettings((previous) => ({ ...previous, resolution }))
-                }
-                className={chipClass(active)}
-              >
-                {resolution}
-              </button>
-            );
-          })}
-        </ChipGroup>
-
-        <ChipGroup label={copy.audio}>
-          {(["On", "Off"] as const).map((option) => {
-            const value = option === "On";
-            const disabled = !model.audio;
-            const active = disabled ? false : settings.audio === value;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={active}
-                disabled={disabled}
-                onClick={() =>
-                  setSettings((previous) => ({ ...previous, audio: value }))
-                }
-                className={chipClass(active, disabled)}
-              >
-                {option === "On" ? copy.on : copy.off}
-              </button>
-            );
-          })}
-        </ChipGroup>
-
-        <div className="studio-generation-footer">
-          <output className="studio-credit-estimate" aria-live="polite">
-            <span><span className="block text-xs text-[var(--hfv-muted)]">{selectedModelConnected ? copy.creditCost : copy.creditEstimate}</span><span className="mt-1 block text-[11px] text-[var(--hfv-muted)]">{settings.duration}s · {settings.resolution}{settings.audio ? ` · ${copy.on}` : ""}</span></span>
-            <strong className="text-lg text-[var(--hfv-text)]">{selectedModelConnected ? "" : "≈ "}{exampleCredits} <span className="text-xs font-medium">{copy.credits}</span></strong>
-          </output>
-          <p className="text-[10px] leading-relaxed text-[var(--hfv-muted)]">{selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}</p>
-        <button
-          type="button"
-          disabled={promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId)}
-          onClick={handleGenerate}
-          className={[
-            "flex h-12 w-full items-center justify-between rounded-[var(--hfv-radius-btn)] bg-[var(--hfv-accent)] px-4 text-[var(--hfv-accent-text)]",
-            promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId) ? "cursor-not-allowed opacity-50" : "",
-          ].join(" ")}
-        >
-          <span className="font-semibold">
-            {submitting ? copy.submit : copy.generate}
-          </span>
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-        </button>
-        </div>
-
-        {notice ? (
-          <output
-            aria-live="polite"
-            className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] px-3 py-2 text-xs text-[var(--hfv-muted)]"
-          >
-            {notice}
-          </output>
-        ) : null}
-        </> : <div className="flex flex-col gap-3">
-          <div className="relative h-[126px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)]">
-            <img src="/home/hero-marina-poster.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-55" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-            <div className="absolute bottom-3 left-4"><p className="font-display text-lg font-bold uppercase text-[var(--hfv-accent)]">{isChinese ? "编辑工具" : "Edit tools"}</p><p className="text-xs text-white/80">{isChinese ? "修饰、扩展并重新构想视频" : "Refine, extend and reshape your video"}</p></div>
-          </div>
-          <p className="text-xs text-[var(--hfv-muted)]">{isChinese ? "选择一个编辑工具，查看其用途。编辑生成接口尚未接入。" : "Choose an edit tool to see what it does. The editing API is not connected yet."}</p>
-          {EDIT_TOOLS.map((tool, index) => <button key={tool.en} type="button" aria-pressed={editTool === index} onClick={() => setEditTool(index)} className={`flex items-center gap-3 rounded-[var(--hfv-radius-card)] border px-4 py-3 text-left ${editTool === index ? "border-[var(--hfv-accent)] bg-[var(--hfv-panel-3)]" : "border-[var(--hfv-border)] bg-[var(--hfv-panel-2)]"}`}>
-            <Film size={18} className="shrink-0 text-[var(--hfv-muted)]" /><span className="flex-1"><span className="block text-sm font-medium">{isChinese ? tool.zh : tool.en}</span><span className="block text-xs text-[var(--hfv-muted)]">{isChinese ? tool.descZh : tool.descEn}</span></span><ChevronRight size={16} className="text-[var(--hfv-muted)]" />
-          </button>)}
-          <div className="rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-4 text-sm text-[var(--hfv-muted)]">{isChinese ? "视频编辑功能待接入模型接口。创建视频仍可在“创建视频”中使用。" : "Video editing awaits a model API. You can still generate clips in Create video."}</div>
-        </div>}
+        )}
       </aside>
 
-      <section
-        aria-label={copy.results}
-        className="min-w-0 flex-1 overflow-y-auto rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-4"
-      >
-        {mode === "Edit" ? (
-          <div className="flex min-h-full flex-col items-center justify-center gap-5 py-6 text-center">
-            <div className="w-full max-w-[850px] overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
-              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" className="aspect-video w-full object-cover" />
-            </div>
-            <h2 className="font-display text-3xl font-bold uppercase text-[var(--hfv-text)] md:text-5xl">
-              {isChinese ? EDIT_TOOLS[editTool].zh : EDIT_TOOLS[editTool].en}
-            </h2>
-            <p className="max-w-lg text-sm text-[var(--hfv-muted)]">
-              {isChinese ? EDIT_TOOLS[editTool].descZh : EDIT_TOOLS[editTool].descEn}
-              {isChinese ? "。编辑模型接口待接入。" : ". The editing model API is coming soon."}
-            </p>
-          </div>
-        ) : <>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {RIGHT_TABS.map((tab) => {
-            const active = tab === activeTab;
+      <section aria-label={copy.results} className="vs-stage">
+        <div className="vs-stage-tabs">
+          {STAGE_TABS.map((tab) => {
             const Icon = TAB_ICONS[tab];
-
             return (
               <button
                 key={tab}
                 type="button"
-                aria-pressed={active}
+                aria-pressed={tab === activeTab}
                 onClick={() => setActiveTab(tab)}
-                className={[
-                  "flex items-center gap-1.5 rounded-[var(--hfv-radius-chip)] px-3 py-1.5 text-xs transition-colors",
-                  active
-                    ? "bg-[var(--hfv-chip-bg)] text-[var(--hfv-text)]"
-                    : "text-[var(--hfv-muted)]",
-                ].join(" ")}
+                className={tab === activeTab ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                 {copy.tabs[tab] ?? tab}
+                {tab === "History" && results.length > 0 ? <span className="vs-stage-count">{results.length}</span> : null}
               </button>
             );
           })}
         </div>
 
-        <div className="grid items-center gap-6 py-8 lg:grid-cols-2">
-          <div className="flex flex-col gap-3">
-            <h2 className="font-display text-[40px] font-bold uppercase leading-none text-[var(--hfv-text)]">
-              {copy.heroTitle}
-            </h2>
-            <p className="text-sm text-[var(--hfv-muted)]">
-              {copy.heroBody}
+        {mode === "Edit" ? (
+          <div className="vs-howto">
+            <h2 className="vs-howto-title">{isChinese ? EDIT_TOOLS[editTool].zh : EDIT_TOOLS[editTool].en}</h2>
+            <p className="vs-howto-sub">
+              {isChinese ? `${EDIT_TOOLS[editTool].descZh}。编辑模型接口待接入。` : `${EDIT_TOOLS[editTool].descEn}. The editing model API is coming soon.`}
             </p>
+            <div className="vs-howto-media vs-howto-wide">
+              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" />
+            </div>
           </div>
-          <div className="aspect-video overflow-hidden rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-3)]">
-            <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" className="h-full w-full object-cover" />
-          </div>
-        </div>
-
-        <div className="pt-4">
-          {activeTab === "Library" ? (
-            <GallerySection />
-          ) : null}
-
-          {activeTab === "How it works" ? (
-            <div className="grid gap-3 md:grid-cols-3">
-              {copy.steps.map((step, index) => (
-                <div
-                  key={step.title}
-                  className="flex flex-col gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] p-4"
-                >
-                  <span className="font-display text-2xl font-bold uppercase text-[var(--hfv-accent)]">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm font-semibold">{step.title}</span>
-                  <span className="text-xs text-[var(--hfv-muted)]">
-                    {step.body}
-                  </span>
+        ) : activeTab === "History" ? (
+          results.length === 0 ? (
+            <div className="vs-empty">
+              <Clock className="h-6 w-6" aria-hidden="true" />
+              <p>{copy.empty}</p>
+            </div>
+          ) : (
+            <div className="vs-results">
+              {results.map((result) =>
+                result.status === "completed" && result.videoUrl ? (
+                  <video
+                    key={result.id}
+                    src={result.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    title={result.prompt ?? undefined}
+                    className="vs-result"
+                  />
+                ) : (
+                  <div key={result.id} title={result.prompt ?? undefined} className="vs-result vs-result-wait">
+                    {result.status === "failed" ? (
+                      <X className="h-5 w-5" aria-hidden="true" />
+                    ) : (
+                      <Clock className={`h-5 w-5 ${result.status === "generating" ? "animate-pulse" : ""}`} aria-hidden="true" />
+                    )}
+                    <span>
+                      {result.status === "failed" ? copy.failed : result.status === "generating" ? copy.generating : copy.queued}
+                    </span>
+                    {result.status === "failed" && result.message ? <span className="line-clamp-2 text-[11px]">{result.message}</span> : null}
+                  </div>
+                ),
+              )}
+            </div>
+          )
+        ) : (
+          <div className="vs-howto">
+            <h2 className="vs-howto-title">{isChinese ? "一键制作视频" : "Make a video in one click"}</h2>
+            <p className="vs-howto-sub">
+              {isChinese
+                ? "写一句提示词或上传一张起始帧，选好模型就能生成，生成前就能看到要消耗的积分。"
+                : "Write a prompt or upload a start frame, pick a model and generate. You see the credit cost before you start."}
+            </p>
+            <div className="vs-steps">
+              {stepCopy.map((step, index) => (
+                <div key={step.title} className="vs-step">
+                  <div className="vs-howto-media">
+                    <img src={STEP_IMAGES[index]} alt="" loading="lazy" />
+                  </div>
+                  <h3 className="vs-step-title">{step.title}</h3>
+                  <p className="vs-step-body">{step.body}</p>
                 </div>
               ))}
             </div>
-          ) : null}
-
-          {activeTab === "History" ? (
-            results.length === 0 ? (
-              <p className="py-10 text-center text-sm text-[var(--hfv-muted)]">
-                {copy.empty}
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {results.map((result) =>
-                  result.status === "completed" && result.videoUrl ? (
-                    <video
-                      key={result.id}
-                      src={result.videoUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      title={result.prompt ?? undefined}
-                      className="aspect-video w-full rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-black object-contain"
-                    />
-                  ) : (
-                    <div
-                      key={result.id}
-                      title={result.prompt ?? undefined}
-                      className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] px-3 text-center"
-                    >
-                      {result.status === "failed" ? (
-                        <X
-                          className="h-5 w-5 text-[var(--hfv-muted)]"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Clock
-                          className={`h-5 w-5 text-[var(--hfv-muted)] ${result.status === "generating" ? "animate-pulse" : ""}`}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span className="text-xs uppercase tracking-wide text-[var(--hfv-muted)]">
-                        {result.status === "failed"
-                          ? copy.failed
-                          : result.status === "generating"
-                            ? copy.generating
-                            : copy.queued}
-                      </span>
-                      {result.status === "failed" && result.message ? (
-                        <span className="line-clamp-2 text-[11px] text-[var(--hfv-muted)]">
-                          {result.message}
-                        </span>
-                      ) : null}
-                    </div>
-                  ),
-                )}
-              </div>
-            )
-          ) : null}
-        </div>
-        </>}
+          </div>
+        )}
       </section>
     </div>
   );

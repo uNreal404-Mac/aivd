@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   const { locale } = await params;
   const zh = locale === "zh";
   return {
-    title: zh ? "文字生成图片 | aivd.ai" : "Text to Image | aivd.ai",
+    title: zh ? "AI 图片生成器 - 文字生成图片" : "AI Image Generator - Text to Image",
     description: zh ? "用文字描述画面，选择图片模型并生成作品。" : "Describe an image, choose a model and create a visual.",
     alternates: buildAlternates("/ai/image", locale),
   };

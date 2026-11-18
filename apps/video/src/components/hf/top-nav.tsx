@@ -208,13 +208,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "image",
       label: zh ? "图像" : "Image",
-      path: "/image",
-      routes: ["/image", "/ai/image"],
+      path: "/ai/image",
+      routes: ["/ai/image", "/image"],
       columns: [
         {
           title: zh ? "功能" : "Features",
           items: [
-            { title: zh ? "创建图像" : "Create image", desc: zh ? "用文字生成 AI 图像" : "Generate AI images from text", icon: ImageIcon, href: "/image" },
+            { title: zh ? "创建图像" : "Create image", desc: zh ? "用文字生成 AI 图像" : "Generate AI images from text", icon: ImageIcon, href: "/ai/image" },
             { title: zh ? "图片转视频" : "Image to video", desc: zh ? "让一张静态图片动起来" : "Bring a still image to life", icon: ImagePlus, href: "/image-to-video", badge: "hot" },
             { title: zh ? "编辑图像" : "Edit image", desc: zh ? "用一句话修改图片内容" : "Change an image with one sentence", icon: Layers },
             { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "选中区域，描述修改内容" : "Select an area and describe the change", icon: Brush },
@@ -240,8 +240,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "video",
       label: zh ? "视频" : "Video",
-      path: "/video",
-      routes: ["/video", "/ai/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
+      path: "/ai/video",
+      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
       columns: [
         {
           title: zh ? "功能" : "Features",
@@ -274,14 +274,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "audio",
       label: zh ? "音频" : "Audio",
-      path: "/veo-3-1",
-      routes: [],
+      path: "/audio",
+      routes: ["/audio"],
       columns: [
         {
           title: zh ? "功能" : "Features",
           items: [
             { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/veo-3-1", badge: "hot" },
-            { title: zh ? "文字转语音" : "Text to speech", desc: zh ? "把文字读成自然的人声" : "Turn text into a natural voice", icon: AudioLines },
+            { title: zh ? "文字转语音" : "Text to speech", desc: zh ? "把文字读成自然的人声" : "Turn text into a natural voice", icon: AudioLines, href: "/audio" },
             { title: zh ? "AI 配音" : "AI voiceover", desc: zh ? "给视频配上旁白" : "Add narration to a video", icon: Mic },
             { title: zh ? "AI 音乐" : "AI music", desc: zh ? "按风格生成背景音乐" : "Generate background music by style", icon: Music },
             { title: zh ? "音效生成" : "Sound effects", desc: zh ? "用文字生成环境声和音效" : "Create ambience and effects from text", icon: Volume2 },
@@ -359,61 +359,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     { label: "MCP", icon: Plug },
   ];
 
-  const sectionTabs: Record<string, { label: string; path: string; soon?: boolean }[]> = {
-    video: [
-      { label: zh ? "AI 视频" : "AI Video", path: "/video" },
-      { label: zh ? "视频工作室" : "Video studio", path: "/ai/video" },
-      { label: zh ? "文生视频" : "Text to Video", path: "/text-to-video" },
-      { label: zh ? "图生视频" : "Image to Video", path: "/image-to-video" },
-      { label: zh ? "参考生视频" : "Reference to Video", path: "/reference-to-video" },
-      { label: "Veo 3.1", path: "/veo-3-1" },
-      { label: "Wan 2.6", path: "/wan-2-6" },
-      { label: zh ? "AI 视频编辑" : "AI Video Editor", path: "", soon: true },
-      { label: zh ? "视频画质提升" : "Video Upscaler", path: "", soon: true },
-    ],
-    image: [
-      { label: zh ? "AI 图片" : "AI Image", path: "/image" },
-      { label: zh ? "图片工作室" : "Image studio", path: "/ai/image" },
-      { label: zh ? "图生图" : "Image to Image", path: "", soon: true },
-      { label: zh ? "AI 图片编辑" : "AI Photo Editor", path: "", soon: true },
-      { label: zh ? "图片高清放大" : "Image Upscaler", path: "", soon: true },
-      { label: zh ? "背景去除" : "Background Remover", path: "", soon: true },
-    ],
-    creative: [
-      { label: zh ? "创作空间" : "Creative Space", path: "/creative-space" },
-      { label: zh ? "画布" : "Canvas", path: "/creative-space/canvas" },
-      { label: zh ? "我的作品" : "My creations", path: "/my-creations" },
-      { label: zh ? "AI 故事视频" : "AI Story Video", path: "", soon: true },
-      { label: zh ? "AI 配音" : "AI Voiceover", path: "", soon: true },
-    ],
-    templates: [
-      { label: zh ? "全部模板" : "All templates", path: "/templates" },
-      { label: zh ? "特效模板" : "Effect templates", path: "/effects" },
-      { label: zh ? "社区画廊" : "Community gallery", path: "/gallery" },
-      { label: zh ? "灵感探索" : "Explore", path: "/explore" },
-    ],
-  };
-
   const href = (path: string) => (path.startsWith("/#") ? `/${lang}${path.slice(1)}` : `/${lang}${path === "/" ? "" : path}`);
   const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const activeSection = dropdowns.find((menu) => inRoutes(menu.routes));
-  const tabs = activeSection ? sectionTabs[activeSection.id] : undefined;
   const headerRef = useRef<HTMLElement>(null);
-  // Tool layouts size their workspace to the space under the header, which
-  // grows when a section tab strip is shown.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the strip appears or goes
+  // Tool layouts size their workspace to the space under the header.
   useEffect(() => {
-    const height = headerRef.current?.offsetHeight ?? 56;
+    const height = headerRef.current?.offsetHeight ?? 52;
     document.documentElement.style.setProperty("--hf-header-h", `${height}px`);
-  }, [tabs?.length]);
+  }, []);
 
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
-  // Highlight only the most specific matching tab, so /creative-space/canvas
-  // lights "Canvas" and not "Creative Space" as well.
-  const activeTabPath = tabs
-    ?.filter((tab) => !tab.soon && isActive(tab.path))
-    .reduce<string | undefined>((best, tab) => (!best || tab.path.length > best.length ? tab.path : best), undefined);
-
   const openNow = (id: string, trigger?: HTMLElement | null) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     if (trigger) setPanelLeft(trigger.getBoundingClientRect().left - 4);
@@ -504,7 +460,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
 
   return (
-    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled", tabs && "hf-nav-with-tabs")}>
+    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
       <div className="hf-nav-inner">
         <Link href={href("/")} className="hf-brand">
           <img src="/logo.svg" alt="" width={28} height={28} className="hf-brand-logo" />
@@ -679,28 +635,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             </div>
           ))}
         </div>
-      ) : null}
-
-      {tabs ? (
-        <nav className="hf-tabs" aria-label={activeSection?.label}>
-          {tabs.map((tab) =>
-            tab.soon ? (
-              <span key={tab.label} className="hf-tab hf-tab-soon" aria-disabled="true">
-                {tab.label}
-                <span className="hf-tag">{soonLabel}</span>
-              </span>
-            ) : (
-              <Link
-                key={tab.label}
-                href={href(tab.path)}
-                aria-current={tab.path === activeTabPath ? "page" : undefined}
-                className={cn("hf-tab", tab.path === activeTabPath && "hf-tab-active")}
-              >
-                {tab.label}
-              </Link>
-            ),
-          )}
-        </nav>
       ) : null}
 
       {menuOpen ? (

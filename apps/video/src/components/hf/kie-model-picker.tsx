@@ -6,6 +6,7 @@ import {
   AudioLines,
   Check,
   ChevronDown,
+  ChevronRight,
   Clapperboard,
   Film,
   Image as ImageIcon,
@@ -31,7 +32,10 @@ type Props = {
   onChange: (id: string) => void;
   /** Models that can generate today. Everything else is listed as coming soon. */
   connectedIds?: string[];
-  placement?: "top" | "inline";
+  /** "card" renders a settings card: a small label over the model name. */
+  placement?: "top" | "inline" | "card";
+  /** Label shown above the name when placement is "card". */
+  label?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /** Kept for callers; availability is now always shown by section. */
@@ -90,6 +94,7 @@ export function KieModelPicker({
   open: controlledOpen,
   onOpenChange,
   compact = false,
+  label,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const catalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
@@ -152,7 +157,9 @@ export function KieModelPicker({
     ? current?.name
     : hasAnyAvailable
       ? (current?.name ?? copy.choose)
-      : copy.noneAvailable;
+      : compact
+        ? (current?.name ?? copy.noneAvailable)
+        : copy.noneAvailable;
   // A search should reveal matches wherever they are.
   const upcomingVisible = showUpcoming || query.trim() !== "";
 
@@ -236,14 +243,16 @@ export function KieModelPicker({
   );
 
   const triggerClass =
-    placement === "inline"
+    placement === "card"
+      ? "vs-card w-full"
+      : placement === "inline"
       ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3"
       : compact
         ? "h-9 max-w-[min(46vw,230px)] px-1 text-xs hover:text-[var(--du-accent-text)] sm:text-sm"
         : "h-9 w-full rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm";
 
   return (
-    <div ref={pickerRef} className={`relative ${placement === "inline" ? "w-full" : ""}`}>
+    <div ref={pickerRef} className={`relative ${placement === "inline" || placement === "card" ? "w-full" : ""}`}>
       <button
         ref={triggerRef}
         type="button"
@@ -252,13 +261,25 @@ export function KieModelPicker({
         onClick={() => (open ? close(false) : setOpen(true))}
         className={`flex items-center gap-2 text-left ${triggerClass}`}
       >
-        {kind === "video" ? (
-          <Film className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+        {placement === "card" ? (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="vs-card-label">{label ?? copy.choose}</span>
+              <span className="vs-card-value">{triggerLabel}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+          </>
         ) : (
-          <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+          <>
+            {kind === "video" ? (
+              <Film className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+            ) : (
+              <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+            )}
+            <span className="truncate text-[var(--du-text)]">{triggerLabel}</span>
+            <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+          </>
         )}
-        <span className="truncate text-[var(--du-text)]">{triggerLabel}</span>
-        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
       </button>
 
       {open ? (
