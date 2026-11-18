@@ -1,3 +1,4 @@
+import { ProviderRejectedError } from "../types";
 import type {
   AIVideoProvider,
   VideoGenerationParams,
@@ -8,6 +9,11 @@ import {
   getProviderModelId,
   transformParamsForProvider,
 } from "../model-mapping";
+
+/** True when a KIE status/code means no task was created. */
+export function isDefiniteRejection(code: number): boolean {
+  return code >= 400 && code < 500 && code !== 408;
+}
 
 export class KieProvider implements AIVideoProvider {
   name = "kie";
@@ -23,7 +29,10 @@ export class KieProvider implements AIVideoProvider {
     const internalModelId = params.model || "sora-2";
     const providerConfig = getProviderConfig(internalModelId, "kie");
     if (!providerConfig?.supported) {
-      throw new Error(`Model ${internalModelId} is not supported by KIE`);
+      // Nothing was sent to KIE, so no task can exist.
+      throw new ProviderRejectedError(
+        `Model ${internalModelId} is not supported by KIE`
+      );
     }
     const apiEndpoint = providerConfig.apiEndpoint || "/api/v1/jobs/createTask";
 
@@ -55,8 +64,31 @@ export class KieProvider implements AIVideoProvider {
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
-    if (result.code !== 200) throw new Error(result.msg || "API error");
+    // KIE reports errors as a JSON body `{ code, msg }`; the HTTP status may
+    // or may not mirror `code`. A body that cannot be parsed leaves only the
+    // HTTP status to go on.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let result: any = null;
+    try {
+      result = await response.json();
+    } catch {
+      result = null;
+    }
+
+    const code =
+      typeof result?.code === "number" ? result.code : response.status;
+
+    if (code !== 200 || !result?.data?.taskId) {
+      const message = result?.msg || `KIE API error: ${code}`;
+      // 4xx (except 408 Request Timeout) means KIE definitely rejected the
+      // request and created no task: validation, auth, balance, rate limit.
+      // Callers release the user's held credits on this error. Everything
+      // else (5xx, 408, a 200 without a taskId) is an unknown outcome.
+      if (isDefiniteRejection(code)) {
+        throw new ProviderRejectedError(message, code);
+      }
+      throw new Error(message);
+    }
 
     return {
       taskId: result.data.taskId,
