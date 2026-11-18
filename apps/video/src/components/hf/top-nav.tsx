@@ -1,8 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Gem, Menu, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  Clapperboard,
+  Compass,
+  Crown,
+  Film,
+  Image as ImageIcon,
+  ImagePlus,
+  LayoutGrid,
+  Menu,
+  Orbit,
+  Sparkles,
+  Wand2,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
 import { cn } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
@@ -10,6 +26,7 @@ import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
 import { LocaleChange } from "@/components/locale-change";
+import "./top-nav.css";
 
 interface HfTopNavProps {
   user?: {
@@ -20,260 +37,291 @@ interface HfTopNavProps {
   lang: string;
 }
 
-interface NavItem {
+type MenuLink = { label: string; href?: string; icon: LucideIcon; soon?: boolean; badge?: string };
+type MenuColumn = { title: string; links: MenuLink[]; more?: { label: string; href: string } };
+type MegaMenu = {
+  id: string;
   label: string;
-  href: string;
-  badge?: { label: string; tone: "lime" | "muted" };
-  disabled?: boolean;
-  featured?: boolean;
-}
-
-function Badge({ label, tone }: { label: string; tone: "lime" | "muted" }) {
-  return (
-    <span
-      className={cn(
-        "shrink-0 rounded-md px-1.5 text-[10px] font-semibold",
-        tone === "lime"
-          ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
-          : "bg-[var(--du-surface-2)] text-[var(--du-text-muted)]"
-      )}
-    >
-      {label}
-    </span>
-  );
-}
+  intro: { title: string; body: string; cta: string; href: string; image: string };
+  columns: MenuColumn[];
+};
 
 export function HfTopNav({ user, lang }: HfTopNavProps) {
   const pathname = useLocalePathname();
   const signInModal = useSigninModal();
+  const zh = lang.toLowerCase().startsWith("zh");
   const [menuOpen, setMenuOpen] = useState(false);
-  const isChinese = lang.toLowerCase().startsWith("zh");
-  const copy = isChinese
+  const [openMega, setOpenMega] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!openMega) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMega(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [openMega]);
+
+  // Close menus when the route changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run on route change only
+  useEffect(() => {
+    setOpenMega(null);
+    setMenuOpen(false);
+  }, [pathname]);
+
+  const soon = zh ? "即将上线" : "Soon";
+  const t = zh
     ? {
-        reference: "探索",
-        create: "视频",
-        creativeSpace: "创作空间",
-        video: "一键模版",
-        image: "图片",
-        music: "音乐",
-        effects: "特效",
-        modeling: "3D 建模",
-        creations: "我的作品",
-        soon: "即将开放",
-        pricing: "定价",
+        home: "首页",
+        templates: "模板",
+        creative: "创作空间",
+        pricing: "价格",
+        upgrade: "升级",
         login: "登录",
-        signup: "注册",
-        top: "热门",
-        creationsAria: "我的作品",
+        signup: "免费开始",
         openMenu: "打开菜单",
         closeMenu: "关闭菜单",
+        creations: "我的作品",
       }
     : {
-        reference: "Explore",
-        create: "Video",
-        creativeSpace: "Creative Space",
-        video: "One-click Templates",
-        image: "Image",
-        music: "Music",
-        effects: "Effects",
-        modeling: "3D Modeling",
-        creations: "My creations",
-        soon: "Soon",
+        home: "Home",
+        templates: "Templates",
+        creative: "Creative Space",
         pricing: "Pricing",
-        login: "Login",
-        signup: "Sign up",
-        top: "Top",
-        creationsAria: "My creations",
+        upgrade: "Upgrade",
+        login: "Log in",
+        signup: "Start free",
         openMenu: "Open menu",
         closeMenu: "Close menu",
+        creations: "My creations",
       };
-  const navItems: NavItem[] = [
-    { label: copy.reference, href: "/explore" },
-    { label: copy.create, href: "/ai/video" },
-    { label: copy.image, href: "/ai/image" },
-    { label: copy.video, href: "/gallery", badge: { label: copy.top, tone: "lime" } },
-    { label: copy.creations, href: "/my-creations" },
-    { label: copy.creativeSpace, href: "/creative-space", featured: true },
+
+  // Only pages that exist are linked. Models that are not connected yet are
+  // listed as coming soon and are not clickable.
+  const megaMenus: MegaMenu[] = [
+    {
+      id: "video",
+      label: zh ? "AI视频" : "AI Video",
+      intro: {
+        title: zh ? "AI视频" : "AI Video",
+        body: zh
+          ? "用文字或图片生成带运镜和声音的视频，生成前就能看到要消耗的积分。"
+          : "Turn text or an image into video with camera moves and sound. See the credit cost before you generate.",
+        cta: zh ? "试试AI视频生成器" : "Try the AI video generator",
+        href: "/ai/video",
+        image: "/home/samples/mountain-valley.webp",
+      },
+      columns: [
+        {
+          title: zh ? "视频" : "Video",
+          links: [
+            { label: zh ? "文生视频" : "Text to Video", href: "/text-to-video", icon: Film },
+            { label: zh ? "图生视频" : "Image to Video", href: "/image-to-video", icon: ImagePlus },
+            { label: zh ? "参考生视频" : "Reference to Video", href: "/reference-to-video", icon: Clapperboard },
+            { label: zh ? "AI 视频特效" : "AI Video Effects", href: "/effects", icon: Wand2 },
+          ],
+          more: { label: zh ? "打开视频工作室" : "Open video studio", href: "/ai/video" },
+        },
+        {
+          title: zh ? "视频模型" : "Video models",
+          links: [
+            { label: "Veo 3.1", href: "/veo-3-1", icon: Sparkles },
+            { label: "Wan 2.6", href: "/wan-2-6", icon: Orbit },
+            { label: "Seedance 2.0", icon: Clapperboard, soon: true },
+            { label: "Kling 4.0", icon: Orbit, soon: true },
+            { label: "MiniMax H3", icon: Film, soon: true },
+          ],
+        },
+        {
+          title: zh ? "产品" : "Products",
+          links: [
+            { label: t.creative, href: "/creative-space", icon: Sparkles },
+            { label: zh ? "社区画廊" : "Community gallery", href: "/gallery", icon: LayoutGrid },
+            { label: zh ? "灵感探索" : "Explore", href: "/explore", icon: Compass },
+          ],
+        },
+      ],
+    },
+    {
+      id: "image",
+      label: zh ? "AI图片" : "AI Image",
+      intro: {
+        title: zh ? "AI图片" : "AI Image",
+        body: zh
+          ? "根据文字或参考图生成静态画面，可作为视频的起始帧。"
+          : "Generate stills from text or a reference image, and use them as a video's start frame.",
+        cta: zh ? "试试AI图片生成器" : "Try the AI image generator",
+        href: "/ai/image",
+        image: "/home/samples/red-carpet.webp",
+      },
+      columns: [
+        {
+          title: zh ? "图片" : "Image",
+          links: [{ label: zh ? "AI 图片生成器" : "AI Image Generator", href: "/ai/image", icon: ImageIcon }],
+        },
+        {
+          title: zh ? "图片模型" : "Image models",
+          links: [
+            { label: "Nano Banana 2", icon: ImageIcon, soon: true },
+            { label: "Seedream 5.5", icon: ImageIcon, soon: true },
+            { label: "GPT Image 2.5", icon: ImageIcon, soon: true },
+            { label: "FLUX.3", icon: ImageIcon, soon: true },
+          ],
+        },
+      ],
+    },
   ];
 
-  const isActive = (href: string) => {
-    if (href === "") {
-      return pathname === "/";
-    }
-    return pathname === href || pathname.startsWith(`${href}/`);
+  const href = (path: string) => `/${lang}${path === "/" ? "" : path}`;
+  const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
+
+  const openNow = (id: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenMega(id);
+  };
+  const closeSoon = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenMega(null), 120);
   };
 
-  const renderItem = (item: NavItem, mobile = false) => {
-    const active = !item.disabled && isActive(item.href);
-    const content = (
+  const plainLink = (path: string, label: string) => (
+    <Link key={path} href={href(path)} className={cn("hf-nav-link", isActive(path) && "hf-nav-link-active")}>
+      {label}
+    </Link>
+  );
+
+  const menuRow = (link: MenuLink) => {
+    const Icon = link.icon;
+    const inner = (
       <>
-        {item.featured && <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
-        <span className="whitespace-nowrap">{item.label}</span>
-        {item.badge && <Badge label={item.badge.label} tone={item.badge.tone} />}
+        <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+        <span className="truncate">{link.label}</span>
+        {link.soon ? <span className="hf-mega-soon">{soon}</span> : null}
       </>
     );
-
-    if (item.disabled) {
-      return (
-        <span
-          key={item.label}
-          aria-disabled="true"
-          className={cn(
-            "flex shrink-0 cursor-not-allowed items-center gap-1.5 text-sm font-medium text-[var(--du-text-dim)] opacity-60",
-            mobile ? "px-3 py-2" : "px-2 text-[14px]"
-          )}
-        >
-          {content}
-        </span>
-      );
-    }
-
-    return (
-      <Link
-        key={item.label}
-        href={`/${lang}${item.href}`}
-        onClick={(event) => {
-          if (mobile) setMenuOpen(false);
-          if (!user && item.href === "/my-creations") {
-            event.preventDefault();
-            signInModal.onOpenWithRedirect(`/${lang}/my-creations`);
-          }
-        }}
-        className={cn(
-          "flex shrink-0 items-center gap-1.5 font-medium transition-colors",
-          item.featured
-            ? "rounded-full border border-[var(--du-border-strong)] bg-[var(--du-accent-soft)] font-semibold text-[var(--du-accent-text)] shadow-[var(--du-glow)] hover:border-[var(--du-accent)]"
-            : active
-              ? "text-[var(--du-accent-text)]"
-              : "text-[var(--du-text)] hover:text-[var(--du-accent-text)]",
-          mobile
-            ? item.featured
-              ? "mx-3 my-1 px-3 py-2 text-sm"
-              : "px-3 py-2 text-sm"
-            : item.featured
-              ? "px-3 py-1.5 text-[14px]"
-              : "px-2 text-[14px]"
-        )}
-      >
-        {content}
+    return link.soon || !link.href ? (
+      <span key={link.label} className="hf-mega-row hf-mega-row-disabled" aria-disabled="true">
+        {inner}
+      </span>
+    ) : (
+      <Link key={link.label} href={href(link.href)} className="hf-mega-row">
+        {inner}
       </Link>
     );
   };
 
   return (
-    <header className="sticky top-0 z-40 h-[52px] border-b border-[var(--du-border)] bg-[var(--du-bg)]">
-      <div className="flex h-full items-center justify-between px-4">
-        {/* Left: logo + desktop nav */}
-        <div className="flex min-w-0 flex-1 items-center gap-4">
-          <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2">
-            <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
-            <span className="whitespace-nowrap text-base font-semibold text-[var(--du-text)]">
-              aivd.ai
-            </span>
-            <PreviewBadge lang={lang} />
-          </Link>
+    <header className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
+      <div className="hf-nav-inner">
+        <Link href={href("/")} className="flex shrink-0 items-center gap-2">
+          <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
+          <span className="whitespace-nowrap text-[17px] font-semibold tracking-tight text-white">aivd.ai</span>
+          <PreviewBadge lang={lang} />
+        </Link>
 
-          <nav className="hidden min-w-0 items-center gap-1 overflow-hidden xl:flex">
-            {navItems.map((item) => renderItem(item))}
-          </nav>
-        </div>
+        <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
+          {plainLink("/", t.home)}
+          {megaMenus.map((menu) => (
+            <div key={menu.id} className="relative" onMouseEnter={() => openNow(menu.id)} onMouseLeave={closeSoon}>
+              <button
+                type="button"
+                aria-expanded={openMega === menu.id}
+                onClick={() => (openMega === menu.id ? setOpenMega(null) : openNow(menu.id))}
+                onFocus={() => openNow(menu.id)}
+                className={cn("hf-nav-link", openMega === menu.id && "hf-nav-link-active")}
+              >
+                {menu.label}
+                <ChevronDown aria-hidden="true" className={cn("h-3.5 w-3.5 transition-transform", openMega === menu.id && "rotate-180")} />
+              </button>
+            </div>
+          ))}
+          {plainLink("/creative-space", t.creative)}
+          {plainLink("/gallery", t.templates)}
+          {plainLink("/pricing", t.pricing)}
+        </nav>
 
-        {/* Right: actions */}
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href={`/${lang}/pricing`}
-            aria-label={copy.pricing}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:hidden"
-          >
-            <Gem className="h-4 w-4" />
+          <Link href={href("/pricing")} className="hf-nav-pill">
+            <Crown aria-hidden="true" className="h-3.5 w-3.5 text-[var(--du-accent-text)]" />
+            {t.upgrade}
           </Link>
-          <Link
-            href={`/${lang}/pricing`}
-            className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-[var(--du-surface)] px-3 text-sm font-medium text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:flex"
-          >
-            <Gem className="h-4 w-4" />
-            {copy.pricing}
-          </Link>
-
           <LocaleChange />
-
           {user ? (
-            <Link
-              href={`/${lang}/my-creations`}
-              className="flex h-9 shrink-0 items-center rounded-[10px] px-1"
-              aria-label={copy.creationsAria}
-            >
-              <UserAvatar
-                user={{ name: user.name ?? null, image: user.image ?? null }}
-                className="h-8 w-8"
-              />
+            <Link href={href("/my-creations")} aria-label={t.creations} className="flex h-9 items-center">
+              <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-7 w-7" />
             </Link>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => signInModal.onOpen()}
-                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-transparent bg-[var(--du-accent-soft)] px-3 text-sm font-medium text-[var(--du-accent-text)] hover:border-[var(--du-border-strong)] xl:flex"
-              >
-                {copy.login}
+              <button type="button" onClick={() => signInModal.onOpen()} className="hf-nav-login">
+                {t.login}
               </button>
-              <button
-                type="button"
-                onClick={() => signInModal.onOpen()}
-                className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] xl:flex"
-              >
-                {copy.signup}
-              </button>
-              <button
-                type="button"
-                onClick={() => signInModal.onOpen()}
-                className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)] shadow-[var(--du-glow)] hover:bg-[var(--du-accent-hover)] xl:hidden"
-              >
-                {copy.signup}
+              <button type="button" onClick={() => signInModal.onOpen()} className="hf-nav-signup">
+                {t.signup}
               </button>
             </>
           )}
-
-          {/* Mobile menu toggle */}
           <button
             type="button"
-            aria-label={menuOpen ? copy.closeMenu : copy.openMenu}
-            onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--du-surface)] text-[var(--du-text)] hover:bg-[var(--du-surface-2)] xl:hidden"
+            aria-label={menuOpen ? t.closeMenu : t.openMenu}
+            onClick={() => setMenuOpen((value) => !value)}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white xl:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile dropdown panel */}
-      {menuOpen && (
-        <div className="absolute inset-x-0 top-[52px] border-b border-[var(--du-border)] bg-[var(--du-bg-elev)] py-2 xl:hidden">
-          <nav className="flex flex-col">
-            {navItems.map((item) => renderItem(item, true))}
-            <Link
-              href={`/${lang}/pricing`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[var(--du-text)] hover:text-[var(--du-accent-text)]"
-            >
-              <Gem className="h-4 w-4" />
-              {copy.pricing}
-            </Link>
-            {!user && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  signInModal.onOpen();
-                }}
-                className="mt-1 mx-3 flex h-9 items-center justify-center rounded-[10px] bg-[var(--du-accent)] px-3 text-sm font-medium text-[var(--du-on-accent)]"
-              >
-                {copy.signup}
-              </button>
-            )}
-          </nav>
-        </div>
+      {megaMenus.map((menu) =>
+        openMega === menu.id ? (
+          <div
+            key={menu.id}
+            className="hf-mega"
+            onMouseEnter={() => openNow(menu.id)}
+            onMouseLeave={closeSoon}
+          >
+            <div className="hf-mega-intro">
+              <p className="hf-mega-intro-title">{menu.intro.title}</p>
+              <p className="hf-mega-intro-body">{menu.intro.body}</p>
+              <Link href={href(menu.intro.href)} className="hf-mega-intro-cta">
+                {menu.intro.cta}
+                <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+              </Link>
+              <img src={menu.intro.image} alt="" className="hf-mega-intro-image" loading="lazy" />
+            </div>
+            {menu.columns.map((column) => (
+              <div key={column.title} className="hf-mega-col">
+                <p className="hf-mega-col-title">{column.title}</p>
+                {column.links.map(menuRow)}
+                {column.more ? (
+                  <Link href={href(column.more.href)} className="hf-mega-more">
+                    {column.more.label}
+                    <ArrowRight aria-hidden="true" className="h-3 w-3" />
+                  </Link>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null,
       )}
+
+      {menuOpen ? (
+        <div className="hf-nav-mobile xl:hidden">
+          {plainLink("/", t.home)}
+          {megaMenus.map((menu) => plainLink(menu.intro.href, menu.label))}
+          {plainLink("/creative-space", t.creative)}
+          {plainLink("/gallery", t.templates)}
+          {plainLink("/pricing", t.pricing)}
+        </div>
+      ) : null}
     </header>
   );
 }
