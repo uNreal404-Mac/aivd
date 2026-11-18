@@ -17,14 +17,46 @@ type ShowcaseCopy = {
   gallery: string;
 };
 
-function EmptyVideoFrames({ kind }: { kind: ShowcaseKind }) {
-  const count = kind === "story" ? 8 : kind === "motion" ? 6 : 4;
+type ShowcaseSample = { image: string; zh: string; en: string };
 
+const sample = (name: string, zh: string, en: string): ShowcaseSample => ({
+  image: `/home/samples/${name}.webp`,
+  zh,
+  en,
+});
+
+const SHOWCASE_SAMPLES: Record<ShowcaseKind, ShowcaseSample[]> = {
+  story: [
+    sample("boy-and-dog", "雨夜街角", "Rainy Street Corner"),
+    sample("autumn-walk", "秋日同行", "Autumn Walk"),
+    sample("rain-couple", "雨中重逢", "Reunion in the Rain"),
+    sample("mountain-wind", "山顶的风", "Wind on the Summit"),
+  ],
+  motion: [
+    sample("cosmic-bloom", "星云绽放", "Cosmic Bloom"),
+    sample("mountain-valley", "云海山谷", "Valley of Clouds"),
+    sample("storm-sea", "风暴之海", "Storm Sea"),
+  ],
+  recast: [
+    sample("planet-impact", "星球撞击", "Planet Impact"),
+    sample("tomb-light", "古墓之光", "Light in the Tomb"),
+    sample("mech-warrior", "机甲战士", "Mech Warrior"),
+    sample("dreaming", "梦境", "Dreaming"),
+  ],
+};
+
+function ShowcaseFrames({ kind, isChinese }: { kind: ShowcaseKind; isChinese: boolean }) {
   return (
-    <div className={`home-showcase-grid home-showcase-grid-${kind}`} aria-hidden="true">
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="home-showcase-empty-frame" />
-      ))}
+    <div className={`home-showcase-grid home-showcase-grid-${kind}`}>
+      {SHOWCASE_SAMPLES[kind].map((item) => {
+        const caption = isChinese ? item.zh : item.en;
+        return (
+          <figure key={item.image} className="home-showcase-card">
+            <img src={item.image} alt={caption} loading="lazy" />
+            <figcaption>{caption}</figcaption>
+          </figure>
+        );
+      })}
     </div>
   );
 }
@@ -56,7 +88,7 @@ function ShowcasePanel({
             </Link>
           </header>
 
-          <EmptyVideoFrames kind={kind} />
+          <ShowcaseFrames kind={kind} isChinese={lang.toLowerCase().startsWith("zh")} />
 
           <div className="home-showcase-footer">
             <Link className="home-showcase-secondary" href={localizedHref(lang, "/gallery")}>
@@ -181,7 +213,9 @@ function CreativeSpacePreview({ lang }: { lang: string }) {
           </div>
 
           <div className="home-creative-video-area" aria-hidden="true">
-            <div className="home-creative-video-frame" />
+            <div className="home-creative-video-frame">
+              <img src="/home/samples/dancer.webp" alt="" loading="lazy" />
+            </div>
           </div>
         </div>
       </div>

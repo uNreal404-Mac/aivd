@@ -24,12 +24,12 @@ import "./home-gallery.css";
 const PAGE_SIZE = 20;
 
 const HOME_SAMPLES = [
-  { image: "/home/hero-marina-poster.png", zh: "海边的一刻", en: "A Moment by the Sea" },
+  { image: "/home/hero-marina-poster.webp", zh: "海边的一刻", en: "A Moment by the Sea" },
   { image: "/home/gallery-sample-journey.jpg", zh: "共同旅程", en: "The Journey Together" },
-  { image: "/home/neon-streets.webp", zh: "霓虹漫游", en: "Neon Wanderings" },
-  { image: "/home/planet-horizon.webp", zh: "远方星球", en: "A Distant World" },
-  { image: "/home/golden-hour.webp", zh: "落日光影", en: "Golden Hour" },
-  { image: "/home/coast-drive.webp", zh: "沿海公路", en: "The Coastal Road" },
+  { image: "/home/samples/red-carpet.webp", zh: "红毯时刻", en: "Red Carpet Moment" },
+  { image: "/home/samples/autumn-walk.webp", zh: "秋日同行", en: "Autumn Walk" },
+  { image: "/home/samples/planet-impact.webp", zh: "星球撞击", en: "Planet Impact" },
+  { image: "/home/samples/tomb-light.webp", zh: "古墓之光", en: "Light in the Tomb" },
 ] as const;
 
 interface GalleryListResponse {

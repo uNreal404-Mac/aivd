@@ -25,7 +25,7 @@ export function HomeStudioStory({ lang, modelName }: { lang: string; modelName: 
           <div className="flex flex-wrap gap-4 text-xs text-[var(--du-text-muted)]"><span className="flex items-center gap-2"><ImagePlus className="h-4 w-4 text-[var(--du-accent-text)]" />{zh ? "可选起始帧" : "Optional start frame"}</span><span className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-[var(--du-accent-text)]" />{zh ? "按模型调整参数" : "Model-specific settings"}</span></div>
         </div>
         <div className="relative min-h-[300px] bg-[var(--du-bg)] lg:min-h-[480px]">
-          <video className="absolute inset-0 h-full w-full object-cover" src="/home/hero-showcase-02.mp4" autoPlay muted loop playsInline preload="metadata" />
+          <img className="absolute inset-0 h-full w-full object-cover" src="/home/samples/studio-room.webp" alt={zh ? "AI 视频创作工作室" : "AI video creation studio"} loading="lazy" />
           <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 to-transparent" />
           <span className="absolute bottom-5 left-5 rounded-full border border-white/30 bg-black/45 px-3 py-1.5 text-xs text-white backdrop-blur">{zh ? "从构想到画面" : "From idea to frame"}</span>
         </div>

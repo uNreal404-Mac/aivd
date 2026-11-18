@@ -156,10 +156,10 @@ export const MODELS_HEADER: SectionHeader = {
 };
 
 export const MODEL_CARDS: ModelCard[] = [
-  { id: "video-lite", title: "Video Lite", icon: "Zap", description: "Fast everyday clips for quick ideas and drafts.", href: "/text-to-video", image: img("video-lite"), alt: "Quick draft clip preview" },
-  { id: "video-pro", title: "Video Pro", icon: "Film", description: "Cinematic motion and detail for finished shots.", href: "/image-to-video", image: img("video-pro"), alt: "Cinematic motion frame" },
-  { id: "image-studio", title: "Image Studio", icon: "Image", description: "Detailed stills from text or reference.", href: "/ai/image", image: img("image-studio"), alt: "Detailed generated still" },
-  { id: "anime-style", title: "Anime & Style", icon: "Palette", description: "Bold styles and looks for standout frames.", href: "/text-to-video", image: img("anime-style"), alt: "Stylized anime frame" },
+  { id: "video-lite", title: "Video Lite", icon: "Zap", description: "Fast everyday clips for quick ideas and drafts.", href: "/text-to-video", image: img("samples/boy-and-dog"), alt: "Quick draft clip preview" },
+  { id: "video-pro", title: "Video Pro", icon: "Film", description: "Cinematic motion and detail for finished shots.", href: "/image-to-video", image: img("samples/mountain-valley"), alt: "Cinematic motion frame" },
+  { id: "image-studio", title: "Image Studio", icon: "Image", description: "Detailed stills from text or reference.", href: "/ai/image", image: img("samples/red-carpet"), alt: "Detailed generated still" },
+  { id: "anime-style", title: "Anime & Style", icon: "Palette", description: "Bold styles and looks for standout frames.", href: "/text-to-video", image: img("samples/mech-warrior"), alt: "Stylized anime frame" },
 ];
 
 export const EFFECTS_HEADER: SectionHeader = {
@@ -196,8 +196,8 @@ export const CREDITS_BANNER = {
   accent: "free credits.",
   subtitle: "No card needed. Turn your next idea into something real.",
   cta: { label: "Get Free Credits →", href: "/pricing", icon: "ArrowRight", variant: "primary" } as Cta,
-  image: img("planet-horizon"),
-  alt: "Planet horizon lit from behind",
+  image: img("samples/cosmic-bloom"),
+  alt: "Glowing cosmic bloom in deep space",
 };
 
 export function localizedHref(lang: string, href: string): string {

@@ -108,18 +108,16 @@ function SectionHeading({
   );
 }
 
-const HERO_SLIDES = [
+const HERO_SLIDES: { video?: string; poster: string }[] = [
   {
     video: "/home/hero-marina-loop.mp4",
-    poster: "/home/hero-marina-poster.png",
+    poster: "/home/hero-marina-poster.webp",
   },
   {
-    video: "/home/hero-showcase-02.mp4",
-    poster: "/home/video-pro.webp",
+    poster: "/home/samples/mountain-valley.webp",
   },
   {
-    video: "/home/hero-showcase-03.mp4",
-    poster: "/home/coast-drive.webp",
+    poster: "/home/samples/storm-sea.webp",
   },
 ];
 
@@ -212,18 +210,27 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           </button>
 
           <div className="relative z-10 min-h-[690px] w-full max-w-[2560px] overflow-hidden rounded-[26px] border border-[var(--du-border-strong)] bg-[var(--du-surface)] shadow-[0_28px_90px_rgba(0,0,0,0.45)] sm:rounded-[34px] md:h-[min(calc(100svh-9rem),960px)] md:min-h-[530px]">
-            <video
-              key={HERO_SLIDES[heroIndex].video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={HERO_SLIDES[heroIndex].poster}
-              className="absolute inset-0 h-full w-full object-cover"
-            >
-              <source src={HERO_SLIDES[heroIndex].video} type="video/mp4" />
-            </video>
+            {HERO_SLIDES[heroIndex].video ? (
+              <video
+                key={HERO_SLIDES[heroIndex].video}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster={HERO_SLIDES[heroIndex].poster}
+                className="absolute inset-0 h-full w-full object-cover"
+              >
+                <source src={HERO_SLIDES[heroIndex].video} type="video/mp4" />
+              </video>
+            ) : (
+              <img
+                key={HERO_SLIDES[heroIndex].poster}
+                src={HERO_SLIDES[heroIndex].poster}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
             <span className="pointer-events-none absolute inset-0 bg-black/50" />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
@@ -259,7 +266,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 md:bottom-[1.5%]">
               {HERO_SLIDES.map((slide, index) => (
                 <button
-                  key={slide.video}
+                  key={slide.poster}
                   type="button"
                   onClick={() => setHeroIndex(index)}
                   aria-label={`${index + 1}`}
@@ -311,7 +318,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
                   src={model.image}
                   alt={isChinese ? homeCopy.modelTitles[model.id] ?? model.alt : model.alt}
                   loading="lazy"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover object-[50%_30%]"
                 />
               </div>
               <p className="mt-3 flex-1 text-sm text-[var(--du-text-muted)]">
