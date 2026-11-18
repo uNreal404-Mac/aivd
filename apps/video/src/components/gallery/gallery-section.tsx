@@ -274,16 +274,13 @@ export function GallerySection({
                       <div className="relative aspect-[16/9] overflow-hidden">
                         <img src={sample.image} alt="" loading={index < 3 ? "eager" : "lazy"} className="h-full w-full object-cover" />
                         <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--du-accent-text)]">
-                          {isChinese ? "示例" : "SAMPLE"}
+                          {isChinese ? "示例" : "Example"}
                         </span>
                       </div>
                       <div className="home-gallery-card-copy p-4 sm:p-5">
                         <h3 className="truncate text-base font-semibold text-[var(--du-text)] sm:text-lg">
                           {isChinese ? sample.zh : sample.en}
                         </h3>
-                        <p className="mt-1 text-xs text-[var(--du-text-muted)] sm:text-sm">
-                          {isChinese ? "站内画面示例 · 真实作品发布后自动更新" : "Site visual sample · Replaced when creators publish"}
-                        </p>
                       </div>
                     </article>
                   ))
