@@ -114,7 +114,8 @@ import {
 
 function pickTextToVideoModel(): string {
   const candidates = [
-    "seedance-1.5-pro",
+    "wan2.6",
+    "veo-3.1",
   ];
   for (const id of candidates) {
     const cfg = getModelConfig(id);

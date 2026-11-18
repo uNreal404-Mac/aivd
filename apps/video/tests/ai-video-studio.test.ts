@@ -19,6 +19,14 @@ import {
 } from "@/lib/ai-video-studio";
 import { calculateModelCredits } from "@/config/credits";
 
+const byId = (id: string) => {
+  const model = STUDIO_MODELS.find((item) => item.id === id);
+  if (!model) throw new Error(`missing studio model ${id}`);
+  return model;
+};
+const WAN = byId("wan2.6");
+const VEO = byId("veo-3.1");
+
 function fakeResponse(status: number, payload: unknown): Response {
   return {
     status,
@@ -51,7 +59,7 @@ describe("defaultSettings", () => {
   });
 
   it("derives every field from the provided model", () => {
-    const model = STUDIO_MODELS[2];
+    const model = STUDIO_MODELS[1];
     const settings = defaultSettings(model);
 
     expect(settings.modelId).toBe(model.id);
@@ -62,46 +70,47 @@ describe("defaultSettings", () => {
 
 describe("selectModel", () => {
   it("keeps supported options when switching between available models", () => {
-    const start = defaultSettings(STUDIO_MODELS[2]);
-    const next = selectModel(start, STUDIO_MODELS[0].id);
+    const start = defaultSettings(VEO);
+    const next = selectModel(start, WAN.id);
 
-    expect(next.modelId).toBe(STUDIO_MODELS[0].id);
-    expect(next.duration).toBe(start.duration);
+    expect(next.modelId).toBe(WAN.id);
     expect(next.aspect).toBe(start.aspect);
     expect(next.resolution).toBe(start.resolution);
+    // Veo only offers 8s, which Wan does not, so the length falls back.
+    expect(next.duration).toBe(WAN.durations[0]);
   });
 
   it("falls back to the new model's defaults for unsupported options", () => {
     const start = {
-      ...defaultSettings(STUDIO_MODELS[1]),
+      ...defaultSettings(VEO),
       duration: 7,
       aspect: "2:1",
       resolution: "4k",
     };
-    const next = selectModel(start, STUDIO_MODELS[0].id);
+    const next = selectModel(start, WAN.id);
 
-    expect(next.modelId).toBe(STUDIO_MODELS[0].id);
-    expect(next.duration).toBe(STUDIO_MODELS[0].durations[0]);
-    expect(next.aspect).toBe(STUDIO_MODELS[0].aspects[0]);
-    expect(next.resolution).toBe(STUDIO_MODELS[0].resolutions[0]);
+    expect(next.modelId).toBe(WAN.id);
+    expect(next.duration).toBe(WAN.durations[0]);
+    expect(next.aspect).toBe(WAN.aspects[0]);
+    expect(next.resolution).toBe(WAN.resolutions[0]);
   });
 
   it("disables audio when the new model has no audio", () => {
-    const start = { ...defaultSettings(STUDIO_MODELS[2]), audio: true };
-    const next = selectModel(start, STUDIO_MODELS[0].id);
+    const start = { ...defaultSettings(VEO), audio: true };
+    const next = selectModel(start, WAN.id);
 
     expect(next.audio).toBe(false);
   });
 
   it("returns the settings unchanged for an unknown id", () => {
-    const start = defaultSettings(STUDIO_MODELS[0]);
+    const start = defaultSettings(WAN);
     const next = selectModel(start, "does-not-exist");
 
     expect(next).toEqual(start);
   });
 
   it("ignores an unavailable model", () => {
-    const start = defaultSettings(STUDIO_MODELS[0]);
+    const start = defaultSettings(WAN);
     const next = selectModel(start, "kling-3");
 
     expect(next).toEqual(start);
@@ -143,19 +152,22 @@ describe("estimateCredits", () => {
     const price = (modelId: string, duration: number, resolution: string) =>
       estimateCredits({ modelId, duration, resolution });
 
-    expect(price("sora-2", 10, "720p")).toBe(2);
-    expect(price("sora-2", 15, "720p")).toBe(3);
-    expect(price("veo-3.1", 8, "720p")).toBe(10);
-    expect(price("wan2.6", 5, "720p")).toBe(25);
-    expect(price("wan2.6", 5, "1080p")).toBe(42);
-    expect(price("seedance-1.5-pro", 4, "480p")).toBe(16);
-    expect(price("seedance-1.5-pro", 4, "1080p")).toBe(32);
+    expect(price("veo-3.1", 8, "720p")).toBe(90);
+    expect(price("wan2.6", 5, "720p")).toBe(100);
+    expect(price("wan2.6", 5, "1080p")).toBe(150);
+    expect(price("wan2.6", 10, "720p")).toBe(195);
+    expect(price("wan2.6", 15, "1080p")).toBe(435);
+  });
+
+  it("prices models that are off sale at zero", () => {
+    expect(estimateCredits({ modelId: "sora-2", duration: 10, resolution: "720p" })).toBe(0);
+    expect(estimateCredits({ modelId: "seedance-1.5-pro", duration: 4, resolution: "480p" })).toBe(0);
   });
 });
 
 describe("canGenerate", () => {
   it("reports empty-prompt when the prompt is blank", () => {
-    const settings = defaultSettings(STUDIO_MODELS[0]);
+    const settings = defaultSettings(WAN);
 
     expect(canGenerate(settings, true)).toEqual({
       ok: false,
@@ -169,7 +181,7 @@ describe("canGenerate", () => {
 
   it("reports unavailable-model when the selected model is unavailable", () => {
     const settings = {
-      ...defaultSettings(STUDIO_MODELS[0]),
+      ...defaultSettings(WAN),
       modelId: "kling-3",
       prompt: "a cat",
     };
@@ -182,7 +194,7 @@ describe("canGenerate", () => {
 
   it("reports unavailable-model before disabled", () => {
     const settings = {
-      ...defaultSettings(STUDIO_MODELS[0]),
+      ...defaultSettings(WAN),
       modelId: "kling-3",
       prompt: "a cat",
     };
@@ -194,7 +206,7 @@ describe("canGenerate", () => {
   });
 
   it("reports disabled when generation is turned off", () => {
-    const settings = { ...defaultSettings(STUDIO_MODELS[0]), prompt: "a cat" };
+    const settings = { ...defaultSettings(WAN), prompt: "a cat" };
 
     expect(canGenerate(settings, false)).toEqual({
       ok: false,
@@ -203,7 +215,7 @@ describe("canGenerate", () => {
   });
 
   it("reports ok when the prompt exists and generation is enabled", () => {
-    const settings = { ...defaultSettings(STUDIO_MODELS[0]), prompt: "a cat" };
+    const settings = { ...defaultSettings(WAN), prompt: "a cat" };
 
     expect(canGenerate(settings, true)).toEqual({ ok: true });
   });
@@ -227,7 +239,7 @@ describe("buildGenerateRequest", () => {
 
   it("carries the settings and idempotency key into the body", () => {
     const settings = {
-      ...defaultSettings(STUDIO_MODELS[0]),
+      ...defaultSettings(WAN),
       prompt: "a cat",
       duration: 8,
       aspect: "9:16",
@@ -240,7 +252,7 @@ describe("buildGenerateRequest", () => {
       ok: true,
       body: {
         prompt: "a cat",
-        model: "seedance-1.5-pro",
+        model: "wan2.6",
         duration: 8,
         aspectRatio: "9:16",
         quality: "1080p",
@@ -252,7 +264,7 @@ describe("buildGenerateRequest", () => {
 
   it("trims surrounding whitespace from the prompt", () => {
     const result = buildGenerateRequest(
-      { ...defaultSettings(STUDIO_MODELS[0]), prompt: "  a cat  " },
+      { ...defaultSettings(WAN), prompt: "  a cat  " },
       "key-1",
     );
 
@@ -266,7 +278,7 @@ describe("buildGenerateRequest", () => {
   it("reports empty-prompt for a blank prompt", () => {
     expect(
       buildGenerateRequest(
-        { ...defaultSettings(STUDIO_MODELS[0]), prompt: "   " },
+        { ...defaultSettings(WAN), prompt: "   " },
         "key-1",
       ),
     ).toEqual({ ok: false, reason: "empty-prompt" });
@@ -276,7 +288,7 @@ describe("buildGenerateRequest", () => {
     expect(
       buildGenerateRequest(
         {
-          ...defaultSettings(STUDIO_MODELS[0]),
+          ...defaultSettings(WAN),
           modelId: "kling-3",
           prompt: "a cat",
         },
@@ -289,7 +301,7 @@ describe("buildGenerateRequest", () => {
     expect(
       buildGenerateRequest(
         {
-          ...defaultSettings(STUDIO_MODELS[0]),
+          ...defaultSettings(WAN),
           modelId: "does-not-exist",
           prompt: "a cat",
         },
@@ -301,7 +313,7 @@ describe("buildGenerateRequest", () => {
 
 describe("submitGeneration", () => {
   const settings = {
-    ...defaultSettings(STUDIO_MODELS[0]),
+    ...defaultSettings(WAN),
     prompt: "a cat",
     duration: 8,
     aspect: "9:16",
@@ -329,7 +341,7 @@ describe("submitGeneration", () => {
       },
       body: JSON.stringify({
         prompt: "a cat",
-        model: "seedance-1.5-pro",
+        model: "wan2.6",
         duration: 8,
         aspectRatio: "9:16",
         quality: "1080p",
@@ -476,7 +488,7 @@ describe("settingsFromSearchParams", () => {
 
   it("takes the first value when a param is an array", () => {
     const settings = settingsFromSearchParams({
-      model: ["wan2.6", "seedance-1.5-pro"],
+      model: ["wan2.6", "veo-3.1"],
       prompt: ["first shot", "second shot"],
     });
 

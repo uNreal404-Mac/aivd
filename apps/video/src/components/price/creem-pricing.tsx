@@ -43,11 +43,10 @@ function formatPrice(cents: number): string {
   return `$${value}`;
 }
 
-// 计算年付折扣（年付 = 月付 × 10，买 10 送 2）
+// 计算年付折扣（年付 = 月付 × 11，付 11 个月用 12 个月）
 function calculateYearlyDiscount(): string {
-  // 月付12个月 vs 年付10个月的价格
-  // 折扣 = (12 - 10) / 12 = 16.67% ≈ 17%
-  return "17% OFF";
+  // 折扣 = (12 - 11) / 12 = 8.33% ≈ 8%
+  return "8% OFF";
 }
 
 export function CreemPricing({

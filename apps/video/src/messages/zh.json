@@ -243,15 +243,15 @@
     "packages": {
       "starter": {
         "name": "入门积分包",
-        "description": "280 积分 - 适合试用体验"
+        "description": "650 积分 - 适合试用体验"
       },
       "basic": {
         "name": "基础版",
-        "description": "280 积分/月 - 适合轻度使用"
+        "description": "1,000 积分/月 - 适合轻度使用"
       },
       "pro": {
         "name": "专业版",
-        "description": "960 积分/月 - 适合专业人士"
+        "description": "3,000 积分/月 - 适合专业人士"
       },
       "ultimate": {
         "name": "旗舰版",
@@ -259,7 +259,7 @@
       },
       "standard": {
         "name": "标准积分包",
-        "description": "960 积分 - 性价比之选"
+        "description": "2,100 积分 - 性价比之选"
       }
     },
     "features": {

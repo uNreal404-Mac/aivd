@@ -34,6 +34,8 @@ export const VIDEO_CATALOG: CatalogModel[] = [
 ];
 
 export const VIDEO_FEATURED_IDS = [
+  // On sale today, so they lead the list.
+  "veo-3.1", "wan2.6",
   "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "kling/v4-reference-to-video",
   "kling/v4-flash-reference-to-video", "wan/3-0-video-prime",
   "bytedance/seedance-2", "minimax-h3/text-to-video",

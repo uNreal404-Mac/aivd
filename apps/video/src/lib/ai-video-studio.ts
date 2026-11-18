@@ -14,14 +14,16 @@ export type StudioModel = {
 
 export const STUDIO_MODELS: StudioModel[] = [
   {
-    id: "seedance-1.5-pro",
-    name: "Seedance 1.5 Pro",
-    tagline: "Fast, expressive motion for everyday clips.",
+    id: "veo-3.1",
+    name: "Veo 3.1",
+    tagline: "Rich scenes with synchronized sound and depth.",
     badge: "Top",
-    durations: [4, 5, 6, 8, 10, 12],
-    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
-    resolutions: ["480p", "720p", "1080p"],
-    audio: false,
+    durations: [8],
+    aspects: ["16:9", "9:16"],
+    // 720p only: asking KIE for "1080p" switches to the Quality tier at about
+    // four times the cost without a guaranteed 1080p render.
+    resolutions: ["720p"],
+    audio: true,
     available: true,
   },
   {
@@ -34,15 +36,16 @@ export const STUDIO_MODELS: StudioModel[] = [
     audio: false,
     available: true,
   },
+  // Off sale: no verified KIE cost to price them from (see kie-pricing.ts).
   {
-    id: "veo-3.1",
-    name: "Veo 3.1",
-    tagline: "Rich scenes with synchronized sound and depth.",
-    durations: [8],
-    aspects: ["16:9", "9:16"],
-    resolutions: ["720p"],
-    audio: true,
-    available: true,
+    id: "seedance-1.5-pro",
+    name: "Seedance 1.5 Pro",
+    tagline: "Fast, expressive motion for everyday clips.",
+    durations: [4, 5, 6, 8, 10, 12],
+    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
+    resolutions: ["480p", "720p", "1080p"],
+    audio: false,
+    available: false,
   },
   {
     id: "sora-2",
@@ -52,7 +55,7 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["16:9", "9:16"],
     resolutions: ["720p"],
     audio: true,
-    available: true,
+    available: false,
   },
   {
     id: "kling-3",

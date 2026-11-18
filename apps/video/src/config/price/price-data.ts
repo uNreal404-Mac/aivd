@@ -20,11 +20,11 @@ export interface SubscriptionPlanTranslation {
  * 定价数据配置
  *
  * 基于 PRICING_REFERENCE.md 文档：
- * - Basic: $9.90/月, $99/年, 280积分/月 (3360积分/年)
- * - Pro: $29.90/月, $299/年, 960积分/月 (11520积分/年)
- * - Ultimate: $79.90/月, $799/年, 2850积分/月 (34200积分/年)
+ * - Basic: $12/月, $132/年, 1000积分/月 (12000积分/年)
+ * - Pro: $29/月, $319/年, 3000积分/月 (36000积分/年)
+ * - Ultimate: $79/月, $869/年, 9000积分/月 (108000积分/年)
  *
- * 年付 = 月付 × 10（买 10 送 2，省 2 个月）
+ * 年付 = 月付 × 11（付 11 个月用 12 个月）
  *
  * 数据来源：从 SUBSCRIPTION_PRODUCTS (pricing-user.ts) 自动生成
  */
@@ -77,13 +77,13 @@ function generatePriceData() {
       },
       benefits: {
         zh: [
-          "每月 280 积分（约 28 个视频）",
+          "每月 1,000 积分",
           "高清视频生成（720P/1080P）",
           "快速生成通道",
           "商业使用权",
         ],
         en: [
-          "280 credits/month (~28 videos)",
+          "1,000 credits/month",
           "HD video generation (720P/1080P)",
           "Fast generation",
           "Commercial license",
@@ -101,13 +101,13 @@ function generatePriceData() {
       },
       benefits: {
         zh: [
-          "每月 960 积分（约 96 个视频）",
+          "每月 3,000 积分",
           "高清视频生成（720P/1080P）",
           "快速生成通道",
           "商业使用权",
         ],
         en: [
-          "960 credits/month (~96 videos)",
+          "3,000 credits/month",
           "HD video generation (720P/1080P)",
           "Fast generation",
           "Commercial license",
@@ -125,13 +125,13 @@ function generatePriceData() {
       },
       benefits: {
         zh: [
-          "每月 2,850 积分（约 285 个视频）",
+          "每月 9,000 积分",
           "高清视频生成（720P/1080P）",
           "快速生成通道",
           "商业使用权",
         ],
         en: [
-          "2,850 credits/month (~285 videos)",
+          "9,000 credits/month",
           "HD video generation (720P/1080P)",
           "Fast generation",
           "Commercial license",

@@ -32,7 +32,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, onBrowseIde
   const [referenceImages, setReferenceImages] = useState<{ file: File; preview: string }[]>([]);
   const [aspect, setAspect] = useState(models[0]?.aspects[0] ?? "16:9");
   const [duration, setDuration] = useState(models[0]?.durations[0] ?? 4);
-  const [resolution, setResolution] = useState("480p");
+  const [resolution, setResolution] = useState(() => STUDIO_MODELS.find((item) => item.id === models[0]?.id)?.resolutions[0] ?? "720p");
   const [sound, setSound] = useState(false);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -152,7 +152,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, onBrowseIde
 
   return <div id="home-generator" className="relative z-20 mt-4 w-full max-w-[1120px] scroll-mt-24">
     <div className="mx-auto flex w-fit rounded-full border border-white/20 bg-[var(--du-surface)]/90 p-1 shadow-[0_8px_32px_rgba(0,0,0,.3)]" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
-      <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution("480p"); }} className={`min-w-[92px] rounded-full px-5 py-2 text-sm font-medium transition-colors sm:min-w-[112px] ${kind === "video" ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
+      <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`min-w-[92px] rounded-full px-5 py-2 text-sm font-medium transition-colors sm:min-w-[112px] ${kind === "video" ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setAspect("1:1"); setResolution("1K"); }} className={`min-w-[92px] rounded-full px-5 py-2 text-sm font-medium transition-colors sm:min-w-[112px] ${kind === "image" ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
     </div>
     <form onSubmit={submit} className="du-glass relative mt-3 w-full rounded-[22px] p-3 text-left shadow-[0_20px_60px_rgba(0,0,0,.35)] sm:p-4">

@@ -81,9 +81,9 @@ export const NEW_USER_GIFT = {
   /** 是否启用赠送 */
   enabled: true,
   /** 赠送积分数量 */
-  credits: 2,  // 1 个 Sora 2 视频
+  credits: 70,  // 够生成一条最便宜的视频，或几十张图片
   /** 积分有效期（天）*/
-  validDays: 30,
+  validDays: 7,
 };
 
 /**
@@ -122,8 +122,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_jsRIeZmqn3L9NN2fiFIn6", // 从 Creem 后台复制 Basic Monthly Product ID
     name: "Basic Plan",
-    priceUsd: 9.9,
-    credits: 280, // ~28 Veo 3.1 视频 (60% 毛利率)
+    priceUsd: 12,
+    credits: 1000,
     period: "month" as const,
     popular: false,
     enabled: true,
@@ -132,8 +132,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq21zX2Z16", // 从 Creem 后台复制 Pro Monthly Product ID
     name: "Pro Plan",
-    priceUsd: 29.9,
-    credits: 960, // ~96 Veo 3.1 视频 (55% 毛利率，比 Basic 便宜 12%)
+    priceUsd: 29,
+    credits: 3000,
     period: "month" as const,
     popular: true, // 推荐
     enabled: true,
@@ -142,8 +142,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z18", // 从 Creem 后台复制 Ultimate Monthly Product ID
     name: "Ultimate Plan",
-    priceUsd: 79.9,
-    credits: 2850, // ~285 Veo 3.1 视频 (50% 毛利率，比 Basic 便宜 21%)
+    priceUsd: 79,
+    credits: 9000,
     period: "month" as const,
     popular: false,
     enabled: true,
@@ -154,8 +154,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z10", // 从 Creem 后台复制 Basic Yearly Product ID
     name: "Basic Plan (Yearly)",
-    priceUsd: 99, // 月付 × 10 (省 2 个月)
-    credits: 3360, // 280 × 12
+    priceUsd: 132, // 月付 × 11
+    credits: 12000, // 1000 × 12
     period: "year" as const,
     popular: false,
     enabled: true,
@@ -164,8 +164,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z55", // 从 Creem 后台复制 Pro Yearly Product ID
     name: "Pro Plan (Yearly)",
-    priceUsd: 299, // 月付 × 10 (省 2 个月)
-    credits: 11520, // 960 × 12
+    priceUsd: 319, // 月付 × 11
+    credits: 36000, // 3000 × 12
     period: "year" as const,
     popular: true,
     enabled: true,
@@ -174,8 +174,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z21", // 从 Creem 后台复制 Ultimate Yearly Product ID
     name: "Ultimate Plan (Yearly)",
-    priceUsd: 799, // 月付 × 10 (省 2 个月)
-    credits: 34200, // 2850 × 12
+    priceUsd: 869, // 月付 × 11
+    credits: 108000, // 9000 × 12
     period: "year" as const,
     popular: false,
     enabled: true,
@@ -203,8 +203,8 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
   {
     id: "prod_3tlZPSRNHZSaNq21zX2ZPO", // 从 Creem 后台复制 Starter Pack Product ID
     name: "Starter Pack",
-    priceUsd: 14.9,
-    credits: 280, // 和 Basic 月付积分相同
+    priceUsd: 10,
+    credits: 650,
     popular: true, // 推荐
     enabled: true,
     allowFreeUser: true, // 所有用户可购买
@@ -213,8 +213,8 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z12", // 从 Creem 后台复制 Standard Pack Product ID
     name: "Standard Pack",
-    priceUsd: 39.9, // 比月付 Pro 贵 33%
-    credits: 960, // 和 Pro 月付积分相同
+    priceUsd: 30,
+    credits: 2100,
     popular: false,
     enabled: true,
     allowFreeUser: false, // 仅订阅用户
@@ -223,8 +223,8 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z13", // 从 Creem 后台复制 Pro Pack Product ID
     name: "Pro Pack",
-    priceUsd: 99.9, // 比月付 Ultimate 贵 25%
-    credits: 2850, // 和 Ultimate 月付积分相同
+    priceUsd: 100,
+    credits: 7500,
     popular: false,
     enabled: true,
     allowFreeUser: false, // 仅订阅用户
@@ -256,51 +256,17 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
  * - qualityMultiplier: 画质乘数（1080p vs 720p）
  */
 export const VIDEO_MODEL_PRICING: Record<string, VideoModelPricing> = {
-  /** Seedance 1.5 Pro - 按秒计费（默认有音频） */
-  "seedance-1.5-pro": {
-    baseCredits: 0,
-    perSecond: 4, // 720p 有音频: 3.557 Credits/秒 → 4 积分/秒
-    qualityMultiplier: 2, // 1080p = 720p × 2
-    enabled: true,
-  },
-
-  /** Seedance 1.0 Pro Fast - 快速生成（APImart） */
-  "seedance-1.0-pro-fast": {
-    baseCredits: 0,
-    perSecond: 3, // 按秒计费
-    qualityMultiplier: 2,
-    enabled: true,
-  },
-
-  /** Seedance 1.0 Pro Quality - 高质量生成（APImart） */
-  "seedance-1.0-pro-quality": {
-    baseCredits: 0,
-    perSecond: 5, // 高质量，每秒积分更高
-    qualityMultiplier: 2,
-    enabled: true,
-  },
-
-  /** Veo 3.1 Fast Lite - Google */
-  "veo-3.1": {
-    baseCredits: 10,
-    perSecond: 0,
-    enabled: true,
-  },
-
-  /** Sora 2 Lite - OpenAI */
-  "sora-2": {
-    baseCredits: 2,
-    perSecond: 0,
-    enabled: true,
-  },
-
-  /** Wan 2.6 */
-  "wan2.6": {
-    baseCredits: 25,
-    perSecond: 5,
-    qualityMultiplier: 1.67,
-    enabled: true,
-  },
+  // Credit prices are no longer set here: they are computed from KIE's list
+  // prices in kie-pricing.ts. This table only controls which models are on
+  // sale and their display order. baseCredits / perSecond are unused.
+  "veo-3.1": { baseCredits: 0, perSecond: 0, enabled: true },
+  "wan2.6": { baseCredits: 0, perSecond: 0, enabled: true },
+  // Not on KIE's price list as of 2026-11-18, so there is no verified cost to
+  // price them from. Off sale until a cost is confirmed.
+  "seedance-1.5-pro": { baseCredits: 0, perSecond: 0, enabled: false },
+  "sora-2": { baseCredits: 0, perSecond: 0, enabled: false },
+  "seedance-1.0-pro-fast": { baseCredits: 0, perSecond: 0, enabled: false },
+  "seedance-1.0-pro-quality": { baseCredits: 0, perSecond: 0, enabled: false },
 };
 
 // ============================================

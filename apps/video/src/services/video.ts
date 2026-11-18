@@ -146,6 +146,13 @@ export class VideoService {
       });
     }
 
+    if (modelConfig.enabled === false) {
+      throw new ApiError(`Model ${params.model} is not available`, 400, {
+        code: "MODEL_DISABLED",
+        model: params.model,
+      });
+    }
+
     const effectiveDuration = params.duration || modelConfig.durations[0] || 5;
 
     const outputNumber = Math.max(1, params.outputNumber ?? 1);
@@ -153,6 +160,14 @@ export class VideoService {
       duration: effectiveDuration,
       quality: params.quality,
     }) * outputNumber;
+
+    // A model with no verified cost prices at 0. Never run it for free.
+    if (!(creditsRequired > 0)) {
+      throw new ApiError(`Model ${params.model} has no price`, 400, {
+        code: "MODEL_NOT_PRICED",
+        model: params.model,
+      });
+    }
 
     const hasImageInput =
       (params.imageUrls && params.imageUrls.length > 0) || Boolean(params.imageUrl);
