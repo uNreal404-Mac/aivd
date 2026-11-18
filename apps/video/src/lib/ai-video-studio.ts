@@ -356,3 +356,178 @@ export async function submitGeneration(
 
   return code ? { ok: false, message, code } : { ok: false, message };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Results: status polling and history                                        */
+/* -------------------------------------------------------------------------- */
+
+export type StudioResultStatus =
+  | "queued"
+  | "generating"
+  | "completed"
+  | "failed";
+
+export type StudioResult = {
+  id: string;
+  status: StudioResultStatus;
+  videoUuid?: string | null;
+  videoUrl?: string | null;
+  prompt?: string | null;
+  message?: string | null;
+};
+
+export const RESULT_POLL_INTERVAL_MS = 5000;
+export const RESULT_HISTORY_LIMIT = 12;
+
+/** Map a server VideoStatus onto the four states the studio renders. */
+export function toStudioStatus(status: unknown): StudioResultStatus {
+  switch (typeof status === "string" ? status.toUpperCase() : "") {
+    case "COMPLETED":
+      return "completed";
+    case "FAILED":
+      return "failed";
+    case "GENERATING":
+    case "UPLOADING":
+      return "generating";
+    default:
+      return "queued";
+  }
+}
+
+export function isResultPending(result: StudioResult): boolean {
+  return (
+    Boolean(result.videoUuid) &&
+    (result.status === "queued" || result.status === "generating")
+  );
+}
+
+type StatusPayload = {
+  success?: boolean;
+  data?: { status?: string; videoUrl?: string; error?: string } | null;
+};
+
+export type FetchResultStatus =
+  | {
+      ok: true;
+      status: StudioResultStatus;
+      videoUrl: string | null;
+      message: string | null;
+    }
+  | { ok: false };
+
+/**
+ * Ask the server for the latest state of one generation. The endpoint also
+ * refreshes from the provider, so this is what moves a clip to completed when
+ * the provider callback has not arrived. Any failure is reported as
+ * `{ ok: false }` so the caller keeps the previous state and tries again.
+ */
+export async function fetchResultStatus(
+  videoUuid: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FetchResultStatus> {
+  try {
+    const response = await fetchImpl(
+      `/api/v1/video/${encodeURIComponent(videoUuid)}/status`,
+      { cache: "no-store" },
+    );
+    if (response.status !== 200) {
+      return { ok: false };
+    }
+    const payload = (await response.json()) as StatusPayload;
+    if (!payload?.success || !payload.data) {
+      return { ok: false };
+    }
+    return {
+      ok: true,
+      status: toStudioStatus(payload.data.status),
+      videoUrl: payload.data.videoUrl ?? null,
+      message: payload.data.error ?? null,
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
+type ListPayload = {
+  success?: boolean;
+  data?: {
+    videos?: Array<{
+      uuid?: string;
+      status?: string;
+      videoUrl?: string | null;
+      prompt?: string | null;
+      errorMessage?: string | null;
+    }>;
+  } | null;
+};
+
+/**
+ * Load the signed-in user's most recent generations, newest first. Returns an
+ * empty list when signed out or on any error: history is a convenience and
+ * must never block the studio.
+ */
+export async function fetchRecentResults(
+  fetchImpl: typeof fetch = fetch,
+  limit: number = RESULT_HISTORY_LIMIT,
+): Promise<StudioResult[]> {
+  try {
+    const response = await fetchImpl(`/api/v1/video/list?limit=${limit}`, {
+      cache: "no-store",
+    });
+    if (response.status !== 200) {
+      return [];
+    }
+    const payload = (await response.json()) as ListPayload;
+    if (!payload?.success || !Array.isArray(payload.data?.videos)) {
+      return [];
+    }
+    const results: StudioResult[] = [];
+    for (const video of payload.data.videos) {
+      if (!video?.uuid) continue;
+      results.push({
+        id: video.uuid,
+        videoUuid: video.uuid,
+        status: toStudioStatus(video.status),
+        videoUrl: video.videoUrl ?? null,
+        prompt: video.prompt ?? null,
+        message: video.errorMessage ?? null,
+      });
+    }
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Merge server history into the local list. Local entries win (they may be
+ * newer than the history snapshot) and keep their position at the top.
+ */
+export function mergeResults(
+  local: StudioResult[],
+  history: StudioResult[],
+): StudioResult[] {
+  const seen = new Set(local.map((item) => item.id));
+  return [...local, ...history.filter((item) => !seen.has(item.id))];
+}
+
+/** Apply one status poll to the list, leaving other entries untouched. */
+export function applyResultStatus(
+  results: StudioResult[],
+  videoUuid: string,
+  update: FetchResultStatus,
+): StudioResult[] {
+  if (!update.ok) {
+    return results;
+  }
+  return results.map((item) =>
+    item.videoUuid === videoUuid
+      ? {
+          ...item,
+          status: update.status,
+          videoUrl: update.videoUrl ?? item.videoUrl ?? null,
+          message: update.message ?? item.message ?? null,
+        }
+      : item,
+  );
+}

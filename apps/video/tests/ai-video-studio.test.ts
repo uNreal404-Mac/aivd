@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  applyResultStatus,
   buildGenerateRequest,
+  fetchRecentResults,
+  fetchResultStatus,
+  isResultPending,
+  mergeResults,
+  toStudioStatus,
   canGenerate,
   defaultSettings,
   estimateCredits,
@@ -517,5 +523,108 @@ describe("settingsFromSearchParams", () => {
     if (result.ok) {
       expect("preset" in result.body).toBe(false);
     }
+  });
+});
+
+describe("studio results", () => {
+  it("maps server statuses onto studio states", () => {
+    expect(toStudioStatus("PENDING")).toBe("queued");
+    expect(toStudioStatus("GENERATING")).toBe("generating");
+    expect(toStudioStatus("UPLOADING")).toBe("generating");
+    expect(toStudioStatus("COMPLETED")).toBe("completed");
+    expect(toStudioStatus("FAILED")).toBe("failed");
+    expect(toStudioStatus(undefined)).toBe("queued");
+  });
+
+  it("only treats unfinished clips with a uuid as pending", () => {
+    expect(isResultPending({ id: "a", status: "queued", videoUuid: "a" })).toBe(true);
+    expect(isResultPending({ id: "a", status: "generating", videoUuid: "a" })).toBe(true);
+    expect(isResultPending({ id: "a", status: "completed", videoUuid: "a" })).toBe(false);
+    expect(isResultPending({ id: "a", status: "failed", videoUuid: "a" })).toBe(false);
+    expect(isResultPending({ id: "a", status: "queued", videoUuid: null })).toBe(false);
+  });
+
+  it("reads a completed status with its video url", async () => {
+    const fetchImpl = vi.fn(async () =>
+      fakeResponse(200, {
+        success: true,
+        data: { status: "COMPLETED", videoUrl: "https://cdn.test/v.mp4" },
+      }),
+    );
+
+    const result = await fetchResultStatus("vid_1", fetchImpl as unknown as typeof fetch);
+
+    expect(fetchImpl).toHaveBeenCalledWith("/api/v1/video/vid_1/status", { cache: "no-store" });
+    expect(result).toEqual({
+      ok: true,
+      status: "completed",
+      videoUrl: "https://cdn.test/v.mp4",
+      message: null,
+    });
+  });
+
+  it("reports status errors as not ok instead of throwing", async () => {
+    const http = vi.fn(async () => fakeResponse(500, { success: false }));
+    const network = vi.fn(async () => {
+      throw new Error("offline");
+    });
+
+    expect(await fetchResultStatus("vid_1", http as unknown as typeof fetch)).toEqual({ ok: false });
+    expect(await fetchResultStatus("vid_1", network as unknown as typeof fetch)).toEqual({ ok: false });
+  });
+
+  it("loads history and returns an empty list when signed out", async () => {
+    const ok = vi.fn(async () =>
+      fakeResponse(200, {
+        success: true,
+        data: {
+          videos: [
+            { uuid: "vid_2", status: "COMPLETED", videoUrl: "https://cdn.test/2.mp4", prompt: "a cat" },
+            { uuid: "vid_1", status: "FAILED", errorMessage: "boom" },
+            { status: "PENDING" },
+          ],
+        },
+      }),
+    );
+    const signedOut = vi.fn(async () => fakeResponse(401, { success: false }));
+
+    expect(await fetchRecentResults(ok as unknown as typeof fetch)).toEqual([
+      { id: "vid_2", videoUuid: "vid_2", status: "completed", videoUrl: "https://cdn.test/2.mp4", prompt: "a cat", message: null },
+      { id: "vid_1", videoUuid: "vid_1", status: "failed", videoUrl: null, prompt: null, message: "boom" },
+    ]);
+    expect(await fetchRecentResults(signedOut as unknown as typeof fetch)).toEqual([]);
+  });
+
+  it("merges history under local entries without duplicates", () => {
+    const merged = mergeResults(
+      [{ id: "vid_3", status: "queued", videoUuid: "vid_3" }],
+      [
+        { id: "vid_3", status: "completed", videoUuid: "vid_3" },
+        { id: "vid_2", status: "completed", videoUuid: "vid_2" },
+      ],
+    );
+
+    expect(merged.map((item) => `${item.id}:${item.status}`)).toEqual([
+      "vid_3:queued",
+      "vid_2:completed",
+    ]);
+  });
+
+  it("applies a status update to the matching clip only", () => {
+    const list = [
+      { id: "vid_1", status: "queued" as const, videoUuid: "vid_1" },
+      { id: "vid_2", status: "queued" as const, videoUuid: "vid_2" },
+    ];
+
+    const next = applyResultStatus(list, "vid_2", {
+      ok: true,
+      status: "completed",
+      videoUrl: "https://cdn.test/2.mp4",
+      message: null,
+    });
+
+    expect(next[0]).toBe(list[0]);
+    expect(next[1]).toMatchObject({ status: "completed", videoUrl: "https://cdn.test/2.mp4" });
+    expect(applyResultStatus(list, "vid_2", { ok: false })).toBe(list);
   });
 });

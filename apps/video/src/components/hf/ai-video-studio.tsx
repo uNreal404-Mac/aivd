@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   BookOpen,
@@ -12,15 +12,21 @@ import {
   X,
 } from "lucide-react";
 import {
+  RESULT_POLL_INTERVAL_MS,
   RIGHT_TABS,
   STUDIO_MODELS,
+  applyResultStatus,
   canGenerate,
   defaultSettings,
   estimateCredits,
+  fetchRecentResults,
+  fetchResultStatus,
+  isResultPending,
+  mergeResults,
   selectModel,
   submitGeneration,
 } from "@/lib/ai-video-studio";
-import type { StudioSettings } from "@/lib/ai-video-studio";
+import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
@@ -60,12 +66,6 @@ const HOW_IT_WORKS = [
   },
 ];
 
-type ResultItem = {
-  id: string;
-  status: "queued" | "failed";
-  videoUuid?: string | null;
-  message?: string;
-};
 
 function chipClass(active: boolean, disabled = false): string {
   return [
@@ -148,6 +148,8 @@ export function AiVideoStudio({
         ],
         empty: "还没有视频，你生成的内容会显示在这里。",
         queued: "排队中",
+        generating: "生成中",
+        failed: "生成失败",
         paused: "生成功能正在完成配置，当前设置已保留在此页面。",
         modelTaglines: {
           "seedance-1.5-pro": "适合日常短片的快速、自然运动。",
@@ -192,6 +194,8 @@ export function AiVideoStudio({
         steps: HOW_IT_WORKS,
         empty: "No clips yet. Your generations will show up here.",
         queued: "queued",
+        generating: "generating",
+        failed: "failed",
         paused: "Generation is paused while we finish setup. Your settings are saved on this page.",
         modelTaglines: {} as Record<string, string>,
       };
@@ -212,7 +216,7 @@ export function AiVideoStudio({
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [results, setResults] = useState<ResultItem[]>([]);
+  const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(RIGHT_TABS[1]);
   const [mode, setMode] = useState<(typeof MODES)[number]>("Create");
@@ -257,6 +261,59 @@ export function AiVideoStudio({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pickerOpen]);
 
+  // Show earlier generations so a reload does not lose clips in progress.
+  useEffect(() => {
+    let cancelled = false;
+    fetchRecentResults().then((history) => {
+      if (cancelled || history.length === 0) return;
+      setResults((previous) => mergeResults(previous, history));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Poll unfinished clips until they complete or fail. The timer is keyed on
+  // the set of pending ids, so it stops by itself once nothing is pending.
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const pendingKey = results
+    .filter(isResultPending)
+    .map((item) => item.videoUuid)
+    .join(",");
+
+  useEffect(() => {
+    if (!pendingKey) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const tick = async () => {
+      if (document.visibilityState !== "hidden") {
+        const pending = resultsRef.current.filter(isResultPending);
+        const updates = await Promise.all(
+          pending.map(async (item) => ({
+            uuid: item.videoUuid as string,
+            update: await fetchResultStatus(item.videoUuid as string),
+          })),
+        );
+        if (cancelled) return;
+        setResults((previous) =>
+          updates.reduce(
+            (list, { uuid, update }) => applyResultStatus(list, uuid, update),
+            previous,
+          ),
+        );
+      }
+      if (!cancelled) timer = setTimeout(tick, RESULT_POLL_INTERVAL_MS);
+    };
+
+    timer = setTimeout(tick, RESULT_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [pendingKey]);
+
   async function handleGenerate() {
     if (promptEmpty || submitting || !availableModelIds.includes(catalogModelId)) {
       return;
@@ -291,6 +348,7 @@ export function AiVideoStudio({
           id: result.videoUuid ?? result.taskId ?? `clip-${previous.length + 1}`,
           status: "queued",
           videoUuid: result.videoUuid,
+          prompt: settings.prompt.trim(),
         },
         ...previous,
       ]);
@@ -645,20 +703,49 @@ export function AiVideoStudio({
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {results.map((result) => (
-                  <div
-                    key={result.id}
-                    className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)]"
-                  >
-                    <Clock
-                      className="h-5 w-5 text-[var(--hfv-muted)]"
-                      aria-hidden="true"
+                {results.map((result) =>
+                  result.status === "completed" && result.videoUrl ? (
+                    <video
+                      key={result.id}
+                      src={result.videoUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      title={result.prompt ?? undefined}
+                      className="aspect-video w-full rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-black object-contain"
                     />
-                    <span className="text-xs uppercase tracking-wide text-[var(--hfv-muted)]">
-                      {result.status === "queued" ? copy.queued : result.status}
-                    </span>
-                  </div>
-                ))}
+                  ) : (
+                    <div
+                      key={result.id}
+                      title={result.prompt ?? undefined}
+                      className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[var(--hfv-radius-card)] border border-[var(--hfv-border)] bg-[var(--hfv-panel-2)] px-3 text-center"
+                    >
+                      {result.status === "failed" ? (
+                        <X
+                          className="h-5 w-5 text-[var(--hfv-muted)]"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Clock
+                          className={`h-5 w-5 text-[var(--hfv-muted)] ${result.status === "generating" ? "animate-pulse" : ""}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="text-xs uppercase tracking-wide text-[var(--hfv-muted)]">
+                        {result.status === "failed"
+                          ? copy.failed
+                          : result.status === "generating"
+                            ? copy.generating
+                            : copy.queued}
+                      </span>
+                      {result.status === "failed" && result.message ? (
+                        <span className="line-clamp-2 text-[11px] text-[var(--hfv-muted)]">
+                          {result.message}
+                        </span>
+                      ) : null}
+                    </div>
+                  ),
+                )}
               </div>
             )
           ) : null}
