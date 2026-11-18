@@ -14,6 +14,8 @@ import {
   type HomeTemplate,
 } from "@/lib/home-templates";
 import { IMAGE_CATALOG, VIDEO_CATALOG, type CatalogModel } from "@/lib/kie-model-catalog";
+import "@/components/hf/home-showcase.css";
+import "@/components/hf/home-pricing.css";
 import "./section-pages.css";
 
 type ComposerModel = { id: string; name: string; durations: number[]; aspects: string[] };
@@ -183,6 +185,22 @@ export function ImageSectionPage({ lang, models, initialPrompt }: { lang: string
   );
 }
 
+const TEMPLATE_CATEGORY_LINES: Record<string, { zh: string; en: string }> = {
+  story: { zh: "有人物、有情节的电影感短片", en: "Cinematic shorts with characters and a plot" },
+  motion: { zh: "自然、粒子和舞蹈，让画面动起来", en: "Nature, particles and dance in motion" },
+  recast: { zh: "科幻、奇幻和超现实的创意场景", en: "Sci-fi, fantasy and surreal ideas" },
+};
+
+// Models that suit templates, shown as tiles beside the offer card.
+const TEMPLATE_MODEL_TILES: { name: string; zh: string; en: string; href: string; badge?: { zh: string; en: string } }[] = [
+  { name: "Veo 3.1", zh: "带同步声音的电影级短片", en: "Cinematic clips with synced sound", href: "/ai/video?model=veo-3.1", badge: { zh: "热门", en: "Hot" } },
+  { name: "Wan 2.6", zh: "5–15 秒，性价比高", en: "5–15s, good value", href: "/ai/video?model=wan2.6" },
+  { name: "Seedance 2.5", zh: "最长 30 秒的电影级视频", en: "Cinematic video up to 30s", href: "/ai/video?model=bytedance%2Fseedance-2-5", badge: { zh: "新", en: "New" } },
+  { name: "Kling 4.0", zh: "参考图锁定人物", en: "References keep characters steady", href: "/ai/video?model=kling%2Fv4-reference-to-video" },
+  { name: "Grok Imagine", zh: "快速、实惠的短视频", en: "Fast, affordable clips", href: "/ai/video?model=grok-imagine%2Ftext-to-video" },
+  { name: "HappyHorse 1.1", zh: "风格鲜明的趣味短视频", en: "Playful clips with a strong style", href: "/ai/video?model=happyhorse-1-1" },
+];
+
 export function TemplatesSectionPage({ lang }: { lang: string }) {
   const zh = isZh(lang);
   const [query, setQuery] = useState("");
@@ -195,16 +213,13 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
   }, [query]);
   const useHref = (item: HomeTemplate) =>
     `${localizedHref(lang, "/video")}?prompt=${encodeURIComponent(zh ? item.prompt.zh : item.prompt.en)}`;
+  // Tall photo card from the homepage; hover shows "use template".
   const card = (item: HomeTemplate) => (
-    <Link key={item.id} href={useHref(item)} className="sp-tpl-card" title={zh ? item.prompt.zh : item.prompt.en}>
-      <span className="sp-tpl-cover">
-        <img src={item.image} alt="" loading="lazy" />
-        <span className="sp-tpl-use">{zh ? "使用模板" : "Use template"}</span>
-      </span>
-      <span className="sp-tpl-meta">
-        <span className="sp-tpl-name">{zh ? item.title.zh : item.title.en}</span>
-        <span className="sp-tpl-author">@aivd</span>
-      </span>
+    <Link key={item.id} href={useHref(item)} className="hs-tall" title={zh ? item.prompt.zh : item.prompt.en}>
+      <img src={item.image} alt="" loading="lazy" />
+      <span className="hs-usecase-shade" aria-hidden="true" />
+      <span className="hs-tall-title">{zh ? item.title.zh : item.title.en}</span>
+      <span className="hs-tall-use">{zh ? "使用模板" : "Use template"}</span>
     </Link>
   );
   return (
@@ -225,38 +240,134 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
         </div>
       </section>
 
-      {results ? (
-        <section className="sp-tpl-section">
-          <h2 className="sp-h2">{zh ? `搜索结果（${results.length}）` : `Results (${results.length})`}</h2>
-          {results.length > 0 ? <div className="sp-tpl-grid">{results.map(card)}</div> : <p className="sp-empty">{zh ? "没有匹配的模板" : "No templates match"}</p>}
-        </section>
-      ) : (
-        <>
-          <section className="sp-explore" aria-labelledby="sp-explore-title">
-            <h2 id="sp-explore-title" className="sp-h2">{zh ? "探索模板" : "Explore templates"}</h2>
-            <div className="sp-explore-grid">
-              {HOME_TEMPLATE_CATEGORIES.map((item) => (
-                <a key={item.id} href={`#tpl-${item.id}`} className="sp-explore-card">
-                  <span>{zh ? item.zh : item.en}</span>
-                  <img src={templatesFor(item.id)[0]?.image} alt="" loading="lazy" />
-                </a>
-              ))}
-              <Link href={localizedHref(lang, "/effects")} className="sp-explore-card sp-explore-more">
-                <span>{zh ? "视频特效" : "Video effects"}</span>
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </div>
-          </section>
-          {HOME_TEMPLATE_CATEGORIES.map((group) => (
-            <section key={group.id} id={`tpl-${group.id}`} className="sp-tpl-section sp-tpl-framed">
-              <div className="sp-tpl-head">
-                <h2 className="sp-showcase-title">{zh ? group.zh : group.en}</h2>
+      {/* Below the search the page uses the homepage and pricing styles. */}
+      <div className="hs sp-hs">
+        {results ? (
+          <section className="hs-section" aria-labelledby="tpl-results-title">
+            <div className="hs-head">
+              <div>
+                <h2 id="tpl-results-title" className="hs-title">{zh ? "搜索结果" : "RESULTS"}</h2>
+                <p className="hs-sub">{zh ? `找到 ${results.length} 个模板` : `${results.length} templates found`}</p>
               </div>
-              <div className="sp-tpl-grid">{templatesFor(group.id).map(card)}</div>
+            </div>
+            {results.length > 0 ? (
+              <div className="hs-tall-row sp-tall-4">{results.map(card)}</div>
+            ) : (
+              <p className="hs-sub">{zh ? "没有匹配的模板，换个关键词试试。" : "No templates match. Try another word."}</p>
+            )}
+          </section>
+        ) : (
+          <>
+            {/* 1. Category carousel */}
+            <section className="hs-carousel" aria-label={zh ? "模板分类" : "Template categories"}>
+              <div className="hs-carousel-track">
+                {HOME_TEMPLATE_CATEGORIES.map((item) => (
+                  <a key={item.id} href={`#tpl-${item.id}`} className="hs-slide">
+                    <span className="hs-slide-media">
+                      <img src={templatesFor(item.id)[0]?.image} alt="" loading="lazy" />
+                    </span>
+                    <span className="hs-slide-title">{zh ? item.zh : item.en}</span>
+                    <span className="hs-slide-body">
+                      {zh ? `${templatesFor(item.id).length} 个模板 · ` : `${templatesFor(item.id).length} templates · `}
+                      {zh ? TEMPLATE_CATEGORY_LINES[item.id]?.zh : TEMPLATE_CATEGORY_LINES[item.id]?.en}
+                    </span>
+                  </a>
+                ))}
+                <Link href={localizedHref(lang, "/effects")} className="hs-slide">
+                  <span className="hs-slide-media">
+                    <img src="/home/samples/cosmic-bloom.webp" alt="" loading="lazy" />
+                  </span>
+                  <span className="hs-slide-title">{zh ? "视频特效" : "VIDEO EFFECTS"}</span>
+                  <span className="hs-slide-body">{zh ? "热门特效，一键套用" : "Trending effects in one click"}</span>
+                </Link>
+              </div>
             </section>
-          ))}
-        </>
-      )}
+
+            {/* 2. Offer card and model tiles */}
+            <section className="hs-offer-grid" aria-label={zh ? "适合模板的模型" : "Models for templates"}>
+              <Link href={localizedHref(lang, "/ai/video")} className="hs-offer">
+                <span className="hs-offer-glow" aria-hidden="true" />
+                <span className="hs-offer-kicker">{zh ? "模板免费用" : "Templates are free"}</span>
+                <span className="hs-offer-title">{zh ? "一键套用" : "One click"}</span>
+                <span className="hs-offer-body">{zh ? "提示词自动填好，只按生成扣积分" : "The prompt is filled in; you only pay to generate"}</span>
+                <span className="hs-offer-cta">{zh ? "打开视频工作室" : "Open the video studio"}</span>
+              </Link>
+              <div className="hs-tiles">
+                {TEMPLATE_MODEL_TILES.map((tile) => (
+                  <Link key={tile.name} href={localizedHref(lang, tile.href)} className="hs-tile">
+                    <Sparkles className="hs-tile-icon" aria-hidden="true" />
+                    <span className="hs-tile-title">
+                      {tile.name}
+                      {tile.badge ? <span className="hs-badge">{zh ? tile.badge.zh : tile.badge.en}</span> : null}
+                    </span>
+                    <span className="hs-tile-body">{zh ? tile.zh : tile.en}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* 3. One section per category; ids match the nav's #tpl-* links */}
+            {HOME_TEMPLATE_CATEGORIES.map((group) => (
+              <section key={group.id} id={`tpl-${group.id}`} className="hs-section sp-anchor" aria-labelledby={`tpl-title-${group.id}`}>
+                <div className="hs-head">
+                  <div>
+                    <h2 id={`tpl-title-${group.id}`} className="hs-title">{zh ? group.zh : group.en}</h2>
+                    <p className="hs-sub">{zh ? TEMPLATE_CATEGORY_LINES[group.id]?.zh : TEMPLATE_CATEGORY_LINES[group.id]?.en}</p>
+                  </div>
+                </div>
+                <div className="hs-tall-row sp-tall-4">{templatesFor(group.id).map(card)}</div>
+              </section>
+            ))}
+
+            {/* 4. Banner: templates are a starting point */}
+            <section className="hs-banner hs-banner-canvas" aria-labelledby="tpl-agent-title">
+              <div className="hs-banner-text">
+                <span className="hs-banner-kicker">{zh ? "创作空间" : "CREATIVE SPACE"}</span>
+                <h2 id="tpl-agent-title" className="hs-banner-title">
+                  {zh ? <>模板只是起点。<br />想法才是主角。</> : <>Templates are a start.<br />Your idea leads.</>}
+                </h2>
+                <p className="hs-banner-body">
+                  {zh ? "没有合适的模板？说一句想法，Agent 帮你拆成分镜再生成" : "No template fits? Say the idea and the agent plans the shots"}
+                </p>
+                <Link href={localizedHref(lang, "/creative-space")} className="hs-btn hs-btn-light">
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  {zh ? "进入创作空间" : "Open Creative Space"}
+                </Link>
+              </div>
+              <div className="hs-banner-art" aria-hidden="true">
+                <img src="/home/samples/rain-couple.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
+                <img src="/home/samples/dancer.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
+                <span className="hs-banner-bubble">{zh ? "把这个模板改成雨夜版本" : "Make this template a rainy night"}</span>
+              </div>
+            </section>
+
+            {/* 5. Steps as gradient cards */}
+            <section className="hs-section" aria-labelledby="tpl-steps-title">
+              <div className="hs-head">
+                <div>
+                  <h2 id="tpl-steps-title" className="hs-title">{zh ? "三步用好模板" : "THREE STEPS"}</h2>
+                  <p className="hs-sub">{zh ? "从模板到成片，不用自己写提示词。" : "From template to clip without writing a prompt."}</p>
+                </div>
+              </div>
+              <div className="hp-plans">
+                {[
+                  { zh: "挑模板", en: "Pick", bodyZh: "按分类浏览或搜索，找一个接近你想法的模板。", bodyEn: "Browse or search for a template close to your idea." },
+                  { zh: "改几个词", en: "Tweak", bodyZh: "提示词已填好，换掉人物、场景或风格就行。", bodyEn: "The prompt is filled in; swap the subject, scene or style." },
+                  { zh: "生成下载", en: "Generate", bodyZh: "选模型、看积分、点生成，成片保存在我的作品。", bodyEn: "Pick a model, see the cost, generate and download." },
+                ].map((step, index) => (
+                  <article key={step.en} className={`hp-plan hp-plan-${(["basic", "pro", "ultimate"] as const)[index]}`}>
+                    <div className="hp-plan-top sp-step-card">
+                      <span className="sp-step-n">{index + 1}</span>
+                      <p className="hp-plan-name">{zh ? step.zh : step.en}</p>
+                      <p className="hp-plan-blurb">{zh ? step.bodyZh : step.bodyEn}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }

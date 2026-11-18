@@ -482,3 +482,50 @@ a.sp-model:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Templates page: sections below the search reuse the homepage (hs-*) and
+   pricing (hp-*) styles. */
+.sp-hs {
+  position: relative;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.sp-anchor {
+  scroll-margin-top: calc(var(--hf-header-h, 52px) + 24px);
+}
+
+.sp-tall-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sp-step-card {
+  position: relative;
+  min-height: 220px;
+  justify-content: flex-end;
+}
+
+.sp-step-card .hp-plan-name {
+  font-size: 30px;
+}
+
+.sp-step-n {
+  position: absolute;
+  top: 18px;
+  right: 26px;
+  font-size: 84px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.18;
+}
+
+@media (max-width: 1199px) {
+  .sp-tall-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* The homepage hides cards past the third here; this page shows all four. */
+  .sp-tall-4 > :nth-child(n + 4) {
+    display: block;
+  }
+}
