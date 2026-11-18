@@ -1,0 +1,84 @@
+/* Site-wide type system, after the reference sites: a grotesk display face
+   for headlines, prices and badges, Inter for everything else, and the
+   system CJK face for Chinese. Loaded after the component styles' imports in
+   the root layout, so it only has to set families, not sizes. */
+
+/* Defined on body, where next/font puts --font-sans / --font-display. */
+body {
+  --du-font-body: var(--font-sans), "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+    ui-sans-serif, system-ui, sans-serif;
+  --du-font-display: var(--font-display), "Space Grotesk", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", ui-sans-serif, sans-serif;
+}
+
+body {
+  font-family: var(--du-font-body);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display face: section titles, hero lines, plan names, prices, badges. */
+.hf-brand-word,
+.hs-title,
+.hs-slide-title,
+.hs-chrome-kicker,
+.hs-chrome-title,
+.hs-banner-title,
+.hs-banner-tag,
+.hs-offer-title,
+.hs-badge,
+.hp-kicker,
+.hp-title,
+.hp-h3,
+.hp-plan-name,
+.hp-price-now,
+.hp-price-was,
+.hp-need,
+.hp-cta-save,
+.vs-howto-title,
+.vs-banner-title,
+.vs-step-title,
+.is-title,
+.hf-dd-badge,
+.hf-dd-4k,
+.cs-step-n,
+.sp-step-n,
+.is-step-n,
+.ft-logo,
+.ft-tagline {
+  font-family: var(--du-font-display);
+}
+
+/* Large display lines read better a touch tighter. */
+.hs-title,
+.hs-chrome-title,
+.hs-banner-title,
+.hp-title,
+.hp-plan-name,
+.hp-price-now,
+.hp-need,
+.vs-howto-title,
+.is-title,
+.ft-tagline {
+  letter-spacing: -0.025em;
+}
+
+/* Figures that change or line up: prices, credits, counts. */
+.hp-price-now,
+.hp-price-was,
+.hp-need,
+.hp-credits,
+.hp-tree,
+.hp-table td,
+.hp-slider-value,
+.hs-offer-title,
+.vs-generate-cost,
+.is-generate-sub,
+.du-composer-cost,
+.hf-acct-credits-value,
+.hf-acct-left,
+.vs-count {
+  font-variant-numeric: tabular-nums;
+}

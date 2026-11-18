@@ -1,4 +1,3 @@
-import { Inter as FontSans, Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -7,6 +6,8 @@ import "@/styles/globals.css";
 import "@/styles/hf-theme.css";
 import "@/styles/hf-video-tokens.css";
 import "@/styles/hf-home-tokens.css";
+import "@/styles/typography.css";
+import "@/styles/motion.css";
 
 import { NextIntlClientProvider } from "next-intl";
 
@@ -19,18 +20,24 @@ import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PlausibleAnalytics } from "@/components/plausible-provider";
 import { AttributionCapture } from "@/components/attribution-capture";
+import { TiltEffect } from "@/components/tilt-effect";
 import { i18n } from "@/config/i18n-config";
 import { getSiteTitle, siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 
-const fontSans = FontSans({
-  subsets: ["latin"],
+// Self-hosted variable fonts (latin subset) so every build gets the real
+// faces without fetching Google Fonts. Chinese falls back to the system font.
+const fontSans = localFont({
+  src: "../styles/fonts/Inter-Variable-latin.woff2",
+  weight: "100 900",
+  display: "swap",
   variable: "--font-sans",
 });
 
-const fontDisplay = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["500", "700"],
+const fontDisplay = localFont({
+  src: "../styles/fonts/SpaceGrotesk-Variable-latin.woff2",
+  weight: "300 700",
+  display: "swap",
   variable: "--font-display",
 });
 
@@ -170,6 +177,7 @@ export default async function RootLayout({
             <QueryProvider>
               <PlausibleAnalytics />
               <AttributionCapture />
+              <TiltEffect />
               <ModalProvider>{children}</ModalProvider>
               <Toaster richColors position="top-right" />
               <TailwindIndicator />

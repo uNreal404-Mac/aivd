@@ -84,7 +84,7 @@ export function ImageShowcase({ lang }: { lang: string }) {
           {TILES.map((tile) => {
             const Icon = tile.icon;
             return (
-              <Link key={tile.en} href={href(tile.href)} className="hs-tile">
+              <Link key={tile.en} href={href(tile.href)} className="hs-tile" data-tilt>
                 <Icon className="hs-tile-icon" aria-hidden="true" />
                 <span className="hs-tile-title">
                   {zh ? tile.zh : tile.en}
@@ -117,7 +117,7 @@ export function ImageShowcase({ lang }: { lang: string }) {
             { zh: "生成下载", en: "Generate", bodyZh: "几秒出图，悬停即可下载原图。", bodyEn: "Images arrive in seconds; hover to download." },
           ].map((step, index) => (
             <article key={step.en} className={`hp-plan hp-plan-${(["basic", "pro", "ultimate"] as const)[index]}`}>
-              <div className="hp-plan-top is-step-card">
+              <div className="hp-plan-top is-step-card" data-tilt>
                 <span className="is-step-n">{index + 1}</span>
                 <p className="hp-plan-name">{zh ? step.zh : step.en}</p>
                 <p className="hp-plan-blurb">{zh ? step.bodyZh : step.bodyEn}</p>

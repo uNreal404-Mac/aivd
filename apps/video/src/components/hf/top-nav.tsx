@@ -401,7 +401,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const badge = (kind: DropItem["badge"]) =>
     kind ? <span className={cn("hf-dd-badge", kind === "hot" ? "hf-dd-badge-hot" : "hf-dd-badge-new")}>{kind === "hot" ? t.hot : t.fresh}</span> : null;
 
-  const row = (item: DropItem) => {
+  const row = (item: DropItem, index: number) => {
     const Icon = item.icon;
     const inner = (
       <>
@@ -420,11 +420,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       </>
     );
     return item.href ? (
-      <Link key={item.title} href={href(item.href)} className="hf-dd-row">
+      <Link key={item.title} href={href(item.href)} className="hf-dd-row" style={{ ["--i" as string]: index }}>
         {inner}
       </Link>
     ) : (
-      <span key={item.title} className="hf-dd-row hf-dd-row-off" aria-disabled="true">
+      <span key={item.title} className="hf-dd-row hf-dd-row-off" aria-disabled="true" style={{ ["--i" as string]: index }}>
         {inner}
       </span>
     );

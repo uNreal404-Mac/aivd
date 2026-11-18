@@ -1,0 +1,156 @@
+/* Site-wide motion, after the reference sites: one easing and duration,
+   popovers that settle in, dropdown rows that stagger, cards that lift (and
+   tilt toward the pointer where marked with data-tilt), buttons that press,
+   and sections that rise in as they scroll into view. Everything stops for
+   people who ask for reduced motion. */
+
+:root {
+  --du-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --du-dur: 400ms;
+  --du-dur-fast: 180ms;
+}
+
+@keyframes du-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+}
+
+@keyframes du-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+
+@keyframes du-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+/* Popovers: nav dropdowns, account menu, model picker, toggles. */
+.hf-dd,
+.hf-acct {
+  animation: du-pop var(--du-dur) var(--du-ease) both;
+  transform-origin: top left;
+}
+
+.hf-acct {
+  transform-origin: top right;
+}
+
+/* Dropdown rows arrive one after another (--i is set per row). */
+.hf-dd-row {
+  animation: du-row-in var(--du-dur) var(--du-ease) both;
+  animation-delay: calc(var(--i, 0) * 30ms + 30ms);
+}
+
+/* Cards lift on hover; data-tilt cards also lean toward the pointer. */
+:root .hs-tile,
+:root .hs-usecase,
+:root .hs-tall,
+:root .hs-wall-item,
+:root .hs-slide-media,
+:root .hp-plan-top,
+:root .hp-pack,
+:root .vs-banner,
+:root .vs-step .vs-howto-media,
+:root .as-card {
+  transition:
+    transform var(--du-dur) var(--du-ease),
+    box-shadow var(--du-dur) var(--du-ease),
+    background-color var(--du-dur) var(--du-ease);
+}
+
+:root .hs-tile:hover,
+:root .hs-usecase:hover,
+:root .hs-tall:hover,
+:root .hs-wall-item:hover,
+:root .hs-slide:hover .hs-slide-media,
+:root .hp-pack:hover,
+:root .as-card:hover {
+  transform: translateY(-2px) scale(1.015);
+}
+
+:root [data-tilt] {
+  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg));
+  transition: transform var(--du-dur) var(--du-ease);
+  will-change: transform;
+}
+
+:root [data-tilt]:hover {
+  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg))
+    translateY(-2px) scale(1.02);
+}
+
+/* Buttons press in. */
+:root .hs-btn,
+:root .hp-cta,
+:root .hp-more,
+:root .vs-generate,
+:root .is-generate,
+:root .hf-act,
+:root .hf-auth,
+:root .hf-avatar,
+:root .hs-offer-cta,
+:root .du-composer-send,
+:root .cs-send,
+:root .hs-mini button,
+:root .vs-chip,
+:root .is-chip,
+:root .hs-chip {
+  transition:
+    transform var(--du-dur-fast) var(--du-ease),
+    filter var(--du-dur-fast) ease,
+    background-color var(--du-dur-fast) ease,
+    color var(--du-dur-fast) ease;
+}
+
+:root .hs-btn:active,
+:root .hp-cta:active,
+:root .hp-more:active,
+:root .vs-generate:active:not(:disabled),
+:root .is-generate:active:not(:disabled),
+:root .hf-act:active,
+:root .hf-auth:active,
+:root .hs-offer-cta:active,
+:root .du-composer-send:active:not(:disabled),
+:root .cs-send:active:not(:disabled),
+:root .hs-mini button:active:not(:disabled),
+:root .vs-chip:active,
+:root .is-chip:active {
+  transform: scale(0.97);
+}
+
+/* Sections rise in as they scroll into view, where the browser supports
+   scroll-driven animations; elsewhere they simply show. */
+@supports (animation-timeline: view()) {
+  .hs > section,
+  .hs > .hs-usecases,
+  .hp > div,
+  .hp-plan,
+  .is-showcase > section {
+    animation: du-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  [data-tilt],
+  [data-tilt]:hover {
+    transform: none;
+  }
+}

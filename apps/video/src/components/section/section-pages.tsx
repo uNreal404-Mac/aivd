@@ -295,7 +295,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
               </Link>
               <div className="hs-tiles">
                 {TEMPLATE_MODEL_TILES.map((tile) => (
-                  <Link key={tile.name} href={localizedHref(lang, tile.href)} className="hs-tile">
+                  <Link key={tile.name} href={localizedHref(lang, tile.href)} className="hs-tile" data-tilt>
                     <Sparkles className="hs-tile-icon" aria-hidden="true" />
                     <span className="hs-tile-title">
                       {tile.name}
@@ -357,7 +357,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                   { zh: "生成下载", en: "Generate", bodyZh: "选模型、看积分、点生成，成片保存在我的作品。", bodyEn: "Pick a model, see the cost, generate and download." },
                 ].map((step, index) => (
                   <article key={step.en} className={`hp-plan hp-plan-${(["basic", "pro", "ultimate"] as const)[index]}`}>
-                    <div className="hp-plan-top sp-step-card">
+                    <div className="hp-plan-top sp-step-card" data-tilt>
                       <span className="sp-step-n">{index + 1}</span>
                       <p className="hp-plan-name">{zh ? step.zh : step.en}</p>
                       <p className="hp-plan-blurb">{zh ? step.bodyZh : step.bodyEn}</p>

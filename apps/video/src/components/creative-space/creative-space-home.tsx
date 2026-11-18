@@ -140,7 +140,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
             {AGENT_TILES.map((tile) => {
               const Icon = tile.icon;
               return (
-                <Link key={tile.en} href={canvasHref()} className="hs-tile">
+                <Link key={tile.en} href={canvasHref()} className="hs-tile" data-tilt>
                   <Icon className="hs-tile-icon" aria-hidden="true" />
                   <span className="hs-tile-title">
                     {zh ? tile.zh : tile.en}
@@ -215,7 +215,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
           <div className="hp-plans">
             {STEPS.map((step, index) => (
               <article key={step.en} className={`hp-plan hp-plan-${(["basic", "pro", "ultimate"] as const)[index]}`}>
-                <div className="hp-plan-top cs-step-card">
+                <div className="hp-plan-top cs-step-card" data-tilt>
                   <span className="cs-step-n">{index + 1}</span>
                   <p className="hp-plan-name">{zh ? step.zh : step.en}</p>
                   <p className="hp-plan-blurb">{zh ? step.bodyZh : step.bodyEn}</p>

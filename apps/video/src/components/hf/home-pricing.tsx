@@ -238,7 +238,7 @@ export function HomePricing({
           const isPick = plan.tier === recommended;
           return (
             <article key={plan.tier} className={`hp-plan hp-plan-${plan.tier}${isPick ? " hp-plan-pick" : ""}`}>
-              <div className="hp-plan-top">
+              <div className="hp-plan-top" data-tilt>
                 <div className="hp-plan-name">
                   {name}
                   {plan.popular ? (
