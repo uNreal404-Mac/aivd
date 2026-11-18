@@ -9,7 +9,8 @@ import { GallerySection } from "@/components/gallery/gallery-section";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { CREATIVE_SKILLS, CREATIVE_SKILL_CATEGORIES } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
-import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, type Bi, type ShowMedia } from "@/lib/home-showcase";
+import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
+import { WallCard } from "@/components/hf/wall-card";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
 import "./home-showcase.css";
 
@@ -229,20 +230,22 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
         </Link>
       </div>
       <div className="hs-wall">
-        {gallery.media.map((media, position) => (
-          <Link
-            key={`${gallery.id}-${position}`}
-            href={localizedHref(lang, gallery.href)}
-            className="hs-wall-item"
-            style={{ aspectRatio: WALL_RATIOS[(position + index) % WALL_RATIOS.length] }}
-          >
-            <Media media={media} />
-            <span className="hs-wall-hover">
-              <Clapperboard className="h-4 w-4" aria-hidden="true" />
-              {zh ? gallery.cta.zh : gallery.cta.en}
-            </span>
-          </Link>
-        ))}
+        {gallery.media.map((media, position) => {
+          const prompt = SAMPLE_PROMPTS[media.src];
+          const text = prompt ? (zh ? prompt.zh : prompt.en) : undefined;
+          return (
+            <WallCard
+              key={`${gallery.id}-${position}`}
+              media={media}
+              href={localizedHref(lang, withPrompt(gallery.href, text))}
+              prompt={text}
+              cta={zh ? "做同款" : "Make one like this"}
+              ratio={WALL_RATIOS[(position + index) % WALL_RATIOS.length]}
+              position={position + index}
+              zh={zh}
+            />
+          );
+        })}
       </div>
     </section>
   );

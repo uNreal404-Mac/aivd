@@ -6,6 +6,8 @@ import { ArrowRight, Clapperboard, Grid3x3, ImagePlus, Images, Sparkles, Type, Z
 import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { localizedHref } from "@/lib/du-home";
 import { navModelHref } from "@/lib/nav-models";
+import { SAMPLE_PROMPTS, withPrompt } from "@/lib/home-showcase";
+import { WallCard } from "@/components/hf/wall-card";
 import "./home-showcase.css";
 import "./home-pricing.css";
 import "./image-showcase.css";
@@ -178,20 +180,22 @@ function ImageWall({
           </Link>
         </div>
         <div className="hs-wall">
-          {model.wall.map((name, position) => (
-            <Link
-              key={`${model.id}-${name}`}
-              href={link}
-              className="hs-wall-item"
-              style={{ aspectRatio: WALL_RATIOS[(position + offset) % WALL_RATIOS.length] }}
-            >
-              <img src={S(name)} alt="" loading="lazy" />
-              <span className="hs-wall-hover">
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {cta}
-              </span>
-            </Link>
-          ))}
+          {model.wall.map((name, position) => {
+            const prompt = SAMPLE_PROMPTS[S(name)];
+            const text = prompt ? (zh ? prompt.zh : prompt.en) : undefined;
+            return (
+              <WallCard
+                key={`${model.id}-${name}`}
+                media={{ src: S(name) }}
+                href={localizedHref(lang, withPrompt(navModelHref("image", model.id), text))}
+                prompt={text}
+                cta={zh ? "做同款" : "Make one like this"}
+                ratio={WALL_RATIOS[(position + offset) % WALL_RATIOS.length]}
+                position={position + offset}
+                zh={zh}
+              />
+            );
+          })}
         </div>
       </section>
     </>

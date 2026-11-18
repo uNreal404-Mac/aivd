@@ -100,7 +100,7 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
   {
     id: "veo",
     title: "VEO 3.1",
-    body: { zh: "浏览社区里带声音的电影级短片", en: "Cinematic clips with sound from the community" },
+    body: { zh: "画面和声音一起生成的电影级短片", en: "Cinematic clips with picture and sound in one pass" },
     href: navModelHref("video", "veo-3.1"),
     cta: { zh: "用 Veo 3.1 生成", en: "Create with Veo 3.1" },
     media: [MEDIA.marina, MEDIA.valley, MEDIA.sea, MEDIA.showcase3, MEDIA.wind, MEDIA.planet, MEDIA.rain, MEDIA.autumn],
@@ -114,3 +114,34 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
     media: [MEDIA.mech, MEDIA.dancer, MEDIA.tomb, MEDIA.boyDog, MEDIA.dreaming, MEDIA.carpet, MEDIA.bloom, MEDIA.studio],
   },
 ];
+
+/**
+ * "Make one like this" prompts for the sample media: a recipe that produces
+ * something in the same spirit, offered on the walls. They describe the
+ * picture; they are not the record of how each sample was made.
+ */
+export const SAMPLE_PROMPTS: Record<string, Bi> = {
+  "/home/hero-marina-loop.mp4": { zh: "一群朋友在码头边的船屋甲板上举杯庆祝，香槟飞溅，阴天柔光，手持跟拍", en: "Friends toasting on a houseboat deck by the marina, champagne spraying, soft overcast light, handheld follow shot" },
+  "/home/hero-showcase-02.mp4": { zh: "一对年轻情侣在公园树下对着镜头微笑，自然光，背景虚化，镜头缓慢推近", en: "A young couple smiling at the camera under park trees, natural light, soft background, slow push-in" },
+  "/home/hero-showcase-03.mp4": { zh: "一对情侣在林荫公园里并肩站着，相视而笑，午后暖光，轻微环绕运镜", en: "A couple standing side by side in a leafy park, smiling, warm afternoon light, gentle orbit" },
+  "/home/samples/boy-and-dog.webp": { zh: "雾气弥漫的老街，穿呢子大衣的小男孩和一只小狗站在石板路上，路灯昏黄，电影感", en: "A misty old street, a small boy in a wool coat and a scruffy dog on wet cobblestones, amber streetlamps, cinematic" },
+  "/home/samples/autumn-walk.webp": { zh: "一对白发老人在红枫林小路上并肩散步，落叶铺地，柔和自然光", en: "A white-haired couple walking side by side down a red maple path, fallen leaves, soft natural light" },
+  "/home/samples/rain-couple.webp": { zh: "大雨中的一对情侣额头相抵，浑身湿透，背后霓虹虚化，电影感特写", en: "A couple forehead to forehead in heavy rain, soaked, neon bokeh behind, cinematic close-up" },
+  "/home/samples/mountain-wind.webp": { zh: "长裙女子坐在山顶岩石上，长发和裙摆被风吹起，远山云海，黄昏侧光", en: "A woman in a flowing dress sitting on a summit rock, hair and dress lifted by wind, distant hills, golden side light" },
+  "/home/samples/cosmic-bloom.webp": { zh: "半透明的紫色花朵在深空中发光，花芯金色，周围漂浮光粒，微距景深", en: "A translucent violet flower glowing in deep space, golden core, drifting light particles, macro depth of field" },
+  "/home/samples/mountain-valley.webp": { zh: "暴雨将至的高山峡谷，云雾缠绕山峰，前景松树，冷色调广角", en: "An alpine valley before a storm, clouds wrapping the peaks, pines in the foreground, cool wide angle" },
+  "/home/samples/storm-sea.webp": { zh: "翻涌的紫蓝色云浪，金色光尘四散，抽象而壮阔", en: "Surging violet-blue waves of cloud, golden dust scattering, abstract and vast" },
+  "/home/samples/dancer.webp": { zh: "穿水手服的舞者在影棚里轻盈起跳，干净灰色背景，高速快门", en: "A dancer in a sailor dress leaping lightly in a studio, clean grey backdrop, fast shutter" },
+  "/home/samples/planet-impact.webp": { zh: "小行星撞上行星的瞬间，火焰与碎石喷射，太空视角，史诗感", en: "The moment an asteroid strikes a planet, fire and debris bursting out, view from space, epic" },
+  "/home/samples/tomb-light.webp": { zh: "古埃及墓室，一束光从顶部洞口照在金色石棺上，壁画斑驳，尘埃漂浮", en: "An ancient Egyptian tomb, a shaft of light from above on a golden sarcophagus, faded murals, floating dust" },
+  "/home/samples/mech-warrior.webp": { zh: "身穿银色机甲的女战士持枪站在红色荒漠，身后巨大怪兽张开血口，夕阳光", en: "A woman in silver power armour holding a rifle in a red desert, a giant beast roaring behind her, sunset light" },
+  "/home/samples/dreaming.webp": { zh: "卷发女子在昏暗房间里枕着花纹枕头熟睡，一束柔光落在脸上，油画质感", en: "A curly-haired woman asleep on a floral pillow in a dim room, soft light on her face, painterly" },
+  "/home/samples/red-carpet.webp": { zh: "红毯上的女演员，粉色高开衩长裙，身后摄影师闪光灯，85mm 人像", en: "An actress on the red carpet in a pink high-slit gown, photographers flashing behind, 85mm portrait" },
+  "/home/samples/studio-room.webp": { zh: "夜晚的未来感工作室，落地窗，巨幅屏幕和多屏工作台，冷蓝灯光", en: "A futuristic studio at night, floor-to-ceiling windows, a giant screen and multi-monitor desk, cool blue light" },
+};
+
+/** Add a prompt to a studio link, keeping any query it already has. */
+export function withPrompt(href: string, prompt: string | undefined): string {
+  if (!prompt) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}prompt=${encodeURIComponent(prompt)}`;
+}

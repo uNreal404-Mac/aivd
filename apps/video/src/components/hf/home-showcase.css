@@ -765,3 +765,109 @@
     columns: 2;
   }
 }
+
+/* ---------- Living wall cards ---------- */
+.wc img,
+.wc video {
+  display: block;
+  transform-origin: center;
+  transition: transform 700ms var(--du-ease, ease);
+}
+
+/* Stills: a slow camera move while hovered. */
+.wc-move-push:hover img { transform: scale(1.12); transition-duration: 6s; }
+.wc-move-left:hover img { transform: scale(1.12) translateX(-4%); transition-duration: 6s; }
+.wc-move-right:hover img { transform: scale(1.12) translateX(4%); transition-duration: 6s; }
+.wc-move-rise:hover img { transform: scale(1.12) translateY(-4%); transition-duration: 6s; }
+.wc-video:hover video { transform: scale(1.02); }
+
+/* A light sweep across the card as the pointer arrives. */
+.wc-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, color-mix(in srgb, white 14%, transparent) 50%, transparent 65%);
+  background-position: 160% 0;
+  background-size: 250% 100%;
+  pointer-events: none;
+}
+
+.wc:hover .wc-sheen {
+  background-position: -60% 0;
+  transition: background-position 900ms var(--du-ease, ease);
+}
+
+.wc-kind {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  transition: opacity 300ms ease;
+}
+
+.wc-video:hover .wc-kind {
+  opacity: 0;
+}
+
+.wc-info {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 40px 14px 14px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--du-dur, 400ms) var(--du-ease, ease),
+    transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.wc:hover .wc-info,
+.wc:focus-visible .wc-info {
+  opacity: 1;
+  transform: none;
+}
+
+.wc-prompt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: color-mix(in srgb, white 88%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.wc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc:hover img,
+  .wc:hover video {
+    transform: none;
+  }
+
+  .wc:hover .wc-sheen {
+    background-position: 160% 0;
+  }
+}
