@@ -4,7 +4,7 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  height: 56px;
+  min-height: 56px;
   background: transparent;
   transition: background 200ms ease, border-color 200ms ease;
   border-bottom: 1px solid transparent;
@@ -18,7 +18,7 @@
 
 .hf-nav-inner {
   display: flex;
-  height: 100%;
+  height: 56px;
   align-items: center;
   gap: 16px;
   padding: 0 20px;
@@ -248,4 +248,57 @@ a.hf-mega-row:hover {
   .hf-nav-mobile {
     display: none;
   }
+}
+
+/* Section tab strip: second-level navigation inside a section. */
+.hf-nav-with-tabs {
+  background: color-mix(in srgb, var(--du-bg) 90%, transparent);
+  border-bottom-color: color-mix(in srgb, white 6%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.hf-tabs {
+  display: flex;
+  height: 44px;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 0 20px;
+  border-top: 1px solid color-mix(in srgb, white 5%, transparent);
+  scrollbar-width: none;
+}
+
+.hf-tab {
+  display: inline-flex;
+  height: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: color-mix(in srgb, white 70%, transparent);
+  font-size: 13px;
+  font-weight: 300;
+  white-space: nowrap;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+a.hf-tab:hover {
+  background: color-mix(in srgb, white 5%, transparent);
+  color: white;
+}
+
+.hf-tab-active,
+a.hf-tab-active:hover {
+  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
+  color: var(--du-accent-text);
+}
+
+.hf-tab-soon {
+  color: color-mix(in srgb, white 35%, transparent);
+  cursor: default;
+}
+
+.hf-mega {
+  top: var(--hf-header-h, 56px);
 }

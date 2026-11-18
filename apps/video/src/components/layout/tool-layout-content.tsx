@@ -24,7 +24,7 @@ export function ToolLayoutContent({
         lang={lang}
       />
 
-      <div className="flex lg:h-[calc(100svh-52px)]">
+      <div className="flex lg:h-[calc(100svh-var(--hf-header-h,56px))]">
         <div className="flex flex-1 min-w-0 lg:overflow-hidden">{children}</div>
       </div>
     </div>

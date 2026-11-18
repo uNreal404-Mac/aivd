@@ -41,7 +41,7 @@ export default async function DashboardLayout({
         lang={locale}
       />
 
-      <div className="flex h-[calc(100vh-52px)]">
+      <div className="flex h-[calc(100vh-var(--hf-header-h,56px))]">
         {/* Left Sidebar - Fixed 200px */}
         <Sidebar lang={locale} />
 

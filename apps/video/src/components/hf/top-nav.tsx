@@ -53,6 +53,10 @@ type MenuColumn = { title: string; links: MenuLink[]; more?: { label: string; hr
 type MegaMenu = {
   id: string;
   label: string;
+  /** Landing page of the section; the top-level item links here. */
+  path: string;
+  /** Routes that belong to the section, for the active state and the tab strip. */
+  routes: string[];
   intro: { title: string; body: string; cta: string; href: string; image: string };
   columns: MenuColumn[];
 };
@@ -128,7 +132,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const megaMenus: MegaMenu[] = [
     {
       id: "video",
-      label: zh ? "AI视频" : "AI Video",
+      label: zh ? "视频" : "Video",
+      path: "/ai/video",
+      routes: ["/ai/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
       intro: {
         title: zh ? "AI视频" : "AI Video",
         body: zh
@@ -180,7 +186,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     },
     {
       id: "image",
-      label: zh ? "AI图片" : "AI Image",
+      label: zh ? "图片" : "Image",
+      path: "/ai/image",
+      routes: ["/ai/image"],
       intro: {
         title: zh ? "AI图片" : "AI Image",
         body: zh
@@ -224,6 +232,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "creative",
       label: t.creative,
+      path: "/creative-space",
+      routes: ["/creative-space"],
       intro: {
         title: t.creative,
         body: zh
@@ -254,13 +264,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "templates",
       label: t.templates,
+      path: "/effects",
+      routes: ["/effects", "/gallery", "/explore"],
       intro: {
         title: t.templates,
         body: zh
           ? "选一个创意模板，提示词会直接填进首页的生成器，改完就能生成。"
           : "Pick an idea template and its prompt loads into the homepage generator, ready to edit and generate.",
         cta: zh ? "浏览全部模板" : "Browse all templates",
-        href: "/#home-templates",
+        href: "/effects",
         image: "/home/samples/boy-and-dog.webp",
       },
       columns: [
@@ -285,6 +297,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "developers",
       label: zh ? "开发者" : "Developers",
+      path: "/pricing",
+      routes: [],
       intro: {
         title: zh ? "开发者" : "Developers",
         body: zh
@@ -307,7 +321,44 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     },
   ];
 
+  const sectionTabs: Record<string, { label: string; path: string; soon?: boolean }[]> = {
+    video: [
+      { label: zh ? "视频工作室" : "Video studio", path: "/ai/video" },
+      { label: zh ? "文生视频" : "Text to Video", path: "/text-to-video" },
+      { label: zh ? "图生视频" : "Image to Video", path: "/image-to-video" },
+      { label: zh ? "参考生视频" : "Reference to Video", path: "/reference-to-video" },
+      { label: "Veo 3.1", path: "/veo-3-1" },
+      { label: "Wan 2.6", path: "/wan-2-6" },
+      { label: zh ? "AI 视频编辑" : "AI Video Editor", path: "", soon: true },
+      { label: zh ? "视频画质提升" : "Video Upscaler", path: "", soon: true },
+    ],
+    image: [
+      { label: zh ? "AI 图片生成器" : "AI Image Generator", path: "/ai/image" },
+      { label: zh ? "图生图" : "Image to Image", path: "", soon: true },
+      { label: zh ? "AI 图片编辑" : "AI Photo Editor", path: "", soon: true },
+      { label: zh ? "图片高清放大" : "Image Upscaler", path: "", soon: true },
+      { label: zh ? "背景去除" : "Background Remover", path: "", soon: true },
+    ],
+    templates: [
+      { label: zh ? "特效模板" : "Effect templates", path: "/effects" },
+      { label: zh ? "社区画廊" : "Community gallery", path: "/gallery" },
+      { label: zh ? "灵感探索" : "Explore", path: "/explore" },
+    ],
+  };
+
   const href = (path: string) => (path.startsWith("/#") ? `/${lang}${path.slice(1)}` : `/${lang}${path === "/" ? "" : path}`);
+  const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  const activeSection = megaMenus.find((menu) => inRoutes(menu.routes));
+  const tabs = activeSection ? sectionTabs[activeSection.id] : undefined;
+  const headerRef = useRef<HTMLElement>(null);
+  // Tool layouts size their workspace to the space under the header, which
+  // grows when a section tab strip is shown.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the strip appears or goes
+  useEffect(() => {
+    const height = headerRef.current?.offsetHeight ?? 56;
+    document.documentElement.style.setProperty("--hf-header-h", `${height}px`);
+  }, [tabs?.length]);
+
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
 
   const openNow = (id: string) => {
@@ -348,7 +399,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   };
 
   return (
-    <header className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
+    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled", tabs && "hf-nav-with-tabs")}>
       <div className="hf-nav-inner">
         <Link href={href("/")} className="flex shrink-0 items-center gap-2">
           <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
@@ -360,18 +411,19 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           {plainLink("/", t.home)}
           {megaMenus.map((menu) => (
             <div key={menu.id} className="relative" onMouseEnter={() => openNow(menu.id)} onMouseLeave={() => closeSoon(menu.id)}>
-              <button
-                type="button"
+              <Link
+                href={href(menu.path)}
                 aria-expanded={openMega === menu.id}
-                onClick={() => openNow(menu.id)}
+                aria-haspopup="true"
                 onFocus={() => openNow(menu.id)}
-                className={cn("hf-nav-link", openMega === menu.id && "hf-nav-link-active")}
+                className={cn("hf-nav-link", (openMega === menu.id || activeSection?.id === menu.id) && "hf-nav-link-active")}
               >
                 {menu.label}
                 <ChevronDown aria-hidden="true" className={cn("h-3.5 w-3.5 transition-transform", openMega === menu.id && "rotate-180")} />
-              </button>
+              </Link>
             </div>
           ))}
+          {user ? plainLink("/my-creations", t.creations) : null}
           {plainLink("/pricing", t.pricing)}
         </nav>
 
@@ -405,6 +457,28 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           </button>
         </div>
       </div>
+
+      {tabs ? (
+        <nav className="hf-tabs" aria-label={activeSection?.label}>
+          {tabs.map((tab) =>
+            tab.soon ? (
+              <span key={tab.label} className="hf-tab hf-tab-soon" aria-disabled="true">
+                {tab.label}
+                <span className="hf-mega-soon">{soon}</span>
+              </span>
+            ) : (
+              <Link
+                key={tab.label}
+                href={href(tab.path)}
+                aria-current={isActive(tab.path) ? "page" : undefined}
+                className={cn("hf-tab", isActive(tab.path) && "hf-tab-active")}
+              >
+                {tab.label}
+              </Link>
+            ),
+          )}
+        </nav>
+      ) : null}
 
       {megaMenus.map((menu) =>
         openMega === menu.id ? (
@@ -442,7 +516,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       {menuOpen ? (
         <div className="hf-nav-mobile xl:hidden">
           {plainLink("/", t.home)}
-          {megaMenus.map((menu) => plainLink(menu.intro.href, menu.label))}
+          {megaMenus.map((menu) => plainLink(menu.path, menu.label))}
           {plainLink("/pricing", t.pricing)}
         </div>
       ) : null}

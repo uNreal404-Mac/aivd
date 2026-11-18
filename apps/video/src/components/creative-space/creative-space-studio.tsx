@@ -579,7 +579,7 @@ export function CreativeSpaceStudio({ locale }: CreativeSpaceStudioProps) {
   };
 
   return (
-    <main className="flex min-h-[calc(100svh-52px)] w-full flex-col overflow-hidden bg-[#000] text-[#c5c6c7]">
+    <main className="flex min-h-[calc(100svh-var(--hf-header-h,56px))] w-full flex-col overflow-hidden bg-[#000] text-[#c5c6c7]">
       <section className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1f2833] px-4 py-3 lg:px-6">
         <div>
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#66fcf1]">

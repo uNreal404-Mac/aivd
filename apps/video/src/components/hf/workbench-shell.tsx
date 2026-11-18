@@ -110,7 +110,7 @@ export function HfWorkbenchShell({
       };
 
   return (
-    <div className="flex h-auto flex-col gap-3 p-3 lg:h-[calc(100svh-52px)] lg:flex-row">
+    <div className="flex h-auto flex-col gap-3 p-3 lg:h-[calc(100svh-var(--hf-header-h,56px))] lg:flex-row">
       <aside className="flex w-full shrink-0 flex-col rounded-[20px] border border-[var(--du-border)] bg-[var(--du-surface)] lg:w-[320px] lg:overflow-y-auto">
         <div className="flex items-center gap-4 border-b border-[var(--du-border)] px-3 pt-3">
           {MODE_TABS.map((tab) => {

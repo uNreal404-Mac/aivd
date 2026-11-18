@@ -365,7 +365,7 @@ export function AiVideoStudio({
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col gap-3 bg-[var(--hfv-bg)] p-3 text-[var(--hfv-text)] lg:h-[calc(100svh-52px)] lg:flex-row">
+    <div className="flex w-full min-w-0 flex-1 flex-col gap-3 bg-[var(--hfv-bg)] p-3 text-[var(--hfv-text)] lg:h-[calc(100svh-var(--hf-header-h,56px))] lg:flex-row">
       <aside
         aria-label={copy.settings}
         className="flex flex-col gap-3 rounded-[var(--hfv-radius-panel)] border border-[var(--hfv-border)] bg-[var(--hfv-panel)] p-3 lg:w-[340px] lg:shrink-0 lg:overflow-y-auto"
