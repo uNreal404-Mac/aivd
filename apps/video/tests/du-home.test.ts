@@ -193,11 +193,21 @@ describe("du-glass styling", () => {
     expect(css).toContain("backdrop-filter");
   });
 
-  it("uses the glass classes in the component", () => {
+  it("keeps the generator on top and mounts the sections below it", () => {
     const tsx = readSource("src/components/hf/du-home.tsx");
 
-    expect(tsx).toContain("du-glass-btn");
-    expect(tsx).toContain("du-glass");
+    expect(tsx).toContain("<HomeGenerator");
+    expect(tsx).toContain("<HomeShowcase");
+    expect(tsx).toContain('<MiniComposer lang={lang} anchorId="home-generator" />');
+    expect(tsx.indexOf("<HomeGenerator")).toBeLessThan(tsx.indexOf("<HomeShowcase"));
+  });
+
+  it("never hardcodes a colour in the homepage sections", () => {
+    for (const file of ["src/components/hf/home-showcase.tsx", "src/components/hf/home-showcase.css", "src/components/landing/footer.css"]) {
+      const source = readSource(file);
+      expect(source, file).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+      expect(source, file).not.toMatch(/rgba?\(/);
+    }
   });
 });
 

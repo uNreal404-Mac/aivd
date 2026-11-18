@@ -1,0 +1,108 @@
+/* Footer laid out after the reference site's: a full-width accent block with
+   the brand on the left and the site directory in columns, then a dark bar. */
+
+.ft {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.ft-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 1fr));
+  gap: 32px;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 72px 24px 88px;
+}
+
+.ft-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--du-on-accent);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* The logo is accent-coloured, so it sits on a dark chip here. */
+.ft-logo-img {
+  width: 40px;
+  height: 40px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--du-bg);
+}
+
+.ft-tagline {
+  margin-top: 14px;
+  max-width: 320px;
+  color: var(--du-on-accent);
+  font-size: clamp(24px, 2.2vw, 34px);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ft-col {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.ft-group ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ft-group-title {
+  margin-bottom: 14px;
+  color: color-mix(in srgb, var(--du-on-accent) 45%, transparent);
+  font-size: 15px;
+}
+
+.ft-link {
+  color: var(--du-on-accent);
+  font-size: 15px;
+  font-weight: 500;
+  transition: opacity 150ms ease;
+}
+
+.ft-link:hover {
+  opacity: 0.6;
+}
+
+.ft-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px;
+  background: var(--du-bg);
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: 14px;
+}
+
+.ft-bottom-links {
+  display: flex;
+  gap: 24px;
+}
+
+.ft-bottom-links a {
+  color: white;
+}
+
+.ft-bottom-links a:hover {
+  color: var(--du-accent-text);
+}
+
+@media (max-width: 1023px) {
+  .ft-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ft-brand {
+    grid-column: 1 / -1;
+  }
+}
