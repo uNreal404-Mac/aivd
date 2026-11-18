@@ -1,33 +1,43 @@
-/* Top navigation, laid out after the reference site's marketing header. */
+/* Top navigation, laid out after the reference site's header: links start
+   right after the logo, account controls sit on the right, and each section
+   opens a two-column dropdown (features / models). */
 
 .hf-nav {
   position: sticky;
   top: 0;
   z-index: 40;
   min-height: 56px;
-  background: transparent;
-  transition: background 200ms ease, border-color 200ms ease;
+  background: color-mix(in srgb, var(--du-bg) 70%, transparent);
   border-bottom: 1px solid transparent;
+  backdrop-filter: blur(16px);
+  transition: background 200ms ease, border-color 200ms ease;
 }
 
 .hf-nav-scrolled {
-  background: color-mix(in srgb, var(--du-bg) 82%, transparent);
+  background: color-mix(in srgb, var(--du-bg) 90%, transparent);
   border-bottom-color: color-mix(in srgb, white 6%, transparent);
-  backdrop-filter: blur(16px);
 }
 
 .hf-nav-inner {
   display: flex;
   height: 56px;
   align-items: center;
-  gap: 16px;
-  padding: 0 20px;
+  gap: 20px;
+  padding: 0 16px;
 }
 
 .hf-nav-links {
   display: none;
-  margin-left: auto;
+  min-width: 0;
   align-items: center;
+}
+
+.hf-nav-right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 @media (min-width: 1280px) {
@@ -41,10 +51,10 @@
   height: 56px;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
-  color: color-mix(in srgb, white 88%, transparent);
+  padding: 0 9px;
+  color: color-mix(in srgb, white 85%, transparent);
   font-size: 14px;
-  font-weight: 300;
+  font-weight: 400;
   white-space: nowrap;
   transition: color 150ms ease;
 }
@@ -54,28 +64,115 @@
   color: var(--du-accent-text);
 }
 
+.hf-nav-link-off,
+.hf-nav-link-off:hover {
+  color: color-mix(in srgb, white 55%, transparent);
+  cursor: default;
+}
+
+.hf-nav-tag {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, white 8%, transparent);
+  color: color-mix(in srgb, white 55%, transparent);
+  font-size: 10px;
+}
+
+.hf-nav-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 8px;
+  background: color-mix(in srgb, white 12%, transparent);
+}
+
+/* The upcoming products only fit on wide screens. */
+@media (max-width: 1599px) {
+  .hf-nav-sep,
+  .hf-nav-link-off {
+    display: none;
+  }
+}
+
+/* Right side */
+.hf-icon-btn {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, white 6%, transparent);
+  color: color-mix(in srgb, white 80%, transparent);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.hf-icon-btn:hover {
+  background: color-mix(in srgb, white 10%, transparent);
+  color: white;
+}
+
+.hf-offer {
+  position: relative;
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
+  color: var(--du-accent-text);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 150ms ease;
+}
+
+.hf-offer:hover {
+  background: color-mix(in srgb, var(--du-accent) 22%, transparent);
+}
+
+.hf-offer-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--du-accent);
+}
+
+.hf-wide-only {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .hf-wide-only {
+    display: inline-flex;
+  }
+}
+
 .hf-nav-pill {
   display: inline-flex;
-  height: 28px;
+  height: 34px;
   align-items: center;
   gap: 5px;
   padding: 0 12px;
-  border-radius: 24px;
-  background: color-mix(in srgb, white 5%, transparent);
-  color: color-mix(in srgb, white 65%, transparent);
-  font-size: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, white 6%, transparent);
+  color: color-mix(in srgb, white 85%, transparent);
+  font-size: 13px;
   white-space: nowrap;
   transition: background 150ms ease, color 150ms ease;
 }
 
 .hf-nav-pill:hover {
-  background: color-mix(in srgb, white 9%, transparent);
+  background: color-mix(in srgb, white 10%, transparent);
   color: white;
 }
 
 .hf-nav-login {
   display: none;
-  height: 32px;
+  height: 34px;
   padding: 0 14px;
   border-radius: 999px;
   color: var(--du-accent-text);
@@ -84,7 +181,7 @@
 }
 
 .hf-nav-signup {
-  height: 32px;
+  height: 34px;
   padding: 0 16px;
   border-radius: 999px;
   background: var(--du-accent);
@@ -106,132 +203,244 @@
   }
 }
 
-/* Mega menu */
-.hf-mega {
+.hf-avatar-btn {
+  display: flex;
+  height: 38px;
+  width: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--du-accent) 70%, transparent);
+}
+
+/* Dropdowns */
+.hf-dd-anchor {
+  position: relative;
+}
+
+.hf-dd {
   position: absolute;
-  top: 56px;
-  right: 20px;
+  top: 100%;
+  left: -8px;
   display: flex;
   gap: 8px;
-  max-width: calc(100vw - 40px);
-  padding: 12px;
+  padding: 14px 10px 10px;
   border: 1px solid color-mix(in srgb, white 7%, transparent);
   border-radius: 20px;
-  background: color-mix(in srgb, var(--du-bg-elev) 96%, transparent);
+  background: color-mix(in srgb, var(--du-bg-elev) 97%, transparent);
   box-shadow: 0 24px 64px color-mix(in srgb, var(--du-bg) 80%, transparent);
   backdrop-filter: blur(20px);
 }
 
-.hf-mega-intro {
+.hf-dd-col {
   display: flex;
-  width: 300px;
+  width: 320px;
   flex-direction: column;
-  padding: 20px;
-  border-radius: 14px;
-  background: color-mix(in srgb, white 4%, transparent);
 }
 
-.hf-mega-intro-title {
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.hf-mega-intro-body {
-  margin-top: 8px;
-  color: var(--du-text-muted);
-  font-size: 12px;
-  font-weight: 300;
-  line-height: 1.6;
-}
-
-.hf-mega-intro-cta {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 7px 16px;
-  border: 1px solid color-mix(in srgb, white 30%, transparent);
-  border-radius: 999px;
-  color: white;
-  font-size: 12px;
-  transition: border-color 150ms ease, color 150ms ease;
-}
-
-.hf-mega-intro-cta:hover {
-  border-color: var(--du-accent);
-  color: var(--du-accent-text);
-}
-
-.hf-mega-intro-image {
-  width: 100%;
-  margin-top: 16px;
-  aspect-ratio: 16 / 10;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.hf-mega-col {
-  display: flex;
-  width: 236px;
-  flex-direction: column;
-  padding: 12px 8px;
-}
-
-.hf-mega-col-title {
+.hf-dd-col-title {
   padding: 0 10px 8px;
   color: color-mix(in srgb, white 40%, transparent);
   font-size: 12px;
 }
 
-.hf-mega-row {
+.hf-dd-row {
   display: flex;
-  height: 36px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border-radius: 12px;
+  transition: background 150ms ease;
+}
+
+a.hf-dd-row:hover {
+  background: color-mix(in srgb, white 5%, transparent);
+}
+
+.hf-dd-row-off {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.hf-dd-tile {
+  position: relative;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, white 8%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, white 5%, transparent);
+  color: white;
+}
+
+.hf-dd-badge {
+  position: absolute;
+  top: -7px;
+  left: -6px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  white-space: nowrap;
+  transform: rotate(-6deg);
+}
+
+.hf-dd-badge-hot {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.hf-dd-badge-new {
+  background: white;
+  color: var(--du-bg);
+}
+
+.hf-dd-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hf-dd-desc {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--du-text-muted);
+  font-size: 12.5px;
+  font-weight: 300;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hf-dd-soon {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, white 15%, transparent);
+  border-radius: 5px;
+  color: color-mix(in srgb, white 60%, transparent);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+/* Account menu */
+.hf-acct {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 290px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, white 7%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--du-bg-elev) 97%, transparent);
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--du-bg) 80%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+/* Bridge the gap so the pointer can travel from the avatar to the menu. */
+.hf-acct::before {
+  position: absolute;
+  inset: -12px 0 auto 0;
+  height: 12px;
+  content: "";
+}
+
+.hf-acct-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.hf-acct-name {
+  overflow: hidden;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hf-acct-email {
+  overflow: hidden;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hf-acct-credits {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 2px 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, white 5%, transparent);
+}
+
+.hf-acct-credits-label {
+  display: block;
+  color: var(--du-text-muted);
+  font-size: 11px;
+}
+
+.hf-acct-credits-value {
+  display: block;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hf-acct-buy {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hf-acct-buy:hover {
+  background: var(--du-accent-hover);
+}
+
+.hf-acct-list {
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, white 6%, transparent);
+}
+
+.hf-acct-row {
+  display: flex;
+  width: 100%;
+  height: 38px;
   align-items: center;
   gap: 10px;
-  padding: 0 10px;
-  border-radius: 8px;
-  color: color-mix(in srgb, white 88%, transparent);
+  padding: 0 12px;
+  border-radius: 10px;
+  color: color-mix(in srgb, white 85%, transparent);
   font-size: 13px;
-  font-weight: 300;
+  text-align: left;
   transition: background 150ms ease, color 150ms ease;
 }
 
-a.hf-mega-row:hover {
+.hf-acct-row:hover {
   background: color-mix(in srgb, white 6%, transparent);
   color: white;
 }
 
-.hf-mega-row-disabled {
-  color: color-mix(in srgb, white 38%, transparent);
-  cursor: default;
+.hf-acct-signout {
+  margin-top: 4px;
 }
 
-.hf-mega-soon {
-  flex-shrink: 0;
-  margin-left: auto;
-  white-space: nowrap;
-  padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, white 12%, transparent);
-  border-radius: 6px;
-  font-size: 10px;
-}
-
-.hf-mega-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  padding: 6px 10px;
-  color: color-mix(in srgb, white 55%, transparent);
-  font-size: 12px;
-}
-
-.hf-mega-more:hover {
-  color: var(--du-accent-text);
-}
-
+/* Mobile */
 .hf-nav-mobile {
   display: flex;
   flex-direction: column;
@@ -251,19 +460,13 @@ a.hf-mega-row:hover {
 }
 
 /* Section tab strip: second-level navigation inside a section. */
-.hf-nav-with-tabs {
-  background: color-mix(in srgb, var(--du-bg) 90%, transparent);
-  border-bottom-color: color-mix(in srgb, white 6%, transparent);
-  backdrop-filter: blur(16px);
-}
-
 .hf-tabs {
   display: flex;
   height: 44px;
   align-items: center;
   gap: 4px;
   overflow-x: auto;
-  padding: 0 20px;
+  padding: 0 16px;
   border-top: 1px solid color-mix(in srgb, white 5%, transparent);
   scrollbar-width: none;
 }
@@ -297,8 +500,4 @@ a.hf-tab-active:hover {
 .hf-tab-soon {
   color: color-mix(in srgb, white 35%, transparent);
   cursor: default;
-}
-
-.hf-mega {
-  top: var(--hf-header-h, 56px);
 }

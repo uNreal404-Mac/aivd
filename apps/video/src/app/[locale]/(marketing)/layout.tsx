@@ -1,6 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
 
-import { HfPromoBar } from "@/components/hf/promo-bar";
 import { HfTopNav } from "@/components/hf/top-nav";
 import { LandingFooter } from "@/components/landing/footer";
 
@@ -16,7 +15,6 @@ export default async function MarketingLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <HfPromoBar lang={locale} />
       <HfTopNav
         user={
           user
