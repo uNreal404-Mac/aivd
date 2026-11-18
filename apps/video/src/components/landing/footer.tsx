@@ -17,11 +17,12 @@ export function LandingFooter() {
     {
       title: isChinese ? "创作" : "Create",
       links: [
-        { title: isChinese ? "AI 视频生成器" : "AI Video Generator", href: "/ai/video" },
+        { title: isChinese ? "AI 视频生成器" : "AI Video Generator", href: "/video" },
+        { title: isChinese ? "视频模板" : "Video templates", href: "/templates" },
         { title: isChinese ? "文字生成视频" : "Text to Video", href: "/text-to-video" },
         { title: isChinese ? "图片生成视频" : "Image to Video", href: "/image-to-video" },
         { title: isChinese ? "参考生成视频" : "Reference to Video", href: "/reference-to-video" },
-        { title: isChinese ? "AI 图片生成器" : "AI Image Generator", href: "/ai/image" },
+        { title: isChinese ? "AI 图片生成器" : "AI Image Generator", href: "/image" },
         { title: isChinese ? "创作空间" : "Creative Space", href: "/creative-space" },
       ],
     },

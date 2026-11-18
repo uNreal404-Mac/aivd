@@ -9,30 +9,31 @@ import { localizedHref } from "@/lib/du-home";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import "./home-generator.css";
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 export type HomeGeneratorPreset = { prompt: string; aspect?: string; nonce: number };
-type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null };
+type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean };
 type Panel = "mode" | "settings" | null;
 
 const VIDEO_ASPECTS = ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"];
 const IMAGE_ASPECTS = ["1:1", "16:9", "3:2", "2:3", "3:4", "4:3", "9:16", "4:5", "5:4"];
 const VIDEO_MODES = ["reference", "text"] as const;
 
-export function HomeGenerator({ lang, models, onModelChange, preset }: Props) {
+export function HomeGenerator({ lang, models, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false }: Props) {
   const zh = lang.toLowerCase().startsWith("zh");
   const router = useRouter();
-  const [kind, setKind] = useState<"video" | "image">("video");
+  const [kind, setKind] = useState<"video" | "image">(initialKind);
   const [panel, setPanel] = useState<Panel>(null);
   const [mode, setMode] = useState<(typeof VIDEO_MODES)[number]>("text");
   const [modelId, setModelId] = useState(models[0]?.id ?? "");
   const [imageModelId, setImageModelId] = useState(IMAGE_CATALOG[0]?.id ?? "");
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
   const [startFile, setStartFile] = useState<File | null>(null);
   const [referenceImages, setReferenceImages] = useState<{ file: File; preview: string }[]>([]);
-  const [aspect, setAspect] = useState(models[0]?.aspects[0] ?? "16:9");
+  const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (models[0]?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(models[0]?.durations[0] ?? 4);
-  const [resolution, setResolution] = useState(() => STUDIO_MODELS.find((item) => item.id === models[0]?.id)?.resolutions[0] ?? "720p");
+  const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === models[0]?.id)?.resolutions[0] ?? "720p"));
   const [sound, setSound] = useState(false);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -154,10 +155,10 @@ export function HomeGenerator({ lang, models, onModelChange, preset }: Props) {
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 
   return <div id="home-generator" className="relative z-20 w-full max-w-[720px] scroll-mt-24">
-    <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
+    {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
-    </div>
+    </div>}
     <form onSubmit={submit} className="du-composer">
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
       <input ref={referencesRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addReferences(event.target.files); event.target.value = ""; }} />

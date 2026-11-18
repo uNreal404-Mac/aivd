@@ -118,7 +118,7 @@
   border: 1px solid color-mix(in srgb, white 7%, transparent);
   border-radius: 20px;
   background: color-mix(in srgb, var(--du-bg-elev) 96%, transparent);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--du-bg) 80%, transparent);
   backdrop-filter: blur(20px);
 }
 

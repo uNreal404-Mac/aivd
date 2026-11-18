@@ -133,8 +133,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "video",
       label: zh ? "视频" : "Video",
-      path: "/ai/video",
-      routes: ["/ai/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
+      path: "/video",
+      routes: ["/video", "/ai/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
       intro: {
         title: zh ? "AI视频" : "AI Video",
         body: zh
@@ -187,8 +187,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "image",
       label: zh ? "图片" : "Image",
-      path: "/ai/image",
-      routes: ["/ai/image"],
+      path: "/image",
+      routes: ["/image", "/ai/image"],
       intro: {
         title: zh ? "AI图片" : "AI Image",
         body: zh
@@ -264,24 +264,24 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     {
       id: "templates",
       label: t.templates,
-      path: "/effects",
-      routes: ["/effects", "/gallery", "/explore"],
+      path: "/templates",
+      routes: ["/templates", "/effects", "/gallery", "/explore"],
       intro: {
         title: t.templates,
         body: zh
           ? "选一个创意模板，提示词会直接填进首页的生成器，改完就能生成。"
           : "Pick an idea template and its prompt loads into the homepage generator, ready to edit and generate.",
         cta: zh ? "浏览全部模板" : "Browse all templates",
-        href: "/effects",
+        href: "/templates",
         image: "/home/samples/boy-and-dog.webp",
       },
       columns: [
         {
           title: zh ? "模板分类" : "Categories",
           links: [
-            { label: zh ? "故事视频" : "Story video", href: "/#home-templates-story", icon: BookOpen },
-            { label: zh ? "动态创作" : "Motion", href: "/#home-templates-motion", icon: Orbit },
-            { label: zh ? "创意重构" : "Recast", href: "/#home-templates-recast", icon: Wand2 },
+            { label: zh ? "故事视频" : "Story video", href: "/templates#tpl-story", icon: BookOpen },
+            { label: zh ? "动态创作" : "Motion", href: "/templates#tpl-motion", icon: Orbit },
+            { label: zh ? "创意重构" : "Recast", href: "/templates#tpl-recast", icon: Wand2 },
           ],
         },
         {
@@ -323,6 +323,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   const sectionTabs: Record<string, { label: string; path: string; soon?: boolean }[]> = {
     video: [
+      { label: zh ? "AI 视频" : "AI Video", path: "/video" },
       { label: zh ? "视频工作室" : "Video studio", path: "/ai/video" },
       { label: zh ? "文生视频" : "Text to Video", path: "/text-to-video" },
       { label: zh ? "图生视频" : "Image to Video", path: "/image-to-video" },
@@ -333,13 +334,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       { label: zh ? "视频画质提升" : "Video Upscaler", path: "", soon: true },
     ],
     image: [
-      { label: zh ? "AI 图片生成器" : "AI Image Generator", path: "/ai/image" },
+      { label: zh ? "AI 图片" : "AI Image", path: "/image" },
+      { label: zh ? "图片工作室" : "Image studio", path: "/ai/image" },
       { label: zh ? "图生图" : "Image to Image", path: "", soon: true },
       { label: zh ? "AI 图片编辑" : "AI Photo Editor", path: "", soon: true },
       { label: zh ? "图片高清放大" : "Image Upscaler", path: "", soon: true },
       { label: zh ? "背景去除" : "Background Remover", path: "", soon: true },
     ],
     templates: [
+      { label: zh ? "全部模板" : "All templates", path: "/templates" },
       { label: zh ? "特效模板" : "Effect templates", path: "/effects" },
       { label: zh ? "社区画廊" : "Community gallery", path: "/gallery" },
       { label: zh ? "灵感探索" : "Explore", path: "/explore" },
