@@ -8,6 +8,7 @@ import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { HomeTemplates } from "@/components/hf/home-templates";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
+import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
 import type { HomeTemplate, HomeTemplateCategory } from "@/lib/home-templates";
 import "./du-home.css";
@@ -22,6 +23,17 @@ type HomeVideoModel = {
 const STEP_ICONS: LucideIcon[] = [PenLine, SlidersHorizontal, Download];
 
 const noop = () => {};
+
+/** Cheapest credit price a model on sale can be run at. */
+function startingCredits(modelId: string): number | null {
+  const model = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
+  if (!model) return null;
+  const prices = model.durations.flatMap((duration) =>
+    model.resolutions.map((resolution) => estimateCredits({ modelId, duration, resolution })),
+  );
+  const positive = prices.filter((value) => value > 0);
+  return positive.length > 0 ? Math.min(...positive) : null;
+}
 
 export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[] }) {
   const isChinese = lang.toLowerCase().startsWith("zh");
@@ -38,10 +50,33 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
     }));
     scrollToId("home-generator");
   };
-  const browseIdeas = (category: HomeTemplateCategory) => {
-    setTemplateCategory(category);
-    scrollToId("home-templates");
-  };
+  const veoFrom = startingCredits("veo-3.1");
+  const wanFrom = startingCredits("wan2.6");
+  const from = (credits: number | null) =>
+    credits === null ? "" : isChinese ? ` ${credits} 积分起。` : ` From ${credits} credits.`;
+  const features = [
+    {
+      href: "/veo-3-1",
+      image: "/home/samples/mountain-valley.webp",
+      art: "VEO 3.1",
+      title: "VEO 3.1",
+      body: (isChinese ? "带同步声音的 8 秒短片。" : "8-second clips with synchronized sound.") + from(veoFrom),
+    },
+    {
+      href: "/wan-2-6",
+      image: "/home/samples/storm-sea.webp",
+      art: "WAN 2.6",
+      title: "WAN 2.6",
+      body: (isChinese ? "5 到 15 秒，720p 与 1080p。" : "5 to 15 seconds in 720p and 1080p.") + from(wanFrom),
+    },
+    {
+      href: "/creative-space",
+      image: "/home/samples/cosmic-bloom.webp",
+      art: isChinese ? "创作空间" : "CREATIVE SPACE",
+      title: isChinese ? "创作空间" : "CREATIVE SPACE",
+      body: isChinese ? "在画布上整理素材，把想法拆成分镜和提示词。" : "Arrange assets on a canvas and turn an idea into shots and prompts.",
+    },
+  ];
 
   const copy = isChinese
     ? {
@@ -83,20 +118,29 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       <section className="du-hero">
         <div className="du-hero-glow" aria-hidden="true" />
         <div className="du-hero-inner">
-          <h1 className="du-hero-title">{copy.title}</h1>
+          <h1 className="du-hero-eyebrow">{copy.title}</h1>
           <p className="du-hero-tagline">{copy.tagline}</p>
-          <p className="du-hero-subtitle">{copy.subtitle}</p>
-          <HomeGenerator
-            lang={lang}
-            models={models}
-            onModelChange={noop}
-            preset={preset}
-            onBrowseIdeas={browseIdeas}
-          />
+          <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
         </div>
       </section>
 
-      {/* 2. Ideas that load a prompt into the generator */}
+      {/* 2. Feature cards */}
+      <section className="du-features" aria-label={isChinese ? "功能与模型" : "Features and models"}>
+        {features.map((item) => (
+          <Link key={item.href} href={localizedHref(lang, item.href)} className="du-feature">
+            <span className="du-feature-media">
+              <img src={item.image} alt="" loading="lazy" />
+              <span className="du-feature-art" aria-hidden="true">{item.art}</span>
+            </span>
+            <span className="du-feature-body">
+              <span className="du-feature-title">{item.title}</span>
+              <span className="du-feature-text">{item.body}</span>
+            </span>
+          </Link>
+        ))}
+      </section>
+
+      {/* 3. Ideas that load a prompt into the generator */}
       <HomeTemplates
         lang={lang}
         category={templateCategory}

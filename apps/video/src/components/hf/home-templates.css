@@ -1,83 +1,82 @@
+/* Template wall under the homepage composer. */
+
 .home-templates {
   margin: 0 auto;
-  max-width: 1680px;
-  padding: 24px 24px 72px;
-}
-
-.home-templates-header {
-  text-align: center;
-}
-
-.home-templates-eyebrow {
-  color: var(--du-accent-text);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-}
-
-.home-templates-title {
-  margin-top: 10px;
-  color: var(--du-text);
-  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-
-.home-templates-description {
-  margin: 12px auto 0;
-  max-width: 640px;
-  color: var(--du-text-muted);
-  font-size: 15px;
-  line-height: 1.6;
+  max-width: 1280px;
+  padding: 8px 24px 72px;
 }
 
 .home-templates-tabs {
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 28px;
+  gap: 28px;
+  border-bottom: 1px solid color-mix(in srgb, white 7%, transparent);
 }
 
 .home-templates-tab {
-  min-height: 40px;
-  padding: 0 18px;
-  border: 1px solid var(--du-border);
-  border-radius: 999px;
-  background: var(--du-surface);
+  padding: 10px 0;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
   color: var(--du-text-muted);
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  font-size: 15px;
+  transition: color 160ms ease;
 }
 
 .home-templates-tab:hover {
-  color: var(--du-text);
-  border-color: var(--du-border-strong);
+  color: white;
 }
 
 .home-templates-tab-active,
 .home-templates-tab-active:hover {
-  border-color: var(--du-accent);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
+  border-bottom-color: var(--du-accent);
+  color: var(--du-accent-text);
+  font-weight: 500;
+}
+
+.home-templates-group {
+  scroll-margin-top: 88px;
+}
+
+.home-templates-title {
+  margin-top: 36px;
+  color: white;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.home-templates-title span {
+  color: var(--du-accent-text);
+}
+
+.home-templates-description {
+  margin-top: 12px;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  font-weight: 300;
+  text-align: center;
 }
 
 .home-templates-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 28px;
+  margin-top: 18px;
 }
 
 .home-templates-card {
-  position: relative;
-  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--du-border-strong);
-  border-radius: 18px;
-  background: var(--du-surface-2);
+  border-radius: 14px;
+  background: color-mix(in srgb, white 4%, transparent);
   text-align: left;
   cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.home-templates-card:hover {
+  background: color-mix(in srgb, white 8%, transparent);
 }
 
 .home-templates-card:focus-visible {
@@ -85,77 +84,83 @@
   outline-offset: 3px;
 }
 
-.home-templates-card img {
+.home-templates-cover {
+  position: relative;
   display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.home-templates-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 28%;
   transition: transform 500ms ease;
 }
 
-.home-templates-card:hover img,
-.home-templates-card:focus-visible img {
-  transform: scale(1.04);
+.home-templates-card:hover .home-templates-cover img,
+.home-templates-card:focus-visible .home-templates-cover img {
+  transform: scale(1.05);
 }
 
-.home-templates-card-body {
+.home-templates-use {
   position: absolute;
-  inset: auto 0 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 56px 16px 16px;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 92%, transparent) 35%, transparent);
-}
-
-.home-templates-card-title {
-  color: var(--du-text);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.home-templates-card-prompt {
-  display: -webkit-box;
-  overflow: hidden;
-  max-height: 0;
-  color: var(--du-text-muted);
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0;
-  transition: max-height 220ms ease, opacity 220ms ease;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.home-templates-card-action {
+  right: 10px;
+  bottom: 10px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-height: 0;
-  overflow: hidden;
-  color: var(--du-accent-text);
-  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: 11px;
   font-weight: 600;
   opacity: 0;
-  transition: max-height 220ms ease, opacity 220ms ease;
+  transform: translateY(4px);
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
-.home-templates-card:hover .home-templates-card-prompt,
-.home-templates-card:focus-visible .home-templates-card-prompt {
-  max-height: 4.6em;
+.home-templates-card:hover .home-templates-use,
+.home-templates-card:focus-visible .home-templates-use {
   opacity: 1;
+  transform: translateY(0);
 }
 
-.home-templates-card:hover .home-templates-card-action,
-.home-templates-card:focus-visible .home-templates-card-action {
-  max-height: 2em;
-  opacity: 1;
+.home-templates-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 12px;
+}
+
+.home-templates-card-title {
+  overflow: hidden;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-templates-author {
+  flex-shrink: 0;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  font-weight: 300;
+}
+
+@media (max-width: 900px) {
+  .home-templates-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-templates-card img,
-  .home-templates-card-prompt,
-  .home-templates-card-action {
+  .home-templates-cover img,
+  .home-templates-use {
     transition: none;
   }
 }

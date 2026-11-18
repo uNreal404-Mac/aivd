@@ -2,22 +2,19 @@
 
 .du-hero {
   position: relative;
-  overflow: hidden;
-  padding: clamp(56px, 10vh, 120px) 24px 56px;
+  padding: 56px 24px 28px;
 }
 
+/* One soft glow behind the top of the page, as on the reference layout. */
 .du-hero-glow {
   position: absolute;
-  left: 50%;
-  top: -180px;
-  width: min(1100px, 92vw);
-  height: 620px;
-  transform: translateX(-50%);
+  inset: -80px 0 auto 0;
+  height: 900px;
   background: radial-gradient(
-    ellipse at 50% 45%,
-    color-mix(in srgb, var(--du-accent) 15%, transparent) 0%,
-    color-mix(in srgb, var(--du-accent) 5%, transparent) 38%,
-    transparent 68%
+    585px 585px at 50% 18%,
+    color-mix(in srgb, var(--du-accent) 20%, transparent) 0%,
+    color-mix(in srgb, var(--du-accent) 9%, transparent) 47%,
+    transparent 100%
   );
   pointer-events: none;
 }
@@ -28,32 +25,242 @@
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
-  max-width: 920px;
+  max-width: 720px;
   text-align: center;
 }
 
-.du-hero-title {
-  color: white;
-  font-size: clamp(2.5rem, 5.2vw, 4.5rem);
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+.du-hero-eyebrow {
+  color: var(--du-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
 .du-hero-tagline {
-  margin-top: 14px;
-  color: var(--du-text);
-  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: white;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.5;
 }
 
-.du-hero-subtitle {
-  margin-top: 8px;
-  margin-bottom: 20px;
+/* Composer */
+.du-composer-tabs {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, white 4%, transparent);
+}
+
+.du-composer-tab {
+  min-width: 68px;
+  padding: 6px 16px;
+  border-radius: 999px;
   color: var(--du-text-muted);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 12px;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.du-composer-tab:hover {
+  color: white;
+}
+
+.du-composer-tab-active,
+.du-composer-tab-active:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--du-accent) 34%, transparent),
+    color-mix(in srgb, var(--du-accent) 12%, transparent)
+  );
+  color: white;
+}
+
+.du-composer {
+  position: relative;
+  margin-top: 16px;
+  padding: 12px 12px 10px;
+  border: 1px solid color-mix(in srgb, white 9%, transparent);
+  border-top-color: color-mix(in srgb, var(--du-accent) 45%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
+  box-shadow: 0 -18px 48px -22px color-mix(in srgb, var(--du-accent) 60%, transparent);
+  text-align: left;
+  backdrop-filter: blur(18px);
+}
+
+.du-composer-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--du-text-muted);
+  font-size: 12px;
+}
+
+.du-composer-send {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  transition: background 160ms ease, opacity 160ms ease;
+}
+
+.du-composer-send:hover {
+  background: var(--du-accent-hover);
+}
+
+.du-composer-send:disabled {
+  background: color-mix(in srgb, white 6%, transparent);
+  color: color-mix(in srgb, white 30%, transparent);
+  cursor: not-allowed;
+}
+
+.du-composer-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px -4px 0;
+  padding: 8px 4px 0;
+  border-top: 1px solid color-mix(in srgb, white 7%, transparent);
+}
+
+.du-composer-suggestions-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  color: var(--du-text-muted);
+  font-size: 11px;
+}
+
+.du-composer-suggestions-label:hover {
+  color: white;
+}
+
+.du-composer-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 10px;
+  color: color-mix(in srgb, white 82%, transparent);
+  font-size: 12px;
+  font-weight: 300;
+  text-align: left;
+}
+
+.du-composer-suggestion:hover {
+  background: color-mix(in srgb, white 5%, transparent);
+  color: white;
+}
+
+.du-composer-suggestion img {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.du-composer-suggestion span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Feature cards */
+.du-features {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 12px 24px 40px;
+}
+
+.du-feature {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: color-mix(in srgb, white 4%, transparent);
+  transition: background 160ms ease;
+}
+
+.du-feature:hover {
+  background: color-mix(in srgb, white 7%, transparent);
+}
+
+.du-feature-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.du-feature-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 500ms ease;
+}
+
+.du-feature:hover .du-feature-media img {
+  transform: scale(1.04);
+}
+
+.du-feature-media::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 70%, transparent), transparent 60%);
+  content: "";
+}
+
+.du-feature-art {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  color: white;
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 4px 18px color-mix(in srgb, var(--du-bg) 80%, transparent);
+}
+
+.du-feature-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px 16px;
+}
+
+.du-feature-title {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.du-feature-text {
+  color: var(--du-text-muted);
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.5;
 }
 
 .du-section-eyebrow {
@@ -155,6 +362,10 @@
 }
 
 @media (max-width: 900px) {
+  .du-features {
+    grid-template-columns: 1fr;
+  }
+
   .du-steps-grid {
     grid-template-columns: 1fr;
   }
