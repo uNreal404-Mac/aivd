@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AudioLines,
   BookOpen,
   Brush,
-  ChevronDown,
+  ChevronRight,
   Clapperboard,
   Code2,
   Coins,
@@ -20,6 +20,7 @@ import {
   Film,
   Folder,
   Image as ImageIcon,
+  Languages,
   ImagePlus,
   Layers,
   LayoutGrid,
@@ -94,6 +95,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  // Left edge of the open dropdown, taken from the trigger that opened it.
+  const [panelLeft, setPanelLeft] = useState(16);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState({ start: false, end: false });
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const balance = useCreditsStore((state) => state.balance);
   const fetchBalance = useCreditsStore((state) => state.fetchBalance);
@@ -155,7 +161,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         signOut: "退出登录",
         hot: "热门",
         fresh: "新",
-        soonShort: "即将",
+        soonShort: "即将推出",
+        offerTag: `送${NEW_USER_GIFT.credits}积分`,
+        creditsLabel: "积分",
+        remaining: "剩余",
+        upgradePlan: "开通高级版",
+        upgrade: "升级",
+        language: "语言",
+        languageName: "简体中文",
+        plans: { FREE: "免费套餐", PRO: "专业版", BUSINESS: "商业版" },
       }
     : {
         explore: "Explore",
@@ -177,7 +191,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         signOut: "Sign out",
         hot: "Hot",
         fresh: "New",
-        soonShort: "Soon",
+        soonShort: "Coming soon",
+        offerTag: `+${NEW_USER_GIFT.credits} credits`,
+        creditsLabel: "Credits",
+        remaining: "left",
+        upgradePlan: "Go premium",
+        upgrade: "Upgrade",
+        language: "Language",
+        languageName: "English",
+        plans: { FREE: "Free plan", PRO: "Pro plan", BUSINESS: "Business plan" },
       };
 
   // Only pages that exist get a link. Everything else is listed so visitors
@@ -392,8 +414,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     ?.filter((tab) => !tab.soon && isActive(tab.path))
     .reduce<string | undefined>((best, tab) => (!best || tab.path.length > best.length ? tab.path : best), undefined);
 
-  const openNow = (id: string) => {
+  const openNow = (id: string, trigger?: HTMLElement | null) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    if (trigger) setPanelLeft(trigger.getBoundingClientRect().left - 4);
     setOpen(id);
   };
   // Only close the menu that was left; moving straight onto another menu
@@ -402,7 +425,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(() => setOpen((current) => (current === id ? null : current)), 140);
   };
-  const hover = (id: string) => ({ onMouseEnter: () => openNow(id), onMouseLeave: () => closeSoon(id) });
+  const hover = (id: string) => ({
+    onMouseEnter: (event: React.MouseEvent<HTMLElement>) => openNow(id, event.currentTarget),
+    onMouseLeave: () => closeSoon(id),
+  });
+  const keepOpen = (id: string) => ({ onMouseEnter: () => openNow(id), onMouseLeave: () => closeSoon(id) });
 
   const badge = (kind: DropItem["badge"]) =>
     kind ? <span className={cn("hf-dd-badge", kind === "hot" ? "hf-dd-badge-hot" : "hf-dd-badge-new")}>{kind === "hot" ? t.hot : t.fresh}</span> : null;
@@ -411,14 +438,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     const Icon = item.icon;
     const inner = (
       <>
-        <span className="hf-dd-tile">
-          <Icon aria-hidden="true" className="h-5 w-5" />
+        <span className={cn("hf-dd-tile", item.badge && "hf-dd-tile-flag")}>
+          <Icon aria-hidden="true" />
           {badge(item.badge)}
         </span>
-        <span className="min-w-0">
+        <span className="hf-dd-text">
           <span className="hf-dd-title">
             {item.title}
-            {item.href ? null : <span className="hf-dd-soon">{soonLabel}</span>}
+            {item.href ? null : <span className="hf-tag">{soonLabel}</span>}
           </span>
           <span className="hf-dd-desc">{item.desc}</span>
         </span>
@@ -435,145 +462,199 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     );
   };
 
+  // Keep the dropdown inside the window when its trigger sits near the right.
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const maxLeft = window.innerWidth - panel.offsetWidth - 16;
+    if (panelLeft > maxLeft) setPanelLeft(Math.max(16, maxLeft));
+  }, [open, panelLeft]);
+
+  // Fade the ends of the link row when it scrolls sideways, like the reference.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const update = () =>
+      setFade({ start: list.scrollLeft > 2, end: list.scrollLeft + list.clientWidth < list.scrollWidth - 2 });
+    update();
+    list.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      list.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
   const signOut = async () => {
     await authClient.signOut();
     router.push(`/${lang}`);
     router.refresh();
   };
 
+  const otherLang = zh ? "en" : "zh";
   const accountLinks: { label: string; href: string; icon: LucideIcon }[] = [
     { label: t.creations, href: "/my-creations", icon: Folder },
     { label: t.billing, href: "/credits", icon: CreditCard },
-    { label: t.pricing, href: "/pricing", icon: Crown },
     { label: t.account, href: "/account", icon: UserRound },
     { label: t.settings, href: "/settings", icon: Settings },
   ];
+  const openMenu = dropdowns.find((menu) => menu.id === open);
+  const dots = 30;
+  const filledDots =
+    balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
 
   return (
     <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled", tabs && "hf-nav-with-tabs")}>
       <div className="hf-nav-inner">
-        <Link href={href("/")} className="flex shrink-0 items-center gap-2">
-          <img src="/logo.svg" alt="" width={28} height={28} className="rounded-md" />
-          <span className="whitespace-nowrap text-[17px] font-semibold tracking-tight text-white">aivd.ai</span>
+        <Link href={href("/")} className="hf-brand">
+          <img src="/logo.svg" alt="" width={28} height={28} className="hf-brand-logo" />
+          <span className="hf-brand-word">aivd.ai</span>
           <PreviewBadge lang={lang} />
         </Link>
 
-        <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
-          <Link href={href("/")} className={cn("hf-nav-link", pathname === "/" && "hf-nav-link-active")}>
-            {t.explore}
-          </Link>
-          {dropdowns.map((menu) => (
-            <div key={menu.id} className="hf-dd-anchor" {...hover(menu.id)}>
+        <div ref={listRef} className="hf-nav-scroll" data-fade-start={fade.start || undefined} data-fade-end={fade.end || undefined}>
+          <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
+            <Link href={href("/")} className="hf-item" data-active={pathname === "/" || undefined}>
+              {t.explore}
+            </Link>
+            {dropdowns.map((menu) => (
               <Link
+                key={menu.id}
                 href={href(menu.path)}
                 aria-expanded={open === menu.id}
                 aria-haspopup="true"
-                onFocus={() => openNow(menu.id)}
-                className={cn("hf-nav-link", (open === menu.id || activeSection?.id === menu.id) && "hf-nav-link-active")}
+                onFocus={(event) => openNow(menu.id, event.currentTarget)}
+                className="hf-item"
+                data-open={open === menu.id || undefined}
+                data-active={activeSection?.id === menu.id || undefined}
+                {...hover(menu.id)}
               >
                 {menu.label}
-                <ChevronDown aria-hidden="true" className={cn("h-3.5 w-3.5 transition-transform", open === menu.id && "rotate-180")} />
               </Link>
-              {open === menu.id ? (
-                <div className="hf-dd">
-                  {menu.columns.map((column) => (
-                    <div key={column.title} className="hf-dd-col">
-                      <p className="hf-dd-col-title">{column.title}</p>
-                      {column.items.map(row)}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ))}
-          <Link href={href("/gallery")} className={cn("hf-nav-link", isActive("/gallery") && "hf-nav-link-active")}>
-            {t.community}
-          </Link>
-          <span className="hf-nav-sep" aria-hidden="true" />
-          {upcoming.map((item) => (
-            <span key={item.label} className="hf-nav-link hf-nav-link-off" aria-disabled="true" title={soonLabel}>
-              {item.label}
-              <span className="hf-nav-tag">{t.soonShort}</span>
-            </span>
-          ))}
-        </nav>
+            ))}
+            <Link href={href("/gallery")} className="hf-item" data-active={isActive("/gallery") || undefined}>
+              {t.community}
+            </Link>
+            <span className="hf-sep" aria-hidden="true" />
+            {upcoming.map((item) => (
+              <span key={item.label} className="hf-item hf-item-off" aria-disabled="true">
+                {item.label}
+                <span className="hf-tag">{t.soonShort}</span>
+              </span>
+            ))}
+          </nav>
+        </div>
 
-        <div className="hf-nav-right">
-          <Link href={href("/templates")} aria-label={t.search} title={t.search} className="hf-icon-btn hf-wide-only">
-            <Search className="h-4 w-4" aria-hidden="true" />
+        <div className="hf-actions">
+          <Link href={href("/templates")} aria-label={t.search} title={t.search} className="hf-act hf-act-icon">
+            <Search aria-hidden="true" />
           </Link>
           {user ? (
-            <Link href={href("/my-creations")} aria-label={t.creations} title={t.creations} className="hf-icon-btn hf-wide-only">
-              <Folder className="h-4 w-4" aria-hidden="true" />
+            <Link href={href("/my-creations")} aria-label={t.creations} title={t.creations} className="hf-act hf-act-icon">
+              <Folder aria-hidden="true" />
             </Link>
           ) : null}
-          <Link href={href("/pricing")} title={t.offerTitle} className="hf-offer hf-wide-only">
-            <Tag className="h-3.5 w-3.5" aria-hidden="true" />
+          <Link href={href("/pricing")} title={t.offerTitle} className="hf-act hf-act-accent">
+            <Tag aria-hidden="true" />
             {t.offer}
-            <span className="hf-offer-dot" aria-hidden="true" />
+            <span className="hf-act-dot" aria-hidden="true" />
           </Link>
-          <Link href={href("/pricing")} className="hf-nav-pill">
-            <Crown aria-hidden="true" className="h-3.5 w-3.5 text-[var(--du-accent-text)]" />
+          <Link href={href("/pricing")} className="hf-act hf-act-pricing">
+            <Crown aria-hidden="true" />
             {t.pricing}
+            <span className="hf-act-discount">{t.offerTag}</span>
           </Link>
-          <LocaleChange />
+          <span className="hf-lang">
+            <LocaleChange />
+          </span>
           {user ? (
-            <div className="hf-dd-anchor" {...hover("account")}>
+            <div className="relative" {...hover("account")}>
               <button
                 type="button"
                 aria-label={t.account}
                 aria-expanded={open === "account"}
                 aria-haspopup="true"
                 onClick={() => setOpen((current) => (current === "account" ? null : "account"))}
-                className="hf-avatar-btn"
+                className="hf-avatar"
               >
-                <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-8 w-8" />
+                <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-7 w-7" />
               </button>
               {open === "account" ? (
                 <div className="hf-acct">
-                  <div className="hf-acct-head">
-                    <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-10 w-10" />
-                    <div className="min-w-0">
-                      {user.name ? <p className="hf-acct-name">{user.name}</p> : null}
-                      {user.email ? <p className="hf-acct-email">{user.email}</p> : null}
-                    </div>
-                  </div>
-                  <div className="hf-acct-credits">
-                    <span className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-[var(--du-accent-text)]" aria-hidden="true" />
-                      <span>
-                        <span className="hf-acct-credits-label">{t.credits}</span>
-                        <span className="hf-acct-credits-value">{balance ? balance.availableCredits.toLocaleString() : "—"}</span>
-                      </span>
+                  <Link href={href("/account")} className="hf-acct-profile">
+                    <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-[30px] w-[30px]" />
+                    <span className="min-w-0 flex-1">
+                      <span className="hf-acct-name">{user.name || user.email}</span>
+                      <span className="hf-acct-sub">{balance?.plan ? t.plans[balance.plan] : t.plans.FREE}</span>
                     </span>
-                    <Link href={href("/pricing")} className="hf-acct-buy">
-                      {t.buyCredits}
+                  </Link>
+
+                  <div className="hf-acct-card">
+                    <Link href={href("/credits")} className="hf-acct-credits">
+                      <span className="hf-acct-credits-row">
+                        <span className="hf-acct-label">{t.creditsLabel}</span>
+                        <span className="hf-acct-left">
+                          {zh
+                            ? `${t.remaining} ${balance ? balance.availableCredits.toLocaleString() : "—"}`
+                            : `${balance ? balance.availableCredits.toLocaleString() : "—"} ${t.remaining}`}
+                          <ChevronRight aria-hidden="true" />
+                        </span>
+                      </span>
+                      <span className="hf-acct-dots" aria-hidden="true">
+                        {Array.from({ length: dots }, (_, index) => (
+                          <span key={index} data-on={index < filledDots || undefined} />
+                        ))}
+                      </span>
+                    </Link>
+                    <span className="hf-acct-divider" />
+                    <Link href={href("/pricing")} className="hf-acct-upgrade">
+                      <span className="flex items-center gap-1.5">
+                        <span className="hf-acct-ico">
+                          <Crown aria-hidden="true" />
+                        </span>
+                        {t.upgradePlan}
+                      </span>
+                      <span className="hf-acct-pill">{t.upgrade}</span>
                     </Link>
                   </div>
+
                   <div className="hf-acct-list">
                     {accountLinks.map((item) => {
                       const Icon = item.icon;
                       return (
                         <Link key={item.href} href={href(item.href)} className="hf-acct-row">
-                          <Icon className="h-4 w-4" aria-hidden="true" />
+                          <span className="hf-acct-ico">
+                            <Icon aria-hidden="true" />
+                          </span>
                           {item.label}
                         </Link>
                       );
                     })}
+                    <Link href={`/${otherLang}${pathname === "/" ? "" : pathname}`} className="hf-acct-row hf-acct-row-split">
+                      <span className="flex items-center gap-1.5">
+                        <span className="hf-acct-ico">
+                          <Languages aria-hidden="true" />
+                        </span>
+                        {t.language}
+                      </span>
+                      <span className="hf-acct-muted">{t.languageName}</span>
+                    </Link>
+                    <button type="button" onClick={signOut} className="hf-acct-row">
+                      <span className="hf-acct-ico">
+                        <LogOut aria-hidden="true" />
+                      </span>
+                      {t.signOut}
+                    </button>
                   </div>
-                  <button type="button" onClick={signOut} className="hf-acct-row hf-acct-signout">
-                    <LogOut className="h-4 w-4" aria-hidden="true" />
-                    {t.signOut}
-                  </button>
                 </div>
               ) : null}
             </div>
           ) : (
             <>
-              <button type="button" onClick={() => signInModal.onOpen()} className="hf-nav-login">
+              <button type="button" onClick={() => signInModal.onOpen()} className="hf-auth hf-auth-login">
                 {t.login}
               </button>
-              <button type="button" onClick={() => signInModal.onOpen()} className="hf-nav-signup">
+              <button type="button" onClick={() => signInModal.onOpen()} className="hf-auth hf-auth-signup">
                 {t.signup}
               </button>
             </>
@@ -582,12 +663,23 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             type="button"
             aria-label={menuOpen ? t.closeMenu : t.openMenu}
             onClick={() => setMenuOpen((value) => !value)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white xl:hidden"
+            className="hf-act hf-act-icon hf-burger"
           >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
         </div>
       </div>
+
+      {openMenu ? (
+        <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)}>
+          {openMenu.columns.map((column) => (
+            <div key={column.title} className="hf-dd-col">
+              <p className="hf-dd-col-title">{column.title}</p>
+              {column.items.map(row)}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {tabs ? (
         <nav className="hf-tabs" aria-label={activeSection?.label}>
@@ -595,7 +687,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             tab.soon ? (
               <span key={tab.label} className="hf-tab hf-tab-soon" aria-disabled="true">
                 {tab.label}
-                <span className="hf-dd-soon">{soonLabel}</span>
+                <span className="hf-tag">{soonLabel}</span>
               </span>
             ) : (
               <Link
@@ -612,19 +704,19 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       ) : null}
 
       {menuOpen ? (
-        <div className="hf-nav-mobile xl:hidden">
-          <Link href={href("/")} className="hf-nav-link">
+        <div className="hf-nav-mobile">
+          <Link href={href("/")} className="hf-item">
             {t.explore}
           </Link>
           {dropdowns.map((menu) => (
-            <Link key={menu.id} href={href(menu.path)} className="hf-nav-link">
+            <Link key={menu.id} href={href(menu.path)} className="hf-item">
               {menu.label}
             </Link>
           ))}
-          <Link href={href("/gallery")} className="hf-nav-link">
+          <Link href={href("/gallery")} className="hf-item">
             {t.community}
           </Link>
-          <Link href={href("/pricing")} className="hf-nav-link">
+          <Link href={href("/pricing")} className="hf-item">
             {t.pricing}
           </Link>
         </div>
