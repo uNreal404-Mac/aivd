@@ -282,66 +282,27 @@ button.is-chip:hover:not(:disabled) {
   opacity: 0.6;
 }
 
-/* Results grid shown above the composer once something was generated. */
+/* Results above the composer once something was generated: a masonry wall
+   that keeps each image's own shape. */
 .is-results {
-  display: grid;
   width: min(1400px, 100%);
   flex: 1;
-  align-content: start;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
   padding: 8px 0 20px;
+  column-gap: 12px;
+  columns: 4 240px;
 }
 
 .is-result {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 1;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  margin: 0 0 12px;
+  break-inside: avoid;
 }
 
-.is-result img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.is-result-dl {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  width: 32px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
-  color: white;
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
-.is-result:hover .is-result-dl {
-  opacity: 1;
+.is-result.sr-card > img {
+  height: auto;
 }
 
 .is-result-wait {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  color: color-mix(in srgb, white 60%, transparent);
-  font-size: 13px;
-  text-align: center;
-}
-
-.is-result-msg {
-  font-size: 11px;
-  opacity: 0.8;
+  aspect-ratio: 1;
 }
 
 .is-refs {

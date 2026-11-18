@@ -1,13 +1,23 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { AtSign, ChevronRight, Clock, Download, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, Sparkles, X } from "lucide-react";
+import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { ImageShowcase } from "@/components/hf/image-showcase";
+import {
+  CopyPromptButton,
+  DownloadLink,
+  MediaViewer,
+  PendingCard,
+  sendImageToVideo,
+  useImageDrop,
+  type ViewerItem,
+} from "@/components/hf/studio-results";
+import { localizedHref } from "@/lib/du-home";
 import "./ai-image-studio.css";
 
 // Tilted photo stack above the title, as on the reference image page.
@@ -76,7 +86,34 @@ export function AiImageStudio({
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image");
+  const [viewing, setViewing] = useState<number | null>(null);
+
+  // Every finished image, in order, for the full-screen viewer.
+  const gallery = useMemo<ViewerItem[]>(
+    () =>
+      jobs.flatMap((job) =>
+        job.status === "completed"
+          ? job.urls.map((url, index) => ({
+              key: `${job.uuid}-${index}`,
+              url,
+              kind: "image" as const,
+              prompt: job.prompt,
+              model: getMarketModel(job.model)?.name ?? job.model,
+            }))
+          : [],
+      ),
+    [jobs],
+  );
+
+  const reuse = (text: string) => {
+    setPrompt(text);
+    setNotice(null);
+    promptRef.current?.focus();
+    promptRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+  const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image");
 
   const maxCount = options.maxCount ?? 1;
   const maxImages = options.maxImages ?? 0;
@@ -103,10 +140,13 @@ export function AiImageStudio({
     setRefs((current) => current.slice(0, next.options.maxImages ?? 0));
   };
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files) return;
+  const onFiles = async (files: File[]) => {
+    if (maxImages === 0) {
+      setNotice(zh ? "该模型不支持参考图。" : "This model takes no reference image.");
+      return;
+    }
     const room = maxImages - refs.length;
-    for (const file of Array.from(files).slice(0, Math.max(0, room))) {
+    for (const file of files.slice(0, Math.max(0, room))) {
       const error = validateImageFile(file);
       if (error) {
         setNotice(error);
@@ -144,8 +184,9 @@ export function AiImageStudio({
       if (result.needsLogin) signIn.onOpen();
       return;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id });
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, createdAt: Date.now() });
   };
+  const drop = useImageDrop((files) => void onFiles(files), !uploading);
 
   return (
     <main className="is-root">
@@ -170,31 +211,49 @@ export function AiImageStudio({
         <section className="is-results" aria-label={zh ? "生成结果" : "Results"}>
           {jobs.map((job) =>
             job.status === "completed" && job.urls.length > 0 ? (
-              job.urls.map((url, index) => (
-                <figure key={`${job.uuid}-${index}`} className="is-result">
-                  <img src={url} alt={job.prompt} loading="lazy" />
-                  <a href={url} download className="is-result-dl" aria-label={zh ? "下载" : "Download"} target="_blank" rel="noreferrer">
-                    <Download className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </figure>
-              ))
+              job.urls.map((url, index) => {
+                const position = gallery.findIndex((item) => item.key === `${job.uuid}-${index}`);
+                return (
+                  <figure key={`${job.uuid}-${index}`} className="sr-card is-result">
+                    <img src={url} alt={job.prompt} loading="lazy" />
+                    <button type="button" className="sr-card-open" aria-label={zh ? "查看大图" : "Open image"} onClick={() => setViewing(position)} />
+                    <span className="sr-card-shade" aria-hidden="true" />
+                    <span className="sr-card-top">
+                      <CopyPromptButton prompt={job.prompt} zh={zh} />
+                      <DownloadLink url={url} zh={zh} />
+                    </span>
+                    <span className="sr-card-bottom">
+                      <span className="sr-card-prompt">{job.prompt}</span>
+                      <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => reuse(job.prompt)}>
+                        <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button type="button" className="sr-icon" title={zh ? "用这张图生成视频" : "Make a video from this"} aria-label={zh ? "用这张图生成视频" : "Make a video from this"} onClick={() => toVideo(url)}>
+                        <Clapperboard className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </span>
+                  </figure>
+                );
+              })
             ) : (
-              <div key={job.uuid} className="is-result is-result-wait" title={job.prompt}>
-                {job.status === "failed" ? <X className="h-5 w-5" aria-hidden="true" /> : <Clock className="h-5 w-5 animate-pulse" aria-hidden="true" />}
-                <span>
-                  {job.status === "failed"
-                    ? zh ? "生成失败，积分已退回" : "Failed, credits returned"
-                    : zh ? "生成中…" : "Generating…"}
-                </span>
-                {job.status === "failed" && job.message ? <span className="is-result-msg">{job.message}</span> : null}
-              </div>
+              <PendingCard
+                key={job.uuid}
+                className="is-result is-result-wait"
+                status={job.status === "completed" ? "failed" : job.status}
+                since={job.createdAt}
+                prompt={job.prompt}
+                message={job.status === "completed" ? (zh ? "没有返回图片" : "No image came back") : job.message}
+                zh={zh}
+                onReuse={() => reuse(job.prompt)}
+              />
             ),
           )}
         </section>
       )}
 
       <form
-        className="is-composer"
+        {...drop.bind}
+        className={`is-composer sr-drop ${drop.over ? "sr-drop-on" : ""}`}
+        data-drop-label={zh ? "松开即可添加参考图" : "Drop to add reference images"}
         onSubmit={(event) => {
           event.preventDefault();
           void generate();
@@ -218,6 +277,7 @@ export function AiImageStudio({
           </label>
           <textarea
             id="image-prompt"
+            ref={promptRef}
             value={prompt}
             maxLength={5000}
             rows={2}
@@ -254,7 +314,7 @@ export function AiImageStudio({
               multiple
               className="hidden"
               onChange={(event) => {
-                void onFiles(event.target.files);
+                void onFiles(Array.from(event.target.files ?? []));
                 event.target.value = "";
               }}
             />
@@ -303,6 +363,17 @@ export function AiImageStudio({
           </span>
         </button>
       </form>
+      {viewing !== null && gallery[viewing] ? (
+        <MediaViewer
+          items={gallery}
+          index={viewing}
+          zh={zh}
+          onIndex={setViewing}
+          onClose={() => setViewing(null)}
+          onReuse={(item) => reuse(item.prompt)}
+          onToVideo={(item) => toVideo(item.url)}
+        />
+      ) : null}
       {notice ? (
         <output className="is-notice" aria-live="polite">
           {notice}

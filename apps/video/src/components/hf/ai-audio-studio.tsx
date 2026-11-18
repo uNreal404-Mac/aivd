@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Download, Image as ImageIcon, Music, Sparkles, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, RotateCcw, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
+import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
 import "./ai-video-studio.css";
 
 const MODES = ["tts", "music", "voice", "translate"] as const;
@@ -51,6 +52,12 @@ export function AiAudioStudio({
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const { jobs, add } = useMediaJobs("audio");
+  const scriptRef = useRef<HTMLTextAreaElement>(null);
+  const reuse = (text: string) => {
+    setScript(text);
+    setNotice(null);
+    scriptRef.current?.focus();
+  };
   const [tab, setTab] = useState<"history" | "how">("how");
   const shownTab = tab;
 
@@ -157,7 +164,7 @@ export function AiAudioStudio({
       if (result.needsLogin) signIn.onOpen();
       return;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id });
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id, createdAt: Date.now() });
     setTab("history");
   };
 
@@ -199,6 +206,7 @@ export function AiAudioStudio({
               <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
               <textarea
                 id="audio-script"
+                ref={scriptRef}
                 value={script}
                 maxLength={maxScript}
                 placeholder={t.scriptHint}
@@ -294,30 +302,42 @@ export function AiAudioStudio({
             </div>
           ) : (
             <div className="as-list">
-              {jobs.map((job) => (
-                <div key={job.uuid} className="as-item">
-                  <div className="as-item-head">
-                    <span className="as-item-model">{getMarketModel(job.model)?.name ?? job.model}</span>
-                    <span className="as-item-prompt">{job.prompt}</span>
+              {jobs.map((job) => {
+                const done = job.status === "completed" && job.urls.length > 0;
+                return (
+                  <div key={job.uuid} className="as-item">
+                    <div className="as-item-head">
+                      <span className="as-item-model">{getMarketModel(job.model)?.name ?? job.model}</span>
+                      <span className="as-item-prompt" title={job.prompt}>{job.prompt}</span>
+                      {done ? (
+                        <span className="as-item-tools">
+                          <CopyPromptButton prompt={job.prompt} zh={zh} />
+                          <button type="button" className="sr-icon" title={zh ? "复用文本" : "Reuse text"} aria-label={zh ? "复用文本" : "Reuse text"} onClick={() => reuse(job.prompt)}>
+                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </span>
+                      ) : null}
+                    </div>
+                    {done ? (
+                      job.urls.map((url, index) => (
+                        <div key={`${job.uuid}-${index}`} className="as-item-player">
+                          <WaveformPlayer url={url} zh={zh} />
+                          <DownloadLink url={url} zh={zh} className="as-item-dl" />
+                        </div>
+                      ))
+                    ) : (
+                      <PendingCard
+                        className="as-pending"
+                        status={job.status === "completed" ? "failed" : job.status}
+                        since={job.createdAt}
+                        message={job.status === "completed" ? (zh ? "没有返回音频" : "No audio came back") : job.message}
+                        zh={zh}
+                        onReuse={() => reuse(job.prompt)}
+                      />
+                    )}
                   </div>
-                  {job.status === "completed" && job.urls.length > 0 ? (
-                    job.urls.map((url, index) => (
-                      <div key={`${job.uuid}-${index}`} className="as-item-player">
-                        {/* biome-ignore lint/a11y/useMediaCaption: generated speech and music have no caption track */}
-                        <audio src={url} controls preload="none" />
-                        <a href={url} download target="_blank" rel="noreferrer" aria-label={zh ? "下载" : "Download"} className="as-item-dl">
-                          <Download className="h-4 w-4" aria-hidden="true" />
-                        </a>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="as-item-status">
-                      {job.status === "failed" ? <X className="h-4 w-4" aria-hidden="true" /> : <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" />}
-                      {job.status === "failed" ? t.failed : t.generating}
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         ) : (

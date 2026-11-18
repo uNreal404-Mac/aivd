@@ -1,5 +1,6 @@
 import { calculateModelCredits } from "@/config/credits";
 import { marketModelsOf } from "@/ai/kie-market";
+import { promptWithPreset } from "@/lib/video-presets";
 
 export type StudioModel = {
   id: string;
@@ -288,7 +289,7 @@ export function buildGenerateRequest(
   return {
     ok: true,
     body: {
-      prompt,
+      prompt: promptWithPreset(prompt, settings.preset),
       model: settings.modelId,
       duration: settings.duration,
       aspectRatio: settings.aspect,
@@ -393,6 +394,8 @@ export type StudioResult = {
   videoUrl?: string | null;
   prompt?: string | null;
   message?: string | null;
+  /** When the clip was submitted (ms), for the elapsed timer. */
+  createdAt?: number;
 };
 
 export const RESULT_POLL_INTERVAL_MS = 5000;
@@ -476,6 +479,7 @@ type ListPayload = {
       videoUrl?: string | null;
       prompt?: string | null;
       errorMessage?: string | null;
+      createdAt?: string | number | null;
     }>;
   } | null;
 };
@@ -510,6 +514,7 @@ export async function fetchRecentResults(
         videoUrl: video.videoUrl ?? null,
         prompt: video.prompt ?? null,
         message: video.errorMessage ?? null,
+        createdAt: toMillis(video.createdAt),
       });
     }
     return results;
@@ -549,4 +554,10 @@ export function applyResultStatus(
         }
       : item,
   );
+}
+
+/** A timestamp from the API (ISO string, seconds or milliseconds) in ms. */
+export function toMillis(value: string | number | null | undefined): number | undefined {
+  if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
+  return value ? Date.parse(value) || undefined : undefined;
 }

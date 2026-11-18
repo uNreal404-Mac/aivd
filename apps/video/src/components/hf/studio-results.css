@@ -1,0 +1,503 @@
+/* Shared studio results: running-job card, hover actions, full-screen viewer,
+   waveform player and the drop highlight. Theme tokens only. */
+
+/* ---------- Running / failed job ---------- */
+.sr-pending {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  align-items: flex-end;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--du-surface-2) 45%, var(--du-bg-elev));
+  isolation: isolate;
+}
+
+.sr-shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(120% 80% at 20% 0%, color-mix(in srgb, var(--du-accent) 16%, transparent), transparent 60%),
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in srgb, white 7%, transparent) 45%,
+      transparent 70%
+    );
+  background-size:
+    100% 100%,
+    220% 100%;
+  animation: sr-shimmer 1.8s linear infinite;
+}
+
+@keyframes sr-shimmer {
+  from {
+    background-position:
+      0 0,
+      120% 0;
+  }
+  to {
+    background-position:
+      0 0,
+      -120% 0;
+  }
+}
+
+.sr-pending-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+}
+
+.sr-pending-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--du-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sr-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--du-accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--du-accent) 60%, transparent);
+  animation: sr-ping 1.4s var(--du-ease, ease) infinite;
+}
+
+@keyframes sr-ping {
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.sr-elapsed {
+  color: var(--du-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.sr-pending-prompt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sr-pending-failed {
+  border: 1px solid color-mix(in srgb, var(--du-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--du-danger) 8%, var(--du-bg-elev));
+}
+
+.sr-pending-failed .sr-pending-status {
+  color: var(--du-danger);
+}
+
+.sr-pending-msg {
+  color: var(--du-text-muted);
+  font-size: 11px;
+}
+
+/* ---------- Buttons ---------- */
+.sr-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  color: var(--du-text);
+  backdrop-filter: blur(10px);
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+}
+
+.sr-icon:hover {
+  background: color-mix(in srgb, var(--du-bg) 82%, transparent);
+}
+
+.sr-icon:active {
+  transform: scale(0.94);
+}
+
+.sr-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, white 8%, transparent);
+  color: var(--du-text);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+}
+
+.sr-pill:hover {
+  background: color-mix(in srgb, white 14%, transparent);
+}
+
+.sr-pill:active {
+  transform: scale(0.97);
+}
+
+.sr-pill-accent {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.sr-pill-accent:hover {
+  background: var(--du-accent-hover, var(--du-accent));
+}
+
+/* ---------- Result card with hover actions ---------- */
+.sr-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  cursor: zoom-in;
+}
+
+.sr-card > img,
+.sr-card > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--du-ease, ease);
+}
+
+.sr-card:hover > img,
+.sr-card:hover > video {
+  transform: scale(1.03);
+}
+
+.sr-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 78%, transparent), transparent 45%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.sr-card-top,
+.sr-card-bottom {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition:
+    opacity var(--du-dur, 400ms) var(--du-ease, ease),
+    transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.sr-card-top {
+  top: 10px;
+  justify-content: flex-end;
+  transform: translateY(-4px);
+}
+
+.sr-card-bottom {
+  bottom: 10px;
+  transform: translateY(4px);
+}
+
+.sr-card-prompt {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--du-text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sr-card:hover .sr-card-shade,
+.sr-card:focus-within .sr-card-shade,
+.sr-card:hover .sr-card-top,
+.sr-card:focus-within .sr-card-top,
+.sr-card:hover .sr-card-bottom,
+.sr-card:focus-within .sr-card-bottom {
+  opacity: 1;
+  transform: none;
+}
+
+.sr-card-open {
+  position: absolute;
+  inset: 0;
+  cursor: zoom-in;
+}
+
+.sr-card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  color: var(--du-text);
+  font-size: 11px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+/* ---------- Full-screen viewer ---------- */
+.sr-viewer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  z-index: 200;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  animation: sr-fade var(--du-dur, 400ms) var(--du-ease, ease) both;
+}
+
+@keyframes sr-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.sr-viewer-scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--du-bg) 92%, transparent);
+  backdrop-filter: blur(18px);
+  cursor: zoom-out;
+}
+
+.sr-viewer-stage {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 72px;
+  pointer-events: none;
+}
+
+.sr-viewer-media {
+  max-width: 100%;
+  max-height: calc(100vh - 80px);
+  border-radius: 14px;
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--du-bg) 70%, transparent);
+  object-fit: contain;
+  pointer-events: auto;
+  animation: du-pop var(--du-dur, 400ms) var(--du-ease, ease) both;
+}
+
+.sr-viewer-nav {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 10%, transparent);
+  color: var(--du-text);
+  pointer-events: auto;
+  transform: translateY(-50%);
+  transition: background-color var(--du-dur-fast, 180ms) ease;
+}
+
+.sr-viewer-nav:hover {
+  background: color-mix(in srgb, white 18%, transparent);
+}
+
+.sr-viewer-prev {
+  left: 16px;
+}
+
+.sr-viewer-next {
+  right: 16px;
+}
+
+.sr-viewer-side {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-left: 1px solid color-mix(in srgb, white 6%, transparent);
+  background: var(--du-bg-elev);
+  overflow-y: auto;
+}
+
+.sr-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.sr-viewer-count {
+  color: var(--du-text-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-viewer-model {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--du-accent-soft, color-mix(in srgb, var(--du-accent) 15%, transparent));
+  color: var(--du-accent-text, var(--du-accent));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sr-viewer-label {
+  margin-top: 6px;
+  color: var(--du-text-muted);
+  font-size: 12px;
+}
+
+.sr-viewer-prompt {
+  color: var(--du-text);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sr-viewer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sr-viewer-keys {
+  margin-top: auto;
+  color: var(--du-text-dim, var(--du-text-muted));
+  font-size: 12px;
+}
+
+/* ---------- Waveform player ---------- */
+.sr-wave {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-wave-play {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  transition: transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+}
+
+.sr-wave-play:active {
+  transform: scale(0.92);
+}
+
+.sr-wave-bars {
+  display: flex;
+  height: 38px;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.sr-wave-bars:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid var(--du-accent);
+  outline-offset: 3px;
+}
+
+.sr-bar {
+  min-height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, white 18%, transparent);
+  transition:
+    height var(--du-dur, 400ms) var(--du-ease, ease),
+    background-color 120ms ease;
+}
+
+.sr-bar-on {
+  background: var(--du-accent);
+}
+
+.sr-wave-time {
+  flex-shrink: 0;
+  color: var(--du-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Drop highlight ---------- */
+.sr-drop {
+  position: relative;
+}
+
+.sr-drop-on {
+  outline: 2px dashed var(--du-accent);
+  outline-offset: 3px;
+}
+
+.sr-drop-on::after {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--du-accent) 14%, var(--du-bg) 70%);
+  color: var(--du-text);
+  content: attr(data-drop-label);
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sr-shimmer,
+  .sr-dot {
+    animation: none;
+  }
+}

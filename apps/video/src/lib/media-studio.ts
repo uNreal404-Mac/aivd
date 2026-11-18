@@ -3,6 +3,7 @@
 // Client helpers shared by the image and audio studios: submit a market
 // generation, poll it to completion and load the user's recent results.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toMillis } from "@/lib/ai-video-studio";
 
 export type MediaKind = "image" | "audio";
 export type MediaJobStatus = "queued" | "generating" | "completed" | "failed";
@@ -14,6 +15,8 @@ export type MediaJob = {
   prompt: string;
   model?: string;
   message?: string | null;
+  /** When the job was submitted (ms), for the elapsed timer. */
+  createdAt?: number;
 };
 
 export type SubmitBody = {
@@ -104,7 +107,16 @@ async function fetchHistory(kind: MediaKind, limit = 24): Promise<MediaJob[]> {
     const payload = await response.json();
     const rows: unknown[] = Array.isArray(payload?.data?.videos) ? payload.data.videos : [];
     return rows.map((row) => {
-      const item = row as { uuid: string; status: string; mediaUrls?: string[]; videoUrl?: string | null; prompt?: string; model?: string; errorMessage?: string | null };
+      const item = row as {
+        uuid: string;
+        status: string;
+        mediaUrls?: string[];
+        videoUrl?: string | null;
+        prompt?: string;
+        model?: string;
+        errorMessage?: string | null;
+        createdAt?: string | number | null;
+      };
       return {
         uuid: item.uuid,
         status: toStatus(item.status),
@@ -112,6 +124,7 @@ async function fetchHistory(kind: MediaKind, limit = 24): Promise<MediaJob[]> {
         prompt: item.prompt ?? "",
         model: item.model,
         message: item.errorMessage ?? null,
+        createdAt: toMillis(item.createdAt),
       };
     });
   } catch {
@@ -166,3 +179,4 @@ export function useMediaJobs(kind: MediaKind) {
   const add = useCallback((job: MediaJob) => setJobs((current) => [job, ...current]), []);
   return { jobs, add };
 }
+
