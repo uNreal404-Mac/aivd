@@ -7,7 +7,7 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { IMAGE_CATALOG } from "@/lib/kie-model-catalog";
 import { localizedHref } from "@/lib/du-home";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
-import { STUDIO_MODELS } from "@/lib/ai-video-studio";
+import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void };
@@ -49,7 +49,7 @@ export function HomeGenerator({ lang, models, onModelChange }: Props) {
   const current = models.find((item) => item.id === modelId);
   const studioModel = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
   const available = Boolean(current && studioModel);
-  const estimatedCredits = studioModel ? Math.ceil(duration * studioModel.creditsPerSecond * (resolution === "1080p" ? 1.5 : 1) * (sound ? 1.2 : 1)) : null;
+  const estimatedCredits = studioModel ? estimateCredits({ modelId, duration, resolution }) : null;
   const modeLabels = zh ? ["参考生成视频", "文字/图片生成视频", "关键帧生成视频"] : ["Reference to Video", "Text/Image to Video", "Keyframes to Video"];
   const modeIndex = VIDEO_MODES.indexOf(mode);
 
