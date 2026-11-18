@@ -10,45 +10,53 @@ export function LandingFooter() {
   const isChinese = locale === "zh";
   const currentYear = new Date().getFullYear();
 
+  // A site directory rather than a short link list: every page a visitor or a
+  // crawler should be able to reach from anywhere. Only models that are on
+  // sale are listed.
   const footerSections = [
     {
-      title: t('product'),
+      title: isChinese ? "创作" : "Create",
       links: [
-        { title: isChinese ? "视频生成" : "Video generation", href: "/ai/video" },
-        { title: isChinese ? "图片生成" : "Image generation", href: "/ai/image" },
+        { title: isChinese ? "AI 视频生成器" : "AI Video Generator", href: "/ai/video" },
+        { title: isChinese ? "文字生成视频" : "Text to Video", href: "/text-to-video" },
         { title: isChinese ? "图片生成视频" : "Image to Video", href: "/image-to-video" },
-        { title: isChinese ? "一键模版" : "One-click Templates", href: "/gallery" },
+        { title: isChinese ? "参考生成视频" : "Reference to Video", href: "/reference-to-video" },
+        { title: isChinese ? "AI 图片生成器" : "AI Image Generator", href: "/ai/image" },
         { title: isChinese ? "创作空间" : "Creative Space", href: "/creative-space" },
+      ],
+    },
+    {
+      title: isChinese ? "视频模型" : "Video models",
+      links: [
+        { title: "Veo 3.1", href: "/veo-3-1" },
+        { title: "Wan 2.6", href: "/wan-2-6" },
+      ],
+    },
+    {
+      title: isChinese ? "探索" : "Explore",
+      links: [
+        { title: isChinese ? "社区画廊" : "Community gallery", href: "/gallery" },
+        { title: isChinese ? "灵感探索" : "Explore", href: "/explore" },
+        { title: isChinese ? "视频特效" : "Video effects", href: "/effects" },
         { title: isChinese ? "定价" : "Pricing", href: "/pricing" },
       ],
     },
-    // {
-    //   title: t('company'),
-    //   links: [
-    //     { title: "About", href: "/about" },
-    //     { title: "Blog", href: "/blog" },
-    //     { title: "Careers", href: "/careers" },
-    //     { title: "Contact", href: "/contact" },
-    //   ],
-    // },
     {
       title: t('legal'),
       links: [
         { title: t('privacy'), href: "/privacy" },
         { title: t('terms'), href: "/terms" },
-        { title: locale === "zh" ? "退款政策" : "Refund Policy", href: "/refund-policy" },
-        { title: locale === "zh" ? "联系我们" : "Contact", href: "/contact" },
-        // { title: t('cookie'), href: "/cookies" },
+        { title: isChinese ? "退款政策" : "Refund Policy", href: "/refund-policy" },
+        { title: isChinese ? "联系我们" : "Contact", href: "/contact" },
       ],
     },
   ];
-
 
   return (
     <footer className="border-t border-[var(--du-border)] bg-[var(--du-bg-elev)]">
       <div className="mx-auto max-w-[1680px] px-6 py-16">
         {/* Main Footer Content */}
-        <div className="mb-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:gap-20">
+        <div className="mb-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:gap-12">
           {/* Brand Column */}
           <div>
             <LocaleLink

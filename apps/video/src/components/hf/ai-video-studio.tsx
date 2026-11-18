@@ -30,7 +30,6 @@ import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
-import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import "./ai-video-studio.css";
 
 const MODES = ["Create", "Edit"] as const;
@@ -211,10 +210,12 @@ export function AiVideoStudio({
       : defaultSettings(availableModels[0]);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Start on a model that can generate: the one in the URL when it is on sale,
+  // otherwise whatever the settings resolved to.
   const [catalogModelId, setCatalogModelId] = useState(() =>
-    VIDEO_CATALOG.some((item) => item.id === initialCatalogModelId)
-      ? initialCatalogModelId as string
-      : VIDEO_CATALOG[0].id,
+    initialCatalogModelId && availableModelIds.includes(initialCatalogModelId)
+      ? initialCatalogModelId
+      : settings.modelId,
   );
   const [fileName, setFileName] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
@@ -483,11 +484,8 @@ export function AiVideoStudio({
           connectedIds={availableModelIds} open={pickerOpen} onOpenChange={setPickerOpen}
           onChange={(id) => {
             setCatalogModelId(id);
-            if (availableModelIds.includes(id)) {
-              setSettings((previous) => selectModel(previous, id));
-            } else if (![4, 5, 6, 7, 8, 9, 10, 11, 12].includes(settings.duration)) {
-              setSettings((previous) => ({ ...previous, duration: 4 }));
-            }
+            // The picker only offers models that can generate.
+            setSettings((previous) => selectModel(previous, id));
           }} />
         {!availableModelIds.includes(catalogModelId) ? <output className="text-xs text-[var(--hfv-muted)]">{isChinese ? "此模型已列入 KIE 目录，本站生成接口尚未接入。" : "Listed by KIE; generation is not connected on this site yet."}</output> : null}
 
