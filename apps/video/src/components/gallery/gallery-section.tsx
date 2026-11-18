@@ -237,6 +237,11 @@ export function GallerySection({
     const isChinese = locale.toLowerCase().startsWith("zh");
     const showSamples = status !== "ready" || items.length === 0;
 
+    // The homepage shows this section only when creators have published
+    // something. Until then the idea templates above carry the visuals, and
+    // a "community" row of site samples would repeat them.
+    if (showSamples) return null;
+
     return (
       <section className="home-gallery-section mx-auto max-w-[1680px] px-4 py-16 sm:px-6" aria-label={isChinese ? "作品画廊" : "Community gallery"}>
         <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -317,8 +322,6 @@ export function GallerySection({
           </div>
           <div className="home-gallery-perforation" aria-hidden="true" />
         </div>
-
-        {status === "error" ? <p className="mt-3 text-xs text-[var(--du-text-muted)]">{isChinese ? "画廊暂时无法加载，当前展示站内示例。" : "The gallery is temporarily unavailable. Showing site samples."}</p> : null}
         <GalleryDetailDialog item={activeItem} open={activeItem !== null} onOpenChange={(next) => { if (!next) setActiveItem(null); }} />
       </section>
     );

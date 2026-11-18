@@ -150,12 +150,12 @@ export function HomeGenerator({ lang, models, onModelChange, preset, onBrowseIde
   const divider = <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />;
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 
-  return <div id="home-generator" className="relative z-20 mt-4 w-full max-w-[1120px] scroll-mt-24">
-    <div className="mx-auto flex w-fit rounded-full border border-white/20 bg-[var(--du-surface)]/90 p-1 shadow-[0_8px_32px_rgba(0,0,0,.3)]" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
+  return <div id="home-generator" className="relative z-20 w-full max-w-[920px] scroll-mt-24">
+    <div className="mx-auto flex w-fit rounded-full border border-white/10 bg-[var(--du-surface)] p-1" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`min-w-[92px] rounded-full px-5 py-2 text-sm font-medium transition-colors sm:min-w-[112px] ${kind === "video" ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setAspect("1:1"); setResolution("1K"); }} className={`min-w-[92px] rounded-full px-5 py-2 text-sm font-medium transition-colors sm:min-w-[112px] ${kind === "image" ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
     </div>
-    <form onSubmit={submit} className="du-glass relative mt-3 w-full rounded-[22px] p-3 text-left shadow-[0_20px_60px_rgba(0,0,0,.35)] sm:p-4">
+    <form onSubmit={submit} className="relative mt-4 w-full rounded-[24px] border border-white/10 bg-[var(--du-surface)] p-4 text-left sm:p-5">
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
       <input ref={referencesRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addReferences(event.target.files); event.target.value = ""; }} />
       <button type="button" onClick={() => referencesRef.current?.click()} disabled={referenceImages.length >= 5} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] disabled:opacity-40" aria-label={zh ? "添加参考图片" : "Add reference images"}><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
@@ -172,7 +172,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, onBrowseIde
           <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => startRef.current?.click()} title={startFile?.name} className="flex h-[66px] w-[58px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white"><span className="text-xl leading-none">{startFile ? "✓" : "+"}</span><span className="mt-1">{zh ? "起始" : "Start"}</span></button><span className="text-[10px] text-white/65">{zh ? "可选" : "Optional"}</span></div>
         </div> : null}
         <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
-        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={2} maxLength={2000} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} className="min-h-[66px] min-w-[160px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
+        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={3} maxLength={2000} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} className="min-h-[92px] min-w-[160px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
       </div>
     </div>
     <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--du-border)] pb-3 sm:gap-x-3">
@@ -186,8 +186,8 @@ export function HomeGenerator({ lang, models, onModelChange, preset, onBrowseIde
     {notice ? <p role="status" className="mt-2 text-xs text-[var(--du-accent-text)]">{notice}</p> : null}
     </form>
     {onBrowseIdeas ? <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-      <span className="text-xs text-white/70">{zh ? "没想好？从创意开始：" : "Not sure yet? Start from an idea:"}</span>
-      {HOME_TEMPLATE_CATEGORIES.map((item) => <button key={item.id} type="button" onClick={() => onBrowseIdeas(item.id)} className="min-h-8 rounded-full border border-white/25 bg-black/35 px-3 text-xs text-white/90 transition-colors hover:border-[var(--du-accent)] hover:text-white">{zh ? item.zh : item.en}</button>)}
+      <span className="text-xs text-[var(--du-text-muted)]">{zh ? "没想好？从创意开始：" : "Not sure yet? Start from an idea:"}</span>
+      {HOME_TEMPLATE_CATEGORIES.map((item) => <button key={item.id} type="button" onClick={() => onBrowseIdeas(item.id)} className="min-h-8 rounded-full border border-white/10 bg-[var(--du-surface)] px-3 text-xs text-[var(--du-text)] transition-colors hover:border-white/30 hover:text-white">{zh ? item.zh : item.en}</button>)}
     </div> : null}
   </div>;
 }

@@ -1,0 +1,166 @@
+/* Homepage layout. Colours come from theme tokens only. */
+
+.du-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(56px, 10vh, 120px) 24px 56px;
+}
+
+.du-hero-glow {
+  position: absolute;
+  left: 50%;
+  top: -180px;
+  width: min(1100px, 92vw);
+  height: 620px;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    color-mix(in srgb, var(--du-accent) 15%, transparent) 0%,
+    color-mix(in srgb, var(--du-accent) 5%, transparent) 38%,
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+.du-hero-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 920px;
+  text-align: center;
+}
+
+.du-hero-title {
+  color: white;
+  font-size: clamp(2.5rem, 5.2vw, 4.5rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.du-hero-tagline {
+  margin-top: 14px;
+  color: var(--du-text);
+  font-size: clamp(1.15rem, 1.7vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.du-hero-subtitle {
+  margin-top: 8px;
+  margin-bottom: 20px;
+  color: var(--du-text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.du-section-eyebrow {
+  color: var(--du-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+.du-section-title {
+  margin-top: 10px;
+  color: white;
+  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.du-steps {
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 24px 24px 72px;
+}
+
+.du-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.du-step {
+  padding: 24px;
+}
+
+.du-step-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--du-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.du-step-title {
+  margin-top: 14px;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.du-step-body {
+  margin-top: 8px;
+  color: var(--du-text-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.du-cta {
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: 0 24px 88px;
+}
+
+.du-cta-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 36px 40px;
+  border: 1px solid var(--du-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 60%),
+    var(--du-surface);
+}
+
+.du-cta-title {
+  color: white;
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.du-cta-body {
+  margin-top: 8px;
+  max-width: 560px;
+  color: var(--du-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.du-cta-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .du-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .du-cta-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
