@@ -25,7 +25,9 @@ import {
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { HomeStudioStory } from "@/components/hf/home-studio-story";
 import { HomeShowcaseSections } from "@/components/hf/home-showcase-sections";
-import { HomeGenerator } from "@/components/hf/home-generator";
+import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
+import { HomeTemplates } from "@/components/hf/home-templates";
+import type { HomeTemplate, HomeTemplateCategory } from "@/lib/home-templates";
 import {
   CREDITS_BANNER,
   MODEL_CARDS,
@@ -132,6 +134,21 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroModelId, setHeroModelId] = useState(models[0]?.id ?? "");
   const heroModel = models.find((item) => item.id === heroModelId);
+  const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
+  const [templateCategory, setTemplateCategory] = useState<HomeTemplateCategory>("story");
+  const scrollToId = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const useTemplate = (template: HomeTemplate) => {
+    setPreset((previous) => ({
+      prompt: lang.toLowerCase().startsWith("zh") ? template.prompt.zh : template.prompt.en,
+      aspect: template.aspect,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
+    scrollToId("home-generator");
+  };
+  const browseIdeas = (category: HomeTemplateCategory) => {
+    setTemplateCategory(category);
+    scrollToId("home-templates");
+  };
   const isChinese = lang.toLowerCase().startsWith("zh");
   const heroCopy = isChinese
     ? {
@@ -243,7 +260,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
               <p className="mt-[2%] max-w-[980px] text-[clamp(0.85rem,1.25vw,1.35rem)] leading-relaxed text-white/90">
                 {heroCopy.subtitle}
               </p>
-              <HomeGenerator lang={lang} models={models} onModelChange={setHeroModelId} />
+              <HomeGenerator lang={lang} models={models} onModelChange={setHeroModelId} preset={preset} onBrowseIdeas={browseIdeas} />
             </div>
 
             <button
@@ -292,6 +309,9 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           </button>
         </div>
       </section>
+
+      <HomeTemplates lang={lang} category={templateCategory} onCategoryChange={setTemplateCategory} onUse={useTemplate} />
+
 
       <HomeStudioStory lang={lang} modelName={heroModel?.name ?? (isChinese ? "视频模型" : "Video model")} />
 

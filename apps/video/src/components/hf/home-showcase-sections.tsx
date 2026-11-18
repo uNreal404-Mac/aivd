@@ -7,101 +7,6 @@ import { ArrowRight, Bot, Plus, Send, ShieldCheck, Sparkles } from "lucide-react
 import { localizedHref } from "@/lib/du-home";
 import "./home-showcase-sections.css";
 
-type ShowcaseKind = "story" | "motion" | "recast";
-
-type ShowcaseCopy = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  cta: string;
-  gallery: string;
-};
-
-type ShowcaseSample = { image: string; zh: string; en: string };
-
-const sample = (name: string, zh: string, en: string): ShowcaseSample => ({
-  image: `/home/samples/${name}.webp`,
-  zh,
-  en,
-});
-
-const SHOWCASE_SAMPLES: Record<ShowcaseKind, ShowcaseSample[]> = {
-  story: [
-    sample("boy-and-dog", "雨夜街角", "Rainy Street Corner"),
-    sample("autumn-walk", "秋日同行", "Autumn Walk"),
-    sample("rain-couple", "雨中重逢", "Reunion in the Rain"),
-    sample("mountain-wind", "山顶的风", "Wind on the Summit"),
-  ],
-  motion: [
-    sample("cosmic-bloom", "星云绽放", "Cosmic Bloom"),
-    sample("mountain-valley", "云海山谷", "Valley of Clouds"),
-    sample("storm-sea", "风暴之海", "Storm Sea"),
-  ],
-  recast: [
-    sample("planet-impact", "星球撞击", "Planet Impact"),
-    sample("tomb-light", "古墓之光", "Light in the Tomb"),
-    sample("mech-warrior", "机甲战士", "Mech Warrior"),
-    sample("dreaming", "梦境", "Dreaming"),
-  ],
-};
-
-function ShowcaseFrames({ kind, isChinese }: { kind: ShowcaseKind; isChinese: boolean }) {
-  return (
-    <div className={`home-showcase-grid home-showcase-grid-${kind}`}>
-      {SHOWCASE_SAMPLES[kind].map((item) => {
-        const caption = isChinese ? item.zh : item.en;
-        return (
-          <figure key={item.image} className="home-showcase-card">
-            <img src={item.image} alt={caption} loading="lazy" />
-            <figcaption>{caption}</figcaption>
-          </figure>
-        );
-      })}
-    </div>
-  );
-}
-
-function ShowcasePanel({
-  id,
-  kind,
-  copy,
-  lang,
-}: {
-  id: string;
-  kind: ShowcaseKind;
-  copy: ShowcaseCopy;
-  lang: string;
-}) {
-  return (
-    <section className="home-showcase-section" aria-labelledby={id}>
-      <div className="home-showcase-frame">
-        <div className="home-showcase-inner">
-          <header className="home-showcase-header">
-            <div>
-              <p className="home-showcase-eyebrow">{copy.eyebrow}</p>
-              <h2 id={id} className="home-showcase-title">{copy.title}</h2>
-              <p className="home-showcase-description">{copy.description}</p>
-            </div>
-            <Link className="home-showcase-primary" href={localizedHref(lang, "/ai/video")}>
-              {copy.cta}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </header>
-
-          <ShowcaseFrames kind={kind} isChinese={lang.toLowerCase().startsWith("zh")} />
-
-          <div className="home-showcase-footer">
-            <Link className="home-showcase-secondary" href={localizedHref(lang, "/gallery")}>
-              {copy.gallery}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 const CREATIVE_TABS = ["idea", "storyboard", "assets"] as const;
 type CreativeTab = (typeof CREATIVE_TABS)[number];
 
@@ -228,25 +133,11 @@ function CreativeSpacePreview({ lang }: { lang: string }) {
   );
 }
 
+// The Story / Motion / Recast panels moved into HomeTemplates, where each
+// sample is a clickable idea that loads a prompt into the generator.
 export function HomeShowcaseSections({ lang }: { lang: string }) {
-  const isChinese = lang.toLowerCase().startsWith("zh");
-  const panels: { id: string; kind: ShowcaseKind; copy: ShowcaseCopy }[] = isChinese
-    ? [
-        { id: "home-story-title", kind: "story", copy: { eyebrow: "视频创作 · 01", title: "故事视频", description: "从一个想法出发，为故事安排画面与节奏。", cta: "进入视频工作台", gallery: "浏览画廊" } },
-        { id: "home-motion-title", kind: "motion", copy: { eyebrow: "视频创作 · 02", title: "动态创作", description: "用镜头运动和视觉节奏，探索画面的更多可能。", cta: "进入视频工作台", gallery: "浏览画廊" } },
-        { id: "home-recast-title", kind: "recast", copy: { eyebrow: "视频创作 · 03", title: "创意重构", description: "以现有构想为起点，尝试新的叙事和视觉表达。", cta: "进入视频工作台", gallery: "浏览画廊" } },
-      ]
-    : [
-        { id: "home-story-title", kind: "story", copy: { eyebrow: "VIDEO CREATION · 01", title: "STORY VIDEO", description: "Start with an idea and give the story its shots and rhythm.", cta: "Open Video Studio", gallery: "Browse Gallery" } },
-        { id: "home-motion-title", kind: "motion", copy: { eyebrow: "VIDEO CREATION · 02", title: "MOTION", description: "Explore what movement and visual rhythm can bring to a frame.", cta: "Open Video Studio", gallery: "Browse Gallery" } },
-        { id: "home-recast-title", kind: "recast", copy: { eyebrow: "VIDEO CREATION · 03", title: "RECAST", description: "Take an existing concept toward a new story and visual direction.", cta: "Open Video Studio", gallery: "Browse Gallery" } },
-      ];
-
   return (
     <div className="home-showcases mx-auto max-w-[1680px] px-4 sm:px-6">
-      {panels.map((panel) => (
-        <ShowcasePanel key={panel.id} {...panel} lang={lang} />
-      ))}
       <CreativeSpacePreview lang={lang} />
     </div>
   );
