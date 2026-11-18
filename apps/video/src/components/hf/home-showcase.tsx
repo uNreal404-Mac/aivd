@@ -249,7 +249,16 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
 }
 
 /** Compact prompt bar pinned to the bottom once the main generator scrolls away. */
-export function MiniComposer({ lang, anchorId }: { lang: string; anchorId: string }) {
+export function MiniComposer({
+  lang,
+  anchorId,
+  targetPath = "/ai/video",
+}: {
+  lang: string;
+  anchorId: string;
+  /** Page the prompt opens in; it arrives as ?prompt=. */
+  targetPath?: string;
+}) {
   const zh = lang.toLowerCase().startsWith("zh");
   const router = useRouter();
   const [visible, setVisible] = useState(false);
@@ -280,7 +289,7 @@ export function MiniComposer({ lang, anchorId }: { lang: string; anchorId: strin
     event.preventDefault();
     const text = prompt.trim();
     if (!text) return;
-    router.push(localizedHref(lang, `/ai/video?prompt=${encodeURIComponent(text)}`));
+    router.push(localizedHref(lang, `${targetPath}?prompt=${encodeURIComponent(text)}`));
   };
 
   return (

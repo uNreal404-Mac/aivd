@@ -96,7 +96,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "ads",
     "fashion-ad",
-    "/home/silver-muse.webp",
+    "/home/samples/red-carpet.webp",
     ["时尚广告", "Fashion ad"],
     ["模特、服装和光影，适合品牌和电商。", "Models, clothing and light for brands and e-commerce."],
     [
@@ -107,7 +107,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "ads",
     "travel-promo",
-    "/home/coast-drive.webp",
+    "/home/hero-marina-poster.webp",
     ["旅行宣传", "Travel promo"],
     ["目的地风光和公路镜头，适合文旅和酒店。", "Destination scenery and road shots for tourism and hotels."],
     [
@@ -118,7 +118,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "ads",
     "food-promo",
-    "/home/fire-light.webp",
+    "/home/samples/dreaming.webp",
     ["餐饮宣传", "Food promo"],
     ["火光、蒸汽和特写，让食物看起来更好吃。", "Firelight, steam and close-ups that make food look better."],
     [
@@ -140,7 +140,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "social",
     "portrait-motion",
-    "/home/portrait-girl.webp",
+    "/home/samples/mountain-wind.webp",
     ["人像动起来", "Living portrait"],
     ["让一张人像照片自然地动起来。", "Bring a portrait photo to life with natural motion."],
     [
@@ -151,7 +151,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "social",
     "city-vlog",
-    "/home/neon-streets.webp",
+    "/home/samples/rain-couple.webp",
     ["城市夜景", "City nights"],
     ["霓虹街头和延时感，适合 vlog 开场。", "Neon streets and a time-lapse feel for vlog openers."],
     [
@@ -173,7 +173,7 @@ export const CREATIVE_SKILLS: CreativeSkill[] = [
   skill(
     "cinematic",
     "golden-hour",
-    "/home/golden-hour.webp",
+    "/home/samples/planet-impact.webp",
     ["黄金时刻", "Golden hour"],
     ["逆光、暖色和柔焦，最常用的电影感。", "Backlight, warm tones and soft focus, the classic cinematic look."],
     [

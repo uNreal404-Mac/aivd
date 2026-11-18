@@ -3,31 +3,25 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, Coins, Film, ImagePlus, ListChecks, MessageSquareText, Wand2 } from "lucide-react";
+import { ArrowUp, AtSign, Coins, Film, ImagePlus, ListChecks, MessageSquareText, Sparkles, Wand2, type LucideIcon } from "lucide-react";
 
 import { estimateCredits } from "@/lib/ai-video-studio";
-import {
-  CREATIVE_SKILL_CATEGORIES,
-  skillsFor,
-  type CreativeSkill,
-  type CreativeSkillCategory,
-} from "@/lib/creative-skills";
+import { MiniComposer } from "@/components/hf/home-showcase";
+import { CREATIVE_SKILL_CATEGORIES, skillsFor, type CreativeSkillCategory } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import "@/components/hf/home-showcase.css";
+import "@/components/hf/home-pricing.css";
 import "./creative-space-home.css";
 
 const CANVAS_PATH = "/creative-space/canvas";
 const VEO_CREDITS = estimateCredits({ modelId: "veo-3.1", duration: 8, resolution: "720p" });
-
-type Library = "skills" | "templates";
 
 export function CreativeSpaceHome({ lang }: { lang: string }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const router = useRouter();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [brief, setBrief] = useState("");
-  const [library, setLibrary] = useState<Library>("skills");
-  const [category, setCategory] = useState<CreativeSkillCategory>("story");
 
   const canvasHref = (text?: string) =>
     localizedHref(lang, text ? `${CANVAS_PATH}?prompt=${encodeURIComponent(text)}` : CANVAS_PATH);
@@ -49,7 +43,6 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
   };
 
   const quickSkills = CREATIVE_SKILL_CATEGORIES.flatMap((item) => skillsFor(item.id).slice(0, 2));
-  const activeCategory = CREATIVE_SKILL_CATEGORIES.find((item) => item.id === category);
 
   return (
     <div className="cs-page">
@@ -63,7 +56,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
             : "Write a goal, or add images and video as references. The agent drafts the shots and prompt first, and Veo 3.1 generates once you approve."}
         </p>
 
-        <form className="cs-composer" onSubmit={submit}>
+        <form id="cs-composer-anchor" className="cs-composer" onSubmit={submit}>
           <textarea
             ref={inputRef}
             value={brief}
@@ -109,165 +102,176 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
         </div>
       </section>
 
-      <section className="cs-library" aria-label={zh ? "技能和模板" : "Skills and templates"}>
-        <div className="cs-switch" role="tablist">
-          <button type="button" role="tab" aria-selected={library === "skills"} className={library === "skills" ? "cs-switch-on" : ""} onClick={() => setLibrary("skills")}>
-            {zh ? "技能" : "Skills"}
-          </button>
-          <button type="button" role="tab" aria-selected={library === "templates"} className={library === "templates" ? "cs-switch-on" : ""} onClick={() => setLibrary("templates")}>
-            {zh ? "模板" : "Templates"}
-          </button>
-        </div>
+      {/* Below the composer the page uses the homepage and pricing styles. */}
+      <div className="hs">
+        {/* 1. Category carousel */}
+        <section className="hs-carousel" aria-label={zh ? "技能分类" : "Skill categories"}>
+          <div className="hs-carousel-track">
+            {CREATIVE_SKILL_CATEGORIES.map((item) => {
+              const first = skillsFor(item.id)[0];
+              return (
+                <a key={item.id} href={`#cs-cat-${item.id}`} className="hs-slide">
+                  <span className="hs-slide-media">
+                    <img src={first?.image} alt="" loading="lazy" />
+                  </span>
+                  <span className="hs-slide-title">{zh ? item.zh : item.en}</span>
+                  <span className="hs-slide-body">
+                    {zh ? `${skillsFor(item.id).length} 个技能 · ` : `${skillsFor(item.id).length} skills · `}
+                    {zh ? first?.description.zh : first?.description.en}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
 
-        {library === "skills" ? (
-          <>
-            <div className="cs-cats" role="tablist">
-              {CREATIVE_SKILL_CATEGORIES.map((item) => (
-                <button key={item.id} type="button" role="tab" aria-selected={category === item.id} className={category === item.id ? "cs-cat cs-cat-on" : "cs-cat"} onClick={() => setCategory(item.id)}>
-                  {zh ? item.zh : item.en}
+        {/* 2. How the agent works: offer card and feature tiles */}
+        <section className="hs-offer-grid" aria-label={zh ? "Agent 能做什么" : "What the agent does"}>
+          <Link href={canvasHref()} className="hs-offer">
+            <span className="hs-offer-glow" aria-hidden="true" />
+            <span className="hs-offer-kicker">{zh ? "先看计划，再花积分" : "Plan first, pay later"}</span>
+            <span className="hs-offer-title">{zh ? "出计划免费" : "Planning is free"}</span>
+            <span className="hs-offer-body">
+              {zh ? `确认后用 Veo 3.1 生成，${VEO_CREDITS} 积分一条` : `Veo 3.1 renders on approval, ${VEO_CREDITS} credits a clip`}
+            </span>
+            <span className="hs-offer-cta">{zh ? "打开画布" : "Open the canvas"}</span>
+          </Link>
+          <div className="hs-tiles">
+            {AGENT_TILES.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <Link key={tile.en} href={canvasHref()} className="hs-tile">
+                  <Icon className="hs-tile-icon" aria-hidden="true" />
+                  <span className="hs-tile-title">
+                    {zh ? tile.zh : tile.en}
+                    {tile.isNew ? <span className="hs-badge">{zh ? "新" : "New"}</span> : null}
+                  </span>
+                  <span className="hs-tile-body">{zh ? tile.bodyZh : tile.bodyEn}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 3. One section per skill category */}
+        {CREATIVE_SKILL_CATEGORIES.map((item) => (
+          <section key={item.id} id={`cs-cat-${item.id}`} className="hs-section cs-anchor" aria-labelledby={`cs-cat-title-${item.id}`}>
+            <div className="hs-head">
+              <div>
+                <h2 id={`cs-cat-title-${item.id}`} className="hs-title">{zh ? item.zh : item.en}</h2>
+                <p className="hs-sub">{zh ? CATEGORY_LINES[item.id].zh : CATEGORY_LINES[item.id].en}</p>
+              </div>
+            </div>
+            <div className="hs-usecase-grid">
+              {skillsFor(item.id).map((skill) => (
+                <button key={skill.id} type="button" className="hs-usecase cs-skill" onClick={() => applyBrief(zh ? skill.brief.zh : skill.brief.en)}>
+                  <img src={skill.image} alt="" loading="lazy" />
+                  <span className="hs-usecase-shade" aria-hidden="true" />
+                  <span className="cs-skill-hover" aria-hidden="true">
+                    <span>{zh ? skill.description.zh : skill.description.en}</span>
+                    <span className="cs-skill-use">{zh ? "运用技能" : "Use skill"}</span>
+                  </span>
+                  <span className="hs-usecase-title">{zh ? skill.title.zh : skill.title.en}</span>
+                  <span className="hs-usecase-tags">
+                    <span className="hs-chip">{zh ? item.zh : item.en}</span>
+                    <span className="hs-chip">{zh ? "Agent 分镜" : "Agent plan"}</span>
+                  </span>
                 </button>
               ))}
             </div>
-            <h2 className="cs-h2">{activeCategory ? (zh ? activeCategory.zh : activeCategory.en) : null}</h2>
-            <div className="cs-grid">
-              {skillsFor(category).map((item) => (
-                <SkillCard key={item.id} zh={zh} skill={item} onUse={applyBrief} />
-              ))}
+          </section>
+        ))}
+
+        {/* 4. Canvas banner */}
+        <section className="hs-banner hs-banner-canvas" aria-labelledby="cs-canvas-title">
+          <div className="hs-banner-text">
+            <span className="hs-banner-kicker">{zh ? "画布" : "CANVAS"}</span>
+            <h2 id="cs-canvas-title" className="hs-banner-title">
+              {zh ? <>一块画布。<br />所有素材。</> : <>One canvas.<br />Every asset.</>}
+            </h2>
+            <p className="hs-banner-body">
+              {zh ? "把产品图、人像、参考视频拖进来，用 @ 点名交给 Agent" : "Drop product shots, portraits and reference video in, then @-mention them to the agent"}
+            </p>
+            <Link href={canvasHref()} className="hs-btn hs-btn-light">
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              {zh ? "打开画布" : "Open the canvas"}
+            </Link>
+          </div>
+          <div className="hs-banner-art" aria-hidden="true">
+            <img src="/home/samples/studio-room.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
+            <img src="/home/samples/red-carpet.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
+            <span className="hs-banner-bubble">{zh ? "@产品图 做一条 8 秒发布短片" : "@product make an 8s launch clip"}</span>
+          </div>
+        </section>
+
+        {/* 5. Steps as gradient cards, like the pricing plans */}
+        <section className="hs-section" aria-labelledby="cs-steps-title">
+          <div className="hs-head">
+            <div>
+              <h2 id="cs-steps-title" className="hs-title">{zh ? "三步把想法变成视频" : "IDEA TO VIDEO IN THREE STEPS"}</h2>
+              <p className="hs-sub">{zh ? "从一句话到一条成片，全程不用自己琢磨提示词。" : "From one line to a finished clip without writing prompts yourself."}</p>
             </div>
-          </>
-        ) : (
-          <>
-            <h2 className="cs-h2">{zh ? "从模板开始" : "Start from a template"}</h2>
-            <div className="cs-grid">
-              {HOME_TEMPLATES.map((item) => (
-                <button key={item.id} type="button" className="cs-card" onClick={() => applyBrief(zh ? item.prompt.zh : item.prompt.en)}>
-                  <img src={item.image} alt="" loading="lazy" className="cs-card-img" />
-                  <span className="cs-card-shade" aria-hidden="true" />
-                  <span className="cs-card-title">{zh ? item.title.zh : item.title.en}</span>
-                </button>
-              ))}
+          </div>
+          <div className="hp-plans">
+            {STEPS.map((step, index) => (
+              <article key={step.en} className={`hp-plan hp-plan-${(["basic", "pro", "ultimate"] as const)[index]}`}>
+                <div className="hp-plan-top cs-step-card">
+                  <span className="cs-step-n">{index + 1}</span>
+                  <p className="hp-plan-name">{zh ? step.zh : step.en}</p>
+                  <p className="hp-plan-blurb">{zh ? step.bodyZh : step.bodyEn}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* 6. Templates row */}
+        <section className="hs-section" aria-labelledby="cs-templates-title">
+          <div className="hs-head">
+            <div>
+              <h2 id="cs-templates-title" className="hs-title">{zh ? "从视频模板开始" : "START FROM A TEMPLATE"}</h2>
+              <p className="hs-sub">{zh ? "点一下，模板的描述就填进上方输入框。" : "One click puts the template's brief in the box above."}</p>
             </div>
-          </>
-        )}
-      </section>
-
-      <section className="cs-why" aria-labelledby="cs-why-title">
-        <h2 id="cs-why-title" className="cs-h2 cs-center">{zh ? "为什么用创作空间做视频" : "Why make videos in Creative Space"}</h2>
-        <Feature
-          image="/home/samples/studio-room.webp"
-          title={zh ? "把零散素材变成一条完整的视频" : "Turn loose assets into one finished clip"}
-          body={zh
-            ? "把产品图、人像、参考视频拖到画布上，用 @ 点名要用的素材。Agent 会读懂这些素材，再把你的目标写成可直接生成的提示词。"
-            : "Drop product shots, portraits and reference video on the canvas and @-mention the ones to use. The agent reads them and turns your goal into a prompt ready to generate."}
-          cta={zh ? "打开画布" : "Open the canvas"}
-          href={canvasHref()}
-        />
-        <Feature
-          reverse
-          image="/home/samples/mountain-valley.webp"
-          title={zh ? "先看计划，再花积分" : "See the plan before you spend credits"}
-          body={zh
-            ? "Agent 先给出分镜步骤和最终提示词，出计划不扣积分。你满意了再点生成，不满意就改一句话重新规划。"
-            : "The agent lays out the shot steps and final prompt first, and planning costs nothing. Generate when you are happy, or change a line and plan again."}
-          cta={zh ? "试一个技能" : "Try a skill"}
-          href="#"
-          onClick={() => applyBrief(zh ? quickSkills[0].brief.zh : quickSkills[0].brief.en)}
-        />
-        <Feature
-          image="/home/samples/cosmic-bloom.webp"
-          title={zh ? "从技能出发，不用自己琢磨提示词" : "Start from a skill instead of a blank prompt"}
-          body={zh
-            ? "故事、广告、社交短视频、电影风格，每个技能都带好了一段写好的目标。点一下填进输入框，改几个词就能用。"
-            : "Story, ads, social clips and cinematic looks each come with a written brief. One click puts it in the box; change a few words and go."}
-          cta={zh ? "浏览技能" : "Browse skills"}
-          href="#"
-          onClick={() => {
-            setLibrary("skills");
-            document.querySelector(".cs-library")?.scrollIntoView({ behavior: "smooth" });
-          }}
-        />
-      </section>
-
-      <section className="cs-steps" aria-labelledby="cs-steps-title">
-        <h2 id="cs-steps-title" className="cs-h2 cs-center">{zh ? "三步把想法变成视频" : "Idea to video in three steps"}</h2>
-        <ol className="cs-steps-grid">
-          <Step icon={MessageSquareText} n={1} title={zh ? "说出目标，加上素材" : "Say the goal, add assets"} body={zh ? "写一句想要的效果，或选一个技能；需要的话把图片和视频拖到画布上。" : "Write what you want or pick a skill, and drag images or video onto the canvas if you have them."} />
-          <Step icon={ListChecks} n={2} title={zh ? "确认 Agent 的计划" : "Approve the agent's plan"} body={zh ? "Agent 给出分镜步骤和最终提示词。不满意就补充一句，再规划一次。" : "The agent returns shot steps and a final prompt. Add a note and plan again if it is not right."} />
-          <Step icon={Wand2} n={3} title={zh ? "生成并下载" : "Generate and download"} body={zh ? `确认后用 Veo 3.1 生成 8 秒有声视频，消耗 ${VEO_CREDITS} 积分，完成后在“我的作品”里查看。` : `Veo 3.1 renders an 8-second clip with sound for ${VEO_CREDITS} credits; find it in My creations.`} />
-        </ol>
-        <div className="cs-center">
-          <Link href={canvasHref()} className="cs-cta">
-            {zh ? "免费开始创作" : "Start creating free"}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SkillCard({ zh, skill, onUse }: { zh: boolean; skill: CreativeSkill; onUse: (brief: string) => void }) {
-  return (
-    <button type="button" className="cs-card" onClick={() => onUse(zh ? skill.brief.zh : skill.brief.en)}>
-      <img src={skill.image} alt="" loading="lazy" className="cs-card-img" />
-      <span className="cs-card-shade" aria-hidden="true" />
-      <span className="cs-card-hover" aria-hidden="true">
-        <span className="cs-card-desc">{zh ? skill.description.zh : skill.description.en}</span>
-        <span className="cs-card-use">{zh ? "运用技能" : "Use skill"}</span>
-      </span>
-      <span className="cs-card-title">{zh ? skill.title.zh : skill.title.en}</span>
-    </button>
-  );
-}
-
-function Feature({
-  image,
-  title,
-  body,
-  cta,
-  href,
-  onClick,
-  reverse,
-}: {
-  image: string;
-  title: string;
-  body: string;
-  cta: string;
-  href: string;
-  onClick?: () => void;
-  reverse?: boolean;
-}) {
-  return (
-    <div className={reverse ? "cs-feature cs-feature-reverse" : "cs-feature"}>
-      <img src={image} alt="" loading="lazy" className="cs-feature-img" />
-      <div className="cs-feature-text">
-        <h3 className="cs-h3">{title}</h3>
-        <p className="cs-body">{body}</p>
-        {onClick ? (
-          <button type="button" className="cs-outline" onClick={onClick}>
-            {cta}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-        ) : (
-          <Link href={href} className="cs-outline">
-            {cta}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        )}
+            <Link href={localizedHref(lang, "/templates")} className="hs-btn hs-btn-dark">
+              {zh ? "查看全部模板" : "All templates"}
+            </Link>
+          </div>
+          <div className="hs-tall-row">
+            {HOME_TEMPLATES.slice(0, 5).map((template) => (
+              <button key={template.id} type="button" className="hs-tall" onClick={() => applyBrief(zh ? template.prompt.zh : template.prompt.en)}>
+                <img src={template.image} alt="" loading="lazy" />
+                <span className="hs-usecase-shade" aria-hidden="true" />
+                <span className="hs-tall-title">{zh ? template.title.zh : template.title.en}</span>
+                <span className="hs-tall-use">{zh ? "使用模板" : "Use template"}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
+
+      <MiniComposer lang={lang} anchorId="cs-composer-anchor" targetPath={CANVAS_PATH} />
     </div>
   );
 }
 
-function Step({ icon: Icon, n, title, body }: { icon: typeof Film; n: number; title: string; body: string }) {
-  return (
-    <li className="cs-step">
-      <span className="cs-step-icon" aria-hidden="true">
-        <Icon className="h-5 w-5" />
-      </span>
-      <span className="cs-step-n">{n}</span>
-      <h3 className="cs-h3">{title}</h3>
-      <p className="cs-body">{body}</p>
-    </li>
-  );
-}
+const AGENT_TILES: { zh: string; en: string; bodyZh: string; bodyEn: string; icon: LucideIcon; isNew?: boolean }[] = [
+  { zh: "上传素材", en: "Upload assets", bodyZh: "图片和视频拖进画布", bodyEn: "Drag images and video onto the canvas", icon: ImagePlus },
+  { zh: "@ 点名素材", en: "@-mention assets", bodyZh: "告诉 Agent 用哪些素材", bodyEn: "Tell the agent which assets to use", icon: AtSign },
+  { zh: "自动分镜", en: "Shot plan", bodyZh: "一句话拆成镜头步骤", bodyEn: "One line becomes shot steps", icon: ListChecks, isNew: true },
+  { zh: "改一句重来", en: "Revise in a line", bodyZh: "不满意就补充一句再规划", bodyEn: "Add a note and plan again", icon: MessageSquareText },
+  { zh: "一键生成", en: "Generate", bodyZh: "确认后用 Veo 3.1 出片", bodyEn: "Veo 3.1 renders once you approve", icon: Wand2 },
+  { zh: "我的作品", en: "My creations", bodyZh: "成片自动保存，随时下载", bodyEn: "Clips are saved for download", icon: Film },
+];
+
+const CATEGORY_LINES: Record<CreativeSkillCategory, { zh: string; en: string }> = {
+  story: { zh: "童话、爱情、冒险和科幻，适合有情节的短片", en: "Fairy tales, romance, adventure and sci-fi with a plot" },
+  ads: { zh: "产品发布、时尚、旅行和餐饮，适合品牌和电商", en: "Launches, fashion, travel and food for brands and shops" },
+  social: { zh: "竖屏、人像和城市夜景，适合短视频平台", en: "Vertical, portraits and city nights for short-video apps" },
+  cinematic: { zh: "黄金时刻、暗调悬疑和史诗自然，一键电影感", en: "Golden hour, dark mystery and epic nature in one click" },
+};
+
+const STEPS = [
+  { zh: "说出目标", en: "Say the goal", bodyZh: "写一句想要的效果，或选一个技能；有素材就拖进画布。", bodyEn: "Write what you want or pick a skill, and drag in any assets." },
+  { zh: "确认计划", en: "Approve the plan", bodyZh: "Agent 给出分镜和最终提示词，出计划不扣积分。", bodyEn: "The agent returns shots and a final prompt; planning is free." },
+  { zh: "生成下载", en: "Generate", bodyZh: `用 Veo 3.1 生成有声视频，完成后在我的作品里下载。`, bodyEn: "Veo 3.1 renders a clip with sound; download it from My creations." },
+];

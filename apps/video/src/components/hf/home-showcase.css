@@ -719,3 +719,49 @@
   background: color-mix(in srgb, white 10%, transparent);
   color: color-mix(in srgb, white 45%, transparent);
 }
+
+/* Narrower desktop windows: fewer columns so cards keep their text clear. */
+@media (max-width: 1199px) {
+  .hs-carousel-track {
+    grid-auto-columns: calc((100% - 24px) / 2.15);
+  }
+
+  .hs-offer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hs-usecase-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hs-tall-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hs-tall-row > :nth-child(n + 4) {
+    display: none;
+  }
+
+  .hs-wall {
+    columns: 3;
+  }
+
+  .hs-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .hs-banner-art,
+  .hs-banner-fan {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .hs-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hs-wall {
+    columns: 2;
+  }
+}
