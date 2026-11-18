@@ -1,3 +1,5 @@
+import { calculateModelCredits } from "@/config/credits";
+
 export type StudioModel = {
   id: string;
   name: string;
@@ -7,7 +9,6 @@ export type StudioModel = {
   aspects: string[];
   resolutions: string[];
   audio: boolean;
-  creditsPerSecond: number;
   available: boolean;
 };
 
@@ -21,7 +22,6 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     resolutions: ["480p", "720p", "1080p"],
     audio: false,
-    creditsPerSecond: 4,
     available: true,
   },
   {
@@ -32,7 +32,6 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"],
     resolutions: ["720p", "1080p"],
     audio: false,
-    creditsPerSecond: 2,
     available: true,
   },
   {
@@ -43,7 +42,6 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["16:9", "9:16"],
     resolutions: ["720p"],
     audio: true,
-    creditsPerSecond: 6,
     available: true,
   },
   {
@@ -54,7 +52,6 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["16:9", "9:16"],
     resolutions: ["720p"],
     audio: true,
-    creditsPerSecond: 5,
     available: true,
   },
   {
@@ -66,7 +63,6 @@ export const STUDIO_MODELS: StudioModel[] = [
     aspects: ["Auto", "16:9", "9:16", "1:1"],
     resolutions: ["720p", "1080p"],
     audio: true,
-    creditsPerSecond: 5,
     available: false,
   },
 ];
@@ -194,16 +190,19 @@ export function settingsFromSearchParams(
   };
 }
 
-export function estimateCredits(settings: StudioSettings): number {
-  const model = STUDIO_MODELS.find((item) => item.id === settings.modelId);
-  const rate = model ? model.creditsPerSecond : 0;
-
-  const resolutionFactor = settings.resolution === "1080p" ? 1.5 : 1;
-  const audioFactor = settings.audio ? 1.2 : 1;
-
-  return Math.ceil(
-    settings.duration * rate * resolutionFactor * audioFactor,
-  );
+/**
+ * Credits a generation with these settings will cost. Delegates to the same
+ * function the server charges with (`videoService.generate`), so the number
+ * shown in the UI is the number frozen on submit. Audio does not change the
+ * price; resolution is passed as the server's `quality`.
+ */
+export function estimateCredits(
+  settings: Pick<StudioSettings, "modelId" | "duration" | "resolution">,
+): number {
+  return calculateModelCredits(settings.modelId, {
+    duration: settings.duration,
+    quality: settings.resolution,
+  });
 }
 
 export function canGenerate(

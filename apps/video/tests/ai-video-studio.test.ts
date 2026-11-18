@@ -11,6 +11,7 @@ import {
   STUDIO_MODELS,
   submitGeneration,
 } from "@/lib/ai-video-studio";
+import { calculateModelCredits } from "@/config/credits";
 
 function fakeResponse(status: number, payload: unknown): Response {
   return {
@@ -102,35 +103,47 @@ describe("selectModel", () => {
 });
 
 describe("estimateCredits", () => {
-  it("multiplies duration by the model rate", () => {
-    const settings = defaultSettings(STUDIO_MODELS[1]);
+  it("matches what the server charges for every available model and setting", () => {
+    for (const model of STUDIO_MODELS.filter((item) => item.available)) {
+      for (const duration of model.durations) {
+        for (const resolution of model.resolutions) {
+          for (const audio of [false, true]) {
+            const settings = {
+              ...defaultSettings(model),
+              duration,
+              resolution,
+              audio,
+            };
 
-    expect(estimateCredits(settings)).toBe(
-      Math.ceil(settings.duration * STUDIO_MODELS[1].creditsPerSecond),
-    );
+            expect(
+              estimateCredits(settings),
+              `${model.id} ${duration}s ${resolution} audio=${audio}`,
+            ).toBe(
+              calculateModelCredits(model.id, { duration, quality: resolution }),
+            );
+          }
+        }
+      }
+    }
   });
 
-  it("applies the 1080p resolution factor", () => {
-    const settings = {
-      ...defaultSettings(STUDIO_MODELS[0]),
-      resolution: "1080p",
-    };
-
-    expect(estimateCredits(settings)).toBe(
-      Math.ceil(
-        settings.duration * STUDIO_MODELS[0].creditsPerSecond * 1.5,
-      ),
-    );
+  it("returns a positive price for every available model", () => {
+    for (const model of STUDIO_MODELS.filter((item) => item.available)) {
+      expect(estimateCredits(defaultSettings(model)), model.id).toBeGreaterThan(0);
+    }
   });
 
-  it("applies the audio factor", () => {
-    const settings = { ...defaultSettings(STUDIO_MODELS[2]), audio: true };
+  it("pins the published prices", () => {
+    const price = (modelId: string, duration: number, resolution: string) =>
+      estimateCredits({ modelId, duration, resolution });
 
-    expect(estimateCredits(settings)).toBe(
-      Math.ceil(
-        settings.duration * STUDIO_MODELS[2].creditsPerSecond * 1.2,
-      ),
-    );
+    expect(price("sora-2", 10, "720p")).toBe(2);
+    expect(price("sora-2", 15, "720p")).toBe(3);
+    expect(price("veo-3.1", 8, "720p")).toBe(10);
+    expect(price("wan2.6", 5, "720p")).toBe(25);
+    expect(price("wan2.6", 5, "1080p")).toBe(42);
+    expect(price("seedance-1.5-pro", 4, "480p")).toBe(16);
+    expect(price("seedance-1.5-pro", 4, "1080p")).toBe(32);
   });
 });
 

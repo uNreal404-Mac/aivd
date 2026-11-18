@@ -137,6 +137,8 @@ export function AiVideoStudio({
         credits: "积分",
         creditEstimate: "预计消耗积分 · 示例",
         creditEstimateNote: "示例估算，实际消耗以正式计费规则为准。",
+        creditCost: "本次消耗积分",
+        creditCostNote: "提交时冻结这些积分，生成失败会退回。",
         settings: "视频设置",
         results: "生成结果",
         heroTitle: "掌控每一帧",
@@ -185,6 +187,8 @@ export function AiVideoStudio({
         credits: "credits",
         creditEstimate: "Estimated credits · example",
         creditEstimateNote: "Example estimate only. Actual credits follow the published pricing.",
+        creditCost: "Credits for this clip",
+        creditCostNote: "Held when you submit and returned if generation fails.",
         settings: "Video settings",
         results: "Results",
         heroTitle: "Direct every frame",
@@ -515,10 +519,10 @@ export function AiVideoStudio({
 
         <div className="studio-generation-footer">
           <output className="studio-credit-estimate" aria-live="polite">
-            <span><span className="block text-xs text-[var(--hfv-muted)]">{copy.creditEstimate}</span><span className="mt-1 block text-[11px] text-[var(--hfv-muted)]">{settings.duration}s · {settings.resolution}{settings.audio ? ` · ${copy.on}` : ""}</span></span>
-            <strong className="text-lg text-[var(--hfv-text)]">≈ {exampleCredits} <span className="text-xs font-medium">{copy.credits}</span></strong>
+            <span><span className="block text-xs text-[var(--hfv-muted)]">{selectedModelConnected ? copy.creditCost : copy.creditEstimate}</span><span className="mt-1 block text-[11px] text-[var(--hfv-muted)]">{settings.duration}s · {settings.resolution}{settings.audio ? ` · ${copy.on}` : ""}</span></span>
+            <strong className="text-lg text-[var(--hfv-text)]">{selectedModelConnected ? "" : "≈ "}{exampleCredits} <span className="text-xs font-medium">{copy.credits}</span></strong>
           </output>
-          <p className="text-[10px] leading-relaxed text-[var(--hfv-muted)]">{copy.creditEstimateNote}</p>
+          <p className="text-[10px] leading-relaxed text-[var(--hfv-muted)]">{selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}</p>
         <button
           type="button"
           disabled={promptEmpty || submitting || uploading || availableModels.length === 0 || !availableModelIds.includes(catalogModelId)}
