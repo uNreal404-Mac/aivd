@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
+import { HomePricing } from "@/components/hf/home-pricing";
 import { HomeShowcase, MiniComposer } from "@/components/hf/home-showcase";
 import type { HomeTemplate } from "@/lib/home-templates";
 import "./du-home.css";
@@ -44,6 +45,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
 
       {/* 2. Everything below the generator follows the reference homepage */}
       <HomeShowcase lang={lang} onUseTemplate={useTemplate} />
+      {/* 3. Pricing, after the reference sites' pricing pages */}
+      <HomePricing lang={lang} />
       <MiniComposer lang={lang} anchorId="home-generator" />
     </div>
   );
