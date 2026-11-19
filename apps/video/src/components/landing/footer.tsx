@@ -2,7 +2,9 @@
 
 import { useTranslations, useLocale } from "next-intl";
 
-import { LocaleLink } from "@/i18n/navigation";
+import { Languages } from "lucide-react";
+
+import { LocaleLink, useLocalePathname } from "@/i18n/navigation";
 import "./footer.css";
 
 export function LandingFooter() {
@@ -10,6 +12,7 @@ export function LandingFooter() {
   const locale = useLocale();
   const zh = locale === "zh";
   const currentYear = new Date().getFullYear();
+  const pathname = useLocalePathname();
 
   // A site directory, laid out after the reference site's footer: every page a
   // visitor or a crawler should reach, grouped the same way as the nav.
@@ -17,6 +20,7 @@ export function LandingFooter() {
     {
       groups: [
         {
+          title: zh ? "创作" : "Create",
           links: [
             { title: zh ? "AI 视频" : "AI Video", href: "/ai/video" },
             { title: zh ? "AI 视频生成器" : "AI Video Generator", href: "/video" },
@@ -137,9 +141,14 @@ export function LandingFooter() {
       <div className="ft-bottom">
         <p>{t("copyright", { year: currentYear })}</p>
         <div className="ft-bottom-links">
-          <LocaleLink href="/privacy">{t("privacy")}</LocaleLink>
-          <LocaleLink href="/terms">{t("terms")}</LocaleLink>
+          <LocaleLink href={pathname} locale={zh ? "en" : "zh"} className="ft-lang" hrefLang={zh ? "en" : "zh"}>
+            <Languages aria-hidden="true" />
+            {zh ? "English" : "简体中文"}
+          </LocaleLink>
           <LocaleLink href="/contact">{zh ? "联系我们" : "Contact"}</LocaleLink>
+          <LocaleLink href="/refund-policy">{zh ? "退款政策" : "Refunds"}</LocaleLink>
+          <LocaleLink href="/terms">{t("terms")}</LocaleLink>
+          <LocaleLink href="/privacy">{t("privacy")}</LocaleLink>
         </div>
       </div>
     </footer>

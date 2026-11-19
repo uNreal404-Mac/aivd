@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 
 import {
   CATEGORY_LABELS,
@@ -17,6 +17,9 @@ import {
 import "./effects.css";
 
 const S = (name: string) => `/home/samples/${name}.webp`;
+
+/** Card shapes for the masonry wall, repeated down the list. */
+const SHAPES = ["4 / 5", "3 / 4", "1 / 1", "9 / 16", "4 / 5", "3 / 4", "1 / 1"];
 
 /**
  * A library picture for each effect and, for camera and motion effects, the
@@ -70,23 +73,33 @@ export function EffectsGallery({ lang }: { lang: string }) {
         <p className="fx-empty">{copy.empty}</p>
       ) : (
         <ul className="fx-grid">
-          {items.map((template) => {
+          {items.map((template, index) => {
             const name = labelFor(template.name, lang);
             const look = LOOK[template.id] ?? { image: S("cosmic-bloom") };
             return (
-              <li key={template.id}>
-                <Link href={useHref(lang, template)} className={`fx-card ${look.move ? `fx-move-${look.move}` : ""}`}>
-                  <span className="fx-media">
-                    <img src={look.image} alt="" loading="lazy" />
-                    <span className="fx-tag">{zh ? "示意" : "Illustration"}</span>
-                    {template.badge === "new" ? <span className="fx-new">{copy.newBadge}</span> : null}
-                    <span className="fx-use">
-                      {zh ? "套用特效" : "Use effect"}
-                      <ArrowRight aria-hidden="true" />
+              <li key={template.id} className="fx-item">
+                <Link
+                  href={useHref(lang, template)}
+                  className={`fx-card ${look.move ? `fx-move-${look.move}` : ""}`}
+                  style={{ aspectRatio: SHAPES[index % SHAPES.length] }}
+                >
+                  <img src={look.image} alt="" loading="lazy" />
+                  <span className="fx-tag">{zh ? "示意" : "Illustration"}</span>
+                  {template.badge === "new" ? (
+                    <span className="fx-new">
+                      <Sparkles aria-hidden="true" />
+                      {copy.newBadge}
+                    </span>
+                  ) : null}
+                  <span className="fx-over">
+                    <span className="fx-text">
+                      <span className="fx-name">{name}</span>
+                      <span className="fx-desc">{labelFor(template.description, lang)}</span>
+                    </span>
+                    <span className="fx-go" aria-hidden="true">
+                      <ArrowUpRight />
                     </span>
                   </span>
-                  <span className="fx-name">{name}</span>
-                  <span className="fx-desc">{labelFor(template.description, lang)}</span>
                 </Link>
               </li>
             );

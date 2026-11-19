@@ -8,7 +8,7 @@
 
 .ft-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2.4fr) repeat(5, minmax(0, 1fr));
   gap: 32px;
   max-width: 1680px;
   margin: 0 auto;
@@ -80,7 +80,7 @@
   gap: 12px;
   padding: 22px 24px;
   background: var(--du-bg);
-  color: var(--ds-text-3);
+  color: color-mix(in srgb, var(--ds-text-1) 60%, transparent);
   font-size: var(--ds-fs-sm);
 }
 
@@ -91,6 +91,21 @@
 
 .ft-bottom-links a {
   color: white;
+  transition: color 150ms ease;
+}
+
+.ft-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 24px;
+  border-right: 1px solid var(--ds-line-2);
+}
+
+.ft-lang svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
 }
 
 .ft-bottom-links a:hover {
