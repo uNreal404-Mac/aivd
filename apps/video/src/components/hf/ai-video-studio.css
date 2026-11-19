@@ -31,6 +31,12 @@
   padding: 4px 4px 4px 0;
 }
 
+/* The column scrolls when it is taller than the window; nothing in it may be
+   squeezed instead (the banner used to collapse to nothing on short screens). */
+.vs-panel > * {
+  flex-shrink: 0;
+}
+
 @media (min-width: 1024px) {
   .vs-panel {
     width: 334px;
@@ -361,6 +367,10 @@ button.vs-chip:disabled {
 }
 
 .vs-generate {
+  /* Always in reach: pinned to the bottom of the settings column while it scrolls. */
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   height: 48px;
   flex-shrink: 0;
@@ -370,7 +380,10 @@ button.vs-chip:disabled {
   margin-top: 4px;
   border-radius: var(--ds-r-lg);
   background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
+  box-shadow:
+    inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent),
+    0 4px 0 var(--du-bg),
+    0 -14px 14px -2px var(--du-bg);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-md);
   font-weight: 600;
@@ -383,8 +396,11 @@ button.vs-chip:disabled {
 
 .vs-generate:disabled {
   cursor: not-allowed;
-  background: var(--ds-fill-2);
-  box-shadow: none;
+  /* Solid underneath: the column scrolls behind this pinned button. */
+  background: linear-gradient(var(--ds-fill-2), var(--ds-fill-2)), var(--du-bg-elev);
+  box-shadow:
+    0 4px 0 var(--du-bg),
+    0 -14px 14px -2px var(--du-bg);
   color: var(--ds-text-3);
   filter: none;
 }

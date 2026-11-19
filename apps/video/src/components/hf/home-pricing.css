@@ -202,8 +202,9 @@
 .hp-price {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin-top: 28px;
+  white-space: nowrap;
 }
 
 .hp-price-was {
@@ -213,7 +214,8 @@
 }
 
 .hp-price-now {
-  font-size: var(--ds-fs-4xl);
+  /* A little smaller on narrow laptops so "/月" stays on the same line. */
+  font-size: clamp(var(--ds-fs-3xl), 2.9vw, var(--ds-fs-4xl));
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
