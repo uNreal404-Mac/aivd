@@ -154,8 +154,8 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
         )}
 
         <p className="si-legal">
-          {t("terms_prefix")} <a href={legal("/terms-of-service")}>{t("terms")}</a> {t("and")}{" "}
-          <a href={legal("/privacy-policy")}>{t("privacy_link")}</a>
+          {t("terms_prefix")} <a href={legal("/terms")}>{t("terms")}</a> {t("and")}{" "}
+          <a href={legal("/privacy")}>{t("privacy_link")}</a>
         </p>
       </div>
     </div>
