@@ -61,20 +61,14 @@ export function UserAuthForm({
 
       if (error) {
         console.error("Error during sign in:", error);
-        toast.error("Something went wrong.", {
-          description: "Your sign in request failed. Please try again.",
-        });
+        toast.error(t("request_failed"), { description: t("request_failed_desc") });
         return;
       }
 
-      toast.success("Check your email", {
-        description: "We sent you a login link. Be sure to check your spam too.",
-      });
+      toast.success(t("check_email"), { description: t("check_email_desc") });
     } catch (error) {
       console.error("Error during sign in:", error);
-      toast.error("Something went wrong.", {
-        description: "Your sign in request failed. Please try again.",
-      });
+      toast.error(t("request_failed"), { description: t("request_failed_desc") });
     } finally {
       setIsLoading(false);
     }

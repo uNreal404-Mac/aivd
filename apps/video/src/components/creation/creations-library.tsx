@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { AudioLines, Clapperboard, Image as ImageIcon } from "lucide-react";
+import type { CreationMediaType } from "@/lib/types/dashboard";
 import { useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
 import {
   DEFAULT_VIEW_MODE,
@@ -64,9 +66,52 @@ function StatusPill({ tag, label }: { tag: StatusTag; label: string }) {
   );
 }
 
+const KINDS: { id: CreationMediaType; zh: string; en: string; icon: typeof Clapperboard }[] = [
+  { id: "video", zh: "视频", en: "Videos", icon: Clapperboard },
+  { id: "image", zh: "图片", en: "Images", icon: ImageIcon },
+  { id: "audio", zh: "音频", en: "Audio", icon: AudioLines },
+];
+
+const EXTENSIONS: Record<CreationMediaType, string> = { video: "mp4", image: "png", audio: "mp3" };
+
+/** The first output file of a creation, whatever its type. */
+function mediaUrl(video: Video): string | null {
+  return video.mediaUrls?.[0] ?? video.videoUrl ?? null;
+}
+
+/** Card picture: the image itself, the clip's first frame, or an audio tile. */
+function CreationThumb({ video, kind }: { video: Video; kind: CreationMediaType }) {
+  const url = mediaUrl(video);
+  if (kind === "audio") {
+    return (
+      <span className="cr-thumb-audio" aria-hidden="true">
+        <AudioLines />
+      </span>
+    );
+  }
+  if (video.thumbnailUrl) return <img src={video.thumbnailUrl} alt="" loading="lazy" />;
+  if (url && kind === "image") return <img src={url} alt="" loading="lazy" />;
+  if (url && kind === "video") {
+    return (
+      <video
+        src={`${url}#t=0.1`}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        onMouseEnter={(event) => void event.currentTarget.play().catch(() => undefined)}
+        onMouseLeave={(event) => event.currentTarget.pause()}
+      />
+    );
+  }
+  return <img src={PLACEHOLDER_SRC} alt="" loading="lazy" />;
+}
+
 export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   const t = useTranslations("dashboard.myCreations");
   const [tab, setTab] = useState<StatusTab>("all");
+  const [kind, setKind] = useState<CreationMediaType>("video");
+  const zh = locale.toLowerCase().startsWith("zh");
   const [viewMode, setViewMode] = useState<CreationsViewMode>(DEFAULT_VIEW_MODE);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -81,7 +126,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
     refetch,
     deleteVideo,
     isDeleting,
-  } = useVideos({});
+  } = useVideos({ mediaType: kind });
 
   useRefreshProcessingVideos(videos, refetch);
 
@@ -129,7 +174,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   }, [activeVideo]);
 
   const handleSelect = useCallback((video: Video) => {
-    if (!video.videoUrl && !video.errorMessage) {
+    if (!mediaUrl(video) && !video.errorMessage) {
       return;
     }
     setActiveVideo(video);
@@ -149,7 +194,27 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   return (
     <div className="cr-library">
       <header className="cr-header">
-        <h1 className="cr-title">{t("title")}</h1>
+        <div className="cr-heading">
+          <h1 className="cr-title">{t("title")}</h1>
+          <div className="cr-kinds" role="tablist" aria-label={zh ? "作品类型" : "Creation type"}>
+            {KINDS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={kind === item.id}
+                  className={kind === item.id ? "cr-kind cr-kind-on" : "cr-kind"}
+                  onClick={() => setKind(item.id)}
+                >
+                  <Icon aria-hidden="true" />
+                  {zh ? item.zh : item.en}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="cr-header-actions">
           <div className="cr-tabs">
             {STATUS_TABS.map((item) => (
@@ -213,7 +278,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
           />
           <h2 className="cr-empty-title">{t("empty.title")}</h2>
           <p className="cr-empty-description">{t("empty.description")}</p>
-          <a className="cr-cta" href={`/${locale}/ai/video`}>
+          <a className="cr-cta" href={`/${locale}${kind === "image" ? "/ai/image" : kind === "audio" ? "/audio" : "/ai/video"}`}>
             {t("empty.ctaStart")}
           </a>
         </div>
@@ -229,11 +294,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 onClick={() => handleSelect(video)}
               >
                 <div className="cr-thumb">
-                  <img
-                    src={video.thumbnailUrl ?? PLACEHOLDER_SRC}
-                    alt=""
-                    loading="lazy"
-                  />
+                  <CreationThumb video={video} kind={kind} />
                 </div>
                 <div className="cr-card-meta">
                   <span className="cr-model">{modelLabel(video.model)}</span>
@@ -266,11 +327,11 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 </button>
                 <div className="cr-row-actions">
                   <StatusPill tag={tag} label={t(TAG_KEYS[tag])} />
-                  {video.videoUrl ? (
+                  {mediaUrl(video) ? (
                     <a
                       className="cr-button cr-button--ghost"
-                      href={video.videoUrl}
-                      download={`${video.uuid}.mp4`}
+                      href={mediaUrl(video) ?? undefined}
+                      download={`${video.uuid}.${EXTENSIONS[kind]}`}
                       rel="noopener"
                     >
                       {t("actions.download")}
@@ -336,20 +397,28 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 {t("close")}
               </button>
             </div>
-            {activeVideo.videoUrl ? (
-              <video className="cr-video" src={activeVideo.videoUrl} controls>
-                <track kind="captions" />
-              </video>
+            {mediaUrl(activeVideo) ? (
+              kind === "image" ? (
+                <img className="cr-video" src={mediaUrl(activeVideo) ?? undefined} alt={activeVideo.prompt ?? ""} />
+              ) : kind === "audio" ? (
+                <audio className="cr-audio" src={mediaUrl(activeVideo) ?? undefined} controls>
+                  <track kind="captions" />
+                </audio>
+              ) : (
+                <video className="cr-video" src={mediaUrl(activeVideo) ?? undefined} controls>
+                  <track kind="captions" />
+                </video>
+              )
             ) : null}
             {activeVideo.errorMessage ? (
               <p className="cr-error">{activeVideo.errorMessage}</p>
             ) : null}
-            {activeVideo.videoUrl ? (
+            {mediaUrl(activeVideo) ? (
               <div className="cr-dialog-actions">
                 <a
                   className="cr-button cr-button--primary"
-                  href={activeVideo.videoUrl}
-                  download={`${activeVideo.uuid}.mp4`}
+                  href={mediaUrl(activeVideo) ?? undefined}
+                  download={`${activeVideo.uuid}.${EXTENSIONS[kind]}`}
                   rel="noopener"
                 >
                   {t("actions.download")}

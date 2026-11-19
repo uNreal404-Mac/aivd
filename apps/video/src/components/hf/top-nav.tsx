@@ -295,7 +295,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     { label: t.creations, href: "/my-creations", icon: Folder },
     { label: t.billing, href: "/credits", icon: CreditCard },
     { label: t.account, href: "/account", icon: UserRound },
-    { label: t.settings, href: "/settings", icon: Settings },
   ];
   const openMenu = dropdowns.find((menu) => menu.id === open);
   const dots = 30;

@@ -13,6 +13,8 @@ export interface Video {
   status: VideoStatus;
   videoUrl: string | null;
   thumbnailUrl: string | null;
+  /** Every output file (images can come in sets). */
+  mediaUrls?: string[];
   duration: number;
   aspectRatio: string;
   parameters: Record<string, unknown>;
@@ -37,7 +39,11 @@ export interface Video {
 // Filter Types
 // ============================================
 
+export type CreationMediaType = "video" | "image" | "audio";
+
 export interface VideoFilterOptions {
+  /** Which studio's output to list. */
+  mediaType?: CreationMediaType;
   status?: VideoStatus | "all";
   model?: string | "all";
   sortBy?: "newest" | "oldest";
@@ -46,6 +52,7 @@ export interface VideoFilterOptions {
 export interface ListVideosParams {
   limit?: number;
   cursor?: string;
+  type?: CreationMediaType;
   status?: VideoStatus;
 }
 
@@ -128,6 +135,14 @@ export interface Invoice {
   status: InvoiceStatus;
   items: InvoiceItem[];
   createdAt: Date;
+  /** The credit package behind this entry. */
+  credits?: {
+    transType: string;
+    initial: number;
+    remaining: number;
+    expiredAt: string | Date | null;
+    status: string;
+  };
 }
 
 export interface BillingResponse {

@@ -1,26 +1,9 @@
-import { SettingsPage } from "@/components/billing/settings-page";
-import { requireAuth } from "@/lib/auth";
-import { i18n, type Locale } from "@/config/i18n-config";
+import { permanentRedirect } from "next/navigation";
+import { i18n } from "@/config/i18n-config";
 
-interface PageProps {
-  params: Promise<{
-    locale: string;
-  }>;
-}
-
-export function generateStaticParams() {
-  return i18n.locales.map((locale) => ({ locale }));
-}
-
-export default async function SettingsRoute({ params }: PageProps) {
+// Profile, plan and preferences all live on the account page now; billing
+// moved to credits. The old address points to the account page.
+export default async function SettingsRoute({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const user = await requireAuth(`/${locale}/login`);
-
-  return (
-    <SettingsPage
-      locale={locale}
-      userEmail={user.email}
-      userId={user.id}
-    />
-  );
+  permanentRedirect(locale === i18n.defaultLocale ? "/account" : `/${locale}/account`);
 }

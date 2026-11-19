@@ -6,14 +6,14 @@ import { useTranslations } from "next-intl";
 
 import { authClient } from "@/lib/auth/client";
 import { getSafeCallbackURL } from "@/lib/auth/redirect";
-import { Button } from "@/components/ui/button";
 import * as Icons from "@/components/ui/icons";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/components/ui";
 import { siteConfig } from "@/config/site";
+import { NEW_USER_GIFT } from "@/config/pricing-user";
+import "./sign-in-modal.css";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { toast } from "sonner";
+import { Gift } from "lucide-react";
 
 interface SignInModalContentProps {
   lang: string;
@@ -43,16 +43,12 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
       if (error) {
         console.error(`${provider} signIn error:`, error);
         setSignInClicked(null);
-        toast.error("Login failed", {
-          description: `Could not sign in with ${provider}. Please try again.`,
-        });
+        toast.error(t("login_failed"), { description: t("login_failed_desc") });
       }
     } catch (error) {
       console.error(`${provider} signIn error:`, error);
       setSignInClicked(null);
-      toast.error("Login failed", {
-        description: `Could not sign in with ${provider}. Please try again.`,
-      });
+      toast.error(t("login_failed"), { description: t("login_failed_desc") });
     }
   };
 
@@ -61,7 +57,7 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
-      setEmailError("Please enter a valid email address");
+      setEmailError(t("invalid_email"));
       return;
     }
 
@@ -76,23 +72,17 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
 
       if (error) {
         console.error("Magic link signIn error:", error);
-        toast.error("Something went wrong", {
-          description: "Your sign in request failed. Please try again.",
-        });
+        toast.error(t("request_failed"), { description: t("request_failed_desc") });
         return;
       }
 
-      toast.success("Check your email", {
-        description: "We sent you a login link. Be sure to check your spam too.",
-      });
+      toast.success(t("check_email"), { description: t("check_email_desc") });
 
       setEmail("");
       signInModal.onClose();
     } catch (error) {
       console.error("Magic link signIn error:", error);
-      toast.error("Something went wrong", {
-        description: "Your sign in request failed. Please try again.",
-      });
+      toast.error(t("request_failed"), { description: t("request_failed_desc") });
     } finally {
       setSignInClicked(null);
     }
@@ -100,97 +90,70 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
 
   const isLoading = signInClicked !== null;
 
+  const legal = (path: string) => `/${lang}${path}`;
+
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex flex-col items-center justify-center space-y-3 border-b bg-background px-4 py-6 pt-8 text-center">
-        <h3 className="font-urban text-2xl font-bold">
-          {t("signin_title")}
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          {t("signin_subtitle")}
+    <div className="si">
+      <div className="si-head">
+        <div className="si-art" aria-hidden="true">
+          <img src="/home/samples/rain-couple.webp" alt="" />
+          <img src="/home/samples/red-carpet.webp" alt="" />
+          <img src="/home/samples/autumn-walk.webp" alt="" />
+        </div>
+        <h3 className="si-title">{t("signin_title")}</h3>
+        <p className="si-sub">{t("signin_subtitle")}</p>
+        <p className="si-gift">
+          <Gift className="h-3.5 w-3.5" aria-hidden="true" />
+          {t("gift", { credits: NEW_USER_GIFT.credits })}
         </p>
       </div>
 
-      {/* Body */}
-      <div className="flex flex-col space-y-4 bg-secondary/50 px-4 py-8">
-        {/* Google Login - Priority */}
+      <div className="si-body">
         {siteConfig.auth.enableGoogleLogin && (
-          <Button
-            variant="default"
-            className="w-full"
-            disabled={isLoading}
-            onClick={() => handleSocialLogin("google")}
-          >
-            {signInClicked === "google" ? (
-              <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Icons.Google className="mr-2 h-4 w-4" />
-            )}
+          <button type="button" className="si-google" disabled={isLoading} onClick={() => handleSocialLogin("google")}>
+            {signInClicked === "google" ? <Icons.Spinner className="h-4 w-4 animate-spin" /> : <Icons.Google className="h-4 w-4" />}
             {t("continue_google")}
-          </Button>
+          </button>
         )}
 
-        {/* Magic Link Email Login */}
         {siteConfig.auth.enableMagicLinkLogin && (
           <>
             {siteConfig.auth.enableGoogleLogin && (
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-secondary/50 px-2 text-muted-foreground">
-                    {t("or_continue_with")}
-                  </span>
-                </div>
+              <div className="si-or">
+                <span>{t("or_continue_with")}</span>
               </div>
             )}
-
-            <form onSubmit={handleMagicLinkLogin} className="grid gap-2">
-              <div className="grid gap-1">
-                <Label className="sr-only" htmlFor="email">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  placeholder="name@example.com"
-                  type="email"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  autoCorrect="off"
-                  disabled={isLoading}
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setEmailError("");
-                  }}
-                  className={cn(emailError && "border-red-500")}
-                />
-                {emailError && (
-                  <p className="px-1 text-xs text-red-600">{emailError}</p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                variant={siteConfig.auth.enableGoogleLogin ? "outline" : "default"}
-                className="w-full"
+            <form onSubmit={handleMagicLinkLogin} className="si-form">
+              <label className="sr-only" htmlFor="email">
+                {t("email_label")}
+              </label>
+              <input
+                id="email"
+                className={cn("si-input", emailError && "si-input-error")}
+                placeholder={t("email_placeholder")}
+                type="email"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect="off"
                 disabled={isLoading}
-              >
-                {signInClicked === "email" ? (
-                  <Icons.Spinner className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Icons.Mail className="mr-2 h-4 w-4" />
-                )}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError("");
+                }}
+              />
+              {emailError ? <p className="si-error">{emailError}</p> : null}
+              <button type="submit" className="si-email" disabled={isLoading}>
+                {signInClicked === "email" ? <Icons.Spinner className="h-4 w-4 animate-spin" /> : <Icons.Mail className="h-4 w-4" />}
                 {t("continue_email")}
-              </Button>
+              </button>
             </form>
           </>
         )}
 
-        {/* Footer text */}
-        <p className="text-center text-xs text-muted-foreground">
-          {t("terms_notice")}
+        <p className="si-legal">
+          {t("terms_prefix")} <a href={legal("/terms-of-service")}>{t("terms")}</a> {t("and")}{" "}
+          <a href={legal("/privacy-policy")}>{t("privacy_link")}</a>
         </p>
       </div>
     </div>

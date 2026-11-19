@@ -1,0 +1,136 @@
+/* Checkout result pages. Built on the ds.css scale. */
+
+.co-page {
+  display: flex;
+  min-height: 70vh;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-7) var(--ds-space-5);
+  color: var(--ds-text-1);
+}
+
+.co-card {
+  display: flex;
+  width: 100%;
+  max-width: 460px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-7) var(--ds-space-6);
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background:
+    radial-gradient(70% 60% at 50% 0%, color-mix(in srgb, var(--du-accent) 14%, transparent), transparent 70%),
+    var(--ds-surface-1);
+  box-shadow: var(--ds-shadow-2);
+  text-align: center;
+}
+
+.co-notice {
+  margin: 0 0 var(--ds-space-2);
+  padding: 4px 12px;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.co-title {
+  margin: 0;
+  font-family: var(--du-font-display, inherit);
+  font-size: var(--ds-fs-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.co-text {
+  margin: 0;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+}
+
+.co-actions {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-2);
+}
+
+.co-btn {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--ds-space-6);
+  border: 0;
+  border-radius: var(--ds-r-lg);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  cursor: pointer;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+}
+
+.co-btn:hover {
+  background: var(--du-accent-hover);
+}
+
+.co-btn:active {
+  transform: scale(0.97);
+}
+
+.co-link {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+}
+
+.co-link:hover {
+  color: var(--ds-text-1);
+}
+
+.co-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--ds-line-2);
+  border-top-color: var(--du-accent);
+  border-radius: var(--ds-r-full);
+  animation: co-spin 900ms linear infinite;
+}
+
+.co-badge {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  margin-bottom: var(--ds-space-1);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
+  color: var(--du-accent-text);
+}
+
+.co-badge svg {
+  width: 26px;
+  height: 26px;
+}
+
+.co-badge-muted {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-2);
+}
+
+.co-badge-error {
+  background: color-mix(in srgb, var(--du-danger) 14%, transparent);
+  color: var(--du-danger);
+}
+
+@keyframes co-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

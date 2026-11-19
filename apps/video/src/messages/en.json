@@ -317,7 +317,10 @@
     "business_title": "Business",
     "business_desc": "Shared workspace and pooled credits for teams",
     "business_note": "Not available yet",
-    "coming_soon": "Coming soon"
+    "coming_soon": "Coming soon",
+    "checkout_error": "Could not open checkout",
+    "portal_error": "Could not open subscription management",
+    "portal_error_desc": "Please try again later, or contact us."
   },
   "PricingFaq": {
     "faq": "Frequently Asked Questions",
@@ -369,17 +372,34 @@
       "accessDenied": "Sign-in was canceled or denied. Please try again.",
       "rateLimited": "Too many attempts. Please wait and try again.",
       "generic": "Sign-in failed, please try again."
-    }
+    },
+    "request_failed": "Something went wrong",
+    "request_failed_desc": "The sign-in request failed. Please try again.",
+    "check_email": "Check your email",
+    "check_email_desc": "We sent you a sign-in link. Check your spam folder too."
   },
   "SignInModal": {
-    "signin_title": "Sign in to your account",
-    "signin_subtitle": "Get started with aivd.ai today",
+    "signin_title": "Sign in to aivd.ai",
+    "signin_subtitle": "One account for video, images and audio",
     "privacy": "By continuing, you agree to our Terms of Service and Privacy Policy.",
     "continue_google": "Continue with Google",
     "continue_email": "Continue with Email",
     "or_continue_with": "or continue with",
     "email_placeholder": "name@example.com",
-    "terms_notice": "By continuing, you agree to our Terms of Service and Privacy Policy."
+    "terms_notice": "By continuing, you agree to our Terms of Service and Privacy Policy.",
+    "gift": "New accounts get {credits} free credits for a first video",
+    "terms_prefix": "By continuing you agree to our",
+    "terms": "Terms of Service",
+    "and": "and",
+    "privacy_link": "Privacy Policy",
+    "email_label": "Email",
+    "invalid_email": "Please enter a valid email address",
+    "login_failed": "Sign-in failed",
+    "login_failed_desc": "Could not sign in with Google. Please try again.",
+    "check_email": "Check your email",
+    "check_email_desc": "We sent you a sign-in link. Check your spam folder too.",
+    "request_failed": "Something went wrong",
+    "request_failed_desc": "The sign-in request failed. Please try again."
   },
   "MainNav": {
     "introducing": "Introducing aivd.ai"

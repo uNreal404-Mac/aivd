@@ -5,7 +5,6 @@ import { apiSuccess, handleApiError } from "@/lib/api/response";
 import { db } from "@/db";
 import { creditPackages } from "@/db/schema";
 import { and, desc, eq, lt } from "drizzle-orm";
-import type { CreditTransType } from "@/db/schema";
 
 /**
  * GET /api/v1/user/billing
@@ -23,13 +22,10 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "20");
     const cursor = searchParams.get("cursor");
 
-    // Get ORDER_PAY type value
-    const orderPayType: CreditTransType = "ORDER_PAY";
-
-    const conditions = [
-      eq(creditPackages.userId, user.id),
-      eq(creditPackages.transType, orderPayType),
-    ];
+    // Every credit package the user has (gifts, plans and packs), so the
+    // credits page can show where credits came from and when they expire.
+    // The ledger stores types in more than one spelling, so no type filter.
+    const conditions = [eq(creditPackages.userId, user.id)];
     if (cursor) {
       conditions.push(lt(creditPackages.id, Number.parseInt(cursor)));
     }
@@ -89,6 +85,16 @@ export async function GET(request: NextRequest) {
           },
         ],
         createdAt: pkg.createdAt,
+        // The package itself: where the credits came from, what is left and
+        // when they expire. (The amount above is an estimate, not a price;
+        // the credits page shows these fields instead.)
+        credits: {
+          transType: pkg.transType,
+          initial: pkg.initialCredits,
+          remaining: pkg.remainingCredits,
+          expiredAt: pkg.expiredAt,
+          status: pkg.status.toLowerCase(),
+        },
       };
     });
 

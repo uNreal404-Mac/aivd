@@ -317,7 +317,10 @@
     "business_title": "团队版",
     "business_desc": "团队共享工作区与积分池",
     "business_note": "暂未开放",
-    "coming_soon": "即将推出"
+    "coming_soon": "即将推出",
+    "checkout_error": "无法打开支付页面",
+    "portal_error": "无法打开订阅管理",
+    "portal_error_desc": "请稍后再试，或联系我们处理。"
   },
   "PricingFaq": {
     "faq": "常见问题",
@@ -369,17 +372,34 @@
       "accessDenied": "登录已取消或被拒绝，请重试。",
       "rateLimited": "尝试次数过多，请稍后重试。",
       "generic": "登录失败，请重试"
-    }
+    },
+    "request_failed": "出了点问题",
+    "request_failed_desc": "登录请求没有成功，请重试。",
+    "check_email": "请查收邮件",
+    "check_email_desc": "登录链接已发送到你的邮箱，也记得看看垃圾邮件。"
   },
   "SignInModal": {
-    "signin_title": "登录您的账户",
-    "signin_subtitle": "立即开始使用 aivd.ai",
+    "signin_title": "登录 aivd.ai",
+    "signin_subtitle": "一个账户，视频、图片和音频都能生成",
     "privacy": "继续即表示您同意我们的服务条款和隐私政策。",
     "continue_google": "使用 Google 继续",
     "continue_email": "使用邮箱继续",
     "or_continue_with": "或使用以下方式继续",
     "email_placeholder": "name@example.com",
-    "terms_notice": "继续即表示您同意我们的服务条款和隐私政策。"
+    "terms_notice": "继续即表示您同意我们的服务条款和隐私政策。",
+    "gift": "新用户注册即送 {credits} 积分，可免费生成第一条视频",
+    "terms_prefix": "继续即表示你同意",
+    "terms": "服务条款",
+    "and": "和",
+    "privacy_link": "隐私政策",
+    "email_label": "邮箱",
+    "invalid_email": "请输入有效的邮箱地址",
+    "login_failed": "登录失败",
+    "login_failed_desc": "无法通过 Google 登录，请重试。",
+    "check_email": "请查收邮件",
+    "check_email_desc": "登录链接已发送到你的邮箱，也记得看看垃圾邮件。",
+    "request_failed": "出了点问题",
+    "request_failed_desc": "登录请求没有成功，请重试。"
   },
   "MainNav": {
     "introducing": "介绍 aivd.ai"

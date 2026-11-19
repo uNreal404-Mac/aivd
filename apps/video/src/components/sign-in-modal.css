@@ -1,0 +1,197 @@
+/* Sign-in modal. Built on the ds.css scale. */
+
+.si {
+  width: 100%;
+  overflow: hidden;
+  background: var(--du-bg-elev);
+  color: var(--ds-text-1);
+}
+
+.si-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-6) var(--ds-space-5) var(--ds-space-5);
+  background:
+    radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--du-accent) 16%, transparent), transparent 70%),
+    var(--du-bg-elev);
+  text-align: center;
+}
+
+.si-art {
+  display: flex;
+  height: 84px;
+  align-items: center;
+  margin-bottom: var(--ds-space-2);
+}
+
+.si-art img {
+  width: 58px;
+  height: 76px;
+  margin: 0 -8px;
+  border: 2px solid var(--du-bg-elev);
+  border-radius: var(--ds-r-lg);
+  box-shadow: var(--ds-shadow-1);
+  object-fit: cover;
+}
+
+.si-art img:nth-child(1) {
+  transform: rotate(-9deg) translateY(5px);
+}
+
+.si-art img:nth-child(2) {
+  z-index: 1;
+  transform: translateY(-3px);
+}
+
+.si-art img:nth-child(3) {
+  transform: rotate(9deg) translateY(5px);
+}
+
+.si-title {
+  font-family: var(--du-font-display, inherit);
+  font-size: var(--ds-fs-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.si-sub {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+}
+
+.si-gift {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--ds-space-2);
+  padding: 4px 12px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+}
+
+.si-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-5);
+  border-top: 1px solid var(--ds-line-1);
+}
+
+.si-google,
+.si-email {
+  display: inline-flex;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  border-radius: var(--ds-r-lg);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+}
+
+.si-google {
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
+.si-google:hover {
+  background: var(--ds-text-2);
+}
+
+.si-email {
+  border: 1px solid var(--ds-line-2);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.si-email:hover {
+  background: var(--ds-fill-2);
+}
+
+.si-google:active,
+.si-email:active {
+  transform: scale(0.98);
+}
+
+.si-google:disabled,
+.si-email:disabled {
+  opacity: 0.6;
+}
+
+.si-or {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+}
+
+.si-or::before,
+.si-or::after {
+  height: 1px;
+  flex: 1;
+  background: var(--ds-line-1);
+  content: "";
+}
+
+.si-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.si-input {
+  height: 44px;
+  padding: 0 var(--ds-space-4);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  outline: none;
+  transition: border-color var(--du-dur-fast, 180ms) ease;
+}
+
+.si-input::placeholder {
+  color: var(--ds-text-4);
+}
+
+.si-input:focus {
+  border-color: color-mix(in srgb, var(--du-accent) 55%, transparent);
+}
+
+.si-input-error {
+  border-color: var(--du-danger);
+}
+
+.si-error {
+  color: var(--du-danger);
+  font-size: var(--ds-fs-xs);
+}
+
+.si-legal {
+  margin-top: var(--ds-space-1);
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.si-legal a {
+  color: var(--ds-text-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.si-legal a:hover {
+  color: var(--ds-text-1);
+}

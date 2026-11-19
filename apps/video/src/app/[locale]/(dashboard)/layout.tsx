@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { requireAuth } from "@/lib/auth";
 import { HfTopNav } from "@/components/hf/top-nav";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AccountNav } from "@/components/dashboard/account-nav";
+import "@/components/dashboard/dashboard.css";
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
 import { i18n } from "@/config/i18n-config";
 import { NOINDEX_ROBOTS } from "@/lib/indexing";
@@ -41,14 +42,9 @@ export default async function DashboardLayout({
         lang={locale}
       />
 
-      <div className="flex h-[calc(100vh-var(--hf-header-h,56px))]">
-        {/* Left Sidebar - Fixed 200px */}
-        <Sidebar lang={locale} />
-
-        {/* Main Content Area - Flex */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">{children}</div>
-        </main>
+      <div className="db-shell">
+        <AccountNav lang={locale} />
+        <main className="db-main">{children}</main>
       </div>
 
       {/* 全局升级弹窗 */}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { Check, Clock, LogIn, SearchX, TriangleAlert } from "lucide-react";
 import {
   POLL_INTERVAL_MS,
   classifyStatusResponse,
@@ -11,6 +12,7 @@ import {
   shouldKeepPolling,
   type CheckoutStatus,
 } from "@/lib/checkout-status";
+import "./checkout.css";
 
 export type CheckoutSuccessProps = {
   lang: string;
@@ -83,108 +85,6 @@ const COPY: Record<"en" | "zh", Copy> = {
   },
 };
 
-const STYLES = `
-  .co-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 20px;
-    background: var(--co-bg);
-    color: var(--co-text);
-  }
-  .co-card {
-    width: 100%;
-    max-width: 460px;
-    box-sizing: border-box;
-    padding: 40px 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    background: var(--co-surface);
-    border: 1px solid var(--co-border);
-    border-radius: var(--co-radius);
-  }
-  .co-notice {
-    margin: 0;
-    padding: 4px 12px;
-    border: 1px dashed var(--co-border);
-    border-radius: 999px;
-    color: var(--co-muted);
-    font-size: 13px;
-    line-height: 1.4;
-  }
-  .co-title {
-    margin: 0;
-    font-size: 24px;
-    line-height: 1.3;
-    font-weight: 600;
-    color: var(--co-text);
-  }
-  .co-text {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--co-muted);
-  }
-  .co-actions {
-    width: 100%;
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-  .co-btn {
-    display: inline-block;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 999px;
-    background: var(--co-accent);
-    color: var(--co-on-accent);
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-  }
-  .co-btn:hover {
-    background: var(--co-accent-hover);
-  }
-  .co-link {
-    font-size: 14px;
-    color: var(--co-muted);
-    text-decoration: none;
-  }
-  .co-link:hover {
-    color: var(--co-text);
-  }
-  .co-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--co-border);
-    border-top-color: var(--co-accent);
-    border-radius: 50%;
-    animation: co-spin 900ms linear infinite;
-  }
-  .co-badge {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--co-border);
-    border-radius: 50%;
-    color: var(--co-success);
-    font-size: 22px;
-  }
-  @keyframes co-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
 
 /** Tolerates either the raw status object or an `{ data: ... }` envelope. */
 function parseStatus(body: unknown): CheckoutStatus | null {
@@ -285,6 +185,9 @@ export default function CheckoutSuccess({
   if (!sessionValid) {
     content = (
       <>
+        <span className="co-badge co-badge-muted" aria-hidden="true">
+          <SearchX />
+        </span>
         <h1 className="co-title">{copy.notFoundTitle}</h1>
         <div className="co-actions">
           <Link className="co-btn" href={`/${lang}/pricing`}>
@@ -297,7 +200,7 @@ export default function CheckoutSuccess({
     content = (
       <>
         <span className="co-badge" aria-hidden="true">
-          ✓
+          <Check />
         </span>
         <h1 className="co-title">{copy.paidTitle}</h1>
         <p className="co-text">
@@ -316,6 +219,9 @@ export default function CheckoutSuccess({
   } else if (view.kind === "timeout") {
     content = (
       <>
+        <span className="co-badge co-badge-muted" aria-hidden="true">
+          <Clock />
+        </span>
         <p className="co-text">{copy.timeout}</p>
         <div className="co-actions">
           <button
@@ -331,6 +237,9 @@ export default function CheckoutSuccess({
   } else if (view.kind === "unauthorized") {
     content = (
       <>
+        <span className="co-badge co-badge-muted" aria-hidden="true">
+          <LogIn />
+        </span>
         <h1 className="co-title">{copy.signInTitle}</h1>
         <div className="co-actions">
           <Link className="co-btn" href={`/${lang}/login`}>
@@ -342,6 +251,9 @@ export default function CheckoutSuccess({
   } else if (view.kind === "error") {
     content = (
       <>
+        <span className="co-badge co-badge-error" aria-hidden="true">
+          <TriangleAlert />
+        </span>
         <h1 className="co-title">{copy.errorTitle}</h1>
         <p className="co-text">{copy.errorText}</p>
         <div className="co-actions">
@@ -369,7 +281,6 @@ export default function CheckoutSuccess({
 
   return (
     <main className="co-page">
-      <style>{STYLES}</style>
       <section className="co-card" aria-live="polite">
         {sessionValid && testMode ? (
           <p className="co-notice">{copy.testModeNotice}</p>

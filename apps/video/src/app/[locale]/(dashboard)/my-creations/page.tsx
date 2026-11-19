@@ -9,5 +9,9 @@ interface PageProps {
 
 export default async function MyCreationsRoute({ params }: PageProps) {
   const { locale } = await params;
-  return <CreationsLibrary locale={locale} />;
+  return (
+    <div className="db-page">
+      <CreationsLibrary locale={locale} />
+    </div>
+  );
 }

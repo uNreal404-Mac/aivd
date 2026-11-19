@@ -12,7 +12,6 @@ import {
   Image as ImageIcon,
   LayoutTemplate,
   Search,
-  Settings,
   Sparkles,
   UserRound,
   Users,
@@ -115,11 +114,10 @@ function buildIndex(zh: boolean): Entry[] {
   // Pages people look for by name.
   const pages: { title: [string, string]; desc: [string, string]; href: string; icon: LucideIcon; keywords: string[] }[] = [
     { title: ["定价", "Pricing"], desc: ["套餐、积分包和新用户福利", "Plans, credit packs and the new-account offer"], href: "/pricing", icon: Crown, keywords: ["价格", "会员", "套餐", "订阅", "price", "plan", "subscription", "premium"] },
-    { title: ["积分与账单", "Credits & billing"], desc: ["查看积分余额和消费记录", "Your balance and credit history"], href: "/credits", icon: CreditCard, keywords: ["积分", "余额", "充值", "账单", "credits", "balance", "billing"] },
+    { title: ["积分与账单", "Credits & billing"], desc: ["积分余额、明细和积分包到期时间", "Balance, history and when credits expire"], href: "/credits", icon: CreditCard, keywords: ["积分", "余额", "充值", "账单", "credits", "balance", "billing"] },
     { title: ["我的作品", "My creations"], desc: ["生成过的视频、图片和音频", "Everything you have generated"], href: "/my-creations", icon: Folder, keywords: ["历史", "作品", "下载", "history", "downloads"] },
     { title: ["社区画廊", "Community gallery"], desc: ["看看大家公开发布的作品", "Work others have published"], href: "/gallery", icon: Users, keywords: ["社区", "画廊", "community", "gallery"] },
-    { title: ["账户", "Account"], desc: ["个人资料和登录方式", "Profile and sign-in"], href: "/account", icon: UserRound, keywords: ["个人", "资料", "profile"] },
-    { title: ["设置", "Settings"], desc: ["偏好与通知", "Preferences and notifications"], href: "/settings", icon: Settings, keywords: ["偏好", "preferences"] },
+    { title: ["账户", "Account"], desc: ["个人资料、套餐和偏好设置", "Profile, plan and preferences"], href: "/account", icon: UserRound, keywords: ["个人", "资料", "设置", "语言", "退出", "profile", "settings", "language", "sign out"] },
   ];
   for (const page of pages) {
     entries.push({

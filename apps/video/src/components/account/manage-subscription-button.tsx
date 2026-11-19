@@ -18,7 +18,7 @@ export function ManageSubscriptionButton({
 
   if (!enabled) {
     return (
-      <button type="button" className="acct-button" disabled>
+      <button type="button" className="db-btn" disabled>
         {copy.comingSoon}
       </button>
     );
@@ -50,7 +50,7 @@ export function ManageSubscriptionButton({
     <>
       <button
         type="button"
-        className="acct-button acct-button-secondary"
+        className="db-btn"
         onClick={() => {
           void handleClick();
         }}
@@ -58,7 +58,7 @@ export function ManageSubscriptionButton({
       >
         {copy.manageSubscription}
       </button>
-      {error ? <p className="acct-error">{error}</p> : null}
+      {error ? <p className="db-error">{error}</p> : null}
     </>
   );
 }

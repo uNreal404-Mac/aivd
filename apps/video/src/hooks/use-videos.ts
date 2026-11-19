@@ -33,6 +33,7 @@ export function useVideos(filter?: VideoFilterOptions) {
       return apiClient.getVideos({
         limit: 20,
         cursor: pageParam,
+        type: filter?.mediaType,
       });
     },
     initialPageParam: undefined as string | undefined,

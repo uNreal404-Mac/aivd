@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import CheckoutSuccess from "@/components/checkout/checkout-success";
-import "@/styles/checkout-tokens.css";
 
 type CheckoutSuccessPageProps = {
   params: Promise<{ locale: string }>;

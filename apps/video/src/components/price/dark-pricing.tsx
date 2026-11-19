@@ -123,7 +123,7 @@ export function DarkPricing({
       const result = await startStripeCheckout(product.id);
 
       if (!result.ok) {
-        toast.error("Checkout error", { description: result.error });
+        toast.error(t("checkout_error"), { description: result.error });
       }
     });
   };
@@ -131,16 +131,12 @@ export function DarkPricing({
   const handlePortal = async () => {
     const { data, error } = await creem.createPortal();
     if (error) {
-      toast.error("Portal error", {
-        description: error.message ?? "Failed to open customer portal.",
-      });
+      toast.error(t("portal_error"), { description: error.message ?? t("portal_error_desc") });
       return;
     }
 
     if (!data || !("url" in data) || !data.url) {
-      toast.error("Portal error", {
-        description: "Missing portal URL from Creem.",
-      });
+      toast.error(t("portal_error"), { description: t("portal_error_desc") });
       return;
     }
 

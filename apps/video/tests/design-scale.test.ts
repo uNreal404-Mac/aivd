@@ -10,6 +10,8 @@ const DIRS = [
   "src/components/landing",
   "src/components/model-landing",
   "src/components/effects",
+  "src/components/dashboard",
+  "src/components/checkout",
 ];
 const FILES = [
   ...DIRS.flatMap((dir) =>
@@ -18,6 +20,7 @@ const FILES = [
       .map((name) => path.join(dir, name)),
   ),
   "src/styles/states.css",
+  "src/components/sign-in-modal.css",
 ];
 const SCALE = readFileSync(path.join(process.cwd(), "src/styles/ds.css"), "utf8");
 const defined = new Set([...SCALE.matchAll(/(--ds-[a-z0-9-]+):/g)].map((match) => match[1]));
