@@ -117,9 +117,20 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
     setNotice("");
   };
 
+  // An empty prompt gets a nudge instead of a silent no-op. A start image or
+  // reference images alone are enough to go on.
+  const [nudge, setNudge] = useState(0);
+  const hasInput = Boolean(prompt.trim()) || (kind === "video" ? Boolean(startFile) : referenceImages.length > 0);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
+    if (!hasInput) {
+      setNotice(zh ? "先写一句想生成的画面，或点下面的提示试试。" : "Describe what you want to see, or pick a prompt below.");
+      setNudge((value) => value + 1);
+      promptRef.current?.focus({ preventScroll: true });
+      return;
+    }
     const params = new URLSearchParams();
     params.set("prompt", prompt.trim());
     if (kind === "image") {
@@ -164,7 +175,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
     </div>}
-    <form onSubmit={submit} className="du-composer">
+    <form onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
       <input ref={referencesRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addReferences(event.target.files); event.target.value = ""; }} />
       <button type="button" onClick={() => referencesRef.current?.click()} disabled={referenceImages.length >= 5} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] disabled:opacity-40" aria-label={zh ? "添加参考图片" : "Add reference images"}><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
@@ -181,7 +192,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
           <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => startRef.current?.click()} title={startFile?.name} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white"><span className="text-xl leading-none">{startFile ? "✓" : "+"}</span><span className="mt-1">{zh ? "起始" : "Start"}</span></button><span className="text-[10px] text-white/65">{zh ? "可选" : "Optional"}</span></div>
         </div> : null}
         <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
-        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={2} maxLength={2000} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} className="min-h-[64px] min-w-[160px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
+        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { setPrompt(event.target.value); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={2} maxLength={2000} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} className="min-h-[64px] min-w-[160px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
       </div>
     </div>
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
@@ -192,7 +203,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       <div className="ml-auto flex items-center gap-3">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{estimatedCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
         {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{imageCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
-        <button type="submit" disabled={submitting || (kind === "video" && !available)} aria-label={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} className="du-composer-send"><ArrowUp className="h-4 w-4" aria-hidden="true" /></button>
+        <button type="submit" disabled={submitting || (kind === "video" && !available)} aria-label={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "继续创建图片（Enter）" : "Continue to image (Enter)")} className="du-composer-send"><ArrowUp className="h-4 w-4" aria-hidden="true" /></button>
       </div>
     </div>
     {notice ? <p role="status" className="mt-2 text-xs text-[var(--du-accent-text)]">{notice}</p> : null}

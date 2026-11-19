@@ -66,3 +66,17 @@
   --ds-space-7: 48px;
   --ds-space-8: 72px;
 }
+
+/* One visible keyboard focus ring for the whole site. Mouse clicks do not show
+   it (:focus-visible). Text fields are left out: the caret already shows
+   where typing goes, and their boxes style focus themselves. Cards inside
+   scrolling rows draw the ring inside the card so the row's clipping does not
+   hide it. */
+:where(a, button, select, summary, input[type="checkbox"], input[type="radio"], input[type="range"], [tabindex]:not(textarea, input)):focus-visible {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: 2px;
+}
+
+:where(.hs-slide, .hs-tall, .hs-usecase, .wc, .sp-row-card, .fx-card, .gl-open, .hs-tile):focus-visible {
+  outline-offset: -2px;
+}

@@ -440,6 +440,12 @@ export function AiVideoStudio({
   // Some models (Grok Imagine 1.5 on KIE) only run from a start image.
   const needsStartImage = Boolean(getMarketModel(catalogModelId)?.options.requiresImage) && !imageKey;
   const cover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
+  // Shortcut label: ⌘ on Apple keyboards, Ctrl elsewhere. Decided after mount
+  // so the server render and the first client render agree.
+  const [isMac, setIsMac] = useState(true);
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
+  }, []);
   const generateDisabled =
     promptEmpty || submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage;
   const stepCopy = isChinese
@@ -573,6 +579,13 @@ export function AiVideoStudio({
                 maxLength={PROMPT_MAX_LENGTH}
                 placeholder={copy.promptPlaceholder}
                 onChange={(event) => setSettings((previous) => ({ ...previous, prompt: event.target.value }))}
+                onKeyDown={(event) => {
+                  // ⌘/Ctrl+Enter generates, the same shortcut as the image studio.
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !generateDisabled) {
+                    event.preventDefault();
+                    void handleGenerate();
+                  }
+                }}
               />
               <div className="vs-prompt-foot">
                 <button
@@ -599,7 +612,12 @@ export function AiVideoStudio({
                   {model.audio && settings.audio ? <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> : <VolumeX className="h-3.5 w-3.5" aria-hidden="true" />}
                   {model.audio && settings.audio ? copy.on : copy.off}
                 </button>
-                <span className="vs-count">{settings.prompt.length}/{PROMPT_MAX_LENGTH}</span>
+                <span className="vs-count">
+                  <kbd className="vs-kbd" title={isChinese ? "按 ⌘/Ctrl + Enter 生成" : "Press ⌘/Ctrl + Enter to generate"}>
+                    {isMac ? "⌘" : "Ctrl"} ↵
+                  </kbd>
+                  {settings.prompt.length}/{PROMPT_MAX_LENGTH}
+                </span>
               </div>
             </div>
 

@@ -211,6 +211,12 @@ export function AiAudioStudio({
                 value={script}
                 maxLength={maxScript}
                 placeholder={t.scriptHint}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && script.trim() && !submitting) {
+                    event.preventDefault();
+                    void generate();
+                  }
+                }}
                 onChange={(event) => {
                   setScript(event.target.value);
                   setNotice(null);

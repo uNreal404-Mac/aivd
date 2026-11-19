@@ -129,3 +129,26 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A short shake when generate is pressed with nothing to work from. */
+.du-composer-nudge {
+  animation: du-composer-nudge 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes du-composer-nudge {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .du-composer-nudge {
+    animation-duration: 1ms;
+  }
+}
