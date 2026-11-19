@@ -62,6 +62,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   // Left edge of the open dropdown, taken from the trigger that opened it.
   const [panelLeft, setPanelLeft] = useState(16);
   const panelRef = useRef<HTMLDivElement>(null);
+  // The nav item whose dropdown is open, to return focus to it from the keyboard.
+  const triggerRef = useRef<HTMLElement | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState({ start: false, end: false });
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +80,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(null);
+      if (event.key !== "Escape") return;
+      if (panelRef.current?.contains(document.activeElement)) triggerRef.current?.focus();
+      setOpen(null);
     };
     const onPointer = (event: PointerEvent) => {
       if (!(event.target as Element).closest(".hf-nav")) setOpen(null);
@@ -232,7 +236,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
   const openNow = (id: string, trigger?: HTMLElement | null) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    if (trigger) setPanelLeft(trigger.getBoundingClientRect().left - 4);
+    if (trigger) {
+      setPanelLeft(trigger.getBoundingClientRect().left - 4);
+      triggerRef.current = trigger;
+    }
     setOpen(id);
   };
   // Only close the menu that was left; moving straight onto another menu
@@ -246,6 +253,60 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     onMouseLeave: () => closeSoon(id),
   });
   const keepOpen = (id: string) => ({ onMouseEnter: () => openNow(id), onMouseLeave: () => closeSoon(id) });
+
+  // Keyboard: ↓ on a nav item moves into its dropdown; ↑/↓ move between rows;
+  // Tab leaves the dropdown for the next nav item; Esc returns to the item.
+  const panelRows = () => [...(panelRef.current?.querySelectorAll<HTMLElement>("a.hf-dd-row") ?? [])];
+  const focusRow = (index: number) => {
+    const rows = panelRows();
+    if (rows.length) rows[(index + rows.length) % rows.length].focus();
+  };
+  const triggerKeys = (id: string) => ({
+    onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key !== "ArrowDown") return;
+      event.preventDefault();
+      const trigger = event.currentTarget;
+      openNow(id, trigger);
+      // Only if focus is still on this item when the panel is drawn.
+      requestAnimationFrame(() => {
+        if (document.activeElement === trigger) focusRow(0);
+      });
+    },
+    onBlur: (event: React.FocusEvent<HTMLElement>) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && (panelRef.current?.contains(next) || (next as Element).closest?.(".hf-nav-links"))) return;
+      setOpen((current) => (current === id ? null : current));
+    },
+  });
+  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links .hf-item")];
+  const panelKeys = {
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const rows = panelRows();
+      const at = rows.indexOf(document.activeElement as HTMLElement);
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        focusRow(at + (event.key === "ArrowDown" ? 1 : -1));
+      } else if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        focusRow(event.key === "Home" ? 0 : -1);
+      } else if (event.key === "Tab") {
+        event.preventDefault();
+        const trigger = triggerRef.current;
+        setOpen(null);
+        if (!trigger) return;
+        if (event.shiftKey) return trigger.focus();
+        const stops = navStops();
+        const after = stops[stops.indexOf(trigger) + 1];
+        (after ?? document.querySelector<HTMLElement>(".hf-actions a, .hf-actions button"))?.focus();
+      }
+    },
+    onBlur: (event: React.FocusEvent<HTMLDivElement>) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && (panelRef.current?.contains(next) || next === triggerRef.current)) return;
+      if (next && (next as Element).closest?.(".hf-nav-links")) return;
+      setOpen(null);
+    },
+  };
 
   const badge = (kind: DropItem["badge"]) =>
     kind ? <span className={cn("hf-dd-badge", kind === "hot" ? "hf-dd-badge-hot" : "hf-dd-badge-new")}>{kind === "hot" ? t.hot : t.fresh}</span> : null;
@@ -357,6 +418,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 aria-expanded={open === menu.id}
                 aria-haspopup="true"
                 onFocus={(event) => openNow(menu.id, event.currentTarget)}
+                {...triggerKeys(menu.id)}
                 className="hf-item"
                 data-open={open === menu.id || undefined}
                 data-active={activeSection?.id === menu.id || undefined}
@@ -375,6 +437,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               aria-haspopup="true"
               data-open={open === "more" || undefined}
               onFocus={(event) => openNow("more", event.currentTarget)}
+              {...triggerKeys("more")}
               onClick={(event) => (open === "more" ? setOpen(null) : openNow("more", event.currentTarget))}
               {...hover("more")}
             >
@@ -521,7 +584,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       </div>
 
       {openMenu ? (
-        <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)}>
+        <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)} {...panelKeys}>
           {openMenu.columns.map((column) => (
             <div key={column.title} className="hf-dd-col">
               <p className="hf-dd-col-title">{column.title}</p>

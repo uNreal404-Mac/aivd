@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, RotateCcw, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
@@ -49,6 +50,7 @@ export function AiAudioStudio({
   const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
   const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
   const [script, setScript] = useState("");
+  const draft = usePromptDraft("audio", script, setScript, false);
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -222,6 +224,14 @@ export function AiAudioStudio({
                   setNotice(null);
                 }}
               />
+              {draft.restored ? (
+                <p className="draft-note">
+                  {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
+                  <button type="button" onClick={draft.discard}>
+                    {zh ? "清空" : "Clear"}
+                  </button>
+                </p>
+              ) : null}
               <span className="vs-count">
                 {script.length}/{maxScript}
               </span>

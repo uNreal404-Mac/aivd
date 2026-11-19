@@ -207,6 +207,7 @@
   align-items: center;
   gap: 10px;
   min-height: 54px;
+  flex-shrink: 0;
   padding: 8px 12px;
   border-radius: var(--ds-r-lg);
   background: var(--vs-card);

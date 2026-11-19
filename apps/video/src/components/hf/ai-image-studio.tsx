@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
@@ -78,6 +79,7 @@ export function AiImageStudio({
   const model = getMarketModel(modelId) ?? IMAGE_MODELS[0];
   const options = model.options;
   const [prompt, setPrompt] = useState(initialPrompt);
+  const draft = usePromptDraft("image", prompt, setPrompt, Boolean(initialPrompt));
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
   const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
   const [count, setCount] = useState(1);
@@ -290,6 +292,14 @@ export function AiImageStudio({
             }}
             placeholder={zh ? "描述你想象中的场景" : "Describe the scene you imagine"}
           />
+          {draft.restored ? (
+                <p className="draft-note">
+                  {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
+                  <button type="button" onClick={draft.discard}>
+                    {zh ? "清空" : "Clear"}
+                  </button>
+                </p>
+              ) : null}
           <div className="is-toolbar">
             <span className="is-chip-group">
               <button

@@ -323,3 +323,23 @@
     animation: none;
   }
 }
+
+/* "Your unsent draft is back · Clear", under a studio prompt. */
+.draft-note {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  margin: var(--ds-space-1) 0;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.draft-note button {
+  padding: 0;
+  color: var(--du-accent-text);
+  font-weight: 600;
+}
+
+.draft-note button:hover {
+  text-decoration: underline;
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { errorMessage } from "@/lib/media-studio";
 import {
@@ -265,6 +266,12 @@ export function AiVideoStudio({
       ? initial
       : defaultSettings(availableModels[0]);
   });
+  const draft = usePromptDraft(
+    "video",
+    settings.prompt,
+    (text) => setSettings((previous) => ({ ...previous, prompt: text })),
+    Boolean(initialSettings?.prompt),
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
   // Start on a model that can generate: the one in the URL when it is on sale,
   // otherwise whatever the settings resolved to.
@@ -604,6 +611,14 @@ export function AiVideoStudio({
                   }
                 }}
               />
+              {draft.restored ? (
+                <p className="draft-note">
+                  {isChinese ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
+                  <button type="button" onClick={draft.discard}>
+                    {isChinese ? "清空" : "Clear"}
+                  </button>
+                </p>
+              ) : null}
               <div className="vs-prompt-foot">
                 <button
                   type="button"
