@@ -1,4 +1,4 @@
-import { LANDING_SLUGS } from '@/lib/model-landing';
+import { INDEXED_LANDING_SLUGS } from '@/lib/model-landing';
 import { MetadataRoute } from "next";
 import { i18n } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
@@ -154,7 +154,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 动态路由页面需显式补充（scanPages 会跳过含 "[" 的页面）
   const modelsPageFile = join(appDir, '(marketing)', 'models', '[slug]', 'page.tsx');
-  for (const slug of LANDING_SLUGS) {
+  // Only live models: pages for models that cannot generate yet are noindex.
+  for (const slug of INDEXED_LANDING_SLUGS) {
     routes.push({
       path: `models/${slug}`,
       file: modelsPageFile,

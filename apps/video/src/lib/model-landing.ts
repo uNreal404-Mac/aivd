@@ -84,6 +84,9 @@ export const LANDING_MODELS: LandingModel[] = [
 
 export const LANDING_SLUGS: string[] = LANDING_MODELS.map((model) => model.slug);
 
+/** Pages offered to search engines: models that can generate today. */
+export const INDEXED_LANDING_SLUGS: string[] = LANDING_MODELS.filter((model) => model.live).map((model) => model.slug);
+
 export function getLandingModel(slug: string): LandingModel | undefined {
   return LANDING_MODELS.find((model) => model.slug === slug);
 }

@@ -370,8 +370,8 @@ describe("sitemap source", () => {
   );
 
   // Every model in the nav now has a landing page; the sitemap lists them all.
-  it("adds one route per model landing page using LANDING_SLUGS", () => {
-    expect(sitemapSource).toContain("LANDING_SLUGS");
+  it("adds one route per live model landing page", () => {
+    expect(sitemapSource).toContain("INDEXED_LANDING_SLUGS");
     expect(sitemapSource).toMatch(
       /(from|require\()\s*["']@\/lib\/model-landing["']/
     );
