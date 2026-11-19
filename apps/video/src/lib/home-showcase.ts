@@ -84,10 +84,10 @@ export const FEATURE_SLIDES: {
 ];
 
 /** 2. Product tiles next to the offer card. */
-export const PRODUCT_TILES: { title: string; badge?: Bi; tag?: string; body: Bi; href: string; icon: "film" | "spark" | "image" | "wave" | "layers" | "orbit" }[] = [
+export const PRODUCT_TILES: { title: string | Bi; badge?: Bi; tag?: string; body: Bi; href: string; icon: "film" | "spark" | "image" | "wave" | "layers" | "orbit" }[] = [
   { title: "Seedance 2.5", tag: "1080P", body: { zh: "新一代视频模型", en: "The new video model" }, href: navModelHref("video", "bytedance/seedance-2-5"), icon: "film" },
   { title: "Kling 4.0", badge: { zh: "新", en: "New" }, body: { zh: "参考图生成，人物一致", en: "Reference-driven, consistent characters" }, href: navModelHref("video", "kling/v4-reference-to-video"), icon: "orbit" },
-  { title: "创作空间 Agent", badge: { zh: "新", en: "New" }, body: { zh: "一句话拆成分镜并生成", en: "One line becomes a shot plan" }, href: "/creative-space", icon: "spark" },
+  { title: { zh: "创作空间 Agent", en: "Creative Space Agent" }, badge: { zh: "新", en: "New" }, body: { zh: "一句话拆成分镜并生成", en: "One line becomes a shot plan" }, href: "/creative-space", icon: "spark" },
   { title: "Nano Banana Pro", badge: { zh: "热门", en: "Hot" }, body: { zh: "出色的 4K 图像模型", en: "An excellent 4K image model" }, href: navModelHref("image", "nano-banana-pro"), icon: "image" },
   { title: "Eleven v3", badge: { zh: "新", en: "New" }, body: { zh: "富有表现力的 AI 配音", en: "Expressive AI voiceover" }, href: navModelHref("audio", "elevenlabs-v3"), icon: "wave" },
   { title: "GPT Image 2.6", badge: { zh: "新", en: "New" }, body: { zh: "品质出众，编辑精准", en: "Outstanding quality, precise edits" }, href: navModelHref("image", "gpt-image-2-6-sunburst"), icon: "layers" },

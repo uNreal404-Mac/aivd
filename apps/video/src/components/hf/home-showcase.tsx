@@ -81,10 +81,10 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
           {PRODUCT_TILES.map((tile) => {
             const Icon = TILE_ICONS[tile.icon];
             return (
-              <Link key={tile.title} href={href(tile.href)} className="hs-tile" data-tilt>
+              <Link key={tile.href} href={href(tile.href)} className="hs-tile" data-tilt>
                 <Icon className="hs-tile-icon" aria-hidden="true" />
                 <span className="hs-tile-title">
-                  {tile.title}
+                  {typeof tile.title === "string" ? tile.title : t(tile.title)}
                   {tile.badge ? <span className="hs-badge">{t(tile.badge)}</span> : null}
                   {tile.tag ? <span className="hs-badge hs-badge-tag">{tile.tag}</span> : null}
                 </span>
