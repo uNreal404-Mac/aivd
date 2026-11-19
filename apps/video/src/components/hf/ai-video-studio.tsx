@@ -10,6 +10,7 @@ import {
   Film,
   ImagePlus,
   Pencil,
+  Play,
   RotateCcw,
   Sparkles,
   Wand2,
@@ -443,12 +444,12 @@ export function AiVideoStudio({
   const stepCopy = isChinese
     ? [
         { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
-        { title: "选择模型", body: "挑一个模型，设置时长、画面比例、画质和声音。" },
+        { title: "选择预设", body: "挑一个镜头预设，控制画面的运动方式。" },
         { title: "获取视频", body: "点击生成，完成后在历史记录里播放和下载。" },
       ]
     : [
         { title: "Add an image", body: "Upload a start frame, or just write a prompt and start from scratch." },
-        { title: "Pick a model", body: "Choose a model and set length, ratio, quality and sound." },
+        { title: "Pick a preset", body: "Choose a camera preset to control how the shot moves." },
         { title: "Get the video", body: "Hit generate, then play and download it from history." },
       ];
 
@@ -863,20 +864,53 @@ export function AiVideoStudio({
                 ? "写一句提示词或上传一张起始帧，选好模型就能生成，生成前就能看到要消耗的积分。"
                 : "Write a prompt or upload a start frame, pick a model and generate. You see the credit cost before you start."}
             </p>
-            <div className="vs-intro">
-              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" autoPlay muted loop playsInline preload="metadata" />
-              <span className="vs-intro-shade" aria-hidden="true" />
-              <span className="vs-intro-tag">VEO 3.1 · SEEDANCE 2.5 · KLING 4.0</span>
-            </div>
-            <ol className="vs-steps vs-steps-text">
+            <ol className="vs-steps vs-steps-illus">
               {stepCopy.map((step, index) => (
-                <li key={step.title} className="vs-step vs-step-card">
-                  <span className="vs-step-n">{index + 1}</span>
+                <li key={step.title} className="vs-step">
+                  <div className="vs-illus" aria-hidden="true">
+                    {index === 0 ? (
+                      <div className="vs-illus-upload">
+                        <span className="vs-illus-drop">
+                          <ImagePlus />
+                          {isChinese ? "上传图片" : "Upload an image"}
+                          <small>{isChinese ? "拖入或点击上传" : "Drop or click"}</small>
+                        </span>
+                        <img src="/home/samples/rain-couple.webp" alt="" className="vs-illus-photo" />
+                      </div>
+                    ) : index === 1 ? (
+                      <div className="vs-illus-presets">
+                        {VIDEO_PRESETS.slice(0, 3).map((preset, position) => (
+                          <span key={preset.id} className={position === 1 ? "vs-illus-preset vs-illus-preset-on" : "vs-illus-preset"}>
+                            <img src={preset.image} alt="" />
+                            <small>{isChinese ? preset.zh : preset.en}</small>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="vs-illus-result">
+                        <img src="/home/hero-marina-poster.webp" alt="" />
+                        <span className="vs-illus-play">
+                          <Play />
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <h3 className="vs-step-title">{step.title}</h3>
                   <p className="vs-step-body">{step.body}</p>
                 </li>
               ))}
             </ol>
+            <a className="vs-help" href={`/${locale}/templates`}>
+              <span className="vs-help-art" aria-hidden="true">
+                <img src="/home/samples/autumn-walk.webp" alt="" />
+                <img src="/home/samples/cosmic-bloom.webp" alt="" />
+              </span>
+              <span className="vs-help-text">
+                <strong>{isChinese ? "不知道从哪里开始？" : "Not sure where to start?"}</strong>
+                <span>{isChinese ? "从模板挑一个，提示词会自动填好" : "Pick a template and its prompt fills in"}</span>
+              </span>
+              <ChevronRight aria-hidden="true" />
+            </a>
           </div>
         )}
       </section>

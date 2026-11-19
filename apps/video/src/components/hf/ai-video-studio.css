@@ -2,8 +2,9 @@
    column on the left, a stage with history and how-it-works on the right. */
 .vs-root {
   --vs-panel: var(--ds-surface-1);
-  --vs-card: var(--ds-surface-2);
-  --vs-card-hover: var(--du-surface-2);
+  /* Settings cards sit straight on the page, as on the reference. */
+  --vs-card: var(--ds-fill-1);
+  --vs-card-hover: var(--ds-fill-2);
   display: flex;
   width: 100%;
   min-width: 0;
@@ -22,18 +23,17 @@
   }
 }
 
+/* No backing panel: the reference lets the settings cards sit on the page. */
 .vs-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--vs-panel);
+  gap: 8px;
+  padding: 4px 4px 4px 0;
 }
 
 @media (min-width: 1024px) {
   .vs-panel {
-    width: 360px;
+    width: 334px;
     flex-shrink: 0;
     overflow-y: auto;
     scrollbar-width: none;
@@ -50,7 +50,7 @@
   padding: 10px 6px 12px;
   border-bottom: 2px solid transparent;
   color: var(--ds-text-3);
-  font-size: var(--ds-fs-md);
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition: color 150ms ease, border-color 150ms ease;
 }
@@ -69,7 +69,7 @@
   display: block;
   height: 150px;
   overflow: hidden;
-  border-radius: var(--ds-r-xl);
+  border-radius: var(--ds-r-lg);
   text-align: left;
 }
 
@@ -146,7 +146,7 @@
   gap: 6px;
   padding: 16px;
   border: 1px dashed var(--ds-line-2);
-  border-radius: var(--ds-r-xl);
+  border-radius: var(--ds-r-lg);
   background: var(--vs-card);
   cursor: pointer;
   text-align: center;
@@ -206,8 +206,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: var(--ds-r-xl);
+  min-height: 54px;
+  padding: 8px 12px;
+  border-radius: var(--ds-r-lg);
   background: var(--vs-card);
   text-align: left;
   transition: background-color 150ms ease;
@@ -221,9 +222,9 @@ label.vs-select:hover {
 .vs-card-label {
   display: block;
   overflow: hidden;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  line-height: 16px;
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -233,9 +234,9 @@ label.vs-select:hover {
   overflow: hidden;
   margin-top: 2px;
   color: white;
-  font-size: var(--ds-fs-md);
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
-  line-height: 22px;
+  line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -340,7 +341,7 @@ button.vs-chip:disabled {
 
 .vs-generate {
   display: flex;
-  height: 52px;
+  height: 48px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -351,7 +352,7 @@ button.vs-chip:disabled {
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-md);
-  font-weight: 700;
+  font-weight: 600;
   transition: filter 150ms ease;
 }
 
@@ -948,67 +949,6 @@ button.vs-chip:disabled {
   align-items: center;
 }
 
-/* Introduction on first visit: a real clip, then the three steps as cards. */
-.vs-intro {
-  position: relative;
-  overflow: hidden;
-  max-width: 1100px;
-  margin-top: 32px;
-  aspect-ratio: 21 / 9;
-  border-radius: var(--ds-r-2xl);
-  background: var(--vs-card);
-}
-
-.vs-intro video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.vs-intro-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 70%, transparent), transparent 50%);
-}
-
-.vs-intro-tag {
-  position: absolute;
-  bottom: 18px;
-  left: 22px;
-  color: white;
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
-.vs-steps-text {
-  max-width: 1100px;
-  margin-top: 20px;
-  gap: 12px;
-  list-style: none;
-  padding: 0;
-}
-
-.vs-step-card {
-  padding: 18px 20px 20px;
-  border-radius: var(--ds-r-xl);
-  background: var(--vs-card);
-}
-
-.vs-step-n {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  margin-bottom: 12px;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-3);
-  color: white;
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-}
 
 /* Audio: voices as a scannable grid, generate pinned to the panel bottom. */
 .as-voice-pick {
@@ -1083,4 +1023,211 @@ button.vs-chip:disabled {
 
 .as-generate {
   margin-top: auto;
+}
+
+/* First visit: three illustrated steps drawn like the studio itself, then a
+   way into the templates, after the reference's how-it-works. */
+.vs-steps-illus {
+  max-width: 1100px;
+  margin-top: var(--ds-space-6);
+  gap: var(--ds-space-4);
+  list-style: none;
+  padding: 0;
+}
+
+.vs-illus {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 16 / 11;
+  margin-bottom: var(--ds-space-4);
+  place-items: center;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background:
+    radial-gradient(70% 70% at 50% 30%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 70%),
+    var(--ds-surface-2);
+}
+
+.vs-illus-upload {
+  position: relative;
+  width: 70%;
+  height: 64%;
+}
+
+.vs-illus-drop {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--ds-line-3);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.vs-illus-drop svg {
+  width: 22px;
+  height: 22px;
+  color: var(--ds-text-2);
+}
+
+.vs-illus-drop small {
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
+}
+
+.vs-illus-photo {
+  position: absolute;
+  bottom: -18%;
+  left: -8%;
+  width: 46%;
+  aspect-ratio: 4 / 3;
+  border: 2px solid var(--du-accent);
+  border-radius: var(--ds-r-md);
+  box-shadow: var(--ds-shadow-2);
+  object-fit: cover;
+  transform: rotate(-8deg);
+  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.vs-step:hover .vs-illus-photo {
+  transform: rotate(-4deg) translateY(-6px);
+}
+
+.vs-illus-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vs-illus-preset {
+  display: flex;
+  width: 92px;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+  text-align: center;
+  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.vs-illus-preset img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 2px solid transparent;
+  border-radius: var(--ds-r-md);
+  object-fit: cover;
+}
+
+.vs-illus-preset-on {
+  color: var(--ds-text-1);
+  transform: translateY(-6px) scale(1.06);
+}
+
+.vs-illus-preset-on img {
+  border-color: var(--du-accent);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--du-accent) 25%, transparent);
+}
+
+.vs-step:hover .vs-illus-preset-on img {
+  animation: vs-push 1.6s var(--du-ease, ease) infinite alternate;
+}
+
+.vs-illus-result {
+  position: relative;
+  width: 74%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--du-accent) 70%, transparent);
+  border-radius: var(--ds-r-lg);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--du-accent) 25%, transparent);
+}
+
+.vs-illus-result img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vs-illus-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
+  color: var(--ds-text-1);
+  backdrop-filter: blur(6px);
+  transform: translate(-50%, -50%);
+}
+
+.vs-illus-play svg {
+  width: 16px;
+  height: 16px;
+}
+
+.vs-help {
+  display: flex;
+  max-width: 1100px;
+  align-items: center;
+  gap: var(--ds-space-4);
+  margin-top: var(--ds-space-6);
+  padding: var(--ds-space-3) var(--ds-space-5) var(--ds-space-3) var(--ds-space-3);
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-fill-1);
+  transition: background-color var(--du-dur-fast, 180ms) ease;
+}
+
+.vs-help:hover {
+  background: var(--ds-fill-2);
+}
+
+.vs-help-art {
+  display: flex;
+}
+
+.vs-help-art img {
+  width: 44px;
+  height: 56px;
+  border: 2px solid var(--du-bg);
+  border-radius: var(--ds-r-sm);
+  object-fit: cover;
+}
+
+.vs-help-art img + img {
+  margin-left: -14px;
+  transform: rotate(6deg);
+}
+
+.vs-help-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.vs-help-text strong {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.vs-help > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ds-text-3);
 }

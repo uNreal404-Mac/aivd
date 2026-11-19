@@ -1,9 +1,13 @@
 /* Signed-in account area: rail, page header, cards, stats, lists. Built on
    the ds.css scale. */
 
+/* Rail on the page, content in one rounded panel, as on the reference's
+   asset library. */
 .db-shell {
   display: flex;
   min-height: calc(100svh - var(--hf-header-h, 52px));
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2);
   background: var(--du-bg);
   color: var(--ds-text-1);
 }
@@ -11,15 +15,14 @@
 /* ---------- Rail ---------- */
 .db-rail {
   position: sticky;
-  top: var(--hf-header-h, 52px);
+  top: calc(var(--hf-header-h, 52px) + var(--ds-space-2));
   display: flex;
-  width: 232px;
-  height: calc(100svh - var(--hf-header-h, 52px));
+  width: 224px;
+  height: calc(100svh - var(--hf-header-h, 52px) - var(--ds-space-4));
   flex-shrink: 0;
   flex-direction: column;
   gap: var(--ds-space-1);
-  padding: var(--ds-space-5) var(--ds-space-3);
-  border-right: 1px solid var(--ds-line-1);
+  padding: var(--ds-space-2) var(--ds-space-1);
 }
 
 .db-rail-title {
@@ -105,15 +108,17 @@
 .db-main {
   min-width: 0;
   flex: 1;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-1);
 }
 
 .db-page {
   display: flex;
-  max-width: 1120px;
+  max-width: 1200px;
   flex-direction: column;
-  gap: var(--ds-space-6);
-  margin: 0 auto;
-  padding: var(--ds-space-6) var(--ds-space-6) var(--ds-space-8);
+  gap: var(--ds-space-5);
+  padding: var(--ds-space-4) var(--ds-space-5) var(--ds-space-7);
 }
 
 .db-head {
@@ -125,8 +130,8 @@
 
 .db-title {
   font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-2xl);
-  font-weight: 700;
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -157,7 +162,7 @@
   padding: var(--ds-space-5);
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-xl);
-  background: var(--ds-surface-1);
+  background: var(--ds-surface-2);
 }
 
 /* ---------- Buttons ---------- */
@@ -558,4 +563,21 @@
 .cr-audio {
   width: 100%;
   margin: var(--ds-space-4) 0;
+}
+
+/* Inside the panel, cards, stats and lists sit one surface up. */
+.db-main .db-stat,
+.db-main .db-list {
+  background: var(--ds-surface-2);
+}
+
+.db-main .cr-title {
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+}
+
+.db-main .db-stat-main {
+  background:
+    radial-gradient(80% 90% at 0% 0%, color-mix(in srgb, var(--du-accent) 18%, transparent), transparent 70%),
+    var(--ds-surface-2);
 }
