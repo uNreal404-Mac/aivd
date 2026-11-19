@@ -17,6 +17,7 @@ describe("credit labels", () => {
     expect(describeRemark("Stripe payment: Basic Plan", true)).toBe("购买 Basic 套餐");
     expect(describeRemark("Stripe payment: Basic Plan", false)).toBe("Bought the Basic plan");
     expect(describeRemark("Stripe refund: stripe_cs_test_a109eCWlkWxyz", true)).toBe("订单退款");
+    expect(describeRemark("Credits expired: 280 left in package 5", true)).toBe("到期未用完的积分已失效");
     expect(describeRemark("", true)).toBeNull();
     expect(describeRemark("Manual top-up for vid_abcdefgh123", false)).toBe("Manual top-up for");
   });

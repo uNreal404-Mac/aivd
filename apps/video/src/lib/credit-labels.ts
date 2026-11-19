@@ -48,6 +48,7 @@ export function describeRemark(remark: string | null | undefined, zh: boolean): 
   if (/generation settled/i.test(text)) return zh ? "生成完成" : "Generation finished";
   if (/generation failed|credits release/i.test(text)) return zh ? "生成失败，积分已退回" : "Generation failed; credits returned";
   if (/welcome/i.test(text)) return zh ? "新用户欢迎积分" : "Welcome credits";
+  if (/credits expired/i.test(text)) return zh ? "到期未用完的积分已失效" : "Unused credits reached their expiry date";
   // Anything else is shown as written, minus long ids.
   return text.replace(/\b(?:vid|cs|stripe_cs|pi|sub|in)_[A-Za-z0-9_]{6,}\b/g, "").replace(/[:\s]+$/, "").trim() || null;
 }
