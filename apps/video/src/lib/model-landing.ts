@@ -165,6 +165,49 @@ export function landingSpecs(model: LandingModel): LandingSpec[] {
   return specs;
 }
 
+/** A headline number for the spec section: big figure, unit and label. */
+export type LandingHighlight = { big: string; unit: Bi; label: Bi };
+
+const RES_RANK = ["360p", "480p", "540p", "720p", "768p", "1080p", "1k", "2k", "4k", "8k"];
+
+function topResolution(values: string[] | undefined): string | null {
+  if (!values?.length) return null;
+  return [...values].sort((a, b) => RES_RANK.indexOf(b.toLowerCase()) - RES_RANK.indexOf(a.toLowerCase()))[0];
+}
+
+/**
+ * The few numbers worth printing large, read from what the model accepts on
+ * this site. Nothing is shown that the studio does not offer.
+ */
+export function landingHighlights(model: LandingModel): LandingHighlight[] {
+  const market = getMarketModel(model.id);
+  const studio = STUDIO_MODELS.find((item) => item.id === model.id);
+  const out: LandingHighlight[] = [];
+  const durations = studio?.durations ?? market?.options.durations ?? [];
+  const resolutions = studio?.resolutions ?? market?.options.resolutions;
+  const aspects = (studio?.aspects ?? market?.options.aspects ?? []).filter((value) => value !== "auto");
+  if (model.kind === "video" && durations.length) {
+    out.push({ big: String(Math.max(...durations)), unit: { zh: "秒", en: "s" }, label: { zh: "单条最长时长", en: "Longest clip" } });
+  }
+  const top = topResolution(resolutions);
+  if (top) out.push({ big: top.toUpperCase().replace("P", "p"), unit: { zh: "", en: "" }, label: { zh: "最高画质", en: "Top resolution" } });
+  if (aspects.length > 1) out.push({ big: String(aspects.length), unit: { zh: "种", en: "" }, label: { zh: "画面比例", en: "Aspect ratios" } });
+  const refs = market?.options.maxImages ?? 0;
+  if (refs > 1) out.push({ big: String(refs), unit: { zh: "张", en: "" }, label: { zh: "参考图", en: "Reference images" } });
+  if (market?.options.maxCount && market.options.maxCount > 1) {
+    out.push({ big: String(market.options.maxCount), unit: { zh: "张", en: "" }, label: { zh: "单次生成", en: "Per run" } });
+  }
+  if (model.kind === "video" && (studio?.audio ?? market?.options.audioToggle)) {
+    out.push({ big: "♪", unit: { zh: "", en: "" }, label: { zh: "画面和声音一起生成", en: "Sound with the picture" } });
+  }
+  if (market?.options.voices?.length) {
+    out.push({ big: String(market.options.voices.length), unit: { zh: "种", en: "" }, label: { zh: "预设音色", en: "Preset voices" } });
+  }
+  const price = landingPrice(model);
+  if (price) out.push({ big: String(price.credits), unit: { zh: "积分", en: "credits" }, label: { zh: model.kind === "video" ? "每条起" : model.kind === "image" ? "每张起" : "起", en: "from" } });
+  return out.slice(0, 5);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Price                                                                       */
 /* -------------------------------------------------------------------------- */

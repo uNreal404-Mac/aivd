@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INDEXED_LANDING_SLUGS, LANDING_MODELS, LANDING_SLUGS, getLandingModel, landingFaqs, landingPrice, landingSlug, landingSpecs } from "@/lib/model-landing";
+import { INDEXED_LANDING_SLUGS, LANDING_MODELS, LANDING_SLUGS, landingHighlights, getLandingModel, landingFaqs, landingPrice, landingSlug, landingSpecs } from "@/lib/model-landing";
 
 describe("model landing pages", () => {
   it("makes readable, unique slugs", () => {
@@ -39,6 +39,18 @@ describe("model landing pages", () => {
     for (const model of LANDING_MODELS) {
       expect(landingFaqs(model, true).length).toBeGreaterThanOrEqual(4);
       expect(landingFaqs(model, false).length).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("prints only numbers the studio offers", () => {
+    const kling = landingHighlights(getLandingModel("kling-4-0")!);
+    expect(kling.find((item) => item.label.en === "Longest clip")?.big).toBe("15");
+    expect(kling.find((item) => item.label.en === "Top resolution")?.big).toBe("1080p");
+    expect(kling.find((item) => item.label.en === "Reference images")?.big).toBe("4");
+    const kimg = landingHighlights(getLandingModel("kling-image-4-0")!);
+    expect(kimg.find((item) => item.label.en === "Top resolution")?.big).toBe("8K");
+    for (const model of LANDING_MODELS.filter((item) => item.live)) {
+      expect(landingHighlights(model).length, model.slug).toBeGreaterThan(0);
     }
   });
 });

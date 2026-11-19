@@ -2,12 +2,14 @@ import Link from "next/link";
 import { ArrowRight, AudioLines, Check, ChevronDown, Clapperboard, Image as ImageIcon, Sparkles } from "lucide-react";
 
 import { WallCard } from "@/components/hf/wall-card";
+import { InViewVideo } from "@/components/hf/in-view-video";
 import { ModelPrompt } from "@/components/model-landing/model-prompt";
 import { localizedHref } from "@/lib/du-home";
 import { withPrompt } from "@/lib/home-showcase";
 import {
   kindLabel,
   landingFaqs,
+  landingHighlights,
   landingHref,
   landingIntro,
   landingMedia,
@@ -34,6 +36,7 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
   const KindIcon = KIND_ICON[model.kind];
   const specs = landingSpecs(model);
   const price = landingPrice(model);
+  const highlights = landingHighlights(model);
   const media = landingMedia(model);
   const faqs = landingFaqs(model, zh);
   const related = relatedModels(model);
@@ -63,8 +66,22 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
     <div className="ml">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJson) }} />
 
-      {/* 1. Hero */}
-      <section className="ml-hero">
+      {/* 1. Hero: the picture fills the first screen, words sit centred at the foot */}
+      <section className={`ml-hero ${model.kind === "audio" ? "ml-hero-audio" : ""}`}>
+        <div className="ml-hero-media" aria-hidden="true">
+          {model.kind === "audio" ? (
+            <div className="ml-wave">
+              {Array.from({ length: 64 }, (_, index) => (
+                <span key={index} style={{ height: `${14 + Math.round(Math.abs(Math.sin(index * 0.55) * 64) + (index % 7) * 3)}%` }} />
+              ))}
+            </div>
+          ) : media.hero.video ? (
+            <InViewVideo src={media.hero.src} poster={media.hero.poster} threshold={0.2} />
+          ) : (
+            <img src={media.hero.src} alt="" />
+          )}
+          <span className="ml-hero-shade" />
+        </div>
         <div className="ml-hero-text">
           <p className="ml-kicker">
             <KindIcon aria-hidden="true" />
@@ -72,15 +89,13 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
             {model.live ? null : <span className="ml-soon">{zh ? "即将上线" : "Coming soon"}</span>}
             {model.live && model.badge ? <span className="ml-badge">{model.badge === "hot" ? (zh ? "热门" : "Hot") : zh ? "新" : "New"}</span> : null}
           </p>
-          <h1 className="ml-title">{title}</h1>
+          <h1 className="ml-title">
+            {model.name}
+            {highlights.find((item) => item.label.en === "Top resolution") ? (
+              <span className="ml-title-tag">{highlights.find((item) => item.label.en === "Top resolution")?.big}</span>
+            ) : null}
+          </h1>
           <p className="ml-intro">{landingIntro(model, zh)}</p>
-          {specs.length ? (
-            <ul className="ml-chips" aria-label={zh ? "主要参数" : "Key specs"}>
-              {specs.slice(0, 4).map((spec) => (
-                <li key={spec.label.en}>{zh ? spec.value.zh : spec.value.en}</li>
-              ))}
-            </ul>
-          ) : null}
           {target ? (
             <ModelPrompt
               href={href(studioHref(target))}
@@ -108,52 +123,51 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
                 : `${model.name} is not open yet. You can create with ${target?.name ?? "another model"} today.`}
           </p>
         </div>
-        <div className={`ml-hero-media ${model.kind === "audio" ? "ml-hero-audio" : ""}`}>
-          {model.kind === "audio" ? (
-            <div className="ml-wave" aria-hidden="true">
-              {Array.from({ length: 48 }, (_, index) => (
-                <span key={index} style={{ height: `${18 + Math.round(Math.abs(Math.sin(index * 0.7) * 62) + (index % 5) * 4)}%` }} />
-              ))}
-              <span className="ml-wave-name">{model.name}</span>
-            </div>
-          ) : media.hero.video ? (
-            <video src={media.hero.src} poster={media.hero.poster} autoPlay muted loop playsInline preload="metadata" />
-          ) : (
-            <img src={media.hero.src} alt="" />
-          )}
-          {model.kind === "audio" ? null : <span className="ml-hero-caption">{zh ? "示例画面" : "Sample"}</span>}
-        </div>
+        {model.kind === "audio" ? null : <span className="ml-hero-caption">{zh ? "示例画面" : "Sample"}</span>}
       </section>
 
-      {/* 2. Specs */}
-      {specs.length ? (
+      {/* 2. Headline numbers, then the full list */}
+      {highlights.length || specs.length ? (
         <section className="ml-section" aria-labelledby="ml-specs">
-          <h2 id="ml-specs" className="ml-h2">{model.live ? (zh ? `${model.name} 支持什么` : `What ${model.name} supports`) : zh ? `${model.name} 的参数` : `${model.name} specs`}</h2>
-          <dl className="ml-specs">
-            {specs.map((spec) => (
-              <div key={spec.label.en} className="ml-spec">
-                <dt>{zh ? spec.label.zh : spec.label.en}</dt>
-                <dd>{zh ? spec.value.zh : spec.value.en}</dd>
-              </div>
-            ))}
-            {price ? (
-              <div className="ml-spec ml-spec-accent">
-                <dt>{zh ? "积分" : "Credits"}</dt>
-                <dd>{zh ? price.label.zh : price.label.en}</dd>
-              </div>
-            ) : null}
-          </dl>
+          <div className="ml-head-c">
+            <p className="ml-eyebrow">{zh ? "参数" : "Specs"}</p>
+            <h2 id="ml-specs" className="ml-h2">
+              {model.live ? (zh ? `${model.name} 能做到什么` : `What ${model.name} can do`) : zh ? `${model.name} 的参数` : `${model.name} specs`}
+            </h2>
+          </div>
+          {highlights.length ? (
+            <div className={`ml-bento ml-bento-${Math.min(highlights.length, 5)}`}>
+              {highlights.map((item) => (
+                <div key={item.label.en} className="ml-big">
+                  <span className="ml-big-num">
+                    {item.big}
+                    {(zh ? item.unit.zh : item.unit.en) ? <small>{zh ? item.unit.zh : item.unit.en}</small> : null}
+                  </span>
+                  <span className="ml-big-label">{zh ? item.label.zh : item.label.en}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {specs.length ? (
+            <dl className="ml-specs">
+              {specs.map((spec) => (
+                <div key={spec.label.en} className="ml-spec">
+                  <dt>{zh ? spec.label.zh : spec.label.en}</dt>
+                  <dd>{zh ? spec.value.zh : spec.value.en}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
         </section>
       ) : null}
 
       {/* 3. Ideas wall */}
       {model.kind !== "audio" && target ? (
         <section className="ml-section" aria-labelledby="ml-ideas">
-          <div className="ml-head">
-            <div>
-              <h2 id="ml-ideas" className="ml-h2">{zh ? "灵感示例" : "Ideas to start from"}</h2>
-              <p className="ml-sub">{zh ? "点一张，带着提示词去生成同款" : "Pick one to open the studio with its prompt"}</p>
-            </div>
+          <div className="ml-head-c">
+            <p className="ml-eyebrow">{zh ? "灵感" : "Ideas"}</p>
+            <h2 id="ml-ideas" className="ml-h2">{zh ? `用 ${model.name} 做同款` : `Make one with ${model.name}`}</h2>
+            <p className="ml-sub">{zh ? "点一张，带着提示词去生成" : "Pick one to open the studio with its prompt"}</p>
           </div>
           <div className="hs-wall ml-wall">
             {media.wall.map((item, position) => {
@@ -206,7 +220,10 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
 
       {/* 5. FAQ */}
       <section className="ml-section" aria-labelledby="ml-faq">
-        <h2 id="ml-faq" className="ml-h2">{zh ? "常见问题" : "Questions"}</h2>
+        <div className="ml-head-c">
+          <p className="ml-eyebrow">FAQ</p>
+          <h2 id="ml-faq" className="ml-h2">{zh ? "常见问题" : "Questions"}</h2>
+        </div>
         <div className="ml-faq">
           {faqs.map((faq, index) => (
             <details key={faq.q} open={index === 0}>
@@ -223,7 +240,10 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
       {/* 6. Other models */}
       {related.length ? (
         <section className="ml-section" aria-labelledby="ml-more">
-          <h2 id="ml-more" className="ml-h2">{zh ? `更多 AI ${kind.zh}模型` : `More AI ${kind.en.toLowerCase()} models`}</h2>
+          <div className="ml-head-c">
+            <p className="ml-eyebrow">{zh ? "更多模型" : "More models"}</p>
+            <h2 id="ml-more" className="ml-h2">{zh ? `其他 AI ${kind.zh}模型` : `Other AI ${kind.en.toLowerCase()} models`}</h2>
+          </div>
           <div className="ml-related">
             {related.map((item) => (
               <Link key={item.slug} href={href(landingHref(item.slug))} className="ml-rel">

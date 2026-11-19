@@ -42,6 +42,7 @@ import { findNavModel } from "@/lib/nav-models";
 import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { StateBlock } from "@/components/states/state-block";
+import { InViewVideo } from "@/components/hf/in-view-video";
 import {
   CopyPromptButton,
   DownloadLink,
@@ -778,7 +779,7 @@ export function AiVideoStudio({
               {isChinese ? `${EDIT_TOOLS[editTool].descZh}。编辑模型接口待接入。` : `${EDIT_TOOLS[editTool].descEn}. The editing model API is coming soon.`}
             </p>
             <div className="vs-howto-media vs-howto-wide">
-              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.png" autoPlay muted loop playsInline preload="metadata" />
+              <InViewVideo src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" />
             </div>
           </div>
         ) : activeTab === "History" ? (

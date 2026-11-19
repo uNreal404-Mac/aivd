@@ -12,6 +12,7 @@ import { localizedHref } from "@/lib/du-home";
 import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
 import { SlideCover } from "@/components/hf/slide-cover";
+import { InViewVideo } from "@/components/hf/in-view-video";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
 import "./home-showcase.css";
 
@@ -29,7 +30,7 @@ const WALL_RATIOS = ["3 / 4", "4 / 3", "1 / 1", "16 / 10", "4 / 5", "16 / 9", "3
 
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
-    <video className={className} src={media.src} poster={media.poster} autoPlay muted loop playsInline preload={eager ? "auto" : "metadata"} />
+    <InViewVideo className={className} src={media.src} poster={media.poster} />
   ) : (
     <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} />
   );
