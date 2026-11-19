@@ -108,27 +108,21 @@ if (env.RESEND_API_KEY && env.RESEND_FROM) {
 
         const userVerified = !!existingUser?.emailVerified;
         const siteName = (siteConfig as { name: string }).name;
-        const authSubject = userVerified
-          ? `Sign-in link for ${siteName}`
-          : "Activate your account";
-        const firstName = existingUser?.name?.trim() || "there";
-        const actionLabel = userVerified ? "Sign in" : "Activate Account";
-        const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px">
-<h2>${siteName}</h2>
-<p>Hi ${firstName},</p>
-<p>Click the button below to ${userVerified ? "sign in to" : "activate"} your account.</p>
-<p><a href="${url}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#fff;border-radius:6px;text-decoration:none">${actionLabel}</a></p>
-<p>This link expires in 5 minutes and can only be used once.</p>
-<p style="color:#666;font-size:12px">${siteName}</p>
-</body></html>`;
-        const textBody = `Hi ${firstName},\n\n${actionLabel}: ${url}\n\nThis link expires in 5 minutes.\n\n${siteName}`;
+        const { buildMagicLinkEmail, isChineseLink } = await import("@/lib/emails/magic-link-html");
+        const message = buildMagicLinkEmail({
+          url,
+          siteName,
+          name: existingUser?.name,
+          verified: userVerified,
+          zh: isChineseLink(url),
+        });
 
         const { error: sendError, data: sendData } = await resend.emails.send({
           from: resendFrom,
           to: email,
-          subject: authSubject,
-          html,
-          text: textBody,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
           headers: {
             "X-Entity-Ref-ID": String(Date.now()),
           },
