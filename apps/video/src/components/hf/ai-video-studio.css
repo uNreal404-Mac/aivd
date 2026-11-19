@@ -256,6 +256,11 @@ label.vs-select:hover {
   cursor: pointer;
 }
 
+/* A setting the model fixes: no arrow, no hover, the value just reads. */
+.vs-card-fixed {
+  cursor: default;
+}
+
 .vs-select select {
   position: absolute;
   inset: 0;

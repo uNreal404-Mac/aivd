@@ -86,6 +86,7 @@ function SelectCard<T extends string | number>({
   format,
   onChange,
   disabled,
+  fixedHint,
 }: {
   id: string;
   label: string;
@@ -94,8 +95,21 @@ function SelectCard<T extends string | number>({
   format?: (option: T) => string;
   onChange: (option: T) => void;
   disabled?: boolean;
+  /** Shown on hover when the model offers only this one value. */
+  fixedHint?: string;
 }) {
   const show = format ?? ((option: T) => String(option));
+  // A single choice is not a choice: show it as a fixed value, not a dropdown.
+  if (options.length <= 1 && !disabled) {
+    return (
+      <div className="vs-card vs-card-fixed" title={fixedHint}>
+        <span className="min-w-0 flex-1">
+          <span className="vs-card-label">{label}</span>
+          <span className="vs-card-value">{show(value)}</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <label htmlFor={id} className={`vs-card vs-select ${disabled ? "vs-card-off" : ""}`}>
       <span className="min-w-0 flex-1">
@@ -739,6 +753,7 @@ export function AiVideoStudio({
               <SelectCard
                 id="studio-duration"
                 label={copy.duration}
+                fixedHint={isChinese ? `${model.name} 只支持这个时长` : `${model.name} only offers this length`}
                 value={settings.duration}
                 options={durationOptions}
                 format={(option) => `${option}s`}
@@ -747,6 +762,7 @@ export function AiVideoStudio({
               <SelectCard
                 id="studio-aspect"
                 label={copy.aspect}
+                fixedHint={isChinese ? `${model.name} 只支持这个比例` : `${model.name} only offers this ratio`}
                 value={settings.aspect}
                 options={model.aspects}
                 onChange={(aspect) => setSettings((previous) => ({ ...previous, aspect }))}
@@ -754,6 +770,7 @@ export function AiVideoStudio({
               <SelectCard
                 id="studio-resolution"
                 label={isChinese ? "画质" : "Quality"}
+                fixedHint={isChinese ? `${model.name} 只支持这个画质` : `${model.name} only offers this quality`}
                 value={settings.resolution}
                 options={model.resolutions}
                 onChange={(resolution) => setSettings((previous) => ({ ...previous, resolution }))}
