@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, AudioLines, ChevronRight, Clapperboard, Film, Image as ImageIcon, Layers, Orbit, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUp, AudioLines, ChevronLeft, ChevronRight, Clapperboard, Film, Image as ImageIcon, Layers, Orbit, Sparkles, type LucideIcon } from "lucide-react";
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
@@ -13,6 +13,7 @@ import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, 
 import { WallCard } from "@/components/hf/wall-card";
 import { SlideCover } from "@/components/hf/slide-cover";
 import { InViewVideo } from "@/components/hf/in-view-video";
+import { useCarousel } from "@/components/hf/use-carousel";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
 import "./home-showcase.css";
 
@@ -41,7 +42,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
   const t = (value: Bi) => (zh ? value.zh : value.en);
   const href = (path: string) => localizedHref(lang, path);
   const trackRef = useRef<HTMLDivElement>(null);
-  const scrollTrack = (direction: number) => trackRef.current?.scrollBy({ left: direction * trackRef.current.clientWidth * 0.75, behavior: "smooth" });
+  const carousel = useCarousel(trackRef);
   const skills = CREATIVE_SKILLS.slice(0, 8);
   const categoryName = (id: string) => {
     const category = CREATIVE_SKILL_CATEGORIES.find((item) => item.id === id);
@@ -64,9 +65,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             </Link>
           ))}
         </div>
-        <button type="button" className="hs-arrow" aria-label={zh ? "下一组" : "Next"} onClick={() => scrollTrack(1)}>
-          <ChevronRight className="h-5 w-5" aria-hidden="true" />
-        </button>
+        <CarouselArrows zh={zh} {...carousel} />
       </section>
 
       {/* 2. Offer card and product tiles */}
@@ -314,5 +313,43 @@ export function MiniComposer({
         <ArrowUp className="h-4 w-4" aria-hidden="true" />
       </button>
     </form>
+  );
+}
+
+/** Previous / next buttons over a card row; each hides at its end of the row. */
+export function CarouselArrows({
+  zh,
+  canPrev,
+  canNext,
+  step,
+}: {
+  zh: boolean;
+  canPrev: boolean;
+  canNext: boolean;
+  step: (direction: 1 | -1) => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        className="hs-arrow hs-arrow-prev"
+        aria-label={zh ? "上一组" : "Previous"}
+        data-hidden={!canPrev || undefined}
+        tabIndex={canPrev ? 0 : -1}
+        onClick={() => step(-1)}
+      >
+        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className="hs-arrow"
+        aria-label={zh ? "下一组" : "Next"}
+        data-hidden={!canNext || undefined}
+        tabIndex={canNext ? 0 : -1}
+        onClick={() => step(1)}
+      >
+        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+      </button>
+    </>
   );
 }

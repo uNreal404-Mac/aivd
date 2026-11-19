@@ -93,6 +93,24 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
   color: white;
   backdrop-filter: blur(10px);
+  transition:
+    opacity 200ms ease,
+    background-color 150ms ease;
+}
+
+.hs-arrow:hover {
+  background: color-mix(in srgb, var(--du-bg) 90%, transparent);
+}
+
+.hs-arrow-prev {
+  right: auto;
+  left: -6px;
+}
+
+/* At either end of the row the arrow fades out and stops taking clicks. */
+.hs-arrow[data-hidden] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* 2. Offer and tiles */

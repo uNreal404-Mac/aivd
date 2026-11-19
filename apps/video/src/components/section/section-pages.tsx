@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Image as ImageIcon, Search, Sparkles } from "lucide-react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { ImageShowcase } from "@/components/hf/image-showcase";
 import { SlideCover } from "@/components/hf/slide-cover";
+import { CarouselArrows } from "@/components/hf/home-showcase";
+import { useCarousel } from "@/components/hf/use-carousel";
 import { modelIcon } from "@/components/hf/nav-menus";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
@@ -216,6 +218,8 @@ const TEMPLATE_MODEL_TILES: { name: string; zh: string; en: string; href: string
 export function TemplatesSectionPage({ lang }: { lang: string }) {
   const zh = isZh(lang);
   const [query, setQuery] = useState("");
+  const categoryTrack = useRef<HTMLDivElement>(null);
+  const categoryCarousel = useCarousel(categoryTrack, query.trim() === "");
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return null;
@@ -309,7 +313,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
           <>
             {/* 1. Category carousel */}
             <section className="hs-carousel" aria-label={zh ? "模板分类" : "Template categories"}>
-              <div className="hs-carousel-track">
+              <div ref={categoryTrack} className="hs-carousel-track">
                 {HOME_TEMPLATE_CATEGORIES.map((item) => (
                   <a key={item.id} href={`#tpl-${item.id}`} className="hs-slide">
                     <span className="hs-slide-media">
@@ -332,6 +336,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                   <span className="hs-slide-body">{zh ? "镜头运动、变形和氛围特效" : "Camera moves, transforms and atmosphere"}</span>
                 </Link>
               </div>
+              <CarouselArrows zh={zh} {...categoryCarousel} />
             </section>
 
             {/* 2. Offer card and model tiles */}
