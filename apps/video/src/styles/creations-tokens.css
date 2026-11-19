@@ -457,17 +457,208 @@
 }
 
 .cr-dialog {
+  /* The base reset zeroes <dialog> margins, which also undoes its centring. */
+  margin: auto;
   border: 1px solid var(--cr-border);
-  border-radius: var(--cr-radius-lg);
+  border-radius: var(--ds-r-2xl);
   background: var(--cr-surface);
   color: var(--cr-text);
-  max-width: min(960px, 92vw);
+  max-width: min(1180px, 94vw);
   width: 100%;
-  padding: 16px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .cr-dialog::backdrop {
-  background: var(--cr-overlay);
+  background: color-mix(in srgb, var(--du-bg) 75%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+/* Detail: the media large on the left, prompt and actions on the right. */
+.cr-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  max-height: min(86vh, 760px);
+}
+
+.cr-detail-media {
+  display: flex;
+  min-height: 360px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-3);
+  background: var(--du-bg);
+}
+
+.cr-detail-media .cr-video {
+  max-height: calc(min(86vh, 760px) - 24px);
+  object-fit: contain;
+}
+
+.cr-detail-media .cr-thumb-failed {
+  min-height: 320px;
+  border-radius: var(--ds-r-lg);
+}
+
+.cr-detail-audio {
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-4);
+  color: var(--du-accent-text);
+}
+
+.cr-detail-audio > svg {
+  width: 48px;
+  height: 48px;
+}
+
+.cr-detail-side {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4);
+  overflow-y: auto;
+  border-left: 1px solid var(--cr-border);
+}
+
+.cr-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cr-detail-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-1);
+}
+
+.cr-detail-count {
+  min-width: 48px;
+  color: var(--cr-text-muted);
+  font-size: var(--ds-fs-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.cr-icon-btn {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--cr-text);
+  transition: background-color 150ms ease;
+}
+
+.cr-icon-btn:hover:not(:disabled) {
+  background: var(--ds-fill-2);
+}
+
+.cr-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cr-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cr-icon-btn-sm {
+  width: 26px;
+  height: 26px;
+}
+
+.cr-icon-btn-sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cr-detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.cr-detail-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--cr-text-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+.cr-detail-prompt {
+  max-height: 220px;
+  margin: 0;
+  overflow-y: auto;
+  color: var(--cr-text);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.cr-detail-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ds-space-3);
+  margin: 0;
+  padding: var(--ds-space-3);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+}
+
+.cr-detail-meta dt {
+  color: var(--cr-text-muted);
+  font-size: var(--ds-fs-2xs);
+}
+
+.cr-detail-meta dd {
+  margin: 2px 0 0;
+  color: var(--cr-text);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.cr-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  margin-top: auto;
+}
+
+.cr-detail-actions .cr-button {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cr-detail-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 900px) {
+  .cr-detail {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .cr-detail-side {
+    border-left: 0;
+    border-top: 1px solid var(--cr-border);
+  }
 }
 
 .cr-dialog-header {

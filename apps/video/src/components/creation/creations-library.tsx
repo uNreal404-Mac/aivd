@@ -3,7 +3,8 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, AudioLines, Clapperboard, Image as ImageIcon } from "lucide-react";
+import { AlertTriangle, AudioLines, ChevronLeft, ChevronRight, Clapperboard, Download, Image as ImageIcon, Sparkles, X } from "lucide-react";
+import { CopyPromptButton } from "@/components/hf/studio-results";
 import type { CreationMediaType } from "@/lib/types/dashboard";
 import { useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
 import {
@@ -188,6 +189,24 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
     }
     setActiveVideo(video);
   }, []);
+
+  // Previous / next among the items that can be opened, also on ← and →.
+  const openable = visibleVideos.filter((video) => mediaUrl(video) || video.errorMessage);
+  const activeIndex = activeVideo ? openable.findIndex((item) => item.uuid === activeVideo.uuid) : -1;
+  const step = (delta: number) => {
+    const next = openable[activeIndex + delta];
+    if (next) setActiveVideo(next);
+  };
+  useEffect(() => {
+    if (!activeVideo) return;
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.closest("video, audio, input, textarea")) return;
+      if (event.key === "ArrowRight") step(1);
+      if (event.key === "ArrowLeft") step(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const handleDelete = useCallback(
     async (uuid: string) => {
@@ -391,52 +410,111 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
         onClose={() => setActiveVideo(null)}
       >
         {activeVideo ? (
-          <div>
-            <div className="cr-dialog-header">
-              <div>
-                <h2 className="cr-dialog-title">
-                  {modelLabel(activeVideo.model)}
-                </h2>
-                <p className="cr-dialog-subtitle">
-                  {formatCreatedAt(activeVideo.createdAt, locale)}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="cr-button cr-button--ghost"
-                onClick={() => dialogRef.current?.close()}
-              >
-                {t("close")}
-              </button>
-            </div>
-            {mediaUrl(activeVideo) ? (
-              kind === "image" ? (
-                <img className="cr-video" src={mediaUrl(activeVideo) ?? undefined} alt={activeVideo.prompt ?? ""} />
-              ) : kind === "audio" ? (
-                <audio className="cr-audio" src={mediaUrl(activeVideo) ?? undefined} controls>
-                  <track kind="captions" />
-                </audio>
+          <div className="cr-detail">
+            <div className="cr-detail-media">
+              {mediaUrl(activeVideo) ? (
+                kind === "image" ? (
+                  <img className="cr-video" src={mediaUrl(activeVideo) ?? undefined} alt={activeVideo.prompt ?? ""} />
+                ) : kind === "audio" ? (
+                  <div className="cr-detail-audio">
+                    <AudioLines aria-hidden="true" />
+                    <audio className="cr-audio" src={mediaUrl(activeVideo) ?? undefined} controls autoPlay>
+                      <track kind="captions" />
+                    </audio>
+                  </div>
+                ) : (
+                  <video key={activeVideo.uuid} className="cr-video" src={mediaUrl(activeVideo) ?? undefined} controls autoPlay playsInline loop>
+                    <track kind="captions" />
+                  </video>
+                )
               ) : (
-                <video className="cr-video" src={mediaUrl(activeVideo) ?? undefined} controls>
-                  <track kind="captions" />
-                </video>
-              )
-            ) : null}
-            {activeVideo.errorMessage ? (
-              <p className="cr-error">{activeVideo.errorMessage}</p>
-            ) : null}
-            {mediaUrl(activeVideo) ? (
-              <div className="cr-dialog-actions">
-                <a
-                  className="cr-button cr-button--primary"
-                  href={mediaUrl(activeVideo) ?? undefined}
-                  download={`${activeVideo.uuid}.${EXTENSIONS[kind]}`}
-                  rel="noopener"
-                >
-                  {t("actions.download")}
-                </a>
+                <span className="cr-thumb-failed">
+                  <AlertTriangle aria-hidden="true" />
+                  {zh ? "生成失败" : "Failed"}
+                </span>
+              )}
+            </div>
+
+            <aside className="cr-detail-side">
+              <div className="cr-detail-top">
+                <div className="cr-detail-nav">
+                  <button type="button" className="cr-icon-btn" aria-label={zh ? "上一个" : "Previous"} disabled={activeIndex <= 0} onClick={() => step(-1)}>
+                    <ChevronLeft aria-hidden="true" />
+                  </button>
+                  <span className="cr-detail-count">
+                    {activeIndex + 1} / {openable.length}
+                  </span>
+                  <button type="button" className="cr-icon-btn" aria-label={zh ? "下一个" : "Next"} disabled={activeIndex >= openable.length - 1} onClick={() => step(1)}>
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                </div>
+                <button type="button" className="cr-icon-btn" aria-label={t("close")} onClick={() => dialogRef.current?.close()}>
+                  <X aria-hidden="true" />
+                </button>
               </div>
-            ) : null}
+
+              <div className="cr-detail-block">
+                <div className="cr-detail-label">
+                  {zh ? "提示词" : "Prompt"}
+                  {activeVideo.prompt ? <CopyPromptButton prompt={activeVideo.prompt} zh={zh} className="cr-icon-btn cr-icon-btn-sm" /> : null}
+                </div>
+                <p className="cr-detail-prompt">{activeVideo.prompt || (zh ? "（没有提示词）" : "(No prompt)")}</p>
+              </div>
+
+              <dl className="cr-detail-meta">
+                <div>
+                  <dt>{zh ? "模型" : "Model"}</dt>
+                  <dd>{modelLabel(activeVideo.model)}</dd>
+                </div>
+                <div>
+                  <dt>{zh ? "时间" : "Created"}</dt>
+                  <dd>{formatCreatedAt(activeVideo.createdAt, locale)}</dd>
+                </div>
+                {kind === "video" && activeVideo.duration ? (
+                  <div>
+                    <dt>{zh ? "时长" : "Length"}</dt>
+                    <dd>{activeVideo.duration}s</dd>
+                  </div>
+                ) : null}
+                {kind !== "audio" && activeVideo.aspectRatio ? (
+                  <div>
+                    <dt>{zh ? "比例" : "Aspect"}</dt>
+                    <dd>{activeVideo.aspectRatio}</dd>
+                  </div>
+                ) : null}
+                {activeVideo.creditsUsed ? (
+                  <div>
+                    <dt>{zh ? "消耗" : "Credits"}</dt>
+                    <dd>{activeVideo.creditsUsed}</dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              {activeVideo.errorMessage ? <p className="cr-error">{activeVideo.errorMessage}</p> : null}
+
+              <div className="cr-detail-actions">
+                {kind !== "audio" && activeVideo.prompt ? (
+                  <a
+                    className="cr-button cr-button--ghost"
+                    href={`/${locale}${kind === "image" ? "/ai/image" : "/ai/video"}?${new URLSearchParams({ prompt: activeVideo.prompt, model: activeVideo.model })}`}
+                  >
+                    <Sparkles aria-hidden="true" />
+                    {zh ? "用这个提示词再生成" : "Generate again"}
+                  </a>
+                ) : null}
+                {mediaUrl(activeVideo) ? (
+                  <a
+                    className="cr-button cr-button--primary"
+                    href={mediaUrl(activeVideo) ?? undefined}
+                    download={`${activeVideo.uuid}.${EXTENSIONS[kind]}`}
+                    rel="noopener"
+                  >
+                    <Download aria-hidden="true" />
+                    {t("actions.download")}
+                  </a>
+                ) : null}
+              </div>
+            </aside>
           </div>
         ) : null}
       </dialog>
