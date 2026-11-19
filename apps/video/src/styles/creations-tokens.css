@@ -384,7 +384,8 @@
 .cr-cta,
 .cr-button--primary {
   background: var(--cr-accent);
-  color: var(--cr-text);
+  color: var(--du-on-accent);
+  font-weight: 600;
 }
 
 .cr-button--ghost {

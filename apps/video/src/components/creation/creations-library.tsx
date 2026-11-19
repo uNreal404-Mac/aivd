@@ -200,7 +200,8 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   useEffect(() => {
     if (!activeVideo) return;
     const onKey = (event: KeyboardEvent) => {
-      if ((event.target as HTMLElement | null)?.closest("video, audio, input, textarea")) return;
+      // Arrows switch items even with focus on the player; only typing is left alone.
+      if ((event.target as HTMLElement | null)?.closest("input, textarea")) return;
       if (event.key === "ArrowRight") step(1);
       if (event.key === "ArrowLeft") step(-1);
     };
