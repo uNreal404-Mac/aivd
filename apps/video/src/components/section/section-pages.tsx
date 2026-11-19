@@ -10,6 +10,7 @@ import { SlideCover } from "@/components/hf/slide-cover";
 import { modelIcon } from "@/components/hf/nav-menus";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
+import { EFFECT_TEMPLATES, labelFor, useHref as effectHref } from "@/lib/effects-data";
 import {
   HOME_TEMPLATE_CATEGORIES,
   HOME_TEMPLATES,
@@ -222,6 +223,14 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
       [item.title.zh, item.title.en, item.prompt.zh, item.prompt.en].some((text) => text.toLowerCase().includes(needle)),
     );
   }, [query]);
+  // Effects are templates too; a search should find them.
+  const effectResults = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return [];
+    return EFFECT_TEMPLATES.filter((item) =>
+      [item.name.zh, item.name.en, item.description.zh, item.description.en].some((text) => text.toLowerCase().includes(needle)),
+    );
+  }, [query]);
   const useHref = (item: HomeTemplate) =>
     `${localizedHref(lang, "/video")}?prompt=${encodeURIComponent(zh ? item.prompt.zh : item.prompt.en)}`;
   // Tall photo card from the homepage; hover shows "use template".
@@ -259,14 +268,42 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
             <div className="hs-head">
               <div>
                 <h2 id="tpl-results-title" className="hs-title">{zh ? "搜索结果" : "RESULTS"}</h2>
-                <p className="hs-sub">{zh ? `找到 ${results.length} 个模板` : `${results.length} templates found`}</p>
+                <p className="hs-sub">
+                  {zh
+                    ? `找到 ${results.length} 个模板${effectResults.length ? `、${effectResults.length} 个特效` : ""}`
+                    : `${results.length} templates${effectResults.length ? `, ${effectResults.length} effects` : ""} found`}
+                </p>
               </div>
             </div>
+            {effectResults.length > 0 ? (
+              <div className="sp-effect-hits">
+                {effectResults.map((effect) => (
+                  <Link key={effect.id} href={effectHref(lang, effect)} className="sp-effect-hit">
+                    <Sparkles aria-hidden="true" />
+                    <span>
+                      {zh ? "特效 · " : "Effect · "}
+                      {labelFor(effect.name, lang)}
+                    </span>
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+            ) : null}
             {results.length > 0 ? (
               <div className="hs-tall-row sp-tall-4">{results.map(card)}</div>
-            ) : (
-              <p className="hs-sub">{zh ? "没有匹配的模板，换个关键词试试。" : "No templates match. Try another word."}</p>
-            )}
+            ) : effectResults.length === 0 ? (
+              <div className="sp-no-hit">
+                <p className="hs-sub">{zh ? "没有匹配的模板。" : "No templates match."}</p>
+                <Link
+                  href={`${localizedHref(lang, "/ai/video")}?prompt=${encodeURIComponent(query.trim())}`}
+                  className="sp-no-hit-go"
+                >
+                  <Sparkles aria-hidden="true" />
+                  {zh ? `直接用「${query.trim()}」生成视频` : `Generate a video from "${query.trim()}"`}
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </div>
+            ) : null}
           </section>
         ) : (
           <>
