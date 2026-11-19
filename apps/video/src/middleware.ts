@@ -15,6 +15,9 @@ const legacyRedirects: Record<string, string> = {
   "/dashboard/billing": "/credits",
   "/dashboard/settings": "/account",
 };
+// Longest first, so /dashboard/settings is not caught by /dashboard and sent
+// to /my-creations/settings.
+const legacyRedirectEntries = Object.entries(legacyRedirects).sort(([a], [b]) => b.length - a.length);
 
 /**
  * Private paths that should never be indexed by search engines,
@@ -69,7 +72,7 @@ export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check for legacy dashboard routes (without locale prefix)
-  for (const [from, to] of Object.entries(legacyRedirects)) {
+  for (const [from, to] of legacyRedirectEntries) {
     if (pathname === from || pathname.startsWith(from + "/")) {
       // Preserve the rest of the path if any
       const rest = pathname.slice(from.length);
@@ -82,7 +85,7 @@ export default function middleware(request: NextRequest) {
   // Check for legacy dashboard routes (with locale prefix)
   // e.g., /en/dashboard -> /en/image-to-video
   for (const locale of routing.locales) {
-    for (const [from, to] of Object.entries(legacyRedirects)) {
+    for (const [from, to] of legacyRedirectEntries) {
       const localeFrom = `/${locale}${from}`;
       if (pathname === localeFrom || pathname.startsWith(localeFrom + "/")) {
         const rest = pathname.slice(localeFrom.length);
