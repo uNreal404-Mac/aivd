@@ -6,6 +6,7 @@ import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
+import { StateBlock } from "@/components/states/state-block";
 import "./ai-video-studio.css";
 
 const MODES = ["tts", "music", "voice", "translate"] as const;
@@ -296,10 +297,23 @@ export function AiAudioStudio({
 
         {shownTab === "history" ? (
           jobs.length === 0 ? (
-            <div className="vs-empty">
-              <Clock className="h-6 w-6" aria-hidden="true" />
-              <p>{t.empty}</p>
-            </div>
+            <StateBlock
+              icon={AudioLines}
+              title={zh ? "还没有生成过音频" : "No audio yet"}
+              body={zh ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以从一句示例开始：" : "Write your text on the left and generate; voiceovers and music land here. Or start from an example:"}
+            >
+              <div className="st-ideas">
+                {(zh
+                  ? ["欢迎收看本期节目，今天我们聊聊 AI 视频。", "清晨的海边，轻柔的钢琴与海浪声。", "一段热血的游戏预告片旁白。"]
+                  : ["Welcome back to the show. Today we talk about AI video.", "A calm morning by the sea, soft piano and waves.", "An epic voiceover for a game trailer."]
+                ).map((line) => (
+                  <button key={line} type="button" className="st-idea" onClick={() => reuse(line)}>
+                    <Sparkles aria-hidden="true" />
+                    {line}
+                  </button>
+                ))}
+              </div>
+            </StateBlock>
           ) : (
             <div className="as-list">
               {jobs.map((job) => {

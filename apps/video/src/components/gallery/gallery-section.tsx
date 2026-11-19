@@ -10,7 +10,9 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Lock, Play } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Clapperboard, LayoutTemplate, Loader2, Lock, Play, RotateCcw, WifiOff } from "lucide-react";
+import { StateBlock } from "@/components/states/state-block";
+import { GridSkeleton } from "@/components/states/skeletons";
 
 import { GalleryDetailDialog } from "@/components/gallery/gallery-detail-dialog";
 import {
@@ -339,22 +341,39 @@ export function GallerySection({
       </div>
 
       {status === "loading" ? (
-        <p className="mt-8 inline-flex items-center gap-2 text-sm text-[var(--du-text-muted)]">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          {tc("loading")}
-        </p>
+        <div className="mt-8">
+          <GridSkeleton count={6} height={260} />
+        </div>
       ) : null}
 
       {status === "error" ? (
-        <p className="mt-8 text-sm text-[var(--du-text-muted)]">
-          {tc("error")}
-        </p>
+        <StateBlock
+          className="mt-8"
+          framed
+          tone="error"
+          icon={WifiOff}
+          title={locale.toLowerCase().startsWith("zh") ? "作品没能加载出来" : "The gallery did not load"}
+          body={locale.toLowerCase().startsWith("zh") ? "可能是网络不稳定，稍后再试一次。" : "The connection may be unsteady. Try again in a moment."}
+          actions={[{ label: locale.toLowerCase().startsWith("zh") ? "重试" : "Try again", onClick: () => void loadInitial(), icon: RotateCcw, primary: true }]}
+        />
       ) : null}
 
       {status === "ready" && items.length === 0 ? (
-        <p className="mt-8 text-sm text-[var(--du-text-muted)]">
-          {t("empty")}
-        </p>
+        <StateBlock
+          className="mt-8"
+          framed
+          art={["/home/samples/rain-couple.webp", "/home/samples/red-carpet.webp", "/home/samples/autumn-walk.webp"]}
+          title={locale.toLowerCase().startsWith("zh") ? "社区还没有公开作品" : "No published work yet"}
+          body={
+            locale.toLowerCase().startsWith("zh")
+              ? "在「我的作品」里把满意的视频设为公开，它就会出现在这里，别人还能一键做同款。"
+              : "Publish a video from My creations and it shows up here, where others can remix it in one click."
+          }
+          actions={[
+            { label: locale.toLowerCase().startsWith("zh") ? "生成第一条视频" : "Make the first video", href: localizedHref(locale, "/ai/video"), icon: Clapperboard, primary: true },
+            { label: locale.toLowerCase().startsWith("zh") ? "看看模板" : "Browse templates", href: localizedHref(locale, "/templates"), icon: LayoutTemplate },
+          ]}
+        />
       ) : null}
 
       {items.length > 0 ? (

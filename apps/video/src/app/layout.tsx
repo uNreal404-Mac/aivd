@@ -8,6 +8,7 @@ import "@/styles/hf-video-tokens.css";
 import "@/styles/hf-home-tokens.css";
 import "@/styles/typography.css";
 import "@/styles/motion.css";
+import "@/styles/states.css";
 
 import { NextIntlClientProvider } from "next-intl";
 

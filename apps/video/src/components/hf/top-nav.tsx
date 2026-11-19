@@ -109,8 +109,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         setSearchOpen(true);
       }
     };
+    // Other parts of the page (e.g. the 404 page) can ask for search too.
+    const onRequest = () => {
+      setOpen(null);
+      setSearchOpen(true);
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    window.addEventListener("aivd:open-search", onRequest);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("aivd:open-search", onRequest);
+    };
   }, []);
 
   // The account menu shows the credit balance; load it when the menu opens.

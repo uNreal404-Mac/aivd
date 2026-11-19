@@ -5,6 +5,7 @@ import {
   AtSign,
   BookOpen,
   ChevronRight,
+  Clapperboard,
   Clock,
   Film,
   ImagePlus,
@@ -38,6 +39,8 @@ import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
+import { HOME_TEMPLATES } from "@/lib/home-templates";
+import { StateBlock } from "@/components/states/state-block";
 import {
   CopyPromptButton,
   DownloadLink,
@@ -778,10 +781,30 @@ export function AiVideoStudio({
           </div>
         ) : activeTab === "History" ? (
           results.length === 0 ? (
-            <div className="vs-empty">
-              <Clock className="h-6 w-6" aria-hidden="true" />
-              <p>{copy.empty}</p>
-            </div>
+            <StateBlock
+              icon={Clapperboard}
+              title={isChinese ? "还没有生成过视频" : "No clips yet"}
+              body={
+                isChinese
+                  ? "在左边写一句提示词再点生成，视频会出现在这里。没有头绪？试试下面的点子："
+                  : "Write a prompt on the left and generate; your clips land here. Need an idea? Try one:"
+              }
+            >
+              <div className="st-ideas">
+                {HOME_TEMPLATES.slice(0, 4).map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    className="st-idea"
+                    title={isChinese ? template.prompt.zh : template.prompt.en}
+                    onClick={() => reuse(isChinese ? template.prompt.zh : template.prompt.en)}
+                  >
+                    <Sparkles aria-hidden="true" />
+                    {isChinese ? template.title.zh : template.title.en}
+                  </button>
+                ))}
+              </div>
+            </StateBlock>
           ) : (
             <div className="vs-results">
               {results.map((result) => {
