@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
@@ -32,8 +32,12 @@ const COLLAGE = [
 const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
 
-/** Small toolbar chip that cycles through its options on click. */
-function CycleChip({
+/**
+ * Toolbar chip that opens a small menu of its options above the composer.
+ * (It used to step to the next value on each click, which hid the choices.)
+ * A single option reads as a plain value.
+ */
+function MenuChip({
   icon,
   value,
   options,
@@ -48,17 +52,76 @@ function CycleChip({
   onChange: (option: string) => void;
   label: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  if (options.length <= 1) {
+    return (
+      <span className="is-chip is-chip-fixed" title={label}>
+        {icon}
+        {format(value)}
+      </span>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      className="is-chip"
-      aria-label={`${label}: ${format(value)}`}
-      title={label}
-      onClick={() => onChange(options[(options.indexOf(value) + 1) % options.length])}
-    >
-      {icon}
-      {format(value)}
-    </button>
+    <span ref={wrapRef} className="is-menu-wrap">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="is-chip"
+        aria-label={`${label}: ${format(value)}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        title={label}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {icon}
+        {format(value)}
+      </button>
+      {open ? (
+        <span className="is-menu" role="group" aria-label={label}>
+          <span className="is-menu-title">{label}</span>
+          <span className="is-menu-grid">
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className="is-menu-item"
+                aria-pressed={option === value}
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                  buttonRef.current?.focus();
+                }}
+              >
+                {format(option)}
+              </button>
+            ))}
+          </span>
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -339,7 +402,7 @@ export function AiImageStudio({
               <ChevronRight className="is-model-chevron" aria-hidden="true" />
             </div>
             {options.aspects?.length ? (
-              <CycleChip
+              <MenuChip
                 icon={<RectangleHorizontal className="h-4 w-4" aria-hidden="true" />}
                 label={zh ? "画面比例" : "Aspect ratio"}
                 value={aspect}
@@ -349,7 +412,7 @@ export function AiImageStudio({
               />
             ) : null}
             {options.resolutions?.length ? (
-              <CycleChip
+              <MenuChip
                 icon={<Gem className="h-4 w-4" aria-hidden="true" />}
                 label={zh ? "分辨率" : "Resolution"}
                 value={resolution}
@@ -358,7 +421,12 @@ export function AiImageStudio({
                 onChange={setResolution}
               />
             ) : null}
-            <span className="is-stepper" title={maxCount === 1 ? (zh ? "该模型每次生成 1 张" : "This model makes one image at a time") : undefined}>
+            {maxCount <= 1 ? (
+              <span className="is-chip is-chip-fixed" title={zh ? "这个模型每次生成 1 张" : "This model makes one image at a time"}>
+                {zh ? "1 张" : "1 image"}
+              </span>
+            ) : (
+            <span className="is-stepper">
               <button type="button" aria-label={zh ? "减少数量" : "Fewer images"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
                 <Minus className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -369,6 +437,7 @@ export function AiImageStudio({
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </span>
+            )}
           </div>
         </div>
         <button type="submit" className="is-generate" disabled={submitting || uploading}>

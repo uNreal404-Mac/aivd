@@ -367,3 +367,64 @@ button.is-chip:hover:not(:disabled) {
   padding-top: 40px;
   border-top: 1px solid var(--ds-line-1);
 }
+
+/* A value the model fixes: reads like a chip, does nothing. */
+.is-chip-fixed {
+  cursor: default;
+  color: var(--ds-text-2);
+}
+
+/* Options menu above a toolbar chip (ratio, resolution). */
+.is-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.is-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  min-width: 200px;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.is-menu-title {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.is-menu-grid {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.is-menu-item {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.is-menu-item:hover {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.is-menu-item[aria-pressed="true"] {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
