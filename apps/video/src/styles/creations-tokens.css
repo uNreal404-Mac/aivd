@@ -709,3 +709,23 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+.cr-detail-side .cr-error {
+  margin: 0;
+  color: var(--cr-text);
+}
+
+.cr-error p {
+  margin: 0;
+}
+
+.cr-error details {
+  margin-top: 6px;
+  color: var(--cr-text-muted);
+  font-size: 0.75rem;
+}
+
+.cr-error summary {
+  cursor: pointer;
+  color: var(--cr-failed);
+}

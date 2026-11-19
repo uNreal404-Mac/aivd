@@ -483,7 +483,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     <dd>{activeVideo.aspectRatio}</dd>
                   </div>
                 ) : null}
-                {activeVideo.creditsUsed ? (
+                {activeVideo.creditsUsed && videoTag(activeVideo) !== "failed" ? (
                   <div>
                     <dt>{zh ? "消耗" : "Credits"}</dt>
                     <dd>{activeVideo.creditsUsed}</dd>
@@ -491,7 +491,18 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 ) : null}
               </dl>
 
-              {activeVideo.errorMessage ? <p className="cr-error">{activeVideo.errorMessage}</p> : null}
+              {videoTag(activeVideo) === "failed" ? (
+                <div className="cr-error">
+                  <p>{zh ? "这次没有生成成功，冻结的积分已经退回。" : "This one did not come out. The credits held for it were returned."}</p>
+                  {activeVideo.errorMessage ? (
+                    <details>
+                      <summary>{zh ? "错误详情" : "Details"}</summary>
+                      {/* Provider names are internal; keep only the reason. */}
+                      {activeVideo.errorMessage.replace(/^\s*[a-z]+ rejected:\s*/i, "")}
+                    </details>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="cr-detail-actions">
                 {kind !== "audio" && activeVideo.prompt ? (
