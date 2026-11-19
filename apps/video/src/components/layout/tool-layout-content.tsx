@@ -25,7 +25,7 @@ export function ToolLayoutContent({
       />
 
       <div className="flex lg:h-[calc(100svh-var(--hf-header-h,56px))]">
-        <div className="flex flex-1 min-w-0 lg:overflow-hidden">{children}</div>
+        <main className="flex flex-1 min-w-0 lg:overflow-hidden">{children}</main>
       </div>
     </div>
   );

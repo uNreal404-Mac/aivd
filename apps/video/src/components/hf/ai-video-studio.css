@@ -229,7 +229,7 @@ label.vs-select:hover {
 .vs-card-label {
   display: block;
   overflow: hidden;
-  color: var(--ds-text-4);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
   line-height: 20px;
   text-overflow: ellipsis;
@@ -347,7 +347,7 @@ button.vs-chip:disabled {
   align-items: center;
   gap: 8px;
   margin-left: auto;
-  color: var(--ds-text-4);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
 }
 

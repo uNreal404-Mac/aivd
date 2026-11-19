@@ -314,7 +314,7 @@ export function KieModelPicker({
       <button
         ref={triggerRef}
         type="button"
-        aria-label={copy.choose}
+        aria-label={triggerLabel ? `${copy.choose}：${triggerLabel}` : copy.choose}
         aria-expanded={open}
         onClick={() => (open ? close(false) : setOpen(true))}
         className={`flex items-center gap-2 text-left ${triggerClass}`}

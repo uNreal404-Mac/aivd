@@ -124,6 +124,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
               href={href(`/creative-space/canvas?prompt=${encodeURIComponent(zh ? skill.brief.zh : skill.brief.en)}`)}
               className={index >= 4 ? "hs-usecase hs-usecase-faded" : "hs-usecase"}
               tabIndex={index >= 4 ? -1 : undefined}
+              aria-hidden={index >= 4 || undefined}
             >
               <img src={skill.image} alt="" loading="lazy" />
               <span className="hs-usecase-shade" aria-hidden="true" />

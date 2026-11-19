@@ -301,7 +301,7 @@ export function HomePricing({
       {/* Usage estimator */}
       <div className="hp-estimator">
         <div className="hp-est-left">
-          <h3 className="hp-h3">{copy.estimatorTitle}</h3>
+          <h2 className="hp-h3">{copy.estimatorTitle}</h2>
           <p className="hp-sub-sm">{copy.estimatorSub}</p>
           <div className="hp-slider">
             <div className="hp-slider-head">
@@ -378,7 +378,7 @@ export function HomePricing({
       <div className="hp-compare">
         <div className="hp-compare-head">
           <div>
-            <h3 className="hp-h3">{copy.compareTitle}</h3>
+            <h2 className="hp-h3">{copy.compareTitle}</h2>
             <p className="hp-sub-sm">{copy.compareSub}</p>
           </div>
         </div>

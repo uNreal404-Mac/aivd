@@ -256,8 +256,9 @@
   padding: 2px 8px;
   border-radius: var(--ds-r-full);
   background: var(--du-accent-hover);
-  color: white;
+  color: var(--du-on-accent);
   font-size: var(--ds-fs-sm);
+  font-weight: 600;
 }
 
 .hp-cta-accent {

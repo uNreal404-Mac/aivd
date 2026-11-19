@@ -553,7 +553,7 @@ export function AiVideoStudio({
 
         {mode === "Create" ? (
           <>
-            <button type="button" className="vs-banner" onClick={() => setPickerOpen(true)} aria-label={copy.chooseModel}>
+            <button type="button" className="vs-banner" onClick={() => setPickerOpen(true)} aria-label={`${copy.chooseModel}：${bannerName}`}>
               <img src={cover} alt="" className="vs-banner-img" />
               <span className="vs-banner-shade" aria-hidden="true" />
               <span className="vs-banner-change">

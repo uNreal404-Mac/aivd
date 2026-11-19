@@ -21,9 +21,8 @@ export function LocaleChange() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
+        <Button variant="ghost" size="sm" className="h-8 w-8 px-0" aria-label="语言 / Language">
           <Icons.Languages />
-          <span className="sr-only" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

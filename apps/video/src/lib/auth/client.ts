@@ -8,7 +8,9 @@ import {
 import { creemClient } from "@creem_io/better-auth/client";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL,
+  // In the browser, always talk to the site the page came from. The build-time
+  // value can be a developer's localhost when the bundle was built locally.
+  baseURL: typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL,
   plugins: [
     inferAdditionalFields({
       user: {
