@@ -37,6 +37,24 @@
   text-align: center;
 }
 
+/* Library pages (templates) use the large centred head of effects and gallery. */
+.sp-title-xl {
+  margin-bottom: var(--ds-space-2);
+  color: var(--du-accent-text);
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(var(--ds-fs-4xl), 5vw, var(--ds-fs-display));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.sp-lede {
+  margin-bottom: var(--ds-space-5);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-md);
+  text-align: center;
+}
+
 .sp-h2 {
   color: white;
   font-size: var(--ds-fs-lg);

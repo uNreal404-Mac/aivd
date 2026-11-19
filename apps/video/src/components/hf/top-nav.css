@@ -286,7 +286,30 @@ a.hf-item:hover,
   display: none;
 }
 
-/* Below tablet width the link row gives way to the menu button. */
+/* Narrower desktops drop the offer and language buttons first, then the
+   link row gives way to the menu button before it can run under the actions. */
+@media (max-width: 1279px) {
+  .hf-act-accent,
+  .hf-lang {
+    display: none;
+  }
+}
+
+@media (max-width: 1079px) {
+  .hf-nav-inner {
+    grid-template-columns: 1fr auto;
+  }
+
+  .hf-nav-scroll {
+    display: none;
+  }
+
+  .hf-burger {
+    display: inline-flex;
+  }
+}
+
+/* Below tablet width the remaining extras go too. */
 @media (max-width: 767px) {
   .hf-nav-scroll,
   .hf-act-accent,
@@ -659,7 +682,7 @@ a.hf-dd-row:active {
   padding: 10px 8px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1080px) {
   .hf-nav-mobile {
     display: none;
   }

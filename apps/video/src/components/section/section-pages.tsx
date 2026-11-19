@@ -237,7 +237,8 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
     <div className="sp-page">
       <div className="sp-glow" aria-hidden="true" />
       <section className="sp-hero">
-        <h1 className="sp-title">{zh ? "模板已就绪，现在让它成为你的作品" : "Templates are ready. Now make them yours."}</h1>
+        <h1 className="sp-title sp-title-xl">{zh ? "视频模板" : "Video templates"}</h1>
+        <p className="sp-lede">{zh ? "模板已就绪，改几个词，就是你的作品。" : "Templates are ready. Change a few words and make them yours."}</p>
         <label className="sp-search">
           <span className="sr-only">{zh ? "搜索模板" : "Search templates"}</span>
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={zh ? "搜索模板" : "Search templates"} />
@@ -281,9 +282,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                         sub={zh ? `${templatesFor(item.id).length} 个模板` : `${templatesFor(item.id).length} templates`}
                       />
                     </span>
-                    <span className="hs-slide-title">{zh ? item.zh : item.en}</span>
                     <span className="hs-slide-body">
-                      {zh ? `${templatesFor(item.id).length} 个模板 · ` : `${templatesFor(item.id).length} templates · `}
                       {zh ? TEMPLATE_CATEGORY_LINES[item.id]?.zh : TEMPLATE_CATEGORY_LINES[item.id]?.en}
                     </span>
                   </a>
@@ -293,8 +292,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                     <img src="/home/samples/cosmic-bloom.webp" alt="" loading="lazy" />
                     <SlideCover main={zh ? "视频特效" : "EFFECTS"} sub={zh ? "一键套用" : "ONE CLICK"} />
                   </span>
-                  <span className="hs-slide-title">{zh ? "视频特效" : "VIDEO EFFECTS"}</span>
-                  <span className="hs-slide-body">{zh ? "热门特效，一键套用" : "Trending effects in one click"}</span>
+                  <span className="hs-slide-body">{zh ? "镜头运动、变形和氛围特效" : "Camera moves, transforms and atmosphere"}</span>
                 </Link>
               </div>
             </section>
