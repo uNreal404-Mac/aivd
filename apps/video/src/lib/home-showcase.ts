@@ -123,8 +123,8 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
  */
 export const SAMPLE_PROMPTS: Record<string, Bi> = {
   "/home/hero-marina-loop.mp4": { zh: "一群朋友在码头边的船屋甲板上举杯庆祝，香槟飞溅，阴天柔光，手持跟拍", en: "Friends toasting on a houseboat deck by the marina, champagne spraying, soft overcast light, handheld follow shot" },
-  "/home/hero-showcase-02.mp4": { zh: "一对年轻情侣在公园树下对着镜头微笑，自然光，背景虚化，镜头缓慢推近", en: "A young couple smiling at the camera under park trees, natural light, soft background, slow push-in" },
-  "/home/hero-showcase-03.mp4": { zh: "一对情侣在林荫公园里并肩站着，相视而笑，午后暖光，轻微环绕运镜", en: "A couple standing side by side in a leafy park, smiling, warm afternoon light, gentle orbit" },
+  "/home/hero-showcase-02.mp4": { zh: "公园树下一对情侣相视而笑、牵起手，男生脸颊上慢慢浮现发光的红色裂纹，变身特效，自然光", en: "A couple in a park smile at each other and hold hands as glowing red cracks slowly spread across his cheek, transformation effect, natural light" },
+  "/home/hero-showcase-03.mp4": { zh: "林荫公园里的一对情侣牵着手，皮肤逐渐裂开、泛出绿色荧光，从微笑的普通人变身成丧尸，变身特效", en: "A couple holding hands in a leafy park as their skin cracks and glows green, turning from smiling people into zombies, transformation effect" },
   "/home/samples/boy-and-dog.webp": { zh: "雾气弥漫的老街，穿呢子大衣的小男孩和一只小狗站在石板路上，路灯昏黄，电影感", en: "A misty old street, a small boy in a wool coat and a scruffy dog on wet cobblestones, amber streetlamps, cinematic" },
   "/home/samples/autumn-walk.webp": { zh: "一对白发老人在红枫林小路上并肩散步，落叶铺地，柔和自然光", en: "A white-haired couple walking side by side down a red maple path, fallen leaves, soft natural light" },
   "/home/samples/rain-couple.webp": { zh: "大雨中的一对情侣额头相抵，浑身湿透，背后霓虹虚化，电影感特写", en: "A couple forehead to forehead in heavy rain, soaked, neon bokeh behind, cinematic close-up" },
