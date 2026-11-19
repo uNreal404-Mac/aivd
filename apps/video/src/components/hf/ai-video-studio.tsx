@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { errorMessage } from "@/lib/media-studio";
 import {
@@ -518,6 +519,9 @@ export function AiVideoStudio({
     [results],
   );
   const activePreset = findVideoPreset(settings.preset);
+  // Effects from the effects page arrive as a preset id; show their name.
+  const effectTemplate = settings.preset ? EFFECT_TEMPLATES.find((item) => item.id === settings.preset) : undefined;
+  const effectName = effectTemplate ? labelFor(effectTemplate.name, locale) : null;
 
   return (
     <div className="vs-root" {...(mode === "Create" ? { onPaste: drop.bind.onPaste } : {})}>
@@ -595,7 +599,12 @@ export function AiVideoStudio({
             ) : null}
 
             <div className="vs-card vs-prompt">
-              <label htmlFor="studio-prompt" className="vs-prompt-label">{copy.prompt}</label>
+              <div className="vs-prompt-head">
+                <label htmlFor="studio-prompt" className="vs-prompt-label">{copy.prompt}</label>
+                <kbd className="vs-kbd" title={isChinese ? "按 ⌘/Ctrl + Enter 生成" : "Press ⌘/Ctrl + Enter to generate"}>
+                  {isMac ? "⌘" : "Ctrl"} ↵ {isChinese ? "生成" : "generate"}
+                </kbd>
+              </div>
               <textarea
                 id="studio-prompt"
                 ref={promptRef}
@@ -645,9 +654,6 @@ export function AiVideoStudio({
                   {model.audio && settings.audio ? copy.on : copy.off}
                 </button>
                 <span className="vs-count">
-                  <kbd className="vs-kbd" title={isChinese ? "按 ⌘/Ctrl + Enter 生成" : "Press ⌘/Ctrl + Enter to generate"}>
-                    {isMac ? "⌘" : "Ctrl"} ↵
-                  </kbd>
                   {settings.prompt.length}/{PROMPT_MAX_LENGTH}
                 </span>
               </div>
@@ -655,7 +661,7 @@ export function AiVideoStudio({
 
             {settings.preset && !activePreset ? (
               <span className="vs-chip w-fit">
-                {copy.preset}: {settings.preset}
+                {effectName ? `${isChinese ? "特效" : "Effect"}：${effectName}` : `${copy.preset}: ${settings.preset}`}
                 <button type="button" aria-label={copy.clearPreset} onClick={() => setSettings((previous) => ({ ...previous, preset: undefined }))}>
                   <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>

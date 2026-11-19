@@ -275,6 +275,12 @@ label.vs-select:hover {
   padding: 12px 14px 10px;
 }
 
+.vs-prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .vs-prompt-label {
   color: white;
   font-size: var(--ds-fs-sm);
@@ -304,7 +310,9 @@ label.vs-select:hover {
 
 .vs-chip {
   display: inline-flex;
+  flex-shrink: 0;
   height: 28px;
+  white-space: nowrap;
   align-items: center;
   gap: 5px;
   padding: 0 10px;

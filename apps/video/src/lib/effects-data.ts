@@ -22,6 +22,8 @@ export type EffectTemplate = {
   name: LocalizedText;
   description: LocalizedText;
   prompt: string;
+  /** The same prompt in Chinese, used on the Chinese pages. */
+  promptZh?: string;
   image: string;
   badge?: "new";
 };
@@ -57,6 +59,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Slowly push the camera toward the subject with a steady, smooth motion and a shallow depth of field, keeping the framing centered.",
+    promptZh: "镜头平稳、缓慢地推近主体，浅景深，构图保持居中。",
     image: "/effects/effect-01.webp",
     badge: "new",
   },
@@ -70,6 +73,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Circle the camera around the subject in a smooth half orbit, revealing its depth and shape under consistent lighting.",
+    promptZh: "镜头绕主体平滑地转半圈，在统一的光线下展现它的立体感和轮廓。",
     image: "/effects/effect-02.webp",
   },
   {
@@ -82,6 +86,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Rapidly zoom the camera toward the subject in a single decisive move to add sudden impact.",
+    promptZh: "镜头一下子快速推向主体，一气呵成，制造突然的冲击感。",
     image: "/effects/effect-03.webp",
   },
   {
@@ -94,6 +99,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Drift the camera sideways at a constant speed while keeping the horizon level for a soft, dreamy glide.",
+    promptZh: "镜头匀速横向漂移，地平线保持水平，画面轻柔梦幻。",
     image: "/effects/effect-04.webp",
   },
   {
@@ -106,6 +112,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Make the subject soften and melt downward into liquid drips, dissolving gradually into the background.",
+    promptZh: "主体慢慢变软，向下融化成液滴，逐渐消散进背景里。",
     image: "/effects/effect-05.webp",
   },
   {
@@ -118,6 +125,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Fold the scene like a sheet of paper along crisp creases, transforming its shape in smooth stages.",
+    promptZh: "把画面像一张纸那样沿清晰的折痕折起来，分几步平滑地变形。",
     image: "/effects/effect-06.webp",
   },
   {
@@ -130,6 +138,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Morph one shape smoothly into another with a glossy liquid surface that ripples gently through the transition.",
+    promptZh: "一个形状平滑地变成另一个形状，表面像光亮的液体，过渡时轻轻泛起涟漪。",
     image: "/effects/effect-07.webp",
   },
   {
@@ -142,6 +151,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Add falling neon rain with glowing droplets and colorful reflections that light up the whole scene.",
+    promptZh: "加入落下的霓虹雨，发光的雨滴和彩色倒影把整个画面点亮。",
     image: "/effects/effect-08.webp",
   },
   {
@@ -154,6 +164,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Fill the air with slow-floating golden dust particles that catch a warm, soft light.",
+    promptZh: "空气里飘着缓慢浮动的金色微尘，映着温暖柔和的光。",
     image: "/effects/effect-09.webp",
     badge: "new",
   },
@@ -167,6 +178,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Roll soft layers of fog across the scene, adding depth and a quiet, mysterious mood.",
+    promptZh: "柔和的雾一层层漫过画面，增加纵深，气氛安静而神秘。",
     image: "/effects/effect-10.webp",
   },
   {
@@ -179,6 +191,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Render the frame as flowing ink wash brush strokes with soft bleeding edges and a paper texture.",
+    promptZh: "把画面变成流动的水墨笔触，边缘轻轻晕开，带纸张纹理。",
     image: "/effects/effect-11.webp",
   },
   {
@@ -191,6 +204,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Convert the image into bold, colorful pixel art with crisp square blocks and a lively palette.",
+    promptZh: "把画面变成色彩鲜明的像素画，方块清晰利落，配色活泼。",
     image: "/effects/effect-12.webp",
   },
   {
@@ -203,6 +217,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Sculpt the scene into soft stop-motion clay with visible fingerprints and a gentle frame-by-frame motion.",
+    promptZh: "把场景做成柔软的定格黏土动画，能看到指纹痕迹，动作一帧一帧地轻轻变化。",
     image: "/effects/effect-13.webp",
     badge: "new",
   },
@@ -216,6 +231,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Lift the subject gently upward so it floats and rises with a light, weightless motion.",
+    promptZh: "主体轻轻向上浮起，动作轻盈，像没有重量一样。",
     image: "/effects/effect-14.webp",
   },
   {
@@ -228,6 +244,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Sweep a strong gust of wind through hair and cloth, bending them in one flowing direction.",
+    promptZh: "一阵强风吹过，头发和衣服都朝同一个方向飘动。",
     image: "/effects/effect-15.webp",
   },
   {
@@ -240,6 +257,7 @@ export const EFFECT_TEMPLATES: EffectTemplate[] = [
     },
     prompt:
       "Freeze the action at the peak of a burst, holding the particles suspended for a dramatic beat.",
+    promptZh: "在爆发最强的一瞬间定格，粒子悬停在空中，留出一个戏剧性的停顿。",
     image: "/effects/effect-16.webp",
   },
 ];
@@ -255,9 +273,8 @@ export function filterEffects(
 }
 
 export function useHref(lang: string, template: EffectTemplate): string {
-  return `/${lang}/ai/video?preset=${encodeURIComponent(
-    template.id,
-  )}&prompt=${encodeURIComponent(template.prompt)}`;
+  const prompt = lang.toLowerCase().startsWith("zh") && template.promptZh ? template.promptZh : template.prompt;
+  return `/${lang}/ai/video?preset=${encodeURIComponent(template.id)}&prompt=${encodeURIComponent(prompt)}`;
 }
 
 export const EFFECTS_COPY: Record<"en" | "zh", EffectsCopy> = {
