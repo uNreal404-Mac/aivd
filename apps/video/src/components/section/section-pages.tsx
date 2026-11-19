@@ -20,6 +20,7 @@ import {
   type HomeTemplate,
 } from "@/lib/home-templates";
 import { IMAGE_CATALOG, VIDEO_CATALOG, type CatalogModel } from "@/lib/kie-model-catalog";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "@/components/hf/home-showcase.css";
 import "@/components/hf/home-pricing.css";
 import "./section-pages.css";
@@ -44,7 +45,7 @@ function startingCredits(modelId: string): number | null {
 function TemplateRow({ lang, onUse }: { lang: string; onUse: (template: HomeTemplate) => void }) {
   const zh = isZh(lang);
   const scroll = (direction: number) =>
-    document.getElementById("section-template-row")?.scrollBy({ left: direction * 640, behavior: "smooth" });
+    document.getElementById("section-template-row")?.scrollBy({ left: direction * 640, behavior: scrollMotion() });
   return (
     <section className="sp-row" aria-label={zh ? "模板" : "Templates"}>
       <Link href={localizedHref(lang, "/templates")} className="sp-promo">
@@ -139,7 +140,7 @@ function useComposerPreset(lang: string) {
       aspect: template.aspect,
       nonce: (previous?.nonce ?? 0) + 1,
     }));
-    document.getElementById("home-generator")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("home-generator")?.scrollIntoView({ behavior: scrollMotion(), block: "center" });
   };
   return { preset, useTemplate };
 }

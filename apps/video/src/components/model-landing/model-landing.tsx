@@ -3,6 +3,7 @@ import { ArrowRight, AudioLines, Check, ChevronDown, Clapperboard, Image as Imag
 
 import { WallCard } from "@/components/hf/wall-card";
 import { InViewVideo } from "@/components/hf/in-view-video";
+import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import { ModelPrompt } from "@/components/model-landing/model-prompt";
 import { localizedHref } from "@/lib/du-home";
 import { withPrompt } from "@/lib/home-showcase";
@@ -67,7 +68,10 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJson) }} />
 
       {/* 1. Hero: the picture fills the first screen, words sit centred at the foot */}
-      <section className={`ml-hero ${model.kind === "audio" ? "ml-hero-audio" : ""}`}>
+      <section
+        className={`ml-hero ${model.kind === "audio" ? "ml-hero-audio" : ""}`}
+        data-video-scope={model.kind !== "audio" && media.hero.video ? true : undefined}
+      >
         <div className="ml-hero-media" aria-hidden="true">
           {model.kind === "audio" ? (
             <div className="ml-wave">
@@ -76,7 +80,9 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
               ))}
             </div>
           ) : media.hero.video ? (
-            <InViewVideo src={media.hero.src} poster={media.hero.poster} threshold={0.2} />
+            // Fills the first screen: with reduced motion it plays from the
+            // play button only, since hover would amount to autoplay.
+            <InViewVideo src={media.hero.src} poster={media.hero.poster} threshold={0.2} hoverPlay={false} />
           ) : (
             <img src={media.hero.src} alt="" />
           )}
@@ -124,6 +130,7 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
           </p>
         </div>
         {model.kind === "audio" ? null : <span className="ml-hero-caption">{zh ? "示例画面" : "Sample"}</span>}
+        {model.kind !== "audio" && media.hero.video ? <VideoPlayToggle zh={zh} className="ml-hero-play" /> : null}
       </section>
 
       {/* 2. Headline numbers, then the full list */}

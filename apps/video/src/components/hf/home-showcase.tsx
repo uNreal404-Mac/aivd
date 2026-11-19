@@ -13,7 +13,9 @@ import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, 
 import { WallCard } from "@/components/hf/wall-card";
 import { SlideCover } from "@/components/hf/slide-cover";
 import { InViewVideo } from "@/components/hf/in-view-video";
+import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import { useCarousel } from "@/components/hf/use-carousel";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
 import "./home-showcase.css";
 
@@ -37,6 +39,20 @@ function Media({ media, className, eager }: { media: ShowMedia; className?: stri
   );
 }
 
+/** Picture, lettering and caption of one carousel slide. */
+function SlideContent({ slide, eager, t }: { slide: (typeof FEATURE_SLIDES)[number]; eager: boolean; t: (value: Bi) => string }) {
+  return (
+    <>
+      <span className="hs-slide-media">
+        <Media media={slide.media} eager={eager} />
+        <SlideCover main={slide.cover.main} sub={t(slide.cover.sub)} />
+      </span>
+      <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
+      <span className="hs-slide-body">{t(slide.body)}</span>
+    </>
+  );
+}
+
 export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTemplate: (template: HomeTemplate) => void }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const t = (value: Bi) => (zh ? value.zh : value.en);
@@ -51,19 +67,27 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
 
   return (
     <div className="hs">
+      <ScrollReveal />
       {/* 1. Feature carousel */}
       <section className="hs-carousel" aria-label={zh ? "最新功能" : "What's new"}>
         <div ref={trackRef} className="hs-carousel-track">
-          {FEATURE_SLIDES.map((slide, index) => (
-            <Link key={slide.href} href={href(slide.href)} className="hs-slide">
-              <span className="hs-slide-media">
-                <Media media={slide.media} eager={index < 3} />
-                <SlideCover main={slide.cover.main} sub={t(slide.cover.sub)} />
-              </span>
-              <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
-              <span className="hs-slide-body">{t(slide.body)}</span>
-            </Link>
-          ))}
+          {FEATURE_SLIDES.map((slide, index) =>
+            // A slide with a clip is a card that holds the link and, beside
+            // it, the play button shown under reduced motion (a button may
+            // not sit inside a link).
+            slide.media.video ? (
+              <div key={slide.href} className="hs-slide" data-video-scope>
+                <Link href={href(slide.href)} className="hs-slide-link">
+                  <SlideContent slide={slide} eager={index < 3} t={t} />
+                </Link>
+                <VideoPlayToggle zh={zh} className="hs-slide-play" />
+              </div>
+            ) : (
+              <Link key={slide.href} href={href(slide.href)} className="hs-slide">
+                <SlideContent slide={slide} eager={index < 3} t={t} />
+              </Link>
+            ),
+          )}
         </div>
         <CarouselArrows zh={zh} {...carousel} />
       </section>

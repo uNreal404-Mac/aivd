@@ -32,11 +32,25 @@
 }
 
 .hs-slide {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 4px;
   scroll-snap-align: start;
+}
+
+/* A slide with a clip is a card: the link, and the play button beside it. */
+.hs-slide-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hs-slide-play {
+  top: 10px;
+  right: 10px;
 }
 
 .hs-slide-media {
@@ -787,6 +801,19 @@
 }
 
 /* ---------- Living wall cards ---------- */
+/* The card holds a link that fills it and, on clips, a play button beside
+   the link (shown under reduced motion). */
+.wc-link {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.wc-play {
+  top: 10px;
+  right: 10px;
+}
+
 .wc img,
 .wc video {
   display: block;
@@ -854,7 +881,7 @@
 }
 
 .wc:hover .wc-info,
-.wc:focus-visible .wc-info {
+.wc-link:focus-visible .wc-info {
   opacity: 1;
   transform: none;
 }

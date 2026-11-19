@@ -1,0 +1,36 @@
+/* Play / pause button for a showcase clip (video-play-toggle.tsx).
+
+   Hidden by default: without reduced motion, clips play by themselves when
+   they are on screen or hovered. Visitors who asked for reduced motion get
+   stills, and this button to start a clip by click, tap or keyboard. Each
+   place that uses it sets the corner it sits in. */
+.vpt {
+  position: absolute;
+  z-index: 3;
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 16%, transparent);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.vpt:hover {
+  background: color-mix(in srgb, var(--du-bg) 84%, transparent);
+}
+
+.vpt svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vpt {
+    display: inline-flex;
+  }
+}

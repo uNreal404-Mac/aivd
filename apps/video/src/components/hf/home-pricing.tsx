@@ -9,6 +9,7 @@ import { calculateModelCredits } from "@/config/credits";
 import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 import { localizedHref } from "@/lib/du-home";
 import { startStripeCheckout } from "@/lib/stripe-checkout-client";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import "./home-pricing.css";
 
 type Period = "month" | "year";
@@ -210,6 +211,7 @@ export function HomePricing({
 
   return (
     <section className={asPage ? "hp hp-page" : "hp"} aria-labelledby="hp-title">
+      <ScrollReveal />
       <div className="hp-head">
         <p className="hp-kicker">{copy.kicker}</p>
         {asPage ? (

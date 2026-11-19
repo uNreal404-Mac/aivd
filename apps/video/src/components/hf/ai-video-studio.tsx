@@ -49,6 +49,7 @@ import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { StateBlock } from "@/components/states/state-block";
 import { InViewVideo } from "@/components/hf/in-view-video";
+import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import {
   CopyPromptButton,
   DownloadLink,
@@ -864,10 +865,12 @@ export function AiVideoStudio({
             <p className="vs-howto-sub">
               {isChinese ? `${EDIT_TOOLS[editTool].descZh}。即将上线。` : `${EDIT_TOOLS[editTool].descEn}. Coming soon.`}
             </p>
-            <div className="vs-howto-media vs-howto-wide">
-              <InViewVideo src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" />
+            <div className="vs-howto-media vs-howto-wide" data-video-scope>
+              {/* A large clip: with reduced motion it plays from the button only. */}
+              <InViewVideo src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" hoverPlay={false} />
               {/* One sample clip stands in for every tool; it is not that tool's result. */}
               <span className="vs-howto-tag">{isChinese ? "示意" : "Illustration"}</span>
+              <VideoPlayToggle zh={isChinese} className="vs-howto-play" />
             </div>
           </div>
         ) : activeTab === "History" ? (

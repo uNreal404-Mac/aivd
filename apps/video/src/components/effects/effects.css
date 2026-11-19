@@ -243,14 +243,23 @@
   transform: none;
 }
 
-/* Camera and motion effects play their move while hovered. */
-.fx-move-push:hover img { animation: fx-push 2.4s var(--du-ease, ease) infinite alternate; }
-.fx-move-orbit:hover img { animation: fx-orbit 3s ease-in-out infinite alternate; }
-.fx-move-zoom:hover img { animation: fx-zoom 1.2s cubic-bezier(0.7, 0, 0.3, 1) infinite alternate; }
-.fx-move-drift:hover img { animation: fx-drift 3s ease-in-out infinite alternate; }
-.fx-move-rise:hover img { animation: fx-rise 2.6s ease-in-out infinite alternate; }
-.fx-move-sweep:hover img { animation: fx-sweep 2.2s ease-in-out infinite alternate; }
-.fx-move-freeze:hover img { animation: fx-freeze 1.6s steps(1, end) infinite; }
+/* Camera and motion effects play their move while hovered. Each move's
+   length is a variable so the reduced-motion rule below can restate it. */
+.fx-move-push { --fx-dur: 2.4s; }
+.fx-move-orbit { --fx-dur: 3s; }
+.fx-move-zoom { --fx-dur: 1.2s; }
+.fx-move-drift { --fx-dur: 3s; }
+.fx-move-rise { --fx-dur: 2.6s; }
+.fx-move-sweep { --fx-dur: 2.2s; }
+.fx-move-freeze { --fx-dur: 1.6s; }
+
+.fx-move-push:hover img { animation: fx-push var(--fx-dur) var(--du-ease, ease) infinite alternate; }
+.fx-move-orbit:hover img { animation: fx-orbit var(--fx-dur) ease-in-out infinite alternate; }
+.fx-move-zoom:hover img { animation: fx-zoom var(--fx-dur) cubic-bezier(0.7, 0, 0.3, 1) infinite alternate; }
+.fx-move-drift:hover img { animation: fx-drift var(--fx-dur) ease-in-out infinite alternate; }
+.fx-move-rise:hover img { animation: fx-rise var(--fx-dur) ease-in-out infinite alternate; }
+.fx-move-sweep:hover img { animation: fx-sweep var(--fx-dur) ease-in-out infinite alternate; }
+.fx-move-freeze:hover img { animation: fx-freeze var(--fx-dur) steps(1, end) infinite; }
 
 @keyframes fx-push { from { transform: scale(1); } to { transform: scale(1.25); } }
 @keyframes fx-orbit { from { transform: perspective(500px) scale(1.2) rotateY(-10deg); } to { transform: perspective(500px) scale(1.2) rotateY(10deg); } }
@@ -273,7 +282,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Nothing moves by itself. Resting the pointer on a camera or motion effect
+     is a request to see its move, and the move is what the card is there to
+     show: it starts after a short pause (a passing cursor does not set it
+     off) and plays twice, there and back, then rests. These override the
+     site-wide rule in motion.css that cuts every animation short. */
+  .fx-card[class*="fx-move-"]:hover img {
+    animation-duration: var(--fx-dur, 2.4s) !important;
+    animation-delay: 250ms !important;
+    animation-iteration-count: 2 !important;
+  }
+
+  /* No hover zoom: with transitions cut short it would be a jump, and on a
+     card with a move it would jump again when the move starts and ends. */
   .fx-card:hover img {
-    animation: none;
+    transform: none;
   }
 }

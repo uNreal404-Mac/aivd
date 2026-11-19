@@ -8,6 +8,7 @@ import {
   type HomeTemplate,
   type HomeTemplateCategory,
 } from "@/lib/home-templates";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "./home-templates.css";
 
 export function HomeTemplates({
@@ -46,7 +47,7 @@ export function HomeTemplates({
     onCategoryChange(id);
     document
       .getElementById(`home-templates-${id}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      ?.scrollIntoView({ behavior: scrollMotion(), block: "start" });
   };
 
   return (

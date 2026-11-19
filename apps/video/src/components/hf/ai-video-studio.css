@@ -1278,6 +1278,11 @@ button.vs-chip:disabled {
   color: var(--ds-text-3);
 }
 
+.vs-howto-play {
+  right: 12px;
+  bottom: 12px;
+}
+
 .vs-howto-tag {
   position: absolute;
   top: 12px;

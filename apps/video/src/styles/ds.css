@@ -78,6 +78,6 @@
   outline-offset: 2px;
 }
 
-:where(.hs-slide, .hs-tall, .hs-usecase, .wc, .sp-row-card, .fx-card, .gl-open, .hs-tile):focus-visible {
+:where(.hs-slide, .hs-slide-link, .hs-tall, .hs-usecase, .wc-link, .sp-row-card, .fx-card, .gl-open, .hs-tile):focus-visible {
   outline-offset: -2px;
 }

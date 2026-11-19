@@ -6,6 +6,7 @@ import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-ge
 import { HomePricing } from "@/components/hf/home-pricing";
 import { HomeShowcase, MiniComposer } from "@/components/hf/home-showcase";
 import type { HomeTemplate } from "@/lib/home-templates";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "./du-home.css";
 
 type HomeVideoModel = {
@@ -28,7 +29,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       aspect: template.aspect,
       nonce: (previous?.nonce ?? 0) + 1,
     }));
-    document.getElementById("home-generator")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("home-generator")?.scrollIntoView({ behavior: scrollMotion(), block: "start" });
   };
 
   return (

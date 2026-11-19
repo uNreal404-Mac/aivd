@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState, type RefObject } from "react";
 
+import { scrollMotion } from "@/lib/reduced-motion";
+
 /**
  * Arrows for a horizontally scrolling row of cards. Each step lands on a card
  * edge (so scroll-snap does not fight it), and the arrows know when the row is
@@ -53,8 +55,7 @@ export function useCarousel(
       const previous = cards.filter((card) => start + card.getBoundingClientRect().left - view.left <= goal + 1).pop();
       target = previous ? start + previous.getBoundingClientRect().left - view.left : 0;
     }
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    track.scrollTo({ left: Math.max(0, target), behavior: reduced ? "instant" : "smooth" });
+    track.scrollTo({ left: Math.max(0, target), behavior: scrollMotion() });
   };
 
   return { canPrev, canNext, step };

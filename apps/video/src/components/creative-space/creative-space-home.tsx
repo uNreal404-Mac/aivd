@@ -10,10 +10,12 @@ import { MiniComposer } from "@/components/hf/home-showcase";
 import { CREATIVE_SKILL_CATEGORIES, skillsFor, type CreativeSkillCategory } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "@/components/hf/home-showcase.css";
 import "@/components/hf/home-pricing.css";
 import "./creative-space-home.css";
 import { SlideCover } from "@/components/hf/slide-cover";
+import { ScrollReveal } from "@/components/scroll-reveal";
 
 const CANVAS_PATH = "/creative-space/canvas";
 const VEO_CREDITS = estimateCredits({ modelId: "veo-3.1", duration: 8, resolution: "720p" });
@@ -29,7 +31,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
 
   const applyBrief = (text: string) => {
     setBrief(text);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollMotion() });
     inputRef.current?.focus({ preventScroll: true });
   };
 
@@ -105,6 +107,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
 
       {/* Below the composer the page uses the homepage and pricing styles. */}
       <div className="hs">
+        <ScrollReveal />
         {/* 1. Category carousel */}
         <section className="hs-carousel" aria-label={zh ? "技能分类" : "Skill categories"}>
           <div className="hs-carousel-track">

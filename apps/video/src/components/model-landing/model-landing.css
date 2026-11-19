@@ -196,6 +196,13 @@
   backdrop-filter: blur(8px);
 }
 
+/* Play button for a hero clip, shown under reduced motion: top right, clear
+   of the words at the foot. */
+.ml-hero-play {
+  top: var(--ds-space-4);
+  right: var(--ds-space-5);
+}
+
 /* Audio models: a full-width waveform instead of a picture. */
 .ml-hero-audio .ml-hero-media {
   background:

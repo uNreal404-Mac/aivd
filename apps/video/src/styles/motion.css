@@ -1,8 +1,8 @@
 /* Site-wide motion, after the reference sites: one easing and duration,
    popovers that settle in, dropdown rows that stagger, cards that lift (and
    tilt toward the pointer where marked with data-tilt), buttons that press,
-   and sections that rise in as they scroll into view. Everything stops for
-   people who ask for reduced motion. */
+   and sections that rise in once as they scroll into view. Everything stops
+   for people who ask for reduced motion. */
 
 :root {
   --du-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -125,20 +125,32 @@
   transform: scale(0.97);
 }
 
-/* Sections rise in as they scroll into view, where the browser supports
-   scroll-driven animations; elsewhere they simply show. */
-@supports (animation-timeline: view()) {
-  .hs > section,
-  .hs > .hs-usecases,
-  .hp > div,
-  .hp-plan,
-  .is-showcase > section {
-    animation: du-rise linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 35%;
+/* Sections rise in once as they scroll into view. components/scroll-reveal
+   marks the ones still below the screen as waiting and switches each to "in"
+   when it arrives; a section that is already on screen is never hidden, and
+   none is left half faded at the foot of the screen. (An animation tied to
+   the scroll position did both, and the reduced-motion rule below cannot
+   stop one.) Only opacity while waiting: the keyframe supplies the offset, so
+   a section keeps a transform of its own. */
+[data-reveal="wait"] {
+  opacity: 0;
+}
+
+[data-reveal="in"] {
+  animation: du-rise 600ms var(--du-ease);
+}
+
+/* On paper, and for reduced motion, a waiting section just shows. */
+@media print, (prefers-reduced-motion: reduce) {
+  [data-reveal="wait"] {
+    opacity: 1;
   }
 }
 
+/* Reduced motion: nothing on the site moves by itself. What a visitor asks
+   for still plays: a showcase clip on hover, keyboard focus or its play
+   button (lib/hover-play.ts, components/hf/video-play-toggle), and an effect
+   card's move on hover (components/effects/effects.css). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -19,6 +19,7 @@ import {
   type ViewerItem,
 } from "@/components/hf/studio-results";
 import { localizedHref } from "@/lib/du-home";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "./ai-image-studio.css";
 
 // Tilted photo stack above the title, as on the reference image page.
@@ -176,7 +177,7 @@ export function AiImageStudio({
     setPrompt(text);
     setNotice(null);
     promptRef.current?.focus();
-    promptRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    promptRef.current?.scrollIntoView({ block: "center", behavior: scrollMotion() });
   };
   const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image");
 

@@ -8,6 +8,7 @@ import { localizedHref } from "@/lib/du-home";
 import { navModelHref } from "@/lib/nav-models";
 import { SAMPLE_PROMPTS, withPrompt } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import "./home-showcase.css";
 import "./home-pricing.css";
 import "./image-showcase.css";
@@ -55,6 +56,7 @@ export function ImageShowcase({ lang }: { lang: string }) {
 
   return (
     <div className="hs is-showcase">
+      <ScrollReveal />
       {/* 1. Model carousel */}
       <section className="hs-carousel" aria-label={zh ? "图片模型" : "Image models"}>
         <div className="hs-carousel-track">

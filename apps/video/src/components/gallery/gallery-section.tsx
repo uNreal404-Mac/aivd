@@ -21,6 +21,8 @@ import {
 } from "@/components/gallery/use-template";
 import type { GalleryItem } from "@/lib/gallery";
 import { localizedHref } from "@/lib/du-home";
+import { HOVER_INTENT_MS, playQuietly } from "@/lib/hover-play";
+import { prefersReducedMotion, scrollMotion } from "@/lib/reduced-motion";
 import "./home-gallery.css";
 import "./gallery.css";
 
@@ -42,27 +44,27 @@ interface GalleryListResponse {
 
 type LoadStatus = "loading" | "ready" | "error";
 
-/** Poster/video preview that plays muted on hover unless motion is reduced. */
+/** Poster/video preview that plays muted while hovered. */
 function GalleryThumb({ item }: { item: GalleryItem }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const reducedMotion = useRef<boolean | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const prefersReducedMotion = () => {
-    if (reducedMotion.current === null) {
-      reducedMotion.current =
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    }
-    return reducedMotion.current;
-  };
+  // A preview still waiting to start must not start after the card is gone.
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
 
+  // Hovering is the visitor asking for a preview, so it also works with
+  // reduced motion; there it waits a moment so a passing cursor does not
+  // start it.
   const play = () => {
     const video = videoRef.current;
-    if (!video || prefersReducedMotion()) return;
-    void video.play().catch(() => undefined);
+    if (!video) return;
+    clearTimeout(hoverTimer.current);
+    if (prefersReducedMotion()) hoverTimer.current = setTimeout(() => playQuietly(video), HOVER_INTENT_MS);
+    else playQuietly(video);
   };
 
   const stop = () => {
+    clearTimeout(hoverTimer.current);
     const video = videoRef.current;
     if (!video) return;
     video.pause();
@@ -151,11 +153,7 @@ export function GallerySection({
     const rail = railRef.current;
     const card = rail?.querySelector<HTMLElement>(".home-gallery-card");
     if (!rail || !card) return;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    rail.scrollBy({
-      left: direction * (card.offsetWidth + 18),
-      behavior: reducedMotion ? "instant" : "smooth",
-    });
+    rail.scrollBy({ left: direction * (card.offsetWidth + 18), behavior: scrollMotion() });
   };
 
   const fetchPage = useCallback(async (cursor: string | null) => {
