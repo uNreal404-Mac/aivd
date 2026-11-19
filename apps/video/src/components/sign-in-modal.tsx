@@ -17,9 +17,11 @@ import { Gift } from "lucide-react";
 
 interface SignInModalContentProps {
   lang: string;
+  /** Where to land after signing in. The modal defaults to the page it opened on. */
+  callbackURL?: string;
 }
 
-export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
+export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalContentProps) => {
   const t = useTranslations("SignInModal");
   const signInModal = useSigninModal();
   const pathname = usePathname();
@@ -29,7 +31,7 @@ export const SignInModalContent = ({ lang }: SignInModalContentProps) => {
   const [emailError, setEmailError] = useState("");
 
   const callbackURL = getSafeCallbackURL(
-    signInModal.callbackURL ?? searchParams?.get("callbackURL") ?? pathname,
+    landing ?? signInModal.callbackURL ?? searchParams?.get("callbackURL") ?? pathname,
   );
 
   const handleSocialLogin = async (provider: "google") => {

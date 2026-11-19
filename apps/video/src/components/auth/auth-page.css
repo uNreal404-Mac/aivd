@@ -1,0 +1,167 @@
+/* Login and register pages. Built on the ds.css scale. */
+
+.au {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  background: var(--du-bg);
+  color: var(--ds-text-1);
+}
+
+.au-visual {
+  position: relative;
+  overflow: hidden;
+  margin: var(--ds-space-2);
+  border-radius: var(--ds-r-2xl);
+  background: var(--ds-surface-2);
+}
+
+.au-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+.au-visual-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent 55%);
+}
+
+.au-visual-copy {
+  position: absolute;
+  right: var(--ds-space-6);
+  bottom: var(--ds-space-6);
+  left: var(--ds-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.au-visual-kicker {
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.au-visual-title {
+  color: var(--ds-text-1);
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(var(--ds-fs-3xl), 3.4vw, var(--ds-fs-display));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.au-visual-models {
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+}
+
+.au-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: var(--ds-space-4) var(--ds-space-5);
+}
+
+.au-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+}
+
+.au-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.au-brand img {
+  border-radius: var(--ds-r-sm);
+}
+
+.au-back {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.au-back:hover {
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.au-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.au-center {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-6) 0;
+}
+
+.au-card {
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.au-card-fallback {
+  height: 420px;
+  background: var(--du-bg-elev);
+}
+
+.au-error {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, var(--du-danger) 14%, transparent);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+}
+
+.au-note {
+  max-width: 420px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.6;
+  text-align: center;
+}
+
+@media (max-width: 1023px) {
+  .au {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .au-visual {
+    display: none;
+  }
+}
