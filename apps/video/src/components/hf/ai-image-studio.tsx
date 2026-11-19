@@ -100,8 +100,8 @@ function MenuChip({
         {format(value)}
       </button>
       {open ? (
-        <span className="is-menu" role="group" aria-label={label}>
-          <span className="is-menu-title">{label}</span>
+        <fieldset className="is-menu">
+          <legend className="is-menu-title">{label}</legend>
           <span className="is-menu-grid">
             {options.map((option) => (
               <button
@@ -119,7 +119,7 @@ function MenuChip({
               </button>
             ))}
           </span>
-        </span>
+        </fieldset>
       ) : null}
     </span>
   );
