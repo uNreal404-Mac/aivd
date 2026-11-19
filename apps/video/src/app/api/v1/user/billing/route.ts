@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { requireAuth } from "@/lib/api/auth";
+import { creditService } from "@/services/credit";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
 import { db } from "@/db";
 import { creditPackages } from "@/db/schema";
@@ -17,6 +18,9 @@ import { and, desc, eq, lt } from "drizzle-orm";
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    // Write ledger entries for credits that expired since the last visit.
+    // A failure here must not stop the page from loading.
+    await creditService.recordExpiries(user.id).catch((error) => console.error("[Credit] recordExpiries failed", error));
     const { searchParams } = new URL(request.url);
 
     const limit = Number.parseInt(searchParams.get("limit") || "20");

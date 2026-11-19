@@ -89,7 +89,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "expiry",
     question: "Do my credits expire?",
     answer:
-      "Subscription credits are valid for the plan period; one-time pack credits are valid for the period shown at checkout.",
+      "Yes. Monthly plan credits last 30 days from each grant; yearly plans grant the whole year up front, valid for 365 days; one-time packs last a year; welcome credits last 7 days. Credits closest to expiry are used first, and anything that expires unused shows up as an expiry entry under Credits & billing.",
   },
   {
     id: "switching",
@@ -127,7 +127,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   {
     id: "expiry",
     question: "我的积分会过期吗？",
-    answer: "订阅积分在方案周期内有效；一次性积分包的积分有效期以结账时显示的期限为准。",
+    answer: "会。月付订阅每期发放的积分 30 天内有效，年付一次发放全年积分、365 天内有效；单独购买的积分包 1 年内有效；新用户赠送积分 7 天内有效。使用时先扣即将到期的积分，到期未用的积分会在「积分与账单」里记一条过期记录。",
   },
   {
     id: "switching",

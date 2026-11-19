@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "20");
     const offset = Number.parseInt(searchParams.get("cursor") || searchParams.get("offset") || "0");
 
+    // Write ledger entries for credits that expired since the last visit.
+    // A failure here must not stop the page from loading.
+    await creditService.recordExpiries(user.id).catch((error) => console.error("[Credit] recordExpiries failed", error));
     const result = await creditService.getHistory(user.id, {
       limit,
       offset,

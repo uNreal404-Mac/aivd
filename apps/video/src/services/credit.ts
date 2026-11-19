@@ -16,6 +16,7 @@ import {
   gt,
   isNull,
   lt,
+  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -44,6 +45,11 @@ type DbReader = Pick<typeof db, "select">;
 function isConstraintError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /(?:UNIQUE|CHECK) constraint failed/i.test(message);
+}
+
+/** Idempotency key for the ledger entry written when a package expires. */
+export function expiryOrderNo(packageId: number): string {
+  return `EXPIRE_${packageId}`;
 }
 
 export class CreditService {
@@ -531,25 +537,82 @@ export class CreditService {
   }
 
   /**
-   * 过期积分处理（定时任务调用）
+   * 过期积分处理：把已过期、仍有余量的积分包标记为 EXPIRED，并为每个包
+   * 写一条 EXPIRED 流水，让用户在积分明细里看到积分是怎么没的。
+   *
+   * 不传 userId 时处理所有用户（给定时任务用）；传 userId 时只处理该用户
+   * （读余额、明细、积分包前调用，这样没有定时任务也能补记）。
+   *
+   * 幂等：流水的 orderNo 固定为 `EXPIRE_<packageId>`，命中唯一索引就跳过；
+   * 积分包状态更新也只作用于仍为 ACTIVE 的包。正在冻结的包（有生成任务
+   * 在跑）先不处理，等冻结结算后再过期。
    */
-  async expireCredits(): Promise<number> {
+  async recordExpiries(userId?: string): Promise<number> {
     const now = new Date();
+    const conditions = [
+      eq(creditPackages.status, CreditPackageStatus.ACTIVE),
+      lt(creditPackages.expiredAt, now),
+      gt(creditPackages.remainingCredits, 0),
+      eq(creditPackages.frozenCredits, 0),
+    ];
+    if (userId) conditions.push(eq(creditPackages.userId, userId));
 
-    const result = await db
-      .update(creditPackages)
-      .set({ status: CreditPackageStatus.EXPIRED })
-      .where(
-        and(
-          eq(creditPackages.status, CreditPackageStatus.ACTIVE),
-          lt(creditPackages.expiredAt, now),
-          gt(creditPackages.remainingCredits, 0),
-          eq(creditPackages.frozenCredits, 0)
-        )
-      )
-      .returning({ id: creditPackages.id });
+    const expired = await db
+      .select()
+      .from(creditPackages)
+      .where(and(...conditions))
+      .orderBy(asc(creditPackages.expiredAt), asc(creditPackages.id));
 
-    return result.length;
+    let recorded = 0;
+    for (const pkg of expired) {
+      const expiredAt = pkg.expiredAt ?? now;
+      const balanceAfter = await this.balanceAfterExpiry(pkg.userId, expiredAt, pkg.remainingCredits);
+      const [, txn] = (await db.batch([
+        db
+          .update(creditPackages)
+          .set({ status: CreditPackageStatus.EXPIRED, updatedAt: now })
+          .where(and(eq(creditPackages.id, pkg.id), eq(creditPackages.status, CreditPackageStatus.ACTIVE))),
+        db
+          .insert(creditTransactions)
+          .values({
+            transNo: `TXN${Date.now()}${nanoid(6)}`,
+            userId: pkg.userId,
+            transType: CreditTransType.EXPIRED,
+            credits: -pkg.remainingCredits,
+            balanceAfter,
+            packageId: pkg.id,
+            orderNo: expiryOrderNo(pkg.id),
+            remark: `Credits expired: ${pkg.remainingCredits} left in package ${pkg.id}`,
+            // Dated when the credits actually expired, so the ledger reads in order.
+            createdAt: expiredAt,
+          })
+          .onConflictDoNothing({ target: creditTransactions.orderNo }),
+      ])) as unknown as [unknown, { meta?: { changes?: number } }];
+      if (Number(txn?.meta?.changes) > 0) recorded += 1;
+    }
+    return recorded;
+  }
+
+  /** Kept for callers that only want the count; records expiries for everyone. */
+  async expireCredits(): Promise<number> {
+    return this.recordExpiries();
+  }
+
+  /**
+   * Balance right after a package expired: the ledger balance just before
+   * that moment, less what expired. Falls back to today's balance (which
+   * already leaves the expired package out) when the ledger has nothing older.
+   */
+  private async balanceAfterExpiry(userId: string, expiredAt: Date, credits: number): Promise<number> {
+    const [previous] = await db
+      .select({ balanceAfter: creditTransactions.balanceAfter })
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.userId, userId), lte(creditTransactions.createdAt, expiredAt)))
+      .orderBy(desc(creditTransactions.createdAt), desc(creditTransactions.id))
+      .limit(1);
+    if (previous) return Math.max(0, previous.balanceAfter - credits);
+    const balance = await this.getBalanceInTx(db, userId);
+    return balance.availableCredits;
   }
 
   /**
