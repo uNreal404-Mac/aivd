@@ -21,6 +21,11 @@ function toDate(value: unknown): Date | null {
   return null;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return { title: locale === "zh" ? "账户" : "Account" };
+}
+
 export default async function AccountPage({
   params,
 }: {

@@ -166,6 +166,25 @@
   display: block;
 }
 
+.cr-thumb-failed {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--du-danger) 8%, var(--cr-surface-raised));
+  color: var(--cr-text-muted);
+  font-size: 0.75rem;
+}
+
+.cr-thumb-failed svg {
+  width: 20px;
+  height: 20px;
+  color: var(--du-danger);
+}
+
 .cr-thumb-square {
   width: 48px;
   height: 48px;
@@ -190,8 +209,10 @@
 }
 
 .cr-created {
+  overflow: hidden;
   font-size: 0.75rem;
   color: var(--cr-text-muted);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AudioLines, Clapperboard, Image as ImageIcon } from "lucide-react";
+import { AlertTriangle, AudioLines, Clapperboard, Image as ImageIcon } from "lucide-react";
 import type { CreationMediaType } from "@/lib/types/dashboard";
 import { useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
 import {
@@ -80,8 +80,17 @@ function mediaUrl(video: Video): string | null {
 }
 
 /** Card picture: the image itself, the clip's first frame, or an audio tile. */
-function CreationThumb({ video, kind }: { video: Video; kind: CreationMediaType }) {
+function CreationThumb({ video, kind, zh }: { video: Video; kind: CreationMediaType; zh: boolean }) {
   const url = mediaUrl(video);
+  // A failed job gets a clear failed tile, not the "in progress" placeholder.
+  if (videoTag(video) === "failed" && !url) {
+    return (
+      <span className="cr-thumb-failed">
+        <AlertTriangle aria-hidden="true" />
+        {zh ? "生成失败" : "Failed"}
+      </span>
+    );
+  }
   if (kind === "audio") {
     return (
       <span className="cr-thumb-audio" aria-hidden="true">
@@ -294,13 +303,16 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 onClick={() => handleSelect(video)}
               >
                 <div className="cr-thumb">
-                  <CreationThumb video={video} kind={kind} />
+                  <CreationThumb video={video} kind={kind} zh={zh} />
                 </div>
                 <div className="cr-card-meta">
-                  <span className="cr-model">{modelLabel(video.model)}</span>
+                  <span className="cr-model" title={video.prompt ?? undefined}>
+                    {video.prompt?.trim() || modelLabel(video.model)}
+                  </span>
                   <StatusPill tag={tag} label={t(TAG_KEYS[tag])} />
                 </div>
                 <div className="cr-created">
+                  {video.prompt?.trim() ? `${modelLabel(video.model)} · ` : ""}
                   {formatCreatedAt(video.createdAt, locale)}
                 </div>
               </button>
