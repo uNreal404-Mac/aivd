@@ -26,13 +26,13 @@ export async function generateMetadata({ params }: PageMetadataProps) {
   const { locale } = await params;
 
   const titles = {
-    en: "AI Video Generator - Create Stunning Videos with Sora 2 & Veo 3.1",
-    zh: "AI视频生成器 - 使用Sora 2和Veo 3.1创建精彩视频",
+    en: "AI Video Generator - Create Videos with Veo 3.1, Seedance 2.5 & Kling 4.0",
+    zh: "AI视频生成器 - 用Veo 3.1、Seedance 2.5、Kling 4.0生成视频",
   };
 
   const descriptions = {
-    en: "Transform your ideas into stunning videos with AI. Access Sora 2, Veo 3.1, Wan 2.6, and more. Fast, easy, and professional quality video generation in minutes. Start creating today!",
-    zh: "用AI将您的想法转化为精彩视频。访问Sora 2、Veo 3.1、Wan 2.6等模型。快速、简单、专业品质的视频生成，几分钟内完成。立即开始创作！",
+    en: "Turn ideas into videos with AI. Veo 3.1, Seedance 2.5, Kling 4.0, Wan 2.6 and more in one place, plus AI images and audio. See the credit cost before you generate.",
+    zh: "用AI把想法变成视频。Veo 3.1、Seedance 2.5、Kling 4.0、Wan 2.6等模型一站可用，还能生成AI图片和音频。生成前就能看到要消耗的积分。",
   };
 
   const canonicalUrl = `${siteConfig.url}${locale === i18n.defaultLocale ? "" : `/${locale}`}`;

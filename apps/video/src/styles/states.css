@@ -31,6 +31,14 @@
 }
 
 /* Studio skeleton: settings panel on the left, stage on the right. */
+.du-skel-studio,
+.du-skel-center,
+.du-skel-page {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
 .du-skel-studio {
   display: flex;
   min-height: calc(100svh - var(--hf-header-h, 52px));

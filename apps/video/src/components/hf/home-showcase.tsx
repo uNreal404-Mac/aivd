@@ -55,6 +55,11 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             <Link key={slide.href} href={href(slide.href)} className="hs-slide">
               <span className="hs-slide-media">
                 <Media media={slide.media} eager={index < 3} />
+                <span className="hs-slide-shade" aria-hidden="true" />
+                <span className="hs-slide-cover" aria-hidden="true">
+                  <span className="hs-slide-cover-main">{slide.cover.main}</span>
+                  <span className="hs-slide-cover-sub">{t(slide.cover.sub)}</span>
+                </span>
               </span>
               <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
               <span className="hs-slide-body">{t(slide.body)}</span>
@@ -167,7 +172,6 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
 
       {/* 6. Model walls with feature banners between them */}
       <ModelWall lang={lang} index={0} />
-      <ModelWall lang={lang} index={1} />
 
       <section className="hs-banner hs-banner-canvas" aria-labelledby="hs-canvas-title">
         <div className="hs-banner-text">
@@ -188,7 +192,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
         </div>
       </section>
 
-      <ModelWall lang={lang} index={2} />
+      <ModelWall lang={lang} index={1} />
 
       <section className="hs-banner hs-banner-photo" aria-labelledby="hs-photo-title">
         <div className="hs-banner-text">
@@ -208,7 +212,6 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
         </div>
       </section>
 
-      <ModelWall lang={lang} index={3} />
     </div>
   );
 }

@@ -67,7 +67,6 @@ const MODEL_COVERS: Record<string, string> = {
   "wan2.6": "/home/samples/storm-sea.webp",
 };
 
-const STEP_IMAGES = ["/home/samples/boy-and-dog.webp", "/home/samples/dancer.webp", "/home/samples/rain-couple.webp"];
 
 /** A settings card: small label, current value and a chevron. A native select
  *  sits on top so it stays keyboard and screen-reader friendly. */
@@ -333,6 +332,8 @@ export function AiVideoStudio({
     fetchRecentResults().then((history) => {
       if (cancelled || history.length === 0) return;
       setResults((previous) => mergeResults(previous, history));
+      // Returning users see their clips first, not the introduction.
+      setActiveTab((tab) => (tab === "How it works" ? RIGHT_TABS[0] : tab));
     });
     return () => {
       cancelled = true;
@@ -862,17 +863,20 @@ export function AiVideoStudio({
                 ? "写一句提示词或上传一张起始帧，选好模型就能生成，生成前就能看到要消耗的积分。"
                 : "Write a prompt or upload a start frame, pick a model and generate. You see the credit cost before you start."}
             </p>
-            <div className="vs-steps">
+            <div className="vs-intro">
+              <video src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" autoPlay muted loop playsInline preload="metadata" />
+              <span className="vs-intro-shade" aria-hidden="true" />
+              <span className="vs-intro-tag">VEO 3.1 · SEEDANCE 2.5 · KLING 4.0</span>
+            </div>
+            <ol className="vs-steps vs-steps-text">
               {stepCopy.map((step, index) => (
-                <div key={step.title} className="vs-step">
-                  <div className="vs-howto-media">
-                    <img src={STEP_IMAGES[index]} alt="" loading="lazy" />
-                  </div>
+                <li key={step.title} className="vs-step vs-step-card">
+                  <span className="vs-step-n">{index + 1}</span>
                   <h3 className="vs-step-title">{step.title}</h3>
                   <p className="vs-step-body">{step.body}</p>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         )}
       </section>

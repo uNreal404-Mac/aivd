@@ -947,3 +947,65 @@ button.vs-chip:disabled {
 .as-item-head {
   align-items: center;
 }
+
+/* Introduction on first visit: a real clip, then the three steps as cards. */
+.vs-intro {
+  position: relative;
+  overflow: hidden;
+  max-width: 1100px;
+  margin-top: 32px;
+  aspect-ratio: 21 / 9;
+  border-radius: 22px;
+  background: var(--vs-card);
+}
+
+.vs-intro video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vs-intro-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 70%, transparent), transparent 50%);
+}
+
+.vs-intro-tag {
+  position: absolute;
+  bottom: 18px;
+  left: 22px;
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.vs-steps-text {
+  max-width: 1100px;
+  margin-top: 20px;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+.vs-step-card {
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+  background: var(--vs-card);
+}
+
+.vs-step-n {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 10%, transparent);
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: 13px;
+  font-weight: 700;
+}

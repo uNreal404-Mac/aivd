@@ -29,9 +29,18 @@ export const MEDIA = {
 } as const;
 
 /** 1. Large feature cards in the top carousel. */
-export const FEATURE_SLIDES: { media: ShowMedia; title: Bi; body: Bi; href: string; accent?: boolean }[] = [
+export const FEATURE_SLIDES: {
+  media: ShowMedia;
+  /** Big lettering set on the picture, the way the reference designs its covers. */
+  cover: { main: string; sub: Bi };
+  title: Bi;
+  body: Bi;
+  href: string;
+  accent?: boolean;
+}[] = [
   {
     media: MEDIA.marina,
+    cover: { main: "+70", sub: { zh: "免费积分", en: "FREE CREDITS" } },
     title: { zh: "新用户注册即送 70 积分", en: "70 free credits for new accounts" },
     body: { zh: "免费生成你的第一条视频", en: "Make your first video free" },
     href: "/pricing",
@@ -39,30 +48,35 @@ export const FEATURE_SLIDES: { media: ShowMedia; title: Bi; body: Bi; href: stri
   },
   {
     media: MEDIA.showcase2,
+    cover: { main: "SEEDANCE 2.5", sub: { zh: "30 秒 · 1080P", en: "30S · 1080P" } },
     title: { zh: "SEEDANCE 2.5 已上线", en: "SEEDANCE 2.5 IS LIVE" },
     body: { zh: "最长 30 秒的电影级视频，最高 1080p", en: "Cinematic video up to 30s and 1080p" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
   },
   {
-    media: MEDIA.showcase3,
+    media: MEDIA.valley,
+    cover: { main: "VEO 3.1", sub: { zh: "画面 + 声音", en: "WITH SOUND" } },
     title: { zh: "VEO 3.1 有声短片", en: "VEO 3.1 WITH SOUND" },
     body: { zh: "画面和声音一起生成", en: "Picture and sound in one pass" },
     href: navModelHref("video", "veo-3.1"),
   },
   {
     media: MEDIA.bloom,
+    cover: { main: "AGENT", sub: { zh: "一句话 · 一条片", en: "ONE LINE · ONE FILM" } },
     title: { zh: "创作空间 AGENT", en: "CREATIVE SPACE AGENT" },
     body: { zh: "说出想法，自动拆成分镜再生成", en: "Say the idea; it plans the shots" },
     href: "/creative-space",
   },
   {
     media: MEDIA.carpet,
+    cover: { main: "NANO BANANA", sub: { zh: "PRO · 4K", en: "PRO · 4K" } },
     title: { zh: "NANO BANANA PRO 4K", en: "NANO BANANA PRO 4K" },
     body: { zh: "Google 出品的高清图像模型", en: "Google's high-resolution image model" },
     href: navModelHref("image", "nano-banana-pro"),
   },
   {
     media: MEDIA.dancer,
+    cover: { main: "SUNO V6", sub: { zh: "一句话写歌", en: "SONGS FROM ONE LINE" } },
     title: { zh: "SUNO V6 一句话写歌", en: "SUNO V6 SONGS" },
     body: { zh: "描述风格，生成完整歌曲", en: "Describe a style, get a full song" },
     href: "/audio?voiceMode=music",
@@ -79,7 +93,10 @@ export const PRODUCT_TILES: { title: string; badge?: Bi; tag?: string; body: Bi;
   { title: "GPT Image 2.6", badge: { zh: "新", en: "New" }, body: { zh: "品质出众，编辑精准", en: "Outstanding quality, precise edits" }, href: navModelHref("image", "gpt-image-2-6-sunburst"), icon: "layers" },
 ];
 
-/** 4–5. Model galleries, each a title, a line and a masonry of media. */
+/**
+ * 4–5. Model galleries, each a title, a line and a masonry of media. Two walls
+ * that share no samples, so the same picture does not come round again.
+ */
 export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: string; cta: Bi; media: ShowMedia[] }[] = [
   {
     id: "seedance",
@@ -87,7 +104,7 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
     body: { zh: "新一代 AI 视频模型", en: "The next-generation AI video model" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
     cta: { zh: "用 Seedance 2.5 生成", en: "Create with Seedance 2.5" },
-    media: [MEDIA.showcase2, MEDIA.rain, MEDIA.dancer, MEDIA.autumn, MEDIA.wind, MEDIA.boyDog, MEDIA.carpet, MEDIA.valley],
+    media: [MEDIA.showcase2, MEDIA.rain, MEDIA.boyDog, MEDIA.autumn, MEDIA.wind, MEDIA.mech, MEDIA.dancer, MEDIA.valley],
   },
   {
     id: "nano-banana",
@@ -95,23 +112,7 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
     body: { zh: "4K 图像，细节与文字渲染出色", en: "4K images with fine detail and text" },
     href: navModelHref("image", "nano-banana-pro"),
     cta: { zh: "用 Nano Banana Pro 生成", en: "Create with Nano Banana Pro" },
-    media: [MEDIA.carpet, MEDIA.studio, MEDIA.bloom, MEDIA.dreaming, MEDIA.tomb, MEDIA.planet, MEDIA.mech, MEDIA.sea],
-  },
-  {
-    id: "veo",
-    title: "VEO 3.1",
-    body: { zh: "画面和声音一起生成的电影级短片", en: "Cinematic clips with picture and sound in one pass" },
-    href: navModelHref("video", "veo-3.1"),
-    cta: { zh: "用 Veo 3.1 生成", en: "Create with Veo 3.1" },
-    media: [MEDIA.marina, MEDIA.valley, MEDIA.sea, MEDIA.showcase3, MEDIA.wind, MEDIA.planet, MEDIA.rain, MEDIA.autumn],
-  },
-  {
-    id: "kling",
-    title: "KLING 4.0",
-    body: { zh: "参考图锁定人物，长达 30 秒", en: "References keep characters steady, up to 30s" },
-    href: navModelHref("video", "kling/v4-reference-to-video"),
-    cta: { zh: "用 Kling 4.0 生成", en: "Create with Kling 4.0" },
-    media: [MEDIA.mech, MEDIA.dancer, MEDIA.tomb, MEDIA.boyDog, MEDIA.dreaming, MEDIA.carpet, MEDIA.bloom, MEDIA.studio],
+    media: [MEDIA.carpet, MEDIA.studio, MEDIA.bloom, MEDIA.dreaming, MEDIA.tomb, MEDIA.planet, MEDIA.sea],
   },
 ];
 
