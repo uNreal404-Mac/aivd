@@ -347,7 +347,7 @@ export function landingFaqs(model: LandingModel, zh: boolean): { q: string; a: s
         },
         {
           q: `生成的${kind.zh}可以商用吗？`,
-          a: "付费套餐生成的作品无水印，可以用于商业用途。请确保提示词和参考素材不侵犯他人权利。",
+          a: "生成的作品都没有水印；付费套餐的作品可以用于商业用途。请确保提示词和参考素材不侵犯他人权利。",
         },
       ]
     : [
@@ -367,7 +367,7 @@ export function landingFaqs(model: LandingModel, zh: boolean): { q: string; a: s
         },
         {
           q: `Can I use the ${kind.en.toLowerCase()} commercially?`,
-          a: "Work made on a paid plan has no watermark and can be used commercially. Make sure your prompts and references do not infringe anyone's rights.",
+          a: "Nothing you make carries a watermark, and work made on a paid plan can be used commercially. Make sure your prompts and references do not infringe anyone's rights.",
         },
       ];
   return faqs;

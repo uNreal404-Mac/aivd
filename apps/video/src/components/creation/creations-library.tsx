@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, AudioLines, ChevronLeft, ChevronRight, Clapperboard, Download, Image as ImageIcon, Sparkles, X } from "lucide-react";
 import { CopyPromptButton } from "@/components/hf/studio-results";
+import { failureReason } from "@/lib/failure-reason";
 import type { CreationMediaType } from "@/lib/types/dashboard";
 import { useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
 import {
@@ -497,8 +498,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                   {activeVideo.errorMessage ? (
                     <details>
                       <summary>{zh ? "错误详情" : "Details"}</summary>
-                      {/* Provider names are internal; keep only the reason. */}
-                      {activeVideo.errorMessage.replace(/^\s*[a-z]+ rejected:\s*/i, "")}
+                      {failureReason(activeVideo.errorMessage, zh)}
                     </details>
                   ) : null}
                 </div>

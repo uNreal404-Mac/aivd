@@ -581,3 +581,31 @@
     radial-gradient(80% 90% at 0% 0%, color-mix(in srgb, var(--du-accent) 18%, transparent), transparent 70%),
     var(--ds-surface-2);
 }
+
+/* A value with a small copy button after it (user ID). */
+.db-copyable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.db-copy {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-3);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.db-copy:hover {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.db-copy svg {
+  width: 14px;
+  height: 14px;
+}

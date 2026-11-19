@@ -3,6 +3,7 @@
 // Result pieces shared by the video, image and audio studios: the card shown
 // while a job runs, the full-screen viewer, the waveform player and the
 // drag-and-drop / paste hook for uploads.
+import { failureReason } from "@/lib/failure-reason";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, X } from "lucide-react";
@@ -68,7 +69,7 @@ export function PendingCard({
           {!failed && elapsed ? <span className="sr-elapsed">{elapsed}</span> : null}
         </span>
         {prompt ? <span className="sr-pending-prompt">{prompt}</span> : null}
-        {failed && message ? <span className="sr-pending-msg">{message}</span> : null}
+        {failed && failureReason(message, zh) ? <span className="sr-pending-msg">{failureReason(message, zh)}</span> : null}
         {failed && onReuse ? (
           <button type="button" className="sr-pill" onClick={onReuse}>
             <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -84,14 +85,26 @@ export function PendingCard({
 /* Hover actions on a result card                                             */
 /* -------------------------------------------------------------------------- */
 
-export function CopyPromptButton({ prompt, zh, className = "sr-icon" }: { prompt: string; zh: boolean; className?: string }) {
+export function CopyPromptButton({
+  prompt,
+  zh,
+  className = "sr-icon",
+  label,
+}: {
+  prompt: string;
+  zh: boolean;
+  className?: string;
+  /** Tooltip and accessible name; defaults to "Copy prompt". */
+  label?: string;
+}) {
   const [copied, setCopied] = useState(false);
+  const name = label ?? (zh ? "复制提示词" : "Copy prompt");
   return (
     <button
       type="button"
       className={className}
-      title={zh ? "复制提示词" : "Copy prompt"}
-      aria-label={zh ? "复制提示词" : "Copy prompt"}
+      title={copied ? (zh ? "已复制" : "Copied") : name}
+      aria-label={name}
       onClick={async (event) => {
         event.stopPropagation();
         try {

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { SignOutButton } from "@/components/dashboard/sign-out-button";
 import { UserAvatar } from "@/components/user-avatar";
+import { CopyPromptButton } from "@/components/hf/studio-results";
 import { ManageSubscriptionButton } from "@/components/account/manage-subscription-button";
 import { customers, db } from "@/db";
 import { copyFor, planLabel } from "@/lib/account-view";
@@ -89,7 +90,10 @@ export default async function AccountPage({
           </div>
           <div>
             <dt>{zh ? "用户 ID" : "User ID"}</dt>
-            <dd className="db-mono">{user.id}</dd>
+            <dd className="db-mono db-copyable">
+              {user.id}
+              <CopyPromptButton prompt={user.id} zh={zh} className="db-copy" label={zh ? "复制用户 ID" : "Copy user ID"} />
+            </dd>
           </div>
         </dl>
       </section>
@@ -103,13 +107,14 @@ export default async function AccountPage({
               {copy.renewsOn} {renewsOn}
             </p>
           ) : (
-            <p className="db-sub">{zh ? "升级后积分更多、单价更低，作品无水印。" : "Upgrade for more credits at a lower price, without watermarks."}</p>
+            <p className="db-sub">{zh ? "升级后每月积分更多，单价更低。" : "Upgrade for more credits each month at a lower price."}</p>
           )}
           <div className="db-actions">
             <Link className="db-btn db-btn-accent" href={`/${locale}/pricing`}>
               {zh ? "查看套餐" : "See plans"}
             </Link>
-            <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} />
+            {/* Only subscribers have something to manage. */}
+            {balance.plan !== "FREE" || periodEnd ? <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} /> : null}
           </div>
         </section>
 
