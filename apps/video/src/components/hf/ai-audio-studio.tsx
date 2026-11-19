@@ -156,6 +156,55 @@ export function AiAudioStudio({
         demoPrompt: "Warm, calm male voice, unhurried pace, a little gravel, like a late-night nature documentary narrator.",
       };
 
+  // The "how it works" panel follows the mode picked on the left.
+  const how =
+    mode === "music"
+      ? {
+          title: zh ? "一句话写歌和做音效" : "Songs and sound from one line",
+          sub: zh ? "描述风格、情绪和乐器，生成完整的歌曲或音效" : "Describe the style, mood and instruments; get a full song or a sound effect",
+          card1: zh ? "描述风格" : "Describe the style",
+          card1Sub: zh ? "曲风、乐器、节奏和情绪，越具体越接近你想要的" : "Genre, instruments, tempo and mood; the more specific the closer",
+          chips: zh
+            ? [
+                { name: "爵士 · 钢琴", tag: "慢节奏" },
+                { name: "电子 · 合成器", tag: "律动" },
+                { name: "古风 · 笛子", tag: "空灵" },
+              ]
+            : [
+                { name: "Jazz · piano", tag: "slow" },
+                { name: "Electronic · synth", tag: "groove" },
+                { name: "Folk · flute", tag: "airy" },
+              ],
+          card2: zh ? "生成并下载" : "Generate and download",
+          card2Sub: zh ? "完成后在历史记录里播放和下载" : "Play and download it from History when it is done",
+          demo: zh ? "清晨的海边，轻柔的钢琴和海浪声，安静治愈。" : "A calm morning by the sea, soft piano and waves, quiet and soothing.",
+          soon: false,
+        }
+      : mode === "voice" || mode === "translate"
+        ? {
+            title: mode === "voice" ? (zh ? "变声 · 即将上线" : "Voice changer · coming soon") : zh ? "翻译 · 即将上线" : "Translate · coming soon",
+            sub:
+              mode === "voice"
+                ? zh
+                  ? "上传一段音频，换成另一种声音。功能接入后会在这里说明用法。"
+                  : "Upload audio and hear it in another voice. How to use it will be here once it is live."
+                : zh
+                  ? "上传一段音频，翻译成其他语言。功能接入后会在这里说明用法。"
+                  : "Upload audio and get it in another language. How to use it will be here once it is live.",
+            soon: true,
+          }
+        : {
+            title: t.heroTitle,
+            sub: t.heroSub,
+            card1: t.card1,
+            card1Sub: t.card1Sub,
+            chips: t.demoVoices,
+            card2: t.card2,
+            card2Sub: t.card2Sub,
+            demo: t.demoPrompt,
+            soon: false,
+          };
+
   const generate = async () => {
     if (!available || submitting) return;
     // An empty script gets a hint and the cursor, not a dead button.
@@ -395,37 +444,39 @@ export function AiAudioStudio({
           )
         ) : (
           <div className="vs-howto vs-howto-center">
-            <h2 className="vs-howto-title">{t.heroTitle}</h2>
-            <p className="vs-howto-sub">{t.heroSub}</p>
+            <h2 className="vs-howto-title">{how.title}</h2>
+            <p className="vs-howto-sub">{how.sub}</p>
+            {how.soon ? null : (
             <div className="as-cards">
               <div className="as-card">
-                <h3 className="vs-step-title">{t.card1}</h3>
-                <p className="vs-step-body">{t.card1Sub}</p>
+                <h3 className="vs-step-title">{how.card1}</h3>
+                <p className="vs-step-body">{how.card1Sub}</p>
                 <div className="as-voices">
-                  {t.demoVoices.map((item, index) => (
+                  {(how.chips ?? []).map((item, index) => (
                     <div key={item.name} className={index === 0 ? "as-voice as-voice-main" : "as-voice"}>
                       <span className="as-voice-wave" aria-hidden="true">
                         <AudioLines className="h-5 w-5" />
                       </span>
                       <span>
                         <span className="as-voice-name">{item.name}</span>
-                        <span className="as-voice-tag">{item.tag}</span>
+                        {item.tag ? <span className="as-voice-tag">{item.tag}</span> : null}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="as-card">
-                <h3 className="vs-step-title">{t.card2}</h3>
-                <p className="vs-step-body">{t.card2Sub}</p>
+                <h3 className="vs-step-title">{how.card2}</h3>
+                <p className="vs-step-body">{how.card2Sub}</p>
                 <div className="as-mock">
                   <div className="as-mock-box">
                     <span className="vs-card-label">{zh ? "提示词" : "Prompt"}</span>
-                    <p className="as-mock-text">{t.demoPrompt}</p>
+                    <p className="as-mock-text">{how.demo}</p>
                   </div>
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
       </section>
