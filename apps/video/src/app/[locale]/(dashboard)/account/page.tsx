@@ -114,7 +114,7 @@ export default async function AccountPage({
               {zh ? "查看套餐" : "See plans"}
             </Link>
             {/* Only subscribers have something to manage. */}
-            {balance.plan !== "FREE" || periodEnd ? <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} /> : null}
+            {balance.plan === "PRO" || balance.plan === "BUSINESS" ? <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} /> : null}
           </div>
         </section>
 
