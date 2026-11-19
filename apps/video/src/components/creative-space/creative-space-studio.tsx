@@ -68,11 +68,11 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 const copy = {
   zh: {
-    eyebrow: "无限画布 · 试验版",
+    eyebrow: "无限画布 · 测试版",
     title: "创作空间",
     subtitle: "把素材放进画布，用 @素材 告诉 Agent 如何组合。",
-    localOnly: "审核通过前仅本地预览",
-    apiPending: "DeepSeek Agent 已连接",
+    localOnly: "素材审核通过前只在本机预览",
+    apiPending: "Agent 已就绪",
     assets: "素材库",
     addAsset: "上传素材",
     formats: "图片 ≤ 10 MB / 视频 ≤ 100 MB，上传后自动安全检查",
@@ -84,14 +84,17 @@ const copy = {
     agentSubtitle: "理解 @素材，生成分镜和可执行提示词",
     inputPlaceholder: "例如：把 @A 放在片头，@B 放在片尾……",
     createPlan: "发送给 Agent",
+    needPrompt: "先写下你想让 Agent 做什么",
+    stillChecking: "素材还在安全检查，稍等一下",
+    needPlan: "先让 Agent 生成分镜",
     generating: "Agent 思考中",
     quickStart: "试试：把 @A 放在片头",
     noPlan: "上传素材并输入指令后，分镜计划会显示在这里。",
     plan: "Agent 分镜计划",
-    safetyTitle: "安全状态",
-    safetyBody: "Prompt 先经过敏感词规则，再由 DeepSeek 检查文字与视觉内容。可疑或违规内容不会进入生成模型，也不会扣除积分。",
+    safetyTitle: "内容安全",
+    safetyBody: "提示词和素材会先经过安全检查，没通过的不会提交生成，也不扣积分。",
     generationDisabled: "生成视频",
-    generationHelp: "Agent 生成安全分镜后，复用现有视频生成、积分和作品库流程。",
+    generationHelp: "Agent 给出分镜后就能生成视频，扣积分和作品保存都和视频工作室一样。",
     selected: "素材设置",
     size: "显示尺寸",
     remove: "从画布移除",
@@ -112,11 +115,11 @@ const copy = {
     asset: "素材",
   },
   en: {
-    eyebrow: "INFINITE CANVAS · EXPERIMENTAL",
+    eyebrow: "INFINITE CANVAS · BETA",
     title: "Creative Space",
     subtitle: "Place media on the canvas and tell the Agent what to do with @assets.",
     localOnly: "Local preview until approved",
-    apiPending: "DeepSeek Agent connected",
+    apiPending: "Agent ready",
     assets: "Assets",
     addAsset: "Upload assets",
     formats: "Images ≤ 10 MB / videos ≤ 100 MB · automatic safety review",
@@ -128,14 +131,17 @@ const copy = {
     agentSubtitle: "Understand @assets and build an executable storyboard",
     inputPlaceholder: "Example: use @A as the opening and @B as the ending…",
     createPlan: "Send to Agent",
+    needPrompt: "Tell the Agent what to do first",
+    stillChecking: "Assets are still being checked",
+    needPlan: "Ask the Agent for a storyboard first",
     generating: "Agent is thinking",
     quickStart: "Try: use @A as the opening",
     noPlan: "Upload assets and enter an instruction to see a storyboard plan here.",
     plan: "Agent storyboard",
-    safetyTitle: "Safety status",
-    safetyBody: "Prompts pass the local rule gate first, then DeepSeek reviews text and visual content. Uncertain or blocked content never reaches the generation provider and uses no credits.",
+    safetyTitle: "Content safety",
+    safetyBody: "Prompts and assets are checked first. Anything that does not pass is not generated and uses no credits.",
     generationDisabled: "Generate video",
-    generationHelp: "After a safe Agent plan, this reuses the existing generation, credits and creations workflow.",
+    generationHelp: "Once the Agent has a storyboard you can generate; credits and saving work as in the video studio.",
     selected: "Asset settings",
     size: "Display size",
     remove: "Remove from canvas",
@@ -936,6 +942,13 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                     !prompt.trim() ||
                     assets.some((asset) => asset.safety === "checking")
                   }
+                  title={
+                    assets.some((asset) => asset.safety === "checking")
+                      ? t.stillChecking
+                      : !prompt.trim()
+                        ? t.needPrompt
+                        : undefined
+                  }
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#66fcf1] px-3 py-2 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isPlanning ? (
@@ -951,6 +964,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               type="button"
               onClick={() => void startGeneration()}
               disabled={!plan?.generationPrompt || isGenerating}
+              title={!plan?.generationPrompt ? t.needPlan : undefined}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#66fcf1] px-3 py-2.5 text-xs font-semibold text-black transition hover:bg-[#45a29e] disabled:cursor-not-allowed disabled:border disabled:border-[#1f2833] disabled:bg-[#101318] disabled:text-[#5d6670]"
             >
               {isGenerating ? (
