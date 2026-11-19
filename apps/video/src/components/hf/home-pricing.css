@@ -3,7 +3,7 @@
    only. */
 
 .hp {
-  --hp-card: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  --hp-card: var(--ds-surface-1);
   --hp-muted: color-mix(in srgb, white 58%, transparent);
   display: flex;
   max-width: 1320px;
@@ -23,7 +23,7 @@
 
 .hp-kicker {
   color: var(--du-accent-text);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 800;
   letter-spacing: 0.12em;
 }
@@ -39,18 +39,18 @@
   max-width: 620px;
   margin-top: 12px;
   color: var(--hp-muted);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   line-height: 1.6;
 }
 
 .hp-sub-sm {
   margin-top: 6px;
   color: var(--hp-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-h3 {
-  font-size: 24px;
+  font-size: var(--ds-fs-xl);
   font-weight: 800;
 }
 
@@ -63,17 +63,17 @@
   gap: 4px;
   margin-top: 26px;
   padding: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 6%, transparent);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 10%, transparent);
 }
 
 .hp-toggle button {
   height: 36px;
   padding: 0 18px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   color: var(--hp-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 600;
   transition: background-color 150ms ease, color 150ms ease;
 }
@@ -86,7 +86,7 @@
 .hp-toggle-save {
   padding: 0 12px 0 8px;
   color: var(--du-accent-text);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 700;
 }
 
@@ -100,7 +100,7 @@
 .hp-plan {
   display: flex;
   flex-direction: column;
-  border-radius: 28px;
+  border-radius: var(--ds-r-3xl);
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
@@ -108,7 +108,7 @@
   display: flex;
   flex-direction: column;
   padding: 28px;
-  border-radius: 28px;
+  border-radius: var(--ds-r-3xl);
 }
 
 .hp-plan-basic .hp-plan-top {
@@ -148,7 +148,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  font-size: 40px;
+  font-size: var(--ds-fs-4xl);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -159,9 +159,9 @@
   align-items: center;
   gap: 4px;
   padding: 5px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 22%, transparent);
-  font-size: 13px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-4);
+  font-size: var(--ds-fs-sm);
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -181,7 +181,7 @@
 
 .hp-plan-blurb {
   margin-top: 12px;
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   opacity: 0.75;
 }
 
@@ -193,26 +193,26 @@
 }
 
 .hp-price-was {
-  font-size: 26px;
+  font-size: var(--ds-fs-xl);
   font-weight: 800;
   opacity: 0.45;
 }
 
 .hp-price-now {
-  font-size: 46px;
+  font-size: var(--ds-fs-4xl);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
 .hp-price-unit {
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   opacity: 0.75;
 }
 
 .hp-billing {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   opacity: 0.7;
 }
 
@@ -223,11 +223,11 @@
   justify-content: center;
   gap: 10px;
   margin-top: 22px;
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   background: white;
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-bg) 15%, transparent);
   color: var(--du-bg);
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
   transition: filter 150ms ease;
 }
@@ -238,10 +238,10 @@
 
 .hp-cta-save {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent-hover);
   color: white;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-cta-accent {
@@ -255,10 +255,10 @@
   height: 44px;
   margin-top: 0;
   padding: 0 20px;
-  background: color-mix(in srgb, white 7%, transparent);
+  background: var(--ds-fill-2);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
   color: white;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-plan-body {
@@ -273,12 +273,12 @@
   align-items: center;
   gap: 8px;
   color: var(--hp-muted);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
 }
 
 .hp-credits strong {
   color: var(--du-accent-text);
-  font-size: 20px;
+  font-size: var(--ds-fs-lg);
 }
 
 .hp-tree {
@@ -287,8 +287,8 @@
   gap: 10px;
   margin-left: 7px;
   padding-left: 18px;
-  border-left: 2px solid color-mix(in srgb, white 14%, transparent);
-  font-size: 15px;
+  border-left: 2px solid var(--ds-line-3);
+  font-size: var(--ds-fs-md);
 }
 
 .hp-tree strong {
@@ -305,9 +305,9 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 16px;
-  border-top: 1px solid color-mix(in srgb, white 8%, transparent);
-  color: color-mix(in srgb, white 82%, transparent);
-  font-size: 14px;
+  border-top: 1px solid var(--ds-line-2);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-includes li {
@@ -326,7 +326,7 @@
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 24px;
   padding: 28px;
-  border-radius: 28px;
+  border-radius: var(--ds-r-3xl);
   background: var(--hp-card);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
 }
@@ -342,7 +342,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 18px;
-  border-radius: 18px;
+  border-radius: var(--ds-r-xl);
   background: color-mix(in srgb, var(--du-bg) 55%, transparent);
 }
 
@@ -358,17 +358,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 600;
 }
 
 .hp-slider-label select {
   height: 30px;
   padding: 0 10px;
-  border-radius: 8px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-2);
   color: white;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-slider-label option {
@@ -377,7 +377,7 @@
 
 .hp-slider-value {
   color: var(--du-accent-text);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
 }
 
@@ -388,7 +388,7 @@
 
 .hp-slider-note {
   color: var(--hp-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .hp-est-right {
@@ -397,7 +397,7 @@
   justify-content: center;
   gap: 12px;
   padding: 28px;
-  border-radius: 22px;
+  border-radius: var(--ds-r-2xl);
   background:
     radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--du-accent) 22%, transparent), transparent 70%),
     var(--du-bg-elev);
@@ -405,11 +405,11 @@
 
 .hp-need-label {
   color: var(--hp-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-need {
-  font-size: 44px;
+  font-size: var(--ds-fs-4xl);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -417,7 +417,7 @@
 
 .hp-need span {
   color: var(--hp-muted);
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 500;
 }
 
@@ -430,8 +430,8 @@
 
 .hp-dots span {
   aspect-ratio: 1;
-  border-radius: 3px;
-  background: color-mix(in srgb, white 10%, transparent);
+  border-radius: var(--ds-r-xs);
+  background: var(--ds-fill-3);
 }
 
 .hp-dots span[data-on] {
@@ -443,13 +443,13 @@
   align-items: center;
   gap: 8px;
   color: var(--du-accent-text);
-  font-size: 17px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
 }
 
 .hp-overflow {
-  color: color-mix(in srgb, white 70%, transparent);
-  font-size: 13px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
 }
 
 /* Comparison table */
@@ -458,7 +458,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 28px;
-  border-radius: 28px;
+  border-radius: var(--ds-r-3xl);
   background: var(--hp-card);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
 }
@@ -466,13 +466,13 @@
 .hp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-table thead th {
   padding: 0 12px 14px;
   color: white;
-  font-size: 18px;
+  font-size: var(--ds-fs-lg);
   font-weight: 800;
   text-align: left;
 }
@@ -484,17 +484,17 @@
 
 .hp-table td {
   padding: 14px 12px;
-  color: color-mix(in srgb, white 85%, transparent);
+  color: var(--ds-text-2);
 }
 
 .hp-table tbody tr:not(.hp-table-group) {
-  border-top: 1px solid color-mix(in srgb, white 6%, transparent);
+  border-top: 1px solid var(--ds-line-1);
 }
 
 .hp-table-group th {
   padding: 22px 12px 8px;
   color: white;
-  font-size: 18px;
+  font-size: var(--ds-fs-lg);
   font-weight: 800;
   text-align: left;
 }
@@ -516,7 +516,7 @@
   display: block;
   margin-top: 2px;
   color: var(--hp-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 400;
 }
 
@@ -532,10 +532,10 @@
   gap: 6px;
   height: 40px;
   padding: 0 18px;
-  border-radius: 12px;
-  background: color-mix(in srgb, white 6%, transparent);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
   color: white;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 /* Credit packs */
@@ -546,12 +546,12 @@
   justify-content: space-between;
   gap: 20px;
   padding: 22px 28px;
-  border-radius: 22px;
+  border-radius: var(--ds-r-2xl);
   background: var(--hp-card);
 }
 
 .hp-packs-title {
-  font-size: 18px;
+  font-size: var(--ds-fs-lg);
   font-weight: 800;
 }
 
@@ -564,7 +564,7 @@
   display: flex;
   flex-direction: column;
   padding: 10px 18px;
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   background: color-mix(in srgb, var(--du-bg) 55%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 8%, transparent);
   transition: box-shadow 150ms ease;
@@ -575,12 +575,12 @@
 }
 
 .hp-pack strong {
-  font-size: 18px;
+  font-size: var(--ds-fs-lg);
 }
 
 .hp-pack span {
   color: var(--hp-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 @media (max-width: 1023px) {
@@ -598,19 +598,19 @@
 .hp-note {
   margin-top: 10px;
   padding: 4px 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
   color: var(--hp-muted);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hp-error {
   align-self: center;
   padding: 10px 16px;
-  border-radius: 12px;
+  border-radius: var(--ds-r-lg);
   background: color-mix(in srgb, var(--du-accent) 12%, transparent);
   color: var(--du-accent-text);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 button.hp-cta:disabled,

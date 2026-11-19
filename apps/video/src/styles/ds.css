@@ -1,0 +1,68 @@
+/* aivd design scale. One set of steps for type, corners, surfaces, fills,
+   lines and text, measured against the reference sites (which keep to about
+   seven sizes and five radii) and expressed in our own theme colours.
+   Component styles use these variables instead of raw numbers; a test keeps
+   it that way. */
+
+:root {
+  /* Type: 10 / 12 / 14 / 16 / 20 / 24 / 28 / 34 / 40. */
+  --ds-fs-2xs: 10px;
+  --ds-fs-xs: 12px;
+  --ds-fs-sm: 14px;
+  --ds-fs-md: 16px;
+  --ds-fs-lg: 20px;
+  --ds-fs-xl: 24px;
+  --ds-fs-2xl: 28px;
+  --ds-fs-3xl: 34px;
+  --ds-fs-4xl: 40px;
+  /* Oversized decorative numerals (step numbers). */
+  --ds-fs-display: 84px;
+
+  /* Corners: controls 8, buttons 10, cards 12, large cards 16, panels 20,
+     hero blocks 24, and fully round. */
+  --ds-r-xs: 4px;
+  --ds-r-sm: 8px;
+  --ds-r-md: 10px;
+  --ds-r-lg: 12px;
+  --ds-r-xl: 16px;
+  --ds-r-2xl: 20px;
+  --ds-r-3xl: 24px;
+  --ds-r-full: 999px;
+
+  /* Surfaces, from the page up: panel, card, raised. */
+  --ds-surface-1: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
+  --ds-surface-2: color-mix(in srgb, var(--du-surface-2) 50%, var(--du-bg-elev));
+  --ds-surface-3: color-mix(in srgb, var(--du-surface-2) 75%, var(--du-bg-elev));
+
+  /* Translucent fills on top of a surface (chips, hovers, pressed). */
+  --ds-fill-1: color-mix(in srgb, white 5%, transparent);
+  --ds-fill-2: color-mix(in srgb, white 8%, transparent);
+  --ds-fill-3: color-mix(in srgb, white 12%, transparent);
+  --ds-fill-4: color-mix(in srgb, white 18%, transparent);
+
+  /* Hairlines. */
+  --ds-line-1: color-mix(in srgb, white 6%, transparent);
+  --ds-line-2: color-mix(in srgb, white 10%, transparent);
+  --ds-line-3: color-mix(in srgb, white 18%, transparent);
+
+  /* Text: primary, secondary, muted, dim. */
+  --ds-text-1: white;
+  --ds-text-2: color-mix(in srgb, white 80%, transparent);
+  --ds-text-3: color-mix(in srgb, white 55%, transparent);
+  --ds-text-4: color-mix(in srgb, white 38%, transparent);
+
+  /* Elevation. */
+  --ds-shadow-1: 0 2px 6px color-mix(in srgb, var(--du-bg) 35%, transparent);
+  --ds-shadow-2: 0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent),
+    0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
+
+  /* Spacing, for new work: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 72. */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 24px;
+  --ds-space-6: 32px;
+  --ds-space-7: 48px;
+  --ds-space-8: 72px;
+}

@@ -34,9 +34,9 @@
   align-items: center;
   gap: 8px;
   padding: 0 6px 0 12px;
-  border: 1px solid color-mix(in srgb, white 10%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--du-surface-2) 70%, var(--du-bg-elev));
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-3);
   transform: translateX(-50%);
   animation: ns-bar-in var(--du-dur, 400ms) var(--du-ease, ease) both;
 }
@@ -65,7 +65,7 @@
   border: 0;
   background: transparent;
   color: var(--du-text);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   outline: none;
 }
 
@@ -81,26 +81,26 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-  border: 1px solid color-mix(in srgb, white 10%, transparent);
-  border-radius: 5px;
-  background: color-mix(in srgb, white 5%, transparent);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-xs);
+  background: var(--ds-fill-1);
   color: var(--du-text-muted);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-clear {
   padding: 2px 8px;
-  border-radius: 6px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-2);
   color: var(--du-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-bar-sep {
   width: 1px;
   height: 18px;
-  background: color-mix(in srgb, white 10%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .ns-close {
@@ -108,8 +108,8 @@
   width: 26px;
   height: 26px;
   place-items: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
   color: var(--du-text);
 }
 
@@ -128,9 +128,9 @@
   max-height: min(620px, calc(100dvh - 80px));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, white 4%, transparent);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--du-surface-2) 55%, var(--du-bg-elev));
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--ds-surface-2);
   box-shadow:
     0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent),
     0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
@@ -149,14 +149,14 @@
   display: flex;
   gap: 4px;
   padding: 10px 10px 6px;
-  border-bottom: 1px solid color-mix(in srgb, white 5%, transparent);
+  border-bottom: 1px solid var(--ds-line-1);
 }
 
 .ns-tab {
   padding: 5px 11px;
-  border-radius: 8px;
+  border-radius: var(--ds-r-sm);
   color: var(--du-text-muted);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
     background-color var(--du-dur-fast, 180ms) ease,
@@ -168,7 +168,7 @@
 }
 
 .ns-tab-on {
-  background: color-mix(in srgb, white 10%, transparent);
+  background: var(--ds-fill-3);
   color: var(--du-text);
 }
 
@@ -195,7 +195,7 @@
   justify-content: space-between;
   padding: 0 8px 4px;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-count {
@@ -207,7 +207,7 @@
   align-items: center;
   gap: 3px;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-link:hover {
@@ -236,13 +236,13 @@
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  border-radius: 12px;
+  border-radius: var(--ds-r-lg);
   color: var(--du-text);
   text-align: left;
 }
 
 .ns-row-on {
-  background: color-mix(in srgb, white 7%, transparent);
+  background: var(--ds-fill-2);
 }
 
 .ns-row-off {
@@ -256,7 +256,7 @@
   flex-shrink: 0;
   overflow: hidden;
   place-items: center;
-  border-radius: 10px;
+  border-radius: var(--ds-r-md);
   background: var(--du-surface-2);
   color: var(--du-text);
 }
@@ -285,7 +285,7 @@
   align-items: center;
   gap: 6px;
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -293,7 +293,7 @@
 .ns-desc {
   overflow: hidden;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -303,8 +303,8 @@
 .ns-soon {
   flex-shrink: 0;
   padding: 0 5px;
-  border-radius: 4px;
-  font-size: 10px;
+  border-radius: var(--ds-r-xs);
+  font-size: var(--ds-fs-2xs);
   font-weight: 700;
   line-height: 16px;
 }
@@ -319,12 +319,12 @@
 }
 
 .ns-chip {
-  border: 1px solid color-mix(in srgb, white 18%, transparent);
+  border: 1px solid var(--ds-line-3);
   color: var(--du-text);
 }
 
 .ns-soon {
-  background: color-mix(in srgb, white 8%, transparent);
+  background: var(--ds-fill-2);
   color: var(--du-text-muted);
   font-weight: 500;
 }
@@ -360,16 +360,16 @@
   gap: 5px;
   overflow: hidden;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 6%, transparent);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
   color: var(--du-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ns-recent-chip:hover {
-  background: color-mix(in srgb, white 11%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .ns-recent-chip svg {
@@ -398,7 +398,7 @@
   display: block;
   overflow: hidden;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: var(--ds-r-lg);
   background: var(--du-surface-2);
 }
 
@@ -417,7 +417,7 @@
 .ns-card-title {
   overflow: hidden;
   color: var(--du-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -426,7 +426,7 @@
 .ns-card-desc {
   overflow: hidden;
   color: var(--du-text-muted);
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -438,7 +438,7 @@
   gap: 6px;
   padding: 18px 8px 8px;
   color: var(--du-text);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .ns-empty > p {
@@ -448,16 +448,16 @@
 .ns-empty-sub {
   margin-bottom: 4px;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-foot {
   display: flex;
   gap: 14px;
   padding: 8px 14px;
-  border-top: 1px solid color-mix(in srgb, white 5%, transparent);
+  border-top: 1px solid var(--ds-line-1);
   color: var(--du-text-dim);
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
 }
 
 .ns-foot span {

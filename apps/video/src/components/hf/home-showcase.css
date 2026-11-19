@@ -2,8 +2,8 @@
    site's homepage. Colours stay on the theme tokens. */
 
 .hs {
-  --hs-card: color-mix(in srgb, var(--du-surface-2) 45%, var(--du-bg-elev));
-  --hs-card-hover: color-mix(in srgb, var(--du-surface-2) 75%, var(--du-bg-elev));
+  --hs-card: var(--ds-surface-2);
+  --hs-card-hover: var(--ds-surface-3);
   --hs-muted: color-mix(in srgb, white 55%, transparent);
   display: flex;
   flex-direction: column;
@@ -45,7 +45,7 @@
   overflow: hidden;
   aspect-ratio: 16 / 9;
   margin-bottom: 12px;
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   background: var(--hs-card);
 }
 
@@ -64,7 +64,7 @@
 
 .hs-slide-title {
   color: white;
-  font-size: 17px;
+  font-size: var(--ds-fs-md);
   font-weight: 800;
   letter-spacing: -0.01em;
   text-transform: uppercase;
@@ -76,7 +76,7 @@
 
 .hs-slide-body {
   color: var(--hs-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hs-arrow {
@@ -88,7 +88,7 @@
   height: 44px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 75%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
   color: white;
@@ -112,7 +112,7 @@
   gap: 10px;
   overflow: hidden;
   padding: 28px;
-  border-radius: 20px;
+  border-radius: var(--ds-r-2xl);
   background:
     radial-gradient(80% 70% at 50% 40%, color-mix(in srgb, var(--du-accent) 30%, transparent), transparent 70%),
     repeating-linear-gradient(90deg, color-mix(in srgb, white 4%, transparent) 0 1px, transparent 1px 72px),
@@ -124,10 +124,10 @@
 
 .hs-offer-kicker {
   padding: 3px 10px;
-  border-radius: 6px;
-  background: color-mix(in srgb, white 10%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-3);
   color: white;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hs-offer-title {
@@ -140,18 +140,18 @@
 }
 
 .hs-offer-body {
-  color: color-mix(in srgb, white 80%, transparent);
-  font-size: 14px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
 }
 
 .hs-offer-cta {
   margin-top: 8px;
   padding: 10px 22px;
-  border-radius: 10px;
+  border-radius: var(--ds-r-md);
   background: var(--du-accent);
   box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
   color: var(--du-on-accent);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
 }
 
@@ -168,7 +168,7 @@
   justify-content: space-between;
   gap: 6px;
   padding: 18px;
-  border-radius: 16px;
+  border-radius: var(--ds-r-xl);
   background: var(--hs-card);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 5%, transparent);
   transition: background-color 150ms ease;
@@ -191,21 +191,21 @@
   gap: 8px;
   margin-top: 28px;
   color: white;
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 600;
 }
 
 .hs-tile-body {
   color: var(--hs-muted);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .hs-badge {
   padding: 1px 7px;
-  border-radius: 5px;
+  border-radius: var(--ds-r-xs);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
   font-style: italic;
   font-weight: 800;
   transform: skewX(-10deg);
@@ -223,7 +223,7 @@
   align-items: center;
   overflow: hidden;
   padding: 64px 24px;
-  border-radius: 20px;
+  border-radius: var(--ds-r-2xl);
   background:
     radial-gradient(60% 90% at 20% 30%, color-mix(in srgb, white 9%, transparent), transparent 60%),
     radial-gradient(50% 80% at 85% 70%, color-mix(in srgb, white 7%, transparent), transparent 60%),
@@ -250,8 +250,8 @@
 }
 
 .hs-chrome-kicker {
-  color: color-mix(in srgb, white 70%, transparent);
-  font-size: 15px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-md);
   font-weight: 800;
   letter-spacing: 0.04em;
 }
@@ -271,8 +271,8 @@
 .hs-chrome-body {
   max-width: 540px;
   margin-top: 16px;
-  color: color-mix(in srgb, white 80%, transparent);
-  font-size: 15px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-md);
   line-height: 1.6;
 }
 
@@ -289,8 +289,8 @@
   align-items: center;
   gap: 8px;
   padding: 0 20px;
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: var(--ds-r-lg);
+  font-size: var(--ds-fs-md);
   font-weight: 600;
   white-space: nowrap;
   transition: filter 150ms ease;
@@ -307,7 +307,7 @@
 }
 
 .hs-btn-dark {
-  background: color-mix(in srgb, white 7%, transparent);
+  background: var(--ds-fill-2);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
   color: white;
 }
@@ -334,7 +334,7 @@
   display: block;
   overflow: hidden;
   aspect-ratio: 3 / 2;
-  border-radius: 16px;
+  border-radius: var(--ds-r-xl);
   background: var(--hs-card);
 }
 
@@ -368,7 +368,7 @@
   right: 18px;
   bottom: 52px;
   color: white;
-  font-size: 17px;
+  font-size: var(--ds-fs-md);
   font-weight: 600;
 }
 
@@ -387,10 +387,10 @@
 
 .hs-chip {
   padding: 4px 10px;
-  border-radius: 8px;
-  background: color-mix(in srgb, white 14%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-3);
   color: white;
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   backdrop-filter: blur(8px);
 }
 
@@ -402,7 +402,7 @@
   align-items: center;
   gap: 4px;
   color: white;
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 600;
   transform: translateX(-50%);
 }
@@ -423,7 +423,7 @@
 
 .hs-title {
   color: white;
-  font-size: 28px;
+  font-size: var(--ds-fs-2xl);
   font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1.1;
@@ -433,7 +433,7 @@
 .hs-sub {
   margin-top: 6px;
   color: var(--hs-muted);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
 }
 
 .hs-tall-row {
@@ -446,7 +446,7 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 3 / 4;
-  border-radius: 18px;
+  border-radius: var(--ds-r-xl);
   background: var(--hs-card);
   text-align: left;
 }
@@ -467,7 +467,7 @@
   left: 16px;
   bottom: 16px;
   color: white;
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 600;
 }
 
@@ -476,10 +476,10 @@
   left: 50%;
   bottom: 52px;
   padding: 10px 24px;
-  border-radius: 12px;
+  border-radius: var(--ds-r-lg);
   background: white;
   color: var(--du-bg);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 600;
   opacity: 0;
   transform: translate(-50%, 8px);
@@ -504,7 +504,7 @@
   overflow: hidden;
   margin-bottom: 12px;
   break-inside: avoid;
-  border-radius: 16px;
+  border-radius: var(--ds-r-xl);
   background: var(--hs-card);
 }
 
@@ -529,10 +529,10 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 65%, transparent);
   color: white;
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   white-space: nowrap;
   opacity: 0;
   backdrop-filter: blur(10px);
@@ -552,7 +552,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
   align-items: center;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: var(--ds-r-2xl);
 }
 
 .hs-banner-canvas {
@@ -576,16 +576,16 @@
 
 .hs-banner-kicker {
   color: white;
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
 }
 
 .hs-banner-tag {
   padding: 4px 12px;
-  border-radius: 8px;
+  border-radius: var(--ds-r-sm);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-style: italic;
   font-weight: 800;
 }
@@ -599,8 +599,8 @@
 
 .hs-banner-body {
   margin-bottom: 10px;
-  color: color-mix(in srgb, white 80%, transparent);
-  font-size: 15px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-md);
 }
 
 .hs-banner-art {
@@ -611,7 +611,7 @@
 .hs-banner-card {
   position: absolute;
   border: 4px solid color-mix(in srgb, var(--du-accent) 60%, white);
-  border-radius: 22px;
+  border-radius: var(--ds-r-2xl);
   object-fit: cover;
   box-shadow: 0 20px 40px color-mix(in srgb, var(--du-bg) 50%, transparent);
 }
@@ -636,10 +636,10 @@
   left: 2%;
   max-width: 220px;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   background: color-mix(in srgb, white 88%, transparent);
   color: var(--du-bg);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   transform: rotate(-4deg);
 }
 
@@ -655,7 +655,7 @@
   left: calc(4% + var(--i) * 18%);
   width: 30%;
   aspect-ratio: 4 / 5;
-  border-radius: 22px;
+  border-radius: var(--ds-r-2xl);
   object-fit: cover;
   box-shadow: 0 18px 36px color-mix(in srgb, var(--du-bg) 45%, transparent);
   transform: rotate(calc(-14deg + var(--i) * 6deg));
@@ -672,8 +672,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 10px 10px 24px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--du-surface-2) 55%, var(--du-bg-elev));
+  border-radius: var(--ds-r-full);
+  background: var(--ds-surface-2);
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, white 10%, transparent),
     0 18px 48px color-mix(in srgb, var(--du-bg) 70%, transparent);
@@ -696,12 +696,12 @@
   border: 0;
   background: transparent;
   color: white;
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   outline: none;
 }
 
 .hs-mini input::placeholder {
-  color: color-mix(in srgb, white 40%, transparent);
+  color: var(--ds-text-4);
 }
 
 .hs-mini button {
@@ -711,15 +711,15 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
   transition: opacity 150ms ease;
 }
 
 .hs-mini button:disabled {
-  background: color-mix(in srgb, white 10%, transparent);
-  color: color-mix(in srgb, white 45%, transparent);
+  background: var(--ds-fill-3);
+  color: var(--ds-text-4);
 }
 
 /* Narrower desktop windows: fewer columns so cards keep their text clear. */
@@ -806,10 +806,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 60%, transparent);
   color: white;
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   backdrop-filter: blur(10px);
   transition: opacity 300ms ease;
@@ -844,8 +844,8 @@
 .wc-prompt {
   display: -webkit-box;
   overflow: hidden;
-  color: color-mix(in srgb, white 88%, transparent);
-  font-size: 12px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
   line-height: 1.5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -856,10 +856,10 @@
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
 }
 
@@ -911,7 +911,7 @@
 .hs-slide-cover-sub {
   color: var(--du-accent-text);
   font-family: var(--du-font-display, inherit);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;

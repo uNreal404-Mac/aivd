@@ -31,7 +31,7 @@
 
 .du-hero-eyebrow {
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -41,7 +41,7 @@
   margin-top: 10px;
   margin-bottom: 20px;
   color: white;
-  font-size: 24px;
+  font-size: var(--ds-fs-xl);
   font-weight: 300;
   line-height: 1.5;
 }
@@ -61,13 +61,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
-  background: color-mix(in srgb, white 4%, transparent);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-fill-1);
   transition: background 160ms ease;
 }
 
 .du-feature:hover {
-  background: color-mix(in srgb, white 7%, transparent);
+  background: var(--ds-fill-2);
 }
 
 .du-feature-media {
@@ -120,20 +120,20 @@
 
 .du-feature-title {
   color: white;
-  font-size: 16px;
+  font-size: var(--ds-fs-md);
   font-weight: 500;
 }
 
 .du-feature-text {
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 300;
   line-height: 1.5;
 }
 
 .du-section-eyebrow {
   color: var(--du-accent-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   letter-spacing: 0.18em;
   text-align: center;
@@ -170,7 +170,7 @@
   align-items: center;
   gap: 8px;
   color: var(--du-accent-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   letter-spacing: 0.12em;
 }
@@ -178,14 +178,14 @@
 .du-step-title {
   margin-top: 14px;
   color: white;
-  font-size: 18px;
+  font-size: var(--ds-fs-lg);
   font-weight: 600;
 }
 
 .du-step-body {
   margin-top: 8px;
   color: var(--du-text-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   line-height: 1.65;
 }
 
@@ -202,7 +202,7 @@
   gap: 32px;
   padding: 36px 40px;
   border: 1px solid var(--du-border);
-  border-radius: 24px;
+  border-radius: var(--ds-r-3xl);
   background:
     radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 60%),
     var(--du-surface);
@@ -219,7 +219,7 @@
   margin-top: 8px;
   max-width: 560px;
   color: var(--du-text-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   line-height: 1.6;
 }
 

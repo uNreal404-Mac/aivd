@@ -47,7 +47,7 @@
   height: 172px;
   margin-left: -22px;
   border: 3px solid color-mix(in srgb, white 70%, transparent);
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   object-fit: cover;
   box-shadow: 0 18px 40px color-mix(in srgb, var(--du-bg) 70%, transparent);
   transition: transform 300ms ease;
@@ -68,7 +68,7 @@
 .is-3 {
   width: 150px;
   height: 150px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   transform: translateY(8px);
   z-index: 1;
 }
@@ -90,7 +90,7 @@
   flex-direction: column;
   align-items: center;
   color: white;
-  font-size: 40px;
+  font-size: var(--ds-fs-4xl);
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1.12;
@@ -110,8 +110,8 @@
 
 .is-sub {
   margin-top: 12px;
-  color: color-mix(in srgb, white 55%, transparent);
-  font-size: 17px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-md);
 }
 
 /* Composer */
@@ -121,9 +121,9 @@
   align-items: stretch;
   gap: 12px;
   padding: 14px;
-  border: 1px solid color-mix(in srgb, white 6%, transparent);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--ds-surface-1);
   box-shadow: 0 24px 60px color-mix(in srgb, var(--du-bg) 60%, transparent);
 }
 
@@ -142,13 +142,13 @@
   background: transparent;
   padding: 6px 8px;
   color: white;
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   line-height: 1.6;
   outline: none;
 }
 
 .is-composer textarea::placeholder {
-  color: color-mix(in srgb, white 35%, transparent);
+  color: var(--ds-text-4);
 }
 
 .is-toolbar {
@@ -165,22 +165,22 @@
   display: inline-flex;
   height: 38px;
   align-items: center;
-  border-radius: 10px;
-  background: color-mix(in srgb, white 6%, transparent);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
 }
 
 .is-chip {
   gap: 6px;
   padding: 0 12px;
   color: white;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   white-space: nowrap;
   transition: background-color 150ms ease;
 }
 
 button.is-chip:hover:not(:disabled) {
-  background: color-mix(in srgb, white 11%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .is-chip-group {
@@ -205,7 +205,7 @@ button.is-chip:hover:not(:disabled) {
 .is-chip-sep {
   width: 1px;
   height: 16px;
-  background: color-mix(in srgb, white 12%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .is-model {
@@ -216,7 +216,7 @@ button.is-chip:hover:not(:disabled) {
 .is-model > div > button {
   height: 38px;
   color: white;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
 }
 
@@ -227,7 +227,7 @@ button.is-chip:hover:not(:disabled) {
 .is-model-chevron {
   width: 16px;
   height: 16px;
-  color: color-mix(in srgb, white 55%, transparent);
+  color: var(--ds-text-3);
   pointer-events: none;
 }
 
@@ -235,13 +235,13 @@ button.is-chip:hover:not(:disabled) {
   gap: 10px;
   padding: 0 10px;
   color: white;
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
 }
 
 .is-stepper button {
   display: inline-flex;
-  color: color-mix(in srgb, white 60%, transparent);
+  color: var(--ds-text-3);
 }
 
 .is-stepper button:disabled {
@@ -256,11 +256,11 @@ button.is-chip:hover:not(:disabled) {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   background: var(--du-accent);
   box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
   color: var(--du-on-accent);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 700;
   transition: filter 150ms ease;
 }
@@ -273,7 +273,7 @@ button.is-chip:hover:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   opacity: 0.8;
 }
@@ -281,7 +281,7 @@ button.is-chip:hover:not(:disabled) {
 .is-notice {
   margin-top: 10px;
   color: var(--du-accent-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .is-generate:disabled {
@@ -324,7 +324,7 @@ button.is-chip:hover:not(:disabled) {
   width: 56px;
   height: 56px;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--ds-r-md);
 }
 
 .is-ref img {
@@ -342,7 +342,7 @@ button.is-chip:hover:not(:disabled) {
   height: 18px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 70%, transparent);
   color: white;
 }
@@ -363,5 +363,5 @@ button.is-chip:hover:not(:disabled) {
   width: 100%;
   margin-top: 56px;
   padding-top: 40px;
-  border-top: 1px solid color-mix(in srgb, white 6%, transparent);
+  border-top: 1px solid var(--ds-line-1);
 }

@@ -6,8 +6,8 @@
 .du-skel {
   position: relative;
   overflow: hidden;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--du-surface-2) 55%, var(--du-bg-elev));
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
 }
 
 .du-skel::after {
@@ -27,7 +27,7 @@
 
 .du-skel-line {
   height: 12px;
-  border-radius: 6px;
+  border-radius: var(--ds-r-sm);
 }
 
 /* Studio skeleton: settings panel on the left, stage on the right. */
@@ -54,8 +54,8 @@
   flex-direction: column;
   gap: 10px;
   padding: 10px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
+  border-radius: var(--ds-r-2xl);
+  background: var(--ds-surface-1);
 }
 
 .du-skel-stage {
@@ -65,8 +65,8 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px 20px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
+  border-radius: var(--ds-r-2xl);
+  background: var(--ds-surface-1);
 }
 
 .du-skel-row {
@@ -114,8 +114,8 @@
 }
 
 .st-framed {
-  border: 1px dashed color-mix(in srgb, white 10%, transparent);
-  border-radius: 22px;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-2xl);
   background: color-mix(in srgb, var(--du-surface-2) 18%, transparent);
 }
 
@@ -133,7 +133,7 @@
   height: 88px;
   margin: 0 -10px;
   border: 2px solid var(--du-bg);
-  border-radius: 12px;
+  border-radius: var(--ds-r-lg);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--du-bg) 60%, transparent);
   object-fit: cover;
   transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
@@ -166,7 +166,7 @@
   height: 52px;
   place-items: center;
   margin-bottom: 4px;
-  border-radius: 16px;
+  border-radius: var(--ds-r-xl);
   background: color-mix(in srgb, var(--du-surface-2) 70%, transparent);
   color: var(--du-text);
 }
@@ -195,7 +195,7 @@
 
 .st-title {
   font-family: var(--du-font-display, inherit);
-  font-size: 22px;
+  font-size: var(--ds-fs-xl);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -203,18 +203,18 @@
 .st-body {
   max-width: 460px;
   color: var(--du-text-muted);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   line-height: 1.65;
 }
 
 .st-detail {
   max-width: 460px;
   padding: 8px 12px;
-  border-radius: 10px;
-  background: color-mix(in srgb, white 5%, transparent);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
   color: var(--du-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   word-break: break-word;
 }
 
@@ -232,10 +232,10 @@
   align-items: center;
   gap: 6px;
   padding: 0 16px;
-  border-radius: 12px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-2);
   color: var(--du-text);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
     background-color var(--du-dur-fast, 180ms) ease,
@@ -243,7 +243,7 @@
 }
 
 .st-btn:hover {
-  background: color-mix(in srgb, white 14%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .st-btn:active {
@@ -281,10 +281,10 @@
   gap: 6px;
   overflow: hidden;
   padding: 7px 12px;
-  border: 1px solid color-mix(in srgb, white 8%, transparent);
-  border-radius: 999px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
@@ -311,7 +311,7 @@
   gap: 18px;
   margin-top: 18px;
   color: var(--du-text-muted);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
 }
 
 .st-links a:hover {

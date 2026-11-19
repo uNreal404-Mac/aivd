@@ -7,8 +7,8 @@
   display: flex;
   overflow: hidden;
   align-items: flex-end;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--du-surface-2) 45%, var(--du-bg-elev));
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-2);
   isolation: isolate;
 }
 
@@ -21,7 +21,7 @@
     linear-gradient(
       100deg,
       transparent 20%,
-      color-mix(in srgb, white 7%, transparent) 45%,
+      var(--ds-fill-2) 45%,
       transparent 70%
     );
   background-size:
@@ -56,14 +56,14 @@
   align-items: center;
   gap: 8px;
   color: var(--du-text);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 600;
 }
 
 .sr-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--du-accent) 60%, transparent);
   animation: sr-ping 1.4s var(--du-ease, ease) infinite;
@@ -88,7 +88,7 @@
   display: -webkit-box;
   overflow: hidden;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -105,7 +105,7 @@
 
 .sr-pending-msg {
   color: var(--du-text-muted);
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
 }
 
 /* ---------- Buttons ---------- */
@@ -116,7 +116,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--ds-r-md);
   background: color-mix(in srgb, var(--du-bg) 62%, transparent);
   color: var(--du-text);
   backdrop-filter: blur(10px);
@@ -139,10 +139,10 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  border-radius: 10px;
-  background: color-mix(in srgb, white 8%, transparent);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-2);
   color: var(--du-text);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
     background-color var(--du-dur-fast, 180ms) ease,
@@ -150,7 +150,7 @@
 }
 
 .sr-pill:hover {
-  background: color-mix(in srgb, white 14%, transparent);
+  background: var(--ds-fill-3);
 }
 
 .sr-pill:active {
@@ -171,8 +171,8 @@
   position: relative;
   display: block;
   overflow: hidden;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-1);
   cursor: zoom-in;
 }
 
@@ -229,7 +229,7 @@
   flex: 1;
   overflow: hidden;
   color: var(--du-text);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -255,10 +255,10 @@
   top: 10px;
   left: 10px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 62%, transparent);
   color: var(--du-text);
-  font-size: 11px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
   backdrop-filter: blur(10px);
 }
@@ -309,7 +309,7 @@
 .sr-viewer-media {
   max-width: 100%;
   max-height: calc(100vh - 80px);
-  border-radius: 14px;
+  border-radius: var(--ds-r-lg);
   box-shadow: 0 30px 80px color-mix(in srgb, var(--du-bg) 70%, transparent);
   object-fit: contain;
   pointer-events: auto;
@@ -324,8 +324,8 @@
   height: 44px;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, white 10%, transparent);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-3);
   color: var(--du-text);
   pointer-events: auto;
   transform: translateY(-50%);
@@ -333,7 +333,7 @@
 }
 
 .sr-viewer-nav:hover {
-  background: color-mix(in srgb, white 18%, transparent);
+  background: var(--ds-fill-4);
 }
 
 .sr-viewer-prev {
@@ -351,7 +351,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 20px;
-  border-left: 1px solid color-mix(in srgb, white 6%, transparent);
+  border-left: 1px solid var(--ds-line-1);
   background: var(--du-bg-elev);
   overflow-y: auto;
 }
@@ -365,29 +365,29 @@
 
 .sr-viewer-count {
   color: var(--du-text-muted);
-  font-size: 13px;
+  font-size: var(--ds-fs-sm);
   font-variant-numeric: tabular-nums;
 }
 
 .sr-viewer-model {
   width: fit-content;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent-soft, color-mix(in srgb, var(--du-accent) 15%, transparent));
   color: var(--du-accent-text, var(--du-accent));
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-weight: 600;
 }
 
 .sr-viewer-label {
   margin-top: 6px;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 .sr-viewer-prompt {
   color: var(--du-text);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -403,7 +403,7 @@
 .sr-viewer-keys {
   margin-top: auto;
   color: var(--du-text-dim, var(--du-text-muted));
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
 }
 
 /* ---------- Waveform player ---------- */
@@ -422,7 +422,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
   transition: transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
@@ -443,7 +443,7 @@
 }
 
 .sr-wave-bars:focus-visible {
-  border-radius: 6px;
+  border-radius: var(--ds-r-sm);
   outline: 2px solid var(--du-accent);
   outline-offset: 3px;
 }
@@ -451,8 +451,8 @@
 .sr-bar {
   min-height: 3px;
   flex: 1;
-  border-radius: 2px;
-  background: color-mix(in srgb, white 18%, transparent);
+  border-radius: var(--ds-r-xs);
+  background: var(--ds-fill-4);
   transition:
     height var(--du-dur, 400ms) var(--du-ease, ease),
     background-color 120ms ease;
@@ -465,7 +465,7 @@
 .sr-wave-time {
   flex-shrink: 0;
   color: var(--du-text-muted);
-  font-size: 12px;
+  font-size: var(--ds-fs-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -490,7 +490,7 @@
   background: color-mix(in srgb, var(--du-accent) 14%, var(--du-bg) 70%);
   color: var(--du-text);
   content: attr(data-drop-label);
-  font-size: 14px;
+  font-size: var(--ds-fs-sm);
   font-weight: 600;
   pointer-events: none;
 }

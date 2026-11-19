@@ -12,14 +12,14 @@
 }
 
 .is-step-card .hp-plan-name {
-  font-size: 30px;
+  font-size: var(--ds-fs-2xl);
 }
 
 .is-step-n {
   position: absolute;
   top: 18px;
   right: 26px;
-  font-size: 84px;
+  font-size: var(--ds-fs-display);
   font-weight: 900;
   line-height: 1;
   opacity: 0.18;

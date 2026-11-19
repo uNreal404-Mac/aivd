@@ -20,7 +20,7 @@
   align-items: center;
   gap: 10px;
   color: var(--du-on-accent);
-  font-size: 30px;
+  font-size: var(--ds-fs-2xl);
   font-weight: 900;
   letter-spacing: -0.02em;
 }
@@ -30,7 +30,7 @@
   width: 40px;
   height: 40px;
   padding: 6px;
-  border-radius: 10px;
+  border-radius: var(--ds-r-md);
   background: var(--du-bg);
 }
 
@@ -58,12 +58,12 @@
 .ft-group-title {
   margin-bottom: 14px;
   color: color-mix(in srgb, var(--du-on-accent) 45%, transparent);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
 }
 
 .ft-link {
   color: var(--du-on-accent);
-  font-size: 15px;
+  font-size: var(--ds-fs-md);
   font-weight: 500;
   transition: opacity 150ms ease;
 }
@@ -80,8 +80,8 @@
   gap: 12px;
   padding: 22px 24px;
   background: var(--du-bg);
-  color: color-mix(in srgb, white 65%, transparent);
-  font-size: 14px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
 }
 
 .ft-bottom-links {
