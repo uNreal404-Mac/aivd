@@ -1,0 +1,246 @@
+/* Community gallery page, laid out like the effects page: a centred head over
+   a near full-width masonry wall with titles on the pictures. */
+
+.gl-page {
+  display: flex;
+  min-height: 70vh;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  padding: var(--ds-space-7) var(--ds-space-3) var(--ds-space-8);
+  color: var(--ds-text-1);
+}
+
+.gl-head {
+  display: flex;
+  max-width: 760px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.gl-kicker {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.gl-title {
+  color: var(--du-accent-text);
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(var(--ds-fs-4xl), 5vw, var(--ds-fs-display));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.gl-sub {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-md);
+  line-height: 1.6;
+}
+
+.gl {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.gl-grid {
+  margin: 0;
+  padding: 0;
+  column-count: 5;
+  column-gap: var(--ds-space-2);
+  list-style: none;
+}
+
+.gl-item {
+  margin-bottom: var(--ds-space-2);
+  break-inside: avoid;
+}
+
+.gl-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ds-r-md);
+  background: var(--ds-surface-2);
+  isolation: isolate;
+}
+
+.gl-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gl-open img,
+.gl-open video {
+  transition: transform 700ms var(--du-ease, ease);
+}
+
+.gl-card:hover .gl-open img,
+.gl-card:hover .gl-open video {
+  transform: scale(1.04);
+}
+
+.gl-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.gl-tag svg {
+  width: 11px;
+  height: 11px;
+}
+
+.gl-play {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
+  color: var(--ds-text-1);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.gl-play svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+
+.gl-over {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-7) var(--ds-space-3) var(--ds-space-3);
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 80%, transparent), transparent);
+  pointer-events: none;
+}
+
+.gl-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gl-name {
+  overflow: hidden;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gl-meta {
+  overflow: hidden;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gl-use {
+  display: inline-flex;
+  height: 30px;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity var(--du-dur-fast, 180ms) ease;
+}
+
+.gl-use svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gl-card:hover .gl-use,
+.gl-use:focus-visible {
+  opacity: 1;
+}
+
+.gl-use:disabled {
+  opacity: 0.6;
+}
+
+.gl-note {
+  margin-top: var(--ds-space-5);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  text-align: center;
+}
+
+.gl-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--ds-space-6);
+}
+
+.gl-more {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.gl-more:hover {
+  background: var(--ds-fill-3);
+}
+
+.gl-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 1279px) {
+  .gl-grid {
+    column-count: 4;
+  }
+}
+
+@media (max-width: 1023px) {
+  .gl-grid {
+    column-count: 2;
+  }
+}

@@ -46,9 +46,17 @@ function TemplateRow({ lang, onUse }: { lang: string; onUse: (template: HomeTemp
     <section className="sp-row" aria-label={zh ? "模板" : "Templates"}>
       <Link href={localizedHref(lang, "/templates")} className="sp-promo">
         <span className="sp-promo-title">
-          {zh ? "一键打造" : "Make it "}
-          <span>{zh ? "爆款" : "viral"}</span>
-          {zh ? "内容" : " in one click"}
+          {zh ? (
+            <>
+              一键打造
+              <br />
+              <span>爆款</span>内容
+            </>
+          ) : (
+            <>
+              Make it <span>viral</span> in one click
+            </>
+          )}
         </span>
         <span className="sp-promo-cta">{zh ? "试试模板" : "Try templates"}</span>
       </Link>

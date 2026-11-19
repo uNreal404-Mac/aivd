@@ -59,12 +59,22 @@ function supportParagraph(
   return normalized ? [build(normalized)] : [];
 }
 
+const ZH_NUMERALS = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二", "十三", "十四", "十五"];
+const HEADING_NUMBER = /^(?:[一二三四五六七八九十]+、|\d+\.\s+)/;
+
+/** Drops sections left empty (say, by a missing support address) and renumbers the rest. */
 function omitEmptySections(doc: LegalDoc): LegalDoc {
+  const kept = doc.sections.filter(
+    (section) => section.paragraphs.length > 0 || (section.bullets?.length ?? 0) > 0,
+  );
   return {
     ...doc,
-    sections: doc.sections.filter(
-      (section) => section.paragraphs.length > 0 || (section.bullets?.length ?? 0) > 0,
-    ),
+    sections: kept.map((section, index) => {
+      const prefix = section.heading.match(HEADING_NUMBER)?.[0];
+      if (!prefix) return section;
+      const number = prefix.endsWith("、") ? `${ZH_NUMERALS[index] ?? index + 1}、` : `${index + 1}. `;
+      return { ...section, heading: number + section.heading.slice(prefix.length) };
+    }),
   };
 }
 

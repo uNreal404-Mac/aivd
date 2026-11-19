@@ -22,6 +22,7 @@ import {
 import type { GalleryItem } from "@/lib/gallery";
 import { localizedHref } from "@/lib/du-home";
 import "./home-gallery.css";
+import "./gallery.css";
 
 const PAGE_SIZE = 20;
 
@@ -329,128 +330,98 @@ export function GallerySection({
     );
   }
 
-  return (
-    <section className="mx-auto max-w-[1200px] px-6 py-16">
-      <div className="flex flex-col gap-2">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--du-text-dim)]">
-          {t("title")}
-        </p>
-        <h2 className="text-[32px] font-bold leading-tight text-[var(--du-text)] sm:text-[40px]">
-          {t("subtitle")}
-        </h2>
-      </div>
+  const zh = locale.toLowerCase().startsWith("zh");
 
-      {status === "loading" ? (
-        <div className="mt-8">
-          <GridSkeleton count={6} height={260} />
-        </div>
-      ) : null}
+  return (
+    <section className="gl" aria-label={t("subtitle")}>
+      {status === "loading" ? <GridSkeleton count={5} height={320} /> : null}
 
       {status === "error" ? (
         <StateBlock
-          className="mt-8"
           framed
           tone="error"
           icon={WifiOff}
-          title={locale.toLowerCase().startsWith("zh") ? "作品没能加载出来" : "The gallery did not load"}
-          body={locale.toLowerCase().startsWith("zh") ? "可能是网络不稳定，稍后再试一次。" : "The connection may be unsteady. Try again in a moment."}
-          actions={[{ label: locale.toLowerCase().startsWith("zh") ? "重试" : "Try again", onClick: () => void loadInitial(), icon: RotateCcw, primary: true }]}
+          title={zh ? "作品没能加载出来" : "The gallery did not load"}
+          body={zh ? "可能是网络不稳定，稍后再试一次。" : "The connection may be unsteady. Try again in a moment."}
+          actions={[{ label: zh ? "重试" : "Try again", onClick: () => void loadInitial(), icon: RotateCcw, primary: true }]}
         />
       ) : null}
 
       {status === "ready" && items.length === 0 ? (
         <StateBlock
-          className="mt-8"
           framed
           art={["/home/samples/rain-couple.webp", "/home/samples/red-carpet.webp", "/home/samples/autumn-walk.webp"]}
-          title={locale.toLowerCase().startsWith("zh") ? "社区还没有公开作品" : "No published work yet"}
+          title={zh ? "社区还没有公开作品" : "No published work yet"}
           body={
-            locale.toLowerCase().startsWith("zh")
+            zh
               ? "在「我的作品」里把满意的视频设为公开，它就会出现在这里，别人还能一键做同款。"
               : "Publish a video from My creations and it shows up here, where others can remix it in one click."
           }
           actions={[
-            { label: locale.toLowerCase().startsWith("zh") ? "生成第一条视频" : "Make the first video", href: localizedHref(locale, "/ai/video"), icon: Clapperboard, primary: true },
-            { label: locale.toLowerCase().startsWith("zh") ? "看看模板" : "Browse templates", href: localizedHref(locale, "/templates"), icon: LayoutTemplate },
+            { label: zh ? "生成第一条视频" : "Make the first video", href: localizedHref(locale, "/ai/video"), icon: Clapperboard, primary: true },
+            { label: zh ? "看看模板" : "Browse templates", href: localizedHref(locale, "/templates"), icon: LayoutTemplate },
           ]}
         />
       ) : null}
 
       {items.length > 0 ? (
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="gl-grid">
           {items.map((item) => (
-            <article
-              key={item.uuid}
-              className="du-glass flex flex-col overflow-hidden"
-            >
-              <button
-                type="button"
-                aria-label={item.title}
-                onClick={() => setActiveItem(item)}
-                className="group relative block aspect-video w-full overflow-hidden border-b border-[var(--du-border)]"
+            <li key={item.uuid} className="gl-item">
+              <article
+                className="gl-card"
+                style={{ aspectRatio: (item.aspectRatio ?? "16:9").replace(":", " / ") }}
               >
-                <GalleryThumb item={item} />
-                <span className="pointer-events-none absolute inset-0 bg-black/45" />
-                <span className="du-glass-btn du-glass-round du-glass-on-media pointer-events-none absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-                  <Play
-                    className="h-4 w-4 text-[var(--du-on-accent)]"
-                    aria-hidden="true"
-                  />
-                </span>
+                <button
+                  type="button"
+                  className="gl-open"
+                  aria-label={zh ? `查看作品：${item.title}` : `View creation: ${item.title}`}
+                  onClick={() => setActiveItem(item)}
+                >
+                  <GalleryThumb item={item} />
+                </button>
                 {item.promptProtected ? (
-                  <span className="du-glass-btn du-glass-on-media pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 px-2 py-1 text-[11px]">
-                    <Lock className="h-3 w-3" aria-hidden="true" />
+                  <span className="gl-tag">
+                    <Lock aria-hidden="true" />
                     {t("protectedPromptBadge")}
                   </span>
                 ) : null}
-              </button>
-
-              <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-[15px] font-semibold text-[var(--du-text)]">
-                  {item.title}
-                </h3>
-                <p className="mt-1 text-xs text-[var(--du-text-muted)]">
-                  {item.authorName} · {item.modelLabel}
-                </p>
-                <div className="mt-4 flex justify-end">
+                <span className="gl-play" aria-hidden="true">
+                  <Play />
+                </span>
+                <div className="gl-over">
+                  <div className="gl-text">
+                    <h3 className="gl-name">{item.title}</h3>
+                    <p className="gl-meta">
+                      {item.authorName} · {item.modelLabel}
+                    </p>
+                  </div>
                   <button
                     type="button"
+                    className="gl-use"
                     onClick={(event) => void handleUseTemplate(item.uuid, event)}
                     disabled={pendingUuid === item.uuid}
-                    className="du-glass-btn inline-flex h-9 items-center gap-2 px-3 text-xs disabled:opacity-60"
                   >
-                    {pendingUuid === item.uuid ? (
-                      <Loader2
-                        className="h-3.5 w-3.5 animate-spin"
-                        aria-hidden="true"
-                      />
-                    ) : null}
+                    {pendingUuid === item.uuid ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
                     {t("useTemplate")}
                   </button>
                 </div>
-              </div>
-            </article>
+              </article>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : null}
 
       {actionFailed ? (
-        <p className="mt-6 text-sm text-[var(--du-text-muted)]">
+        <p className="gl-note">
           {tc("error")}
         </p>
       ) : null}
 
       {nextCursor ? (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={() => void loadMore()}
-            disabled={loadingMore}
-            className="du-glass-btn inline-flex h-11 items-center gap-2 px-5 text-sm disabled:opacity-60"
-          >
-            {loadingMore ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
+        <div className="gl-more-row">
+          <button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="gl-more">
+            {loadingMore ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
             {t("loadMore")}
           </button>
         </div>

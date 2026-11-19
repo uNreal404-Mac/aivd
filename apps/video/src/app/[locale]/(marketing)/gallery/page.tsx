@@ -54,18 +54,13 @@ export default async function GalleryPage({
   const t = await getTranslations({ locale, namespace: "Gallery" });
 
   return (
-    <div className="min-h-screen w-full bg-[var(--du-bg)]">
-      <div className="mx-auto flex max-w-[1400px] flex-col px-4 py-10">
-        <h1 className="text-3xl font-semibold text-[var(--du-text)] sm:text-4xl">
-          {t("pageTitle")}
-        </h1>
-        <p className="mt-3 max-w-2xl text-[var(--du-text-muted)]">
-          {t("pageSubtitle")}
-        </p>
-        <div className="mt-8">
-          <GallerySection initialItemUuid={video} />
-        </div>
-      </div>
+    <div className="gl-page">
+      <header className="gl-head">
+        <p className="gl-kicker">{t("title")}</p>
+        <h1 className="gl-title">{t("pageTitle")}</h1>
+        <p className="gl-sub">{t("pageSubtitle")}</p>
+      </header>
+      <GallerySection initialItemUuid={video} />
     </div>
   );
 }
