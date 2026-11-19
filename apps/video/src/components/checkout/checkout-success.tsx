@@ -189,8 +189,12 @@ export default function CheckoutSuccess({
           <SearchX />
         </span>
         <h1 className="co-title">{copy.notFoundTitle}</h1>
+        <p className="co-text">{copy.errorText}</p>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${lang}/pricing`}>
+          <Link className="co-btn" href={`/${lang}/credits`}>
+            {copy.viewCredits}
+          </Link>
+          <Link className="co-btn co-btn-ghost" href={`/${lang}/pricing`}>
             {copy.backToPricing}
           </Link>
         </div>

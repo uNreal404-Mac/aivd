@@ -85,6 +85,15 @@
   transform: scale(0.97);
 }
 
+.co-btn-ghost {
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.co-btn-ghost:hover {
+  background: var(--ds-fill-2);
+}
+
 .co-link {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);

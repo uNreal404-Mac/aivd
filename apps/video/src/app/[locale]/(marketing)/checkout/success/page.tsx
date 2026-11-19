@@ -12,7 +12,7 @@ export async function generateMetadata({
 }: CheckoutSuccessPageProps): Promise<Metadata> {
   const { locale } = await params;
   return {
-    title: locale === "zh" ? "支付成功" : "Payment received",
+    title: locale === "zh" ? "支付结果" : "Payment status",
     robots: { index: false, follow: false },
   };
 }
