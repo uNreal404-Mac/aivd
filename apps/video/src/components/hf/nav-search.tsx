@@ -40,7 +40,9 @@ const S = (name: string) => `/home/samples/${name}.webp`;
 /** Everything the panel can find, in the order sections are shown. */
 function buildIndex(zh: boolean): Entry[] {
   const entries: Entry[] = [];
-  const seen = new Set<string>();
+  // The same page can sit in two menus under two names ("图片转视频" under
+  // Image, "图生视频" under Video). Keep one entry and let both names find it.
+  const seen = new Map<string, Entry>();
   const here = buildDropdowns(zh);
   const there = buildDropdowns(!zh);
 
@@ -52,11 +54,14 @@ function buildIndex(zh: boolean): Entry[] {
         if ((pass === "models") !== isModels) return;
         column.items.forEach((item, i) => {
           const key = item.href ?? `${menu.id}:${item.title}`;
-          if (seen.has(key)) return;
-          seen.add(key);
           const other = there[m]?.columns[c]?.items[i];
+          const existing = seen.get(key);
+          if (existing) {
+            existing.keywords = [...(existing.keywords ?? []), item.title, item.desc, other?.title ?? ""];
+            return;
+          }
           const inTemplates = menu.id === "templates";
-          entries.push({
+          const entry: Entry = {
             id: key,
             tab: isModels ? "models" : inTemplates ? "templates" : "features",
             section: isModels
@@ -78,7 +83,9 @@ function buildIndex(zh: boolean): Entry[] {
             tag: item.tag,
             soon: item.soon || !item.href,
             icon: item.icon,
-          });
+          };
+          seen.set(key, entry);
+          entries.push(entry);
         });
       });
     });

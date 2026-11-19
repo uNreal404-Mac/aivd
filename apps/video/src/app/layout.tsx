@@ -183,7 +183,7 @@ export default async function RootLayout({
               <TiltEffect />
               <RouteProgress />
               <ModalProvider>{children}</ModalProvider>
-              <Toaster richColors position="top-right" />
+              <Toaster richColors position="top-right" offset={{ top: 64, right: 16 }} />
               <TailwindIndicator />
             </QueryProvider>
           </NextIntlClientProvider>
