@@ -179,19 +179,19 @@ describe("createStripeClient", () => {
 describe("describeProduct", () => {
   it("describes an one-time credit pack", () => {
     expect(describeProduct(creditPack)).toBe(
-      "100 credits for AI video generation on aidv.ai"
+      "100 credits for AI video generation on aivd.ai"
     );
   });
 
   it("describes a monthly subscription with grouped thousands", () => {
     expect(describeProduct(subscriptionProduct)).toBe(
-      "1,000 credits per month for AI video generation on aidv.ai"
+      "1,000 credits per month for AI video generation on aivd.ai"
     );
   });
 
   it("describes a yearly subscription", () => {
     expect(describeProduct(yearlyProduct)).toBe(
-      "12,000 credits per year for AI video generation on aidv.ai"
+      "12,000 credits per year for AI video generation on aivd.ai"
     );
   });
 });
@@ -238,7 +238,7 @@ describe("buildCheckoutSessionParams", () => {
     expect(priceData?.product_data).toEqual({
       name: "Pro Monthly",
       description:
-        "1,000 credits per month for AI video generation on aidv.ai",
+        "1,000 credits per month for AI video generation on aivd.ai",
     });
 
     expect(params.subscription_data?.metadata).toEqual({
@@ -263,7 +263,7 @@ describe("buildCheckoutSessionParams", () => {
     const priceData = params.line_items?.[0].price_data;
     expect(priceData?.product_data).toEqual({
       name: "Small Pack",
-      description: "100 credits for AI video generation on aidv.ai",
+      description: "100 credits for AI video generation on aivd.ai",
     });
   });
 

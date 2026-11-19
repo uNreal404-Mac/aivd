@@ -6,6 +6,12 @@ const STRIPE_LIVE_MODE_VAR = "STRIPE_LIVE_MODE";
 
 /** Site identifier attached to all checkout metadata. */
 export const CHECKOUT_SITE_ID = "aidv.ai";
+/**
+ * The name buyers see on the Stripe page. CHECKOUT_SITE_ID above is an
+ * internal metadata tag that existing orders and webhooks already carry, so it
+ * keeps its historical spelling; the visible name is the real domain.
+ */
+export const CHECKOUT_DISPLAY_NAME = "aivd.ai";
 
 /** Statement descriptor suffix (card payments only, max 22 chars). */
 export const STATEMENT_DESCRIPTOR_SUFFIX = "AIDV";
@@ -95,19 +101,19 @@ export function createStripeClient(secretKey: string): Stripe {
  * Human-readable product description shown on the Stripe Checkout page.
  *
  * Examples:
- * - one-time: "100 credits for AI video generation on aidv.ai"
- * - monthly: "1,000 credits per month for AI video generation on aidv.ai"
- * - yearly: "1,000 credits per year for AI video generation on aidv.ai"
+ * - one-time: "100 credits for AI video generation on aivd.ai"
+ * - monthly: "1,000 credits per month for AI video generation on aivd.ai"
+ * - yearly: "1,000 credits per year for AI video generation on aivd.ai"
  */
 export function describeProduct(product: CreditPackageConfig): string {
   const credits = product.credits.toLocaleString("en-US");
 
   if (product.type === "subscription") {
     const period = product.billingPeriod === "year" ? "year" : "month";
-    return `${credits} credits per ${period} for AI video generation on ${CHECKOUT_SITE_ID}`;
+    return `${credits} credits per ${period} for AI video generation on ${CHECKOUT_DISPLAY_NAME}`;
   }
 
-  return `${credits} credits for AI video generation on ${CHECKOUT_SITE_ID}`;
+  return `${credits} credits for AI video generation on ${CHECKOUT_DISPLAY_NAME}`;
 }
 
 export interface BuildCheckoutSessionParamsArgs {
