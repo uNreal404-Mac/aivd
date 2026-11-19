@@ -7,8 +7,8 @@
   --hs-muted: color-mix(in srgb, white 55%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 72px;
-  padding: 24px 20px 96px;
+  gap: 40px;
+  padding: 24px 16px 96px;
   color: white;
 }
 

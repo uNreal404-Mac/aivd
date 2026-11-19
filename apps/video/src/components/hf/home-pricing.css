@@ -14,11 +14,25 @@
   color: white;
 }
 
+/* Title on the left, billing toggle on the right, as on the reference. */
 .hp-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  display: grid;
+  align-items: end;
+  column-gap: var(--ds-space-6);
+  grid-template-columns: minmax(0, 1fr) auto;
+  text-align: left;
+}
+
+.hp-head > :not(.hp-toggle) {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.hp-head > .hp-toggle {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  align-self: end;
+  margin-top: 0;
 }
 
 .hp-kicker {
@@ -30,7 +44,7 @@
 
 .hp-title {
   margin-top: 8px;
-  font-size: clamp(32px, 4vw, 52px);
+  font-size: var(--ds-fs-4xl);
   font-weight: 900;
   letter-spacing: -0.02em;
 }

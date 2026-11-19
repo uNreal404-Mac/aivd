@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ChevronDown,
   ChevronRight,
   Code2,
   CreditCard,
@@ -194,12 +195,25 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   // Top-level products that are not built yet, shown the way the reference
   // site shows its upcoming products: in the bar, with a small badge.
-  const upcoming: { label: string; icon: LucideIcon }[] = [
-    { label: zh ? "短剧" : "Short drama", icon: Tv },
-    { label: zh ? "广告工作室" : "Ads Studio", icon: Megaphone },
-    { label: "API", icon: Code2 },
-    { label: "MCP", icon: Plug },
-  ];
+  // Products that are not built yet sit under "More", as the reference keeps
+  // its secondary items, instead of crowding the bar.
+  const moreMenu = {
+    id: "more",
+    label: zh ? "更多" : "More",
+    path: "",
+    routes: [] as string[],
+    columns: [
+      {
+        title: zh ? "即将推出" : "Coming soon",
+        items: [
+          { title: zh ? "AI 短剧" : "AI short drama", desc: zh ? "按集生成连续剧情" : "Generate a series episode by episode", icon: Tv },
+          { title: zh ? "广告工作室" : "Ads Studio", desc: zh ? "批量生成广告视频素材" : "Ad creative in batches", icon: Megaphone },
+          { title: "API", desc: zh ? "在你的产品里调用生成能力" : "Generate from your own product", icon: Code2 },
+          { title: "MCP", desc: zh ? "在 AI 助手里直接生成视频和图片" : "Generate from inside AI assistants", icon: Plug },
+        ] as DropItem[],
+      },
+    ],
+  };
 
   const href = (path: string) => (path.startsWith("/#") ? `/${lang}${path.slice(1)}` : `/${lang}${path === "/" ? "" : path}`);
   const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
@@ -296,7 +310,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     { label: t.billing, href: "/credits", icon: CreditCard },
     { label: t.account, href: "/account", icon: UserRound },
   ];
-  const openMenu = dropdowns.find((menu) => menu.id === open);
+  const openMenu = open === "more" ? moreMenu : dropdowns.find((menu) => menu.id === open);
   const dots = 30;
   const filledDots =
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
@@ -333,13 +347,19 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link href={href("/gallery")} className="hf-item" data-active={isActive("/gallery") || undefined}>
               {t.community}
             </Link>
-            <span className="hf-sep" aria-hidden="true" />
-            {upcoming.map((item) => (
-              <span key={item.label} className="hf-item hf-item-off" aria-disabled="true">
-                {item.label}
-                <span className="hf-tag">{t.soonShort}</span>
-              </span>
-            ))}
+            <button
+              type="button"
+              className="hf-item"
+              aria-expanded={open === "more"}
+              aria-haspopup="true"
+              data-open={open === "more" || undefined}
+              onFocus={(event) => openNow("more", event.currentTarget)}
+              onClick={(event) => (open === "more" ? setOpen(null) : openNow("more", event.currentTarget))}
+              {...hover("more")}
+            >
+              {moreMenu.label}
+              <ChevronDown className="hf-item-caret" aria-hidden="true" />
+            </button>
           </nav>
         </div>
 

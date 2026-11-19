@@ -14,11 +14,13 @@
   border-bottom-color: var(--ds-line-1);
 }
 
+/* Three columns: brand, the links centred in the bar, then actions. */
 .hf-nav-inner {
-  display: flex;
+  display: grid;
   height: 52px;
   align-items: center;
   gap: 16px;
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
   padding: 0 16px;
 }
 
@@ -50,7 +52,6 @@
   --hf-fade-end: black;
   position: relative;
   min-width: 0;
-  flex: 1 1 auto;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -86,7 +87,8 @@
   flex-shrink: 0;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  height: 32px;
+  padding: 0 8px;
   border-radius: var(--ds-r-sm);
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
@@ -105,7 +107,14 @@ a.hf-item:hover,
 .hf-item[data-active],
 .hf-item[data-active]:hover,
 .hf-item[data-active][data-open] {
-  color: var(--du-accent-text);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.hf-item-caret {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
 }
 
 .hf-item-off {
@@ -139,7 +148,7 @@ a.hf-item:hover,
   flex: none;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  justify-self: end;
 }
 
 .hf-act {
