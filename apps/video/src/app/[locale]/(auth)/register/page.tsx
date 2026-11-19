@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { localizedHref } from "@/lib/locale-path";
 
 import { AuthPage } from "@/components/auth/auth-page";
 import type { Locale } from "@/config/i18n-config";
@@ -22,7 +23,7 @@ export default async function RegisterPage({ params }: Props) {
   return (
     <AuthPage
       locale={locale}
-      callbackURL={`/${locale}`}
+      callbackURL={localizedHref(locale, "/")}
       note={zh ? "第一次用邮箱或 Google 登录，就会自动创建账户。" : "Signing in for the first time creates your account."}
     />
   );

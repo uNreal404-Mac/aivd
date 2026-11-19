@@ -97,10 +97,12 @@ export const PRODUCT_TILES: { title: string | Bi; badge?: Bi; tag?: string; body
  * 4–5. Model galleries, each a title, a line and a masonry of media. Two walls
  * that share no samples, so the same picture does not come round again.
  */
-export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: string; cta: Bi; media: ShowMedia[] }[] = [
+export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi; href: string; cta: Bi; media: ShowMedia[] }[] = [
   {
     id: "seedance",
-    title: "SEEDANCE 2.5",
+    // The model name is the small label; the heading says what the wall shows.
+    title: "Seedance 2.5",
+    heading: { zh: "文字生成视频", en: "Text to Video" },
     body: { zh: "新一代 AI 视频模型", en: "The next-generation AI video model" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
     cta: { zh: "用 Seedance 2.5 生成", en: "Create with Seedance 2.5" },
@@ -108,11 +110,31 @@ export const MODEL_GALLERIES: { id: string; title: string; body: Bi; href: strin
   },
   {
     id: "nano-banana",
-    title: "NANO BANANA PRO",
+    title: "Nano Banana Pro",
+    heading: { zh: "AI 图片生成", en: "AI Image Generator" },
     body: { zh: "4K 图像，细节与文字渲染出色", en: "4K images with fine detail and text" },
     href: navModelHref("image", "nano-banana-pro"),
     cta: { zh: "用 Nano Banana Pro 生成", en: "Create with Nano Banana Pro" },
     media: [MEDIA.carpet, MEDIA.studio, MEDIA.bloom, MEDIA.dreaming, MEDIA.tomb, MEDIA.planet, MEDIA.sea],
+  },
+];
+
+/** The three steps under the first screen: what a visitor does to get a video. */
+export const HOW_STEPS: { title: Bi; body: Bi }[] = [
+  {
+    title: { zh: "描述你想要的画面", en: "Describe it" },
+    body: { zh: "写一句想看到的画面，或者上传一张起始图片让它动起来。", en: "Type what you want to see, or add a start image for the model to animate." },
+  },
+  {
+    title: { zh: "选一个模型", en: "Pick a model" },
+    body: {
+      zh: "选 Veo 3.1、Seedance 2.5、Kling 4.0 或其他模型，再定时长、画幅和声音。开始前就能看到要花多少积分。",
+      en: "Choose Veo 3.1, Seedance 2.5, Kling 4.0 or another model, then set the length, shape and sound. The credit cost shows before you start.",
+    },
+  },
+  {
+    title: { zh: "生成并下载", en: "Generate and download" },
+    body: { zh: "视频在后台生成，完成后保存在“我的作品”里，可以直接下载。", en: "The video is made in the background and saved to My creations, where you can download it." },
   },
 ];
 

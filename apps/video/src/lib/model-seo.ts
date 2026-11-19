@@ -8,6 +8,7 @@
  */
 
 import { getModelConfig } from "@/config/credits";
+import { localizedHref } from "@/lib/locale-path";
 
 export interface ModelSeoFaq {
   q: string;
@@ -427,12 +428,12 @@ export function buildFaqJsonLd(
 
 /** Deep link into the generator with this model pre-selected. */
 export function tryHref(lang: string, entry: ModelSeoEntry): string {
-  return `/${lang}/ai/video?model=${encodeURIComponent(entry.modelId)}`;
+  return localizedHref(lang, `/ai/video?model=${encodeURIComponent(entry.modelId)}`);
 }
 
 /** Canonical path of a landing page. */
 export function modelHref(lang: string, slug: string): string {
-  return `/${lang}/models/${slug}`;
+  return localizedHref(lang, `/models/${slug}`);
 }
 
 /** Every visible label on a landing page, per locale. */

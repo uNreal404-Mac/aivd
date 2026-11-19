@@ -95,12 +95,14 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
             {model.live ? null : <span className="ml-soon">{zh ? "即将上线" : "Coming soon"}</span>}
             {model.live && model.badge ? <span className="ml-badge">{model.badge === "hot" ? (zh ? "热门" : "Hot") : zh ? "新" : "New"}</span> : null}
           </p>
-          <h1 className="ml-title">
-            {model.name}
+          {/* The resolution tag sits beside the heading, not in it, so the
+              heading reads as the model's name alone ("Veo 3.1", not "Veo 3.1720p"). */}
+          <div className="ml-title-row">
+            <h1 className="ml-title">{model.name}</h1>
             {highlights.find((item) => item.label.en === "Top resolution") ? (
               <span className="ml-title-tag">{highlights.find((item) => item.label.en === "Top resolution")?.big}</span>
             ) : null}
-          </h1>
+          </div>
           <p className="ml-intro">{landingIntro(model, zh)}</p>
           {target ? (
             <ModelPrompt

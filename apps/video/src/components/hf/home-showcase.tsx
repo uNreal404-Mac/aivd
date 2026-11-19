@@ -9,7 +9,7 @@ import { GallerySection } from "@/components/gallery/gallery-section";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { CREATIVE_SKILLS, CREATIVE_SKILL_CATEGORIES } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
-import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
+import { FEATURE_SLIDES, HOW_STEPS, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
 import { SlideCover } from "@/components/hf/slide-cover";
 import { InViewVideo } from "@/components/hf/in-view-video";
@@ -92,6 +92,25 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
         <CarouselArrows zh={zh} {...carousel} />
       </section>
 
+      {/* How it works: three steps, straight under the first screen */}
+      <section className="hs-section" aria-labelledby="hs-how-title">
+        <div className="hs-head">
+          <div>
+            <h2 id="hs-how-title" className="hs-title">{zh ? "怎么用 AI 生成视频" : "How to make an AI video"}</h2>
+            <p className="hs-sub">{zh ? "从一个想法到一条成片，三步。" : "Three steps from an idea to a finished clip."}</p>
+          </div>
+        </div>
+        <ol className="hs-steps">
+          {HOW_STEPS.map((step, index) => (
+            <li key={step.title.en} className="hs-step">
+              <span className="hs-step-num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <h3 className="hs-step-title">{t(step.title)}</h3>
+              <p className="hs-step-body">{t(step.body)}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       {/* 2. Offer card and product tiles */}
       <section className="hs-offer-grid" aria-label={zh ? "热门产品" : "Popular tools"}>
         <Link href={href("/pricing")} className="hs-offer">
@@ -123,10 +142,9 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
       <section className="hs-chrome" aria-labelledby="hs-agent-title">
         <span className="hs-chrome-edge hs-chrome-edge-a" aria-hidden="true" />
         <span className="hs-chrome-edge hs-chrome-edge-b" aria-hidden="true" />
-        <p className="hs-chrome-kicker">{zh ? "创作空间 AGENT" : "CREATIVE SPACE AGENT"}</p>
-        <h2 id="hs-agent-title" className="hs-chrome-title">
-          {zh ? "一句话，一整条视频" : "ONE LINE. ONE FILM."}
-        </h2>
+        {/* The heading says what this is; the slogan is the display line. */}
+        <h2 id="hs-agent-title" className="hs-chrome-kicker">{zh ? "AI 视频 Agent · 创作空间" : "AI Video Agent · Creative Space"}</h2>
+        <p className="hs-chrome-title">{zh ? "一句话，一整条视频" : "ONE LINE. ONE FILM."}</p>
         <p className="hs-chrome-body">
           {zh ? "说出你的想法，Agent 先拆成分镜和提示词，你确认后再生成。" : "Say the idea. The agent plans shots and prompts, and generates once you approve."}
         </p>
@@ -170,7 +188,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
       <section className="hs-section" aria-labelledby="hs-templates-title">
         <div className="hs-head">
           <div>
-            <h2 id="hs-templates-title" className="hs-title">{zh ? "AI 视频模板" : "AI VIDEO TEMPLATES"}</h2>
+            <h2 id="hs-templates-title" className="hs-title">{zh ? "AI 视频模板" : "AI Video Templates"}</h2>
             <p className="hs-sub">{zh ? "挑一个模板，提示词直接填进上方的生成器，改几个词就能生成。" : "Pick a template and its prompt drops into the generator above."}</p>
           </div>
           <Link href={href("/templates")} className="hs-btn hs-btn-dark">
@@ -197,10 +215,10 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
 
       <section className="hs-banner hs-banner-canvas" aria-labelledby="hs-canvas-title">
         <div className="hs-banner-text">
-          <span className="hs-banner-kicker">{zh ? "新功能" : "NEW"}</span>
-          <h2 id="hs-canvas-title" className="hs-banner-title">
-            {zh ? <>一块画布。<br />所有工作流。</> : <>One canvas.<br />Every workflow.</>}
-          </h2>
+          <h2 id="hs-canvas-title" className="hs-banner-kicker">{zh ? "AI 视频画布" : "AI video canvas"}</h2>
+          <p className="hs-banner-title">
+            {zh ? <>一块画布。<br />所有工作流。</> : <>One canvas.{" "}<br />Every workflow.</>}
+          </p>
           <p className="hs-banner-body">{zh ? "整理素材、用 @ 交给 Agent、生成并管理成片，都在一块画布上" : "Arrange assets, hand them to the agent with @, generate and keep it all in one place"}</p>
           <Link href={href("/creative-space/canvas")} className="hs-btn hs-btn-light">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -220,7 +238,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
         <div className="hs-banner-text">
           <span className="hs-banner-tag">KLING IMAGE 4.0</span>
           <h2 id="hs-photo-title" className="hs-banner-title">
-            {zh ? <>不同场景<br />同一主角</> : <>New scenes,<br />same lead</>}
+            {zh ? <>不同场景<br />同一主角</> : <>Consistent characters,{" "}<br />new scenes</>}
           </h2>
           <p className="hs-banner-body">{zh ? "上传角色参考图，一次生成整组画面" : "Upload a character reference and get a whole set at once"}</p>
           <Link href={href("/ai/image?model=kling-image-4")} className="hs-btn hs-btn-light">
@@ -246,7 +264,8 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
     <section className="hs-section" aria-labelledby={`hs-wall-${gallery.id}`}>
       <div className="hs-head">
         <div>
-          <h2 id={`hs-wall-${gallery.id}`} className="hs-title">{gallery.title}</h2>
+          <p className="hs-kicker">{gallery.title}</p>
+          <h2 id={`hs-wall-${gallery.id}`} className="hs-title">{zh ? gallery.heading.zh : gallery.heading.en}</h2>
           <p className="hs-sub">{zh ? gallery.body.zh : gallery.body.en}</p>
         </div>
         <Link href={localizedHref(lang, gallery.href)} className="hs-btn hs-btn-accent">

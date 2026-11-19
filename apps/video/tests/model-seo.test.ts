@@ -348,16 +348,19 @@ describe("href builders", () => {
     const entry = MODEL_SEO[0];
 
     expect(tryHref("en", entry)).toBe(
-      `/en/ai/video?model=${encodeURIComponent(entry.modelId)}`
+      `/ai/video?model=${encodeURIComponent(entry.modelId)}`
     );
     expect(tryHref("en", { ...entry, modelId: "a b&c" })).toBe(
-      "/en/ai/video?model=a%20b%26c"
+      "/ai/video?model=a%20b%26c"
+    );
+    expect(tryHref("zh", { ...entry, modelId: "a b&c" })).toBe(
+      "/zh/ai/video?model=a%20b%26c"
     );
   });
 
-  it("builds locale-prefixed landing page paths", () => {
+  it("builds landing page paths: no prefix for English, a prefix for other languages", () => {
     for (const entry of MODEL_SEO) {
-      expect(modelHref("en", entry.slug)).toBe(`/en/models/${entry.slug}`);
+      expect(modelHref("en", entry.slug)).toBe(`/models/${entry.slug}`);
       expect(modelHref("zh", entry.slug)).toBe(`/zh/models/${entry.slug}`);
     }
   });

@@ -1,3 +1,5 @@
+import { localizedHref } from "@/lib/locale-path";
+
 export const EXPLORE_CATEGORIES = [
   "all",
   "cinematic",
@@ -320,9 +322,7 @@ export function filterExplore(
 }
 
 export function buildUsePromptHref(lang: string, item: ExploreItem): string {
-  return `/${lang}/ai/video?prompt=${encodeURIComponent(
-    item.prompt,
-  )}&model=${encodeURIComponent(item.modelId)}`;
+  return localizedHref(lang, `/ai/video?prompt=${encodeURIComponent(item.prompt)}&model=${encodeURIComponent(item.modelId)}`);
 }
 
 export function modelName(id: string): string {

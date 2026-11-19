@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { ArrowRight, Film, ImagePlus, SlidersHorizontal } from "lucide-react";
 
 export function HomeStudioStory({ lang, modelName }: { lang: string; modelName: string }) {
@@ -31,7 +32,7 @@ export function HomeStudioStory({ lang, modelName }: { lang: string; modelName: 
         </div>
         <div className="flex flex-col justify-between gap-5 p-6">
           <div><p className="text-xs uppercase tracking-[0.18em] text-[var(--du-accent-text)]">{zh ? "创作方法" : "How it works"}</p><h3 className="mt-4 text-2xl font-semibold">{zh ? "把创意写成可执行的镜头。" : "Turn your idea into a directed shot."}</h3><p className="mt-4 text-sm leading-7 text-[var(--du-text-muted)]">{zh ? "选用当前可用的视频模型，写清场景与运动方式。需要控制构图时可以上传一张起始图片，作品会留在你的创作记录中。" : "Choose an available video model and describe the scene and movement. Add a start image to guide composition, then find the result in your creations."}</p></div>
-          <Link href={`/${lang}/ai/video`} className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--du-accent-text)] hover:underline">{zh ? "打开视频工作台" : "Open the video studio"}<ArrowRight className="h-4 w-4" /></Link>
+          <Link href={localizedHref(lang, "/ai/video")} className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--du-accent-text)] hover:underline">{zh ? "打开视频工作台" : "Open the video studio"}<ArrowRight className="h-4 w-4" /></Link>
         </div>
       </div>
     </section>

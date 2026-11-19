@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { localizedHref } from "@/lib/locale-path";
 import { getTranslations } from "next-intl/server";
 
 import { AuthPage } from "@/components/auth/auth-page";
@@ -26,7 +27,7 @@ export default async function LoginPage({ params, searchParams }: Props) {
   const t = await getTranslations("Login");
   const error = query?.error ? t(`errors.${getLoginErrorMessageKey(query.error)}`) : null;
   // Without a callback, land on the home page in the visitor's language.
-  const callbackURL = query?.callbackURL ? getSafeCallbackURL(query.callbackURL) : `/${locale}`;
+  const callbackURL = query?.callbackURL ? getSafeCallbackURL(query.callbackURL) : localizedHref(locale, "/");
 
   return <AuthPage locale={locale} callbackURL={callbackURL} error={error} />;
 }

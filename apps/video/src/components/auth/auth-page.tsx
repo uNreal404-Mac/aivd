@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -23,7 +24,7 @@ export function AuthPage({
   note?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const home = `/${locale}`;
+  const home = localizedHref(locale, "/");
 
   return (
     <div className="au">

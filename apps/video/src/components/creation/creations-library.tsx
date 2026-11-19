@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, AudioLines, ChevronLeft, ChevronRight, Clapperboard, Download, Image as ImageIcon, Sparkles, X } from "lucide-react";
@@ -308,7 +309,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
           />
           <h2 className="cr-empty-title">{t("empty.title")}</h2>
           <p className="cr-empty-description">{t("empty.description")}</p>
-          <a className="cr-cta" href={`/${locale}${kind === "image" ? "/ai/image" : kind === "audio" ? "/audio" : "/ai/video"}`}>
+          <a className="cr-cta" href={localizedHref(locale, kind === "image" ? "/ai/image" : kind === "audio" ? "/audio" : "/ai/video")}>
             {t("empty.ctaStart")}
           </a>
         </div>
@@ -508,7 +509,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 {kind !== "audio" && activeVideo.prompt ? (
                   <a
                     className="cr-button cr-button--ghost"
-                    href={`/${locale}${kind === "image" ? "/ai/image" : "/ai/video"}?${new URLSearchParams({ prompt: activeVideo.prompt, model: activeVideo.model })}`}
+                    href={localizedHref(locale, `${kind === "image" ? "/ai/image" : "/ai/video"}?${new URLSearchParams({ prompt: activeVideo.prompt, model: activeVideo.model })}`)}
                   >
                     <Sparkles aria-hidden="true" />
                     {zh ? "用这个提示词再生成" : "Generate again"}

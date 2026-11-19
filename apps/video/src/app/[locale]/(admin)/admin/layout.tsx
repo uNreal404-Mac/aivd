@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { localizedHref } from "@/lib/locale-path";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/admin";
@@ -24,7 +25,7 @@ export default async function AdminLayout({
   const { locale } = await params;
 
   // 检查管理员权限
-  const user = await requireAdmin(`/${locale}/login`);
+  const user = await requireAdmin(localizedHref(locale, "/login"));
 
   return (
     <div className="min-h-screen bg-background">

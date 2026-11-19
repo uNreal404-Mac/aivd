@@ -4,39 +4,14 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Coins, Crown, Image as ImageIcon, Music, Sparkles, Video } from "lucide-react";
 
-import { getMarketModel, marketCredits } from "@/ai/kie-market";
-import { calculateModelCredits } from "@/config/credits";
 import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 import { localizedHref } from "@/lib/du-home";
+import { PRICING_UNITS as UNITS, type PricingKind as Kind } from "@/lib/pricing-units";
 import { startStripeCheckout } from "@/lib/stripe-checkout-client";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import "./home-pricing.css";
 
 type Period = "month" | "year";
-type Kind = "video" | "image" | "audio";
-type Unit = { id: string; kind: Kind; name: string; spec: { zh: string; en: string }; credits: number };
-
-// What one generation costs, from the same pricing the studios charge.
-const market = (id: string, req: Parameters<typeof marketCredits>[1]) => {
-  const model = getMarketModel(id);
-  return model ? marketCredits(model, req) : 0;
-};
-const UNITS: Unit[] = [
-  { id: "veo-3.1", kind: "video", name: "Veo 3.1", spec: { zh: "8 秒 · 720p · 有声", en: "8s · 720p · sound" }, credits: calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" }) },
-  { id: "wan2.6", kind: "video", name: "Wan 2.6", spec: { zh: "5 秒 · 720p", en: "5s · 720p" }, credits: calculateModelCredits("wan2.6", { duration: 5, quality: "720p" }) },
-  { id: "grok-imagine/text-to-video", kind: "video", name: "Grok Imagine", spec: { zh: "6 秒 · 720p", en: "6s · 720p" }, credits: market("grok-imagine/text-to-video", { prompt: "", duration: 6, resolution: "720p" }) },
-  { id: "kling/v4-flash-reference-to-video", kind: "video", name: "Kling 4.0 Flash", spec: { zh: "5 秒 · 720p", en: "5s · 720p" }, credits: market("kling/v4-flash-reference-to-video", { prompt: "", duration: 5, resolution: "720p" }) },
-  { id: "seedance-2-5-flash", kind: "video", name: "Seedance 2.5 Flash", spec: { zh: "5 秒 · 720p", en: "5s · 720p" }, credits: market("seedance-2-5-flash", { prompt: "", duration: 5, resolution: "720p" }) },
-  { id: "bytedance/seedance-2-5", kind: "video", name: "Seedance 2.5", spec: { zh: "5 秒 · 720p", en: "5s · 720p" }, credits: market("bytedance/seedance-2-5", { prompt: "", duration: 5, resolution: "720p" }) },
-  { id: "grok-imagine-image-2-0/text-to-image", kind: "image", name: "Grok Imagine 2.0", spec: { zh: "每张", en: "per image" }, credits: market("grok-imagine-image-2-0/text-to-image", { prompt: "" }) },
-  { id: "flux3/klein-text-to-image", kind: "image", name: "FLUX 3", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("flux3/klein-text-to-image", { prompt: "", resolution: "1K" }) },
-  { id: "nano-banana-2-1", kind: "image", name: "Nano Banana 2.1", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-2-1", { prompt: "", resolution: "1K" }) },
-  { id: "nano-banana-pro", kind: "image", name: "Nano Banana Pro", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-pro", { prompt: "", resolution: "1K" }) },
-  { id: "gpt-image-2-6-sunburst", kind: "image", name: "GPT Image 2.6", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("gpt-image-2-6-sunburst", { prompt: "", resolution: "1K" }) },
-  { id: "elevenlabs-turbo-2-5", kind: "audio", name: "Eleven Turbo 2.5", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("elevenlabs-turbo-2-5", { prompt: "x".repeat(1000) }) },
-  { id: "elevenlabs-v3", kind: "audio", name: "Eleven v3", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("elevenlabs-v3", { prompt: "x".repeat(1000) }) },
-  { id: "suno-music", kind: "audio", name: "Suno V6", spec: { zh: "每首歌", en: "per song" }, credits: market("suno-music", { prompt: "" }) },
-];
 const unit = (id: string) => UNITS.find((item) => item.id === id) ?? UNITS[0];
 
 const TIERS = ["basic", "pro", "ultimate"] as const;
@@ -44,8 +19,10 @@ type Tier = (typeof TIERS)[number];
 const TIER_OF = (name: string): Tier => (name.toLowerCase().startsWith("pro") ? "pro" : name.toLowerCase().startsWith("ultimate") ? "ultimate" : "basic");
 
 /**
- * Pricing block. On the homepage its buttons lead to /pricing; on the pricing
- * page (`checkout` set) they start checkout for the exact product shown.
+ * Pricing block. The pricing page (`asPage`) shows all of it: the plans, the
+ * usage estimator, the per-model table and the credit packs, and its buttons
+ * start checkout for the exact product shown (`checkout` set). The homepage
+ * shows the three plans only and sends people to /pricing for the rest.
  */
 export function HomePricing({
   lang,
@@ -90,6 +67,8 @@ export function HomePricing({
     ? {
         kicker: "定价",
         title: "选择适合你的套餐",
+        homeTitle: "AI 视频生成器价格",
+        homeNote: "想算得更细？定价页可以按模型估算每月用量、看每个套餐能生成多少，还能单独购买积分包。",
         sub: `所有套餐都能使用全部模型。新用户注册即送 ${NEW_USER_GIFT.credits} 积分，生成失败积分自动退回。`,
         monthly: "月付",
         yearly: "年付",
@@ -135,6 +114,8 @@ export function HomePricing({
     : {
         kicker: "PRICING",
         title: "Pick the plan that fits",
+        homeTitle: "AI video generator pricing",
+        homeNote: "Want the detail? The pricing page estimates your month by model, shows what each plan makes and sells credit packs.",
         sub: `Every plan unlocks every model. New accounts get ${NEW_USER_GIFT.credits} credits, and failed runs are refunded.`,
         monthly: "Monthly",
         yearly: "Yearly",
@@ -217,7 +198,7 @@ export function HomePricing({
         {asPage ? (
           <h1 id="hp-title" className="hp-title">{copy.title}</h1>
         ) : (
-          <h2 id="hp-title" className="hp-title">{copy.title}</h2>
+          <h2 id="hp-title" className="hp-title">{copy.homeTitle}</h2>
         )}
         <p className="hp-sub">{copy.sub}</p>
         {checkout && !checkout.enabled ? <p className="hp-note">{copy.comingSoon}</p> : null}
@@ -237,7 +218,8 @@ export function HomePricing({
       <div className="hp-plans">
         {plans.map((plan) => {
           const name = copy.names[plan.tier];
-          const isPick = plan.tier === recommended;
+          // "Best fit" comes from the estimator, which only the pricing page has.
+          const isPick = asPage ? plan.tier === recommended : plan.popular;
           return (
             <article key={plan.tier} className={`hp-plan hp-plan-${plan.tier}${isPick ? " hp-plan-pick" : ""}`}>
               <div className="hp-plan-top" data-tilt>
@@ -249,7 +231,7 @@ export function HomePricing({
                       {copy.popular}
                     </span>
                   ) : null}
-                  {isPick ? <span className="hp-pill hp-pill-pick">{copy.recommended}</span> : null}
+                  {asPage && isPick ? <span className="hp-pill hp-pill-pick">{copy.recommended}</span> : null}
                 </div>
                 <p className="hp-plan-blurb">{copy.blurbs[plan.tier]}</p>
                 <p className="hp-price">
@@ -300,7 +282,18 @@ export function HomePricing({
         </output>
       ) : null}
 
+      {/* The homepage stops at the plans. */}
+      {asPage ? null : (
+        <div className="hp-home-more">
+          <p className="hp-sub-sm">{copy.homeNote}</p>
+          <Link href={href("/pricing")} className="hp-cta hp-cta-ghost">
+            {copy.viewPricing}
+          </Link>
+        </div>
+      )}
+
       {/* Usage estimator */}
+      {asPage ? (
       <div className="hp-estimator">
         <div className="hp-est-left">
           <h2 className="hp-h3">{copy.estimatorTitle}</h2>
@@ -375,8 +368,10 @@ export function HomePricing({
           })()}
         </div>
       </div>
+      ) : null}
 
       {/* Comparison table */}
+      {asPage ? (
       <div className="hp-compare">
         <div className="hp-compare-head">
           <div>
@@ -428,8 +423,10 @@ export function HomePricing({
           <ChevronDown className={showAll ? "h-4 w-4 rotate-180" : "h-4 w-4"} aria-hidden="true" />
         </button>
       </div>
+      ) : null}
 
       {/* Credit packs */}
+      {asPage ? (
       <div className="hp-packs">
         <div>
           <p className="hp-packs-title">{copy.packs}</p>
@@ -460,12 +457,8 @@ export function HomePricing({
             ),
           )}
         </div>
-        {checkout ? null : (
-          <Link href={href("/pricing")} className="hp-cta hp-cta-ghost">
-            {copy.viewPricing}
-          </Link>
-        )}
       </div>
+      ) : null}
     </section>
   );
 }

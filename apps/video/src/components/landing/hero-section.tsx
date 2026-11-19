@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { useRouter } from "next/navigation";
 import { Sparkles, Zap, Play } from "lucide-react";
 import { motion } from "framer-motion";
@@ -247,7 +248,7 @@ export function HeroSection({ currentProvider }: HeroSectionProps) {
           notified: false,
         });
       }
-      router.push(`/${locale}/${toolRoute}?id=${result.data.videoUuid}`);
+      router.push(localizedHref(locale, `/${toolRoute}?id=${result.data.videoUuid}`));
     } catch (error) {
       console.error("Generation error:", error);
       const message = error instanceof Error ? error.message : "Failed to generate video. Please try again.";

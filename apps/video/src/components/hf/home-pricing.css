@@ -608,6 +608,28 @@
 }
 
 /* Pricing page mode */
+/* Homepage: under the plans, one line and the way to the full pricing page. */
+.hp-home-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 18px 28px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+}
+
+.hp-home-more .hp-sub-sm {
+  max-width: 68ch;
+  margin-top: 0;
+  line-height: 1.6;
+}
+
+.hp-home-more .hp-cta {
+  flex-shrink: 0;
+}
+
 .hp-page {
   padding-top: 56px;
 }

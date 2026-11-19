@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { Check, Clock, LogIn, SearchX, TriangleAlert } from "lucide-react";
@@ -191,10 +192,10 @@ export default function CheckoutSuccess({
         <h1 className="co-title">{copy.notFoundTitle}</h1>
         <p className="co-text">{copy.errorText}</p>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${lang}/credits`}>
+          <Link className="co-btn" href={localizedHref(lang, "/credits")}>
             {copy.viewCredits}
           </Link>
-          <Link className="co-btn co-btn-ghost" href={`/${lang}/pricing`}>
+          <Link className="co-btn co-btn-ghost" href={localizedHref(lang, "/pricing")}>
             {copy.backToPricing}
           </Link>
         </div>
@@ -211,10 +212,10 @@ export default function CheckoutSuccess({
           {copy.creditsAdded.replace("{credits}", String(view.credits))}
         </p>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${lang}/ai/video`}>
+          <Link className="co-btn" href={localizedHref(lang, "/ai/video")}>
             {copy.startCreating}
           </Link>
-          <Link className="co-link" href={`/${lang}/my-creations`}>
+          <Link className="co-link" href={localizedHref(lang, "/my-creations")}>
             {copy.myCreations}
           </Link>
         </div>
@@ -246,7 +247,7 @@ export default function CheckoutSuccess({
         </span>
         <h1 className="co-title">{copy.signInTitle}</h1>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${lang}/login`}>
+          <Link className="co-btn" href={localizedHref(lang, "/login")}>
             {copy.signIn}
           </Link>
         </div>
@@ -268,7 +269,7 @@ export default function CheckoutSuccess({
           >
             {copy.refresh}
           </button>
-          <Link className="co-link" href={`/${lang}/credits`}>
+          <Link className="co-link" href={localizedHref(lang, "/credits")}>
             {copy.viewCredits}
           </Link>
         </div>

@@ -12,6 +12,7 @@
  */
 
 import { headers } from "next/headers";
+import { localizedHref } from "@/lib/locale-path";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
@@ -89,5 +90,5 @@ export async function isAdmin(): Promise<boolean> {
  * 为给定路径生成本地化的登录重定向路径
  */
 export function getLoginRedirect(locale: Locale = "en"): string {
-  return `/${locale}/login`;
+  return localizedHref(locale, "/login");
 }

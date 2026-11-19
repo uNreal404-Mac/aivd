@@ -4,7 +4,10 @@ import { useTranslations, useLocale } from "next-intl";
 
 import { Languages } from "lucide-react";
 
+import Link from "next/link";
+
 import { LocaleLink, useLocalePathname } from "@/i18n/navigation";
+import { localizedHref } from "@/lib/locale-path";
 import "./footer.css";
 
 export function LandingFooter() {
@@ -141,10 +144,10 @@ export function LandingFooter() {
       <div className="ft-bottom">
         <p>{t("copyright", { year: currentYear })}</p>
         <div className="ft-bottom-links">
-          <LocaleLink href={pathname} locale={zh ? "en" : "zh"} className="ft-lang" hrefLang={zh ? "en" : "zh"}>
+          <Link href={localizedHref(zh ? "en" : "zh", pathname)} className="ft-lang" hrefLang={zh ? "en" : "zh"}>
             <Languages aria-hidden="true" />
             {zh ? "English" : "简体中文"}
-          </LocaleLink>
+          </Link>
           <LocaleLink href="/contact">{zh ? "联系我们" : "Contact"}</LocaleLink>
           <LocaleLink href="/refund-policy">{zh ? "退款政策" : "Refunds"}</LocaleLink>
           <LocaleLink href="/terms">{t("terms")}</LocaleLink>

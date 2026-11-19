@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -96,7 +97,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   }, [open]);
 
   // Close menus when the route changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: run on route change only
   useEffect(() => {
     setOpen(null);
     setMenuOpen(false);
@@ -223,7 +223,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     ],
   };
 
-  const href = (path: string) => (path.startsWith("/#") ? `/${lang}${path.slice(1)}` : `/${lang}${path === "/" ? "" : path}`);
+  const href = (path: string) => localizedHref(lang, path);
   const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
   const activeSection = dropdowns.find((menu) => inRoutes(menu.routes));
   const headerRef = useRef<HTMLElement>(null);
@@ -365,7 +365,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   const signOut = async () => {
     await authClient.signOut();
-    router.push(`/${lang}`);
+    router.push(localizedHref(lang, "/"));
     router.refresh();
   };
 
@@ -543,7 +543,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                         </Link>
                       );
                     })}
-                    <Link href={`/${otherLang}${pathname === "/" ? "" : pathname}`} className="hf-acct-row hf-acct-row-split">
+                    <Link href={localizedHref(otherLang, pathname)} className="hf-acct-row hf-acct-row-split">
                       <span className="flex items-center gap-1.5">
                         <span className="hf-acct-ico">
                           <Languages aria-hidden="true" />
@@ -678,7 +678,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 </span>
                 <ChevronRight aria-hidden="true" />
               </Link>
-              <Link href={`/${otherLang}${pathname === "/" ? "" : pathname}`} className="hf-mm-lang">
+              <Link href={localizedHref(otherLang, pathname)} className="hf-mm-lang">
                 <Languages aria-hidden="true" />
                 {zh ? "English" : "简体中文"}
               </Link>

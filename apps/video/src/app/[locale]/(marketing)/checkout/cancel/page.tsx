@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { CircleSlash } from "lucide-react";
 
@@ -33,10 +34,10 @@ export default async function CheckoutCancelPage({
         <h1 className="co-title">{zh ? "已取消支付" : "Checkout cancelled"}</h1>
         <p className="co-text">{zh ? "没有产生任何扣款。需要的话可以随时重新选择套餐。" : "No charge was made. You can pick a plan again any time."}</p>
         <div className="co-actions">
-          <Link className="co-btn" href={`/${locale}/pricing`}>
+          <Link className="co-btn" href={localizedHref(locale, "/pricing")}>
             {zh ? "返回定价页" : "Back to pricing"}
           </Link>
-          <Link className="co-link" href={`/${locale}/ai/video`}>
+          <Link className="co-link" href={localizedHref(locale, "/ai/video")}>
             {zh ? "先免费试试生成" : "Try generating first"}
           </Link>
         </div>

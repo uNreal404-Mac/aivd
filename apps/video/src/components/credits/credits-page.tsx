@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Coins, Gift, Receipt, RotateCcw, Settings2, ShoppingBag, Sparkles, TimerOff, type LucideIcon } from "lucide-react";
@@ -37,7 +38,7 @@ export function CreditsPage({ locale }: { locale: string }) {
   const { transactions, hasMore, fetchNextPage, isLoading: historyLoading } = useCreditHistory();
   const billing = useBilling();
   const formatDate = useDateFormat(zh);
-  const href = (path: string) => `/${locale}${path}`;
+  const href = (path: string) => localizedHref(locale, path);
 
   // After checkout the user may be sent back to where they started.
   useEffect(() => {

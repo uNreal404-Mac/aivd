@@ -109,9 +109,12 @@ describe("du-home data", () => {
   });
 });
 
+// The helper itself is tested in locale-path.test.ts; this only checks that
+// the home data module still hands it out.
 describe("localizedHref", () => {
-  it("prefixes route hrefs with the locale", () => {
-    expect(localizedHref("en", "/pricing")).toBe("/en/pricing");
+  it("is the site-wide link helper", () => {
+    expect(localizedHref("en", "/pricing")).toBe("/pricing");
+    expect(localizedHref("zh", "/pricing")).toBe("/zh/pricing");
   });
 
   it("leaves anchor hrefs untouched", () => {

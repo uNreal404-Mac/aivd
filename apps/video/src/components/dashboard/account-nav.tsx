@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { useEffect } from "react";
 import { Clapperboard, Coins, Folder, Image as ImageIcon, UserRound } from "lucide-react";
 
@@ -13,7 +14,7 @@ export function AccountNav({ lang }: { lang: string }) {
   const pathname = useLocalePathname();
   const balance = useCreditsStore((state) => state.balance);
   const fetchBalance = useCreditsStore((state) => state.fetchBalance);
-  const href = (path: string) => `/${lang}${path}`;
+  const href = (path: string) => localizedHref(lang, path);
 
   useEffect(() => {
     void fetchBalance();

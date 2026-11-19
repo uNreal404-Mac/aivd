@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/components/ui";
@@ -37,7 +38,7 @@ export function DashboardNav({ items, params: { lang } }: DashboardNavProps) {
           item.href && (
             <Link
               key={index}
-              href={item.disabled ? "/" : `/${lang}` + item.href}
+              href={item.disabled ? "/" : localizedHref(lang, item.href)}
             >
               <span
                 className={cn(

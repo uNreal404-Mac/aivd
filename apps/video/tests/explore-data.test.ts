@@ -72,7 +72,7 @@ describe("buildUsePromptHref", () => {
   it("encodes both the prompt and the model", () => {
     const item = EXPLORE_ITEMS[0];
     expect(buildUsePromptHref("en", item)).toBe(
-      `/en/ai/video?prompt=${encodeURIComponent(
+      `/ai/video?prompt=${encodeURIComponent(
         item.prompt,
       )}&model=${encodeURIComponent(item.modelId)}`,
     );

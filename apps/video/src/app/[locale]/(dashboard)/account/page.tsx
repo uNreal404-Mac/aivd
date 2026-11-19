@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 
 import { SignOutButton } from "@/components/dashboard/sign-out-button";
@@ -110,7 +111,7 @@ export default async function AccountPage({
             <p className="db-sub">{zh ? "升级后每月积分更多，单价更低。" : "Upgrade for more credits each month at a lower price."}</p>
           )}
           <div className="db-actions">
-            <Link className="db-btn db-btn-accent" href={`/${locale}/pricing`}>
+            <Link className="db-btn db-btn-accent" href={localizedHref(locale, "/pricing")}>
               {zh ? "查看套餐" : "See plans"}
             </Link>
             {/* Only subscribers have something to manage. */}
@@ -131,10 +132,10 @@ export default async function AccountPage({
                 : "Credits from failed runs come back automatically"}
           </p>
           <div className="db-actions">
-            <Link className="db-btn" href={`/${locale}/credits`}>
+            <Link className="db-btn" href={localizedHref(locale, "/credits")}>
               {zh ? "积分明细" : "Credit history"}
             </Link>
-            <Link className="db-btn" href={`/${locale}/pricing`}>
+            <Link className="db-btn" href={localizedHref(locale, "/pricing")}>
               {copy.buyCredits}
             </Link>
           </div>

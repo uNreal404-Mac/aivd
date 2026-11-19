@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/components/ui";
@@ -53,7 +54,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
       <div className="flex h-full flex-col">
         {/* Brand */}
         <div className="flex h-16 items-center border-b px-6">
-          <Link href={`/${locale}/admin`} className="flex items-center gap-2">
+          <Link href={localizedHref(locale, "/admin")} className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">A</span>
             </div>
@@ -66,14 +67,14 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
           {navItems.map((item) => {
             // 规范化路径进行比较（移除尾部斜杠）
             const normalizedPathname = pathname.replace(/\/$/, "");
-            const normalizedHref = `/${locale}${item.href}`.replace(/\/$/, "");
+            const normalizedHref = localizedHref(locale, item.href).replace(/\/$/, "");
             const isActive = normalizedPathname === normalizedHref || normalizedPathname.startsWith(`${normalizedHref}/`);
             const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
-                href={`/${locale}${item.href}`}
+                href={localizedHref(locale, item.href)}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
@@ -91,7 +92,7 @@ export function AdminSidebar({ locale }: AdminSidebarProps) {
         {/* Back to App */}
         <div className="border-t p-4">
           <Link
-            href={`/${locale}/dashboard`}
+            href={localizedHref(locale, "/dashboard")}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />

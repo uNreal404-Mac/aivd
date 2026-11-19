@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -92,7 +93,7 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
 
   const isLoading = signInClicked !== null;
 
-  const legal = (path: string) => `/${lang}${path}`;
+  const legal = (path: string) => localizedHref(lang, path);
 
   return (
     <div className="si">

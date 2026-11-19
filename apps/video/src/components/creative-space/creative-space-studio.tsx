@@ -33,6 +33,7 @@ import {
   type CreativePlan,
 } from "@/lib/creative-space/local-plan";
 import { generateVideo, uploadImage } from "@/lib/video-api";
+import { localizedHref } from "@/lib/locale-path";
 
 interface CreativeSpaceStudioProps {
   locale: string;
@@ -981,7 +982,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                   {t.generationStarted}
                 </p>
                 <a
-                  href={`/${language}/my-creations`}
+                  href={localizedHref(language, "/my-creations")}
                   className="mt-2 inline-flex text-[10px] font-semibold text-[#66fcf1] hover:underline"
                 >
                   {t.openCreations}

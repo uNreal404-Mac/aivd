@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { localizedHref } from "@/lib/locale-path";
 
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
@@ -1005,7 +1006,7 @@ export function AiVideoStudio({
                 </li>
               ))}
             </ol>
-            <a className="vs-help" href={`/${locale}/templates`}>
+            <a className="vs-help" href={localizedHref(locale, "/templates")}>
               <span className="vs-help-art" aria-hidden="true">
                 <img src="/home/samples/autumn-walk.webp" alt="" />
                 <img src="/home/samples/cosmic-bloom.webp" alt="" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { useParams } from "next/navigation";
 import { Home, RotateCcw, TriangleAlert } from "lucide-react";
 import { StateBlock } from "@/components/states/state-block";
@@ -29,7 +30,7 @@ export function RouteError({ error, reset }: { error: Error & { digest?: string 
         detail={error.digest ? `${zh ? "错误编号" : "Reference"}: ${error.digest}` : undefined}
         actions={[
           { label: zh ? "重试" : "Try again", onClick: reset, icon: RotateCcw, primary: true },
-          { label: zh ? "回到首页" : "Go home", href: `/${locale}`, icon: Home },
+          { label: zh ? "回到首页" : "Go home", href: localizedHref(locale, "/"), icon: Home },
         ]}
       />
     </div>

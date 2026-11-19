@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, Clock, Film } from "lucide-react";
+import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -118,7 +119,7 @@ export function HfWorkbenchShell({
             return (
               <Link
                 key={tab.key}
-                href={`/${lang}/${tab.slug}`}
+                href={localizedHref(lang, `/${tab.slug}`)}
                 className={`-mb-px border-b-2 pb-2 text-[14px] font-medium transition-colors ${
                   isActive
                     ? "border-[var(--du-accent)] text-[var(--du-accent-text)]"

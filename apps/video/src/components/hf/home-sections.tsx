@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 import { useReveal } from "@/components/hf/use-reveal";
@@ -29,7 +30,7 @@ export function HfHomeSections({ lang }: { lang: string }) {
   const communityRef = useReveal<HTMLElement>();
   const ctaRef = useReveal<HTMLElement>();
 
-  const studioHref = `/${lang}/ai/video`;
+  const studioHref = localizedHref(lang, "/ai/video");
   const marqueePresets = duplicateForMarquee(VFX_PRESETS);
 
   return (

@@ -39,11 +39,21 @@
 
 .du-hero-tagline {
   margin-top: 10px;
-  margin-bottom: 20px;
   color: white;
   font-size: var(--ds-fs-xl);
   font-weight: 300;
   line-height: 1.5;
+}
+
+/* One sentence on what this is and what it costs, for a first-time visitor. */
+.du-hero-sub {
+  max-width: 620px;
+  margin-top: 6px;
+  margin-bottom: 20px;
+  color: var(--du-text-muted);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+  text-wrap: balance;
 }
 
 /* Feature cards */

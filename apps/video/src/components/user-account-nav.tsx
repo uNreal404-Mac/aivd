@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { localizedHref } from "@/lib/locale-path";
 import { useTranslations, useLocale } from "next-intl";
 
 import { authClient, type User } from "@/lib/auth/client";
@@ -58,7 +59,7 @@ export function UserAccountNav({
           className="cursor-pointer"
           onSelect={async () => {
             await authClient.signOut();
-            router.push(`/${locale}`);
+            router.push(localizedHref(locale, "/"));
             router.refresh();
           }}
         >

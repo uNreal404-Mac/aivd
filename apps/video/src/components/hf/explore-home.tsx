@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { localizedHref } from "@/lib/locale-path";
 import {
   ArrowRight,
   AudioLines,
@@ -229,7 +230,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
             return (
               <Link
                 key={card.title}
-                href={`/${lang}${card.href}`}
+                href={localizedHref(lang, card.href ?? "/")}
                 className="w-[300px] shrink-0 snap-start sm:w-[512px]"
               >
                 {inner}
@@ -265,7 +266,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
               ))}
             </ul>
             <Link
-              href={`/${lang}/text-to-video`}
+              href={localizedHref(lang, "/text-to-video")}
               className="mt-5 inline-flex h-11 items-center gap-2 rounded-[10px] bg-[var(--du-accent)] px-4 text-sm font-semibold text-[var(--du-on-accent)] hover:bg-[var(--du-accent-hover)]"
             >
               Open the studio
@@ -317,7 +318,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
             return (
               <Link
                 key={tool.title}
-                href={`/${lang}${tool.href}`}
+                href={localizedHref(lang, tool.href ?? "/")}
                 className="rounded-[16px] bg-[var(--du-surface)] p-4 transition-colors hover:bg-[var(--du-surface-2)]"
               >
                 {body}
@@ -333,7 +334,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
             Trending styles
           </h2>
           <Link
-            href={`/${lang}/text-to-video`}
+            href={localizedHref(lang, "/text-to-video")}
             className="text-sm font-medium text-[var(--du-accent-text)]"
           >
             See all

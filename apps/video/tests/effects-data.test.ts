@@ -125,7 +125,8 @@ describe("useHref", () => {
   it("encodes preset and prompt for the studio", () => {
     const template = EFFECT_TEMPLATES[0];
     const href = useHref("en", template);
-    expect(href.startsWith("/en/ai/video?preset=")).toBe(true);
+    expect(href.startsWith("/ai/video?preset=")).toBe(true);
+    expect(useHref("zh", template).startsWith("/zh/ai/video?preset=")).toBe(true);
     expect(href).toContain(`preset=${encodeURIComponent(template.id)}`);
     expect(href).toContain(`prompt=${encodeURIComponent(template.prompt)}`);
   });

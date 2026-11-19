@@ -1,3 +1,5 @@
+import { localizedHref } from "@/lib/locale-path";
+
 export const EFFECT_CATEGORIES = [
   "all",
   "camera",
@@ -274,7 +276,7 @@ export function filterEffects(
 
 export function useHref(lang: string, template: EffectTemplate): string {
   const prompt = lang.toLowerCase().startsWith("zh") && template.promptZh ? template.promptZh : template.prompt;
-  return `/${lang}/ai/video?preset=${encodeURIComponent(template.id)}&prompt=${encodeURIComponent(prompt)}`;
+  return localizedHref(lang, `/ai/video?preset=${encodeURIComponent(template.id)}&prompt=${encodeURIComponent(prompt)}`);
 }
 
 export const EFFECTS_COPY: Record<"en" | "zh", EffectsCopy> = {

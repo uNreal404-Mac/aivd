@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ export function LocaleChange() {
               // <Link href={redirectedPathName(locale)}>{locale}</Link>
               <DropdownMenuItem key={locale} asChild>
                 <a
-                  href={locale === i18n.defaultLocale ? pathname : `/${locale}${pathname === "/" ? "" : pathname}`}
+                  href={localizedHref(locale, pathname)}
                   hrefLang={locale}
                   className="w-full"
                 >

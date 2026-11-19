@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { useLocalePathname, useLocaleRouter } from "@/i18n/navigation";
 import { Gem, Globe, Menu, Sun, Moon, Monitor } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -67,7 +68,7 @@ export function HeaderSimple({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href={`/${lang}`} className="flex items-center gap-2">
+          <Link href={localizedHref(lang, "/")} className="flex items-center gap-2">
             <span className="text-xl font-semibold">aivd.ai</span>
             <PreviewBadge />
           </Link>
@@ -165,7 +166,7 @@ export function HeaderSimple({
                 <DropdownMenuSeparator />
                 {userMenuItems.map((item) => (
                   <DropdownMenuItem key={item.id} asChild>
-                    <Link href={`/${lang}${item.href}`}>
+                    <Link href={localizedHref(lang, item.href)}>
                       {menuLabelMap[item.id] ?? item.title}
                     </Link>
                   </DropdownMenuItem>
@@ -175,7 +176,7 @@ export function HeaderSimple({
                   className="cursor-pointer text-destructive"
                   onSelect={async () => {
                     await authClient.signOut();
-                    router.push(`/${lang}`);
+                    router.push("/");
                     router.refresh();
                   }}
                 >

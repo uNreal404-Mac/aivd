@@ -200,6 +200,6 @@ export const CREDITS_BANNER = {
   alt: "Glowing cosmic bloom in deep space",
 };
 
-export function localizedHref(lang: string, href: string): string {
-  return href.startsWith("#") ? href : `/${lang}${href}`;
-}
+// The link helper lives in lib/locale-path; it is still exported from here
+// for the home components that import it alongside the home data.
+export { localizedHref } from "@/lib/locale-path";

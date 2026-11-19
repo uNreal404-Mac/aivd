@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { localizedHref } from "@/lib/locale-path";
 import { Clapperboard, Home, Search } from "lucide-react";
 import { StateBlock } from "@/components/states/state-block";
 
@@ -11,7 +12,7 @@ export function openSiteSearch() {
 
 export function NotFoundView({ locale }: { locale: string }) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const href = (path: string) => `/${locale}${path === "/" ? "" : path}`;
+  const href = (path: string) => localizedHref(locale, path);
 
   const links = [
     { label: zh ? "AI 视频" : "AI video", href: "/ai/video" },

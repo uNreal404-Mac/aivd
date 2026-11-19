@@ -281,11 +281,14 @@
   bottom: 0;
 }
 
+/* The section's heading, set small: it names the block for search and for
+   screen readers, and the slogan below is the display line. */
 .hs-chrome-kicker {
   color: var(--ds-text-2);
   font-size: var(--ds-fs-md);
   font-weight: 800;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .hs-chrome-title {
@@ -446,11 +449,24 @@
   gap: 24px;
 }
 
+/* The button drops under the heading when the two do not fit side by side,
+   so a narrow screen is not pushed wider than it is. */
 .hs-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px 24px;
+}
+
+/* The model a wall shows, as a small label over its heading. */
+.hs-kicker {
+  margin-bottom: 6px;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .hs-title {
@@ -466,6 +482,115 @@
   margin-top: 6px;
   color: var(--hs-muted);
   font-size: var(--ds-fs-md);
+}
+
+/* How it works: three numbered steps on a rule, no boxes. */
+.hs-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.hs-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ds-line-2);
+}
+
+.hs-step-num {
+  color: color-mix(in srgb, var(--du-accent) 60%, transparent);
+  font-size: var(--ds-fs-4xl);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.hs-step-title {
+  margin-top: 4px;
+  color: white;
+  font-size: var(--ds-fs-lg);
+  font-weight: 700;
+}
+
+.hs-step-body {
+  max-width: 44ch;
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-md);
+  line-height: 1.6;
+}
+
+/* Questions: the heading on the left, the answers in a column beside it. */
+.hs-faq {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 48px;
+  align-items: start;
+}
+
+.hs-faq-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ds-line-2);
+}
+
+.hs-faq-list details {
+  border-bottom: 1px solid var(--ds-line-2);
+}
+
+.hs-faq-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  cursor: pointer;
+  color: white;
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+  list-style: none;
+}
+
+.hs-faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.hs-faq-list summary svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--hs-muted);
+  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.hs-faq-list details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.hs-faq-list summary:hover svg {
+  color: white;
+}
+
+.hs-faq-list p {
+  max-width: 68ch;
+  padding-bottom: 18px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-md);
+  line-height: 1.7;
+}
+
+@media (max-width: 899px) {
+  .hs-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .hs-faq {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
 }
 
 .hs-tall-row {
@@ -610,6 +735,8 @@
   color: white;
   font-size: var(--ds-fs-md);
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .hs-banner-tag {

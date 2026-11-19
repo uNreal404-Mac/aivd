@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { localizedHref } from "@/lib/locale-path";
 import { Menu, Globe, Sun, Moon, Monitor } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
@@ -63,7 +64,7 @@ export function LandingHeader({ user }: { user?: User | null }) {
 
   const handleSignOut = async () => {
     await authClient.signOut();
-    router.push(`/${locale}`);
+    router.push(localizedHref(locale, "/"));
     router.refresh();
   };
 
