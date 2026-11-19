@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   Code2,
+  Compass,
   CreditCard,
   Crown,
   Folder,
@@ -20,6 +21,7 @@ import {
   Tag,
   Tv,
   UserRound,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -52,6 +54,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const signInModal = useSigninModal();
   const zh = lang.toLowerCase().startsWith("zh");
   const [menuOpen, setMenuOpen] = useState(false);
+  // Section expanded in the narrow-screen menu; null until the menu first opens.
+  const [menuSection, setMenuSection] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -304,6 +308,23 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     router.refresh();
   };
 
+  // The narrow-screen menu opens on the current section, closes on Escape
+  // and holds the page still underneath.
+  useEffect(() => {
+    if (!menuOpen) return;
+    setMenuSection((current) => current ?? activeSection?.id ?? dropdowns[0]?.id ?? null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   const otherLang = zh ? "en" : "zh";
   const accountLinks: { label: string; href: string; icon: LucideIcon }[] = [
     { label: t.creations, href: "/my-creations", icon: Folder },
@@ -514,20 +535,104 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
       {menuOpen ? (
         <div className="hf-nav-mobile">
-          <Link href={href("/")} className="hf-item">
-            {t.explore}
-          </Link>
-          {dropdowns.map((menu) => (
-            <Link key={menu.id} href={href(menu.path)} className="hf-item">
-              {menu.label}
-            </Link>
-          ))}
-          <Link href={href("/gallery")} className="hf-item">
-            {t.community}
-          </Link>
-          <Link href={href("/pricing")} className="hf-item">
-            {t.pricing}
-          </Link>
+          <button type="button" className="hf-mm-backdrop" aria-label={t.closeMenu} onClick={() => setMenuOpen(false)} />
+          <nav
+            className="hf-mm"
+            aria-label={zh ? "全部页面" : "All pages"}
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest("a")) setMenuOpen(false);
+            }}
+          >
+            <div className="hf-mm-quick">
+              <Link href={href("/")} className="hf-mm-quick-item" data-active={pathname === "/" || undefined}>
+                <Compass aria-hidden="true" />
+                {t.explore}
+              </Link>
+              <button
+                type="button"
+                className="hf-mm-quick-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSearchOpen(true);
+                }}
+              >
+                <Search aria-hidden="true" />
+                {zh ? "搜索" : "Search"}
+              </button>
+              <Link href={href("/gallery")} className="hf-mm-quick-item" data-active={isActive("/gallery") || undefined}>
+                <Users aria-hidden="true" />
+                {t.community}
+              </Link>
+              <Link href={href("/pricing")} className="hf-mm-quick-item" data-active={isActive("/pricing") || undefined}>
+                <Crown aria-hidden="true" />
+                {t.pricing}
+              </Link>
+            </div>
+
+            {[...dropdowns, moreMenu].map((menu) => {
+              const expanded = menuSection === menu.id;
+              const current = activeSection?.id === menu.id;
+              return (
+                <section key={menu.id} className="hf-mm-sec" data-open={expanded || undefined}>
+                  <button
+                    type="button"
+                    className="hf-mm-head"
+                    aria-expanded={expanded}
+                    onClick={() => setMenuSection(expanded ? null : menu.id)}
+                  >
+                    <span className="hf-mm-label">
+                      {menu.label}
+                      {current ? <span className="hf-mm-here">{zh ? "当前" : "Here"}</span> : null}
+                    </span>
+                    <ChevronDown className="hf-mm-chev" aria-hidden="true" />
+                  </button>
+                  {expanded ? (
+                    <div className="hf-mm-body">
+                      {menu.columns.map((column) => (
+                        <div key={column.title} className="hf-mm-col">
+                          <p className="hf-dd-col-title">{column.title}</p>
+                          {column.items.map(row)}
+                        </div>
+                      ))}
+                      {menu.path ? (
+                        <Link href={href(menu.path)} className="hf-mm-all">
+                          {zh ? `打开${menu.label}` : `Open ${menu.label}`}
+                          <ChevronRight aria-hidden="true" />
+                        </Link>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+
+            <div className="hf-mm-foot">
+              <Link href={href("/pricing")} className="hf-mm-offer">
+                <Tag aria-hidden="true" />
+                <span>
+                  {t.offer}
+                  <small>{t.offerTitle}</small>
+                </span>
+                <ChevronRight aria-hidden="true" />
+              </Link>
+              <Link href={`/${otherLang}${pathname === "/" ? "" : pathname}`} className="hf-mm-lang">
+                <Languages aria-hidden="true" />
+                {zh ? "English" : "简体中文"}
+              </Link>
+              {user ? null : (
+                <button
+                  type="button"
+                  className="hf-mm-login"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    signInModal.onOpen();
+                  }}
+                >
+                  {t.login}
+                </button>
+              )}
+            </div>
+          </nav>
         </div>
       ) : null}
     </header>
