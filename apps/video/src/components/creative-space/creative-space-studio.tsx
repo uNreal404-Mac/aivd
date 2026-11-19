@@ -974,7 +974,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               )}
               {isGenerating ? t.generatingVideo : t.generationDisabled}
             </button>
-            <p className="mt-2 text-center text-[9px] leading-relaxed text-[#59616a]">{t.generationHelp}</p>
+            <p className="mt-2 text-center text-[9px] leading-relaxed text-[#8b949e]">{t.generationHelp}</p>
             {generationStarted && (
               <div className="mt-3 rounded-xl border border-emerald-900/70 bg-emerald-950/25 p-3 text-center">
                 <p className="text-[10px] leading-relaxed text-emerald-200">
