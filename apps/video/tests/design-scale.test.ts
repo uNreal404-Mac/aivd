@@ -3,7 +3,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Component stylesheets that follow the ds.css scale.
-const DIRS = ["src/components/hf", "src/components/section", "src/components/creative-space", "src/components/landing"];
+const DIRS = [
+  "src/components/hf",
+  "src/components/section",
+  "src/components/creative-space",
+  "src/components/landing",
+  "src/components/model-landing",
+  "src/components/effects",
+];
 const FILES = [
   ...DIRS.flatMap((dir) =>
     readdirSync(path.join(process.cwd(), dir))

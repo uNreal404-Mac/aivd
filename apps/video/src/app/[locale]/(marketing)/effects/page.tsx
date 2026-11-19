@@ -4,7 +4,7 @@ import { EffectsGallery } from "@/components/effects/effects-gallery";
 import type { Locale } from "@/config/i18n-config";
 import { copyFor } from "@/lib/effects-data";
 import { buildAlternates } from "@/lib/seo";
-import "@/styles/effects-tokens.css";
+import "@/components/effects/effects.css";
 
 type EffectsPageProps = {
   params: Promise<{ locale: string }>;
@@ -30,16 +30,13 @@ export default async function EffectsPage({ params }: EffectsPageProps) {
   const copy = copyFor(locale);
 
   return (
-    <div className="bg-[var(--fx-bg)] text-[color:var(--fx-text)]">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-10">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {copy.heading}
-        </h1>
-        <p className="text-sm text-[color:var(--fx-muted)]">{copy.sub}</p>
-        <div className="mt-6">
-          <EffectsGallery lang={locale} />
-        </div>
-      </div>
+    <div className="fx-page">
+      <header className="fx-head">
+        <p className="fx-kicker">{locale === "zh" ? "AI 视频特效" : "AI video effects"}</p>
+        <h1 className="fx-title">{copy.heading}</h1>
+        <p className="fx-sub">{copy.sub}</p>
+      </header>
+      <EffectsGallery lang={locale} />
     </div>
   );
 }

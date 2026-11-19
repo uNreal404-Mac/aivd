@@ -48,9 +48,9 @@ export const FEATURE_SLIDES: {
   },
   {
     media: MEDIA.showcase2,
-    cover: { main: "SEEDANCE 2.5", sub: { zh: "30 秒 · 1080P", en: "30S · 1080P" } },
+    cover: { main: "SEEDANCE 2.5", sub: { zh: "1080P · 有声", en: "1080P · SOUND" } },
     title: { zh: "SEEDANCE 2.5 已上线", en: "SEEDANCE 2.5 IS LIVE" },
-    body: { zh: "最长 30 秒的电影级视频，最高 1080p", en: "Cinematic video up to 30s and 1080p" },
+    body: { zh: "电影级画面和同步声音，最高 1080p", en: "Cinematic video with synced sound, up to 1080p" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
   },
   {

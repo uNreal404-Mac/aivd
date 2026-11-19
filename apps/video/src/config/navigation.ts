@@ -86,15 +86,15 @@ export const sidebarNavigation: NavGroup[] = [
 
 // 落地页顶部导航 - Models 下拉菜单
 export const headerModels = [
-  { id: "sora", title: "Sora 2", subtitle: "by OpenAI", href: "/sora-2" },
-  { id: "veo", title: "Veo 3.1", subtitle: "by Google", href: "/veo-3-1" },
+  { id: "sora", title: "Sora 2", subtitle: "by OpenAI", href: "/models/sora-2" },
+  { id: "veo", title: "Veo 3.1", subtitle: "by Google", href: "/models/veo-3-1" },
   {
     id: "seedance",
     title: "Seedance 1.5",
     subtitle: "by ByteDance",
-    href: "/seedance-1-5",
+    href: "/models/seedance-1-5-pro",
   },
-  { id: "wan", title: "Wan 2.6", subtitle: "by Alibaba", href: "/wan-2-6" },
+  { id: "wan", title: "Wan 2.6", subtitle: "by Alibaba", href: "/models/wan-2-6" },
 ];
 
 // 落地页顶部导航 - Tools 下拉菜单

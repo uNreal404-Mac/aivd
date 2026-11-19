@@ -5,7 +5,6 @@ import {
   BookOpen,
   Brush,
   Clapperboard,
-  Compass,
   Eraser,
   Expand,
   FastForward,
@@ -117,7 +116,7 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
       id: "video",
       label: zh ? "视频" : "Video",
       path: "/ai/video",
-      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
+      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video"],
       columns: [
         {
           title: zh ? "功能" : "Features",
@@ -152,7 +151,7 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
             { title: zh ? "音乐与音效" : "Music & sound", desc: zh ? "一句话生成歌曲和音效" : "Songs and sound effects from one line", icon: Music, href: "/audio?voiceMode=music", badge: "new" },
             { title: zh ? "变声" : "Voice changer", desc: zh ? "把一段声音换成另一种音色" : "Swap a recording into another voice", icon: Mic, href: "/audio?voiceMode=change-voice", soon: true },
             { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Languages, href: "/audio?voiceMode=translate", soon: true },
-            { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/veo-3-1", badge: "hot" },
+            { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/models/veo-3-1", badge: "hot" },
           ],
         },
         {
@@ -190,7 +189,7 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
       id: "templates",
       label: zh ? "模板" : "Templates",
       path: "/templates",
-      routes: ["/templates", "/effects", "/explore"],
+      routes: ["/templates", "/effects"],
       columns: [
         {
           title: zh ? "模板" : "Templates",
@@ -206,7 +205,6 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           items: [
             { title: zh ? "特效模板" : "Effect templates", desc: zh ? "热门视频特效" : "Trending video effects", icon: Sparkles, href: "/effects", badge: "hot" },
             { title: zh ? "社区画廊" : "Community gallery", desc: zh ? "看看大家都在做什么" : "See what others are making", icon: Users, href: "/gallery" },
-            { title: zh ? "灵感探索" : "Explore", desc: zh ? "按主题浏览创意" : "Browse ideas by theme", icon: Compass, href: "/explore" },
           ],
         },
       ],

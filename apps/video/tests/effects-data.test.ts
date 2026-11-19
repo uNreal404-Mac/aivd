@@ -31,7 +31,6 @@ function resolveRepoFile(relativePath: string): string | null {
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
-const tokensPath = resolveRepoFile("src/styles/effects-tokens.css");
 
 describe("EFFECT_TEMPLATES", () => {
   it("contains exactly 16 templates", () => {
@@ -168,33 +167,15 @@ describe("copy helpers", () => {
   });
 });
 
-describe("effects tokens", () => {
-  it("ships a tokens stylesheet with the glass button fallback", () => {
-    expect(tokensPath).not.toBeNull();
-    const css = readFileSync(tokensPath as string, "utf8");
-    expect(css).toContain("@supports not");
-    expect(css).toContain(".fx-glass-btn");
-  });
-
-  it("defines every --fx-* variable used by the gallery", () => {
-    const galleryPath = resolveRepoFile(
-      "src/components/effects/effects-gallery.tsx",
-    );
-    if (!galleryPath) {
-      return;
-    }
-    const css = tokensPath ? readFileSync(tokensPath, "utf8").toLowerCase() : "";
-    const gallery = readFileSync(galleryPath, "utf8");
-
-    const used = new Set<string>();
-    const pattern = /var\(\s*(--fx-[a-z0-9-]+)/gi;
-    for (const match of gallery.matchAll(pattern)) {
-      used.add(match[1].toLowerCase());
-    }
-
-    expect(used.size).toBeGreaterThan(0);
-    for (const name of used) {
-      expect(css).toContain(`${name}:`);
-    }
+describe("effects styles", () => {
+  // The library now uses the site-wide ds.css scale instead of its own tokens.
+  it("styles the gallery with the shared design scale", () => {
+    const cssPath = resolveRepoFile("src/components/effects/effects.css");
+    expect(cssPath).not.toBeNull();
+    const css = readFileSync(cssPath as string, "utf8");
+    expect(css).toMatch(/var\(--ds-/);
+    const gallery = readFileSync(resolveRepoFile("src/components/effects/effects-gallery.tsx") as string, "utf8");
+    expect(gallery).toContain('import "./effects.css"');
   });
 });
+

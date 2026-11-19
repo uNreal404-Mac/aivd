@@ -96,7 +96,7 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
   const zh = isZh(lang);
   const catalog: CatalogModel[] = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const ordered = [...catalog].sort((a, b) => Number(connectedIds.includes(b.id)) - Number(connectedIds.includes(a.id)));
-  const pageFor: Record<string, string> = { "veo-3.1": "/veo-3-1", "wan2.6": "/wan-2-6" };
+  const pageFor: Record<string, string> = { "veo-3.1": "/models/veo-3-1", "wan2.6": "/models/wan-2-6" };
   return (
     <section className="sp-models" aria-labelledby={`sp-models-${kind}`}>
       <h2 id={`sp-models-${kind}`} className="sp-h2">{zh ? "模型" : "Models"}</h2>
@@ -137,8 +137,8 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
   const zh = isZh(lang);
   const { preset, useTemplate } = useComposerPreset(lang);
   const showcases = [
-    { title: "VEO 3.1", body: zh ? "8 秒短片，带同步声音与空间层次。" : "8-second clips with synchronized sound and depth.", href: "/veo-3-1", images: ["mountain-valley", "storm-sea", "planet-impact"] },
-    { title: "WAN 2.6", body: zh ? "5 到 15 秒，720p 与 1080p，成本更低。" : "5 to 15 seconds in 720p and 1080p at a lower cost.", href: "/wan-2-6", images: ["autumn-walk", "rain-couple", "mountain-wind"] },
+    { title: "VEO 3.1", body: zh ? "8 秒短片，带同步声音与空间层次。" : "8-second clips with synchronized sound and depth.", href: "/models/veo-3-1", images: ["mountain-valley", "storm-sea", "planet-impact"] },
+    { title: "WAN 2.6", body: zh ? "5 到 15 秒，720p 与 1080p，成本更低。" : "5 to 15 seconds in 720p and 1080p at a lower cost.", href: "/models/wan-2-6", images: ["autumn-walk", "rain-couple", "mountain-wind"] },
   ];
   return (
     <div className="sp-page">
@@ -198,7 +198,7 @@ const TEMPLATE_CATEGORY_LINES: Record<string, { zh: string; en: string }> = {
 const TEMPLATE_MODEL_TILES: { name: string; zh: string; en: string; href: string; badge?: { zh: string; en: string } }[] = [
   { name: "Veo 3.1", zh: "带同步声音的电影级短片", en: "Cinematic clips with synced sound", href: "/ai/video?model=veo-3.1", badge: { zh: "热门", en: "Hot" } },
   { name: "Wan 2.6", zh: "5–15 秒，性价比高", en: "5–15s, good value", href: "/ai/video?model=wan2.6" },
-  { name: "Seedance 2.5", zh: "最长 30 秒的电影级视频", en: "Cinematic video up to 30s", href: "/ai/video?model=bytedance%2Fseedance-2-5", badge: { zh: "新", en: "New" } },
+  { name: "Seedance 2.5", zh: "电影级画面和同步声音", en: "Cinematic video with synced sound", href: "/ai/video?model=bytedance%2Fseedance-2-5", badge: { zh: "新", en: "New" } },
   { name: "Kling 4.0", zh: "参考图锁定人物", en: "References keep characters steady", href: "/ai/video?model=kling%2Fv4-reference-to-video" },
   { name: "Grok Imagine", zh: "快速、实惠的短视频", en: "Fast, affordable clips", href: "/ai/video?model=grok-imagine%2Ftext-to-video" },
   { name: "HappyHorse 1.1", zh: "风格鲜明的趣味短视频", en: "Playful clips with a strong style", href: "/ai/video?model=happyhorse-1-1" },

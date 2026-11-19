@@ -369,10 +369,11 @@ describe("sitemap source", () => {
     "utf8"
   );
 
-  it("adds one route per model landing page using MODEL_SLUGS", () => {
-    expect(sitemapSource).toContain("MODEL_SLUGS");
+  // Every model in the nav now has a landing page; the sitemap lists them all.
+  it("adds one route per model landing page using LANDING_SLUGS", () => {
+    expect(sitemapSource).toContain("LANDING_SLUGS");
     expect(sitemapSource).toMatch(
-      /(from|require\()\s*["']@\/lib\/model-seo["']/
+      /(from|require\()\s*["']@\/lib\/model-landing["']/
     );
   });
 
@@ -382,11 +383,11 @@ describe("sitemap source", () => {
 });
 
 describe("model page source", () => {
-  it("uses the localized copy helpers instead of hard-coded English labels", () => {
+  it("renders the shared landing template instead of hard-coded English labels", () => {
     const pageSource = readModelPageSource();
 
-    expect(pageSource).toContain("MODEL_PAGE_COPY");
-    expect(pageSource).toContain("localizeModelSeo");
+    expect(pageSource).toContain("ModelLanding");
+    expect(pageSource).toContain("landingTitle");
     expect(pageSource).not.toContain("AI Video Generator");
     expect(pageSource).not.toContain("Try ");
     expect(pageSource).not.toContain("How to use");

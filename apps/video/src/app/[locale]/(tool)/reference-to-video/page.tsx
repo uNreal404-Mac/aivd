@@ -1,9 +1,8 @@
-import { getToolPageConfig, getToolPageConfigForProvider } from "@/config/tool-pages";
-import { ToolPageLayout } from "@/components/tool/tool-page-layout";
+import { VideoStudioPage } from "@/components/hf/video-studio-page";
+import { getToolPageConfig } from "@/config/tool-pages";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
-import { getConfiguredAIProvider } from "@/ai";
 
 interface ReferenceToVideoPageProps {
   params: Promise<{
@@ -18,18 +17,21 @@ export async function generateMetadata({
   const config = getToolPageConfig("reference-to-video");
   const alternates = buildAlternates("/reference-to-video", locale);
   const ogImage = resolveOgImage(config.seo?.ogImage);
+  const isChinese = locale.toLowerCase().startsWith("zh");
+  const title = isChinese ? "参考图生成视频 - 人物和风格保持一致" : config.seo?.title;
+  const description = isChinese ? "上传最多 4 张参考图，用 Kling 4.0 生成人物和风格一致的视频。" : config.seo?.description;
 
   return {
-    title: config.seo?.title,
-    description: config.seo?.description,
+    title,
+    description,
     keywords: config.seo?.keywords,
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,
     },
     openGraph: {
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title,
+      description,
       url: alternates.canonical,
       siteName: siteConfig.name,
       type: "website",
@@ -37,24 +39,17 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: config.seo?.title,
-      description: config.seo?.description,
+      title,
+      description,
       images: ogImage ? [ogImage] : undefined,
     },
   };
 }
 
-export default async function ReferenceToVideoPage({ params }: ReferenceToVideoPageProps) {
-  const config = getToolPageConfigForProvider(
-    "reference-to-video",
-    getConfiguredAIProvider()
-  );
-  const { locale } = await params;
-  return (
-    <ToolPageLayout
-      config={config}
-      locale={locale}
-      toolRoute="reference-to-video"
-    />
-  );
+export default async function ReferenceToVideoPage({
+  params,
+  searchParams,
+}: ReferenceToVideoPageProps & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [{ locale }, sp] = await Promise.all([params, searchParams]);
+  return <VideoStudioPage locale={locale} searchParams={sp} defaultModel="kling/v4-reference-to-video" />;
 }

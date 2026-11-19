@@ -3,7 +3,6 @@
 import { useTranslations, useLocale } from "next-intl";
 
 import { LocaleLink } from "@/i18n/navigation";
-import { navModelHref } from "@/lib/nav-models";
 import "./footer.css";
 
 export function LandingFooter() {
@@ -38,23 +37,23 @@ export function LandingFooter() {
         {
           title: zh ? "视频模型" : "Video models",
           links: [
-            { title: "Veo 3.1", href: "/veo-3-1" },
-            { title: "Wan 2.6", href: "/wan-2-6" },
-            { title: "Seedance 2.5", href: navModelHref("video", "bytedance/seedance-2-5") },
-            { title: "Kling 4.0", href: navModelHref("video", "kling/v4-reference-to-video") },
-            { title: "Gemini Omni Flash", href: navModelHref("video", "gemini-omni-flash-1-2") },
-            { title: "MiniMax H3", href: navModelHref("video", "minimax-h3/text-to-video") },
-            { title: "Grok Imagine 1.5", href: navModelHref("video", "grok-imagine-1-5") },
+            { title: "Veo 3.1", href: "/models/veo-3-1" },
+            { title: "Wan 2.6", href: "/models/wan-2-6" },
+            { title: "Seedance 2.5", href: "/models/seedance-2-5" },
+            { title: "Kling 4.0", href: "/models/kling-4-0" },
+            { title: "Gemini Omni Flash", href: "/models/gemini-omni-flash-1-2" },
+            { title: "MiniMax H3", href: "/models/minimax-h3" },
+            { title: "Grok Imagine 1.5", href: "/models/grok-imagine-1-5" },
           ],
         },
         {
           title: zh ? "图像模型" : "Image models",
           links: [
-            { title: "Nano Banana Pro", href: navModelHref("image", "nano-banana-pro") },
-            { title: "Seedream 5.5", href: navModelHref("image", "seedream-5-5") },
-            { title: "GPT Image 2.6", href: navModelHref("image", "gpt-image-2-6-sunburst") },
-            { title: "Kling Image 4.0", href: navModelHref("image", "kling-image-4") },
-            { title: "FLUX 3", href: navModelHref("image", "flux3/klein-text-to-image") },
+            { title: "Nano Banana Pro", href: "/models/nano-banana-pro" },
+            { title: "Seedream 5.5", href: "/models/seedream-5-5" },
+            { title: "GPT Image 2.6", href: "/models/gpt-image-2-6-sunburst" },
+            { title: "Kling Image 4.0", href: "/models/kling-image-4-0" },
+            { title: "FLUX 3", href: "/models/flux-3-image" },
           ],
         },
       ],
@@ -73,9 +72,9 @@ export function LandingFooter() {
         {
           title: zh ? "音频模型" : "Audio models",
           links: [
-            { title: "Eleven v3", href: navModelHref("audio", "elevenlabs-v3") },
-            { title: "Gemini 3.8 TTS", href: navModelHref("audio", "gemini-3-8-flash-tts") },
-            { title: "Suno V6", href: navModelHref("audio", "suno-music") },
+            { title: "Eleven v3", href: "/models/eleven-v3" },
+            { title: "Gemini 3.8 TTS", href: "/models/gemini-3-8-flash-tts" },
+            { title: "Suno V6", href: "/models/suno-v6" },
           ],
         },
       ],
@@ -86,7 +85,6 @@ export function LandingFooter() {
           title: zh ? "资源" : "Resources",
           links: [
             { title: zh ? "社区画廊" : "Community gallery", href: "/gallery" },
-            { title: zh ? "灵感探索" : "Explore", href: "/explore" },
             { title: zh ? "定价" : "Pricing", href: "/pricing" },
           ],
         },

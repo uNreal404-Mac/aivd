@@ -1,0 +1,235 @@
+/* Page frame. */
+.fx-page {
+  display: flex;
+  max-width: 1400px;
+  flex-direction: column;
+  gap: var(--ds-space-6);
+  margin: 0 auto;
+  padding: var(--ds-space-6) var(--ds-space-5) var(--ds-space-8);
+  color: var(--ds-text-1);
+}
+
+.fx-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.fx-kicker {
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.fx-title {
+  font-family: var(--du-font-display, inherit);
+  font-size: var(--ds-fs-4xl);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.fx-sub {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-md);
+}
+
+/* Effects library. Built on the ds.css scale. */
+
+.fx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+}
+
+.fx-chips {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.fx-chip {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    color var(--du-dur-fast, 180ms) ease;
+}
+
+.fx-chip:hover {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.fx-chip-on {
+  border-color: transparent;
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
+.fx-chip-on:hover {
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
+.fx-chip-count {
+  color: inherit;
+  font-size: var(--ds-fs-xs);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.55;
+}
+
+.fx-empty {
+  padding: var(--ds-space-8) 0;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  text-align: center;
+}
+
+.fx-grid {
+  display: grid;
+  gap: var(--ds-space-5) var(--ds-space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0;
+  list-style: none;
+}
+
+.fx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fx-media {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 6px;
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-2);
+}
+
+.fx-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 700ms var(--du-ease, ease);
+}
+
+.fx-card:hover .fx-media img {
+  transform: scale(1.05);
+}
+
+.fx-tag,
+.fx-new {
+  position: absolute;
+  top: 10px;
+  padding: 2px 8px;
+  border-radius: var(--ds-r-full);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+}
+
+.fx-tag {
+  right: 10px;
+  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
+  color: var(--ds-text-2);
+  backdrop-filter: blur(8px);
+}
+
+.fx-new {
+  left: 10px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.fx-use {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  display: inline-flex;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--ds-r-lg);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--du-dur, 400ms) var(--du-ease, ease),
+    transform var(--du-dur, 400ms) var(--du-ease, ease);
+}
+
+.fx-use svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fx-card:hover .fx-use,
+.fx-card:focus-visible .fx-use {
+  opacity: 1;
+  transform: none;
+}
+
+.fx-name {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.fx-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Camera and motion effects play their move while hovered. */
+.fx-move-push:hover .fx-media img { animation: fx-push 2.4s var(--du-ease, ease) infinite alternate; }
+.fx-move-orbit:hover .fx-media img { animation: fx-orbit 3s ease-in-out infinite alternate; }
+.fx-move-zoom:hover .fx-media img { animation: fx-zoom 1.2s cubic-bezier(0.7, 0, 0.3, 1) infinite alternate; }
+.fx-move-drift:hover .fx-media img { animation: fx-drift 3s ease-in-out infinite alternate; }
+.fx-move-rise:hover .fx-media img { animation: fx-rise 2.6s ease-in-out infinite alternate; }
+.fx-move-sweep:hover .fx-media img { animation: fx-sweep 2.2s ease-in-out infinite alternate; }
+.fx-move-freeze:hover .fx-media img { animation: fx-freeze 1.6s steps(1, end) infinite; }
+
+@keyframes fx-push { from { transform: scale(1); } to { transform: scale(1.25); } }
+@keyframes fx-orbit { from { transform: perspective(500px) scale(1.2) rotateY(-10deg); } to { transform: perspective(500px) scale(1.2) rotateY(10deg); } }
+@keyframes fx-zoom { from { transform: scale(1); } to { transform: scale(1.6); } }
+@keyframes fx-drift { from { transform: scale(1.2) translateX(-6%); } to { transform: scale(1.2) translateX(6%); } }
+@keyframes fx-rise { from { transform: scale(1.15) translateY(6%); } to { transform: scale(1.15) translateY(-6%); } }
+@keyframes fx-sweep { from { transform: scale(1.2) translateX(8%) skewX(-2deg); } to { transform: scale(1.2) translateX(-8%) skewX(2deg); } }
+@keyframes fx-freeze { 0% { transform: scale(1); filter: none; } 50% { transform: scale(1.08); filter: contrast(1.2) brightness(1.1); } }
+
+@media (max-width: 1023px) {
+  .fx-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-card:hover .fx-media img {
+    animation: none;
+  }
+}

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
 
 import {
   CATEGORY_LABELS,
@@ -14,86 +14,80 @@ import {
   useHref,
   type EffectsCategory,
 } from "@/lib/effects-data";
+import "./effects.css";
 
-type EffectsGalleryProps = {
-  lang: string;
+const S = (name: string) => `/home/samples/${name}.webp`;
+
+/**
+ * A library picture for each effect and, for camera and motion effects, the
+ * move it makes, played on hover. The pictures illustrate the idea; they are
+ * not the effect's output, and the card says so.
+ */
+const LOOK: Record<string, { image: string; move?: string }> = {
+  "slow-push-in": { image: S("red-carpet"), move: "push" },
+  "orbit-reveal": { image: S("dancer"), move: "orbit" },
+  "crash-zoom": { image: S("planet-impact"), move: "zoom" },
+  "dolly-drift": { image: S("studio-room"), move: "drift" },
+  "melt-away": { image: S("cosmic-bloom") },
+  "paper-fold": { image: S("tomb-light") },
+  "liquid-morph": { image: S("storm-sea") },
+  "neon-rain": { image: S("rain-couple") },
+  "golden-dust": { image: S("autumn-walk") },
+  "fog-roll": { image: S("mountain-valley") },
+  "ink-wash": { image: S("dreaming") },
+  "pixel-pop": { image: S("mech-warrior") },
+  claymation: { image: S("boy-and-dog") },
+  "float-up": { image: S("mountain-wind"), move: "rise" },
+  "wind-sweep": { image: S("autumn-walk"), move: "sweep" },
+  "freeze-burst": { image: "/home/hero-marina-poster.webp", move: "freeze" },
 };
 
-export function EffectsGallery({ lang }: EffectsGalleryProps) {
+export function EffectsGallery({ lang }: { lang: string }) {
+  const zh = lang.toLowerCase().startsWith("zh");
   const [category, setCategory] = useState<EffectsCategory>("all");
   const copy = copyFor(lang);
-  const items = useMemo(
-    () => filterEffects(EFFECT_TEMPLATES, category),
-    [category],
-  );
+  const items = useMemo(() => filterEffects(EFFECT_TEMPLATES, category), [category]);
 
   return (
-    <div className="flex flex-col gap-[var(--fx-gap)]">
-      <div aria-label={copy.title} className="flex flex-wrap gap-2">
-        {EFFECT_CATEGORIES.map((item) => {
-          const isActive = item === category;
-          return (
-            <button
-              aria-pressed={isActive}
-              className={`inline-flex h-9 items-center rounded-[var(--fx-radius-chip)] px-4 text-sm transition-colors ${
-                isActive
-                  ? "bg-[var(--fx-accent)] text-[color:var(--fx-on-accent)]"
-                  : "fx-glass-btn text-[color:var(--fx-text)]"
-              }`}
-              key={item}
-              onClick={() => setCategory(item)}
-              type="button"
-            >
-              {labelFor(CATEGORY_LABELS[item], lang)}
-            </button>
-          );
-        })}
-      </div>
+    <div className="fx">
+      <fieldset className="fx-chips">
+        <legend className="sr-only">{copy.title}</legend>
+        {EFFECT_CATEGORIES.map((item) => (
+          <button
+            key={item}
+            type="button"
+            aria-pressed={item === category}
+            className={item === category ? "fx-chip fx-chip-on" : "fx-chip"}
+            onClick={() => setCategory(item)}
+          >
+            {labelFor(CATEGORY_LABELS[item], lang)}
+            <span className="fx-chip-count">{filterEffects(EFFECT_TEMPLATES, item).length}</span>
+          </button>
+        ))}
+      </fieldset>
 
       {items.length === 0 ? (
-        <p className="py-16 text-center text-sm text-[color:var(--fx-muted)]">
-          {copy.empty}
-        </p>
+        <p className="fx-empty">{copy.empty}</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-[var(--fx-gap)] md:grid-cols-3 lg:grid-cols-4">
+        <ul className="fx-grid">
           {items.map((template) => {
             const name = labelFor(template.name, lang);
+            const look = LOOK[template.id] ?? { image: S("cosmic-bloom") };
             return (
               <li key={template.id}>
-                <div className="group relative aspect-[4/5] overflow-hidden rounded-[var(--fx-radius-card)] border border-[color:var(--fx-border)] bg-[var(--fx-surface)]">
-                  <Image
-                    alt={name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    height={800}
-                    loading="lazy"
-                    src={template.image}
-                    width={640}
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0"
-                    style={{ backgroundImage: "var(--fx-overlay)" }}
-                  />
-                  {template.badge === "new" ? (
-                    <span className="fx-glass-btn absolute left-3 top-3 inline-flex h-6 items-center rounded-[var(--fx-radius-chip)] px-2 text-xs">
-                      {copy.newBadge}
+                <Link href={useHref(lang, template)} className={`fx-card ${look.move ? `fx-move-${look.move}` : ""}`}>
+                  <span className="fx-media">
+                    <img src={look.image} alt="" loading="lazy" />
+                    <span className="fx-tag">{zh ? "示意" : "Illustration"}</span>
+                    {template.badge === "new" ? <span className="fx-new">{copy.newBadge}</span> : null}
+                    <span className="fx-use">
+                      {zh ? "套用特效" : "Use effect"}
+                      <ArrowRight aria-hidden="true" />
                     </span>
-                  ) : null}
-                  <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 p-3">
-                    <p className="text-[15px] font-semibold text-[color:var(--fx-text)]">
-                      {name}
-                    </p>
-                    <p className="line-clamp-2 text-[12px] text-[color:var(--fx-muted)]">
-                      {labelFor(template.description, lang)}
-                    </p>
-                    <Link
-                      className="fx-glass-btn inline-flex h-8 items-center rounded-full px-3 text-xs"
-                      href={useHref(lang, template)}
-                    >
-                      {copy.use}
-                    </Link>
-                  </div>
-                </div>
+                  </span>
+                  <span className="fx-name">{name}</span>
+                  <span className="fx-desc">{labelFor(template.description, lang)}</span>
+                </Link>
               </li>
             );
           })}

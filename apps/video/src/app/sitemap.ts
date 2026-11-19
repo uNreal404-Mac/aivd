@@ -1,6 +1,6 @@
+import { LANDING_SLUGS } from '@/lib/model-landing';
 import { MetadataRoute } from "next";
 import { i18n } from "@/config/i18n-config";
-import { MODEL_SLUGS } from "@/lib/model-seo";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment } from "@/lib/indexing";
 import { execSync } from "node:child_process";
@@ -40,6 +40,13 @@ const SKIP_SEGMENTS = [
   "credits",
   "privacy-policy",
   "terms-of-service",
+  // Older addresses that now redirect (model pages moved to /models/<slug>,
+  // explore folded into templates).
+  "veo-3-1",
+  "wan-2-6",
+  "sora-2",
+  "seedance-1-5",
+  "explore",
 ];
 
 function isSkippedRoute(routePath: string): boolean {
@@ -147,7 +154,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 动态路由页面需显式补充（scanPages 会跳过含 "[" 的页面）
   const modelsPageFile = join(appDir, '(marketing)', 'models', '[slug]', 'page.tsx');
-  for (const slug of MODEL_SLUGS) {
+  for (const slug of LANDING_SLUGS) {
     routes.push({
       path: `models/${slug}`,
       file: modelsPageFile,

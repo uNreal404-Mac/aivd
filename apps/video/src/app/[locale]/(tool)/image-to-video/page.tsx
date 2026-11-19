@@ -1,8 +1,5 @@
-import "@/styles/i2v-tokens.css";
-
+import { VideoStudioPage } from "@/components/hf/video-studio-page";
 import { getToolPageConfig } from "@/config/tool-pages";
-import { I2VStudio } from "@/components/image-to-video/i2v-studio";
-import { isI2VGenerationEnabled } from "@/lib/image-to-video";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
@@ -51,9 +48,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function ImageToVideoPage({ params }: ImageToVideoPageProps) {
-  const generationEnabled = isI2VGenerationEnabled();
-  const { locale } = await params;
-
-  return <I2VStudio generationEnabled={generationEnabled} locale={locale} />;
+export default async function ImageToVideoPage({
+  params,
+  searchParams,
+}: ImageToVideoPageProps & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [{ locale }, sp] = await Promise.all([params, searchParams]);
+  return <VideoStudioPage locale={locale} searchParams={sp} />;
 }
