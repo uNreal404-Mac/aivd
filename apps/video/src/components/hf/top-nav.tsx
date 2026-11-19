@@ -4,46 +4,22 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  AudioLines,
-  BookOpen,
-  Brush,
   ChevronRight,
-  Clapperboard,
   Code2,
-  Coins,
-  Compass,
   CreditCard,
   Crown,
-  Eraser,
-  Expand,
-  FastForward,
-  Film,
   Folder,
-  Image as ImageIcon,
   Languages,
-  ImagePlus,
-  Layers,
-  LayoutGrid,
   LogOut,
   Megaphone,
   Menu,
-  Mic,
-  Music,
-  Orbit,
   Plug,
-  ScanFace,
   Search,
   Settings,
-  Sparkles,
-  SunMedium,
   Tag,
   Tv,
   UserRound,
-  Users,
-  Volume2,
-  Wand2,
   X,
-  ZoomIn,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,8 +31,8 @@ import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
 import { LocaleChange } from "@/components/locale-change";
 import { authClient } from "@/lib/auth/client";
-import { MARKET_MODELS } from "@/ai/kie-market";
-import { NAV_AUDIO_MODELS, NAV_IMAGE_MODELS, NAV_VIDEO_MODELS, navModelHref, type NavModelKind } from "@/lib/nav-models";
+import { buildDropdowns, type DropItem } from "@/components/hf/nav-menus";
+import { NavSearch } from "@/components/hf/nav-search";
 import { useCreditsStore } from "@/stores/credits-store";
 import "./top-nav.css";
 
@@ -69,49 +45,13 @@ interface HfTopNavProps {
   lang: string;
 }
 
-/** One row in a dropdown: icon tile, title and a one-line description. */
-type DropItem = {
-  title: string;
-  desc: string;
-  icon: LucideIcon;
-  /** Omitted for features that are not live yet; those render greyed out. */
-  href?: string;
-  badge?: "hot" | "new";
-  /** Linked, but generation is not connected yet: show a small tag. */
-  soon?: boolean;
-  /** Extra label after the title, e.g. "4K". */
-  tag?: string;
-};
-type DropColumn = { title: string; items: DropItem[] };
-type Dropdown = {
-  id: string;
-  label: string;
-  /** Landing page of the section; the top-level item links here. */
-  path: string;
-  /** Routes that belong to the section, for the active state and the tab strip. */
-  routes: string[];
-  columns: DropColumn[];
-};
-
-// Models that can generate today; every other listed model is coming soon.
-const LIVE_MODEL_IDS = ["veo-3.1", "wan2.6", ...MARKET_MODELS.map((model) => model.id)];
-
-function modelIcon(name: string): LucideIcon {
-  const n = name.toLowerCase();
-  if (n.startsWith("seedance") || n.startsWith("minimax")) return Clapperboard;
-  if (n.startsWith("kling") || n.startsWith("happyhorse")) return Film;
-  if (n.startsWith("wan") || n.startsWith("flux") || n.startsWith("recraft")) return Orbit;
-  if (n.startsWith("gpt") || n.startsWith("nano") || n.startsWith("seedream")) return ImageIcon;
-  if (n.startsWith("eleven") || n.startsWith("seed ") || n.startsWith("qwen") || n.includes("speech")) return AudioLines;
-  return Sparkles;
-}
-
 export function HfTopNav({ user, lang }: HfTopNavProps) {
   const pathname = useLocalePathname();
   const router = useRouter();
   const signInModal = useSigninModal();
   const zh = lang.toLowerCase().startsWith("zh");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   // Left edge of the open dropdown, taken from the trigger that opened it.
@@ -151,7 +91,27 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   useEffect(() => {
     setOpen(null);
     setMenuOpen(false);
+    setSearchOpen(false);
   }, [pathname]);
+
+  // ⌘K / Ctrl+K anywhere, or "/" when not typing, opens site search.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const typing = target?.closest("input, textarea, select, [contenteditable='true']");
+      if ((event.key === "k" || event.key === "K") && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setOpen(null);
+        setSearchOpen((value) => !value);
+      } else if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        setOpen(null);
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   // The account menu shows the credit balance; load it when the menu opens.
   useEffect(() => {
@@ -170,7 +130,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         signup: "免费开始",
         openMenu: "打开菜单",
         closeMenu: "关闭菜单",
-        search: "搜索模板",
+        search: "搜索（⌘K）",
         creations: "我的作品",
         credits: "可用积分",
         buyCredits: "购买积分",
@@ -200,7 +160,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         signup: "Start free",
         openMenu: "Open menu",
         closeMenu: "Close menu",
-        search: "Search templates",
+        search: "Search (⌘K)",
         creations: "My creations",
         credits: "Credits",
         buyCredits: "Buy credits",
@@ -221,145 +181,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         plans: { FREE: "Free plan", PRO: "Pro plan", BUSINESS: "Business plan" },
       };
 
-  // Model rows: every model links to its studio with the model selected.
-  const modelItems = (kind: NavModelKind): DropItem[] =>
-    (kind === "image" ? NAV_IMAGE_MODELS : kind === "video" ? NAV_VIDEO_MODELS : NAV_AUDIO_MODELS).map((model) => ({
-      title: model.name,
-      desc: zh ? model.desc.zh : model.desc.en,
-      icon: modelIcon(model.name),
-      href: navModelHref(kind, model.id),
-      badge: model.badge,
-      tag: model.tag,
-      soon: !LIVE_MODEL_IDS.includes(model.id),
-    }));
-
-  // Only pages that exist get a link. Everything else is listed so visitors
-  // can see what is coming, but it is greyed out and not clickable.
-  const dropdowns: Dropdown[] = [
-    {
-      id: "image",
-      label: zh ? "图像" : "Image",
-      path: "/ai/image",
-      routes: ["/ai/image", "/image"],
-      columns: [
-        {
-          title: zh ? "功能" : "Features",
-          items: [
-            { title: zh ? "创建图像" : "Create image", desc: zh ? "用文字生成 AI 图像" : "Generate AI images from text", icon: ImageIcon, href: "/ai/image" },
-            { title: zh ? "图片转视频" : "Image to video", desc: zh ? "让一张静态图片动起来" : "Bring a still image to life", icon: ImagePlus, href: "/image-to-video", badge: "hot" },
-            { title: zh ? "编辑图像" : "Edit image", desc: zh ? "用一句话修改图片内容" : "Change an image with one sentence", icon: Layers },
-            { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "选中区域，描述修改内容" : "Select an area and describe the change", icon: Brush },
-            { title: zh ? "重新打光" : "Relight", desc: zh ? "调整光源位置、颜色和亮度" : "Move the light, change its colour and strength", icon: SunMedium },
-            { title: zh ? "背景去除" : "Remove background", desc: zh ? "一键抠出主体" : "Cut out the subject in one click", icon: Eraser },
-            { title: zh ? "图像高清放大" : "Upscale image", desc: zh ? "提升图像清晰度" : "Sharpen and enlarge images", icon: ZoomIn },
-            { title: zh ? "图片扩展" : "Expand image", desc: zh ? "向画面外延展内容" : "Extend the picture beyond its edges", icon: Expand },
-          ],
-        },
-        {
-          title: zh ? "模型" : "Models",
-          items: modelItems("image"),
-        },
-      ],
-    },
-    {
-      id: "video",
-      label: zh ? "视频" : "Video",
-      path: "/ai/video",
-      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video", "/veo-3-1", "/wan-2-6", "/models"],
-      columns: [
-        {
-          title: zh ? "功能" : "Features",
-          items: [
-            { title: zh ? "创建视频" : "Create video", desc: zh ? "在视频工作室里生成和管理视频" : "Generate and manage clips in the studio", icon: Film, href: "/ai/video", badge: "hot" },
-            { title: zh ? "文生视频" : "Text to video", desc: zh ? "一句话描述，直接生成视频" : "Describe it and get a video", icon: Clapperboard, href: "/text-to-video" },
-            { title: zh ? "图生视频" : "Image to video", desc: zh ? "以图片为起始帧生成视频" : "Use an image as the first frame", icon: ImagePlus, href: "/image-to-video" },
-            { title: zh ? "参考生视频" : "Reference to video", desc: zh ? "用多张参考图锁定人物和风格" : "Lock characters and style with references", icon: Layers, href: "/reference-to-video" },
-            { title: zh ? "AI 视频特效" : "AI video effects", desc: zh ? "热门特效模板，一键套用" : "Trending effect templates in one click", icon: Wand2, href: "/effects" },
-            { title: zh ? "AI 数字人" : "AI avatar", desc: zh ? "让数字人开口说话" : "Make an avatar talk", icon: UserRound },
-            { title: zh ? "动作模仿" : "Motion mimic", desc: zh ? "把参考视频的动作迁移到人物上" : "Copy motion from a reference clip", icon: ScanFace },
-            { title: zh ? "视频延长" : "Extend video", desc: zh ? "让视频继续往下播" : "Continue a clip past its end", icon: FastForward },
-            { title: zh ? "视频画质提升" : "Upscale video", desc: zh ? "提升视频清晰度" : "Sharpen and enlarge video", icon: ZoomIn },
-          ],
-        },
-        {
-          title: zh ? "模型" : "Models",
-          items: modelItems("video"),
-        },
-      ],
-    },
-    {
-      id: "audio",
-      label: zh ? "音频" : "Audio",
-      path: "/audio",
-      routes: ["/audio"],
-      columns: [
-        {
-          title: zh ? "功能" : "Features",
-          items: [
-            { title: zh ? "文本转语音" : "Text to speech", desc: zh ? "把脚本读成自然的人声" : "Turn a script into a natural voice", icon: AudioLines, href: "/audio?voiceMode=voiceover", badge: "new" },
-            { title: zh ? "音乐与音效" : "Music & sound", desc: zh ? "一句话生成歌曲和音效" : "Songs and sound effects from one line", icon: Music, href: "/audio?voiceMode=music", badge: "new" },
-            { title: zh ? "变声" : "Voice changer", desc: zh ? "把一段声音换成另一种音色" : "Swap a recording into another voice", icon: Mic, href: "/audio?voiceMode=change-voice", soon: true },
-            { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Languages, href: "/audio?voiceMode=translate", soon: true },
-            { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/veo-3-1", badge: "hot" },
-          ],
-        },
-        {
-          title: zh ? "模型" : "Models",
-          items: modelItems("audio"),
-        },
-      ],
-    },
-    {
-      id: "creative",
-      label: zh ? "创作空间" : "Creative Space",
-      path: "/creative-space",
-      routes: ["/creative-space"],
-      columns: [
-        {
-          title: zh ? "功能" : "Features",
-          items: [
-            { title: zh ? "创作空间" : "Creative Space", desc: zh ? "说出想法，Agent 拆成镜头再生成" : "Say the idea; the agent plans the shots", icon: Sparkles, href: "/creative-space", badge: "new" },
-            { title: zh ? "画布" : "Canvas", desc: zh ? "在画布上整理素材，用 @ 交给 Agent" : "Arrange assets and @-mention them to the agent", icon: LayoutGrid, href: "/creative-space/canvas" },
-            { title: zh ? "视频工作室" : "Video studio", desc: zh ? "选模型、调参数、批量生成" : "Pick a model, tune settings, generate", icon: Film, href: "/ai/video" },
-            { title: zh ? "我的作品" : "My creations", desc: zh ? "查看和下载生成的视频" : "Find and download your videos", icon: Folder, href: "/my-creations" },
-          ],
-        },
-        {
-          title: zh ? "即将推出" : "Coming next",
-          items: [
-            { title: zh ? "AI 故事视频" : "AI story video", desc: zh ? "一段剧本生成多场景故事" : "A script becomes a multi-scene story", icon: BookOpen },
-            { title: zh ? "AI 短剧" : "AI short drama", desc: zh ? "按集生成连续剧情" : "Generate a series episode by episode", icon: Tv },
-            { title: zh ? "情绪板" : "Moodboard", desc: zh ? "把参考素材整理成统一风格" : "Turn references into one look", icon: Layers },
-          ],
-        },
-      ],
-    },
-    {
-      id: "templates",
-      label: zh ? "模板" : "Templates",
-      path: "/templates",
-      routes: ["/templates", "/effects", "/gallery", "/explore"],
-      columns: [
-        {
-          title: zh ? "模板" : "Templates",
-          items: [
-            { title: zh ? "全部模板" : "All templates", desc: zh ? "挑一个模板，提示词一键带入" : "Pick one and its prompt loads for you", icon: LayoutGrid, href: "/templates" },
-            { title: zh ? "故事视频" : "Story video", desc: zh ? "有情节、有人物的短片" : "Short clips with characters and plot", icon: BookOpen, href: "/templates#tpl-story" },
-            { title: zh ? "动态创作" : "Motion", desc: zh ? "自然、粒子和舞蹈的动态画面" : "Nature, particles and dance in motion", icon: Orbit, href: "/templates#tpl-motion" },
-            { title: zh ? "创意重构" : "Recast", desc: zh ? "科幻、奇幻和超现实场景" : "Sci-fi, fantasy and surreal scenes", icon: Wand2, href: "/templates#tpl-recast" },
-          ],
-        },
-        {
-          title: zh ? "灵感" : "Inspiration",
-          items: [
-            { title: zh ? "特效模板" : "Effect templates", desc: zh ? "热门视频特效" : "Trending video effects", icon: Sparkles, href: "/effects", badge: "hot" },
-            { title: zh ? "社区画廊" : "Community gallery", desc: zh ? "看看大家都在做什么" : "See what others are making", icon: Users, href: "/gallery" },
-            { title: zh ? "灵感探索" : "Explore", desc: zh ? "按主题浏览创意" : "Browse ideas by theme", icon: Compass, href: "/explore" },
-          ],
-        },
-      ],
-    },
-  ];
+  const dropdowns = buildDropdowns(zh);
 
   // Top-level products that are not built yet, shown the way the reference
   // site shows its upcoming products: in the bar, with a small badge.
@@ -514,9 +336,20 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         </div>
 
         <div className="hf-actions">
-          <Link href={href("/templates")} aria-label={t.search} title={t.search} className="hf-act hf-act-icon">
+          <button
+            type="button"
+            aria-label={t.search}
+            title={t.search}
+            aria-expanded={searchOpen}
+            className="hf-act hf-act-icon"
+            data-open={searchOpen || undefined}
+            onClick={() => {
+              setOpen(null);
+              setSearchOpen((value) => !value);
+            }}
+          >
             <Search aria-hidden="true" />
-          </Link>
+          </button>
           {user ? (
             <Link href={href("/my-creations")} aria-label={t.creations} title={t.creations} className="hf-act hf-act-icon">
               <Folder aria-hidden="true" />
@@ -648,6 +481,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           ))}
         </div>
       ) : null}
+
+      {searchOpen ? <NavSearch lang={lang} localize={href} onClose={() => setSearchOpen(false)} /> : null}
 
       {menuOpen ? (
         <div className="hf-nav-mobile">
