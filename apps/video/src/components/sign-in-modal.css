@@ -131,7 +131,7 @@
   display: flex;
   align-items: center;
   gap: var(--ds-space-3);
-  color: var(--ds-text-4);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
 }
 
@@ -180,7 +180,7 @@
 
 .si-legal {
   margin-top: var(--ds-space-1);
-  color: var(--ds-text-4);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   line-height: 1.6;
   text-align: center;

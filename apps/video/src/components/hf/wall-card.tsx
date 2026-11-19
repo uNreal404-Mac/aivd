@@ -51,7 +51,8 @@ export function WallCard({
       onMouseLeave={stop}
       onFocus={play}
       onBlur={stop}
-      aria-label={prompt ? `${cta}: ${prompt}` : cta}
+      // Same words, same order as on the card, so voice control can use them.
+      aria-label={[media.video ? (zh ? "视频" : "Video") : null, prompt, cta].filter(Boolean).join(" ")}
     >
       {media.video ? (
         <video

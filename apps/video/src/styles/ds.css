@@ -49,7 +49,8 @@
   --ds-text-1: white;
   --ds-text-2: color-mix(in srgb, white 80%, transparent);
   --ds-text-3: color-mix(in srgb, white 55%, transparent);
-  --ds-text-4: color-mix(in srgb, white 38%, transparent);
+  /* Faintest text that still reads (4.5:1 on the page and card surfaces). */
+  --ds-text-4: color-mix(in srgb, white 48%, transparent);
 
   /* Elevation. */
   --ds-shadow-1: 0 2px 6px color-mix(in srgb, var(--du-bg) 35%, transparent);

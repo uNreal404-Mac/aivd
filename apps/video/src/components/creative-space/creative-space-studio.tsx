@@ -635,7 +635,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             <Upload className="h-4 w-4" />
             {t.addAsset}
           </button>
-          <p className="mt-2 text-[10px] leading-relaxed text-[#66707b]">{t.formats}</p>
+          <p className="mt-2 text-[10px] leading-relaxed text-[#8b949e]">{t.formats}</p>
           {error && (
             <p className="mt-3 rounded-lg border border-red-900/70 bg-red-950/30 p-2 text-[11px] text-red-300">
               {error}
@@ -683,7 +683,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             ))}
           </div>
           {assets.length === 0 && (
-            <div className="mt-5 rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-xs text-[#66707b]">
+            <div className="mt-5 rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-xs text-[#8b949e]">
               <ImageIcon className="mx-auto mb-2 h-5 w-5" />
               {t.emptyAssets}
             </div>
@@ -857,7 +857,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-white">{t.agent}</h2>
-                <p className="text-[10px] text-[#66707b]">{t.agentSubtitle}</p>
+                <p className="text-[10px] text-[#8b949e]">{t.agentSubtitle}</p>
               </div>
             </div>
           </div>
@@ -890,7 +890,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                 <p className="mt-3 text-[10px] leading-relaxed text-[#66fcf1]">{plan.summary}</p>
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-[11px] leading-relaxed text-[#66707b]">
+              <div className="rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-[11px] leading-relaxed text-[#8b949e]">
                 <Bot className="mx-auto mb-2 h-5 w-5" />
                 {t.noPlan}
               </div>
@@ -930,7 +930,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                 <button
                   type="button"
                   onClick={() => setPrompt(t.quickStart.replace(/^试试：|^Try:\s*/i, ""))}
-                  className="truncate px-1 text-left text-[9px] text-[#66707b] hover:text-[#66fcf1]"
+                  className="truncate px-1 text-left text-[9px] text-[#8b949e] hover:text-[#66fcf1]"
                 >
                   {t.quickStart}
                 </button>

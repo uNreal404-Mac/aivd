@@ -57,7 +57,7 @@
 
 .ft-group-title {
   margin-bottom: 14px;
-  color: color-mix(in srgb, var(--du-on-accent) 45%, transparent);
+  color: color-mix(in srgb, var(--du-on-accent) 68%, transparent);
   font-size: var(--ds-fs-md);
 }
 
