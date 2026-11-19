@@ -96,6 +96,13 @@
   line-height: 1.12;
 }
 
+/* Chinese reads as one line: 用 MODEL 开始创作. */
+.is-title-inline {
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 0 0.35em;
+}
+
 .is-title-model {
   color: var(--du-accent-text);
   text-transform: uppercase;

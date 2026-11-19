@@ -13,6 +13,7 @@ import { HOME_TEMPLATES } from "@/lib/home-templates";
 import "@/components/hf/home-showcase.css";
 import "@/components/hf/home-pricing.css";
 import "./creative-space-home.css";
+import { SlideCover } from "@/components/hf/slide-cover";
 
 const CANVAS_PATH = "/creative-space/canvas";
 const VEO_CREDITS = estimateCredits({ modelId: "veo-3.1", duration: 8, resolution: "720p" });
@@ -113,6 +114,10 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
                 <a key={item.id} href={`#cs-cat-${item.id}`} className="hs-slide">
                   <span className="hs-slide-media">
                     <img src={first?.image} alt="" loading="lazy" />
+                    <SlideCover
+                      main={zh ? item.zh : item.en}
+                      sub={zh ? `${skillsFor(item.id).length} 个技能` : `${skillsFor(item.id).length} skills`}
+                    />
                   </span>
                   <span className="hs-slide-title">{zh ? item.zh : item.en}</span>
                   <span className="hs-slide-body">

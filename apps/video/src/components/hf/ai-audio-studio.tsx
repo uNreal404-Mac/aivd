@@ -237,20 +237,25 @@ export function AiAudioStudio({
             </label>
 
             {model.options.voices?.length ? (
-              <label htmlFor="audio-voice" className="vs-card vs-select">
-                <span className="min-w-0 flex-1">
-                  <span className="vs-card-label">{t.voice}</span>
-                  <span className="vs-card-value">{model.options.voices.find((item) => item.id === voice)?.name ?? voice}</span>
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-                <select id="audio-voice" value={voice} onChange={(event) => setVoice(event.target.value)}>
+              <fieldset className="as-voice-pick">
+                <legend className="vs-card-label">{t.voice}</legend>
+                <div className="as-voice-grid">
                   {model.options.voices.map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-pressed={voice === item.id}
+                      className={voice === item.id ? "as-voice-opt as-voice-opt-on" : "as-voice-opt"}
+                      onClick={() => setVoice(item.id)}
+                    >
+                      <span className="as-voice-avatar" aria-hidden="true">
+                        {item.name.slice(0, 1)}
+                      </span>
                       {item.name}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </fieldset>
             ) : null}
 
             {model.id === "gemini-3-8-flash-tts" || model.id === "suno-music" ? (
@@ -270,7 +275,7 @@ export function AiAudioStudio({
               </div>
             ) : null}
 
-            <button type="button" className="vs-generate" disabled={!script.trim() || submitting} onClick={() => void generate()}>
+            <button type="button" className="vs-generate as-generate" disabled={!script.trim() || submitting} onClick={() => void generate()}>
               {submitting ? t.submitting : t.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />

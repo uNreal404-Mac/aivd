@@ -123,11 +123,15 @@
   color: var(--du-on-accent);
 }
 
+/* Top tier: black with an accent edge, so the three plans read apart at a
+   glance (grey, bright, black). */
 .hp-plan-ultimate .hp-plan-top {
   background:
-    radial-gradient(80% 80% at 80% 0%, color-mix(in srgb, var(--du-accent) 40%, transparent), transparent 60%),
-    linear-gradient(165deg, var(--du-accent-hover), var(--du-surface-2));
-  box-shadow: 0 24px 60px -18px color-mix(in srgb, var(--du-accent-hover) 55%, transparent);
+    radial-gradient(70% 60% at 85% 0%, color-mix(in srgb, var(--du-accent) 24%, transparent), transparent 70%),
+    linear-gradient(165deg, color-mix(in srgb, var(--du-surface-2) 55%, var(--du-bg)), var(--du-bg));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent),
+    0 24px 60px -24px color-mix(in srgb, var(--du-accent) 40%, transparent);
 }
 
 .hp-plan-pick {

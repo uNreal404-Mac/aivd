@@ -198,7 +198,7 @@ export function AiImageStudio({
               <img key={item.src} src={item.src} alt="" className={`is-photo ${item.className}`} />
             ))}
           </div>
-          <h1 className="is-title">
+          <h1 className={zh ? "is-title is-title-inline" : "is-title"}>
             <span>{zh ? "用" : "Create with"}</span>
             <span className="is-title-model">{model.name}</span>
             <span>{zh ? "开始创作" : "today"}</span>

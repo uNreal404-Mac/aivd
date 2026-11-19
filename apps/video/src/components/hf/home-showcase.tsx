@@ -11,6 +11,7 @@ import { CREATIVE_SKILLS, CREATIVE_SKILL_CATEGORIES } from "@/lib/creative-skill
 import { localizedHref } from "@/lib/du-home";
 import { FEATURE_SLIDES, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
+import { SlideCover } from "@/components/hf/slide-cover";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
 import "./home-showcase.css";
 
@@ -55,11 +56,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             <Link key={slide.href} href={href(slide.href)} className="hs-slide">
               <span className="hs-slide-media">
                 <Media media={slide.media} eager={index < 3} />
-                <span className="hs-slide-shade" aria-hidden="true" />
-                <span className="hs-slide-cover" aria-hidden="true">
-                  <span className="hs-slide-cover-main">{slide.cover.main}</span>
-                  <span className="hs-slide-cover-sub">{t(slide.cover.sub)}</span>
-                </span>
+                <SlideCover main={slide.cover.main} sub={t(slide.cover.sub)} />
               </span>
               <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
               <span className="hs-slide-body">{t(slide.body)}</span>

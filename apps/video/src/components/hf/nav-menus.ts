@@ -190,7 +190,7 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
       id: "templates",
       label: zh ? "模板" : "Templates",
       path: "/templates",
-      routes: ["/templates", "/effects", "/gallery", "/explore"],
+      routes: ["/templates", "/effects", "/explore"],
       columns: [
         {
           title: zh ? "模板" : "Templates",

@@ -1009,3 +1009,78 @@ button.vs-chip:disabled {
   font-size: 13px;
   font-weight: 700;
 }
+
+/* Audio: voices as a scannable grid, generate pinned to the panel bottom. */
+.as-voice-pick {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--vs-card);
+}
+
+.as-voice-pick legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.as-voice-grid {
+  display: grid;
+  clear: both;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.as-voice-opt {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: color-mix(in srgb, white 4%, transparent);
+  color: color-mix(in srgb, white 80%, transparent);
+  font-size: 13px;
+  text-align: left;
+  transition:
+    background-color var(--du-dur-fast, 180ms) ease,
+    border-color var(--du-dur-fast, 180ms) ease;
+}
+
+.as-voice-opt:hover {
+  background: color-mix(in srgb, white 9%, transparent);
+}
+
+.as-voice-opt-on {
+  border-color: color-mix(in srgb, var(--du-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--du-accent) 12%, transparent);
+  color: white;
+}
+
+.as-voice-avatar {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, white 12%, transparent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.as-voice-opt-on .as-voice-avatar {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.as-generate {
+  margin-top: auto;
+}

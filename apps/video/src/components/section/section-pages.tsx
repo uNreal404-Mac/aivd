@@ -6,6 +6,8 @@ import { ArrowRight, ChevronLeft, ChevronRight, Image as ImageIcon, Search, Spar
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { ImageShowcase } from "@/components/hf/image-showcase";
+import { SlideCover } from "@/components/hf/slide-cover";
+import { modelIcon } from "@/components/hf/nav-menus";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
 import {
@@ -266,6 +268,10 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                   <a key={item.id} href={`#tpl-${item.id}`} className="hs-slide">
                     <span className="hs-slide-media">
                       <img src={templatesFor(item.id)[0]?.image} alt="" loading="lazy" />
+                      <SlideCover
+                        main={zh ? item.zh : item.en}
+                        sub={zh ? `${templatesFor(item.id).length} 个模板` : `${templatesFor(item.id).length} templates`}
+                      />
                     </span>
                     <span className="hs-slide-title">{zh ? item.zh : item.en}</span>
                     <span className="hs-slide-body">
@@ -277,6 +283,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                 <Link href={localizedHref(lang, "/effects")} className="hs-slide">
                   <span className="hs-slide-media">
                     <img src="/home/samples/cosmic-bloom.webp" alt="" loading="lazy" />
+                    <SlideCover main={zh ? "视频特效" : "EFFECTS"} sub={zh ? "一键套用" : "ONE CLICK"} />
                   </span>
                   <span className="hs-slide-title">{zh ? "视频特效" : "VIDEO EFFECTS"}</span>
                   <span className="hs-slide-body">{zh ? "热门特效，一键套用" : "Trending effects in one click"}</span>
@@ -296,7 +303,10 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
               <div className="hs-tiles">
                 {TEMPLATE_MODEL_TILES.map((tile) => (
                   <Link key={tile.name} href={localizedHref(lang, tile.href)} className="hs-tile" data-tilt>
-                    <Sparkles className="hs-tile-icon" aria-hidden="true" />
+                    {(() => {
+                      const TileIcon = modelIcon(tile.name);
+                      return <TileIcon className="hs-tile-icon" aria-hidden="true" />;
+                    })()}
                     <span className="hs-tile-title">
                       {tile.name}
                       {tile.badge ? <span className="hs-badge">{zh ? tile.badge.zh : tile.badge.en}</span> : null}

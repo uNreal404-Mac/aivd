@@ -916,3 +916,8 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.hs-slide-cover-cjk .hs-slide-cover-main {
+  font-style: normal;
+  letter-spacing: 0;
+}
