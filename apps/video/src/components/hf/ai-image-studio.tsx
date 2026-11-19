@@ -166,7 +166,13 @@ export function AiImageStudio({
   };
 
   const generate = async () => {
-    if (!prompt.trim() || submitting || uploading) return;
+    if (submitting || uploading) return;
+    // An empty prompt gets a hint and the cursor, not a dead button.
+    if (!prompt.trim()) {
+      setNotice(zh ? "先写一句提示词，描述你想要的画面。" : "Write a prompt describing the image you want.");
+      promptRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     setNotice(null);
     const result = await submitMedia(
@@ -365,7 +371,7 @@ export function AiImageStudio({
             </span>
           </div>
         </div>
-        <button type="submit" className="is-generate" disabled={!prompt.trim() || submitting || uploading}>
+        <button type="submit" className="is-generate" disabled={submitting || uploading}>
           <span>{submitting ? (zh ? "提交中…" : "Submitting…") : zh ? "生成" : "Generate"}</span>
           <span className="is-generate-sub">
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />

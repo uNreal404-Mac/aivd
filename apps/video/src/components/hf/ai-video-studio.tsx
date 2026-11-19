@@ -396,7 +396,13 @@ export function AiVideoStudio({
   }, [pendingKey]);
 
   async function handleGenerate() {
-    if (promptEmpty || submitting || !availableModelIds.includes(catalogModelId)) {
+    if (submitting || !availableModelIds.includes(catalogModelId)) {
+      return;
+    }
+    // An empty prompt gets a hint and the cursor, not a dead button.
+    if (promptEmpty) {
+      setNotice(isChinese ? "先写一句提示词，描述你想看到的画面。" : "Write a prompt describing what you want to see.");
+      promptRef.current?.focus();
       return;
     }
 
@@ -472,7 +478,7 @@ export function AiVideoStudio({
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
   }, []);
   const generateDisabled =
-    promptEmpty || submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage;
+    submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage;
   const stepCopy = isChinese
     ? [
         { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
@@ -611,7 +617,10 @@ export function AiVideoStudio({
                 value={settings.prompt}
                 maxLength={PROMPT_MAX_LENGTH}
                 placeholder={copy.promptPlaceholder}
-                onChange={(event) => setSettings((previous) => ({ ...previous, prompt: event.target.value }))}
+                onChange={(event) => {
+                  setSettings((previous) => ({ ...previous, prompt: event.target.value }));
+                  if (notice) setNotice(null);
+                }}
                 onKeyDown={(event) => {
                   // ⌘/Ctrl+Enter generates, the same shortcut as the image studio.
                   if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !generateDisabled) {

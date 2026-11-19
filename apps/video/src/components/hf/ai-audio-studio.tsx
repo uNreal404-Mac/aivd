@@ -154,7 +154,13 @@ export function AiAudioStudio({
       };
 
   const generate = async () => {
-    if (!available || !script.trim() || submitting) return;
+    if (!available || submitting) return;
+    // An empty script gets a hint and the cursor, not a dead button.
+    if (!script.trim()) {
+      setNotice(zh ? "先写下要朗读的内容。" : "Write what should be read out first.");
+      scriptRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     setNotice(null);
     const result = await submitMedia(
@@ -291,7 +297,7 @@ export function AiAudioStudio({
               </div>
             ) : null}
 
-            <button type="button" className="vs-generate as-generate" disabled={!script.trim() || submitting} onClick={() => void generate()}>
+            <button type="button" className="vs-generate as-generate" disabled={submitting} onClick={() => void generate()}>
               {submitting ? t.submitting : t.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -402,7 +408,7 @@ export function AiAudioStudio({
                 <p className="vs-step-body">{t.card2Sub}</p>
                 <div className="as-mock">
                   <div className="as-mock-box">
-                    <span className="vs-card-label">Prompt</span>
+                    <span className="vs-card-label">{zh ? "提示词" : "Prompt"}</span>
                     <p className="as-mock-text">{t.demoPrompt}</p>
                   </div>
                 </div>
