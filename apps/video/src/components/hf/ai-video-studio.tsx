@@ -817,7 +817,7 @@ export function AiVideoStudio({
         ) : (
           <div className="flex flex-col gap-2">
             <p className="vs-hint">
-              {isChinese ? "选择一个编辑工具查看用途。视频编辑接口尚未接入。" : "Pick an edit tool to see what it does. The editing API is not connected yet."}
+              {isChinese ? "这些编辑工具即将上线，先看看每个能做什么。" : "These editing tools are coming soon. Pick one to see what it will do."}
             </p>
             {EDIT_TOOLS.map((tool, index) => (
               <button
@@ -862,10 +862,12 @@ export function AiVideoStudio({
           <div className="vs-howto">
             <h2 className="vs-howto-title">{isChinese ? EDIT_TOOLS[editTool].zh : EDIT_TOOLS[editTool].en}</h2>
             <p className="vs-howto-sub">
-              {isChinese ? `${EDIT_TOOLS[editTool].descZh}。编辑模型接口待接入。` : `${EDIT_TOOLS[editTool].descEn}. The editing model API is coming soon.`}
+              {isChinese ? `${EDIT_TOOLS[editTool].descZh}。即将上线。` : `${EDIT_TOOLS[editTool].descEn}. Coming soon.`}
             </p>
             <div className="vs-howto-media vs-howto-wide">
               <InViewVideo src="/home/hero-marina-loop.mp4" poster="/home/hero-marina-poster.webp" />
+              {/* One sample clip stands in for every tool; it is not that tool's result. */}
+              <span className="vs-howto-tag">{isChinese ? "示意" : "Illustration"}</span>
             </div>
           </div>
         ) : activeTab === "History" ? (

@@ -522,6 +522,7 @@ button.vs-chip:disabled {
 }
 
 .vs-howto-media {
+  position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 12;
   border-radius: var(--ds-r-2xl);
@@ -1275,4 +1276,17 @@ button.vs-chip:disabled {
   width: 18px;
   height: 18px;
   color: var(--ds-text-3);
+}
+
+.vs-howto-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 2px 8px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  backdrop-filter: blur(8px);
 }
