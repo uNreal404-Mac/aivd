@@ -40,7 +40,7 @@ function toStatus(value: unknown): MediaJobStatus {
 }
 
 /** Readable message for an API error code, in the page's language. */
-function errorMessage(code: string | undefined, fallback: string, zh: boolean): string {
+export function errorMessage(code: string | undefined, fallback: string, zh: boolean): string {
   switch (code) {
     case "UNAUTHORIZED":
       return zh ? "请先登录再生成。" : "Sign in to generate.";
@@ -48,6 +48,8 @@ function errorMessage(code: string | undefined, fallback: string, zh: boolean): 
       return zh ? "积分不足，请先购买积分。" : "Not enough credits. Buy credits to continue.";
     case "GENERATION_DISABLED":
       return zh ? "预览站暂未开放生成，没有扣除积分。" : "Generation is not open on this preview. No credits were used.";
+    case "NETWORK":
+      return zh ? "网络不稳定，没有提交成功，请再试一次。" : "The connection dropped before it went through. Please try again.";
     case "CONTENT_BLOCKED":
       return fallback;
     default:

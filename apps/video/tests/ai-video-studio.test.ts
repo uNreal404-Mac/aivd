@@ -378,6 +378,7 @@ describe("submitGeneration", () => {
     expect(result).toEqual({
       ok: false,
       message: "Please sign in to generate.",
+      code: "UNAUTHORIZED",
     });
   });
 
@@ -424,6 +425,7 @@ describe("submitGeneration", () => {
     expect(result).toEqual({
       ok: false,
       message: "Network error. Please try again.",
+      code: "NETWORK",
     });
   });
 

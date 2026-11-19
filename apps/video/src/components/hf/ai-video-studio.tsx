@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useSigninModal } from "@/hooks/use-signin-modal";
+import { errorMessage } from "@/lib/media-studio";
 import {
   AtSign,
   BookOpen,
@@ -159,6 +162,7 @@ export function AiVideoStudio({
   upcomingModel?: { name: string; desc: string };
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
+  const signIn = useSigninModal();
   const copy = isChinese
     ? {
         modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
@@ -408,7 +412,20 @@ export function AiVideoStudio({
       const result = await submitGeneration(settings, idempotencyKey, fetch, imageKey);
 
       if (!result.ok) {
-        setNotice(result.message);
+        setNotice(errorMessage(result.code, result.message, isChinese));
+        // Signed out: open sign-in and come back to this studio with the
+        // prompt and settings still filled in.
+        if (result.code === "UNAUTHORIZED") {
+          const params = new URLSearchParams({
+            prompt: settings.prompt.trim(),
+            model: catalogModelId,
+            duration: String(settings.duration),
+            aspect: settings.aspect,
+            resolution: settings.resolution,
+            audio: String(settings.audio),
+          });
+          signIn.onOpenWithRedirect(`${window.location.pathname}?${params}`);
+        }
         return;
       }
 

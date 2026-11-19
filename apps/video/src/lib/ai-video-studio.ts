@@ -347,11 +347,11 @@ export async function submitGeneration(
       body: JSON.stringify(request.body),
     });
   } catch {
-    return { ok: false, message: "Network error. Please try again." };
+    return { ok: false, message: "Network error. Please try again.", code: "NETWORK" };
   }
 
   if (response.status === 401) {
-    return { ok: false, message: "Please sign in to generate." };
+    return { ok: false, message: "Please sign in to generate.", code: "UNAUTHORIZED" };
   }
 
   let payload: GenerateResponsePayload | null = null;
