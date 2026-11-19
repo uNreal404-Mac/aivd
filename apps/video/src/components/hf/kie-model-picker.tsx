@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Aperture,
   AudioLines,
@@ -111,6 +111,11 @@ export function KieModelPicker({
   const pickerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // In a studio's narrow settings column ("card") the list floats to the right
+  // of the card, over the canvas, instead of being clipped by the column.
+  const [floatAt, setFloatAt] = useState<{ left: number; top: number } | null>(null);
 
   const copy = zh
     ? {
@@ -194,6 +199,53 @@ export function KieModelPicker({
     };
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || placement !== "card") {
+      setFloatAt(null);
+      return;
+    }
+    const place = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      const width = panelRef.current?.offsetWidth ?? 400;
+      const height = panelRef.current?.offsetHeight ?? 480;
+      const left = Math.min(trigger.right + 12, window.innerWidth - width - 16);
+      const top = Math.max(64, Math.min(trigger.top, window.innerHeight - height - 16));
+      setFloatAt({ left, top });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, placement, showUpcoming, query]);
+
+  // ↓ from the search box goes into the list; ↑/↓ move between models; Enter
+  // in the search box picks the first match.
+  const rowButtons = () => [...(listRef.current?.querySelectorAll<HTMLButtonElement>("button[data-model-row]") ?? [])];
+  const onListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const rows = rowButtons();
+    const at = rows.indexOf(document.activeElement as HTMLButtonElement);
+    if (at === -1) return;
+    event.preventDefault();
+    const next = at + (event.key === "ArrowDown" ? 1 : -1);
+    if (next < 0) searchRef.current?.focus();
+    else rows[Math.min(next, rows.length - 1)]?.focus();
+  };
+  const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      rowButtons()[0]?.focus();
+    } else if (event.key === "Enter" && available[0]) {
+      event.preventDefault();
+      onChange(available[0].id);
+      close(true);
+    }
+  };
+
   const availableRow = (item: CatalogModel) => {
     const selected = item.id === value;
     const credits = kind === "video" ? startingCredits(item.id) : null;
@@ -201,6 +253,7 @@ export function KieModelPicker({
       <button
         key={item.id}
         type="button"
+        data-model-row
         aria-pressed={selected}
         onClick={() => {
           onChange(item.id);
@@ -289,7 +342,10 @@ export function KieModelPicker({
 
       {open ? (
         <div
-          className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : "mt-2"} z-50 w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
+          ref={panelRef}
+          onKeyDown={onListKeyDown}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : undefined}
+          className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : placement === "card" ? "" : "mt-2"} z-50 w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
         >
           <div className="flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
@@ -298,6 +354,7 @@ export function KieModelPicker({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={onSearchKeyDown}
               placeholder={copy.search}
               aria-label={copy.search}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)]"
@@ -307,7 +364,7 @@ export function KieModelPicker({
             </button>
           </div>
 
-          <div className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
+          <div ref={listRef} className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
             <p className="px-3 pb-1 pt-2 text-xs font-semibold text-[var(--du-text-muted)]">{copy.available}</p>
             {available.length > 0 ? (
               <div>{available.map(availableRow)}</div>
