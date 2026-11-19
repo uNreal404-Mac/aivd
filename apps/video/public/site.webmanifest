@@ -1,11 +1,11 @@
 {
   "name": "aivd.ai",
   "short_name": "aivd.ai",
-  "description": "AI-powered video generation platform",
+  "description": "AI video generator: text and images into cinematic clips",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0f0d",
-  "theme_color": "#1a7a42",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icon-192.png",
