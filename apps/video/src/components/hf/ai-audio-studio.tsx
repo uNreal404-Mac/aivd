@@ -5,6 +5,7 @@ import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, R
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
+import { useSession } from "@/lib/auth/client";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
 import { StateBlock } from "@/components/states/state-block";
@@ -50,6 +51,8 @@ export function AiAudioStudio({
   const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
   const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
   const [script, setScript] = useState("");
+  const { data: session, isPending: sessionLoading } = useSession();
+  const signedOut = !sessionLoading && !session;
   const draft = usePromptDraft("audio", script, setScript, false);
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -326,8 +329,17 @@ export function AiAudioStudio({
           jobs.length === 0 ? (
             <StateBlock
               icon={AudioLines}
-              title={zh ? "还没有生成过音频" : "No audio yet"}
-              body={zh ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以从一句示例开始：" : "Write your text on the left and generate; voiceovers and music land here. Or start from an example:"}
+              title={signedOut ? (zh ? "登录后查看你的音频" : "Sign in to see your audio") : zh ? "还没有生成过音频" : "No audio yet"}
+              body={
+                signedOut
+                  ? zh
+                    ? "生成过的配音和音乐都保存在账户里，换设备也能听到。也可以先从一句示例开始："
+                    : "Your voiceovers and music are kept in your account, on any device. Or start from an example:"
+                  : zh
+                    ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以从一句示例开始："
+                    : "Write your text on the left and generate; voiceovers and music land here. Or start from an example:"
+              }
+              actions={signedOut ? [{ label: zh ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
             >
               <div className="st-ideas">
                 {(zh

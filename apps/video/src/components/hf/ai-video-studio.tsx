@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
 import { useSigninModal } from "@/hooks/use-signin-modal";
+import { useSession } from "@/lib/auth/client";
 import { errorMessage } from "@/lib/media-studio";
 import {
   AtSign,
@@ -165,6 +166,9 @@ export function AiVideoStudio({
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
+  // Signed-out visitors have history too, once they sign in; say so instead of "nothing yet".
+  const { data: session, isPending: sessionLoading } = useSession();
+  const signedOut = !sessionLoading && !session;
   const copy = isChinese
     ? {
         modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
@@ -851,12 +855,25 @@ export function AiVideoStudio({
           results.length === 0 ? (
             <StateBlock
               icon={Clapperboard}
-              title={isChinese ? "还没有生成过视频" : "No clips yet"}
-              body={
-                isChinese
-                  ? "在左边写一句提示词再点生成，视频会出现在这里。没有头绪？试试下面的点子："
-                  : "Write a prompt on the left and generate; your clips land here. Need an idea? Try one:"
+              title={
+                signedOut
+                  ? isChinese
+                    ? "登录后查看你的视频"
+                    : "Sign in to see your clips"
+                  : isChinese
+                    ? "还没有生成过视频"
+                    : "No clips yet"
               }
+              body={
+                signedOut
+                  ? isChinese
+                    ? "生成过的视频都保存在账户里，换设备也能看到。也可以先挑个点子写好提示词："
+                    : "Your clips are kept in your account, on any device. Or pick an idea and write your prompt first:"
+                  : isChinese
+                    ? "在左边写一句提示词再点生成，视频会出现在这里。没有头绪？试试下面的点子："
+                    : "Write a prompt on the left and generate; your clips land here. Need an idea? Try one:"
+              }
+              actions={signedOut ? [{ label: isChinese ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
             >
               <div className="st-ideas">
                 {HOME_TEMPLATES.slice(0, 4).map((template) => (

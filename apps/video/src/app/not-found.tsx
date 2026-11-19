@@ -5,6 +5,11 @@ import { LandingFooter } from "@/components/landing/footer";
 import { NotFoundView } from "@/components/states/not-found-view";
 import { getCurrentUser } from "@/lib/auth";
 
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: locale === "zh" ? "页面不存在" : "Page not found" };
+}
+
 // Every unknown address lands here, in the site's own frame (nav and footer)
 // and language, with a 404 status.
 export default async function NotFound() {
