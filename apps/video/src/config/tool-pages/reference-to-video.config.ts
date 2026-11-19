@@ -7,15 +7,14 @@ import { NEW_USER_GIFT } from "@/config/pricing-user";
 export const referenceToVideoConfig: ToolPageConfig = {
   // SEO 配置
   seo: {
-    title: "Reference to Video - Transform Videos with AI",
-    description: "Upload a reference video and transform it into something new with AI. Change style, add effects, or create variations while maintaining the essence of your original video.",
+    title: "Reference to Video - Keep Characters and Style Consistent",
+    description: "Add up to 4 reference images and generate a video with Kling 4.0 that keeps characters and style consistent.",
     keywords: [
       "reference to video",
-      "video to video",
-      "ai video transformation",
-      "video restyle",
-      "video variation",
-      "video editing ai",
+      "reference image to video",
+      "consistent character video",
+      "ai video from reference images",
+      "kling reference to video",
     ],
     ogImage: "/og-reference-to-video.jpg",
   },
