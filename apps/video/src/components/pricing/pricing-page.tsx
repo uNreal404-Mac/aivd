@@ -8,7 +8,7 @@ export function PricingFaq({ locale }: { locale: string }) {
   const faq = faqItemsFor(locale);
 
   return (
-    <div className="pr-page">
+    <div className="pr-page pr-page--under-pricing">
       <div className="pr-shell">
         <section className="pr-section">
           <h2 className="pr-section__title">{copy.faqTitle}</h2>

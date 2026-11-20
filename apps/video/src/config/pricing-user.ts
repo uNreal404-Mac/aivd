@@ -1,3 +1,5 @@
+import { LEGAL_CONFIG } from "@/config/legal";
+
 /**
  * ============================================
  * 用户配置文件 - 价格和积分
@@ -296,8 +298,8 @@ export const FIRST_MONTH_OFFER = {
   percentOff: 50,
 };
 
-/** 退款规则：首次购买后这么多天内、积分未使用，可全额退款。 */
-export const REFUND_POLICY = { days: 7 };
+/** 退款规则：首次购买后这么多天内、积分未使用，可全额退款。天数与退款政策页同源。 */
+export const REFUND_POLICY = { days: LEGAL_CONFIG.refundWindowDays };
 
 // ============================================
 // 四、AI 模型积分计费

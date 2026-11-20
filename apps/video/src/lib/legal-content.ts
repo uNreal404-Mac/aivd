@@ -432,7 +432,7 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         {
           heading: "二、未使用的已购积分",
           paragraphs: [
-            `如果你购买了积分包，且其中没有任何积分被使用，可以在购买后 ${ctx.refundWindowDays} 天内发送邮件申请退款。`,
+            `你在本站的第一笔购买（积分包或订阅的首次付款），如果这笔购买得到的积分一点都没有使用，可以在付款后 ${ctx.refundWindowDays} 天内发送邮件申请全额退款。随这笔购买赠送的优惠积分会一并收回。`,
           ],
         },
         {
@@ -444,7 +444,7 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         {
           heading: "四、订阅",
           paragraphs: [
-            "你可以随时取消订阅。你仍可使用至当前计费周期结束，此后不再扣费；除法律另有规定外，当前周期不提供部分退款。",
+            "你可以随时取消订阅。你仍可使用至当前计费周期结束，此后不再扣费；除第二条所述的首次付款和法律另有规定的情况外，当前周期不提供部分退款。",
           ],
         },
         {
@@ -479,7 +479,7 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       {
         heading: "2. Unused purchased credits",
         paragraphs: [
-          `If you bought a credit pack and none of its credits have been used, you can request a refund by emailing us within ${ctx.refundWindowDays} days of the purchase.`,
+          `For your first purchase on the site (a credit pack or the first payment of a subscription), if none of the credits it gave you have been used, you can request a full refund by emailing us within ${ctx.refundWindowDays} days of paying. Any bonus credits that came with it are removed with the refund.`,
         ],
       },
       {
@@ -491,7 +491,7 @@ function refundDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
       {
         heading: "4. Subscriptions",
         paragraphs: [
-          "You can cancel a subscription at any time. You keep access until the end of the current billing period, you will not be charged again, and we do not give partial refunds for the current period except where the law requires otherwise.",
+          "You can cancel a subscription at any time. You keep access until the end of the current billing period, you will not be charged again, and we do not give partial refunds for the current period, except for a first payment as described in section 2 or where the law requires otherwise.",
         ],
       },
       {

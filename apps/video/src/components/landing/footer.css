@@ -83,7 +83,8 @@
 
 .ft-bottom-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
 }
 
 .ft-bottom-links a {

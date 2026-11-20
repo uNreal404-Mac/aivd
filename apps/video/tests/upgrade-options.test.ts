@@ -150,3 +150,12 @@ describe("upgrade dialog copy", () => {
     }
   });
 });
+
+describe("first-month price by account", () => {
+  it("shows it to new accounts and hides it from accounts that have paid", () => {
+    const pro = (first: boolean) => upgradeOptions("month", first).find((row) => row.tier === "pro");
+    expect(pro(true)?.firstMonthUsd).not.toBeNull();
+    expect(pro(false)?.firstMonthUsd).toBeNull();
+    expect(pro(false)?.chargedTodayUsd).toBe(pro(true)?.chargedTodayUsd);
+  });
+});

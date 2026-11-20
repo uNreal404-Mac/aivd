@@ -116,8 +116,8 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: "offers",
-    question: "What are the first-month and launch offers?",
-    answer: `If your account has never paid before, your first month of Pro on monthly billing is ${usd(FIRST_MONTH_OFFER.priceUsd)}; it then renews at ${usd(proOffer.monthlyPriceUsd)} a month. While a launch offer is running, a first purchase also gets ${LAUNCH_OFFER.bonusPercent}% extra credits; on a yearly plan the extra is ${LAUNCH_OFFER.bonusPercent}% of one month's credits. The two do not combine, and the launch offer ends on the date shown at the top of this page.`,
+    question: LAUNCH_OFFER.endsAt ? "What are the first-month and launch offers?" : "Is there a first-month offer?",
+    answer: `If your account has never paid before, your first month of Pro on monthly billing is ${usd(FIRST_MONTH_OFFER.priceUsd)}; it then renews at ${usd(proOffer.monthlyPriceUsd)} a month.${LAUNCH_OFFER.endsAt ? ` During the launch offer, a first purchase also gets ${LAUNCH_OFFER.bonusPercent}% extra credits; on a yearly plan the extra is ${LAUNCH_OFFER.bonusPercent}% of one month's credits. The two do not combine, and the launch offer ends on the date shown at the top of this page.` : ""}`,
   },
   {
     id: "expiry",
@@ -139,7 +139,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: "refund-policy",
     question: "Can I get a refund?",
-    answer: `Yes, on a first purchase: ask within ${REFUND_POLICY.days} days and, if none of the credits from that purchase have been used, you get the full amount back. Any launch-offer bonus credits are removed with the refund. Purchases whose credits have been used are not refunded.`,
+    answer: `Yes, on your first purchase, whether a credit pack or the first payment of a subscription: ask within ${REFUND_POLICY.days} days and, if none of the credits from that purchase have been used, you get the full amount back. Any launch-offer bonus credits are removed with the refund. Purchases whose credits have been used are not refunded.`,
   },
   {
     id: "payment",
@@ -180,8 +180,8 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   },
   {
     id: "offers",
-    question: "首月优惠和开业优惠是什么？",
-    answer: `从未付过款的账号第一次按月订阅 Pro，首月 ${usd(FIRST_MONTH_OFFER.priceUsd)}，之后按 ${usd(proOffer.monthlyPriceUsd)}/月续费。开业优惠进行期间，首次付款还会多送 ${LAUNCH_OFFER.bonusPercent}% 积分；年付套餐按一个月积分的 ${LAUNCH_OFFER.bonusPercent}% 赠送。两项优惠不叠加，开业优惠的截止日期写在本页顶部。`,
+    question: LAUNCH_OFFER.endsAt ? "首月优惠和开业优惠是什么？" : "有首月优惠吗？",
+    answer: `从未付过款的账号第一次按月订阅 Pro，首月 ${usd(FIRST_MONTH_OFFER.priceUsd)}，之后按 ${usd(proOffer.monthlyPriceUsd)}/月续费。${LAUNCH_OFFER.endsAt ? `开业优惠期间，首次付款还会多送 ${LAUNCH_OFFER.bonusPercent}% 积分；年付套餐按一个月积分的 ${LAUNCH_OFFER.bonusPercent}% 赠送。两项优惠不叠加，开业优惠的截止日期写在本页顶部。` : ""}`,
   },
   {
     id: "expiry",
@@ -202,7 +202,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   {
     id: "refund-policy",
     question: "可以退款吗？",
-    answer: `首次购买可以：${REFUND_POLICY.days} 天内提出，并且这笔购买的积分一点都没用过，就全额退款。开业优惠赠送的积分会随退款一并收回。积分已经使用的购买不退款。`,
+    answer: `第一笔购买可以（积分包或订阅的首次付款都算）：${REFUND_POLICY.days} 天内提出，并且这笔购买的积分一点都没用过，就全额退款。开业优惠赠送的积分会随退款一并收回。积分已经使用的购买不退款。`,
   },
   {
     id: "payment",

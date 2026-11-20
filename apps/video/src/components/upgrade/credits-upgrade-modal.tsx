@@ -24,6 +24,7 @@ import {
   type UpgradeOption,
   type UpgradeTab,
 } from "@/lib/upgrade-options";
+import { useFirstPurchase } from "@/hooks/use-first-purchase";
 import { useCreditsStore } from "@/stores/credits-store";
 import "./credits-upgrade-modal.css";
 
@@ -83,7 +84,8 @@ function UpgradeBody({ lang }: { lang: string }) {
 
   const available = balanceFresh && balance ? Math.max(0, balance.availableCredits) : null;
   const shortfall = creditsShortfall(requiredCredits, available);
-  const options = useMemo(() => upgradeOptions(tab), [tab]);
+  const firstPurchase = useFirstPurchase();
+  const options = useMemo(() => upgradeOptions(tab, firstPurchase === true), [tab, firstPurchase]);
   const selectedId = picked[tab] ?? defaultOptionId(tab, shortfall);
   const selected = options.find((option) => option.id === selectedId) ?? options[0];
   const yearlySaving = useMemo(() => maxYearlySavingPercent(), []);

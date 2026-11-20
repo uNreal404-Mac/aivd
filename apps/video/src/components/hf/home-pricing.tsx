@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Check, ChevronDown, Coins, Crown, Image as ImageIcon, Layers, Music, Sparkles, Video, Zap } from "lucide-react";
 
 import { LAUNCH_OFFER, NEW_USER_GIFT, REFUND_POLICY, isLaunchOfferActive } from "@/config/pricing-user";
+import { useFirstPurchase } from "@/hooks/use-first-purchase";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { localizedHref } from "@/lib/du-home";
 import {
@@ -53,6 +54,8 @@ export function HomePricing({
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
+  // The first-month price is shown only once we know the account can get it.
+  const firstPurchase = useFirstPurchase();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>("year");
@@ -88,10 +91,10 @@ export function HomePricing({
   const copy = zh
     ? {
         kicker: "定价",
-        title: "所有顶级 AI 视频模型，一个简单的价格",
+        title: "顶级 AI 视频模型，一个简单的价格",
         homeTitle: "AI 视频生成器价格",
         homeNote: "想算得更细？定价页可以按模型估算每月用量、看每个套餐能生成多少，还能单独购买积分包。",
-        sub: (price: string) => `Seedance 2.5、Veo 3.1、Kling 4.0 等全部模型，每个套餐都能用。视频低至 ${price} 一条。`,
+        sub: (price: string) => `Seedance 2.5、Kling 4.0、Veo 3.1 等站内全部模型，每个套餐都能用。视频低至 ${price} 一条。`,
         ticks: ["全部模型", "失败自动退积分", "无水印，可商用", "随时取消"],
         offer: (percent: number, date: string) => `开业优惠：首次付款多送 ${percent}% 积分（年付按一个月的积分计，不与 Pro 首月价叠加），${date} 截止`,
         monthly: "月付",
@@ -119,7 +122,6 @@ export function HomePricing({
         atOnce: (n: number) => `同时生成 ${n} 个视频`,
         priority: "优先排队",
         includes: ["全部视频、图片和音频模型", "生成前显示积分，失败自动退回", "成片无水印，可商用"],
-        recommended: "最适合你",
         whyTitle: "为什么选年付",
         why: [
           { title: (amount: string) => `一年最多省 ${amount}`, body: (percent: number, _: string, top: number) => `Basic 和 Pro 年付省 ${percent}%，Ultimate 省 ${top}%。价格锁定 12 个月。` },
@@ -141,7 +143,7 @@ export function HomePricing({
         fits: (name: string) => `推荐 ${name}`,
         overflow: (n: number) => `超出 ${n.toLocaleString()} 积分，可加购积分包`,
         compareTitle: "每个套餐能生成多少",
-        compareSub: "按每次生成的积分计算，括号里是这一档每条的价格；免费列是新用户赠送的积分。",
+        compareSub: "按每次生成的积分计算，数字下面是这一档每条的价格；免费列是新用户赠送的积分。",
         model: "模型",
         free: "免费",
         perUse: "积分/次",
@@ -161,10 +163,10 @@ export function HomePricing({
       }
     : {
         kicker: "PRICING",
-        title: "Every top AI video model. One simple price.",
+        title: "The top AI video models. One simple price.",
         homeTitle: "AI video generator pricing",
         homeNote: "Want the detail? The pricing page estimates your month by model, shows what each plan makes and sells credit packs.",
-        sub: (price: string) => `Seedance 2.5, Veo 3.1, Kling 4.0 and every other model, on every plan. Videos from ${price} each.`,
+        sub: (price: string) => `Seedance 2.5, Kling 4.0, Veo 3.1 and every other model on the site, on every plan. Videos from ${price} each.`,
         ticks: ["Every model", "Failed runs refunded", "No watermark, commercial use", "Cancel anytime"],
         offer: (percent: number, date: string) => `Launch offer: ${percent}% extra credits on your first purchase, until ${date}. On yearly plans it is ${percent}% of one month; it does not combine with the Pro first-month price.`,
         monthly: "Monthly",
@@ -192,7 +194,6 @@ export function HomePricing({
         atOnce: (n: number) => (n === 1 ? "1 video generating at a time" : `${n} videos generating at once`),
         priority: "Priority queue",
         includes: ["Every video, image and audio model", "Cost shown first, refunds on failure", "No watermark, commercial use"],
-        recommended: "Best fit",
         whyTitle: "Why go yearly",
         why: [
           { title: (amount: string) => `Save up to ${amount} a year`, body: (percent: number, _: string, top: number) => `${percent}% off Basic and Pro, ${top}% off Ultimate. Your price is locked for 12 months.` },
@@ -320,12 +321,10 @@ export function HomePricing({
       <div className="hp-plans">
         {plans.map((plan) => {
           const name = copy.names[plan.tier];
-          // "Best fit" comes from the estimator, which only the pricing page has.
-          const isPick = asPage ? plan.tier === recommended : plan.popular;
           const perCredit = creditPriceUsd(plan, period);
-          const firstMonth = period === "month" && plan.firstMonthPriceUsd !== null ? plan.firstMonthPriceUsd : null;
+          const firstMonth = period === "month" && firstPurchase === true && plan.firstMonthPriceUsd !== null ? plan.firstMonthPriceUsd : null;
           return (
-            <article key={plan.tier} className={`hp-plan hp-plan-${plan.tier}${isPick ? " hp-plan-pick" : ""}${plan.popular ? " hp-plan-popular" : ""}`}>
+            <article key={plan.tier} className={`hp-plan hp-plan-${plan.tier}${plan.popular ? " hp-plan-pick hp-plan-popular" : ""}`}>
               <div className="hp-plan-top" data-tilt>
                 <div className="hp-plan-name">
                   {name}
@@ -335,7 +334,6 @@ export function HomePricing({
                       {copy.popular}
                     </span>
                   ) : null}
-                  {asPage && isPick ? <span className="hp-pill hp-pill-pick">{copy.recommended}</span> : null}
                 </div>
                 <p className="hp-plan-blurb">{copy.blurbs[plan.tier]}</p>
                 <p className="hp-price">
@@ -544,7 +542,7 @@ export function HomePricing({
           <thead>
             <tr>
               <th scope="col">{copy.model}</th>
-              <th scope="col">{copy.free}</th>
+              <th scope="col" className="hp-col-free">{copy.free}</th>
               {plans.map((plan) => (
                 <th key={plan.tier} scope="col" className={plan.tier === recommended ? "hp-col-pick" : undefined}>
                   <span className="hp-th-name">{copy.names[plan.tier]}</span>
@@ -560,7 +558,7 @@ export function HomePricing({
           {(["video", "image", "audio"] as Kind[]).map((kind) => (
             <tbody key={kind}>
               <tr className="hp-table-group">
-                <th scope="rowgroup" colSpan={5}>
+                <th scope="rowgroup" colSpan={2 + plans.length}>
                   {kind === "video" ? <Video className="h-4 w-4" aria-hidden="true" /> : kind === "image" ? <ImageIcon className="h-4 w-4" aria-hidden="true" /> : <Music className="h-4 w-4" aria-hidden="true" />}
                   {copy.kinds[kind]}
                 </th>
@@ -573,7 +571,7 @@ export function HomePricing({
                       {item.spec[zh ? "zh" : "en"]} · {item.credits} {copy.perUse}
                     </span>
                   </th>
-                  <td>{generationsFor(NEW_USER_GIFT.credits, item.credits) > 0 ? generationsFor(NEW_USER_GIFT.credits, item.credits) : "—"}</td>
+                  <td className="hp-col-free">{generationsFor(NEW_USER_GIFT.credits, item.credits) > 0 ? generationsFor(NEW_USER_GIFT.credits, item.credits) : "—"}</td>
                   {plans.map((plan) => (
                     <td key={plan.tier} className={plan.tier === recommended ? "hp-col-pick" : undefined}>
                       <span className="hp-cell-count">{generationsFor(plan.creditsPerMonth, item.credits).toLocaleString()}</span>

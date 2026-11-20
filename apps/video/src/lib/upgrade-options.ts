@@ -61,7 +61,8 @@ export function estimatesFor(credits: number): UpgradeEstimate[] {
 }
 
 /** The rows of one tab, in the order shown. */
-export function upgradeOptions(tab: UpgradeTab): UpgradeOption[] {
+/** `firstPurchase` false hides the first-month price, for accounts that have paid before. */
+export function upgradeOptions(tab: UpgradeTab, firstPurchase = true): UpgradeOption[] {
   if (tab === "pack") {
     return packOffers().map((pack) => ({
       id: pack.id,
@@ -83,7 +84,7 @@ export function upgradeOptions(tab: UpgradeTab): UpgradeOption[] {
   }
   return planOffers().map((plan) => {
     const yearly = tab === "year";
-    const firstMonth = !yearly && plan.firstMonthPriceUsd !== null && plan.firstMonthPriceUsd < plan.monthlyPriceUsd ? plan.firstMonthPriceUsd : null;
+    const firstMonth = !yearly && firstPurchase && plan.firstMonthPriceUsd !== null && plan.firstMonthPriceUsd < plan.monthlyPriceUsd ? plan.firstMonthPriceUsd : null;
     return {
       id: yearly ? plan.yearlyId : plan.monthlyId,
       tab,

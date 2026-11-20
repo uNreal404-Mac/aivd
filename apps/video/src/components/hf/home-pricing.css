@@ -681,6 +681,7 @@
 
 .hp-page {
   padding-top: 56px;
+  padding-bottom: 32px;
 }
 
 .hp-note {
@@ -840,7 +841,6 @@ button.hp-pack {
    table inside its card instead of widening the page. */
 .hp-table-scroll {
   max-width: 100%;
-  overflow-x: auto;
 }
 
 .hp-table thead th {
@@ -855,6 +855,11 @@ button.hp-pack {
 .hp-th-name,
 .hp-th-price {
   display: block;
+}
+
+.hp-table thead th[scope="col"] {
+  padding-bottom: 14px;
+  line-height: 1.2;
 }
 
 .hp-th-price {
@@ -1001,5 +1006,90 @@ button.hp-pack {
   .hp-bottom .hp-cta,
   .hp-bottom-actions {
     width: 100%;
+  }
+}
+
+/* The FAQ under the pricing block shares its width and sits close to it. */
+.pr-page.pr-page--under-pricing {
+  padding: 24px 20px 104px;
+}
+
+.pr-page--under-pricing .pr-shell {
+  max-width: 1280px;
+}
+
+/* Phones: the most popular plan comes first, and the table fits all three
+   plans side by side (the free column and the header buttons go). */
+@media (max-width: 767px) {
+  .hp-plan-popular {
+    order: -1;
+  }
+
+  .hp-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .hp-table .hp-col-free,
+  .hp-th-cta {
+    display: none;
+  }
+
+  /* A fixed-layout table takes its column widths from the header row. */
+  .hp-table thead th:first-child {
+    width: 34%;
+  }
+
+  /* The plan prices are on the cards above; here the columns need the room. */
+  .hp-th-price {
+    display: none;
+  }
+
+  .hp-compare {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .hp-table td {
+    font-size: var(--ds-fs-sm);
+  }
+
+  .hp-cell-price {
+    white-space: nowrap;
+  }
+
+  .hp-table th,
+  .hp-table td {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .hp-table thead th {
+    font-size: var(--ds-fs-md);
+  }
+
+  .hp-th-price {
+    font-size: var(--ds-fs-xs);
+  }
+
+  .hp-row-spec {
+    overflow-wrap: anywhere;
+  }
+
+  .pr-page.pr-page--under-pricing {
+    padding: 16px 16px 88px;
+  }
+
+  .hp-estimator {
+    padding: 20px 16px;
+  }
+}
+
+/* Small phones: a per-clip price may wrap after the currency rather than
+   spill into the next column. */
+@media (max-width: 400px) {
+  .hp-cell-price {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
