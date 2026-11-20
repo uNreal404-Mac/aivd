@@ -25,13 +25,10 @@
   letter-spacing: -0.02em;
 }
 
-/* The logo is accent-coloured, so it sits on a dark chip here. */
+/* The logo carries its own dark tile, so it needs no chip here. */
 .ft-logo-img {
   width: 40px;
   height: 40px;
-  padding: 6px;
-  border-radius: var(--ds-r-md);
-  background: var(--du-bg);
 }
 
 .ft-tagline {
