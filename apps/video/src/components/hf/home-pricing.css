@@ -23,16 +23,65 @@
   text-align: left;
 }
 
-.hp-head > :not(.hp-toggle) {
+.hp-head > :not(.hp-toggle-wrap) {
   grid-column: 1;
   justify-self: start;
 }
 
-.hp-head > .hp-toggle {
+.hp-head > .hp-toggle-wrap {
+  display: flex;
+  max-width: 340px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
   grid-column: 2;
-  grid-row: 1 / span 4;
+  grid-row: 1 / span 5;
   align-self: end;
+}
+
+.hp-toggle-wrap .hp-toggle {
   margin-top: 0;
+}
+
+.hp-assure {
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+  text-align: right;
+}
+
+.hp-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 16px;
+  font-size: var(--ds-fs-sm);
+}
+
+.hp-ticks li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hp-ticks svg {
+  color: var(--du-accent-text);
+}
+
+/* Launch offer: shown only while the configured end date is in the future. */
+.hp-offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+  text-align: center;
 }
 
 .hp-kicker {
@@ -660,4 +709,297 @@ button.hp-pack:disabled {
 
 button.hp-pack {
   text-align: left;
+}
+
+/* The most popular plan stands out whichever plan the estimator suggests. */
+.hp-plan-popular {
+  box-shadow: 0 0 0 2px var(--du-accent), 0 24px 60px -30px color-mix(in srgb, var(--du-accent) 70%, transparent);
+}
+
+.hp-billing-strong {
+  font-weight: 700;
+  opacity: 1;
+}
+
+.hp-billing-save {
+  color: var(--du-accent-text);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.hp-plan-pro .hp-billing-save {
+  color: inherit;
+}
+
+.hp-credits {
+  flex-wrap: wrap;
+}
+
+.hp-unit-price {
+  margin-left: auto;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-upfront {
+  margin-top: -8px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-tree span {
+  display: block;
+}
+
+/* Free first video, and the closing call to action */
+.hp-free,
+.hp-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 22px 28px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+}
+
+.hp-free .hp-cta,
+.hp-bottom .hp-cta {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 0 22px;
+}
+
+.hp-bottom {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 35%, transparent);
+}
+
+.hp-bottom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hp-bottom .hp-cta-ghost {
+  height: 50px;
+}
+
+/* Why yearly */
+.hp-why {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hp-why ul {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hp-why li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 24px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
+}
+
+.hp-why strong {
+  font-size: var(--ds-fs-lg);
+  font-weight: 800;
+}
+
+.hp-why span {
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+}
+
+.hp-retakes {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-sm);
+  cursor: pointer;
+}
+
+.hp-retakes input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--du-accent);
+}
+
+/* Comparison table: the plan row stays in view, and narrow screens scroll the
+   table inside its card instead of widening the page. */
+.hp-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.hp-table thead th {
+  position: sticky;
+  z-index: 1;
+  top: var(--hp-sticky-top, 64px);
+  padding-top: 12px;
+  background: var(--hp-card);
+  vertical-align: bottom;
+}
+
+.hp-th-name,
+.hp-th-price {
+  display: block;
+}
+
+.hp-th-price {
+  margin-top: 2px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.hp-th-cta {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: var(--ds-r-lg);
+  background: white;
+  color: var(--du-bg);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hp-th-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.hp-cell-count {
+  display: block;
+  color: white;
+  font-weight: 600;
+}
+
+.hp-col-pick .hp-cell-count {
+  color: inherit;
+}
+
+.hp-cell-price {
+  display: block;
+  margin-top: 2px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+/* Credit packs: four across on wide screens, wrapping below. */
+.hp-packs-list {
+  flex-wrap: wrap;
+}
+
+.hp-pack {
+  min-width: 190px;
+  flex: 1 1 190px;
+  gap: 2px;
+  padding: 14px 18px;
+}
+
+.hp-pack strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hp-pack em {
+  padding: 1px 8px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.hp-pack .hp-pack-credits {
+  color: white;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 1023px) {
+  .hp-why ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phones: one column, the title on full-width lines, the toggle under it. */
+@media (max-width: 767px) {
+  .hp-head {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .hp-head > .hp-toggle-wrap {
+    max-width: none;
+    align-items: flex-start;
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 22px;
+  }
+
+  .hp-assure {
+    text-align: left;
+  }
+
+  .hp-title {
+    font-size: var(--ds-fs-3xl);
+    line-height: 1.15;
+  }
+
+  .hp-toggle button {
+    height: 44px;
+  }
+
+  .hp-compare,
+  .hp-packs,
+  .hp-free,
+  .hp-bottom {
+    padding: 20px 16px;
+  }
+
+  .hp-table {
+    min-width: 560px;
+  }
+
+  .hp-table thead th {
+    position: static;
+  }
+
+  .hp-th-cta {
+    min-height: 44px;
+  }
+
+  /* 44px targets, and 16px text in the pickers so iOS does not zoom the page. */
+  .hp-more {
+    height: 44px;
+  }
+
+  .hp-slider-label select {
+    min-height: 44px;
+    font-size: var(--ds-fs-md);
+  }
+
+  .hp-free .hp-cta,
+  .hp-bottom .hp-cta,
+  .hp-bottom-actions {
+    width: 100%;
+  }
 }

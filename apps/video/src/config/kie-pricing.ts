@@ -1,34 +1,48 @@
 // Credit prices derived from KIE's public price list.
 //
 // Source: POST https://api.kie.ai/client/v1/model-pricing/page (the data behind
-// https://kie.ai/pricing), read on 2026-11-18. These are list prices, not
+// https://kie.ai/pricing), read on 2026-11-20. These are list prices, not
 // invoiced costs: re-check them against a real KIE bill before relying on the
 // margins, and re-run the numbers whenever KIE changes a price.
 //
-// One credit stands for a fixed slice of fulfilment budget. A job's budget is
-// the KIE cost plus 15% for extra paid calls plus a flat delivery allowance,
-// and its credit price is that budget divided by CREDIT_BUDGET_USD, rounded
-// up. Because every price rounds up, no SKU costs more than CREDIT_BUDGET_USD
-// per credit, which is what the plan margins in pricing-user.ts rely on.
+// Video: a clip is priced at its KIE cost times VIDEO_MARKUP plus a flat
+// VIDEO_FIXED_USD, then turned into credits at CREDIT_LIST_USD and rounded up
+// to 5. The flat part makes cheap clips carry a high multiple (a $0.06 clip
+// sells at about 5x) and dear clips a low one (about 2x), which is how the
+// market prices them. As the cost grows, the KIE cost behind one credit tends
+// to CREDIT_LIST_USD / VIDEO_MARKUP and never exceeds it: that ceiling is
+// MAX_VIDEO_COST_PER_CREDIT_USD, and every plan must net more than it per
+// credit (tests/kie-pricing.test.ts).
+//
+// Images and audio keep the earlier rule: cost plus 15% plus a small delivery
+// allowance, divided by CREDIT_BUDGET_USD and rounded up.
 
-export const KIE_PRICES_CHECKED_AT = "2026-11-18";
+export const KIE_PRICES_CHECKED_AT = "2026-11-20";
 
-/** Fulfilment budget, in USD, that one credit pays for. */
+/** What one credit is worth on the price list, in USD. Video prices are quoted in it. */
+export const CREDIT_LIST_USD = 0.01;
+
+const VIDEO_MARKUP = 1.55;
+const VIDEO_FIXED_USD = 0.15;
+
+/** The most KIE cost one video credit can ever stand for. */
+export const MAX_VIDEO_COST_PER_CREDIT_USD = CREDIT_LIST_USD / VIDEO_MARKUP;
+
+/** Fulfilment budget, in USD, that one image or audio credit pays for. */
 export const CREDIT_BUDGET_USD = 0.004255892255892256;
 
 const EXTRA_CALL_FACTOR = 1.15;
-const VIDEO_DELIVERY_USD = 0.02;
 const IMAGE_DELIVERY_USD = 0.002;
 const EPSILON = 1e-9;
 
-/** Fulfilment budget for one video that costs `kieUsd` on KIE. */
-export function videoBudgetUsd(kieUsd: number): number {
-  return kieUsd * EXTRA_CALL_FACTOR + VIDEO_DELIVERY_USD;
+/** List price in USD of one video that costs `kieUsd` on KIE. */
+export function videoListPriceUsd(kieUsd: number): number {
+  return kieUsd * VIDEO_MARKUP + VIDEO_FIXED_USD;
 }
 
 /** Credits for one video that costs `kieUsd` on KIE, rounded up to 5. */
 export function videoCreditsFromCost(kieUsd: number): number {
-  return Math.ceil(videoBudgetUsd(kieUsd) / CREDIT_BUDGET_USD / 5 - EPSILON) * 5;
+  return Math.ceil(videoListPriceUsd(kieUsd) / CREDIT_LIST_USD / 5 - EPSILON) * 5;
 }
 
 /** Credits for one audio clip that costs `kieUsd` on KIE (minimum 2). */

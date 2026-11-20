@@ -5,6 +5,7 @@ import { getProductById } from "@/config/credits";
 import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { firstMonthDiscount, hasPaidBefore } from "@/payment/offers";
 import {
   buildCheckoutSessionParams,
   createStripeClient,
@@ -62,8 +63,30 @@ export const POST = async (req: NextRequest) => {
 
   let session: Stripe.Checkout.Session;
   try {
-    session = await createStripeClient(keyResult.key).checkout.sessions.create(
-      buildCheckoutSessionParams({ product, userId: user.id, origin })
+    const stripe = createStripeClient(keyResult.key);
+
+    // First-month price: only for an account that has never paid. The coupon
+    // is created once and reused; it takes a fixed amount off the first
+    // invoice, so renewals are charged the list price.
+    let couponId: string | undefined;
+    const discount = firstMonthDiscount(product);
+    if (discount && !(await hasPaidBefore(user.id))) {
+      try {
+        await stripe.coupons.retrieve(discount.couponId);
+      } catch {
+        await stripe.coupons.create({
+          id: discount.couponId,
+          amount_off: discount.amountOffCents,
+          currency: discount.currency,
+          duration: "once",
+          name: "First month offer",
+        });
+      }
+      couponId = discount.couponId;
+    }
+
+    session = await stripe.checkout.sessions.create(
+      buildCheckoutSessionParams({ product, userId: user.id, origin, couponId })
     );
   } catch (error) {
     // Never log the key or full error payload; keep the message short.

@@ -25,6 +25,7 @@ import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -289,6 +290,11 @@ export class VideoService {
         };
       }
     }
+
+    // Plan limit on videos in progress. After the idempotency lookup, so a
+    // retried submit gets its existing job back; before the row is created
+    // and credits are frozen.
+    await assertWithinConcurrencyLimit(params.userId);
 
     const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
@@ -601,6 +607,11 @@ export class VideoService {
           creditsUsed: existing.creditsUsed,
         };
       }
+    }
+
+    // Only videos count against the plan's concurrency; images and audio are quick.
+    if (model.kind === "video") {
+      await assertWithinConcurrencyLimit(params.userId);
     }
 
     const prefix = model.kind === "image" ? "img" : model.kind === "audio" ? "aud" : "vid";

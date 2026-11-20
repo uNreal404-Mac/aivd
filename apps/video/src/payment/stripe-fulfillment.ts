@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { getProductById, getProductExpiryDays } from "@/config/credits";
 import { db, stripeWebhookEvents } from "@/db";
+import { bonusOrderNo, hasPaidBefore, launchBonusCredits } from "@/payment/offers";
 import { CreditTransType, creditService } from "@/services/credit";
 
 import type {
@@ -43,6 +44,20 @@ export const grantCreditsOnce: GrantCreditsOnce = async ({
     remark: `Stripe payment: ${product.name}`,
   });
 
+  // Launch offer: extra credits on an account's first payment. The bonus has
+  // its own order number, so a redelivered webhook cannot grant it twice.
+  const bonus = launchBonusCredits(product);
+  if (bonus > 0 && !(await hasPaidBefore(userId, orderNo))) {
+    await creditService.recharge({
+      userId,
+      credits: bonus,
+      orderNo: bonusOrderNo(orderNo),
+      transType: CreditTransType.SYSTEM_ADJUST,
+      expiryDays: getProductExpiryDays(product),
+      remark: `Launch offer bonus: ${product.name}`,
+    });
+  }
+
   return result.created ? "granted" : "duplicate";
 };
 
@@ -61,6 +76,14 @@ export const revokeCreditsForOrder: RevokeCreditsForOrder = async ({
     revokeOrderNo,
     ratio,
     remark: `Stripe ${reason}: ${orderNo}`,
+  });
+  // A refunded first purchase gives back its launch bonus in the same share.
+  // When there was no bonus this finds nothing and does nothing.
+  await creditService.revokeForOrder({
+    orderNo: bonusOrderNo(orderNo),
+    revokeOrderNo: bonusOrderNo(revokeOrderNo),
+    ratio,
+    remark: `Stripe ${reason}: launch bonus of ${orderNo}`,
   });
   return result.status;
 };

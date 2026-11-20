@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { SignInModalContent } from "@/components/sign-in-modal";
+import { CreditsUpgradeModal } from "@/components/upgrade/credits-upgrade-modal";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useMounted } from "@/hooks/use-mounted";
 import {
@@ -57,6 +58,7 @@ export const ModalProvider = ({
           </DialogContent>
         </Dialog>
       )}
+      {mounted && <CreditsUpgradeModal lang={locale} />}
     </>
   );
 };

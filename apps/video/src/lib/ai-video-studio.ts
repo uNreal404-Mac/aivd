@@ -309,13 +309,13 @@ type GenerateResponsePayload = {
   } | null;
   error?: {
     message?: string;
-    details?: { code?: string } | null;
+    details?: { code?: string; requiredCredits?: number } | null;
   } | null;
 };
 
 export type SubmitGenerationResult =
   | { ok: true; videoUuid: string | null; taskId: string | null }
-  | { ok: false; message: string; code?: string };
+  | { ok: false; message: string; code?: string; requiredCredits?: number };
 
 export async function submitGeneration(
   settings: StudioSettings,
@@ -373,6 +373,9 @@ export async function submitGeneration(
   const message =
     payload?.error?.message ?? "Generation failed. Please try again.";
   const code = payload?.error?.details?.code;
+
+  const requiredCredits = payload?.error?.details?.requiredCredits;
+  if (code === "INSUFFICIENT_CREDITS" && typeof requiredCredits === "number") return { ok: false, message, code, requiredCredits };
 
   return code ? { ok: false, message, code } : { ok: false, message };
 }

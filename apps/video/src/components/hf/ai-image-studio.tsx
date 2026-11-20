@@ -5,6 +5,7 @@ import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus,
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
+import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
@@ -151,6 +152,7 @@ export function AiImageStudio({
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const creditsShortfall = useCreditsShortfall(zh);
   const fileRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image");
@@ -254,6 +256,7 @@ export function AiImageStudio({
     if (!result.ok) {
       setNotice(result.message);
       if (result.needsLogin) signIn.onOpen();
+      if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
       return;
     }
     add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, createdAt: Date.now() });
@@ -463,6 +466,7 @@ export function AiImageStudio({
       {notice ? (
         <output className="is-notice" aria-live="polite">
           {notice}
+          {creditsShortfall.action(notice)}
         </output>
       ) : null}
       </div>

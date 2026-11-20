@@ -81,7 +81,7 @@ export const NEW_USER_GIFT = {
   /** 是否启用赠送 */
   enabled: true,
   /** 赠送积分数量 */
-  credits: 70,  // 够生成一条最便宜的视频，或几十张图片
+  credits: 70,  // 够生成一条 Veo 3.1 Fast（65 积分），或十几张图片
   /** 积分有效期（天）*/
   validDays: 7,
 };
@@ -122,7 +122,7 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_jsRIeZmqn3L9NN2fiFIn6", // 从 Creem 后台复制 Basic Monthly Product ID
     name: "Basic Plan",
-    priceUsd: 12,
+    priceUsd: 9.9,
     credits: 1000,
     period: "month" as const,
     popular: false,
@@ -132,8 +132,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq21zX2Z16", // 从 Creem 后台复制 Pro Monthly Product ID
     name: "Pro Plan",
-    priceUsd: 29,
-    credits: 3000,
+    priceUsd: 29.9,
+    credits: 3300,
     period: "month" as const,
     popular: true, // 推荐
     enabled: true,
@@ -142,19 +142,19 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z18", // 从 Creem 后台复制 Ultimate Monthly Product ID
     name: "Ultimate Plan",
-    priceUsd: 79,
-    credits: 9000,
+    priceUsd: 79.9,
+    credits: 9600,
     period: "month" as const,
     popular: false,
     enabled: true,
     features: ["hd_videos", "fast_generation", "commercial_use"],
   },
 
-  // ===== 年付订阅（月付 × 10，买 10 送 2） =====
+  // ===== 年付订阅（Basic、Pro 八折，Ultimate 约 86 折；积分一次发全年） =====
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z10", // 从 Creem 后台复制 Basic Yearly Product ID
     name: "Basic Plan (Yearly)",
-    priceUsd: 132, // 月付 × 11
+    priceUsd: 94.9, // 月付 × 12 × 0.8
     credits: 12000, // 1000 × 12
     period: "year" as const,
     popular: false,
@@ -164,8 +164,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z55", // 从 Creem 后台复制 Pro Yearly Product ID
     name: "Pro Plan (Yearly)",
-    priceUsd: 319, // 月付 × 11
-    credits: 36000, // 3000 × 12
+    priceUsd: 286.9, // 月付 × 12 × 0.8
+    credits: 39600, // 3300 × 12
     period: "year" as const,
     popular: true,
     enabled: true,
@@ -174,8 +174,8 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z21", // 从 Creem 后台复制 Ultimate Yearly Product ID
     name: "Ultimate Plan (Yearly)",
-    priceUsd: 869, // 月付 × 11
-    credits: 108000, // 9000 × 12
+    priceUsd: 826.9, // 约 86 折，折合 US$68.9/月：折扣比 Basic、Pro 小以保住毛利，但每积分仍比 Pro 年付便宜
+    credits: 115200, // 9600 × 12
     period: "year" as const,
     popular: false,
     enabled: true,
@@ -201,36 +201,103 @@ export const SUBSCRIPTION_PRODUCTS = [
  */
 export const CREDIT_PACKAGES: CreditPackageConfig[] = [
   {
-    id: "prod_3tlZPSRNHZSaNq21zX2ZPO", // 从 Creem 后台复制 Starter Pack Product ID
+    id: "prod_aivd_pack_trial", // 本地商品编号；Stripe 按下单时的金额收款，不需要在后台建商品
+    name: "Trial Pack",
+    priceUsd: 4.9,
+    credits: 330, // 一条 Seedance 2.5（260）加一条 Veo 3.1 Fast（65）
+    popular: false,
+    enabled: true,
+    allowFreeUser: true,
+    features: ["hd_videos", "fast_generation", "commercial_use"],
+  },
+  {
+    id: "prod_3tlZPSRNHZSaNq21zX2ZPO",
     name: "Starter Pack",
-    priceUsd: 10,
-    credits: 650,
+    priceUsd: 9.9,
+    credits: 700,
     popular: true, // 推荐
     enabled: true,
-    allowFreeUser: true, // 所有用户可购买
-    features: ["hd_videos", "fast_generation"],
+    allowFreeUser: true,
+    features: ["hd_videos", "fast_generation", "commercial_use"],
   },
   {
-    id: "prod_3tlZPSRNHZSaNq22zX2Z12", // 从 Creem 后台复制 Standard Pack Product ID
+    id: "prod_3tlZPSRNHZSaNq22zX2Z12",
     name: "Standard Pack",
-    priceUsd: 30,
-    credits: 2100,
+    priceUsd: 29.9,
+    credits: 2200,
     popular: false,
     enabled: true,
-    allowFreeUser: false, // 仅订阅用户
-    features: ["hd_videos", "fast_generation"],
+    allowFreeUser: true,
+    features: ["hd_videos", "fast_generation", "commercial_use"],
   },
   {
-    id: "prod_3tlZPSRNHZSaNq22zX2Z13", // 从 Creem 后台复制 Pro Pack Product ID
+    id: "prod_3tlZPSRNHZSaNq22zX2Z13",
     name: "Pro Pack",
-    priceUsd: 100,
-    credits: 7500,
+    priceUsd: 99.9,
+    credits: 8000,
     popular: false,
     enabled: true,
-    allowFreeUser: false, // 仅订阅用户
+    allowFreeUser: true,
     features: ["hd_videos", "fast_generation", "commercial_use"],
   },
 ];
+
+// ============================================
+// 三之二、档位权益与促销
+// ============================================
+
+export type PlanTier = "free" | "basic" | "pro" | "ultimate";
+
+/** Which tier a subscription product belongs to, from its name. */
+export function planTierOfName(name: string): Exclude<PlanTier, "free"> {
+  const lower = name.toLowerCase();
+  return lower.startsWith("pro") ? "pro" : lower.startsWith("ultimate") ? "ultimate" : "basic";
+}
+
+/**
+ * 各档权益：同时进行的生成任务数、是否优先排队。
+ * free 是没有有效订阅的账号（包括只买过积分包的）。
+ *
+ * priorityQueue 目前全部是 false：站内还没有优先排队的实现，页面只在它为 true
+ * 时才写"优先排队"。做出来之后再把 pro、ultimate 改成 true。
+ */
+export const PLAN_PERKS: Record<PlanTier, { concurrency: number; priorityQueue: boolean }> = {
+  free: { concurrency: 1, priorityQueue: false },
+  basic: { concurrency: 1, priorityQueue: false },
+  pro: { concurrency: 3, priorityQueue: false },
+  ultimate: { concurrency: 6, priorityQueue: false },
+};
+
+/**
+ * 开业活动：活动期内，账号的第一笔付款多送一部分积分。
+ * endsAt 为 null 时活动关闭；填一个真实的结束时间（ISO，UTC）后生效，到点自动结束。
+ * 这个日期会原样显示在定价页上，不要填一个不会真正结束的日期。
+ */
+export const LAUNCH_OFFER: { bonusPercent: number; endsAt: string | null } = {
+  bonusPercent: 30,
+  endsAt: null,
+};
+
+/** Whether the launch offer is running at `now`. */
+export function isLaunchOfferActive(now: Date = new Date()): boolean {
+  return LAUNCH_OFFER.endsAt !== null && now.getTime() < new Date(LAUNCH_OFFER.endsAt).getTime();
+}
+
+/**
+ * 首月优惠：从未付过款的账号第一次订阅 Pro 月付时，第一个月打折，之后按原价续费。
+ * 页面上会同时写出首月价和续费价。
+ */
+export const FIRST_MONTH_OFFER = {
+  enabled: true,
+  tier: "pro" as const,
+  /** 首月实付（美元）。结账时按"原价减去这个数"生成一次性折扣。 */
+  priceUsd: 14.9,
+  /** 页面上说的折扣力度，约数。 */
+  percentOff: 50,
+};
+
+/** 退款规则：首次购买后这么多天内、积分未使用，可全额退款。 */
+export const REFUND_POLICY = { days: 7 };
 
 // ============================================
 // 四、AI 模型积分计费

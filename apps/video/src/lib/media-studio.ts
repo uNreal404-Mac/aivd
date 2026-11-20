@@ -50,6 +50,16 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
       return zh ? "预览站暂未开放生成，没有扣除积分。" : "Generation is not open on this preview. No credits were used.";
     case "NETWORK":
       return zh ? "网络不稳定，没有提交成功，请再试一次。" : "The connection dropped before it went through. Please try again.";
+    case "CONCURRENCY_LIMIT": {
+      // The server's message carries the plan's limit as its only number.
+      const limit = /\d+/.exec(fallback)?.[0];
+      if (zh) {
+        return limit
+          ? `你已有 ${limit} 个视频正在生成。等其中一个完成后再提交，或升级套餐以同时生成更多。`
+          : "正在生成的视频数已达套餐上限。等其中一个完成后再提交，或升级套餐以同时生成更多。";
+      }
+      return fallback || "You have reached your plan's limit of videos generating at once. Wait for one to finish, or upgrade for more at once.";
+    }
     case "CONTENT_BLOCKED":
       return fallback;
     default:
@@ -60,7 +70,7 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
 export async function submitMedia(
   body: SubmitBody,
   zh: boolean,
-): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean }> {
+): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number }> {
   try {
     const response = await fetch("/api/v1/media/generate", {
       method: "POST",
@@ -79,7 +89,13 @@ export async function submitMedia(
     // Errors look like { success: false, error: { message, details: { code } } }.
     const code = payload?.error?.details?.code;
     const message = payload?.error?.message ?? "";
-    return { ok: false, message: errorMessage(code, typeof message === "string" ? message : "", zh) };
+    const requiredCredits = payload?.error?.details?.requiredCredits;
+    return {
+      ok: false,
+      message: errorMessage(code, typeof message === "string" ? message : "", zh),
+      code: typeof code === "string" ? code : undefined,
+      requiredCredits: typeof requiredCredits === "number" ? requiredCredits : undefined,
+    };
   } catch {
     return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
   }

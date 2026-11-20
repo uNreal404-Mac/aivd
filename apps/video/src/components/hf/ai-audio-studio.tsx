@@ -5,6 +5,7 @@ import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, R
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
+import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
@@ -57,6 +58,7 @@ export function AiAudioStudio({
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const creditsShortfall = useCreditsShortfall(zh);
   const { jobs, add } = useMediaJobs("audio");
   const scriptRef = useRef<HTMLTextAreaElement>(null);
   const reuse = (text: string) => {
@@ -223,6 +225,7 @@ export function AiAudioStudio({
     if (!result.ok) {
       setNotice(result.message);
       if (result.needsLogin) signIn.onOpen();
+      if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
       return;
     }
     add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id, createdAt: Date.now() });
@@ -358,7 +361,7 @@ export function AiAudioStudio({
             </button>
           </>
         )}
-        {notice ? <output aria-live="polite" className="vs-notice">{notice}</output> : null}
+        {notice ? <output aria-live="polite" className="vs-notice">{notice}{creditsShortfall.action(notice)}</output> : null}
       </aside>
 
       <section aria-label={t.heroTitle} className="vs-stage">

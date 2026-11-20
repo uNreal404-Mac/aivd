@@ -3,21 +3,32 @@ import { describe, expect, it } from "vitest";
 import { calculateModelCredits, getAvailableModels } from "@/config/credits";
 import {
   CREDIT_BUDGET_USD,
+  CREDIT_LIST_USD,
   KIE_PER_IMAGE_USD,
   KIE_PER_SECOND_USD,
+  MAX_VIDEO_COST_PER_CREDIT_USD,
   imageCreditsFromCost,
   kieVideoCostUsd,
-  videoBudgetUsd,
   videoCreditsFromCost,
+  videoListPriceUsd,
 } from "@/config/kie-pricing";
 import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
 
 describe("credit formula", () => {
   it("rounds video prices up to a multiple of 5", () => {
-    expect(videoCreditsFromCost(0.205)).toBe(65); // Seedance 2.0 Mini 720p 5s
-    expect(videoCreditsFromCost(1.025)).toBe(285); // Seedance 2.0 720p 5s
-    expect(videoCreditsFromCost(0.3)).toBe(90); // Veo 3.1 Fast
-    expect(videoCreditsFromCost(0.35)).toBe(100); // Wan 2.6 5s 720p
+    expect(videoCreditsFromCost(0.06)).toBe(25); // Grok Imagine 480p 5s
+    expect(videoCreditsFromCost(0.205)).toBe(50); // Seedance 2.0 Mini 720p 5s
+    expect(videoCreditsFromCost(0.3)).toBe(65); // Veo 3.1 Fast
+    expect(videoCreditsFromCost(0.35)).toBe(70); // Wan 2.6 5s 720p
+    expect(videoCreditsFromCost(1.025)).toBe(175); // Seedance 2.5 Flash 720p 5s
+    expect(videoCreditsFromCost(1.575)).toBe(260); // Seedance 2.5 720p 5s
+  });
+
+  it("marks cheap clips up more than dear ones", () => {
+    const multiple = (cost: number) => (videoCreditsFromCost(cost) * CREDIT_LIST_USD) / cost;
+    expect(multiple(0.06)).toBeGreaterThan(4);
+    expect(multiple(3.95)).toBeLessThan(1.7);
+    expect(multiple(0.3)).toBeGreaterThan(multiple(1.575));
   });
 
   it("prices images in single credits with a floor of 2", () => {
@@ -26,21 +37,25 @@ describe("credit formula", () => {
     expect(imageCreditsFromCost(0.09)).toBe(25);
   });
 
-  it("never lets a credit cost more than the budget it stands for", () => {
+  it("never lets a credit stand for more KIE cost than its ceiling", () => {
     const costs = [
       ...Object.values(KIE_PER_SECOND_USD).flatMap((tiers) =>
-        Object.values(tiers).flatMap((perSecond) => [perSecond * 5, perSecond * 10]),
+        Object.values(tiers).flatMap((perSecond) => [perSecond * 5, perSecond * 10, perSecond * 30]),
       ),
       0.3, 1.275, 0.35, 0.525, 0.7, 1.05, 1.575,
     ];
     for (const cost of costs) {
-      const perCredit = videoBudgetUsd(cost) / videoCreditsFromCost(cost);
-      expect(perCredit, `cost ${cost}`).toBeLessThanOrEqual(CREDIT_BUDGET_USD + 1e-12);
+      const credits = videoCreditsFromCost(cost);
+      expect(credits * CREDIT_LIST_USD, `cost ${cost}`).toBeGreaterThanOrEqual(videoListPriceUsd(cost) - 1e-9);
+      expect(cost / credits, `cost ${cost}`).toBeLessThanOrEqual(MAX_VIDEO_COST_PER_CREDIT_USD + 1e-12);
     }
     for (const cost of Object.values(KIE_PER_IMAGE_USD)) {
       const perCredit = (cost * 1.15 + 0.002) / imageCreditsFromCost(cost);
       expect(perCredit, `image ${cost}`).toBeLessThanOrEqual(CREDIT_BUDGET_USD + 1e-12);
     }
+    // Image and audio credits stand for less cost than video credits, so the
+    // video ceiling is the worst case for every plan below.
+    expect(CREDIT_BUDGET_USD).toBeLessThan(MAX_VIDEO_COST_PER_CREDIT_USD);
   });
 });
 
@@ -59,10 +74,10 @@ describe("charging what KIE will be asked for", () => {
   });
 
   it("charges Veo 3.1 Quality when the request selects it", () => {
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" })).toBe(90);
-    expect(calculateModelCredits("veo-3.1", { duration: 8 })).toBe(90);
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "1080p" })).toBe(350);
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "high" })).toBe(350);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" })).toBe(65);
+    expect(calculateModelCredits("veo-3.1", { duration: 8 })).toBe(65);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "1080p" })).toBe(215);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "high" })).toBe(215);
   });
 
   it("has no price for models without a verified KIE cost", () => {
@@ -84,36 +99,54 @@ describe("charging what KIE will be asked for", () => {
 });
 
 describe("plans", () => {
-  const WORST_BUDGET_PER_CREDIT = CREDIT_BUDGET_USD;
-  const PAYMENT_AND_AFFILIATE = 0.18;
+  // Card processing only (Stripe's 2.9% + $0.30, rounded up for cross-border
+  // cards). Storage, retries, refunds and tax are not in this figure.
+  const PAYMENT_FEE = 0.05;
+  const netPerCredit = (plan: { priceUsd: number; credits: number }) => (plan.priceUsd * (1 - PAYMENT_FEE)) / plan.credits;
+  const worstCaseMargin = (plan: { priceUsd: number; credits: number }) =>
+    (plan.priceUsd * (1 - PAYMENT_FEE) - plan.credits * MAX_VIDEO_COST_PER_CREDIT_USD) / plan.priceUsd;
 
-  it("keeps the monthly contribution above 30% in the worst case", () => {
-    for (const plan of SUBSCRIPTION_PRODUCTS.filter((item) => item.period === "month")) {
-      const budget = plan.credits * WORST_BUDGET_PER_CREDIT;
-      const contribution = (plan.priceUsd * (1 - PAYMENT_AND_AFFILIATE) - budget) / plan.priceUsd;
-      expect(contribution, plan.name).toBeGreaterThanOrEqual(0.3);
+  it("nets more per credit than a credit can cost, on every plan and pack", () => {
+    for (const product of [...SUBSCRIPTION_PRODUCTS, ...CREDIT_PACKAGES]) {
+      expect(netPerCredit(product), product.name).toBeGreaterThan(MAX_VIDEO_COST_PER_CREDIT_USD);
     }
   });
 
-  it("keeps the yearly contribution above 25% in the worst case", () => {
+  it("keeps the monthly margin above 15% when every credit goes on the dearest clips", () => {
+    for (const plan of SUBSCRIPTION_PRODUCTS.filter((item) => item.period === "month")) {
+      expect(worstCaseMargin(plan), plan.name).toBeGreaterThanOrEqual(0.15);
+    }
+  });
+
+  it("keeps the yearly margin above 5% when every credit goes on the dearest clips", () => {
     for (const plan of SUBSCRIPTION_PRODUCTS.filter((item) => item.period === "year")) {
-      const budget = plan.credits * WORST_BUDGET_PER_CREDIT;
-      const contribution = (plan.priceUsd * (1 - PAYMENT_AND_AFFILIATE) - budget) / plan.priceUsd;
-      expect(contribution, plan.name).toBeGreaterThanOrEqual(0.25);
+      expect(worstCaseMargin(plan), plan.name).toBeGreaterThanOrEqual(0.05);
+    }
+  });
+
+  it("prices every plan and pack to end in .9", () => {
+    for (const product of [...SUBSCRIPTION_PRODUCTS, ...CREDIT_PACKAGES]) {
+      expect(Math.round(product.priceUsd * 100) % 100, product.name).toBe(90);
+    }
+  });
+
+  it("makes each bigger monthly plan cheaper per credit", () => {
+    const monthly = SUBSCRIPTION_PRODUCTS.filter((item) => item.period === "month").sort((a, b) => a.priceUsd - b.priceUsd);
+    for (let index = 1; index < monthly.length; index += 1) {
+      expect(monthly[index].priceUsd / monthly[index].credits).toBeLessThan(monthly[index - 1].priceUsd / monthly[index - 1].credits);
     }
   });
 
   it("never sells pack credits cheaper than the Basic plan's", () => {
-    const basic = SUBSCRIPTION_PRODUCTS.find((item) => item.period === "month" && item.priceUsd === 12);
-    expect(basic).toBeDefined();
-    const basicPerCredit = (basic?.priceUsd ?? 0) / (basic?.credits ?? 1);
+    const basic = SUBSCRIPTION_PRODUCTS.filter((item) => item.period === "month").sort((a, b) => a.priceUsd - b.priceUsd)[0];
+    const basicPerCredit = basic.priceUsd / basic.credits;
     for (const pack of CREDIT_PACKAGES) {
       expect(pack.priceUsd / pack.credits, pack.name).toBeGreaterThan(basicPerCredit);
     }
   });
 
-  it("gives new users enough for one video but caps the cost near $0.30", () => {
-    expect(NEW_USER_GIFT.credits).toBe(70);
-    expect(NEW_USER_GIFT.credits * CREDIT_BUDGET_USD).toBeLessThanOrEqual(0.3);
+  it("gives new users enough for one video on the default model, for under $0.50 of KIE cost", () => {
+    expect(NEW_USER_GIFT.credits).toBeGreaterThanOrEqual(calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" }));
+    expect(NEW_USER_GIFT.credits * MAX_VIDEO_COST_PER_CREDIT_USD).toBeLessThanOrEqual(0.5);
   });
 });

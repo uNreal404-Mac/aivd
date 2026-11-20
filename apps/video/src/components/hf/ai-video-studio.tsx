@@ -8,6 +8,7 @@ import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
 import { errorMessage } from "@/lib/media-studio";
+import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import {
   AtSign,
   BookOpen,
@@ -312,6 +313,7 @@ export function AiVideoStudio({
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const creditsShortfall = useCreditsShortfall(isChinese);
   const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("How it works");
@@ -447,6 +449,9 @@ export function AiVideoStudio({
 
       if (!result.ok) {
         setNotice(errorMessage(result.code, result.message, isChinese));
+        if (result.code === "INSUFFICIENT_CREDITS") {
+          creditsShortfall.report(errorMessage(result.code, result.message, isChinese), result.requiredCredits);
+        }
         // Signed out: open sign-in and come back to this studio with the
         // prompt and settings still filled in.
         if (result.code === "UNAUTHORIZED") {
@@ -814,7 +819,7 @@ export function AiVideoStudio({
               </output>
             )}
 
-            {notice ? <output aria-live="polite" className="vs-notice">{notice}</output> : null}
+            {notice ? <output aria-live="polite" className="vs-notice">{notice}{creditsShortfall.action(notice)}</output> : null}
           </>
         ) : (
           <div className="flex flex-col gap-2">

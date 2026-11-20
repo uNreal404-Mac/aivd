@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { MARKET_MODELS, getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { KieProvider } from "@/ai/providers/kie";
 import { calculateModelCredits } from "@/config/credits";
-import { CREDIT_BUDGET_USD } from "@/config/kie-pricing";
+import { CREDIT_BUDGET_USD, MAX_VIDEO_COST_PER_CREDIT_USD } from "@/config/kie-pricing";
 import { NAV_AUDIO_MODELS, NAV_IMAGE_MODELS, NAV_VIDEO_MODELS } from "@/lib/nav-models";
 
 const req = (overrides = {}) => ({ prompt: "a cat surfing at sunset", ...overrides });
@@ -24,8 +24,9 @@ describe("KIE market registry", () => {
       });
       const credits = marketCredits(model, request);
       expect(credits, model.id).toBeGreaterThan(0);
-      // Credits are rounded up from cost / budget, so they always cover the KIE cost.
-      expect(credits * CREDIT_BUDGET_USD, model.id).toBeGreaterThanOrEqual(model.costUsd(request));
+      // One credit never stands for more KIE cost than its ceiling, so the credits always cover the cost.
+      const ceiling = model.kind === "video" ? MAX_VIDEO_COST_PER_CREDIT_USD : CREDIT_BUDGET_USD;
+      expect(credits * ceiling, model.id).toBeGreaterThanOrEqual(model.costUsd(request));
     }
   });
 

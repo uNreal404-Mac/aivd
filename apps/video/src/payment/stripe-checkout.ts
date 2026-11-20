@@ -120,6 +120,8 @@ export interface BuildCheckoutSessionParamsArgs {
   product: CreditPackageConfig;
   userId: string;
   origin: string;
+  /** Id of a one-time Stripe coupon to apply (the first-month offer). */
+  couponId?: string;
 }
 
 /**
@@ -131,6 +133,7 @@ export function buildCheckoutSessionParams({
   product,
   userId,
   origin,
+  couponId,
 }: BuildCheckoutSessionParamsArgs): Stripe.Checkout.SessionCreateParams {
   const isSubscription = product.type === "subscription";
 
@@ -168,6 +171,12 @@ export function buildCheckoutSessionParams({
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/checkout/cancel`,
   };
+
+  if (couponId) {
+    params.discounts = [{ coupon: couponId }];
+    metadata.offer = "first_month";
+    params.metadata = { ...metadata };
+  }
 
   if (isSubscription) {
     // NOTE: Stripe rejects `payment_intent_data` when mode=subscription.

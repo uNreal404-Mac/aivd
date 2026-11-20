@@ -152,11 +152,11 @@ describe("estimateCredits", () => {
     const price = (modelId: string, duration: number, resolution: string) =>
       estimateCredits({ modelId, duration, resolution });
 
-    expect(price("veo-3.1", 8, "720p")).toBe(90);
-    expect(price("wan2.6", 5, "720p")).toBe(100);
-    expect(price("wan2.6", 5, "1080p")).toBe(150);
-    expect(price("wan2.6", 10, "720p")).toBe(195);
-    expect(price("wan2.6", 15, "1080p")).toBe(435);
+    expect(price("veo-3.1", 8, "720p")).toBe(65);
+    expect(price("wan2.6", 5, "720p")).toBe(70);
+    expect(price("wan2.6", 5, "1080p")).toBe(100);
+    expect(price("wan2.6", 10, "720p")).toBe(125);
+    expect(price("wan2.6", 15, "1080p")).toBe(260);
   });
 
   it("prices models that are off sale at zero", () => {

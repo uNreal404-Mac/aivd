@@ -6,7 +6,6 @@ import { requireAuth } from "@/lib/auth";
 import { HfTopNav } from "@/components/hf/top-nav";
 import { AccountNav } from "@/components/dashboard/account-nav";
 import "@/components/dashboard/dashboard.css";
-import { UpgradeModal } from "@/components/upgrade/upgrade-modal";
 import { i18n } from "@/config/i18n-config";
 import { NOINDEX_ROBOTS } from "@/lib/indexing";
 
@@ -47,9 +46,6 @@ export default async function DashboardLayout({
         <AccountNav lang={locale} />
         <main className="db-main">{children}</main>
       </div>
-
-      {/* 全局升级弹窗 */}
-      <UpgradeModal />
     </div>
   );
 }

@@ -125,13 +125,13 @@ describe("asPricingProducts", () => {
 });
 
 describe("FAQ_ITEMS", () => {
-  it("exposes six answered questions with unique ids", () => {
-    expect(FAQ_ITEMS).toHaveLength(6);
+  it("exposes answered questions with unique ids", () => {
+    expect(FAQ_ITEMS.length).toBeGreaterThanOrEqual(10);
     for (const item of FAQ_ITEMS) {
       expect(item.question.length).toBeGreaterThan(0);
       expect(item.answer.length).toBeGreaterThan(0);
     }
-    expect(new Set(FAQ_ITEMS.map((item) => item.id)).size).toBe(6);
+    expect(new Set(FAQ_ITEMS.map((item) => item.id)).size).toBe(FAQ_ITEMS.length);
   });
 });
 
