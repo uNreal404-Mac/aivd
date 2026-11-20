@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { getProductById } from "@/config/credits";
+import { MAX_VIDEO_COST_PER_CREDIT_USD } from "@/config/kie-pricing";
 import { CREDIT_PACKAGES, FIRST_MONTH_OFFER, LAUNCH_OFFER, SUBSCRIPTION_PRODUCTS, planTierOfName } from "@/config/pricing-user";
 import { creditPackages, db } from "@/db";
 import { creditPriceUsd, planOffers, usd } from "@/lib/pricing-offers";
@@ -113,17 +114,37 @@ describe("launch bonus", () => {
     expect(launchBonusCredits(pack(), new Date("2026-12-20T00:00:00Z"))).toBe(0);
   });
 
-  it("adds a share of the purchase, counting one month for yearly plans", () => {
+  it("adds a share of packs and of one month's credits on yearly plans", () => {
     startOffer();
     const share = LAUNCH_OFFER.bonusPercent / 100;
     expect(launchBonusCredits(pack())).toBe(Math.round(pack().credits * share));
-    expect(launchBonusCredits(product("month", "basic"))).toBe(Math.round(product("month", "basic").credits * share));
-    expect(launchBonusCredits(product("year", "ultimate"))).toBe(Math.round((product("year", "ultimate").credits / 12) * share));
+    for (const tier of ["basic", "pro", "ultimate"] as const) {
+      expect(launchBonusCredits(product("year", tier))).toBe(Math.round((product("year", tier).credits / 12) * share));
+    }
   });
 
-  it("does not stack on the first-month price", () => {
+  it("never sells a credit below the most KIE cost it can stand for, bonus included", () => {
     startOffer();
-    expect(launchBonusCredits(product("month", "pro"))).toBe(0);
+    // Stripe: 2.9% + $0.30, plus 0.7% Billing on subscriptions and 2.5% for a
+    // foreign card with currency conversion, the worst common case.
+    const all = [
+      ...CREDIT_PACKAGES.map((item) => ({ id: item.id, fee: 0.029 + 0.025 })),
+      ...SUBSCRIPTION_PRODUCTS.map((item) => ({ id: item.id, fee: 0.029 + 0.007 + 0.025 })),
+    ];
+    for (const { id, fee } of all) {
+      const config = getProductById(id);
+      if (!config) throw new Error(`no product ${id}`);
+      const net = (config.price.amount / 100) * (1 - fee) - 0.3;
+      const credits = config.credits + launchBonusCredits(config);
+      expect(net / credits, config.name).toBeGreaterThan(MAX_VIDEO_COST_PER_CREDIT_USD);
+    }
+  });
+
+  it("gives monthly plans nothing", () => {
+    startOffer();
+    for (const tier of ["basic", "pro", "ultimate"] as const) {
+      expect(launchBonusCredits(product("month", tier))).toBe(0);
+    }
   });
 
   it("goes to a first payment once, not to later ones", async () => {

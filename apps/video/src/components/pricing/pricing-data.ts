@@ -117,7 +117,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: "offers",
     question: LAUNCH_OFFER.endsAt ? "What are the first-month and launch offers?" : "Is there a first-month offer?",
-    answer: `If your account has never paid before, your first month of Pro on monthly billing is ${usd(FIRST_MONTH_OFFER.priceUsd)}; it then renews at ${usd(proOffer.monthlyPriceUsd)} a month.${LAUNCH_OFFER.endsAt ? ` During the launch offer, a first purchase also gets ${LAUNCH_OFFER.bonusPercent}% extra credits; on a yearly plan the extra is ${LAUNCH_OFFER.bonusPercent}% of one month's credits. The two do not combine, and the launch offer ends on the date shown at the top of this page.` : ""}`,
+    answer: `If your account has never paid before, your first month of Pro on monthly billing is ${usd(FIRST_MONTH_OFFER.priceUsd)}; it then renews at ${usd(proOffer.monthlyPriceUsd)} a month.${LAUNCH_OFFER.endsAt ? ` During the launch offer, a first purchase of a credit pack or a yearly plan also gets ${LAUNCH_OFFER.bonusPercent}% extra credits; on a yearly plan the extra is ${LAUNCH_OFFER.bonusPercent}% of one month's credits. Monthly plans are not part of it, and the launch offer ends on the date shown at the top of this page.` : ""}`,
   },
   {
     id: "expiry",
@@ -181,7 +181,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   {
     id: "offers",
     question: LAUNCH_OFFER.endsAt ? "首月优惠和开业优惠是什么？" : "有首月优惠吗？",
-    answer: `从未付过款的账号第一次按月订阅 Pro，首月 ${usd(FIRST_MONTH_OFFER.priceUsd)}，之后按 ${usd(proOffer.monthlyPriceUsd)}/月续费。${LAUNCH_OFFER.endsAt ? `开业优惠期间，首次付款还会多送 ${LAUNCH_OFFER.bonusPercent}% 积分；年付套餐按一个月积分的 ${LAUNCH_OFFER.bonusPercent}% 赠送。两项优惠不叠加，开业优惠的截止日期写在本页顶部。` : ""}`,
+    answer: `从未付过款的账号第一次按月订阅 Pro，首月 ${usd(FIRST_MONTH_OFFER.priceUsd)}，之后按 ${usd(proOffer.monthlyPriceUsd)}/月续费。${LAUNCH_OFFER.endsAt ? `开业优惠期间，首次购买积分包或年付套餐还会多送 ${LAUNCH_OFFER.bonusPercent}% 积分；年付按一个月积分的 ${LAUNCH_OFFER.bonusPercent}% 赠送。月付套餐不参加，开业优惠的截止日期写在本页顶部。` : ""}`,
   },
   {
     id: "expiry",

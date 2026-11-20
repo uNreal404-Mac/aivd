@@ -10,10 +10,11 @@ import { CreditTransType, creditPackages, db } from "@/db";
  *
  * - First month: the Pro monthly plan at FIRST_MONTH_OFFER.priceUsd for one
  *   month, then the list price.
- * - Launch bonus: extra credits on the first payment while LAUNCH_OFFER runs.
- *   On a yearly plan the bonus is a share of ONE month's credits, not of the
- *   year's, and the bonus is not added to a purchase that already took the
- *   first-month price.
+ * - Launch bonus: extra credits on the first payment while LAUNCH_OFFER runs,
+ *   for credit packs and yearly plans only. On a yearly plan the bonus is a
+ *   share of ONE month's credits, not of the year's. Monthly plans get none:
+ *   at 30% extra, Ultimate monthly would sell a credit for less than the most
+ *   KIE cost it can stand for, and Pro monthly would keep about 3%.
  */
 
 /** Whether the account has any paid purchase, other than `exceptOrderNo`. */
@@ -55,8 +56,9 @@ export function firstMonthDiscount(product: CreditPackageConfig): { couponId: st
 
 /** Extra credits the launch offer adds to a first payment for `product`. */
 export function launchBonusCredits(product: CreditPackageConfig, now: Date = new Date()): number {
-  if (!isLaunchOfferActive(now) || isFirstMonthOfferProduct(product)) return 0;
-  const base = product.type === "subscription" && product.billingPeriod === "year" ? product.credits / 12 : product.credits;
+  if (!isLaunchOfferActive(now)) return 0;
+  if (product.type === "subscription" && product.billingPeriod !== "year") return 0;
+  const base = product.type === "subscription" ? product.credits / 12 : product.credits;
   return Math.round((base * LAUNCH_OFFER.bonusPercent) / 100);
 }
 
