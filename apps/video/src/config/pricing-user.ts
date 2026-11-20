@@ -292,10 +292,13 @@ export function isLaunchOfferActive(now: Date = new Date()): boolean {
 export const FIRST_MONTH_OFFER = {
   enabled: true,
   tier: "pro" as const,
-  /** 首月实付（美元）。结账时按"原价减去这个数"生成一次性折扣。 */
-  priceUsd: 14.9,
+  /**
+   * 首月实付（美元）。结账时按"原价减去这个数"生成一次性折扣。
+   * 2026-11-20 从 14.9 调到 19.9：五折给全额积分时首月必亏，市场上首期折扣多在 20–40%。
+   */
+  priceUsd: 19.9,
   /** 页面上说的折扣力度，约数。 */
-  percentOff: 50,
+  percentOff: 33,
 };
 
 /** 退款规则：首次购买后这么多天内、积分未使用，可全额退款。天数与退款政策页同源。 */

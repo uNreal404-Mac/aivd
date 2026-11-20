@@ -49,7 +49,7 @@ describe("upgrade dialog rows", () => {
       expect(row.chargedTodayUsd).toBe(monthly.priceUsd);
       expect(row.firstMonthUsd).toBe(FIRST_MONTH_OFFER.enabled && row.tier === FIRST_MONTH_OFFER.tier ? FIRST_MONTH_OFFER.priceUsd : null);
     }
-    expect(rows.find((row) => row.tier === "pro")!.firstMonthUsd).toBe(14.9);
+    expect(rows.find((row) => row.tier === "pro")!.firstMonthUsd).toBe(19.9);
   });
 
   it("plan rows carry the tier's perks and Pro is the popular one", () => {
