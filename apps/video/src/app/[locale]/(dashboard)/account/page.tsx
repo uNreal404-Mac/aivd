@@ -6,11 +6,18 @@ import { SignOutButton } from "@/components/dashboard/sign-out-button";
 import { UserAvatar } from "@/components/user-avatar";
 import { CopyPromptButton } from "@/components/hf/studio-results";
 import { ManageSubscriptionButton } from "@/components/account/manage-subscription-button";
+import { SubscriptionActions } from "@/components/account/subscription-actions";
 import { customers, db } from "@/db";
 import { copyFor, planLabel, showManageSubscription } from "@/lib/account-view";
 import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
 import { getUserPlanTier } from "@/lib/plan-limits";
+import { createStripeClient, getUsableStripeKey } from "@/payment/stripe-checkout";
+import {
+  loadOwnSubscription,
+  subscriptionViewOf,
+  type SubscriptionView,
+} from "@/payment/stripe-customer";
 import { creditService } from "@/services/credit";
 
 function toDate(value: unknown): Date | null {
@@ -50,6 +57,7 @@ export default async function AccountPage({
     db
       .select({
         stripeCustomerId: customers.stripeCustomerId,
+        stripeSubscriptionId: customers.stripeSubscriptionId,
         stripeCurrentPeriodEnd: customers.stripeCurrentPeriodEnd,
       })
       .from(customers)
@@ -57,16 +65,31 @@ export default async function AccountPage({
       .limit(1),
   ]);
 
-  // Only a future date is a renewal; a past one is a subscription that ended.
-  const storedEnd = toDate(customer?.stripeCurrentPeriodEnd ?? null);
-  const periodEnd = storedEnd && storedEnd.getTime() > Date.now() ? storedEnd : null;
-  const renewsOn = periodEnd
-    ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
-        dateStyle: "medium",
-      }).format(periodEnd)
-    : null;
-
   const paymentsEnabled = isPaymentsConfigured();
+
+  // The subscription's live state (renewing, or cancelled at period end)
+  // comes from Stripe, so it is right even when a webhook was missed. Only
+  // accounts with a paid tier or a stored subscription ask. If Stripe cannot
+  // be reached, the stored renewal date is shown and no cancel/resume offered.
+  let live: SubscriptionView | null = null;
+  const keyResult = getUsableStripeKey();
+  if (paymentsEnabled && keyResult.ok && (tier !== "free" || customer?.stripeSubscriptionId)) {
+    try {
+      const subscription = await loadOwnSubscription(createStripeClient(keyResult.key), user.id);
+      if (subscription) live = subscriptionViewOf(subscription);
+    } catch (error) {
+      console.error("[account] subscription lookup failed", error instanceof Error ? error.message : error);
+    }
+  }
+
+  // Only a future date counts; a past one is a subscription that ended.
+  const storedEnd = toDate(customer?.stripeCurrentPeriodEnd ?? null);
+  const fallbackEnd = storedEnd && storedEnd.getTime() > Date.now() ? storedEnd : null;
+  const periodEnd = live && live.state !== "ended" ? live.date : live ? null : fallbackEnd;
+  const ending = live?.state === "ending";
+  const formatPeriodEnd = periodEnd
+    ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", { dateStyle: "medium" }).format(periodEnd)
+    : null;
 
   const zh = locale.toLowerCase().startsWith("zh");
   const joined = toDate(user.createdAt ?? null);
@@ -113,9 +136,9 @@ export default async function AccountPage({
         <section className="db-card">
           <p className="db-stat-label">{copy.planHeading}</p>
           <p className="db-plan-name">{planLabel(tier, copy)}</p>
-          {renewsOn ? (
+          {formatPeriodEnd ? (
             <p className="db-sub">
-              {copy.renewsOn} {renewsOn}
+              {ending ? `${copy.endsOn} ${formatPeriodEnd}${zh ? "，" : ", "}${copy.notRenewing}` : `${copy.renewsOn} ${formatPeriodEnd}`}
             </p>
           ) : tier === "free" ? (
             <p className="db-sub">{zh ? "升级后每月积分更多，单价更低。" : "Upgrade for more credits each month at a lower price."}</p>
@@ -127,6 +150,9 @@ export default async function AccountPage({
             {/* Subscribers cancel, change card and see invoices in the Stripe billing portal. */}
             {showManageSubscription(tier, customer?.stripeCustomerId) ? (
               <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} />
+            ) : null}
+            {live && live.state !== "ended" ? (
+              <SubscriptionActions state={live.state} periodEnd={formatPeriodEnd} copy={copy} />
             ) : null}
           </div>
         </section>

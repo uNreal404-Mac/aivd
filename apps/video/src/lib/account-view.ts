@@ -42,6 +42,14 @@ export interface AccountCopy {
   planUltimate: string;
   renewsOn: string;
   manageSubscription: string;
+  endsOn: string;
+  notRenewing: string;
+  cancelSubscription: string;
+  cancelConfirm: string;
+  cancelKeep: string;
+  /** `{date}` is replaced with the end of the paid period. */
+  cancelHint: string;
+  resumeSubscription: string;
   comingSoon: string;
   activityHeading: string;
   filterAll: string;
@@ -76,6 +84,13 @@ export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
     planUltimate: "Ultimate",
     renewsOn: "Renews on",
     manageSubscription: "Manage subscription",
+    endsOn: "Ends on",
+    notRenewing: "will not renew",
+    cancelSubscription: "Cancel subscription",
+    cancelConfirm: "Yes, cancel",
+    cancelKeep: "Keep my plan",
+    cancelHint: "Your plan stays active until {date} and is not charged again. Credits you already have stay until they expire.",
+    resumeSubscription: "Resume subscription",
     comingSoon: "Coming soon",
     activityHeading: "Credit activity",
     filterAll: "All",
@@ -113,6 +128,13 @@ export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
     planUltimate: "旗舰版",
     renewsOn: "续费日期",
     manageSubscription: "管理订阅",
+    endsOn: "到期日期",
+    notRenewing: "到期后不再续费",
+    cancelSubscription: "取消订阅",
+    cancelConfirm: "确认取消",
+    cancelKeep: "先不取消",
+    cancelHint: "套餐会用到 {date}，之后不再扣款。已有的积分保留到各自的过期日。",
+    resumeSubscription: "恢复订阅",
     comingSoon: "即将开放",
     activityHeading: "积分记录",
     filterAll: "全部",
@@ -276,6 +298,8 @@ const PORTAL_ERROR_MESSAGES: Record<string, string> = {
   unauthorized: "You need to sign in to manage your subscription.",
   no_customer: "No billing account was found for this user.",
   portal_unavailable: "The billing page could not be opened. Please try again later or contact support.",
+  no_subscription: "No active subscription was found for this account.",
+  subscription_update_failed: "The subscription could not be changed. Please try again later or contact support.",
   invalid_body: "The request could not be processed.",
   default: "Something went wrong. Please try again.",
 };
@@ -294,4 +318,19 @@ export function parsePortalResponse(status: number, json: unknown): PortalResult
     ok: false,
     message: PORTAL_ERROR_MESSAGES[code] ?? PORTAL_ERROR_MESSAGES.default,
   };
+}
+
+export type SubscriptionChangeResult =
+  | { ok: true; state: "renewing" | "ending" | "ended"; date: string | null }
+  | { ok: false; message: string };
+
+/** Map the cancel/resume API response into a render-ready result. */
+export function parseSubscriptionChangeResponse(status: number, json: unknown): SubscriptionChangeResult {
+  const payload = isRecord(json) ? json : {};
+  const state = payload.state;
+  if (status >= 200 && status < 300 && (state === "renewing" || state === "ending" || state === "ended")) {
+    return { ok: true, state, date: typeof payload.date === "string" ? payload.date : null };
+  }
+  const code = typeof payload.error === "string" ? payload.error : "";
+  return { ok: false, message: PORTAL_ERROR_MESSAGES[code] ?? PORTAL_ERROR_MESSAGES.default };
 }

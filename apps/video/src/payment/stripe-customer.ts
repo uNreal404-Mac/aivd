@@ -70,23 +70,42 @@ export function stripeIdOf(value: string | { id: string } | null | undefined): s
   return typeof value === "string" ? value : value.id;
 }
 
-function isEnded(subscription: Stripe.Subscription): boolean {
+export function isEnded(subscription: Stripe.Subscription): boolean {
   return subscription.status === "canceled" || subscription.status === "incomplete_expired";
 }
 
 /**
- * Next renewal of a subscription, or `null` when it will not renew.
+ * End of the current paid period.
  *
  * Current API versions put `current_period_end` on each subscription item;
  * older ones (the version Stripe SDK v14 types) put it on the subscription.
  */
-export function renewalDateOf(subscription: Stripe.Subscription): Date | null {
-  if (isEnded(subscription) || subscription.cancel_at_period_end || subscription.cancel_at) return null;
-
+export function periodEndOf(subscription: Stripe.Subscription): Date | null {
   const legacy = (subscription as { current_period_end?: number | null }).current_period_end;
   const item = subscription.items?.data?.[0] as { current_period_end?: number | null } | undefined;
   const seconds = item?.current_period_end ?? legacy;
   return typeof seconds === "number" && seconds > 0 ? new Date(seconds * 1000) : null;
+}
+
+/** Next renewal of a subscription, or `null` when it will not renew. */
+export function renewalDateOf(subscription: Stripe.Subscription): Date | null {
+  if (isEnded(subscription) || subscription.cancel_at_period_end || subscription.cancel_at) return null;
+  return periodEndOf(subscription);
+}
+
+/** What the account page shows about a subscription. */
+export type SubscriptionView =
+  | { state: "renewing"; date: Date | null }
+  | { state: "ending"; date: Date | null }
+  | { state: "ended" };
+
+export function subscriptionViewOf(subscription: Stripe.Subscription): SubscriptionView {
+  if (isEnded(subscription)) return { state: "ended" };
+  if (subscription.cancel_at_period_end || subscription.cancel_at) {
+    const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null;
+    return { state: "ending", date: cancelAt ?? periodEndOf(subscription) };
+  }
+  return { state: "renewing", date: periodEndOf(subscription) };
 }
 
 /** The record for one Stripe subscription, or `null` when it is not ours. */
@@ -127,4 +146,33 @@ export async function findStripeSubscriber(
   const live = newest.find((sub) => !isEnded(sub));
   const pick = live ?? newest[0];
   return pick ? subscriberRecordOf(pick) : null;
+}
+
+/**
+ * The account's own current Stripe subscription, or `null`.
+ *
+ * Uses the stored subscription id, falling back to the metadata search for
+ * accounts never linked. Anything whose metadata names another user is
+ * refused, so a stale or tampered row can never act on someone else.
+ */
+export async function loadOwnSubscription(
+  stripe: Stripe,
+  userId: string,
+): Promise<Stripe.Subscription | null> {
+  const [row] = await db
+    .select({ stripeSubscriptionId: customers.stripeSubscriptionId })
+    .from(customers)
+    .where(eq(customers.authUserId, userId))
+    .limit(1);
+
+  let subscriptionId = row?.stripeSubscriptionId ?? null;
+  if (!subscriptionId) {
+    const found = await findStripeSubscriber(stripe, userId);
+    if (!found) return null;
+    await recordStripeSubscriber(found);
+    subscriptionId = found.subscriptionId;
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  return subscription.metadata?.userId === userId ? subscription : null;
 }

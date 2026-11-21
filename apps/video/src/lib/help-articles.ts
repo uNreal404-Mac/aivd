@@ -204,17 +204,21 @@ function enCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
     case "cancel-subscription":
       return {
         question: "How do I cancel my subscription?",
-        description: "Cancel an aivd.ai plan any time: Account, Manage subscription, Cancel. The plan runs to the end of the period you paid for and is not charged again.",
-        answer: "Open your Account page, choose Manage subscription and cancel in the billing page that opens. Your plan stays active until the end of the period you already paid for, and you are not charged again.",
+        description: "Cancel an aivd.ai plan any time from your Account page. The plan runs to the end of the period you paid for and is not charged again.",
+        answer: "Open your Account page, choose Cancel subscription under Current plan and confirm. Your plan stays active until the end of the period you already paid for, and you are not charged again.",
         sections: [
           {
             heading: "Step by step",
             paragraphs: [],
             bullets: [
               "Sign in and open Account from the menu.",
-              "Under Current plan, choose Manage subscription. This opens the secure billing page run by Stripe, our payment provider.",
-              "Choose Cancel subscription and confirm.",
+              "Under Current plan, choose Cancel subscription.",
+              "Check the date your plan runs until, then choose Yes, cancel. The plan card then shows the end date and that the plan will not renew.",
             ],
+          },
+          {
+            heading: "Changed your mind?",
+            paragraphs: ["Until that date, Resume subscription on the same card turns renewal back on. Nothing is charged until the next renewal date."],
           },
           {
             heading: "What happens to your credits",
@@ -402,17 +406,21 @@ function zhCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
     case "cancel-subscription":
       return {
         question: "怎么取消订阅？",
-        description: "aivd.ai 套餐可以随时取消：账户 → 管理订阅 → 取消。已付费的这一期照常可用，到期后不再扣款。",
-        answer: "打开账户页，点“管理订阅”，在打开的账单页里取消即可。已经付费的这一期照常可用，到期后不会再扣款。",
+        description: "aivd.ai 套餐可以随时在账户页取消。已付费的这一期照常可用，到期后不再扣款。",
+        answer: "打开账户页，在“当前套餐”下点“取消订阅”并确认即可。已经付费的这一期照常可用，到期后不会再扣款。",
         sections: [
           {
             heading: "操作步骤",
             paragraphs: [],
             bullets: [
               "登录后从菜单打开“账户”。",
-              "在“当前套餐”下点“管理订阅”，会打开由支付服务商 Stripe 提供的安全账单页。",
-              "选择取消订阅并确认。",
+              "在“当前套餐”下点“取消订阅”。",
+              "看一下套餐能用到哪天，再点“确认取消”。之后套餐卡片会显示到期日期和“到期后不再续费”。",
             ],
+          },
+          {
+            heading: "改主意了？",
+            paragraphs: ["到期之前，在同一张卡片上点“恢复订阅”就会恢复自动续费，下一个续费日之前不会扣款。"],
           },
           {
             heading: "积分怎么办",

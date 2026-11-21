@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { customers, db } from "@/db";
 import {
+  loadOwnSubscription,
   recordStripeSubscriber,
   renewalDateOf,
   subscriberRecordOf,
@@ -181,5 +182,30 @@ describe("recordStripeSubscriber (D1)", () => {
     await recordStripeSubscriber({ userId, stripeCustomerId: customerId, subscriptionId: `sub_new_${userId}`, active: true });
     await recordStripeSubscriber({ userId, stripeCustomerId: customerId, subscriptionId: `sub_old_${userId}`, active: false, renewsAt: null });
     expect((await customerRow(userId))?.stripeSubscriptionId).toBe(`sub_new_${userId}`);
+  });
+});
+
+describe("loadOwnSubscription (D1)", () => {
+  it("returns the stored subscription only when its metadata names this account", async () => {
+    const userId = uniqueUserId("own");
+    await recordStripeSubscriber({ userId, stripeCustomerId: `cus_${userId}`, subscriptionId: `sub_${userId}`, active: true });
+    const retrieve = async (id: string) => subscription({ id, metadata: { userId } });
+    const fake = { subscriptions: { retrieve } } as unknown as Stripe;
+    expect((await loadOwnSubscription(fake, userId))?.id).toBe(`sub_${userId}`);
+
+    const someoneElse = {
+      subscriptions: { retrieve: async (id: string) => subscription({ id, metadata: { userId: "other" } }) },
+    } as unknown as Stripe;
+    expect(await loadOwnSubscription(someoneElse, userId)).toBeNull();
+  });
+
+  it("finds an unlinked account by metadata search and links it", async () => {
+    const userId = uniqueUserId("own");
+    const found = subscription({ id: `sub_${userId}`, customer: `cus_${userId}`, metadata: { userId } });
+    const fake = {
+      subscriptions: { search: async () => ({ data: [found] }), retrieve: async () => found },
+    } as unknown as Stripe;
+    expect((await loadOwnSubscription(fake, userId))?.id).toBe(`sub_${userId}`);
+    expect((await customerRow(userId))?.stripeSubscriptionId).toBe(`sub_${userId}`);
   });
 });
