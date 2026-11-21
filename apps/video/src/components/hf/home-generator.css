@@ -157,6 +157,41 @@
   cursor: not-allowed;
 }
 
+/* Submitting: the round button widens into a pill with a spinner and a line
+   saying where the visitor is going, and stays disabled until the page changes. */
+.du-composer-send.du-composer-send-busy,
+.du-composer-send.du-composer-send-busy:disabled {
+  width: auto;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.du-composer-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  animation: du-composer-spin 0.8s linear infinite;
+}
+
+@keyframes du-composer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .du-composer-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
 .du-composer-references {
   min-width: 0;
   margin: 4px 0 8px;

@@ -17,9 +17,10 @@
 /* Three columns: brand, the links centred in the space between, then
    actions. The side columns take only their own width, so the wide actions
    group no longer pushes "More" up against the search button. */
+/* 56px tall: the 32px controls keep 12px clear above and below. */
 .hf-nav-inner {
   display: grid;
-  height: 52px;
+  height: 56px;
   align-items: center;
   gap: 24px;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
@@ -210,23 +211,20 @@ a.hf-item:hover,
   box-shadow: 0 0 0 2px var(--du-bg);
 }
 
-/* Badge hanging under the pricing button, as on the reference. */
+/* Short inline label inside the pricing button. It used to hang under the
+   button and ran into the bar's bottom edge; a corner badge of the same text
+   covered the word "Pricing", so it now sits beside it. */
 .hf-act-discount {
-  position: absolute;
-  top: calc(100% - 6px);
-  left: 50%;
-  min-width: 52px;
-  height: 14px;
-  padding: 2px 6px;
-  border-radius: var(--ds-r-xs);
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-2xs);
   font-weight: 700;
-  line-height: 10px;
-  text-align: center;
+  line-height: 14px;
   white-space: nowrap;
-  transform: translateX(-50%);
   pointer-events: none;
 }
 
@@ -290,6 +288,62 @@ a.hf-item:hover,
   display: none;
 }
 
+/* Secondary links (Templates, Community) fold into "More" on English pages,
+   whose labels run longer, and on windows 1280px and narrower. The links stay
+   in the HTML; only their place changes. The row then fits without scrolling,
+   so it no longer clips or fades "More". */
+.hf-dd .hf-dd-col-secondary {
+  display: none;
+}
+
+.hf-dd .hf-dd-col-secondary + .hf-dd-col {
+  padding: 12px 8px 8px;
+}
+
+.hf-nav[data-compact-nav] .hf-nav-inner {
+  gap: 16px;
+}
+
+.hf-nav[data-compact-nav] .hf-item-secondary {
+  display: none;
+}
+
+.hf-nav[data-compact-nav] .hf-nav-scroll {
+  overflow: visible;
+  mask-image: none;
+}
+
+.hf-nav[data-compact-nav] .hf-dd .hf-dd-col-secondary {
+  display: flex;
+}
+
+.hf-nav[data-compact-nav] .hf-dd .hf-dd-col-secondary + .hf-dd-col {
+  padding-left: 0;
+}
+
+@media (max-width: 1280px) {
+  .hf-nav-inner {
+    gap: 16px;
+  }
+
+  .hf-item-secondary {
+    display: none;
+  }
+
+  .hf-nav-scroll {
+    overflow: visible;
+    mask-image: none;
+  }
+
+  .hf-dd .hf-dd-col-secondary {
+    display: flex;
+  }
+
+  .hf-dd .hf-dd-col-secondary + .hf-dd-col {
+    padding-left: 0;
+  }
+}
+
 /* Narrower desktops drop the offer button first (it opens /pricing, like the
    Pricing button beside it), then the language button, then the link row
    gives way to the menu button before it can run under the actions. */
@@ -337,7 +391,7 @@ a.hf-item:hover,
 /* Dropdown panel: one shared panel under the bar, aligned to its trigger. */
 .hf-dd {
   position: absolute;
-  top: calc(52px + 8px);
+  top: calc(56px + 8px);
   z-index: 50;
   display: grid;
   max-width: calc(100vw - 32px);

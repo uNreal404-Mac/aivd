@@ -72,3 +72,8 @@ export const IMAGE_FEATURED_IDS = [
   "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
   "grok-imagine-image-2-0/text-to-image",
 ];
+
+/** Message key for a model's subtitle under ModelPicker.details (next-intl keys cannot contain "/" or "."). */
+export function catalogDetailKey(id: string): string {
+  return id.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}

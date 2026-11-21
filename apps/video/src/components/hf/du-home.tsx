@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { HomePricing } from "@/components/hf/home-pricing";
-import { HomeShowcase, MiniComposer } from "@/components/hf/home-showcase";
+import { BackToCreate, HomeShowcase } from "@/components/hf/home-showcase";
 import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "./du-home.css";
@@ -52,7 +52,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       <HomeShowcase lang={lang} onUseTemplate={useTemplate} />
       {/* 3. Pricing, after the reference sites' pricing pages */}
       <HomePricing lang={lang} />
-      <MiniComposer lang={lang} anchorId="home-generator" />
+      <BackToCreate lang={lang} anchorId="home-generator" />
     </div>
   );
 }

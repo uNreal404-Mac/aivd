@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Aperture,
   AudioLines,
@@ -23,6 +24,7 @@ import {
   IMAGE_FEATURED_IDS,
   VIDEO_CATALOG,
   VIDEO_FEATURED_IDS,
+  catalogDetailKey,
   type CatalogModel,
 } from "@/lib/kie-model-catalog";
 
@@ -106,6 +108,11 @@ function startingCredits(modelId: string): number | null {
   return lowest;
 }
 
+/** Models that can generate first, then the rest; order is otherwise kept. */
+function connectedFirst(models: CatalogModel[], isConnected: (id: string) => boolean): CatalogModel[] {
+  return [...models.filter((item) => isConnected(item.id)), ...models.filter((item) => !isConnected(item.id))];
+}
+
 /** Featured models first, then the rest in catalogue order. */
 function inDisplayOrder(models: CatalogModel[], featuredIds: string[]): CatalogModel[] {
   const rank = (id: string) => {
@@ -130,6 +137,7 @@ export function KieModelPicker({
   valueLabel,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
+  const t = useTranslations("ModelPicker");
   const backupIds = kind === "video" ? BACKUP_VIDEO_IDS : BACKUP_IMAGE_IDS;
   const fullCatalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const catalog = catalogSet === "backup" ? fullCatalog.filter((item) => backupIds.includes(item.id)) : fullCatalog;
@@ -137,6 +145,12 @@ export function KieModelPicker({
   const featuredIds = catalogSet === "backup"
     ? kind === "video" ? BACKUP_VIDEO_FEATURED : BACKUP_IMAGE_FEATURED
     : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
+  // Without a connected list every entry counts as ready (older callers).
+  const isConnected = (id: string) => connectedIds.length === 0 || connectedIds.includes(id);
+  const detailOf = (item: CatalogModel) => {
+    const key = `details.${catalogDetailKey(item.id)}`;
+    return t.has(key) ? t(key) : item.detail;
+  };
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -182,9 +196,10 @@ export function KieModelPicker({
       needle === "" ||
       item.name.toLowerCase().includes(needle) ||
       item.family.toLowerCase().includes(needle);
-    const ordered = inDisplayOrder(displayCatalog.filter(matches), featuredIds);
-    return ordered;
+    return connectedFirst(inDisplayOrder(displayCatalog.filter(matches), featuredIds), isConnected);
   }, [kind, query, catalogSet, connectedIds]);
+  const readyCatalog = displayCatalog.filter((item) => isConnected(item.id));
+  const comingSoon = inDisplayOrder(displayCatalog.filter((item) => !isConnected(item.id)), featuredIds);
 
   const current = fullCatalog.find((item) => item.id === value);
   const triggerLabel = valueLabel ?? current?.name ?? (compact ? copy.noneAvailable : copy.choose);
@@ -261,7 +276,7 @@ export function KieModelPicker({
     if (event.key === "ArrowDown") {
       event.preventDefault();
       rowButtons()[0]?.focus();
-    } else if (event.key === "Enter" && matches[0]) {
+    } else if (event.key === "Enter" && matches[0] && isConnected(matches[0].id)) {
       event.preventDefault();
       onChange(matches[0].id);
       close(true);
@@ -270,18 +285,22 @@ export function KieModelPicker({
 
   const availableRow = (item: CatalogModel) => {
     const selected = item.id === value;
-    const credits = kind === "video" ? (startingCredits(item.id) ?? 70) : 20;
+    const ready = isConnected(item.id);
+    const credits = !ready ? null : kind === "video" ? (startingCredits(item.id) ?? 70) : 20;
     return (
       <button
         key={item.id}
         type="button"
         data-model-row
         aria-pressed={selected}
+        aria-disabled={!ready || undefined}
+        disabled={!ready}
         onClick={() => {
+          if (!ready) return;
           onChange(item.id);
           close(true);
         }}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--du-surface-2)] ${selected ? "bg-[var(--du-surface-2)]" : ""}`}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${ready ? "hover:bg-[var(--du-surface-2)]" : "cursor-not-allowed opacity-55"} ${selected ? "bg-[var(--du-surface-2)]" : ""}`}
       >
         <span
           aria-hidden="true"
@@ -291,11 +310,16 @@ export function KieModelPicker({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
-          <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{item.detail}</span>
+          <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{detailOf(item)}</span>
         </span>
         {credits !== null ? (
           <span className="shrink-0 rounded-md bg-[var(--du-surface-2)] px-2 py-1 text-[11px] font-medium text-[var(--du-accent-text)]">
             {copy.from(credits)}
+          </span>
+        ) : null}
+        {!ready ? (
+          <span className="shrink-0 rounded-md border border-[var(--du-border)] px-2 py-1 text-[11px] font-medium text-[var(--du-text-muted)]">
+            {t("comingSoon")}
           </span>
         ) : null}
         {selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-accent-text)]" /> : null}
@@ -347,8 +371,8 @@ export function KieModelPicker({
         <div
           ref={panelRef}
           onKeyDown={onListKeyDown}
-          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight, overflowY: "auto" } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} z-50 w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
+          className={`${placement === "inline" ? "mt-2" : ""} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
         >
           <div className="flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
@@ -367,27 +391,34 @@ export function KieModelPicker({
             </button>
           </div>
 
-          <div ref={listRef} className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
+          {/* Only the list scrolls; the panel itself clips, so there is one scrollbar. */}
+          <div ref={listRef} className="min-h-0 max-h-[320px] flex-1 overflow-y-auto overscroll-contain p-2">
             {query.trim() ? (
               matches.length ? matches.map(availableRow) : <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">{copy.none}</p>
             ) : family ? (
               <>
                 <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>
                 <p className="px-3 pb-1 text-xs font-semibold text-[var(--du-text-muted)]">{family}</p>
-                {displayCatalog.filter((item) => item.family === family).map(availableRow)}
+                {connectedFirst(displayCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
               </>
             ) : (
               <>
                 <p className="px-3 pb-1 pt-2 text-xs font-semibold text-[var(--du-text-muted)]">{copy.featured}</p>
-                {featuredIds.map((id) => displayCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
+                {featuredIds.map((id) => readyCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
                 <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{copy.all}</p>
-                {Array.from(new Set(displayCatalog.map((item) => item.family))).map((name) => (
+                {Array.from(new Set(readyCatalog.map((item) => item.family))).map((name) => (
                   <button key={name} type="button" onClick={() => setFamily(name)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[var(--du-surface-2)]">
                     <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={name} /></span>
-                    <span className="min-w-0 flex-1 text-sm text-[var(--du-text)]">{name}<span className="block text-xs text-[var(--du-text-muted)]">{displayCatalog.filter((item) => item.family === name).length} {copy.models}</span></span>
+                    <span className="min-w-0 flex-1 text-sm text-[var(--du-text)]">{name}<span className="block text-xs text-[var(--du-text-muted)]">{readyCatalog.filter((item) => item.family === name).length} {copy.models}</span></span>
                     <ChevronRight className="h-4 w-4 text-[var(--du-text-muted)]" />
                   </button>
                 ))}
+                {comingSoon.length ? (
+                  <>
+                    <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{t("comingSoonSection")}</p>
+                    {comingSoon.map(availableRow)}
+                  </>
+                ) : null}
               </>
             )}
           </div>

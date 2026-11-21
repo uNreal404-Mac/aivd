@@ -201,7 +201,10 @@ describe("du-glass styling", () => {
 
     expect(tsx).toContain("<HomeGenerator");
     expect(tsx).toContain("<HomeShowcase");
-    expect(tsx).toContain('<MiniComposer lang={lang} anchorId="home-generator" />');
+    // The homepage uses a small corner button back to the generator, not the
+    // full-width bottom composer that covered headings and cards.
+    expect(tsx).toContain('<BackToCreate lang={lang} anchorId="home-generator" />');
+    expect(tsx).not.toContain("<MiniComposer");
     expect(tsx.indexOf("<HomeGenerator")).toBeLessThan(tsx.indexOf("<HomeShowcase"));
   });
 

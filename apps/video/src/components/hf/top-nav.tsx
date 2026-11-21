@@ -19,6 +19,7 @@ import {
   Plug,
   Search,
   Settings,
+  LayoutGrid,
   Tag,
   Tv,
   UserRound,
@@ -211,6 +212,16 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     path: "",
     routes: [] as string[],
     columns: [
+      // Shown only when the bar folds its secondary links into "More"
+      // (English pages, or windows 1280px and narrower; see top-nav.css).
+      {
+        title: zh ? "浏览" : "Browse",
+        secondary: true,
+        items: [
+          { title: zh ? "模板" : "Templates", desc: zh ? "挑一个模板，提示词一键带入" : "Pick one and its prompt loads for you", icon: LayoutGrid, href: "/templates" },
+          { title: t.community, desc: zh ? "看看大家生成的作品" : "See what people are making", icon: Users, href: "/gallery" },
+        ] as DropItem[],
+      },
       {
         title: zh ? "即将推出" : "Coming soon",
         items: [
@@ -256,7 +267,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   // Keyboard: ↓ on a nav item moves into its dropdown; ↑/↓ move between rows;
   // Tab leaves the dropdown for the next nav item; Esc returns to the item.
-  const panelRows = () => [...(panelRef.current?.querySelectorAll<HTMLElement>("a.hf-dd-row") ?? [])];
+  // Rows hidden by CSS (the folded links in "More" on wide Chinese pages) are skipped.
+  const panelRows = () => [...(panelRef.current?.querySelectorAll<HTMLElement>("a.hf-dd-row") ?? [])].filter((row) => row.offsetParent !== null);
   const focusRow = (index: number) => {
     const rows = panelRows();
     if (rows.length) rows[(index + rows.length) % rows.length].focus();
@@ -278,7 +290,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       setOpen((current) => (current === id ? null : current));
     },
   });
-  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links .hf-item")];
+  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links .hf-item")].filter((item) => item.offsetParent !== null);
   const panelKeys = {
     onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
       const rows = panelRows();
@@ -344,8 +356,16 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const maxLeft = window.innerWidth - panel.offsetWidth - 16;
-    if (panelLeft > maxLeft) setPanelLeft(Math.max(16, maxLeft));
+    const clamp = () => {
+      const maxLeft = window.innerWidth - panel.offsetWidth - 16;
+      if (panelLeft > maxLeft) setPanelLeft(Math.max(16, maxLeft));
+    };
+    clamp();
+    // The panel can still widen after the first measure (web fonts, the
+    // folded "Browse" column in "More"), so check again when it resizes.
+    const observer = new ResizeObserver(clamp);
+    observer.observe(panel);
+    return () => observer.disconnect();
   }, [open, panelLeft]);
 
   // Fade the ends of the link row when it scrolls sideways, like the reference.
@@ -398,7 +418,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
 
   return (
-    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
+    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")} data-compact-nav={!zh || undefined}>
       <div className="hf-nav-inner">
         <Link href={href("/")} className="hf-brand">
           <img src="/logo.svg" alt="" width={28} height={28} className="hf-brand-logo" />
@@ -419,7 +439,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 aria-haspopup="true"
                 onFocus={(event) => openNow(menu.id, event.currentTarget)}
                 {...triggerKeys(menu.id)}
-                className="hf-item"
+                className={cn("hf-item", menu.id === "templates" && "hf-item-secondary")}
                 data-open={open === menu.id || undefined}
                 data-active={activeSection?.id === menu.id || undefined}
                 {...hover(menu.id)}
@@ -427,7 +447,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 {menu.label}
               </Link>
             ))}
-            <Link href={href("/gallery")} className="hf-item" data-active={isActive("/gallery") || undefined}>
+            <Link href={href("/gallery")} className="hf-item hf-item-secondary" data-active={isActive("/gallery") || undefined}>
               {t.community}
             </Link>
             <button
@@ -586,7 +606,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       {openMenu ? (
         <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)} {...panelKeys}>
           {openMenu.columns.map((column) => (
-            <div key={column.title} className="hf-dd-col">
+            <div key={column.title} className={cn("hf-dd-col", "secondary" in column && column.secondary === true && "hf-dd-col-secondary")}>
               <p className="hf-dd-col-title">{column.title}</p>
               {column.items.map(row)}
             </div>

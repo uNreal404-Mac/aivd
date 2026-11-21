@@ -17,6 +17,7 @@ import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import { useCarousel } from "@/components/hf/use-carousel";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
+import { scrollMotion } from "@/lib/reduced-motion";
 import "./home-showcase.css";
 
 const TILE_ICONS: Record<(typeof PRODUCT_TILES)[number]["icon"], LucideIcon> = {
@@ -395,5 +396,55 @@ export function CarouselArrows({
         <ChevronRight className="h-5 w-5" aria-hidden="true" />
       </button>
     </>
+  );
+}
+
+/**
+ * A small round button in the bottom-right corner that takes the visitor back
+ * up to the generator. It replaces the full-width bottom composer on the
+ * homepage, which covered headings and cards while scrolling. It shows once
+ * the generator is off screen and hides while the footer is in view.
+ */
+export function BackToCreate({ lang, anchorId }: { lang: string; anchorId: string }) {
+  const zh = lang.toLowerCase().startsWith("zh");
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const anchor = document.getElementById(anchorId);
+      if (!anchor) return;
+      const footer = document.querySelector("footer");
+      const anchorGone = anchor.getBoundingClientRect().bottom < 0;
+      const footerShown = footer ? footer.getBoundingClientRect().top < window.innerHeight : false;
+      setVisible(anchorGone && !footerShown);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [anchorId]);
+
+  const label = zh ? "回到首屏创作" : "Back to the generator";
+  const goBack = () => {
+    const anchor = document.getElementById(anchorId);
+    anchor?.scrollIntoView({ behavior: scrollMotion(), block: "start" });
+    anchor?.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
+  };
+
+  return (
+    <button
+      type="button"
+      className={visible ? "hs-back-to-create hs-back-to-create-on" : "hs-back-to-create"}
+      onClick={goBack}
+      aria-label={label}
+      title={label}
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
+    >
+      <ArrowUp className="h-5 w-5" aria-hidden="true" />
+    </button>
   );
 }

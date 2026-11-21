@@ -881,6 +881,43 @@
   color: var(--ds-text-4);
 }
 
+/* Homepage: a 44×44 corner button back to the generator, in place of the
+   full-width bottom composer. Small enough not to sit over headings or cards. */
+.hs-back-to-create {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--du-bg) 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 200ms ease, transform 200ms ease, background 160ms ease;
+}
+
+.hs-back-to-create-on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.hs-back-to-create:hover {
+  background: var(--du-accent-hover);
+}
+
+.hs-back-to-create:focus-visible {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: 3px;
+}
+
 /* Narrower desktop windows: fewer columns so cards keep their text clear. */
 @media (max-width: 1199px) {
   .hs-carousel-track {
