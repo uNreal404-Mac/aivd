@@ -277,6 +277,26 @@ describe("parseHistoryResponse", () => {
 });
 
 describe("parsePortalResponse", () => {
+  it("answers in Chinese on the Chinese account page", () => {
+    expect(parsePortalResponse(502, { error: "portal_unavailable" }, "zh")).toEqual({
+      ok: false,
+      message: "账单页暂时打不开，请稍后再试或联系客服。",
+    });
+    expect(parsePortalResponse(404, { error: "no_customer" }, "zh")).toEqual({
+      ok: false,
+      message: "没有找到这个账号的账单信息。",
+    });
+    expect(parsePortalResponse(500, "nope", "zh")).toEqual({ ok: false, message: "出错了，请重试。" });
+  });
+
+  it("has a Chinese message for every English one", async () => {
+    const { accountErrorMessage } = await import("@/lib/account-view");
+    for (const code of ["payments_not_configured", "stripe_not_configured", "live_mode_disabled", "invalid_key", "unauthorized", "no_customer", "portal_unavailable", "no_subscription", "subscription_update_failed", "invalid_body"]) {
+      expect(accountErrorMessage(code, "zh")).not.toBe(accountErrorMessage("unknown_code", "zh"));
+      expect(accountErrorMessage(code, "zh")).toMatch(/[\u4e00-\u9fff]/);
+    }
+  });
+
   it("returns the url on success", () => {
     expect(parsePortalResponse(200, { url: "https://billing.example.com/x" })).toEqual(
       { ok: true, url: "https://billing.example.com/x" }

@@ -34,7 +34,7 @@ export function SubscriptionActions({ state, periodEnd, copy }: SubscriptionActi
         body: JSON.stringify({ action }),
       });
       const json: unknown = await response.json().catch(() => null);
-      const result = parseSubscriptionChangeResponse(response.status, json);
+      const result = parseSubscriptionChangeResponse(response.status, json, copy.lang);
       if (!result.ok) {
         setError(result.message || copy.errorGeneric);
         return;

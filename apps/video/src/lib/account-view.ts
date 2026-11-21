@@ -27,6 +27,7 @@ export interface AccountTypeLabels {
 }
 
 export interface AccountCopy {
+  lang: "en" | "zh";
   title: string;
   creditsHeading: string;
   available: string;
@@ -69,6 +70,7 @@ export interface AccountCopy {
 
 export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
   en: {
+    lang: "en",
     title: "Account",
     creditsHeading: "Credits",
     available: "Available",
@@ -113,6 +115,7 @@ export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
     },
   },
   zh: {
+    lang: "zh",
     title: "账户",
     creditsHeading: "积分",
     available: "可用积分",
@@ -290,22 +293,47 @@ export type PortalResult =
   | { ok: true; url: string }
   | { ok: false; message: string };
 
-const PORTAL_ERROR_MESSAGES: Record<string, string> = {
-  payments_not_configured: "Payments are not configured.",
-  stripe_not_configured: "Payments are not configured.",
-  live_mode_disabled: "Payments are not configured.",
-  invalid_key: "Payments are not configured.",
-  unauthorized: "You need to sign in to manage your subscription.",
-  no_customer: "No billing account was found for this user.",
-  portal_unavailable: "The billing page could not be opened. Please try again later or contact support.",
-  no_subscription: "No active subscription was found for this account.",
-  subscription_update_failed: "The subscription could not be changed. Please try again later or contact support.",
-  invalid_body: "The request could not be processed.",
-  default: "Something went wrong. Please try again.",
+const ERROR_MESSAGES: Record<"en" | "zh", Record<string, string>> = {
+  en: {
+    payments_not_configured: "Payments are not configured.",
+    stripe_not_configured: "Payments are not configured.",
+    live_mode_disabled: "Payments are not configured.",
+    invalid_key: "Payments are not configured.",
+    unauthorized: "You need to sign in to manage your subscription.",
+    no_customer: "No billing account was found for this user.",
+    portal_unavailable: "The billing page could not be opened. Please try again later or contact support.",
+    no_subscription: "No active subscription was found for this account.",
+    subscription_update_failed: "The subscription could not be changed. Please try again later or contact support.",
+    invalid_body: "The request could not be processed.",
+    default: "Something went wrong. Please try again.",
+  },
+  zh: {
+    payments_not_configured: "支付功能暂未开通。",
+    stripe_not_configured: "支付功能暂未开通。",
+    live_mode_disabled: "支付功能暂未开通。",
+    invalid_key: "支付功能暂未开通。",
+    unauthorized: "请先登录，再管理订阅。",
+    no_customer: "没有找到这个账号的账单信息。",
+    portal_unavailable: "账单页暂时打不开，请稍后再试或联系客服。",
+    no_subscription: "这个账号没有正在生效的订阅。",
+    subscription_update_failed: "订阅没能修改成功，请稍后再试或联系客服。",
+    invalid_body: "请求无法处理。",
+    default: "出错了，请重试。",
+  },
 };
 
+/** Message for an account API error code, in the page's language. */
+export function accountErrorMessage(code: string, lang: "en" | "zh" = "en"): string {
+  const messages = ERROR_MESSAGES[lang];
+  return messages[code] ?? messages.default;
+}
+
 /** Map the billing portal API response into a render-ready result. */
-export function parsePortalResponse(status: number, json: unknown): PortalResult {
+export function parsePortalResponse(
+  status: number,
+  json: unknown,
+  lang: "en" | "zh" = "en"
+): PortalResult {
   const payload = isRecord(json) ? json : {};
   const url = typeof payload.url === "string" ? payload.url : "";
 
@@ -314,10 +342,7 @@ export function parsePortalResponse(status: number, json: unknown): PortalResult
   }
 
   const code = typeof payload.error === "string" ? payload.error : "";
-  return {
-    ok: false,
-    message: PORTAL_ERROR_MESSAGES[code] ?? PORTAL_ERROR_MESSAGES.default,
-  };
+  return { ok: false, message: accountErrorMessage(code, lang) };
 }
 
 export type SubscriptionChangeResult =
@@ -325,12 +350,16 @@ export type SubscriptionChangeResult =
   | { ok: false; message: string };
 
 /** Map the cancel/resume API response into a render-ready result. */
-export function parseSubscriptionChangeResponse(status: number, json: unknown): SubscriptionChangeResult {
+export function parseSubscriptionChangeResponse(
+  status: number,
+  json: unknown,
+  lang: "en" | "zh" = "en"
+): SubscriptionChangeResult {
   const payload = isRecord(json) ? json : {};
   const state = payload.state;
   if (status >= 200 && status < 300 && (state === "renewing" || state === "ending" || state === "ended")) {
     return { ok: true, state, date: typeof payload.date === "string" ? payload.date : null };
   }
   const code = typeof payload.error === "string" ? payload.error : "";
-  return { ok: false, message: PORTAL_ERROR_MESSAGES[code] ?? PORTAL_ERROR_MESSAGES.default };
+  return { ok: false, message: accountErrorMessage(code, lang) };
 }

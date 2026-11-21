@@ -161,4 +161,12 @@ describe("parseSubscriptionChangeResponse", () => {
     });
     expect(parseSubscriptionChangeResponse(200, {})).toMatchObject({ ok: false });
   });
+
+  it("answers in Chinese on the Chinese account page", () => {
+    expect(parseSubscriptionChangeResponse(502, { error: "subscription_update_failed" }, "zh")).toEqual({
+      ok: false,
+      message: "订阅没能修改成功，请稍后再试或联系客服。",
+    });
+    expect(parseSubscriptionChangeResponse(500, {}, "zh")).toEqual({ ok: false, message: "出错了，请重试。" });
+  });
 });

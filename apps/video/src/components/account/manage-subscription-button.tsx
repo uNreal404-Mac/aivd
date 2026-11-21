@@ -31,7 +31,7 @@ export function ManageSubscriptionButton({
     try {
       const response = await fetch("/api/payments/portal", { method: "POST" });
       const json: unknown = await response.json().catch(() => null);
-      const result = parsePortalResponse(response.status, json);
+      const result = parsePortalResponse(response.status, json, copy.lang);
 
       if (result.ok) {
         window.location.assign(result.url);
