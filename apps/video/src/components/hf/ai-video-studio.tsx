@@ -49,6 +49,7 @@ import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
 import { StateBlock } from "@/components/states/state-block";
 import { InViewVideo } from "@/components/hf/in-view-video";
 import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
@@ -311,6 +312,7 @@ export function AiVideoStudio({
   const [viewing, setViewing] = useState<number | null>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
+  const [homeReferences, setHomeReferences] = useState<UploadedVideoReference[]>([]);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(isChinese);
@@ -337,6 +339,23 @@ export function AiVideoStudio({
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
   useEffect(() => {
+    const references = sessionStorage.getItem("aivd:home-video-references");
+    if (references) {
+      try {
+        const parsed: unknown = JSON.parse(references);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((item): item is UploadedVideoReference =>
+            typeof item?.key === "string" && typeof item?.name === "string" && typeof item?.url === "string");
+          if (valid.length) {
+            setHomeReferences(valid);
+            setImageKey(valid[0].key);
+            setFileName(valid[0].name);
+            setPreview(valid[0].url);
+            return;
+          }
+        }
+      } catch { /* Ignore a stale handoff and keep the studio usable. */ }
+    }
     const key = sessionStorage.getItem("aivd:home-start-image");
     if (!key) return;
     setImageKey(key);
@@ -428,6 +447,17 @@ export function AiVideoStudio({
       return;
     }
 
+    if (homeReferences.length > maxVideoReferences(catalogModelId)) {
+      const limit = maxVideoReferences(catalogModelId);
+      setNotice(isChinese ? `当前模型最多使用 ${limit} 张参考图，请先移除多余图片。` : `This model accepts up to ${limit} reference images. Remove the extras first.`);
+      return;
+    }
+    const preparedPrompt = prepareVideoReferencePrompt(settings.prompt, homeReferences.length || (imageKey ? 1 : 0));
+    if (!preparedPrompt.ok) {
+      setNotice(isChinese ? `@图片${preparedPrompt.index} 没有对应的素材，请检查引用。` : `@Image${preparedPrompt.index} has no matching image. Check the reference.`);
+      return;
+    }
+
     if (!generationEnabled) {
       setNotice(
         copy.paused,
@@ -445,7 +475,7 @@ export function AiVideoStudio({
         : String(Date.now());
 
     try {
-      const result = await submitGeneration(settings, idempotencyKey, fetch, imageKey);
+      const result = await submitGeneration({ ...settings, prompt: preparedPrompt.prompt }, idempotencyKey, fetch, homeReferences.length ? homeReferences.map((item) => item.key) : imageKey);
 
       if (!result.ok) {
         setNotice(errorMessage(result.code, result.message, isChinese));
@@ -479,6 +509,7 @@ export function AiVideoStudio({
         ...previous,
       ]);
       setNotice(null);
+      sessionStorage.removeItem("aivd:home-video-references");
       setActiveTab(RIGHT_TABS[0]);
     } finally {
       setSubmitting(false);
@@ -527,6 +558,8 @@ export function AiVideoStudio({
     const result = await uploadImage(file);
     setUploading(false);
     if (result.ok) {
+      sessionStorage.removeItem("aivd:home-video-references");
+      setHomeReferences([]);
       setFileName(file.name);
       setImageKey(result.key);
       setPreview(URL.createObjectURL(file));
@@ -534,6 +567,16 @@ export function AiVideoStudio({
       setNotice(result.message);
     }
   }
+  const removeHomeReference = (index: number) => {
+    const remaining = homeReferences.filter((_, itemIndex) => itemIndex !== index);
+    setHomeReferences(remaining);
+    if (remaining.length) sessionStorage.setItem("aivd:home-video-references", JSON.stringify(remaining));
+    else sessionStorage.removeItem("aivd:home-video-references");
+    setImageKey(remaining[0]?.key ?? null);
+    setFileName(remaining[0]?.name ?? null);
+    setPreview(remaining[0]?.url ?? null);
+    setSettings((previous) => ({ ...previous, prompt: removeVideoReferenceToken(previous.prompt, index + 1) }));
+  };
   const drop = useImageDrop((files) => void uploadStartFrame(files[0]), !uploading && mode === "Create");
 
   const reuse = (text: string | null | undefined) => {
@@ -604,7 +647,7 @@ export function AiVideoStudio({
                   <span><Sparkles className="h-4 w-4" /></span>
                 </span>
               )}
-              <span className="vs-upload-title">{fileName ?? (isChinese ? "上传起始帧" : "Upload a start frame")}</span>
+              <span className="vs-upload-title">{homeReferences.length > 1 ? (isChinese ? `已添加 ${homeReferences.length} 张参考图` : `${homeReferences.length} reference images added`) : fileName ?? (isChinese ? "上传起始帧" : "Upload a start frame")}</span>
               <span className="vs-upload-sub">
                 {uploading
                   ? isChinese ? "上传中…" : "Uploading…"
@@ -623,8 +666,16 @@ export function AiVideoStudio({
                 }}
               />
             </label>
+            {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "来自首页的参考图片" : "Reference images from the homepage"}>
+              {homeReferences.map((item, index) => <div key={item.key} className="vs-home-reference" title={item.name}>
+                <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
+                <span>@{isChinese ? "图片" : "Image"}{index + 1}</span>
+                <button type="button" onClick={() => removeHomeReference(index)} aria-label={isChinese ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`}><X className="h-3 w-3" /></button>
+              </div>)}
+              <p>{isChinese ? `当前模型最多使用 ${maxVideoReferences(catalogModelId)} 张` : `This model accepts up to ${maxVideoReferences(catalogModelId)}`}</p>
+            </div> : null}
             {imageKey ? (
-              <button type="button" onClick={() => { setImageKey(null); setFileName(null); setPreview(null); }} className="vs-link">
+              <button type="button" onClick={() => { sessionStorage.removeItem("aivd:home-video-references"); setHomeReferences([]); setImageKey(null); setFileName(null); setPreview(null); }} className="vs-link">
                 {isChinese ? "移除起始帧" : "Remove start frame"}
               </button>
             ) : null}

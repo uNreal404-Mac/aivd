@@ -42,8 +42,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           <p className="du-hero-tagline">{isChinese ? "今天想创作什么？" : "What will you create today?"}</p>
           <p className="du-hero-sub">
             {isChinese
-              ? "输入一句话或上传一张图片，就能生成视频，还可以带声音。Veo 3.1、Seedance 2.5、Kling 4.0 等模型一站可用，生成前先显示要花多少积分。"
-              : "Type a prompt or add a photo and get a video, with sound if you want it. Veo 3.1, Seedance 2.5, Kling 4.0 and more in one place, with the credit cost shown before you generate."}
+              ? "输入一句话或添加参考图片，就能生成视频，还可以带声音。Veo 3.1、Seedance 2.5、Kling 4.0 等模型一站可用，生成前先显示要花多少积分。"
+              : "Type a prompt or add reference images and get a video, with sound if you want it. Veo 3.1, Seedance 2.5, Kling 4.0 and more in one place, with the credit cost shown before you generate."}
           </p>
           <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
         </div>

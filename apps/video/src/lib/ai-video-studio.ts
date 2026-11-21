@@ -262,7 +262,8 @@ export type GenerateRequestBody = {
   generateAudio: boolean;
   idempotencyKey: string;
   imageUrl?: string;
-  mode?: "text-to-video" | "image-to-video";
+  imageUrls?: string[];
+  mode?: "text-to-video" | "image-to-video" | "reference-to-video";
 };
 
 export type BuildGenerateRequestResult =
@@ -272,7 +273,7 @@ export type BuildGenerateRequestResult =
 export function buildGenerateRequest(
   settings: StudioSettings,
   idempotencyKey: string,
-  imageKey?: string | null,
+  imageKey?: string | string[] | null,
 ): BuildGenerateRequestResult {
   const prompt = settings.prompt.trim();
 
@@ -286,6 +287,8 @@ export function buildGenerateRequest(
     return { ok: false, reason: "unsupported-model" };
   }
 
+  const imageKeys = Array.isArray(imageKey) ? imageKey : imageKey ? [imageKey] : [];
+
   return {
     ok: true,
     body: {
@@ -296,7 +299,8 @@ export function buildGenerateRequest(
       quality: settings.resolution,
       generateAudio: settings.audio,
       idempotencyKey,
-      ...(imageKey ? { imageUrl: imageKey, mode: "image-to-video" as const } : {}),
+      ...(imageKeys.length === 1 ? { imageUrl: imageKeys[0], mode: "image-to-video" as const } : {}),
+      ...(imageKeys.length > 1 ? { imageUrls: imageKeys, mode: "reference-to-video" as const } : {}),
     },
   };
 }
@@ -321,7 +325,7 @@ export async function submitGeneration(
   settings: StudioSettings,
   idempotencyKey: string,
   fetchImpl: typeof fetch = fetch,
-  imageKey?: string | null,
+  imageKey?: string | string[] | null,
 ): Promise<SubmitGenerationResult> {
   const request = buildGenerateRequest(settings, idempotencyKey, imageKey);
 

@@ -222,6 +222,16 @@ describe("canGenerate", () => {
 });
 
 describe("buildGenerateRequest", () => {
+  it("passes multiple ordered references to the video API", () => {
+    const result = buildGenerateRequest({ ...defaultSettings(WAN), prompt: "image 2 follows image 1" }, "key-1", ["uploads/u/one.png", "uploads/u/two.png"]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.body.imageUrls).toEqual(["uploads/u/one.png", "uploads/u/two.png"]);
+      expect(result.body.mode).toBe("reference-to-video");
+      expect(result.body.imageUrl).toBeUndefined();
+    }
+  });
+
   it("sets body.model to the selected model id for every available model", () => {
     for (const model of STUDIO_MODELS.filter((item) => item.available)) {
       const result = buildGenerateRequest(

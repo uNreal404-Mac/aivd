@@ -12,6 +12,7 @@ import { localizedHref } from "@/lib/du-home";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import { MAX_HOME_VIDEO_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
 import "./home-generator.css";
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
@@ -34,7 +35,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
   const imageModel = getMarketModel(imageModelId);
   const imageCredits = imageModel ? marketCredits(imageModel, { prompt: "", resolution: imageModel.options.resolutions?.[0] }) : null;
   const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
-  const [startFile, setStartFile] = useState<File | null>(null);
+  const [videoReferences, setVideoReferences] = useState<{ file: File; preview: string }[]>([]);
   const [referenceImages, setReferenceImages] = useState<{ file: File; preview: string }[]>([]);
   const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (models[0]?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(models[0]?.durations[0] ?? 4);
@@ -43,11 +44,13 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const startRef = useRef<HTMLInputElement>(null);
+  const videoPreviews = useRef<string[]>([]);
   const referencesRef = useRef<HTMLInputElement>(null);
   const referencePreviews = useRef<string[]>([]);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [suggestionsHidden, setSuggestionsHidden] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
   const suggestions = [0, 1, 2].map((step) => HOME_TEMPLATES[(suggestionOffset + step) % HOME_TEMPLATES.length]);
   const current = models.find((item) => item.id === modelId);
   const studioModel = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
@@ -55,6 +58,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
   const estimatedCredits = studioModel ? estimateCredits({ modelId, duration, resolution }) : null;
   const modeLabels = zh ? ["参考生成视频", "文字/图片生成视频"] : ["Reference to Video", "Text/Image to Video"];
   const modeIndex = VIDEO_MODES.indexOf(mode);
+  const videoReferenceLimit = maxVideoReferences(modelId);
 
   useEffect(() => {
     if (!panel) return;
@@ -66,10 +70,55 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
   }, [panel]);
 
   useEffect(() => () => referencePreviews.current.forEach((preview) => URL.revokeObjectURL(preview)), []);
+  useEffect(() => () => videoPreviews.current.forEach((preview) => URL.revokeObjectURL(preview)), []);
+
+  const addVideoReferences = (files: FileList | null) => {
+    if (!files?.length) return;
+    const selected = Array.from(files);
+    const invalid = selected.map(validateImageFile).find(Boolean);
+    if (invalid) { setNotice(invalid); return; }
+    const remaining = MAX_HOME_VIDEO_REFERENCES - videoReferences.length;
+    if (remaining <= 0) { setNotice(zh ? "最多添加 12 张参考图片。" : "Add up to 12 reference images."); return; }
+    const added = selected.slice(0, remaining).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+    videoPreviews.current.push(...added.map((item) => item.preview));
+    setVideoReferences((previous) => [...previous, ...added]);
+    setNotice(selected.length > remaining ? (zh ? "只保留了前 12 张参考图片。" : "Only the first 12 reference images were kept.") : "");
+  };
+
+  const removeVideoReference = (index: number) => {
+    const removed = videoReferences[index];
+    if (removed) {
+      URL.revokeObjectURL(removed.preview);
+      videoPreviews.current = videoPreviews.current.filter((preview) => preview !== removed.preview);
+    }
+    setVideoReferences((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
+    setPrompt((previous) => removeVideoReferenceToken(previous, index + 1));
+    setNotice("");
+    setMentionOpen(false);
+  };
+
+  const insertVideoReference = (index: number) => {
+    const field = promptRef.current;
+    const start = field?.selectionStart ?? prompt.length;
+    const end = field?.selectionEnd ?? start;
+    const before = prompt.slice(0, start);
+    const mention = before.match(/@(?:图片|image)?\d*$/i);
+    const from = mention ? start - mention[0].length : start;
+    const prefix = prompt.slice(0, from);
+    const spacing = prefix && !/\s$/.test(prefix) ? " " : "";
+    const insertion = `${spacing}@${zh ? "图片" : "Image"}${index + 1} `;
+    const next = `${prefix}${insertion}${prompt.slice(end)}`.slice(0, 2000);
+    setPrompt(next);
+    setMentionOpen(false);
+    setNotice("");
+    requestAnimationFrame(() => {
+      field?.focus({ preventScroll: true });
+      field?.setSelectionRange(from + insertion.length, from + insertion.length);
+    });
+  };
 
   // An idea picked below the hero loads its prompt here. Keyed on the nonce so
   // picking the same idea twice still applies after the visitor edited it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: apply once per pick
   useEffect(() => {
     if (!preset) return;
     setKind("video");
@@ -120,7 +169,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
   // An empty prompt gets a nudge instead of a silent no-op. A start image or
   // reference images alone are enough to go on.
   const [nudge, setNudge] = useState(0);
-  const hasInput = Boolean(prompt.trim()) || (kind === "video" ? Boolean(startFile) : referenceImages.length > 0);
+  const hasInput = Boolean(prompt.trim()) || (kind === "video" ? videoReferences.length > 0 : referenceImages.length > 0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -141,16 +190,20 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       return;
     }
     if (!available) { setNotice(zh ? "请选择当前可用的视频模型。" : "Choose a currently available video model."); return; }
-    if (mode === "reference" && !startFile) { setNotice(zh ? "请先添加参考图片。" : "Add a reference image first."); return; }
+    if (mode === "reference" && videoReferences.length === 0) { setNotice(zh ? "请先添加参考图片。" : "Add a reference image first."); return; }
+    if (videoReferences.length > videoReferenceLimit) { setNotice(zh ? `当前模型最多使用 ${videoReferenceLimit} 张参考图，请先移除多余图片。` : `This model accepts up to ${videoReferenceLimit} reference images. Remove the extras before continuing.`); return; }
+    const preparedPrompt = prepareVideoReferencePrompt(prompt.trim(), videoReferences.length);
+    if (!preparedPrompt.ok) { setNotice(zh ? `@图片${preparedPrompt.index} 没有对应的素材，请检查引用。` : `@Image${preparedPrompt.index} has no matching image. Check the reference.`); return; }
     setSubmitting(true);
     try {
-      if (startFile) {
-        const error = validateImageFile(startFile);
-        if (error) { setNotice(error); return; }
-        const uploaded = await uploadImage(startFile);
-        if (!uploaded.ok) { setNotice(uploaded.message); return; }
-        sessionStorage.setItem("aivd:home-start-image", uploaded.key);
-        sessionStorage.setItem("aivd:home-start-image-name", startFile.name);
+      if (videoReferences.length) {
+        const uploaded = [];
+        for (const item of videoReferences) {
+          const result = await uploadImage(item.file);
+          if (!result.ok) { setNotice(result.message); return; }
+          uploaded.push({ key: result.key, name: item.file.name, url: result.url });
+        }
+        sessionStorage.setItem("aivd:home-video-references", JSON.stringify(uploaded));
       }
       params.set("model", modelId);
       params.set("duration", String(duration));
@@ -172,8 +225,8 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
 
   return <div id="home-generator" className="relative z-20 w-full max-w-[720px] scroll-mt-24">
     {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
-      <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
-      <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
+      <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setMentionOpen(false); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
+      <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setMentionOpen(false); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
     </div>}
     <form onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
@@ -188,13 +241,25 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
     <div className="du-composer-prompt-row flex min-h-[72px] gap-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
         {kind === "video" ? <div className="flex shrink-0 items-start gap-1.5">
-          <input ref={startRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => setStartFile(event.target.files?.[0] ?? null)} />
-          <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => startRef.current?.click()} title={startFile?.name} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white"><span className="text-xl leading-none">{startFile ? "✓" : "+"}</span><span className="mt-1">{zh ? "起始" : "Start"}</span></button><span className="text-[10px] text-white/65">{zh ? "可选" : "Optional"}</span></div>
+          <input ref={startRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addVideoReferences(event.target.files); event.target.value = ""; }} />
+          <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => startRef.current?.click()} disabled={videoReferences.length >= MAX_HOME_VIDEO_REFERENCES} title={zh ? "添加参考图片" : "Add reference images"} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"><span className="text-xl leading-none">+</span><span className="mt-1">{zh ? "参考" : "Ref"}</span></button><span className="text-[10px] text-white/65">{videoReferences.length ? `${videoReferences.length}/12` : (zh ? "可选" : "Optional")}</span></div>
         </div> : null}
         <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
-        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { setPrompt(event.target.value); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={2} maxLength={2000} placeholder={zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…"} className="min-h-[64px] min-w-[160px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
+        <div className="relative min-w-[160px] flex-1">
+          <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={2} maxLength={2000} placeholder={kind === "video" ? (zh ? "最多添加 12 张参考图片，输入文字或用 @图片1、@图片2 引用素材，自由组合画面与动作。" : "Add up to 12 reference images. Write a prompt and use @Image1, @Image2 to combine them into a scene.") : (zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…")} className="min-h-[64px] w-full resize-none bg-transparent px-2 py-1.5 text-[13px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-base" />
+          {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
+            {videoReferences.map((item, index) => <button key={item.preview} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.preview} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
+          </div> : null}
+        </div>
       </div>
     </div>
+    {kind === "video" && videoReferences.length ? <div className="du-composer-references">
+      <div className="du-composer-reference-list">{videoReferences.map((item, index) => <div key={item.preview} className="du-composer-reference" title={item.file.name}>
+        <button type="button" onClick={() => insertVideoReference(index)} aria-label={zh ? `引用图片 ${index + 1}` : `Reference image ${index + 1}`}><img src={item.preview} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>
+        <button type="button" onClick={() => removeVideoReference(index)} aria-label={zh ? `移除图片 ${index + 1}` : `Remove image ${index + 1}`} className="du-composer-reference-remove"><X className="h-3 w-3" /></button>
+      </div>)}</div>
+      <p>{zh ? `已添加 ${videoReferences.length}/12 张 · 当前模型每次最多使用 ${videoReferenceLimit} 张` : `${videoReferences.length}/12 added · This model accepts up to ${videoReferenceLimit} per generation`}</p>
+    </div> : null}
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
       {kind === "video" ? <div data-home-popover className="relative"><button type="button" className={chip} aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}><Film className="h-4 w-4 shrink-0" />{modeLabels[modeIndex]}<ChevronDown className="h-3 w-3 shrink-0" /></button>{panel === "mode" ? <div className="absolute bottom-11 left-0 z-50 w-[min(92vw,290px)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-2xl">{VIDEO_MODES.map((item, index) => <button key={item} type="button" onClick={() => { setMode(item); setPanel(null); }} className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[var(--du-text)] hover:bg-[var(--du-surface-2)]">{modeLabels[index]}{mode === item ? <Check className="h-4 w-4 text-[var(--du-accent-text)]" /> : null}</button>)}</div> : null}</div> : null}
       {kind === "video" ? divider : null}<div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : setImageModelId} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="top" showConnectionStatus={false} compact /></div>
@@ -206,7 +271,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
         <button type="submit" disabled={submitting || (kind === "video" && !available)} aria-label={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "继续创建图片（Enter）" : "Continue to image (Enter)")} className="du-composer-send"><ArrowUp className="h-4 w-4" aria-hidden="true" /></button>
       </div>
     </div>
-    {notice ? <p role="status" className="mt-2 text-xs text-[var(--du-accent-text)]">{notice}</p> : null}
+    {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
     {kind === "video" && !suggestionsHidden ? <div className="du-composer-suggestions">
       <div className="flex items-center justify-between">
         <button type="button" onClick={() => setSuggestionOffset((value) => (value + 3) % HOME_TEMPLATES.length)} className="du-composer-suggestions-label">{zh ? "试试这些提示" : "Try these prompts"}<RefreshCw className="h-3 w-3" aria-hidden="true" /></button>
