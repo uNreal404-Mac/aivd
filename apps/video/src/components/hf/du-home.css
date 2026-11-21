@@ -71,6 +71,10 @@
 }
 
 @media (max-width: 600px) {
+  .du-hero {
+    padding: 40px 16px 24px;
+  }
+
   .du-hero .du-composer {
     padding: 12px 12px 10px;
   }
@@ -84,31 +88,37 @@
   }
 }
 
-.du-hero-eyebrow {
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-xs);
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.du-hero-tagline {
-  margin-top: 10px;
+.du-hero-title {
+  max-width: 100%;
   color: white;
-  font-size: var(--ds-fs-xl);
-  font-weight: 300;
-  line-height: 1.5;
+  font-size: clamp(1.875rem, 3vw, 2.75rem);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
-/* One sentence on what this is and what it costs, for a first-time visitor. */
 .du-hero-sub {
-  max-width: 620px;
-  margin-top: 6px;
-  margin-bottom: 20px;
+  max-width: 920px;
+  margin-top: 14px;
+  margin-bottom: 24px;
   color: var(--du-text-muted);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.6;
+  font-size: clamp(0.9375rem, 1.25vw, 1.125rem);
+  line-height: 1.55;
   text-wrap: balance;
+}
+
+@media (max-width: 600px) {
+  .du-hero-title {
+    font-size: clamp(1.625rem, 7vw, 2rem);
+    line-height: 1.25;
+  }
+
+  .du-hero-sub {
+    margin-top: 12px;
+    margin-bottom: 20px;
+    font-size: 0.9375rem;
+  }
 }
 
 /* Feature cards */
