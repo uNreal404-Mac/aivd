@@ -4,6 +4,7 @@ import { STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { MAX_BYTES } from "@/lib/image-to-video";
 import { LANDING_MODELS } from "@/lib/model-landing";
+import { planCostRange } from "@/lib/pricing-offers";
 import { PRICING_UNITS, type PricingUnit } from "@/lib/pricing-units";
 import { maxVideoReferences } from "@/lib/video-references";
 
@@ -17,7 +18,7 @@ import { maxVideoReferences } from "@/lib/video-references";
 
 export type FeatureKind = "text-to-video" | "image-to-video" | "reference-to-video" | "audio";
 
-export type FeatureModel = { name: string; spec: string; credits: number; href?: string };
+export type FeatureModel = { name: string; spec: string; credits: number; cost: string; href?: string };
 
 export type FeatureCopy = {
   /** <title> without the site suffix, and the meta description. */
@@ -38,6 +39,8 @@ export type FeatureCopy = {
   modelsIntro: string;
   models: FeatureModel[];
   creditsLabel: string;
+  /** Column heads for the models table: model, length and quality, credits, cost on a plan. */
+  columns: [string, string, string, string];
   tryLabel: string;
   /** Example prompts link into the generator, filled in. */
   tryable?: boolean;
@@ -68,7 +71,7 @@ function modelsFor(kind: FeatureKind, zh: boolean): FeatureModel[] {
     .sort((a, b) => a.credits - b.credits)
     .map((unit) => {
       const landing = LANDING_MODELS.find((model) => model.id === unit.id && model.live);
-      return { name: unit.name, spec: zh ? unit.spec.zh : unit.spec.en, credits: unit.credits, href: landing ? `/models/${landing.slug}` : undefined };
+      return { name: unit.name, spec: zh ? unit.spec.zh : unit.spec.en, credits: unit.credits, cost: planCostRange(unit.credits), href: landing ? `/models/${landing.slug}` : undefined };
     });
 }
 
@@ -116,6 +119,9 @@ export function featureCopy(kind: FeatureKind, zh: boolean): FeatureCopy {
   const shared = {
     tryable: kind !== "audio",
     creditsLabel: kind === "audio" ? (zh ? "积分" : "credits") : zh ? "积分 / 条" : "credits a clip",
+    columns: (zh
+      ? ["模型", kind === "audio" ? "计价" : "时长和画质", "积分", "套餐内约合"]
+      : ["Model", kind === "audio" ? "Charged" : "Length and quality", "Credits", "Cost on a plan"]) as [string, string, string, string],
     tryLabel: zh ? "用这条提示词生成" : "Use this prompt",
     relatedTitle: zh ? "继续了解" : "Keep exploring",
   };

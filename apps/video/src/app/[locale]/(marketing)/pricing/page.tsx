@@ -6,6 +6,7 @@ import { jsonLd, pricingGraph } from "@/lib/structured-data";
 import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
+import { CONTENT_UPDATED, formatUpdated } from "@/config/content-dates";
 import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
 import { packOffers, planOffers, usd } from "@/lib/pricing-offers";
 
@@ -77,6 +78,10 @@ export default async function PricingPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
       <HomePricing lang={locale} asPage checkout={{ enabled: isPaymentsConfigured() }} />
       <PricingFaq locale={locale} />
+      <p className="mx-auto max-w-3xl px-6 pb-16 text-center text-[13px] text-[var(--ds-text-3)]">
+        {locale === "zh" ? "价格更新于 " : "Prices last updated "}
+        <time dateTime={CONTENT_UPDATED.pricing}>{formatUpdated(CONTENT_UPDATED.pricing, locale === "zh")}</time>
+      </p>
     </div>
   );
 }

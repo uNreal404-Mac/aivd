@@ -1,3 +1,4 @@
+import { packOffers } from "@/lib/pricing-offers";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -113,6 +114,13 @@ describe("legacy redirects", () => {
     expect(rules).toContainEqual({ source: "/en/:path*", destination: "/:path*", statusCode: 301 });
   });
 
+  it("send old English addresses under /en to their replacement in one hop", () => {
+    const catchAll = rules.findIndex((rule) => rule.source === "/en/:path*");
+    const explore = rules.findIndex((rule) => rule.source === "/en/explore");
+    expect(rules[explore]).toEqual({ source: "/en/explore", destination: "/templates", statusCode: 301 });
+    expect(explore).toBeLessThan(catchAll);
+  });
+
   it("never catch the sample pictures under public/explore", () => {
     expect(rules.some((rule) => rule.source.includes("explore/"))).toBe(false);
   });
@@ -149,9 +157,11 @@ describe("structured data", () => {
   it("offers the free credits and every enabled plan at its list price", () => {
     const offers = pricingOffers("en");
     expect(offers[0]).toMatchObject({ price: "0", priceCurrency: "USD" });
-    const prices = offers.slice(1).map((offer) => offer.price);
     const enabled = SUBSCRIPTION_PRODUCTS.filter((plan) => plan.enabled).map((plan) => plan.priceUsd.toFixed(2));
-    expect(prices).toEqual(enabled);
+    const packs = packOffers().map((pack) => pack.priceUsd.toFixed(2));
+    const prices = offers.slice(1).map((offer) => offer.price);
+    // Plans, then the credit packs bought without a subscription.
+    expect(prices).toEqual([...enabled, ...packs]);
     expect(prices).toContain("9.90");
     expect(prices).toContain("29.90");
     expect(prices).toContain("79.90");

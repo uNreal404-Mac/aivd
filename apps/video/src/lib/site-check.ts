@@ -17,6 +17,8 @@ export type PageFacts = {
   cjkChars: number;
   imagesWithoutAlt: number;
   links: string[];
+  /** Structured data blocks that are not valid JSON, or that carry "undefined" or an empty URL. */
+  badJsonLd: number;
 };
 
 export type Issue = { level: "error" | "warning"; message: string };
@@ -86,7 +88,17 @@ export function pageFacts(html: string): PageFacts {
   const cjkChars = (text.match(/[㐀-鿿]/g) ?? []).length;
   const words = (text.replace(/[㐀-鿿]/g, " ").match(/[A-Za-z0-9][A-Za-z0-9'’-]*/g) ?? []).length;
 
+  const badJsonLd = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)].filter((match) => {
+    try {
+      JSON.parse(match[1]);
+    } catch {
+      return true;
+    }
+    return /undefined|"(url|item|@id)":""/.test(match[1]);
+  }).length;
+
   return {
+    badJsonLd,
     title: titleMatch ? decode(titleMatch[1]) : null,
     description: meta("description"),
     canonical: (() => {
@@ -148,6 +160,9 @@ export const LIMITS = {
   zh: { homeWords: 1500, pageWords: 1000 },
 } as const;
 
+/** Pages with no length target: they answer no search. */
+export const NO_LENGTH_TARGET = ["/about", "/privacy", "/terms", "/refund-policy", "/contact"];
+
 /** Every rule a listed page has to meet, as errors (block launch) and warnings. */
 export function checkPage(facts: PageFacts, context: CheckContext): Issue[] {
   const issues: Issue[] = [];
@@ -184,10 +199,16 @@ export function checkPage(facts: PageFacts, context: CheckContext): Issue[] {
   const missing = context.hreflangs.filter((code) => !facts.hreflangs.includes(code));
   if (missing.length) error(`no hreflang link for ${missing.join(", ")}`);
 
-  const amount = context.language === "zh" ? facts.cjkChars : facts.words;
-  const needed = context.home ? limits.homeWords : limits.pageWords;
-  const unit = context.language === "zh" ? "characters" : "words";
-  if (amount < needed) warn(`${amount} ${unit} of text (aim for ${needed}+)`);
+  // About, legal and contact pages answer no search, so their length is not a target.
+  const bare = normalizePath(context.path).replace(/^\/zh(?=\/|$)/, "") || "/";
+  if (!NO_LENGTH_TARGET.includes(bare)) {
+    const amount = context.language === "zh" ? facts.cjkChars : facts.words;
+    const needed = context.home ? limits.homeWords : limits.pageWords;
+    const unit = context.language === "zh" ? "characters" : "words";
+    if (amount < needed) warn(`${amount} ${unit} of text (aim for ${needed}+)`);
+  }
+
+  if (facts.badJsonLd > 0) error(`${facts.badJsonLd} structured data block(s) that are broken or carry "undefined" or an empty URL`);
 
   if (facts.imagesWithoutAlt > 0) warn(`${facts.imagesWithoutAlt} image(s) without alt`);
 

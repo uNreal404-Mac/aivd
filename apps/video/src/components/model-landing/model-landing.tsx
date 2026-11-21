@@ -15,6 +15,8 @@ import {
   landingIntro,
   landingMedia,
   landingPrice,
+  landingPriceAnswer,
+  landingPriceRows,
   landingSpecs,
   landingTitle,
   landingUseCases,
@@ -23,6 +25,8 @@ import {
   studioHref,
   type LandingModel,
 } from "@/lib/model-landing";
+import { CONTENT_UPDATED, formatUpdated } from "@/config/content-dates";
+import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { breadcrumbList, faqPage, jsonLd } from "@/lib/structured-data";
 import "@/components/hf/home-showcase.css";
 import "./model-landing.css";
@@ -38,6 +42,8 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
   const KindIcon = KIND_ICON[model.kind];
   const specs = landingSpecs(model);
   const price = landingPrice(model);
+  const priceRows = landingPriceRows(model);
+  const priceAnswer = landingPriceAnswer(model, zh, NEW_USER_GIFT.enabled ? NEW_USER_GIFT.credits : 0);
   const highlights = landingHighlights(model);
   const media = landingMedia(model);
   const faqs = landingFaqs(model, zh);
@@ -237,6 +243,44 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
           </ul>
         </div>
       </section>
+
+      {/* Price: a one-sentence answer and the table behind it, for price searches. */}
+      {priceAnswer ? (
+        <section className="ml-section" aria-labelledby="ml-price">
+          <div className="ml-head-c">
+            <p className="ml-eyebrow">{zh ? "价格" : "Price"}</p>
+            <h2 id="ml-price" className="ml-h2">
+              {zh ? `${model.name} 多少钱一${model.kind === "video" ? "条" : model.kind === "image" ? "张" : "次"}？` : `How much does ${model.name} cost?`}
+            </h2>
+          </div>
+          <p className="ml-price-answer">{priceAnswer}</p>
+          <table className="ml-price-table">
+            <thead>
+              <tr>
+                <th scope="col">{zh ? "选项" : "Option"}</th>
+                <th scope="col">{zh ? "积分" : "Credits"}</th>
+                <th scope="col">{zh ? "套餐内约合" : "Cost on a plan"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {priceRows.map((row) => (
+                <tr key={row.option.en}>
+                  <th scope="row">{zh ? row.option.zh : row.option.en}</th>
+                  <td>{row.credits.toLocaleString("en-US")}</td>
+                  <td>{row.cost}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="ml-updated">
+            {zh
+              ? "“套餐内约合”按各订阅套餐的积分单价换算（最便宜的是年付大套餐，最贵的是月付入门套餐）。价格更新于 "
+              : "“Cost on a plan” uses the credit price of each subscription, from the largest yearly plan to the smallest monthly one. Prices last updated "}
+            <time dateTime={CONTENT_UPDATED.models}>{formatUpdated(CONTENT_UPDATED.models, zh)}</time>
+            {zh ? "。" : "."}
+          </p>
+        </section>
+      ) : null}
 
       {/* 5. FAQ */}
       <section className="ml-section" aria-labelledby="ml-faq">

@@ -1,3 +1,4 @@
+import { DRAFT_ROBOTS } from "@/lib/indexing";
 import { getTranslations } from "next-intl/server";
 
 import { GallerySection } from "@/components/gallery/gallery-section";
@@ -21,6 +22,7 @@ export async function generateMetadata({
   return {
     title,
     description,
+    robots: DRAFT_ROBOTS,
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,

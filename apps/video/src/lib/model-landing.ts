@@ -6,6 +6,7 @@ import { getMarketModel, marketCredits, type MarketModel } from "@/ai/kie-market
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { MEDIA, SAMPLE_PROMPTS, type Bi, type ShowMedia } from "@/lib/home-showcase";
 import { MODEL_SEO, type ModelSeoEntry } from "@/lib/model-seo";
+import { planCostRange } from "@/lib/pricing-offers";
 import {
   NAV_AUDIO_MODELS,
   NAV_IMAGE_MODELS,
@@ -323,6 +324,51 @@ export function landingUseCases(model: LandingModel, zh: boolean): string[] {
     },
   };
   return zh ? cases[model.kind].zh : cases[model.kind].en;
+}
+
+export type LandingPriceRow = { option: Bi; credits: number; cost: string };
+
+/**
+ * What one run costs, option by option (every length and quality the
+ * generator offers, cheapest first), with what that comes to on a plan. For
+ * the "How much does it cost" section, which answers price searches in a
+ * sentence and a table.
+ */
+export function landingPriceRows(model: LandingModel): LandingPriceRow[] {
+  if (!model.live) return [];
+  const studio = model.kind === "video" ? STUDIO_MODELS.find((item) => item.id === model.id) : undefined;
+  if (studio) {
+    const rows: LandingPriceRow[] = [];
+    for (const resolution of studio.resolutions) {
+      for (const duration of studio.durations) {
+        const credits = estimateCredits({ modelId: studio.id, duration, resolution });
+        if (credits > 0) rows.push({ option: { zh: `${duration} 秒 · ${resolution}`, en: `${duration}s · ${resolution}` }, credits, cost: planCostRange(credits) });
+      }
+    }
+    return rows.sort((a, b) => a.credits - b.credits).slice(0, 8);
+  }
+  const price = landingPrice(model);
+  if (!price) return [];
+  const option =
+    model.kind === "image"
+      ? { zh: "每张，最低画质", en: "Per image, lowest quality" }
+      : model.kind === "audio"
+        ? { zh: price.label.zh.includes("200") ? "每 200 字" : "每次", en: price.label.en.includes("200") ? "Per 200 characters" : "Per run" }
+        : { zh: "每条，最低配置", en: "Per clip, lowest settings" };
+  return [{ option, credits: price.credits, cost: planCostRange(price.credits) }];
+}
+
+/** The one-sentence answer above the price table. */
+export function landingPriceAnswer(model: LandingModel, zh: boolean, giftCredits: number): string | null {
+  const rows = landingPriceRows(model);
+  if (!rows.length) return null;
+  const first = rows[0];
+  const unit = model.kind === "video" ? (zh ? "条" : "clip") : model.kind === "image" ? (zh ? "张" : "image") : zh ? "次" : "run";
+  const covered = giftCredits >= first.credits;
+  if (zh) {
+    return `在 aivd.ai 用 ${model.name} 生成一${unit}，最低 ${first.credits} 积分（${first.option.zh}），按订阅套餐的积分单价约合 ${first.cost}。${covered ? `新注册送的 ${giftCredits} 积分够生成一${unit}。` : ""}生成前按钮上会显示本次要用的积分，失败自动退回。`;
+  }
+  return `On aivd.ai, one ${model.name} ${unit} starts at ${first.credits} credits (${first.option.en}), about ${first.cost} at subscription credit prices.${covered ? ` The ${giftCredits} free credits new accounts get cover one ${unit}.` : ""} The generate button shows the exact cost first, and failed runs are refunded.`;
 }
 
 export function landingFaqs(model: LandingModel, zh: boolean): { q: string; a: string }[] {

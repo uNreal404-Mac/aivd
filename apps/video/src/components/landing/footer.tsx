@@ -102,6 +102,7 @@ export function LandingFooter() {
         {
           title: zh ? "关于" : "About",
           links: [
+            { title: zh ? "关于 aivd.ai" : "About aivd.ai", href: "/about" },
             { title: zh ? "联系我们" : "Contact", href: "/contact" },
             { title: t("privacy"), href: "/privacy" },
             { title: t("terms"), href: "/terms" },

@@ -48,6 +48,10 @@ export const NAMED_CRAWLERS = [
   "GPTBot",
   "ClaudeBot",
   "PerplexityBot",
+  // Robots tokens rather than crawlers: allowing them lets Gemini and Apple's
+  // AI features use the public pages.
+  "Google-Extended",
+  "Applebot-Extended",
 ] as const;
 
 export type ChangeFrequency = "daily" | "weekly" | "monthly";
@@ -76,6 +80,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
   { path: "/audio", changeFrequency: "weekly", priority: 0.7 },
   { path: "/templates", changeFrequency: "weekly", priority: 0.7 },
   { path: "/creative-space", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/about", changeFrequency: "monthly", priority: 0.4 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
   { path: "/terms", changeFrequency: "monthly", priority: 0.3 },

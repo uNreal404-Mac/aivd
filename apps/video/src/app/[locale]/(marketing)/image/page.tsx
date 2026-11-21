@@ -1,3 +1,4 @@
+import { DRAFT_ROBOTS } from "@/lib/indexing";
 import { ImageSectionPage } from "@/components/section/section-pages";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { getAvailableModels } from "@/config/credits";
@@ -17,6 +18,7 @@ export async function generateMetadata({ params }: Props) {
     description: zh
       ? "根据文字或参考图生成 AI 图片，可作为视频的起始帧。图片模型即将上线。"
       : "Generate AI images from text or a reference image and use them as a video start frame. Image models are coming soon.",
+    robots: DRAFT_ROBOTS,
     alternates: { canonical: alternates.canonical, languages: alternates.languages },
   };
 }

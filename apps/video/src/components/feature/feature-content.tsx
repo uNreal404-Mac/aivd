@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { CONTENT_UPDATED, formatUpdated } from "@/config/content-dates";
 import { featureCopy, type FeatureKind } from "@/lib/feature-pages";
+import { featurePageGraph, jsonLd } from "@/lib/structured-data";
 import { localizedHref } from "@/lib/locale-path";
 
 import "./feature-content.css";
@@ -15,11 +17,9 @@ export function FeatureContent({ kind, locale }: { kind: FeatureKind; locale: st
   const zh = locale.toLowerCase().startsWith("zh");
   const copy = featureCopy(kind, zh);
   const href = (path: string) => localizedHref(locale, path);
-  const faqLd = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: copy.faqs.map((faq) => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })),
-  }).replace(/</g, "\\u003c");
+  const graph = jsonLd(
+    featurePageGraph({ path: `/${kind}`, name: copy.h1, description: copy.description, locale, faqs: copy.faqs, dateModified: CONTENT_UPDATED.features }),
+  );
 
   return (
     <div className="fc">
@@ -93,7 +93,7 @@ export function FeatureContent({ kind, locale }: { kind: FeatureKind; locale: st
               <p className="fc-prompt">{example.prompt}</p>
               {/* A full page load, so the generator starts with this prompt filled in. */}
               {copy.tryable ? (
-                <a className="fc-try" href={`${href(`/${kind}`)}?prompt=${encodeURIComponent(example.prompt)}`}>
+                <a className="fc-try" rel="nofollow" href={`${href(`/${kind}`)}?prompt=${encodeURIComponent(example.prompt)}`}>
                   {copy.tryLabel}
                 </a>
               ) : null}
@@ -107,21 +107,34 @@ export function FeatureContent({ kind, locale }: { kind: FeatureKind; locale: st
           {copy.modelsTitle}
         </h2>
         <p className="fc-body">{copy.modelsIntro}</p>
-        <ul className="fc-models">
-          {copy.models.map((model) => (
-            <li key={model.name} className="fc-model">
-              <span className="fc-model-name">{model.href ? <Link href={href(model.href)}>{model.name}</Link> : model.name}</span>
-              <span className="fc-model-spec">{model.spec}</span>
-              <span className="fc-model-credits">
-                <strong>{model.credits.toLocaleString(zh ? "zh-CN" : "en-US")}</strong> {copy.creditsLabel}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <table className="fc-models">
+          <thead>
+            <tr className="fc-model fc-model-head">
+              {copy.columns.map((column) => (
+                <th key={column} scope="col">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {copy.models.map((model) => (
+              <tr key={model.name} className="fc-model">
+                <th scope="row" className="fc-model-name">
+                  {model.href ? <Link href={href(model.href)}>{model.name}</Link> : model.name}
+                </th>
+                <td className="fc-model-spec">{model.spec}</td>
+                <td className="fc-model-credits">
+                  <strong>{model.credits.toLocaleString(zh ? "zh-CN" : "en-US")}</strong> {copy.creditsLabel}
+                </td>
+                <td className="fc-model-cost">{model.cost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="fc-section" aria-labelledby="fc-faq">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqLd }} />
         <h2 id="fc-faq" className="fc-h2">
           {copy.faqTitle}
         </h2>
@@ -147,6 +160,12 @@ export function FeatureContent({ kind, locale }: { kind: FeatureKind; locale: st
           ))}
         </ul>
       </nav>
+
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: graph }} />
+      <p className="fc-updated">
+        {zh ? "价格和模型信息更新于 " : "Prices and model details last updated "}
+        <time dateTime={CONTENT_UPDATED.features}>{formatUpdated(CONTENT_UPDATED.features, zh)}</time>
+      </p>
     </div>
   );
 }

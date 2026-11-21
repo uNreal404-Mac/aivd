@@ -110,3 +110,21 @@ export function packOffers() {
     per100Usd: round2((pack.priceUsd / pack.credits) * 100),
   }));
 }
+
+/**
+ * What one credit costs on the subscription plans, cheapest (the biggest
+ * yearly plan) to dearest (the smallest monthly plan), for "about $x-$y a
+ * clip" next to a credit price.
+ */
+export function planCreditUsdRange(): { min: number; max: number } {
+  const perCredit = SUBSCRIPTION_PRODUCTS.filter((plan) => plan.enabled && plan.credits > 0).map((plan) => plan.priceUsd / plan.credits);
+  return { min: Math.min(...perCredit), max: Math.max(...perCredit) };
+}
+
+/** "US$0.51–0.64": what a number of credits costs on the plans. */
+export function planCostRange(credits: number): string {
+  const { min, max } = planCreditUsdRange();
+  const low = usd(credits * min, 2);
+  const high = usd(credits * max, 2).replace(/^US\$/, "");
+  return low === `US$${high}` ? low : `${low}–${high}`;
+}

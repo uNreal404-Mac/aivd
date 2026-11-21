@@ -1,3 +1,4 @@
+import { DRAFT_ROBOTS } from "@/lib/indexing";
 import type { Metadata } from "next";
 
 import { EffectsGallery } from "@/components/effects/effects-gallery";
@@ -21,6 +22,7 @@ export async function generateMetadata({
     description: isZh
       ? "浏览 AI 视频特效模板，涵盖镜头运动、变形、氛围与风格，挑一个在创作页应用并按你的想法调整。"
       : "Browse AI video effect templates — camera moves, transforms, atmosphere, and style — then take any look into the studio to make it your own.",
+    robots: DRAFT_ROBOTS,
     alternates: buildAlternates("/effects", locale as Locale),
   };
 }

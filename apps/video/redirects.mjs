@@ -28,6 +28,9 @@ export function legacyRedirects() {
       })),
     ]),
     // English has no prefix, so /en/... is a duplicate of the unprefixed page.
+    // Old English addresses under /en go to their replacement in one hop,
+    // before the catch-all below would send them through the old address.
+    ...LEGACY_PATHS.map(([from, to]) => ({ source: `/en${from}`, destination: to, statusCode: 301 })),
     { source: "/en", destination: "/", statusCode: 301 },
     { source: "/en/:path*", destination: "/:path*", statusCode: 301 },
   ];

@@ -60,6 +60,8 @@ export function WallCard({
     >
       <Link
         href={href}
+        // Prompt links fill in the generator; they are not pages for search engines.
+        rel={href.includes("prompt=") ? "nofollow" : undefined}
         className="wc-link"
         // Same words, same order as on the card, so voice control can use them.
         aria-label={[media.video ? (zh ? "视频" : "Video") : null, prompt, cta].filter(Boolean).join(" ")}

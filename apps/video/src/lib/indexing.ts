@@ -27,3 +27,11 @@ export const NOINDEX_ROBOTS = {
     follow: false,
   },
 } as const;
+
+/**
+ * Pages that work but whose content is not final (/image, /ai/image,
+ * /effects, /gallery): kept out of search until they are, while the links on
+ * them are still followed. When one is ready, drop this and add it to
+ * PUBLIC_ROUTES.
+ */
+export const DRAFT_ROBOTS = { index: false, follow: true } as const;

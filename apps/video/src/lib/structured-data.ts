@@ -3,9 +3,11 @@
  * answers are read from the same config the pages render, so the data can
  * never say something the page does not.
  */
+import { CONTENT_UPDATED } from "@/config/content-dates";
 import { i18n, localeConfig } from "@/config/i18n-config";
 import { NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
-import { siteConfig } from "@/config/site";
+import { SUPPORT_EMAIL, siteConfig } from "@/config/site";
+import { packOffers } from "@/lib/pricing-offers";
 import { getLocaleUrl } from "@/lib/seo";
 
 type Json = Record<string, unknown>;
@@ -40,6 +42,12 @@ export function siteGraph(): Json {
         url: siteConfig.url,
         description: siteConfig.description,
         logo: { "@type": "ImageObject", url: `${siteConfig.url}/logo.svg` },
+        ...(SUPPORT_EMAIL
+          ? {
+              email: SUPPORT_EMAIL,
+              contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, availableLanguage: ["English", "Chinese"] },
+            }
+          : {}),
         ...(sameAs.length ? { sameAs } : {}),
       },
       {
@@ -133,6 +141,18 @@ export function pricingOffers(locale: string): Json[] {
     });
   }
 
+  for (const pack of packOffers()) {
+    offers.push({
+      "@type": "Offer",
+      name: zh ? `${pack.credits.toLocaleString("en-US")} 积分包` : `${pack.credits.toLocaleString("en-US")} credit pack`,
+      description: zh ? "一次性购买，不用订阅" : "One-time purchase, no subscription",
+      price: pack.priceUsd.toFixed(2),
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      url,
+    });
+  }
+
   return offers;
 }
 
@@ -149,9 +169,50 @@ export function pricingGraph(locale: string, faqs: { q: string; a: string }[]): 
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Web",
         publisher: { "@id": ORGANIZATION_ID },
+        dateModified: CONTENT_UPDATED.pricing,
         offers: pricingOffers(locale),
       },
       faqPage(faqs, locale),
+    ],
+  };
+}
+
+/**
+ * A feature page (/text-to-video and the like): where it sits in the site,
+ * when its facts were last checked, and its questions.
+ */
+export function featurePageGraph(input: {
+  path: string;
+  name: string;
+  description: string;
+  locale: string;
+  faqs: { q: string; a: string }[];
+  dateModified: string;
+}): Json {
+  const zh = isZh(input.locale);
+  const url = getLocaleUrl(input.path, input.locale as (typeof i18n.locales)[number]);
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: input.name,
+        description: input.description,
+        inLanguage: zh ? "zh-CN" : "en",
+        dateModified: input.dateModified,
+        isPartOf: { "@id": WEBSITE_ID },
+        publisher: { "@id": ORGANIZATION_ID },
+      },
+      breadcrumbList(
+        [
+          { name: siteConfig.name, path: "/" },
+          { name: input.name, path: input.path },
+        ],
+        input.locale,
+      ),
+      faqPage(input.faqs, input.locale),
     ],
   };
 }
