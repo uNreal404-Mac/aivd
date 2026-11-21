@@ -25,8 +25,63 @@
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
-  max-width: 720px;
+  max-width: 1280px;
   text-align: center;
+}
+
+/* Give the homepage composer the wider, flatter proportions of the hero layout. */
+.du-hero #home-generator {
+  max-width: 1200px;
+}
+
+.du-hero .du-composer {
+  padding: 10px 14px 8px;
+}
+
+.du-hero .du-composer-prompt-row {
+  min-height: 60px;
+}
+
+.du-hero #home-generator-prompt {
+  min-height: 52px;
+}
+
+.du-hero .du-composer-suggestions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px 8px;
+  margin-top: 7px;
+  padding-top: 5px;
+}
+
+.du-hero .du-composer-suggestions > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.du-hero .du-composer-suggestion {
+  min-width: 0;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+@media (max-width: 900px) {
+  .du-hero .du-composer-suggestions {
+    display: flex;
+  }
+}
+
+@media (max-width: 600px) {
+  .du-hero .du-composer {
+    padding: 12px 12px 10px;
+  }
+
+  .du-hero .du-composer-prompt-row {
+    min-height: 72px;
+  }
+
+  .du-hero #home-generator-prompt {
+    min-height: 64px;
+  }
 }
 
 .du-hero-eyebrow {

@@ -185,7 +185,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       </div>)}
       <span className="text-xs text-white/55">{zh ? "最多 5 张 · 点击缩略图可插入 @编号" : "Up to 5 · click an image to insert its @number"}</span>
     </div> : null}
-    <div className="flex min-h-[72px] gap-3">
+    <div className="du-composer-prompt-row flex min-h-[72px] gap-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
         {kind === "video" ? <div className="flex shrink-0 items-start gap-1.5">
           <input ref={startRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => setStartFile(event.target.files?.[0] ?? null)} />
