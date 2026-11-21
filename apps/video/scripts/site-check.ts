@@ -13,6 +13,7 @@
  */
 import { i18n, localeConfig } from "@/config/i18n-config";
 import { PUBLIC_ROUTES } from "@/config/indexing-paths";
+import { HELP_SLUGS } from "@/lib/help-articles";
 import { INDEXED_LANDING_SLUGS } from "@/lib/model-landing";
 import { checkPage, normalizePath, pageFacts, type Issue } from "@/lib/site-check";
 
@@ -27,7 +28,12 @@ const local = /localhost|127\.0\.0\.1/.test(base);
 const parallel = local ? 1 : 4;
 const linkParallel = local ? 1 : 6;
 
-const routes = [...PUBLIC_ROUTES.map((route) => route.path), ...INDEXED_LANDING_SLUGS.map((slug) => `/models/${slug}`)];
+const routes = [
+  ...PUBLIC_ROUTES.map((route) => route.path),
+  ...INDEXED_LANDING_SLUGS.map((slug) => `/models/${slug}`),
+  "/help",
+  ...HELP_SLUGS.map((slug) => `/help/${slug}`),
+];
 const hreflangs = [...i18n.locales.map((locale) => localeConfig[locale].hreflang), "x-default"];
 // --only=/a,/b keeps the pages whose path contains one of these.
 const only = args.find((arg) => arg.startsWith("--only="))?.slice("--only=".length).split(",").filter(Boolean) ?? [];

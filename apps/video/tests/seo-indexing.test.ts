@@ -12,6 +12,7 @@ import {
   privateDisallowPaths,
 } from "@/config/indexing-paths";
 import { SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
+import { HELP_SLUGS } from "@/lib/help-articles";
 import { INDEXED_LANDING_SLUGS, LANDING_SLUGS } from "@/lib/model-landing";
 import { breadcrumbList, jsonLd, pricingOffers, sameAsLinks, siteGraph } from "@/lib/structured-data";
 import robots from "@/app/robots";
@@ -76,7 +77,12 @@ describe("sitemap", () => {
   it("lists every public page and live model in both languages, with hreflang", () => {
     vi.stubEnv("NEXT_PUBLIC_NOINDEX", "false");
     const entries = sitemap();
-    const paths = [...PUBLIC_ROUTES.map((route) => route.path), ...INDEXED_LANDING_SLUGS.map((slug) => `/models/${slug}`)];
+    const paths = [
+      ...PUBLIC_ROUTES.map((route) => route.path),
+      ...INDEXED_LANDING_SLUGS.map((slug) => `/models/${slug}`),
+      "/help",
+      ...HELP_SLUGS.map((slug) => `/help/${slug}`),
+    ];
     expect(entries).toHaveLength(paths.length * i18n.locales.length);
 
     const pricing = entries.find((entry) => entry.url === `${BASE}/pricing`);

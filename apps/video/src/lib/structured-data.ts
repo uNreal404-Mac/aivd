@@ -216,3 +216,42 @@ export function featurePageGraph(input: {
     ],
   };
 }
+
+/**
+ * A help page: WebPage, breadcrumb (home > help > question) and the question
+ * itself as FAQPage. The index passes every question; an article passes one.
+ */
+export function helpPageGraph(input: {
+  path: string;
+  name: string;
+  description: string;
+  locale: string;
+  faqs: { q: string; a: string }[];
+  dateModified: string;
+}): Json {
+  const zh = isZh(input.locale);
+  const url = getLocaleUrl(input.path, input.locale as (typeof i18n.locales)[number]);
+  const crumbs = [
+    { name: siteConfig.name, path: "/" },
+    { name: zh ? "帮助中心" : "Help center", path: "/help" },
+    ...(input.path === "/help" ? [] : [{ name: input.name, path: input.path }]),
+  ];
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: input.name,
+        description: input.description,
+        inLanguage: zh ? "zh-CN" : "en",
+        dateModified: input.dateModified,
+        isPartOf: { "@id": WEBSITE_ID },
+        publisher: { "@id": ORGANIZATION_ID },
+      },
+      breadcrumbList(crumbs, input.locale),
+      faqPage(input.faqs, input.locale),
+    ],
+  };
+}

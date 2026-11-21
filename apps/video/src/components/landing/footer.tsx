@@ -93,6 +93,7 @@ export function LandingFooter() {
           links: [
             { title: zh ? "社区画廊" : "Community gallery", href: "/gallery" },
             { title: zh ? "定价" : "Pricing", href: "/pricing" },
+            { title: zh ? "帮助中心" : "Help center", href: "/help" },
           ],
         },
       ],

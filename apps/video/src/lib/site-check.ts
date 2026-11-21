@@ -201,7 +201,9 @@ export function checkPage(facts: PageFacts, context: CheckContext): Issue[] {
 
   // About, legal and contact pages answer no search, so their length is not a target.
   const bare = normalizePath(context.path).replace(/^\/zh(?=\/|$)/, "") || "/";
-  if (!NO_LENGTH_TARGET.includes(bare)) {
+  // Help pages answer one question in a few paragraphs on purpose, like the
+  // help-centre articles AI search cites; padding them would bury the answer.
+  if (!NO_LENGTH_TARGET.includes(bare) && bare !== "/help" && !bare.startsWith("/help/")) {
     const amount = context.language === "zh" ? facts.cjkChars : facts.words;
     const needed = context.home ? limits.homeWords : limits.pageWords;
     const unit = context.language === "zh" ? "characters" : "words";

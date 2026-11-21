@@ -2,6 +2,7 @@ import { CONTENT_UPDATED } from "@/config/content-dates";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { siteConfig } from "@/config/site";
 import { featureCopy, type FeatureKind } from "@/lib/feature-pages";
+import { helpArticles } from "@/lib/help-articles";
 import { LANDING_MODELS, landingHref, landingPriceRows } from "@/lib/model-landing";
 import { packOffers, planOffers, usd } from "@/lib/pricing-offers";
 
@@ -38,6 +39,10 @@ export function GET() {
     "## Models",
     "",
     ...models,
+    "",
+    "## Help",
+    "",
+    ...helpArticles("en").map((article) => `- [${article.question}](${url(`/help/${article.slug}`)}): ${article.answer}`),
     "",
     "## Pricing and company",
     "",
