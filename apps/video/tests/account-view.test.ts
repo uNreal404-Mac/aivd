@@ -3,8 +3,12 @@ import type { NextRequest } from "next/server";
 
 vi.mock("@/lib/payments", () => ({ isPaymentsConfigured: vi.fn() }));
 vi.mock("@/payment/stripe-checkout", () => ({
-  getStripeSecretKey: vi.fn(),
+  getUsableStripeKey: vi.fn(),
   createStripeClient: vi.fn(),
+}));
+vi.mock("@/payment/stripe-customer", () => ({
+  findStripeSubscriber: vi.fn(),
+  recordStripeSubscriber: vi.fn(),
 }));
 vi.mock("@/lib/auth", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/db", () => ({ db: { select: vi.fn() } }));
@@ -21,8 +25,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
 import {
   createStripeClient,
-  getStripeSecretKey,
+  getUsableStripeKey,
 } from "@/payment/stripe-checkout";
+import {
+  findStripeSubscriber,
+  recordStripeSubscriber,
+} from "@/payment/stripe-customer";
 import { POST } from "@/app/api/payments/portal/route";
 import {
   ACCOUNT_COPY,
@@ -31,6 +39,7 @@ import {
   parseHistoryResponse,
   parsePortalResponse,
   planLabel,
+  showManageSubscription,
   txGroup,
   txMatchesFilter,
 } from "@/lib/account-view";
@@ -46,8 +55,14 @@ const queueCustomerRows = (rows: unknown[]) => {
   return { limit, where, from };
 };
 
-const makeRequest = (url = "https://example.com/api/payments/portal") =>
-  ({ url } as unknown as NextRequest);
+const makeRequest = (
+  url = "https://example.com/api/payments/portal",
+  referer: string | null = null
+) =>
+  ({
+    url,
+    headers: { get: (name: string) => (name === "referer" ? referer : null) },
+  } as unknown as NextRequest);
 
 let portalCreate: ReturnType<typeof vi.fn>;
 
@@ -55,7 +70,11 @@ beforeEach(() => {
   vi.resetAllMocks();
 
   vi.mocked(isPaymentsConfigured).mockReturnValue(true);
-  vi.mocked(getStripeSecretKey).mockReturnValue("sk_test_dummy");
+  vi.mocked(getUsableStripeKey).mockReturnValue({
+    ok: true,
+    key: "sk_test_dummy",
+    mode: "test",
+  });
   vi.mocked(getCurrentUser).mockResolvedValue({ id: "user_1" } as never);
 
   queueCustomerRows([{ stripeCustomerId: "cus_123" }]);
@@ -69,20 +88,40 @@ beforeEach(() => {
 });
 
 describe("planLabel", () => {
-  it("maps plan codes to English labels", () => {
-    expect(planLabel("FREE")).toBe("Free");
-    expect(planLabel("PRO")).toBe("Pro");
-    expect(planLabel("BUSINESS")).toBe("Business");
+  it("names every plan tier in English", () => {
+    expect(planLabel("free")).toBe("Free");
+    expect(planLabel("basic")).toBe("Basic");
+    expect(planLabel("pro")).toBe("Pro");
+    expect(planLabel("ultimate")).toBe("Ultimate");
   });
 
-  it("falls back to Free for null or unknown plans", () => {
+  it("falls back to Free for null or unknown tiers", () => {
     expect(planLabel(null)).toBe("Free");
     expect(planLabel(undefined)).toBe("Free");
     expect(planLabel("ENTERPRISE" as never)).toBe("Free");
   });
 
-  it("supports a custom copy dictionary", () => {
-    expect(planLabel("PRO", ACCOUNT_COPY.zh)).toBe("专业版");
+  it("uses the pricing page's Chinese names", () => {
+    expect(planLabel("basic", ACCOUNT_COPY.zh)).toBe("基础版");
+    expect(planLabel("pro", ACCOUNT_COPY.zh)).toBe("专业版");
+    expect(planLabel("ultimate", ACCOUNT_COPY.zh)).toBe("旗舰版");
+  });
+});
+
+describe("showManageSubscription", () => {
+  it("shows for every paid tier, Basic included", () => {
+    expect(showManageSubscription("basic", null)).toBe(true);
+    expect(showManageSubscription("pro", null)).toBe(true);
+    expect(showManageSubscription("ultimate", undefined)).toBe(true);
+  });
+
+  it("shows for a free-tier account already linked to Stripe", () => {
+    expect(showManageSubscription("free", "cus_123")).toBe(true);
+  });
+
+  it("hides for a free account with no Stripe customer", () => {
+    expect(showManageSubscription("free", null)).toBe(false);
+    expect(showManageSubscription(undefined, undefined)).toBe(false);
   });
 });
 
@@ -249,9 +288,9 @@ describe("parsePortalResponse", () => {
       ok: false,
       message: "Payments are not configured.",
     });
-    expect(parsePortalResponse(503, { error: "test_mode_only" })).toEqual({
+    expect(parsePortalResponse(503, { error: "live_mode_disabled" })).toEqual({
       ok: false,
-      message: "Subscription management is only available in test mode.",
+      message: "Payments are not configured.",
     });
     expect(parsePortalResponse(401, { error: "unauthorized" })).toEqual({
       ok: false,
@@ -291,21 +330,40 @@ describe("POST /api/payments/portal", () => {
   });
 
   it("returns 503 when the secret key is missing", async () => {
-    vi.mocked(getStripeSecretKey).mockReturnValue(null);
+    vi.mocked(getUsableStripeKey).mockReturnValue({
+      ok: false,
+      error: "stripe_not_configured",
+    });
 
     const res = await POST(makeRequest());
 
     expect(res.status).toBe(503);
-    expect(await res.json()).toEqual({ error: "test_mode_only" });
+    expect(await res.json()).toEqual({ error: "stripe_not_configured" });
   });
 
-  it("returns 503 when the secret key is not a test key", async () => {
-    vi.mocked(getStripeSecretKey).mockReturnValue("sk_live_123");
+  it("returns 503 for a live key while live mode is off", async () => {
+    vi.mocked(getUsableStripeKey).mockReturnValue({
+      ok: false,
+      error: "live_mode_disabled",
+    });
 
     const res = await POST(makeRequest());
 
     expect(res.status).toBe(503);
-    expect(await res.json()).toEqual({ error: "test_mode_only" });
+    expect(await res.json()).toEqual({ error: "live_mode_disabled" });
+  });
+
+  it("accepts a live key once live mode is on", async () => {
+    vi.mocked(getUsableStripeKey).mockReturnValue({
+      ok: true,
+      key: "sk_live_123",
+      mode: "live",
+    });
+
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(createStripeClient).toHaveBeenCalledWith("sk_live_123");
   });
 
   it("returns 401 when there is no user", async () => {
@@ -318,18 +376,57 @@ describe("POST /api/payments/portal", () => {
     expect(mockSelect).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when the user has no Stripe customer", async () => {
+  it("returns 404 when neither the database nor Stripe knows a customer", async () => {
     queueCustomerRows([]);
+    vi.mocked(findStripeSubscriber).mockResolvedValue(null);
 
     const res = await POST(makeRequest());
 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: "no_customer" });
-    expect(createStripeClient).not.toHaveBeenCalled();
+    expect(findStripeSubscriber).toHaveBeenCalledWith(expect.anything(), "user_1");
+    expect(portalCreate).not.toHaveBeenCalled();
+  });
+
+  it("finds an unrecorded subscriber in Stripe, saves the link and opens the portal", async () => {
+    queueCustomerRows([]);
+    const found = {
+      userId: "user_1",
+      stripeCustomerId: "cus_found",
+      subscriptionId: "sub_1",
+      active: true,
+      renewsAt: new Date("2026-12-21T00:00:00Z"),
+    };
+    vi.mocked(findStripeSubscriber).mockResolvedValue(found);
+
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+    expect(recordStripeSubscriber).toHaveBeenCalledWith(found);
+    expect(portalCreate).toHaveBeenCalledWith({
+      customer: "cus_found",
+      return_url: "https://example.com/account",
+    });
+  });
+
+  it("returns a Chinese portal to the Chinese account page", async () => {
+    await POST(
+      makeRequest(
+        "https://example.com/api/payments/portal",
+        "https://example.com/zh/account"
+      )
+    );
+
+    expect(portalCreate).toHaveBeenCalledWith({
+      customer: "cus_123",
+      return_url: "https://example.com/zh/account",
+      locale: "zh",
+    });
   });
 
   it("returns 404 when stripeCustomerId is null", async () => {
     queueCustomerRows([{ stripeCustomerId: null }]);
+    vi.mocked(findStripeSubscriber).mockResolvedValue(null);
 
     const res = await POST(makeRequest());
 

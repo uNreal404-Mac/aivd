@@ -7,7 +7,7 @@
  * Only questions whose answer is implemented and checked in the code are
  * listed. Left out until they are: generation time (no measured data yet),
  * watermark on free credits, whether model providers train on uploads, the
- * phone flow, cancelling from the account page, and stuck-task timeouts.
+ * phone flow, and stuck-task timeouts.
  */
 import { CONTENT_UPDATED } from "@/config/content-dates";
 import { LEGAL_CONFIG } from "@/config/legal";
@@ -25,6 +25,7 @@ export const HELP_SLUGS = [
   "credits-per-video",
   "credit-expiry",
   "refund-policy",
+  "cancel-subscription",
   "commercial-use",
   "available-models",
   "concurrent-generations",
@@ -198,6 +199,30 @@ function enCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
           },
         ],
       };
+    case "cancel-subscription":
+      return {
+        question: "How do I cancel my subscription?",
+        description: "Cancel an aivd.ai plan any time: Account, Manage subscription, Cancel. The plan runs to the end of the period you paid for and is not charged again.",
+        answer: "Open your Account page, choose Manage subscription and cancel in the billing page that opens. Your plan stays active until the end of the period you already paid for, and you are not charged again.",
+        sections: [
+          {
+            heading: "Step by step",
+            paragraphs: [],
+            bullets: [
+              "Sign in and open Account from the menu.",
+              "Under Current plan, choose Manage subscription. This opens the secure billing page run by Stripe, our payment provider.",
+              "Choose Cancel subscription and confirm.",
+            ],
+          },
+          {
+            heading: "What happens to your credits",
+            paragraphs: [
+              `Credits you already received stay in your balance until they expire: ${f.expiry.subscriptionDays} days for a monthly plan, ${f.expiry.yearlyDays} days for a yearly plan. No new credits are added after the plan ends.`,
+              "Cancelling does not refund the current period by itself. The refund policy explains when a payment can be refunded.",
+            ],
+          },
+        ],
+      };
     case "commercial-use":
       return {
         question: "Can I use the videos commercially?",
@@ -346,6 +371,30 @@ function zhCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
           },
         ],
       };
+    case "cancel-subscription":
+      return {
+        question: "怎么取消订阅？",
+        description: "aivd.ai 套餐可以随时取消：账户 → 管理订阅 → 取消。已付费的这一期照常可用，到期后不再扣款。",
+        answer: "打开账户页，点“管理订阅”，在打开的账单页里取消即可。已经付费的这一期照常可用，到期后不会再扣款。",
+        sections: [
+          {
+            heading: "操作步骤",
+            paragraphs: [],
+            bullets: [
+              "登录后从菜单打开“账户”。",
+              "在“当前套餐”下点“管理订阅”，会打开由支付服务商 Stripe 提供的安全账单页。",
+              "选择取消订阅并确认。",
+            ],
+          },
+          {
+            heading: "积分怎么办",
+            paragraphs: [
+              `已经发放的积分会留在余额里，到期为止：月付套餐的积分 ${f.expiry.subscriptionDays} 天，年付套餐的积分 ${f.expiry.yearlyDays} 天。套餐结束后不再发放新积分。`,
+              "取消本身不会退还当期费用。哪些付款可以退款，见退款政策。",
+            ],
+          },
+        ],
+      };
     case "commercial-use":
       return {
         question: "生成的视频可以商用吗？",
@@ -401,7 +450,8 @@ const RELATED: Record<HelpSlug, HelpSlug[]> = {
   "free-credits": ["pay-as-you-go-credits", "credits-per-video", "available-models"],
   "credits-per-video": ["pay-as-you-go-credits", "failed-generation-credits", "available-models"],
   "credit-expiry": ["pay-as-you-go-credits", "refund-policy", "free-credits"],
-  "refund-policy": ["failed-generation-credits", "credit-expiry", "pay-as-you-go-credits"],
+  "refund-policy": ["cancel-subscription", "failed-generation-credits", "credit-expiry"],
+  "cancel-subscription": ["refund-policy", "credit-expiry", "pay-as-you-go-credits"],
   "commercial-use": ["available-models", "pay-as-you-go-credits", "refund-policy"],
   "available-models": ["credits-per-video", "concurrent-generations", "free-credits"],
   "concurrent-generations": ["available-models", "pay-as-you-go-credits", "credits-per-video"],
@@ -412,6 +462,7 @@ const PAGES = {
   refund: { path: "/refund-policy", en: "Refund policy", zh: "退款政策" },
   terms: { path: "/terms", en: "Terms of service", zh: "服务条款" },
   contact: { path: "/contact", en: "Contact", zh: "联系我们" },
+  account: { path: "/account", en: "Account", zh: "账户" },
   generator: { path: "/text-to-video", en: "Text to video generator", zh: "文字生成视频" },
 } as const;
 
@@ -422,6 +473,7 @@ const LINKS: Record<HelpSlug, (keyof typeof PAGES)[]> = {
   "credits-per-video": ["pricing", "generator"],
   "credit-expiry": ["pricing", "terms"],
   "refund-policy": ["refund", "contact"],
+  "cancel-subscription": ["account", "refund"],
   "commercial-use": ["terms", "pricing"],
   "available-models": ["generator", "pricing"],
   "concurrent-generations": ["pricing"],

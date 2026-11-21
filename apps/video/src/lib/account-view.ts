@@ -5,7 +5,7 @@
  * is deterministic and safe to call with untrusted input (API payloads).
  */
 
-export type PlanCode = "FREE" | "PRO" | "BUSINESS" | null | undefined;
+import type { PlanTier } from "@/config/pricing-user";
 
 export type TxGroup = "purchase" | "usage" | "refund" | "other";
 
@@ -37,8 +37,9 @@ export interface AccountCopy {
   buyCredits: string;
   planHeading: string;
   planFree: string;
+  planBasic: string;
   planPro: string;
-  planBusiness: string;
+  planUltimate: string;
   renewsOn: string;
   manageSubscription: string;
   comingSoon: string;
@@ -70,8 +71,9 @@ export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
     buyCredits: "Buy credits",
     planHeading: "Current plan",
     planFree: "Free",
+    planBasic: "Basic",
     planPro: "Pro",
-    planBusiness: "Business",
+    planUltimate: "Ultimate",
     renewsOn: "Renews on",
     manageSubscription: "Manage subscription",
     comingSoon: "Coming soon",
@@ -106,8 +108,9 @@ export const ACCOUNT_COPY: Record<"en" | "zh", AccountCopy> = {
     buyCredits: "购买积分",
     planHeading: "当前套餐",
     planFree: "免费版",
+    planBasic: "基础版",
     planPro: "专业版",
-    planBusiness: "商业版",
+    planUltimate: "旗舰版",
     renewsOn: "续费日期",
     manageSubscription: "管理订阅",
     comingSoon: "即将开放",
@@ -138,19 +141,34 @@ export function copyFor(locale: string): AccountCopy {
   return locale === "zh" ? ACCOUNT_COPY.zh : ACCOUNT_COPY.en;
 }
 
-/** Localized label for a plan code coming from the credit balance row. */
+/** Localized label for the account's plan tier (from `getUserPlanTier`). */
 export function planLabel(
-  plan: PlanCode,
+  tier: PlanTier | null | undefined,
   copy: AccountCopy = ACCOUNT_COPY.en
 ): string {
-  switch (plan) {
-    case "PRO":
+  switch (tier) {
+    case "basic":
+      return copy.planBasic;
+    case "pro":
       return copy.planPro;
-    case "BUSINESS":
-      return copy.planBusiness;
+    case "ultimate":
+      return copy.planUltimate;
     default:
       return copy.planFree;
   }
+}
+
+/**
+ * Whether the account page offers "Manage subscription" (the Stripe billing
+ * portal, where a subscriber cancels). Shown to any paid tier, and to any
+ * account already linked to a Stripe customer, so a subscriber whose credits
+ * ran out can still reach cancel and invoices.
+ */
+export function showManageSubscription(
+  tier: PlanTier | null | undefined,
+  stripeCustomerId: string | null | undefined
+): boolean {
+  return (tier != null && tier !== "free") || Boolean(stripeCustomerId);
 }
 
 /** Bucket a transaction type into one of the filter groups. */
@@ -252,7 +270,9 @@ export type PortalResult =
 
 const PORTAL_ERROR_MESSAGES: Record<string, string> = {
   payments_not_configured: "Payments are not configured.",
-  test_mode_only: "Subscription management is only available in test mode.",
+  stripe_not_configured: "Payments are not configured.",
+  live_mode_disabled: "Payments are not configured.",
+  invalid_key: "Payments are not configured.",
   unauthorized: "You need to sign in to manage your subscription.",
   no_customer: "No billing account was found for this user.",
   invalid_body: "The request could not be processed.",

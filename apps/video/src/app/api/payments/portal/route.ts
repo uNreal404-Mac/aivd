@@ -7,8 +7,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
 import {
   createStripeClient,
-  getStripeSecretKey,
+  getUsableStripeKey,
 } from "@/payment/stripe-checkout";
+import {
+  findStripeSubscriber,
+  recordStripeSubscriber,
+} from "@/payment/stripe-customer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +24,13 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  const secretKey = getStripeSecretKey();
-  if (!secretKey || !secretKey.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "test_mode_only" }, { status: 503 });
+  // Same key rules as checkout: test keys work, live keys only once
+  // STRIPE_LIVE_MODE is "true". Anyone who could pay must be able to cancel.
+  const keyResult = getUsableStripeKey();
+  if (!keyResult.ok) {
+    return NextResponse.json({ error: keyResult.error }, { status: 503 });
   }
+  const stripe = createStripeClient(keyResult.key);
 
   const user = await getCurrentUser();
   if (!user) {
@@ -36,19 +43,29 @@ export const POST = async (req: NextRequest) => {
     .where(eq(customers.authUserId, user.id))
     .limit(1);
 
-  const stripeCustomerId = rows[0]?.stripeCustomerId;
+  let stripeCustomerId = rows[0]?.stripeCustomerId ?? null;
+  if (!stripeCustomerId) {
+    // Subscribed before subscribers were recorded, or the webhook was missed:
+    // find the subscription by the userId checkout put in its metadata, and
+    // save the link so the next visit skips the search.
+    const found = await findStripeSubscriber(stripe, user.id);
+    if (found) {
+      await recordStripeSubscriber(found);
+      stripeCustomerId = found.stripeCustomerId;
+    }
+  }
   if (!stripeCustomerId) {
     return NextResponse.json({ error: "no_customer" }, { status: 404 });
   }
 
   const origin = new URL(req.url).origin;
+  const locale = req.headers.get("referer")?.match(/^https?:\/\/[^/]+\/zh(\/|$)/) ? "/zh" : "";
 
-  const session = await createStripeClient(secretKey).billingPortal.sessions.create(
-    {
-      customer: stripeCustomerId,
-      return_url: `${origin}/account`,
-    }
-  );
+  const session = await stripe.billingPortal.sessions.create({
+    customer: stripeCustomerId,
+    return_url: `${origin}${locale}/account`,
+    ...(locale ? { locale: "zh" as const } : {}),
+  });
 
   return NextResponse.json({ url: session.url });
 };

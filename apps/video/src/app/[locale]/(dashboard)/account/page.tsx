@@ -7,9 +7,10 @@ import { UserAvatar } from "@/components/user-avatar";
 import { CopyPromptButton } from "@/components/hf/studio-results";
 import { ManageSubscriptionButton } from "@/components/account/manage-subscription-button";
 import { customers, db } from "@/db";
-import { copyFor, planLabel } from "@/lib/account-view";
+import { copyFor, planLabel, showManageSubscription } from "@/lib/account-view";
 import { getCurrentUser } from "@/lib/auth";
 import { isPaymentsConfigured } from "@/lib/payments";
+import { getUserPlanTier } from "@/lib/plan-limits";
 import { creditService } from "@/services/credit";
 
 function toDate(value: unknown): Date | null {
@@ -41,15 +42,24 @@ export default async function AccountPage({
   }
 
   const copy = copyFor(locale);
-  const balance = await creditService.getBalance(user.id);
+  // The tier comes from the account's live subscription credit grants, the
+  // same source the concurrency limit uses; Customer.plan is never written.
+  const [balance, tier, [customer]] = await Promise.all([
+    creditService.getBalance(user.id),
+    getUserPlanTier(user.id),
+    db
+      .select({
+        stripeCustomerId: customers.stripeCustomerId,
+        stripeCurrentPeriodEnd: customers.stripeCurrentPeriodEnd,
+      })
+      .from(customers)
+      .where(eq(customers.authUserId, user.id))
+      .limit(1),
+  ]);
 
-  const [customer] = await db
-    .select({ stripeCurrentPeriodEnd: customers.stripeCurrentPeriodEnd })
-    .from(customers)
-    .where(eq(customers.authUserId, user.id))
-    .limit(1);
-
-  const periodEnd = toDate(customer?.stripeCurrentPeriodEnd ?? null);
+  // Only a future date is a renewal; a past one is a subscription that ended.
+  const storedEnd = toDate(customer?.stripeCurrentPeriodEnd ?? null);
+  const periodEnd = storedEnd && storedEnd.getTime() > Date.now() ? storedEnd : null;
   const renewsOn = periodEnd
     ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
         dateStyle: "medium",
@@ -102,20 +112,22 @@ export default async function AccountPage({
       <div className="db-two">
         <section className="db-card">
           <p className="db-stat-label">{copy.planHeading}</p>
-          <p className="db-plan-name">{planLabel(balance.plan, copy)}</p>
+          <p className="db-plan-name">{planLabel(tier, copy)}</p>
           {renewsOn ? (
             <p className="db-sub">
               {copy.renewsOn} {renewsOn}
             </p>
-          ) : (
+          ) : tier === "free" ? (
             <p className="db-sub">{zh ? "升级后每月积分更多，单价更低。" : "Upgrade for more credits each month at a lower price."}</p>
-          )}
+          ) : null}
           <div className="db-actions">
             <Link className="db-btn db-btn-accent" href={localizedHref(locale, "/pricing")}>
               {zh ? "查看套餐" : "See plans"}
             </Link>
-            {/* Only subscribers have something to manage. */}
-            {balance.plan === "PRO" || balance.plan === "BUSINESS" ? <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} /> : null}
+            {/* Subscribers cancel, change card and see invoices in the Stripe billing portal. */}
+            {showManageSubscription(tier, customer?.stripeCustomerId) ? (
+              <ManageSubscriptionButton enabled={paymentsEnabled} copy={copy} />
+            ) : null}
           </div>
         </section>
 

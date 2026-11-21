@@ -10,6 +10,7 @@ import {
   grantCreditsOnce,
   revokeCreditsForOrder,
 } from "@/payment/stripe-fulfillment";
+import { recordStripeSubscriber } from "@/payment/stripe-customer";
 import { handleStripeWebhook } from "@/payment/stripe-webhook";
 
 const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
@@ -48,6 +49,7 @@ export const POST = async (req: NextRequest) => {
       eventStore: d1WebhookEventStore,
       revokeCreditsForOrder,
       findOrderNoForPaymentIntent: createFindOrderNoForPaymentIntent(stripe),
+      recordSubscriber: recordStripeSubscriber,
     });
 
     return NextResponse.json(result.body, { status: result.status });

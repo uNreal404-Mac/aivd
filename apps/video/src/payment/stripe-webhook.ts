@@ -1,5 +1,11 @@
 import Stripe from "stripe";
 
+import {
+  stripeIdOf,
+  subscriberRecordOf,
+  type RecordStripeSubscriber,
+} from "@/payment/stripe-customer";
+
 /**
  * Grants credits exactly once for a given `orderNo`.
  *
@@ -70,6 +76,11 @@ export interface HandleStripeWebhookArgs {
   revokeCreditsForOrder?: RevokeCreditsForOrder;
   /** Optional PaymentIntent -> orderNo lookup for refunds and disputes. */
   findOrderNoForPaymentIntent?: FindOrderNoForPaymentIntent;
+  /**
+   * Optional link from an account to its Stripe customer and subscription, so
+   * the account page can open the billing portal (cancel, change card).
+   */
+  recordSubscriber?: RecordStripeSubscriber;
 }
 
 export interface StripeWebhookResult {
@@ -86,7 +97,8 @@ export interface StripeWebhookResult {
  */
 async function grantForCheckoutSession(
   session: Stripe.Checkout.Session,
-  grantCreditsOnce: GrantCreditsOnce
+  grantCreditsOnce: GrantCreditsOnce,
+  recordSubscriber?: RecordStripeSubscriber
 ): Promise<StripeWebhookResult> {
   if (session.payment_status !== "paid") {
     return { status: 200, body: { received: true, ignored: "unpaid" } };
@@ -108,6 +120,14 @@ async function grantForCheckoutSession(
     userId,
     productId,
   });
+
+  // A subscription checkout links the account to its Stripe customer. The
+  // renewal date is left to the customer.subscription.* events.
+  const stripeCustomerId = stripeIdOf(session.customer);
+  const subscriptionId = stripeIdOf(session.subscription);
+  if (recordSubscriber && session.mode === "subscription" && stripeCustomerId && subscriptionId) {
+    await recordSubscriber({ userId, stripeCustomerId, subscriptionId, active: true });
+  }
 
   return { status: 200, body: { received: true, result } };
 }
@@ -154,6 +174,7 @@ interface ProcessEventDeps {
   grantCreditsOnce: GrantCreditsOnce;
   revokeCreditsForOrder?: RevokeCreditsForOrder;
   findOrderNoForPaymentIntent?: FindOrderNoForPaymentIntent;
+  recordSubscriber?: RecordStripeSubscriber;
 }
 
 /**
@@ -166,16 +187,47 @@ async function processEvent(
   event: Stripe.Event,
   deps: ProcessEventDeps
 ): Promise<StripeWebhookResult> {
-  const { grantCreditsOnce, revokeCreditsForOrder, findOrderNoForPaymentIntent } =
-    deps;
+  const {
+    grantCreditsOnce,
+    revokeCreditsForOrder,
+    findOrderNoForPaymentIntent,
+    recordSubscriber,
+  } = deps;
 
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
       return grantForCheckoutSession(
         event.data.object as Stripe.Checkout.Session,
-        grantCreditsOnce
+        grantCreditsOnce,
+        recordSubscriber
       );
+    }
+
+    // Keeps the account's subscription link and renewal date current:
+    // cancelling in the billing portal clears the date (no renewal), and the
+    // end of the subscription clears the link.
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      if (!recordSubscriber) {
+        return {
+          status: 200,
+          body: { received: true, ignored: "subscribers_not_configured" },
+        };
+      }
+      const record = subscriberRecordOf(event.data.object as Stripe.Subscription);
+      if (!record) {
+        return {
+          status: 200,
+          body: { received: true, ignored: "missing_metadata" },
+        };
+      }
+      await recordSubscriber(record);
+      return {
+        status: 200,
+        body: { received: true, result: record.active ? "recorded" : "ended" },
+      };
     }
 
     case "invoice.paid": {
@@ -347,6 +399,7 @@ export async function handleStripeWebhook({
   eventStore,
   revokeCreditsForOrder,
   findOrderNoForPaymentIntent,
+  recordSubscriber,
 }: HandleStripeWebhookArgs): Promise<StripeWebhookResult> {
   if (!signature) {
     return { status: 400, body: { error: "missing_signature" } };
@@ -379,6 +432,7 @@ export async function handleStripeWebhook({
     grantCreditsOnce,
     revokeCreditsForOrder,
     findOrderNoForPaymentIntent,
+    recordSubscriber,
   });
 
   if (eventStore && result.status < 500) {
