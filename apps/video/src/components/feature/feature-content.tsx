@@ -92,9 +92,11 @@ export function FeatureContent({ kind, locale }: { kind: FeatureKind; locale: st
               <h3 className="fc-h3">{example.title}</h3>
               <p className="fc-prompt">{example.prompt}</p>
               {/* A full page load, so the generator starts with this prompt filled in. */}
-              <a className="fc-try" href={`${href(`/${kind}`)}?prompt=${encodeURIComponent(example.prompt)}`}>
-                {copy.tryLabel}
-              </a>
+              {copy.tryable ? (
+                <a className="fc-try" href={`${href(`/${kind}`)}?prompt=${encodeURIComponent(example.prompt)}`}>
+                  {copy.tryLabel}
+                </a>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -1,4 +1,7 @@
 import { VideoStudioPage } from "@/components/hf/video-studio-page";
+import { FeatureContent } from "@/components/feature/feature-content";
+import { ToolLanding } from "@/components/feature/tool-landing";
+import { featureCopy } from "@/lib/feature-pages";
 import { getToolPageConfig } from "@/config/tool-pages";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
@@ -18,8 +21,8 @@ export async function generateMetadata({
   const alternates = buildAlternates("/reference-to-video", locale);
   const ogImage = resolveOgImage(config.seo?.ogImage);
   const isChinese = locale.toLowerCase().startsWith("zh");
-  const title = isChinese ? "参考图生成视频 - 人物和风格保持一致" : config.seo?.title;
-  const description = isChinese ? "上传最多 4 张参考图，用 Kling 4.0 生成人物和风格一致的视频。" : config.seo?.description;
+  // Title, description and H1 come from the feature copy (lib/feature-pages).
+  const { title, description } = featureCopy("reference-to-video", isChinese);
 
   return {
     title,
@@ -52,5 +55,10 @@ export default async function ReferenceToVideoPage({
   searchParams,
 }: ReferenceToVideoPageProps & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [{ locale }, sp] = await Promise.all([params, searchParams]);
-  return <VideoStudioPage locale={locale} searchParams={sp} defaultModel="kling/v4-reference-to-video" />;
+  return (
+    <ToolLanding>
+      <VideoStudioPage locale={locale} searchParams={sp} defaultModel="kling/v4-reference-to-video" />
+      <FeatureContent kind="reference-to-video" locale={locale} />
+    </ToolLanding>
+  );
 }

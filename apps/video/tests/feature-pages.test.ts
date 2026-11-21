@@ -6,7 +6,14 @@ import { MAX_BYTES } from "@/lib/image-to-video";
 import { PRICING_UNITS } from "@/lib/pricing-units";
 import { LIMITS, displayWidth } from "@/lib/site-check";
 
-const KINDS: FeatureKind[] = ["text-to-video", "image-to-video"];
+const KINDS: FeatureKind[] = ["text-to-video", "image-to-video", "reference-to-video", "audio"];
+/** The search each page answers, in English, and its Chinese H1. */
+const KEYWORD: Record<FeatureKind, { en: string; zh: string }> = {
+  "text-to-video": { en: "text to video ai", zh: "AI 文字生成视频" },
+  "image-to-video": { en: "image to video ai", zh: "AI 图片生成视频" },
+  "reference-to-video": { en: "reference to video ai", zh: "AI 参考图生成视频" },
+  audio: { en: "ai text to speech", zh: "AI 文字转语音" },
+};
 const SUFFIX = " | aivd.ai";
 
 /** All the text the feature section puts on the page. */
@@ -36,11 +43,11 @@ describe.each(KINDS)("%s page copy", (kind) => {
   const zh = featureCopy(kind, true);
 
   it("names the search it answers in the title, the H1 and the first paragraph", () => {
-    const keyword = kind === "text-to-video" ? "text to video ai" : "image to video ai";
+    const keyword = KEYWORD[kind].en;
     expect(en.title.toLowerCase()).toContain(keyword);
     expect(en.h1.toLowerCase()).toBe(keyword);
     expect(en.intro[0].toLowerCase()).toContain(keyword);
-    expect(zh.h1).toBe(kind === "text-to-video" ? "AI 文字生成视频" : "AI 图片生成视频");
+    expect(zh.h1).toBe(KEYWORD[kind].zh);
     expect(zh.title).toContain(zh.h1);
   });
 
@@ -68,7 +75,7 @@ describe.each(KINDS)("%s page copy", (kind) => {
     for (const unit of PRICING_UNITS.filter((item) => item.kind === "video" && item.credits > NEW_USER_GIFT.credits)) {
       expect(free).not.toContain(`${unit.name} (`);
     }
-    if (kind === "image-to-video") {
+    if (kind === "image-to-video" || kind === "reference-to-video") {
       expect(allText(en)).toContain(`${Math.round(MAX_BYTES / 1024 / 1024)} MB`);
     }
   });
@@ -83,8 +90,17 @@ describe.each(KINDS)("%s page copy", (kind) => {
   it("links to the related pages and to live model pages", () => {
     expect(en.related.map((link) => link.href)).toContain("/");
     expect(en.related.map((link) => link.href)).toContain(kind === "text-to-video" ? "/image-to-video" : "/text-to-video");
-    expect(en.models.filter((model) => model.href).length).toBeGreaterThan(2);
+    expect(en.related.map((link) => link.href)).not.toContain(`/${kind}`);
+    expect(en.models.length).toBeGreaterThanOrEqual(kind === "reference-to-video" ? 1 : 3);
+    if (kind === "text-to-video" || kind === "image-to-video") expect(en.models.filter((model) => model.href).length).toBeGreaterThan(2);
     expect(en.faqs.length).toBeGreaterThanOrEqual(6);
     expect(zh.faqs.length).toBe(en.faqs.length);
+  });
+});
+
+describe("example prompts", () => {
+  it("open the generator only where it takes a prompt", () => {
+    expect(featureCopy("audio", false).tryable).toBe(false);
+    for (const kind of ["text-to-video", "image-to-video", "reference-to-video"] as const) expect(featureCopy(kind, false).tryable).toBe(true);
   });
 });

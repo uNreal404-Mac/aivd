@@ -15,7 +15,7 @@ import { maxVideoReferences } from "@/lib/video-references";
  * model and upload config, so the copy cannot promise what the site does not do.
  */
 
-export type FeatureKind = "text-to-video" | "image-to-video";
+export type FeatureKind = "text-to-video" | "image-to-video" | "reference-to-video" | "audio";
 
 export type FeatureModel = { name: string; spec: string; credits: number; href?: string };
 
@@ -39,6 +39,8 @@ export type FeatureCopy = {
   models: FeatureModel[];
   creditsLabel: string;
   tryLabel: string;
+  /** Example prompts link into the generator, filled in. */
+  tryable?: boolean;
   faqTitle: string;
   faqs: { q: string; a: string }[];
   relatedTitle: string;
@@ -54,10 +56,14 @@ function list(items: string[], zh: boolean, last = zh ? "和" : "and"): string {
 }
 
 function modelsFor(kind: FeatureKind, zh: boolean): FeatureModel[] {
-  const fits = (unit: PricingUnit) =>
-    unit.kind === "video" &&
-    unit.credits > 0 &&
-    (kind === "image-to-video" ? maxVideoReferences(unit.id) >= 1 : !getMarketModel(unit.id)?.options.requiresImage);
+  const fits = (unit: PricingUnit) => {
+    if (unit.credits <= 0) return false;
+    if (kind === "audio") return unit.kind === "audio";
+    if (unit.kind !== "video") return false;
+    if (kind === "image-to-video") return maxVideoReferences(unit.id) >= 1;
+    if (kind === "reference-to-video") return maxVideoReferences(unit.id) >= 2;
+    return !getMarketModel(unit.id)?.options.requiresImage;
+  };
   return PRICING_UNITS.filter(fits)
     .sort((a, b) => a.credits - b.credits)
     .map((unit) => {
@@ -108,7 +114,8 @@ export function featureCopy(kind: FeatureKind, zh: boolean): FeatureCopy {
     : "";
 
   const shared = {
-    creditsLabel: zh ? "积分 / 条" : "credits a clip",
+    tryable: kind !== "audio",
+    creditsLabel: kind === "audio" ? (zh ? "积分" : "credits") : zh ? "积分 / 条" : "credits a clip",
     tryLabel: zh ? "用这条提示词生成" : "Use this prompt",
     relatedTitle: zh ? "继续了解" : "Keep exploring",
   };
@@ -124,12 +131,246 @@ export function featureCopy(kind: FeatureKind, zh: boolean): FeatureCopy {
       ]
     : [
         {
-          q: `Can ${kind === "text-to-video" ? "text" : "image"} to video AI add sound?`,
+          q: `Can ${kind === "text-to-video" ? "text" : kind === "reference-to-video" ? "reference" : "image"} to video AI add sound?`,
           a: "Yes, on Veo 3.1 and Seedance 2.5: turn sound on in the settings before you generate and say in the prompt what we should hear, such as rain on pavement, footsteps or a line of dialogue. The other models make silent clips.",
         },
         { q: "Can I use the videos commercially?", a: "Yes on paid plans: videos come without a watermark and can be used in commercial work." },
         { q: "What happens if a generation fails?", a: "The credits it used go back to your account automatically; there is nothing to claim." },
       ];
+
+  if (kind === "reference-to-video") {
+    return zh
+      ? {
+          ...shared,
+          title: "AI 参考图生成视频：人物和风格保持一致",
+          description: `上传 1 到 ${klingRefs} 张参考图，用 Kling 4.0 生成人物、商品和画风都保持一致的视频。生成前显示积分，失败自动退回。`,
+          h1: "AI 参考图生成视频",
+          intro: [
+            "参考图生成视频，是把一张或几张参考图交给模型，让视频里的人物、商品或画风和参考图保持一致。只写文字的时候，同一个角色在不同视频里很容易“换了一张脸”；有了参考图，模型知道这个人长什么样、穿什么衣服、产品是什么形状，拍出来的每一条都更像同一个。",
+            `页面上方就是生成工具，默认用 Kling 4.0：上传 1 到 ${klingRefs} 张参考图，写一句画面描述，选好时长和比例，生成按钮上会显示要花多少积分。${giftLine}`,
+          ],
+          stepsTitle: "怎么用参考图生成视频",
+          steps: [
+            { title: "上传参考图", body: `上传 1 到 ${klingRefs} 张图片：可以是同一个人物的正脸和侧脸，也可以是人物加一件商品，或者一张风格参考图。支持 PNG、JPG 和 WebP，每张最大 ${maxMb} MB。` },
+            { title: "写清楚这一镜发生什么", body: "参考图负责“像不像”，提示词负责“做什么”：写人物在什么场景、做什么动作、镜头怎么动。可以在提示词里用 @图片1、@图片2 指明哪张图是谁。" },
+            { title: "生成并下载", body: "选好时长、比例和画质后生成。视频在后台生成，完成后保存在“我的作品”里；生成失败会自动退回积分。" },
+          ],
+          tipsTitle: "让人物保持一致的方法",
+          tips: [
+            { title: "参考图要清楚、主体要大", body: "人物参考图最好是光线均匀、脸部清楚的半身或全身照，主体占画面大部分。背景越简单，模型越不容易把背景当成要保留的东西。" },
+            { title: "多角度比多张同角度有用", body: "一张正脸、一张侧脸、一张全身，比三张差不多的正脸更能帮模型理解这个人。" },
+            { title: "同一个角色用同一组参考图", body: "拍一个系列的时候，每一条都用同一组参考图和相同的人物描述，人物在不同镜头之间最稳定。" },
+            { title: "参考图和提示词别打架", body: "如果参考图里人物穿红衣服，提示词里就别写蓝衣服。描述和参考图一致，结果最可控。" },
+            { title: "先用 Flash 版试", body: "Kling 4.0 Flash 积分更少、出片更快，适合先试动作和镜头，满意了再用 Kling 4.0 出正式版本。" },
+          ],
+          useCasesTitle: "参考图生成视频适合做什么",
+          useCases: [
+            { title: "系列短剧和故事", body: "同一个主角出现在多条视频里，长相和服装保持一致，适合做连续的小故事。" },
+            { title: "商品展示", body: "用商品照片做参考，让同一件商品出现在不同场景和镜头里。" },
+            { title: "虚拟形象和品牌角色", body: "给品牌吉祥物、虚拟主播或游戏角色做一系列视频，形象不走样。" },
+            { title: "统一画风", body: "用一张风格参考图，让一组视频保持同样的色调和质感。" },
+          ],
+          examplesTitle: "参考图生成视频的提示词示例",
+          examplesIntro: "上传参考图后，可以参考这些提示词来写场景和镜头。",
+          examples: examples(["rain-couple", "autumn-walk", "mountain-wind", "boy-and-dog"], true),
+          modelsTitle: "支持多张参考图的模型",
+          modelsIntro: `下面这些模型都可以同时使用多张参考图（最多 ${klingRefs} 张）。价格是一条视频的典型积分，实际以生成按钮上显示的为准。`,
+          models,
+          faqTitle: "AI 参考图生成视频常见问题",
+          faqs: [
+            { q: "参考图生成视频免费吗？", a: freeAnswer(true, "参考图生成视频") },
+            { q: "最多可以上传几张参考图？", a: `Kling 4.0 和 Kling 4.0 Flash 最多 ${klingRefs} 张，支持 PNG、JPG 和 WebP，每张最大 ${maxMb} MB。` },
+            { q: "参考图生成视频和图片生成视频有什么区别？", a: "图片生成视频是把一张图当作视频的第一帧，从这一帧开始动；参考图生成视频是让模型参考图里的人物、商品或画风，画面可以完全是新的场景。" },
+            { q: "人物能保持多像？", a: "参考图越清楚、角度越全，人物越稳定。动作幅度很大或者镜头离得很远时，细节仍然可能有变化，建议先用 Flash 版试几条。" },
+            ...commonFaqs,
+          ],
+          related: [
+            { href: "/", label: "AI 视频生成器" },
+            { href: "/image-to-video", label: "AI 图片生成视频" },
+            { href: "/text-to-video", label: "AI 文字生成视频" },
+            { href: "/pricing", label: "价格" },
+          ],
+        }
+      : {
+          ...shared,
+          title: "Reference to Video AI: Consistent Characters",
+          description: `Upload 1 to ${klingRefs} reference images and Kling 4.0 makes videos where the same person, product or style carries through. See the cost first.`,
+          h1: "Reference to Video AI",
+          intro: [
+            "Reference to video AI gives the model one or more reference images, so the person, product or style in your video matches them. With a text prompt alone, the same character tends to get a new face in every clip; with references, the model knows what they look like, what they wear and what the product is shaped like, so every clip looks like part of the same set.",
+            `The generator above is the whole tool and opens on Kling 4.0: upload 1 to ${klingRefs} reference images, write a line about the shot, set the length and ratio, and the button shows the credits it will cost. ${giftLine}`,
+          ],
+          stepsTitle: "How to make a video from reference images",
+          steps: [
+            { title: "Upload the references", body: `Add 1 to ${klingRefs} images: the same person from the front and the side, a person and a product, or one picture for the style. PNG, JPG and WebP, up to ${maxMb} MB each.` },
+            { title: "Say what happens in the shot", body: "The references decide how things look; the prompt decides what they do. Describe the scene, the action and the camera, and name the images in the prompt as @Image1, @Image2 to say who is who." },
+            { title: "Generate and download", body: "Set the length, ratio and quality, then generate. The clip renders in the background and is saved to My creations; if a generation fails, its credits come back automatically." },
+          ],
+          tipsTitle: "Tips for keeping a character consistent",
+          tips: [
+            { title: "Use clear references with a large subject", body: "For a person, an evenly lit half- or full-body photo with a clear face works best, with the subject filling most of the frame. The plainer the background, the less the model tries to keep it." },
+            { title: "Different angles beat more of the same", body: "One front view, one profile and one full-body shot tell the model more about a person than three similar front views." },
+            { title: "Keep one set of references per character", body: "For a series, use the same references and the same description of the character in every clip; that keeps them steadiest from shot to shot." },
+            { title: "Don't let the prompt fight the references", body: "If the person wears red in the reference, don't ask for blue in the prompt. When the words and the images agree, the result is easiest to control." },
+            { title: "Try it on Flash first", body: "Kling 4.0 Flash costs fewer credits and renders faster, so use it to test the motion and the camera, then make the final version on Kling 4.0." },
+          ],
+          useCasesTitle: "What people make with reference to video",
+          useCases: [
+            { title: "Series and short stories", body: "The same lead in clip after clip, with the same face and outfit, for a story told over several videos." },
+            { title: "Product videos", body: "Use product photos as references and put the same product in different scenes and shots." },
+            { title: "Mascots and virtual characters", body: "A run of videos for a brand mascot, a virtual presenter or a game character that stays on model." },
+            { title: "A consistent look", body: "One style reference keeps a set of videos in the same colours and texture." },
+          ],
+          examplesTitle: "Reference to video prompt examples",
+          examplesIntro: "With the references uploaded, prompts like these set the scene and the camera.",
+          examples: examples(["rain-couple", "autumn-walk", "mountain-wind", "boy-and-dog"], false),
+          modelsTitle: "Models that take several references",
+          modelsIntro: `Each model below can use several reference images at once (up to ${klingRefs}). Prices are typical credits for one clip; the generate button shows the exact cost.`,
+          models,
+          faqTitle: "Reference to video AI FAQ",
+          faqs: [
+            { q: "Is reference to video AI free?", a: freeAnswer(false, "reference to video") },
+            { q: "How many reference images can I use?", a: `Up to ${klingRefs} with Kling 4.0 and Kling 4.0 Flash, as PNG, JPG or WebP files of up to ${maxMb} MB each.` },
+            { q: "How is it different from image to video?", a: "Image to video uses one image as the first frame and moves on from it. Reference to video uses the images as a guide to the person, product or style, so the scene itself can be completely new." },
+            { q: "How closely will the character match?", a: "The clearer the references and the more angles they cover, the steadier the character. Big movements or a distant camera can still change details, so test a few clips on Flash first." },
+            ...commonFaqs,
+          ],
+          related: [
+            { href: "/", label: "AI video generator" },
+            { href: "/image-to-video", label: "Image to video AI" },
+            { href: "/text-to-video", label: "Text to video AI" },
+            { href: "/pricing", label: "Pricing" },
+          ],
+        };
+  }
+
+  if (kind === "audio") {
+    const tts = getMarketModel("elevenlabs-v3");
+    const voices = tts?.options.voices?.length ?? 0;
+    const maxScript = tts?.options.maxPromptLength ?? 5000;
+    const audioFaqs = zh
+      ? [
+          { q: "支持中文配音吗？", a: "支持。Eleven Multilingual v2 和 Eleven v3 都能读中文、英文等多种语言，Gemini 3.8 Flash TTS 也能读多种语言。挑音色时先用一句中文试听。" },
+          { q: "生成失败了怎么办？", a: "失败的那次所用的积分会自动退回到你的账号，不需要申请。" },
+        ]
+      : [
+          { q: "Which languages can it speak?", a: "Eleven Multilingual v2 and Eleven v3 read many languages, including English, Spanish, Chinese and Japanese, and Gemini 3.8 Flash TTS is multilingual too. Audition a voice on a line in your language first." },
+          { q: "What happens if a generation fails?", a: "The credits it used go back to your account automatically; there is nothing to claim." },
+        ];
+    return zh
+      ? {
+          ...shared,
+          title: "AI 文字转语音：配音、音乐和音效生成",
+          description: "把一段文字变成自然的配音，或者用一句话生成歌曲和音效。ElevenLabs、Gemini、Suno 等模型一站可用，生成前显示积分。",
+          h1: "AI 文字转语音",
+          intro: [
+            "AI 文字转语音，就是把一段文字变成听起来像真人的配音：选一个音色，贴上脚本，几秒钟后就能拿到可以下载的音频。在 aivd.ai，除了配音，你还可以用一句话描述生成一首歌或一段音效，给你的视频配上声音。",
+            `页面上方就是生成工具：选择配音、音乐或音效，选模型和音色，写下脚本或描述，生成按钮上会显示要花多少积分。${gift ? `新注册的账号送 ${gift} 积分，${NEW_USER_GIFT.validDays} 天内有效。` : ""}`,
+          ],
+          stepsTitle: "怎么用 AI 把文字变成语音",
+          steps: [
+            { title: "选模型和音色", body: `ElevenLabs v3 表现力最强，Turbo 2.5 更快更省，Multilingual v2 适合多语言，Gemini 3.8 Flash TTS 也有自己的一组音色。ElevenLabs 提供 ${voices} 个预设音色可以直接选。` },
+            { title: "贴上脚本", body: `把要读的文字贴进去，单次最多 ${num(maxScript)} 个字符。可以再用一句话描述想要的语气，比如“温暖、放慢一点、像深夜纪录片的旁白”。` },
+            { title: "生成并下载", body: "生成在后台进行，完成后保存在“我的作品”里，可以试听和下载。生成失败会自动退回积分。" },
+          ],
+          tipsTitle: "让配音更自然的方法",
+          tips: [
+            { title: "用标点控制停顿", body: "逗号是短停顿，句号是长停顿，省略号会拖一下。想让某处停一下，加一个标点比加描述更直接。" },
+            { title: "数字和缩写写成要读的样子", body: "“2026”可能被读成“二零二六”或“两千零二十六”，按你想听到的写出来，结果更可控。" },
+            { title: "一段只要一种情绪", body: "长脚本分段生成，每段描述一种语气，比一次读完更容易控制情绪变化。" },
+            { title: "先用短句试音色", body: "挑音色时先用一两句话试，满意了再贴完整脚本，省积分也省时间。" },
+            { title: "音乐写风格和情绪", body: "用 Suno 生成音乐时，写清楚风格、情绪、乐器和用途，比如“轻快的钢琴和吉他，适合旅行 vlog 的片头”。" },
+          ],
+          useCasesTitle: "AI 配音和音乐可以用来做什么",
+          useCases: [
+            { title: "视频配音和旁白", body: "给短视频、讲解视频和纪录片风格的内容配上旁白。" },
+            { title: "广告和产品介绍", body: "为产品视频、广告和落地页生成清楚、有感染力的配音。" },
+            { title: "背景音乐", body: "用一句话描述生成一首适合视频的背景音乐。" },
+            { title: "音效", body: "生成脚步声、雨声、转场“嗖”声这类音效，补齐视频里的声音细节。" },
+          ],
+          examplesTitle: "配音和音乐的描述示例",
+          examplesIntro: "可以直接参考这些写法来描述音色和音乐。",
+          examples: [
+            { title: "纪录片旁白", prompt: "温暖、沉稳的男声，语速不急，带一点沙哑，像深夜自然纪录片的旁白。" },
+            { title: "产品介绍", prompt: "清楚、自信的女声，语速中等，语气友好但专业，适合一分钟的产品介绍视频。" },
+            { title: "旅行 vlog 背景音乐", prompt: "轻快的原声吉他和钢琴，明亮温暖，节奏适中，适合旅行 vlog 的开场。" },
+            { title: "转场音效", prompt: "短促的“嗖”一声风声，从左到右划过，适合视频转场。" },
+          ],
+          modelsTitle: "可以用的音频模型",
+          modelsIntro: "配音按字数计积分，音乐按首计积分。下面是典型价格，实际以生成按钮上显示的为准。",
+          models,
+          faqTitle: "AI 文字转语音常见问题",
+          faqs: [
+            { q: "AI 文字转语音免费吗？", a: gift ? `新注册的账号送 ${gift} 积分，${NEW_USER_GIFT.validDays} 天内有效，可以用来生成配音、音乐和音效；用完后需要订阅套餐或购买积分包。` : "目前没有免费额度，需要订阅套餐或购买积分包。" },
+            { q: "一次最多能转多少字？", a: `单次最多 ${num(maxScript)} 个字符。更长的脚本可以分段生成，再在剪辑软件里接起来。` },
+            { q: "有哪些音色可以选？", a: `ElevenLabs 提供 ${voices} 个预设音色，Gemini 3.8 Flash TTS 也有自己的一组音色。还可以用一句话描述想要的语气和风格。` },
+            { q: "可以生成音乐吗？", a: "可以。用 Suno V6 写一句话描述风格和情绪，就能生成一首歌；Suno Sounds 可以生成音效。" },
+            ...audioFaqs,
+          ],
+          related: [
+            { href: "/", label: "AI 视频生成器" },
+            { href: "/text-to-video", label: "AI 文字生成视频" },
+            { href: "/image-to-video", label: "AI 图片生成视频" },
+            { href: "/pricing", label: "价格" },
+          ],
+        }
+      : {
+          ...shared,
+          title: "AI Text to Speech: Voiceover, Music and Sound",
+          description: "Turn a script into a natural voiceover, or make a song or a sound effect from one line. ElevenLabs, Gemini and Suno in one place, with the cost shown first.",
+          h1: "AI Text to Speech",
+          intro: [
+            "AI text to speech turns written words into a voice that sounds like a person: pick a voice, paste the script, and a few seconds later you have audio to download. On aivd.ai you can also describe a song or a sound effect in one line and generate it, so your videos get their sound in the same place.",
+            `The generator above is the whole tool: choose voice, music or sound effects, pick the model and the voice, write the script or the description, and the button shows the credits it will cost.${gift ? ` New accounts get ${gift} free credits for ${NEW_USER_GIFT.validDays} days.` : ""}`,
+          ],
+          stepsTitle: "How to turn text into speech with AI",
+          steps: [
+            { title: "Pick a model and a voice", body: `Eleven v3 is the most expressive, Turbo 2.5 is faster and cheaper, Multilingual v2 suits other languages, and Gemini 3.8 Flash TTS brings its own set of voices. ElevenLabs offers ${voices} ready-made voices to choose from.` },
+            { title: "Paste the script", body: `Paste the text to be read, up to ${num(maxScript)} characters at a time, and add a line about the delivery if you like, such as “warm, a little slower, like a late-night documentary narrator”.` },
+            { title: "Generate and download", body: "The audio renders in the background and is saved to My creations, where you can play and download it. If a generation fails, its credits come back automatically." },
+          ],
+          tipsTitle: "Tips for a natural voiceover",
+          tips: [
+            { title: "Use punctuation for pauses", body: "A comma is a short pause, a full stop a longer one, an ellipsis a drawn-out beat. A punctuation mark is the most direct way to get a pause where you want it." },
+            { title: "Write numbers and acronyms as they are said", body: "“2026” can come out as “twenty twenty-six” or “two thousand twenty-six”. Spell it the way you want it heard." },
+            { title: "One mood per passage", body: "Split a long script and give each part its own delivery note; that controls changes of mood better than one long read." },
+            { title: "Audition voices on a short line", body: "Try a voice on a sentence or two before pasting the whole script. It saves credits and time." },
+            { title: "Describe music by style and use", body: "For Suno, name the style, mood, instruments and what it is for, such as “light piano and acoustic guitar for a travel vlog intro”." },
+          ],
+          useCasesTitle: "What people make with AI voice and music",
+          useCases: [
+            { title: "Voiceover and narration", body: "Narration for short videos, explainers and documentary-style content." },
+            { title: "Ads and product videos", body: "Clear, persuasive voiceovers for product videos, ads and landing pages." },
+            { title: "Background music", body: "A track that fits the video, from a one-line description." },
+            { title: "Sound effects", body: "Footsteps, rain, a whoosh for a transition: the small sounds that finish a video." },
+          ],
+          examplesTitle: "Voice and music prompt examples",
+          examplesIntro: "Use these as a starting point for describing a voice or a track.",
+          examples: [
+            { title: "Documentary narrator", prompt: "Warm, calm male voice, unhurried pace, a little gravel, like a late-night nature documentary narrator." },
+            { title: "Product explainer", prompt: "Clear, confident female voice at a medium pace, friendly but professional, for a one-minute product video." },
+            { title: "Travel vlog music", prompt: "Light acoustic guitar and piano, bright and warm, mid tempo, for the opening of a travel vlog." },
+            { title: "Transition whoosh", prompt: "A short whoosh of wind sweeping from left to right, for a video transition." },
+          ],
+          modelsTitle: "Audio models you can use",
+          modelsIntro: "Voice is charged by length and music by the song. These are typical prices; the generate button shows the exact cost.",
+          models,
+          faqTitle: "AI text to speech FAQ",
+          faqs: [
+            { q: "Is AI text to speech free?", a: gift ? `New accounts get ${gift} free credits, valid for ${NEW_USER_GIFT.validDays} days, for voice, music and sound effects. After that, a plan or a credit pack.` : "There are no free credits at the moment; voice and music need a plan or a credit pack." },
+            { q: "How much text can I convert at once?", a: `Up to ${num(maxScript)} characters per generation. For a longer script, generate it in parts and join them in your editor.` },
+            { q: "Which voices can I choose?", a: `ElevenLabs offers ${voices} ready-made voices and Gemini 3.8 Flash TTS has its own set. You can also describe the tone and style you want in a line.` },
+            { q: "Can it make music too?", a: "Yes. Describe the style and mood in a line and Suno V6 writes a song; Suno Sounds makes sound effects." },
+            ...audioFaqs,
+          ],
+          related: [
+            { href: "/", label: "AI video generator" },
+            { href: "/text-to-video", label: "Text to video AI" },
+            { href: "/image-to-video", label: "Image to video AI" },
+            { href: "/pricing", label: "Pricing" },
+          ],
+        };
+  }
 
   if (kind === "text-to-video") {
     return zh
