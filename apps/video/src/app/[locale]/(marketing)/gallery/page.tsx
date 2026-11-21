@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { GallerySection } from "@/components/gallery/gallery-section";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
-import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -26,6 +26,7 @@ export async function generateMetadata({
       languages: alternates.languages,
     },
     openGraph: {
+      ...openGraphLocale(locale),
       type: "website",
       title,
       description,

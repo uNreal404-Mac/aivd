@@ -27,6 +27,8 @@ import { RouteProgress } from "@/components/route-progress";
 import { i18n } from "@/config/i18n-config";
 import { getSiteTitle, siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
+import { defaultShareImages, openGraphLocale } from "@/lib/seo";
+import { jsonLd, siteGraph } from "@/lib/structured-data";
 
 // Self-hosted variable fonts (latin subset) so every build gets the real
 // faces without fetching Google Fonts. Chinese falls back to the system font.
@@ -76,18 +78,20 @@ const baseMetadata = {
     },
   ],
   creator: siteConfig.name,
+  // No og:url here: a page without its own openGraph would otherwise share
+  // the homepage's address. Pages that set openGraph give their own url.
   openGraph: {
     type: "website",
-    locale: "en_US",
-    url: siteConfig.url,
     title: defaultSiteTitle,
     description: siteConfig.description,
     siteName: defaultSiteTitle,
+    images: defaultShareImages(),
   },
   twitter: {
     card: "summary_large_image",
     title: defaultSiteTitle,
     description: siteConfig.description,
+    images: defaultShareImages(),
   },
   icons: {
     icon: [
@@ -111,6 +115,7 @@ export async function generateMetadata() {
     },
     openGraph: {
       ...baseMetadata.openGraph,
+      ...openGraphLocale(locale),
       title: siteTitle,
       siteName: siteTitle,
     },
@@ -140,24 +145,7 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "WebSite",
-                  name: siteConfig.name,
-                  url: siteConfig.url,
-                  description: siteConfig.description,
-                  inLanguage: ["en", "zh"],
-                },
-                {
-                  "@type": "Organization",
-                  name: siteConfig.name,
-                  url: siteConfig.url,
-                  logo: `${siteConfig.url}/logo.svg`,
-                },
-              ],
-            }),
+            __html: jsonLd(siteGraph()),
           }}
         />
       </head>

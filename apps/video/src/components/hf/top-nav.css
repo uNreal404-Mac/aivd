@@ -14,13 +14,15 @@
   border-bottom-color: var(--ds-line-1);
 }
 
-/* Three columns: brand, the links centred in the bar, then actions. */
+/* Three columns: brand, the links centred in the space between, then
+   actions. The side columns take only their own width, so the wide actions
+   group no longer pushes "More" up against the search button. */
 .hf-nav-inner {
   display: grid;
   height: 52px;
   align-items: center;
-  gap: 16px;
-  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
+  gap: 24px;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   padding: 0 16px;
 }
 
@@ -51,6 +53,8 @@
   --hf-fade-start: black;
   --hf-fade-end: black;
   position: relative;
+  justify-self: center;
+  max-width: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -286,10 +290,16 @@ a.hf-item:hover,
   display: none;
 }
 
-/* Narrower desktops drop the offer and language buttons first, then the
-   link row gives way to the menu button before it can run under the actions. */
+/* Narrower desktops drop the offer button first (it opens /pricing, like the
+   Pricing button beside it), then the language button, then the link row
+   gives way to the menu button before it can run under the actions. */
+@media (max-width: 1439px) {
+  .hf-act-accent {
+    display: none;
+  }
+}
+
 @media (max-width: 1279px) {
-  .hf-act-accent,
   .hf-lang {
     display: none;
   }

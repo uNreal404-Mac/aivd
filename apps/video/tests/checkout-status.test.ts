@@ -14,6 +14,7 @@ import {
   shouldKeepPolling,
   toCheckoutStatus,
 } from "@/lib/checkout-status";
+import { PUBLIC_ROUTES, isPrivatePath } from "@/config/indexing-paths";
 
 const read = (relativePath: string) =>
   readFileSync(join(process.cwd(), relativePath), "utf8");
@@ -116,10 +117,9 @@ describe("shouldKeepPolling", () => {
 
 describe("sitemap", () => {
   it("skips the checkout route", () => {
-    const source = read(join("src", "app", "sitemap.ts"));
-    const skipSegments =
-      source.match(/const SKIP_SEGMENTS = \[[\s\S]*?\];/)?.[0] ?? "";
-    expect(skipSegments).toContain('"checkout"');
+    expect(isPrivatePath("/checkout/success")).toBe(true);
+    expect(isPrivatePath("/zh/checkout/cancel")).toBe(true);
+    expect(PUBLIC_ROUTES.some((route) => route.path.startsWith("/checkout"))).toBe(false);
   });
 });
 

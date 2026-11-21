@@ -2,6 +2,7 @@ import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { NextRequest, NextResponse } from "next/server";
 import { isNoIndexEnvironment } from "@/lib/indexing";
+import { isPrivatePath } from "@/config/indexing-paths";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -18,42 +19,6 @@ const legacyRedirects: Record<string, string> = {
 // Longest first, so /dashboard/settings is not caught by /dashboard and sent
 // to /my-creations/settings.
 const legacyRedirectEntries = Object.entries(legacyRedirects).sort(([a], [b]) => b.length - a.length);
-
-/**
- * Private paths that should never be indexed by search engines,
- * regardless of environment.
- */
-const PRIVATE_PATH_SEGMENTS = [
-  "/my-creations",
-  "/credits",
-  "/settings",
-  "/admin",
-  "/login",
-  "/register",
-];
-
-/**
- * Determine whether a pathname targets a private route, ignoring an
- * optional leading locale prefix (e.g. /zh/settings -> /settings).
- */
-function isPrivatePath(pathname: string): boolean {
-  let path = pathname;
-
-  for (const locale of routing.locales) {
-    if (path === `/${locale}` || path.startsWith(`/${locale}/`)) {
-      path = path.slice(locale.length + 1);
-      break;
-    }
-  }
-
-  if (path === "") {
-    path = "/";
-  }
-
-  return PRIVATE_PATH_SEGMENTS.some(
-    (segment) => path === segment || path.startsWith(`${segment}/`)
-  );
-}
 
 /**
  * Next-intl middleware with legacy dashboard redirects
@@ -78,7 +43,7 @@ export default function middleware(request: NextRequest) {
       const rest = pathname.slice(from.length);
       const url = request.nextUrl.clone();
       url.pathname = to + rest;
-      return NextResponse.redirect(url);
+      return NextResponse.redirect(url, 301);
     }
   }
 
@@ -91,7 +56,7 @@ export default function middleware(request: NextRequest) {
         const rest = pathname.slice(localeFrom.length);
         const url = request.nextUrl.clone();
         url.pathname = `/${locale}${to}${rest}`;
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(url, 301);
       }
     }
   }

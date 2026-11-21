@@ -1,10 +1,12 @@
 import "@/styles/pricing-tokens.css";
 import { HomePricing } from "@/components/hf/home-pricing";
 import { PricingFaq } from "@/components/pricing/pricing-page";
+import { faqItemsFor } from "@/components/pricing/pricing-data";
+import { jsonLd, pricingGraph } from "@/lib/structured-data";
 import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
-import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -29,6 +31,7 @@ export async function generateMetadata({
       languages: alternates.languages,
     },
     openGraph: {
+      ...openGraphLocale(locale),
       type: "website",
       title,
       description,
@@ -51,10 +54,17 @@ export default async function PricingPage({
   params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
+  // Plans, the free credits and the FAQ for search engines and AI answers,
+  // from the same config and FAQ list the page renders.
+  const structuredData = pricingGraph(
+    locale,
+    faqItemsFor(locale).map((item) => ({ q: item.question, a: item.answer })),
+  );
 
   // Same pricing block as the homepage, buying in place, then the FAQ.
   return (
     <div className="bg-[var(--du-bg)]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
       <HomePricing lang={locale} asPage checkout={{ enabled: isPaymentsConfigured() }} />
       <PricingFaq locale={locale} />
     </div>

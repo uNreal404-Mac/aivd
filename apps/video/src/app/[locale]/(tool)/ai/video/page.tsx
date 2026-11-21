@@ -20,7 +20,9 @@ export async function generateMetadata({
     description: isChinese
       ? "通过提示词或起始帧创作 AI 短视频，并选择模型、时长、比例与声音。"
       : "Create short AI videos from a prompt or a start frame. Choose a model, length, ratio and sound.",
-    alternates: buildAlternates("/ai/video", locale),
+    // Same studio as /text-to-video, which is the address offered to search
+    // engines; this one points its canonical there.
+    alternates: buildAlternates("/text-to-video", locale),
   };
 }
 

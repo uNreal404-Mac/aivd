@@ -4,7 +4,7 @@ import { HomeFaq } from "@/components/hf/home-faq";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { i18n } from "@/config/i18n-config";
-import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
 import { getAvailableModels } from "@/config/credits";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 
@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: PageMetadataProps) {
       description: descriptions[locale] || descriptions.en,
       url: canonicalUrl,
       siteName: siteConfig.name,
-      locale: locale === "zh" ? "zh_CN" : "en_US",
+      ...openGraphLocale(locale),
       type: "website",
       images: ogImage ? [ogImage] : undefined,
     },

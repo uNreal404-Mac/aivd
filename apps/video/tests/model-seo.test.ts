@@ -380,8 +380,10 @@ describe("sitemap source", () => {
     );
   });
 
-  it("skips dynamic route directories while scanning pages", () => {
-    expect(sitemapSource).toMatch(/includes\(\s*["'`]\[["'`]\s*\)/);
+  // Workers have neither the source tree nor git: the list is written out.
+  it("does not scan the file system or call git", () => {
+    expect(sitemapSource).not.toMatch(/node:fs|node:child_process|execSync|readdir/);
+    expect(sitemapSource).toContain("PUBLIC_ROUTES");
   });
 });
 

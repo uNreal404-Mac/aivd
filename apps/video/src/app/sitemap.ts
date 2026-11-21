@@ -1,190 +1,45 @@
-import { INDEXED_LANDING_SLUGS } from '@/lib/model-landing';
-import { MetadataRoute } from "next";
-import { i18n } from "@/config/i18n-config";
-import { siteConfig } from "@/config/site";
+import type { MetadataRoute } from "next";
+
+import { i18n, localeConfig } from "@/config/i18n-config";
+import { PUBLIC_ROUTES, type PublicRoute } from "@/config/indexing-paths";
 import { isNoIndexEnvironment } from "@/lib/indexing";
-import { execSync } from "node:child_process";
-import { readdir, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { INDEXED_LANDING_SLUGS } from "@/lib/model-landing";
+import { getLocaleUrl } from "@/lib/seo";
 
-// Allow sitemap to be revalidated every hour (3600 seconds)
-export const revalidate = 3600;
+// Built per request: Workers have neither the source tree nor git, so the
+// list is written out (config/indexing-paths) and the environment is read at
+// run time, never baked in at build time.
+export const dynamic = "force-dynamic";
 
-const getLastModified = (filePath: string): Date => {
-  try {
-    // 转义文件路径中的特殊字符，避免 shell 解析错误
-    const escapedPath = filePath.replace(/'/g, "'\\''");
-    const timestamp = execSync(`git log -1 --format=%cI '${escapedPath}'`)
-      .toString()
-      .trim();
-    if (timestamp) {
-      return new Date(timestamp);
-    }
-  } catch (e) {
-    // If git command fails (e.g. in environments without git), fall back to current date
-    console.warn(`Failed to get git timestamp for ${filePath}`, e);
+/** Every language version of a page, plus x-default, as hreflang links. */
+function languageAlternates(path: string): Record<string, string> {
+  const languages: Record<string, string> = {};
+  for (const locale of i18n.locales) {
+    languages[localeConfig[locale].hreflang] = getLocaleUrl(path, locale);
   }
-  return new Date();
-};
-
-// 需要从 sitemap 中排除的私有/重复路由段（精确匹配：路径等于该段或以该段开头）
-const SKIP_SEGMENTS = [
-  "dashboard",
-  "admin",
-  "auth",
-  "checkout",
-  "login",
-  "register",
-  "settings",
-  "my-creations",
-  "credits",
-  "privacy-policy",
-  "terms-of-service",
-  // Older addresses that now redirect (model pages moved to /models/<slug>,
-  // explore folded into templates).
-  "veo-3-1",
-  "wan-2-6",
-  "sora-2",
-  "seedance-1-5",
-  "explore",
-];
-
-function isSkippedRoute(routePath: string): boolean {
-  const normalized = routePath.replace(/^\//, "");
-  return SKIP_SEGMENTS.some(
-    (segment) => normalized === segment || normalized.startsWith(`${segment}/`)
-  );
+  languages["x-default"] = getLocaleUrl(path, i18n.defaultLocale);
+  return languages;
 }
 
-/**
- * 递归扫描目录，查找所有 page.tsx 文件
- */
-async function scanPages(
-  dir: string,
-  baseDir: string
-): Promise<{ path: string; file: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }[]> {
-  const pages: { path: string; file: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }[] = [];
-
-  try {
-    const entries = await readdir(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = join(dir, entry.name);
-
-      // 跳过特定目录
-      if (
-        entry.name.startsWith('_') ||  // Next.js 私有目录
-        entry.name.startsWith('.') ||  // 隐藏文件
-        entry.name === 'node_modules' ||
-        entry.name === 'api'           // 跳过 API 路由
-      ) {
-        continue;
-      }
-
-      if (entry.isDirectory()) {
-        // 递归扫描子目录
-        const subPages = await scanPages(fullPath, baseDir);
-        pages.push(...subPages);
-      } else if (entry.name === 'page.tsx') {
-        // 计算路由路径
-        const relativePath = fullPath.replace(baseDir, '');
-
-        // 动态路由（如 [slug]）无法静态枚举，跳过并由显式条目补充
-        if (relativePath.includes('[')) {
-          continue;
-        }
-
-        const routePath = relativePath
-          .replace(/\/page\.tsx$/, '')           // 移除 /page.tsx
-          .replace(/\[.*?\]/g, '')                // 移除动态路由参数
-          .replace(/\/\([^)]+\)/g, '')            // 移除路由组 (marketing)/(tool)
-          .replace('//', '/')                     // 修复双斜杠
-          .replace(/^\//, '')                     // 移除开头的斜杠
-          || '/';                                 // 根路径
-
-        // 跳过私有/重复页面（精确段匹配，避免误伤 /privacy、/terms）
-        if (isSkippedRoute(routePath)) {
-          continue;
-        }
-
-        // 根据路径确定优先级和更新频率
-        let priority = 0.8;
-        let changeFrequency: 'daily' | 'weekly' | 'monthly' = 'weekly';
-
-        if (routePath === '' || routePath === '/') {
-          priority = 1.0;
-          changeFrequency = 'daily';
-        } else if (routePath.includes('pricing')) {
-          priority = 0.9;
-          changeFrequency = 'weekly';
-        } else if (routePath.includes('privacy') || routePath.includes('terms')) {
-          priority = 0.3;
-          changeFrequency = 'monthly';
-        } else if (routePath.includes('-to-') || /\d/.test(routePath)) {
-          // 工具页面和模型页面
-          priority = 0.7;
-          changeFrequency = 'weekly';
-        }
-
-        pages.push({
-          path: routePath === '/' ? '' : routePath,
-          file: fullPath,
-          priority,
-          changeFrequency,
-        });
-      }
-    }
-  } catch (error) {
-    console.error(`Error scanning directory ${dir}:`, error);
-  }
-
-  return pages;
-}
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   if (isNoIndexEnvironment()) {
     return [];
   }
 
-  const baseUrl = siteConfig.url;
-
-  // 自动扫描所有页面
-  const appDir = join(process.cwd(), 'src', 'app', '[locale]');
-  const routes = await scanPages(appDir, appDir);
-
-  // 动态路由页面需显式补充（scanPages 会跳过含 "[" 的页面）
-  const modelsPageFile = join(appDir, '(marketing)', 'models', '[slug]', 'page.tsx');
   // Only live models: pages for models that cannot generate yet are noindex.
-  for (const slug of INDEXED_LANDING_SLUGS) {
-    routes.push({
-      path: `models/${slug}`,
-      file: modelsPageFile,
-      priority: 0.7,
-      changeFrequency: 'weekly',
-    });
-  }
+  const modelRoutes: PublicRoute[] = INDEXED_LANDING_SLUGS.map((slug) => ({
+    path: `/models/${slug}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
 
-  console.log('🗺️  Sitemap: 发现页面:', routes.length);
-
-  const sitemap: MetadataRoute.Sitemap = [];
-
-  for (const route of routes) {
-    const lastModified = getLastModified(route.file);
-
-    for (const locale of i18n.locales) {
-      const localePath = locale === i18n.defaultLocale ? "" : `/${locale}`;
-      const url = `${baseUrl}${localePath}${route.path ? `/${route.path}` : ''}`;
-
-      sitemap.push({
-        url,
-        lastModified,
-        changeFrequency: route.changeFrequency,
-        priority: route.priority,
-      });
-    }
-  }
-
-  console.log(`🗺️  Sitemap: 生成 ${sitemap.length} 个 URL`);
-
-  return sitemap;
+  return [...PUBLIC_ROUTES, ...modelRoutes].flatMap((route) => {
+    const languages = languageAlternates(route.path);
+    return i18n.locales.map((locale) => ({
+      url: getLocaleUrl(route.path, locale),
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+      alternates: { languages },
+    }));
+  });
 }

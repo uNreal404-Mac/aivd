@@ -7,8 +7,28 @@
 // place the runtime vars live, unless it is already set in the environment.
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-const wrangler = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+// `--config <file>` picks the Wrangler config to build for (default
+// wrangler.jsonc, the preview). The same flag goes on to opennextjs-cloudflare.
+// Production lives in its own file, wrangler.prod.jsonc: the values below are
+// read with regular expressions, so one file must hold one environment only.
+const args = process.argv.slice(2);
+const configIndex = args.findIndex((arg) => arg === "--config" || arg.startsWith("--config="));
+const configArg =
+  configIndex === -1
+    ? undefined
+    : args[configIndex].includes("=")
+      ? args[configIndex].split("=")[1]
+      : args[configIndex + 1];
+const configPath = resolve(process.cwd(), configArg ?? "wrangler.jsonc");
+const wrangler = readFileSync(configPath, "utf8");
+console.log(`cf-build: using ${configPath}`);
+
+if (/"REPLACE_[^"]*"/.test(wrangler)) {
+  console.error(`cf-build: ${configPath} still has REPLACE_ placeholders; fill in the real resources first.`);
+  process.exit(1);
+}
 const fromWrangler = (key) => wrangler.match(new RegExp(`"${key}"\\s*:\\s*"([^"]+)"`))?.[1];
 
 const appUrl = process.env.DEPLOY_APP_URL || fromWrangler("NEXT_PUBLIC_APP_URL");
@@ -33,5 +53,5 @@ const env = {
   BETTER_AUTH_URL: fromWrangler("BETTER_AUTH_URL") ?? appUrl,
 };
 console.log(`cf-build: public vars ${Object.keys(publicVars).join(", ") || "(none)"}`);
-const result = spawnSync("npx", ["opennextjs-cloudflare", "build", ...process.argv.slice(2)], { stdio: "inherit", env });
+const result = spawnSync("npx", ["opennextjs-cloudflare", "build", ...args], { stdio: "inherit", env });
 process.exit(result.status ?? 1);

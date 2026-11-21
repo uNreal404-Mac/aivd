@@ -1,7 +1,7 @@
 import { VideoStudioPage } from "@/components/hf/video-studio-page";
 import { getToolPageConfig } from "@/config/tool-pages";
 import type { Locale } from "@/config/i18n-config";
-import { buildAlternates, resolveOgImage } from "@/lib/seo";
+import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 
 interface TextToVideoPageProps {
@@ -30,6 +30,7 @@ export async function generateMetadata({
       languages: alternates.languages,
     },
     openGraph: {
+      ...openGraphLocale(locale),
       title,
       description,
       url: alternates.canonical,

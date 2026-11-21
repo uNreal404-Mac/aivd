@@ -6,7 +6,7 @@ import { i18n, type Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { isNoIndexEnvironment, NOINDEX_ROBOTS } from "@/lib/indexing";
 import { LANDING_SLUGS, getLandingModel, landingDescription, landingTitle } from "@/lib/model-landing";
-import { buildAlternates } from "@/lib/seo";
+import { buildAlternates, defaultShareImages, openGraphLocale } from "@/lib/seo";
 
 export const dynamicParams = false;
 
@@ -38,7 +38,16 @@ export async function generateMetadata({ params }: ModelPageProps): Promise<Meta
       title,
       description,
       url: `${siteConfig.url}${localePrefix}${path}`,
-      locale: zh ? "zh_CN" : "en_US",
+      siteName: siteConfig.name,
+      type: "website",
+      ...openGraphLocale(locale),
+      images: defaultShareImages(title),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: defaultShareImages(title),
     },
     // Models that cannot generate here yet are not offered to search engines.
     robots: isNoIndexEnvironment() || !model.live ? NOINDEX_ROBOTS : undefined,

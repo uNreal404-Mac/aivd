@@ -8,10 +8,16 @@ export interface SiteConfig {
   url: string;
   ogImage: string;
   supportEmail?: string;
+  /** Official profiles; filled ones become the Organization's sameAs. */
   links: {
-    github?: string;
-    twitter?: string;
+    x?: string;
+    youtube?: string;
+    tiktok?: string;
+    instagram?: string;
     discord?: string;
+    github?: string;
+    linkedin?: string;
+    productHunt?: string;
   };
   auth: {
     enableGoogleLogin: boolean;
@@ -30,6 +36,9 @@ export function getSupportEmail(value = process.env.NEXT_PUBLIC_SUPPORT_EMAIL) {
 
 const configuredAppUrl =
   process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim() || "";
+
+/** The production address, used when no app URL is configured. */
+export const PRODUCTION_URL = "https://aivd.ai";
 
 export const SUPPORT_EMAIL = getSupportEmail();
 
@@ -57,10 +66,22 @@ export function getSiteTitle(locale = "en", preview = isPreviewSite) {
 export const siteConfig: SiteConfig = {
   name: "aivd.ai",
   description: "AI Video Generation Platform - Create videos with Veo 3.1, Seedance 2.5, Kling 4.0 and more",
-  url: configuredAppUrl,
+  // An empty URL would break metadataBase (new URL("") throws); preview and
+  // production both set NEXT_PUBLIC_APP_URL through their wrangler config.
+  url: configuredAppUrl || PRODUCTION_URL,
   ogImage: "/og.png",
   supportEmail: SUPPORT_EMAIL,
-  links: {},
+  // Fill in as the profiles go live; empty ones are left out of sameAs.
+  links: {
+    x: "",
+    youtube: "",
+    tiktok: "",
+    instagram: "",
+    discord: "",
+    github: "",
+    linkedin: "",
+    productHunt: "",
+  },
   auth: {
     enableGoogleLogin: true,
     enableMagicLinkLogin: true,

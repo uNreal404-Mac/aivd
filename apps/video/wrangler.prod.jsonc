@@ -1,0 +1,63 @@
+{
+  // Production Cloudflare Workers config for aivd.ai (@opennextjs/cloudflare).
+  // Build and deploy with `pnpm cf:deploy:prod`; the default `pnpm cf:deploy`
+  // keeps publishing the preview from wrangler.jsonc.
+  //
+  // Values marked REPLACE_ still need the real production resources. While
+  // any remain, scripts/cf-build.mjs refuses to build with this file.
+  //
+  // Secrets are not inherited from the preview worker: set every one again on
+  // this worker with `wrangler secret put <NAME> --config wrangler.prod.jsonc`
+  // (BETTER_AUTH_SECRET, DEEPSEEK_API_KEY, KIE_API_KEY, FAL_KEY,
+  // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, CALLBACK_HMAC_SECRET,
+  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET). Never commit them here.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "REPLACE_production_worker_name",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      // Must equal "name" above.
+      "service": "REPLACE_production_worker_name"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "REPLACE_production_d1_name",
+      "database_id": "REPLACE_production_d1_id",
+      "migrations_dir": "src/db/migrations"
+    }
+  ],
+  // Only aivd.ai serves the site: no *.workers.dev copy and no per-version
+  // preview URLs, which would otherwise be crawlable duplicates.
+  "routes": [{ "pattern": "aivd.ai", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://aivd.ai",
+    "APP_URL": "https://aivd.ai",
+    "BETTER_AUTH_URL": "https://aivd.ai",
+    "NEXT_PUBLIC_IS_PREVIEW": "false",
+    "NEXT_PUBLIC_NOINDEX": "false",
+    // Decide before launch; kept off and in test mode until then.
+    "VIDEO_GENERATION_ENABLED": "false",
+    "DEFAULT_AI_PROVIDER": "kie",
+    "NEXT_PUBLIC_BILLING_PROVIDER": "stripe",
+    "NEXT_PUBLIC_PAYMENTS_ENABLED": "true",
+    "STRIPE_LIVE_MODE": "false",
+    "AI_CALLBACK_URL": "https://aivd.ai/api/v1/video/callback",
+    "STORAGE_ENDPOINT": "https://3d16103f94443a1948212feedf4ddcc1.r2.cloudflarestorage.com",
+    "STORAGE_REGION": "auto",
+    "STORAGE_BUCKET": "REPLACE_production_r2_bucket"
+  }
+}

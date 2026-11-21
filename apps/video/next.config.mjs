@@ -1,6 +1,8 @@
 // @ts-check
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { legacyRedirects } from "./redirects.mjs";
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 if (!process.env.SKIP_ENV_VALIDATION) {
@@ -32,6 +34,9 @@ const config = {
   typescript: { ignoreBuildErrors: true },
   output: "standalone",
   serverExternalPackages: ["postgres"],
+  async redirects() {
+    return legacyRedirects();
+  },
 };
 
 // Compose plugins

@@ -23,6 +23,7 @@ import {
   studioHref,
   type LandingModel,
 } from "@/lib/model-landing";
+import { breadcrumbList, faqPage, jsonLd } from "@/lib/structured-data";
 import "@/components/hf/home-showcase.css";
 import "./model-landing.css";
 
@@ -44,11 +45,21 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
   const alternative = model.live ? undefined : liveAlternative(model);
   const target = model.live ? model : alternative;
   const title = landingTitle(model, zh);
-  const faqJson = {
+  // FAQ and breadcrumb (home > the model's kind section > the model). There
+  // is no /models index, so the middle step is /video, /image or /audio.
+  const structuredData = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    inLanguage: zh ? "zh-CN" : "en",
-    mainEntity: faqs.map((faq) => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })),
+    "@graph": [
+      faqPage(faqs, lang),
+      breadcrumbList(
+        [
+          { name: zh ? "首页" : "Home", path: "/" },
+          { name: zh ? `AI ${kind.zh}` : `AI ${kind.en}`, path: `/${model.kind}` },
+          { name: model.name, path: landingHref(model.slug) },
+        ],
+        lang,
+      ),
+    ],
   };
 
   const steps = zh
@@ -65,7 +76,7 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
 
   return (
     <div className="ml">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJson) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
 
       {/* 1. Hero: the picture fills the first screen, words sit centred at the foot */}
       <section
