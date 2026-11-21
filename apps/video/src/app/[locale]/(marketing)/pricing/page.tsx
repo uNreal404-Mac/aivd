@@ -7,6 +7,7 @@ import { isPaymentsConfigured } from "@/lib/payments";
 import type { Locale } from "@/config/i18n-config";
 import { siteConfig } from "@/config/site";
 import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
+import { packOffers, planOffers, usd } from "@/lib/pricing-offers";
 
 export async function generateMetadata({
   params,
@@ -17,14 +18,22 @@ export async function generateMetadata({
   const alternates = buildAlternates("/pricing", locale);
 
   const isZh = locale === "zh";
-  const title = isZh ? "价格方案与积分" : "Pricing - Plans & Credits";
+  // Every figure comes from the pricing config, so a price change cannot leave the title behind.
+  // Titles use the short "$9.9" searchers type; the page itself writes US$.
+  const short = (value: number) => usd(value).replace(/^US\$/, "$");
+  const from = short(planOffers()[0].monthlyPriceUsd);
+  const packFrom = short(Math.min(...packOffers().map((pack) => pack.priceUsd)));
+  const title = isZh
+    ? `AI 视频生成器价格 — 月付 ${from} 起，支持免订阅积分包 | ${siteConfig.name}`
+    : `AI Video Generator Pricing — Plans from ${from}/mo & Pay-As-You-Go | ${siteConfig.name}`;
   const description = isZh
-    ? "比较 AI 视频生成的月付、年付方案与一次性积分包。美元计价，透明定价，可随时取消。"
-    : "Compare monthly and yearly plans and one-time credit packs for AI video generation. Transparent USD pricing, cancel anytime.";
+    ? `月付 ${from} 起，一站调用 Veo 3.1、Kling 4.0、Seedance 2.5、Wan 2.6 等全部模型。成片无水印、可商用，生成失败自动退积分；不想订阅可买 ${packFrom} 起的积分包。`
+    : `Plans from ${from}/mo for Veo 3.1, Kling 4.0, Seedance 2.5, Wan 2.6 and every other model. No watermark, commercial use, credits back on failed generations, and pay-as-you-go credit packs from ${packFrom}.`;
   const ogImage = resolveOgImage();
 
   return {
-    title,
+    // The full title, without the site-wide "| aivd.ai" template added a second time.
+    title: { absolute: title },
     description,
     alternates: {
       canonical: alternates.canonical,

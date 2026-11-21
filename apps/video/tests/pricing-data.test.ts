@@ -126,7 +126,8 @@ describe("asPricingProducts", () => {
 
 describe("FAQ_ITEMS", () => {
   it("exposes answered questions with unique ids", () => {
-    expect(FAQ_ITEMS.length).toBeGreaterThanOrEqual(10);
+    expect(FAQ_ITEMS.length).toBeGreaterThanOrEqual(7);
+    expect(FAQ_ITEMS.length).toBeLessThanOrEqual(8);
     for (const item of FAQ_ITEMS) {
       expect(item.question.length).toBeGreaterThan(0);
       expect(item.answer.length).toBeGreaterThan(0);

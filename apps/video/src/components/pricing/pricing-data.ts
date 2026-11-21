@@ -1,5 +1,6 @@
 import type { CreditPackageConfig } from "@/config/credits";
 import { FIRST_MONTH_OFFER, LAUNCH_OFFER, REFUND_POLICY } from "@/config/pricing-user";
+import { SUPPORT_EMAIL } from "@/config/site";
 import { CARD_VIDEO_UNIT_IDS, FREE_VIDEO_UNIT_ID, type PlanOffer, creditPriceUsd, packOffers, planOffers, pricingUnit, usd } from "@/lib/pricing-offers";
 
 /**
@@ -94,12 +95,6 @@ const smallestPack = packs[0];
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
-    id: "credits",
-    question: "What are credits and how are they used?",
-    answer:
-      "Credits are the single currency for every generation on aivd.ai. Each model has a set cost that depends on the length and resolution you pick, and the cost is shown before you press generate. Every plan and pack can use every model.",
-  },
-  {
     id: "per-video",
     question: "How much does one video cost?",
     answer: `It depends on the model. On the Basic plan one ${veoUnit.name} clip (${veoUnit.spec.en}) is ${veoUnit.credits} credits, about ${clipPrice(veoUnit.credits, basicOffer)}. One ${klingUnit.name} clip (${klingUnit.spec.en}) is ${klingUnit.credits} credits, about ${clipPrice(klingUnit.credits, basicOffer)}, and one ${seedanceUnit.name} clip (${seedanceUnit.spec.en}) is ${seedanceUnit.credits} credits, about ${clipPrice(seedanceUnit.credits, basicOffer)}. Bigger plans pay less per credit: the same ${seedanceUnit.name} clip is about ${clipPrice(seedanceUnit.credits, ultimateOffer)} on Ultimate. The table above lists every model.`,
@@ -108,11 +103,6 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "plans-differ",
     question: "What is the difference between the plans?",
     answer: `All three plans use every model, export without a watermark and include commercial use. They differ in how many credits you get and how many videos run at once: Basic has ${n(basicOffer.creditsPerMonth)} credits a month and runs ${basicOffer.concurrency} video at a time; Pro has ${n(proOffer.creditsPerMonth)} credits and runs ${proOffer.concurrency} at once; Ultimate has ${n(ultimateOffer.creditsPerMonth)} credits and runs ${ultimateOffer.concurrency} at once. Bigger plans also pay less per credit.`,
-  },
-  {
-    id: "yearly",
-    question: "How does yearly billing work?",
-    answer: `You pay once for the year: ${usd(basicOffer.yearlyPriceUsd)} for Basic, ${usd(proOffer.yearlyPriceUsd)} for Pro or ${usd(ultimateOffer.yearlyPriceUsd)} for Ultimate. That is ${basicOffer.yearlySavingPercent}% less than twelve monthly payments on Basic and Pro, and ${ultimateOffer.yearlySavingPercent}% less on Ultimate. The whole year of credits arrives on the day you pay and stays valid for 365 days, so there is no monthly reset. The per-month figure on the cards is the yearly price divided by twelve, shown for comparison.`,
   },
   {
     id: "offers",
@@ -142,27 +132,14 @@ export const FAQ_ITEMS: FaqItem[] = [
     answer: `Yes, on your first purchase, whether a credit pack or the first payment of a subscription: ask within ${REFUND_POLICY.days} days and, if none of the credits from that purchase have been used, you get the full amount back. Any launch-offer bonus credits are removed with the refund. Purchases whose credits have been used are not refunded.`,
   },
   {
-    id: "payment",
-    question: "Which payment methods do you accept?",
-    answer:
-      "Payments are processed securely by Stripe, which accepts major credit and debit cards. Stripe sends a receipt to your email after each purchase.",
-  },
-  {
     id: "cancel",
     question: "Can I cancel my subscription anytime?",
-    answer:
-      "You can cancel a subscription at any time. Your plan stays active until the end of the period you already paid for, and it will not renew after that. Credits you already have stay usable until they expire.",
+    answer: `Yes. Email ${SUPPORT_EMAIL} from the address you signed up with and we cancel the renewal. Your plan stays active until the end of the period you already paid for and does not renew after that; credits you already have stay usable until they expire.`,
   },
 ];
 
 /** Same questions and ids as FAQ_ITEMS, translated faithfully. */
 export const FAQ_ITEMS_ZH: FaqItem[] = [
-  {
-    id: "credits",
-    question: "什么是积分，如何使用？",
-    answer:
-      "积分是 aivd.ai 上所有生成的统一货币。每个模型的扣点取决于你选的时长和分辨率，生成前会先显示要扣多少。所有套餐和积分包都能用全部模型。",
-  },
   {
     id: "per-video",
     question: "一条视频多少钱？",
@@ -172,11 +149,6 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
     id: "plans-differ",
     question: "三个套餐有什么区别？",
     answer: `三档都能用全部模型，成片无水印、可商用。区别在积分数量和能同时生成几个视频：Basic 每月 ${n(basicOffer.creditsPerMonth)} 积分，同时生成 ${basicOffer.concurrency} 个视频；Pro 每月 ${n(proOffer.creditsPerMonth)} 积分，同时 ${proOffer.concurrency} 个；Ultimate 每月 ${n(ultimateOffer.creditsPerMonth)} 积分，同时 ${ultimateOffer.concurrency} 个。套餐越大，每积分也越便宜。`,
-  },
-  {
-    id: "yearly",
-    question: "年付是怎么算的？",
-    answer: `一次付清全年：Basic ${usd(basicOffer.yearlyPriceUsd)}，Pro ${usd(proOffer.yearlyPriceUsd)}，Ultimate ${usd(ultimateOffer.yearlyPriceUsd)}。Basic 和 Pro 比按月付十二次便宜 ${basicOffer.yearlySavingPercent}%，Ultimate 便宜 ${ultimateOffer.yearlySavingPercent}%。全年的积分在付款当天一次到账，365 天内有效，不按月清零。卡片上的每月价格是年付价除以十二，只用于比较。`,
   },
   {
     id: "offers",
@@ -205,16 +177,9 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
     answer: `第一笔购买可以（积分包或订阅的首次付款都算）：${REFUND_POLICY.days} 天内提出，并且这笔购买的积分一点都没用过，就全额退款。开业优惠赠送的积分会随退款一并收回。积分已经使用的购买不退款。`,
   },
   {
-    id: "payment",
-    question: "你们接受哪些支付方式？",
-    answer:
-      "支付由 Stripe 安全处理，支持主流信用卡和借记卡。每次购买后 Stripe 会向你的邮箱发送收据。",
-  },
-  {
     id: "cancel",
     question: "我可以随时取消订阅吗？",
-    answer:
-      "你可以随时取消订阅。方案会持续有效至你已付费的周期结束，之后不再续订。已有的积分在过期前仍可使用。",
+    answer: `可以。用注册邮箱发邮件到 ${SUPPORT_EMAIL}，我们会取消自动续费。套餐会持续到你已付费的周期结束，之后不再续订；已有的积分在过期前仍可使用。`,
   },
 ];
 

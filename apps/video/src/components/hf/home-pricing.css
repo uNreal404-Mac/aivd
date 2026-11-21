@@ -50,24 +50,6 @@
   text-align: right;
 }
 
-.hp-ticks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin-top: 16px;
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-ticks li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hp-ticks svg {
-  color: var(--du-accent-text);
-}
-
 /* Launch offer: shown only while the configured end date is in the future. */
 .hp-offer {
   display: flex;
@@ -147,10 +129,14 @@
 }
 
 .hp-toggle-save {
-  padding: 0 12px 0 8px;
+  padding: 5px 12px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
   color: var(--du-accent-text);
-  font-size: var(--ds-fs-sm);
+  font-size: var(--ds-fs-xs);
   font-weight: 700;
+  text-align: right;
 }
 
 /* Plan cards */
@@ -196,24 +182,17 @@
   background: linear-gradient(160deg, color-mix(in srgb, white 14%, var(--du-bg-elev)), var(--du-bg-elev));
 }
 
-/* Most popular: a dark card with a single accent edge (it used to be a bright
-   gradient inside a second ring). */
+/* Most popular: a flat dark card with one accent edge, and the only accented
+   card on the page. */
 .hp-plan-pro .hp-plan-top {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--du-accent) 10%, var(--du-bg-elev)), var(--du-bg-elev));
-  box-shadow:
-    inset 0 0 0 2px var(--du-accent),
-    0 24px 60px -24px color-mix(in srgb, var(--du-accent) 45%, transparent);
+  background: var(--du-bg-elev);
+  box-shadow: inset 0 0 0 2px var(--du-accent);
 }
 
-/* Top tier: black with an accent edge, so the three plans read apart at a
-   glance (grey, bright, black). */
+/* Top tier: near-black with a plain hairline, so only Pro carries the accent. */
 .hp-plan-ultimate .hp-plan-top {
-  background:
-    radial-gradient(70% 60% at 85% 0%, color-mix(in srgb, var(--du-accent) 24%, transparent), transparent 70%),
-    linear-gradient(165deg, color-mix(in srgb, var(--du-surface-2) 55%, var(--du-bg)), var(--du-bg));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent),
-    0 24px 60px -24px color-mix(in srgb, var(--du-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg));
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
 }
 
 
@@ -332,6 +311,22 @@
   color: var(--du-on-accent);
 }
 
+.hp-cta-block {
+  width: 100%;
+}
+
+/* Secondary buttons: an outline, so Pro's solid accent button is the one that stands out. */
+.hp-cta-outline {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--du-text);
+}
+
+.hp-cta-outline:hover {
+  background: var(--ds-fill-2);
+  filter: none;
+}
+
 .hp-cta-ghost {
   height: 44px;
   margin-top: 0;
@@ -360,6 +355,14 @@
 .hp-credits strong {
   color: var(--du-accent-text);
   font-size: var(--ds-fs-lg);
+}
+
+.hp-approx {
+  margin-top: 6px;
+  padding-left: 24px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
 }
 
 .hp-tree {
@@ -621,6 +624,7 @@
 
 /* Credit packs */
 .hp-packs {
+  scroll-margin-top: 88px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -632,7 +636,7 @@
 }
 
 .hp-packs-title {
-  font-size: var(--ds-fs-lg);
+  font-size: var(--ds-fs-xl);
   font-weight: 800;
 }
 
@@ -771,8 +775,72 @@ button.hp-pack {
   display: block;
 }
 
-/* Free first video, and the closing call to action */
-.hp-free,
+/* Under the cards: what stands behind every plan, in one quiet line. */
+.hp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 20px;
+  margin-top: -16px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hp-trust svg {
+  width: 14px;
+  height: 14px;
+  color: var(--du-accent-text);
+}
+
+/* For people not ready to subscribe: the free credits, or a pack. */
+.hp-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: -12px;
+}
+
+.hp-split-card {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 20px 24px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-split-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--du-accent-text);
+}
+
+.hp-split-title {
+  font-size: var(--ds-fs-md);
+  font-weight: 800;
+}
+
+.hp-split-card .hp-sub-sm {
+  margin-top: 4px;
+}
+
+.hp-split-card .hp-cta {
+  height: 44px;
+  margin-top: 0;
+  padding: 0 18px;
+  font-size: var(--ds-fs-sm);
+  white-space: nowrap;
+}
+
+/* The closing call to action */
 .hp-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -784,7 +852,6 @@ button.hp-pack {
   background: var(--hp-card);
 }
 
-.hp-free .hp-cta,
 .hp-bottom .hp-cta {
   width: auto;
   flex-shrink: 0;
@@ -802,42 +869,122 @@ button.hp-pack {
   gap: 10px;
 }
 
-.hp-bottom .hp-cta-ghost {
-  height: 50px;
-}
 
-/* Why yearly */
+
+/* Why aivd.ai: a four-row table, plain HTML so it is in the server render. */
 .hp-why {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.hp-why ul {
-  display: grid;
   gap: 16px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.hp-why li {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 22px 24px;
+  padding: 24px 28px;
   border-radius: var(--ds-r-2xl);
   background: var(--hp-card);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
 }
 
-.hp-why strong {
-  font-size: var(--ds-fs-lg);
-  font-weight: 800;
+.hp-why-scroll {
+  overflow-x: auto;
 }
 
-.hp-why span {
-  color: var(--hp-muted);
+.hp-why-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: var(--ds-fs-sm);
+  text-align: left;
+}
+
+.hp-why-table th,
+.hp-why-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ds-line-2);
+  vertical-align: top;
+}
+
+.hp-why-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.hp-why-table thead th {
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.hp-why-table tbody th {
+  width: 22%;
+  color: var(--ds-text-2);
+  font-weight: 600;
+}
+
+.hp-why-table td {
+  color: var(--ds-text-2);
+}
+
+.hp-why-table .hp-why-us {
+  width: 39%;
+  background: color-mix(in srgb, var(--du-accent) 8%, transparent);
+  color: var(--du-text);
+  font-weight: 700;
+}
+
+.hp-why-table thead .hp-why-us {
+  color: var(--du-accent-text);
+}
+
+.hp-why-table td.hp-why-us svg {
+  display: inline-block;
+  margin: -2px 8px 0 0;
+  color: var(--du-accent-text);
+  vertical-align: middle;
+}
+
+.hp-why-note {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
   line-height: 1.6;
+}
+
+/* The estimator is folded by default; its summary is a full-width row. */
+.hp-est-fold {
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+}
+
+.hp-est-fold > summary {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  color: var(--du-text);
+  font-size: var(--ds-fs-md);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.hp-est-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hp-est-fold > summary svg:first-child {
+  color: var(--du-accent-text);
+}
+
+.hp-est-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  transition: transform 150ms ease;
+}
+
+.hp-est-fold[open] .hp-est-chevron {
+  transform: rotate(180deg);
+}
+
+.hp-est-fold .hp-estimator {
+  padding-top: 4px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .hp-retakes {
@@ -902,6 +1049,17 @@ button.hp-pack {
   white-space: nowrap;
 }
 
+.hp-th-cta:not(.hp-th-cta-pick) {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--du-text);
+}
+
+.hp-th-cta-pick {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
 .hp-th-cta:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -959,7 +1117,7 @@ button.hp-pack {
 }
 
 @media (max-width: 1023px) {
-  .hp-why ul {
+  .hp-split {
     grid-template-columns: 1fr;
   }
 }
@@ -996,9 +1154,60 @@ button.hp-pack {
 
   .hp-compare,
   .hp-packs,
-  .hp-free,
+  .hp-why,
   .hp-bottom {
     padding: 20px 16px;
+  }
+
+  .hp-split-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 18px 16px;
+  }
+
+  .hp-split-card .hp-cta {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  /* Phones: each row's label on its own line, the two answers side by side under it. */
+  .hp-why-table,
+  .hp-why-table thead,
+  .hp-why-table tbody {
+    display: block;
+  }
+
+  .hp-why-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-bottom: 1px solid var(--ds-line-2);
+  }
+
+  .hp-why-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .hp-why-table thead td {
+    display: none;
+  }
+
+  .hp-why-table th,
+  .hp-why-table td {
+    padding: 10px;
+    border-bottom: 0;
+  }
+
+  .hp-why-table tbody th {
+    grid-column: 1 / -1;
+    width: auto;
+    padding: 12px 10px 2px;
+  }
+
+  .hp-why-table .hp-why-us {
+    width: auto;
+  }
+
+  .hp-est-fold > summary {
+    padding: 12px 16px;
   }
 
   .hp-table {
@@ -1023,7 +1232,6 @@ button.hp-pack {
     font-size: var(--ds-fs-md);
   }
 
-  .hp-free .hp-cta,
   .hp-bottom .hp-cta,
   .hp-bottom-actions {
     width: 100%;
@@ -1112,5 +1320,12 @@ button.hp-pack {
   .hp-cell-price {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+}
+
+/* The "see packs" link scrolls to them smoothly, unless motion is reduced. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:has(.hp-page) {
+    scroll-behavior: smooth;
   }
 }

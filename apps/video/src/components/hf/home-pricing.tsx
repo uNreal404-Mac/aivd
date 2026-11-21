@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, ChevronDown, Coins, Crown, Image as ImageIcon, Layers, Music, Sparkles, Video, Zap } from "lucide-react";
+import { ArrowRight, Calculator, Check, ChevronDown, Coins, Crown, Gift, Image as ImageIcon, Layers, Music, Package, Sparkles, Video, Zap } from "lucide-react";
 
-import { LAUNCH_OFFER, NEW_USER_GIFT, REFUND_POLICY, isLaunchOfferActive } from "@/config/pricing-user";
+import { CREDIT_EXPIRATION, LAUNCH_OFFER, NEW_USER_GIFT, REFUND_POLICY, isLaunchOfferActive } from "@/config/pricing-user";
 import { useFirstPurchase } from "@/hooks/use-first-purchase";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { localizedHref } from "@/lib/du-home";
@@ -33,9 +33,10 @@ const unit = (id: string) => UNITS.find((item) => item.id === id) ?? UNITS[0];
 const RETAKE_BUFFER = 0.25;
 
 /**
- * Pricing block. The pricing page (`asPage`) shows all of it: the plans, why
- * yearly, the usage estimator, the per-model table and the credit packs, and
- * its buttons start checkout for the exact product shown (`checkout` set). The
+ * Pricing block. The pricing page (`asPage`) shows all of it: the plans, a
+ * free / pay-as-you-go strip for people not ready to subscribe, why aivd.ai,
+ * the per-model table, the credit packs and a folded usage estimator, and its
+ * buttons start checkout for the exact product shown (`checkout` set). The
  * homepage shows the three plans only and sends people to /pricing for the rest.
  *
  * Every figure comes from the pricing config through pricing-offers.ts; nothing
@@ -58,7 +59,9 @@ export function HomePricing({
   const firstPurchase = useFirstPurchase();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<Period>("year");
+  // Monthly first: Basic at its list price and the Pro first-month price are
+  // what a new visitor should see; yearly is one click away with its saving.
+  const [period, setPeriod] = useState<Period>("month");
   const [videoModel, setVideoModel] = useState("veo-3.1");
   const [imageModel, setImageModel] = useState(CARD_IMAGE_UNIT_ID);
   const [videos, setVideos] = useState(15);
@@ -71,10 +74,9 @@ export function HomePricing({
   const maxSaving = Math.max(...plans.map((plan) => plan.yearlySavingPercent));
   const offerOn = isLaunchOfferActive();
   const basic = plans[0];
-  const cheapestVideo = UNITS.filter((item) => item.kind === "video" && item.credits > 0).sort((a, b) => a.credits - b.credits)[0];
-  const fromPrice = cheapestVideo ? cheapestVideo.credits * creditPriceUsd(basic, "month") : 0;
+  const cheapestPack = packs.reduce((low, pack) => (pack.priceUsd < low.priceUsd ? pack : low), packs[0]);
+  const packYears = Math.max(1, Math.round(CREDIT_EXPIRATION.purchaseDays / 365));
   const cardVideos = CARD_VIDEO_UNIT_IDS.map((id) => pricingUnit(id));
-  const cardImage = pricingUnit(CARD_IMAGE_UNIT_ID);
   const freeVideo = pricingUnit(FREE_VIDEO_UNIT_ID);
 
   // Estimator: credits a month for the chosen mix, and the smallest plan that covers it.
@@ -91,16 +93,15 @@ export function HomePricing({
   const copy = zh
     ? {
         kicker: "定价",
-        title: "顶级 AI 视频模型，一个简单的价格",
+        title: "AI 视频生成器价格与套餐",
         homeTitle: "AI 视频生成器价格",
-        homeNote: "想算得更细？定价页可以按模型估算每月用量、看每个套餐能生成多少，还能单独购买积分包。",
-        sub: (price: string) => `Seedance 2.5、Kling 4.0、Veo 3.1 等站内全部模型，每个套餐都能用。视频低至 ${price} 一条。`,
-        ticks: ["全部模型", "失败自动退积分", "无水印，可商用", "随时取消"],
+        homeNote: "想算得更细？定价页可以看每个套餐能生成多少、按月产量估算，还能不订阅单独买积分包。",
+        sub: "一站调用 Veo 3.1、Kling 4.0、Seedance 2.5、Wan 2.6 等全部模型，成片无水印、可商用，生成失败自动退积分。",
         offer: (percent: number, date: string) => `开业优惠：首次购买积分包或年付，多送 ${percent}% 积分（年付按一个月的积分计），${date} 截止`,
         monthly: "月付",
         yearly: "年付",
-        save: (n: number) => `最高省 ${n}%`,
-        assure: (days: number) => `随时取消 · 首次购买 ${days} 天内、积分未使用可全额退款`,
+        save: (n: number) => `最高省 ${n}% · 全年积分一次到账`,
+        assure: (days: number) => `首次购买 ${days} 天内、积分未使用可全额退款`,
         names: { basic: "Basic", pro: "Pro", ultimate: "Ultimate" } as Record<PaidTier, string>,
         blurbs: { basic: "适合初次尝试 AI 创作", pro: "适合日常稳定产出", ultimate: "适合团队和大批量项目" } as Record<PaidTier, string>,
         popular: "最受欢迎",
@@ -113,25 +114,31 @@ export function HomePricing({
         cta: (name: string) => `开通 ${name}`,
         ctaSave: (amount: string) => `省 ${amount}`,
         creditsPerMonth: "积分/月",
+        approx: (count: string, name: string) => `≈ ${count} 条 ${name} 视频/月`,
         creditsUpFront: (n: string) => `${n} 积分一次到账，全年可用`,
         per100: (price: string) => `100 积分 = ${price}`,
         makes: (count: string, name: string) => `约 ${count} 条 ${name}`,
-        makesImages: (count: string, name: string) => `约 ${count} 张 ${name}`,
         each: (price: string) => `每条 ${price}`,
-        eachImage: (price: string) => `每张 ${price}`,
         atOnce: (n: number) => `同时生成 ${n} 个视频`,
         priority: "优先排队",
-        includes: ["全部视频、图片和音频模型", "生成前显示积分，失败自动退回", "成片无水印，可商用"],
-        whyTitle: "为什么选年付",
-        why: [
-          { title: (amount: string) => `一年最多省 ${amount}`, body: (percent: number, _: string, top: number) => `Basic 和 Pro 年付省 ${percent}%，Ultimate 省 ${top}%。价格锁定 12 个月。` },
-          { title: () => "全年积分一次到账", body: () => "不按月清零。这个月忙就多做，下个月闲就少做，一年内用完就行。" },
-          { title: () => "每条视频更便宜", body: (_: number, example: string) => example },
+        includes: ["全部视频、图片和音频模型"],
+        trust: ["Stripe 安全支付", "支持 Visa / Mastercard 等银行卡", "随时取消", "生成失败自动退积分"],
+        freeTitle: "还没决定？",
+        freeBody: (n: number, model: string) => `免绑卡领 ${n} 积分，先免费生成 1 条 ${model}。`,
+        freeCta: "免费生成一条",
+        paygTitle: "不想订阅？",
+        paygBody: (price: string, years: number) => `${price} 起买免订阅积分包，${years} 年有效。`,
+        paygCta: "看积分包",
+        whyTitle: "为什么选 aivd.ai",
+        whyCols: ["", "aivd.ai", "其他多模型平台"],
+        whyRows: (start: string, pack: string, years: number) => [
+          ["起步月价", `${start}/月`, "常见 US$12–20/月"],
+          ["模型权限", "每个套餐都能用全部模型", "部分平台把热门模型留给高档套餐"],
+          ["免订阅积分包", `支持（${pack} 起，${years} 年有效）`, "部分平台仅限订阅用户购买"],
+          ["价格与倒计时", "页面价就是结账价，没有倒计时", "部分平台的限时倒计时刷新后会重置"],
         ],
-        whyExample: (name: string, monthly: string, yearly: string) => `${name} 一条：月付 ${monthly}，年付 ${yearly}（Basic 档）。`,
-        freeTitle: "还没想好付费？",
-        freeBody: (n: number, model: string) => `新账号注册即送 ${n} 积分，够做一条 ${model}，不用绑卡。`,
-        freeCta: "免费做第一条视频",
+        whyNote: "其他平台的数据来自 2026 年 11 月对 38 家 AI 视频站公开定价页的逐页核验；起步月价按其中 19 家多模型平台统计，中位约 US$15。",
+        estimatorToggle: "不确定选哪档？按你的月产量算一算",
         estimatorTitle: "每月要做多少内容？",
         estimatorSub: "拖动滑块，按你选的模型实时算出每月需要的积分。",
         videosLabel: "视频",
@@ -150,8 +157,8 @@ export function HomePricing({
         showMore: "查看全部模型",
         showLess: "收起",
         kinds: { video: "视频", image: "图片", audio: "音频" } as Record<Kind, string>,
-        packs: "积分包",
-        packsSub: "不订阅也能买，订阅积分不够时随时加购。积分包 1 年有效。",
+        packs: "免订阅积分包 · 按次付费",
+        packsSub: (years: number) => `无需订阅 · ${years} 年有效 · 适合偶尔创作或临时加购`,
         packMakes: (a: number, an: string, b: number, bn: string) => `约 ${a} 条 ${an} 或 ${b} 条 ${bn}`,
         bestValue: "热门",
         bottomTitle: "从一条视频开始",
@@ -163,16 +170,15 @@ export function HomePricing({
       }
     : {
         kicker: "PRICING",
-        title: "The top AI video models. One simple price.",
+        title: "AI Video Generator Pricing & Plans",
         homeTitle: "AI video generator pricing",
-        homeNote: "Want the detail? The pricing page estimates your month by model, shows what each plan makes and sells credit packs.",
-        sub: (price: string) => `Seedance 2.5, Kling 4.0, Veo 3.1 and every other model on the site, on every plan. Videos from ${price} each.`,
-        ticks: ["Every model", "Failed runs refunded", "No watermark, commercial use", "Cancel anytime"],
+        homeNote: "Want the detail? The pricing page shows what each plan makes, estimates your month, and sells credit packs without a plan.",
+        sub: "Veo 3.1, Kling 4.0, Seedance 2.5, Wan 2.6 and every other model in one place. No watermark, commercial use, and failed generations get their credits back.",
         offer: (percent: number, date: string) => `Launch offer: ${percent}% extra credits when your first purchase is a credit pack or a yearly plan, until ${date}. On yearly plans it is ${percent}% of one month's credits.`,
         monthly: "Monthly",
         yearly: "Yearly",
-        save: (n: number) => `Save up to ${n}%`,
-        assure: (days: number) => `Cancel anytime · Full refund within ${days} days of a first purchase if the credits are unused`,
+        save: (n: number) => `Save up to ${n}% · Full year of credits upfront`,
+        assure: (days: number) => `Full refund within ${days} days of a first purchase if the credits are unused`,
         names: { basic: "Basic", pro: "Pro", ultimate: "Ultimate" } as Record<PaidTier, string>,
         blurbs: { basic: "For trying AI creation", pro: "For steady everyday output", ultimate: "For teams and big projects" } as Record<PaidTier, string>,
         popular: "Most popular",
@@ -185,25 +191,31 @@ export function HomePricing({
         cta: (name: string) => `Get ${name}`,
         ctaSave: (amount: string) => `Save ${amount}`,
         creditsPerMonth: "credits/mo",
+        approx: (count: string, name: string) => `≈ ${count} ${name} videos a month`,
         creditsUpFront: (n: string) => `All ${n} credits arrive today and last the year`,
         per100: (price: string) => `100 credits = ${price}`,
         makes: (count: string, name: string) => `About ${count} ${name} videos`,
-        makesImages: (count: string, name: string) => `About ${count} ${name} images`,
         each: (price: string) => `${price} each`,
-        eachImage: (price: string) => `${price} each`,
         atOnce: (n: number) => (n === 1 ? "1 video generating at a time" : `${n} videos generating at once`),
         priority: "Priority queue",
-        includes: ["Every video, image and audio model", "Cost shown first, refunds on failure", "No watermark, commercial use"],
-        whyTitle: "Why go yearly",
-        why: [
-          { title: (amount: string) => `Save up to ${amount} a year`, body: (percent: number, _: string, top: number) => `${percent}% off Basic and Pro, ${top}% off Ultimate. Your price is locked for 12 months.` },
-          { title: () => "A year of credits on day one", body: () => "No monthly reset. Make more in a busy month and less in a quiet one; use them any time in the year." },
-          { title: () => "Every video costs less", body: (_: number, example: string) => example },
+        includes: ["Every video, image and audio model"],
+        trust: ["Secure checkout by Stripe", "Visa, Mastercard and other cards", "Cancel anytime", "Credits back on failed generations"],
+        freeTitle: "Not sure yet?",
+        freeBody: (n: number, model: string) => `Get ${n} free credits with no card and make one ${model} video first.`,
+        freeCta: "Make one free",
+        paygTitle: "Rather not subscribe?",
+        paygBody: (price: string, years: number) => `Credit packs from ${price}, no subscription, valid for ${years} year${years === 1 ? "" : "s"}.`,
+        paygCta: "See credit packs",
+        whyTitle: "Why aivd.ai",
+        whyCols: ["", "aivd.ai", "Other multi-model platforms"],
+        whyRows: (start: string, pack: string, years: number) => [
+          ["Starting price", `${start}/mo`, "Usually US$12–20/mo"],
+          ["Model access", "Every model on every plan", "Some keep popular models for higher tiers"],
+          ["Credits without a plan", `Yes, from ${pack}, valid ${years} year${years === 1 ? "" : "s"}`, "Some sell packs to subscribers only"],
+          ["Price and timers", "The page price is the checkout price; no countdown", "Some run countdowns that restart on refresh"],
         ],
-        whyExample: (name: string, monthly: string, yearly: string) => `One ${name} clip: ${monthly} on monthly, ${yearly} on yearly (Basic).`,
-        freeTitle: "Not ready to pay?",
-        freeBody: (n: number, model: string) => `New accounts get ${n} credits, enough for one ${model} video. No card needed.`,
-        freeCta: "Make your first video free",
+        whyNote: "Other platforms: public pricing pages of 38 AI video sites checked one by one in November 2026; the starting price is from the 19 multi-model platforms among them (median about US$15).",
+        estimatorToggle: "Not sure which plan? Work it out from your monthly output",
         estimatorTitle: "How much will you make each month?",
         estimatorSub: "Drag the sliders and see the credits your mix needs.",
         videosLabel: "Videos",
@@ -222,8 +234,8 @@ export function HomePricing({
         showMore: "Show every model",
         showLess: "Show less",
         kinds: { video: "Video", image: "Image", audio: "Audio" } as Record<Kind, string>,
-        packs: "Credit packs",
-        packsSub: "No subscription needed. Top up whenever a plan runs low; packs last a year.",
+        packs: "Pay-As-You-Go Credit Packs",
+        packsSub: (years: number) => `No subscription · Credits last ${years} year${years === 1 ? "" : "s"} · For occasional projects or a quick top-up`,
         packMakes: (a: number, an: string, b: number, bn: string) => `About ${a} ${an} or ${b} ${bn} clips`,
         bestValue: "Popular",
         bottomTitle: "Start with one video",
@@ -272,8 +284,8 @@ export function HomePricing({
   const dots = 40;
   const filled = Math.min(dots, Math.round((need / (plans.find((plan) => plan.tier === recommended)?.creditsPerMonth ?? 1)) * dots));
   const headline = cardVideos[0];
-  const whyExample = copy.whyExample(headline.name, usd(headline.credits * creditPriceUsd(basic, "month"), 2), usd(headline.credits * creditPriceUsd(basic, "year"), 2));
-  const maxSavingUsd = Math.max(...plans.map((plan) => plan.yearlySavingUsd));
+  /** Only Pro, the plan we recommend, gets the solid accent button. */
+  const ctaClass = (tier: PaidTier) => (tier === "pro" ? "hp-cta hp-cta-accent" : "hp-cta hp-cta-outline");
 
   return (
     <section className={asPage ? "hp hp-page" : "hp"} aria-labelledby="hp-title">
@@ -285,15 +297,7 @@ export function HomePricing({
         ) : (
           <h2 id="hp-title" className="hp-title">{copy.homeTitle}</h2>
         )}
-        <p className="hp-sub">{copy.sub(usd(fromPrice, 2))}</p>
-        <ul className="hp-ticks">
-          {copy.ticks.map((item) => (
-            <li key={item}>
-              <Check className="h-4 w-4" aria-hidden="true" />
-              {item}
-            </li>
-          ))}
-        </ul>
+        <p className="hp-sub">{copy.sub}</p>
         {checkout && !checkout.enabled ? <p className="hp-note">{copy.comingSoon}</p> : null}
         <div className="hp-toggle-wrap">
           <fieldset className="hp-toggle">
@@ -304,8 +308,8 @@ export function HomePricing({
             <button type="button" aria-pressed={period === "year"} onClick={() => setPeriod("year")}>
               {copy.yearly}
             </button>
-            <span className="hp-toggle-save">{copy.save(maxSaving)}</span>
           </fieldset>
+          <span className="hp-toggle-save">{copy.save(maxSaving)}</span>
           <p className="hp-assure">{copy.assure(REFUND_POLICY.days)}</p>
         </div>
       </div>
@@ -342,34 +346,37 @@ export function HomePricing({
                   <span className="hp-price-unit">{copy.perMonth}</span>
                 </p>
                 <div className="hp-billing-area">
-                {period === "year" ? (
-                  <>
-                    <p className="hp-billing hp-billing-strong">{copy.payToday(usd(plan.yearlyPriceUsd))}</p>
-                    <p className="hp-billing hp-billing-save">{copy.yearlySave(usd(plan.yearlySavingUsd), plan.yearlySavingPercent, plan.yearlyMonthsFree)}</p>
-                  </>
-                ) : firstMonth !== null ? (
-                  <>
-                    <p className="hp-billing hp-billing-strong">{copy.firstMonth(usd(firstMonth), usd(plan.monthlyPriceUsd))}</p>
-                    <p className="hp-billing">{copy.firstMonthNote} · {copy.billedMonthly}</p>
-                  </>
-                ) : (
-                  <p className="hp-billing">{copy.billedMonthly}</p>
-                )}
+                  {period === "year" ? (
+                    <>
+                      <p className="hp-billing hp-billing-strong">{copy.payToday(usd(plan.yearlyPriceUsd))}</p>
+                      <p className="hp-billing hp-billing-save">{copy.yearlySave(usd(plan.yearlySavingUsd), plan.yearlySavingPercent, plan.yearlyMonthsFree)}</p>
+                    </>
+                  ) : firstMonth !== null ? (
+                    <>
+                      <p className="hp-billing hp-billing-strong">{copy.firstMonth(usd(firstMonth), usd(plan.monthlyPriceUsd))}</p>
+                      <p className="hp-billing">{copy.firstMonthNote} · {copy.billedMonthly}</p>
+                    </>
+                  ) : (
+                    <p className="hp-billing">{copy.billedMonthly}</p>
+                  )}
                 </div>
                 {action({
                   productId: idFor(plan),
                   label: copy.cta(name),
-                  className: "hp-cta",
+                  className: ctaClass(plan.tier),
                   extra: period === "year" && plan.yearlySavingUsd > 0 ? <span className="hp-cta-save">{copy.ctaSave(usd(plan.yearlySavingUsd))}</span> : null,
                 })}
               </div>
               <div className="hp-plan-body">
-                <p className="hp-credits">
-                  <Coins className="h-4 w-4" aria-hidden="true" />
-                  <strong>{plan.creditsPerMonth.toLocaleString()}</strong> {copy.creditsPerMonth}
-                  <span className="hp-unit-price">{copy.per100(usd(perCredit * 100, 2))}</span>
-                </p>
-                {period === "year" ? <p className="hp-upfront">{copy.creditsUpFront(plan.creditsPerYear.toLocaleString())}</p> : null}
+                <div>
+                  <p className="hp-credits">
+                    <Coins className="h-4 w-4" aria-hidden="true" />
+                    <strong>{plan.creditsPerMonth.toLocaleString()}</strong> {copy.creditsPerMonth}
+                    <span className="hp-unit-price">{copy.per100(usd(perCredit * 100, 2))}</span>
+                  </p>
+                  <p className="hp-approx">{copy.approx(generationsFor(plan.creditsPerMonth, freeVideo.credits).toLocaleString(), freeVideo.name)}</p>
+                  {period === "year" ? <p className="hp-upfront">{copy.creditsUpFront(plan.creditsPerYear.toLocaleString())}</p> : null}
+                </div>
                 <ul className="hp-tree">
                   {cardVideos.map((item) => (
                     <li key={item.id}>
@@ -379,10 +386,6 @@ export function HomePricing({
                       </span>
                     </li>
                   ))}
-                  <li>
-                    <Makes text={copy.makesImages("\u0000", cardImage.name)} count={generationsFor(plan.creditsPerMonth, cardImage.credits).toLocaleString()} />
-                    <span>{copy.eachImage(usd(cardImage.credits * perCredit, 2))}</span>
-                  </li>
                 </ul>
                 <ul className="hp-includes">
                   <li>
@@ -408,6 +411,16 @@ export function HomePricing({
         })}
       </div>
 
+      {/* What stands behind every plan, in one quiet line. */}
+      <ul className="hp-trust">
+        {copy.trust.map((item) => (
+          <li key={item}>
+            <Check aria-hidden="true" />
+            {item}
+          </li>
+        ))}
+      </ul>
+
       {checkoutError ? (
         <output className="hp-error" aria-live="polite">
           {checkoutError}
@@ -424,36 +437,175 @@ export function HomePricing({
         </div>
       )}
 
-      {/* Free first video */}
+      {/* Two ways in for people not ready to subscribe: the free credits, or a pack. */}
       {asPage ? (
-        <div className="hp-free">
-          <div>
-            <p className="hp-packs-title">{copy.freeTitle}</p>
-            <p className="hp-sub-sm">{copy.freeBody(NEW_USER_GIFT.credits, freeVideo.name)}</p>
+        <div className="hp-split">
+          <div className="hp-split-card">
+            <Gift className="hp-split-icon" aria-hidden="true" />
+            <div>
+              <p className="hp-split-title">{copy.freeTitle}</p>
+              <p className="hp-sub-sm">{copy.freeBody(NEW_USER_GIFT.credits, freeVideo.name)}</p>
+            </div>
+            <Link href={href("/video")} className="hp-cta hp-cta-outline">
+              {copy.freeCta}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
-          <Link href={href("/video")} className="hp-cta hp-cta-ghost">
-            {copy.freeCta}
-          </Link>
+          <div className="hp-split-card">
+            <Package className="hp-split-icon" aria-hidden="true" />
+            <div>
+              <p className="hp-split-title">{copy.paygTitle}</p>
+              <p className="hp-sub-sm">{copy.paygBody(usd(cheapestPack.priceUsd), packYears)}</p>
+            </div>
+            <a href="#packs" className="hp-cta hp-cta-outline">
+              {copy.paygCta}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </a>
+          </div>
         </div>
       ) : null}
 
-      {/* Why yearly */}
+      {/* Why aivd.ai: only differences we have checked on other sites' pricing pages. */}
       {asPage ? (
         <div className="hp-why">
           <h2 className="hp-h3">{copy.whyTitle}</h2>
-          <ul>
-            {copy.why.map((item, index) => (
-              <li key={index}>
-                <strong>{item.title(usd(maxSavingUsd))}</strong>
-                <span>{item.body(maxSaving, whyExample, plans[plans.length - 1].yearlySavingPercent)}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="hp-why-scroll">
+            <table className="hp-why-table">
+              <thead>
+                <tr>
+                  {copy.whyCols.map((col, index) =>
+                    index === 0 ? (
+                      <td key="corner" />
+                    ) : (
+                      <th key={col} scope="col" className={index === 1 ? "hp-why-us" : undefined}>
+                        {col}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {copy.whyRows(usd(basic.monthlyPriceUsd), usd(cheapestPack.priceUsd), packYears).map(([label, us, others]) => (
+                  <tr key={label}>
+                    <th scope="row">{label}</th>
+                    <td className="hp-why-us">
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                      {us}
+                    </td>
+                    <td>{others}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="hp-why-note">{copy.whyNote}</p>
         </div>
       ) : null}
 
-      {/* Usage estimator */}
+      {/* Comparison table */}
       {asPage ? (
+      <div className="hp-compare">
+        <div className="hp-compare-head">
+          <div>
+            <h2 className="hp-h3">{copy.compareTitle}</h2>
+            <p className="hp-sub-sm">{copy.compareSub}</p>
+          </div>
+        </div>
+        <div className="hp-table-scroll">
+        <table className="hp-table">
+          <thead>
+            <tr>
+              <th scope="col">{copy.model}</th>
+              <th scope="col" className="hp-col-free">{copy.free}</th>
+              {plans.map((plan) => (
+                <th key={plan.tier} scope="col" className={plan.popular ? "hp-col-pick" : undefined}>
+                  <span className="hp-th-name">{copy.names[plan.tier]}</span>
+                  <span className="hp-th-price">
+                    {usd(period === "year" ? plan.yearlyPerMonthUsd : plan.monthlyPriceUsd)}
+                    {copy.perMonth}
+                  </span>
+                  {action({ productId: idFor(plan), label: copy.cta(copy.names[plan.tier]), className: plan.popular ? "hp-th-cta hp-th-cta-pick" : "hp-th-cta" })}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {(["video", "image", "audio"] as Kind[]).map((kind) => (
+            <tbody key={kind}>
+              <tr className="hp-table-group">
+                <th scope="rowgroup" colSpan={2 + plans.length}>
+                  {kind === "video" ? <Video className="h-4 w-4" aria-hidden="true" /> : kind === "image" ? <ImageIcon className="h-4 w-4" aria-hidden="true" /> : <Music className="h-4 w-4" aria-hidden="true" />}
+                  {copy.kinds[kind]}
+                </th>
+              </tr>
+              {visibleUnits(kind).map((item) => (
+                <tr key={item.id}>
+                  <th scope="row">
+                    <span className="hp-row-name">{item.name}</span>
+                    <span className="hp-row-spec">
+                      {item.spec[zh ? "zh" : "en"]} · {item.credits} {copy.perUse}
+                    </span>
+                  </th>
+                  <td className="hp-col-free">{generationsFor(NEW_USER_GIFT.credits, item.credits) > 0 ? generationsFor(NEW_USER_GIFT.credits, item.credits) : "—"}</td>
+                  {plans.map((plan) => (
+                    <td key={plan.tier} className={plan.popular ? "hp-col-pick" : undefined}>
+                      <span className="hp-cell-count">{generationsFor(plan.creditsPerMonth, item.credits).toLocaleString()}</span>
+                      <span className="hp-cell-price">{usd(item.credits * creditPriceUsd(plan, period), 2)}</span>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+        </div>
+        <button type="button" className="hp-more" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
+          {showAll ? copy.showLess : copy.showMore}
+          <ChevronDown className={showAll ? "h-4 w-4 rotate-180" : "h-4 w-4"} aria-hidden="true" />
+        </button>
+      </div>
+      ) : null}
+
+      {/* Credit packs: pay as you go, no subscription */}
+      {asPage ? (
+      <div className="hp-packs" id="packs">
+        <div>
+          <h2 className="hp-packs-title">{copy.packs}</h2>
+          <p className="hp-sub-sm">{copy.packsSub(packYears)}</p>
+        </div>
+        <div className="hp-packs-list">
+          {packs.map((pack) => {
+            const body = (
+              <PackBody
+                key={pack.id}
+                price={usd(pack.priceUsd)}
+                badge={pack.popular ? copy.bestValue : null}
+                credits={pendingId === pack.id ? copy.redirecting : `${pack.credits.toLocaleString()} ${credits}`}
+                makes={copy.packMakes(generationsFor(pack.credits, headline.credits), headline.name, generationsFor(pack.credits, freeVideo.credits), freeVideo.name)}
+                per100={copy.per100(usd(pack.per100Usd, 2))}
+              />
+            );
+            return checkout ? (
+              <button key={pack.id} type="button" className="hp-pack" disabled={!checkout.enabled || pendingId !== null} onClick={() => void buy(pack.id)}>
+                {body}
+              </button>
+            ) : (
+              <Link key={pack.id} href={href("/pricing")} className="hp-pack">
+                {body}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+      ) : null}
+
+      {/* Usage estimator, folded so it does not stand between the plans and the packs */}
+      {asPage ? (
+      <details className="hp-est-fold">
+        <summary>
+          <Calculator className="h-4 w-4" aria-hidden="true" />
+          {copy.estimatorToggle}
+          <ChevronDown className="hp-est-chevron h-4 w-4" aria-hidden="true" />
+        </summary>
       <div className="hp-estimator" id="estimator">
         <div className="hp-est-left">
           <h2 className="hp-h3">{copy.estimatorTitle}</h2>
@@ -524,106 +676,11 @@ export function HomePricing({
           {overflow > 0 ? <p className="hp-overflow">{copy.overflow(overflow)}</p> : null}
           {(() => {
             const pick = plans.find((plan) => plan.tier === recommended) ?? plans[0];
-            return action({ productId: idFor(pick), label: copy.cta(copy.names[recommended]), className: "hp-cta hp-cta-accent" });
+            return action({ productId: idFor(pick), label: copy.cta(copy.names[recommended]), className: `${ctaClass(recommended)} hp-cta-block` });
           })()}
         </div>
       </div>
-      ) : null}
-
-      {/* Comparison table */}
-      {asPage ? (
-      <div className="hp-compare">
-        <div className="hp-compare-head">
-          <div>
-            <h2 className="hp-h3">{copy.compareTitle}</h2>
-            <p className="hp-sub-sm">{copy.compareSub}</p>
-          </div>
-        </div>
-        <div className="hp-table-scroll">
-        <table className="hp-table">
-          <thead>
-            <tr>
-              <th scope="col">{copy.model}</th>
-              <th scope="col" className="hp-col-free">{copy.free}</th>
-              {plans.map((plan) => (
-                <th key={plan.tier} scope="col" className={plan.popular ? "hp-col-pick" : undefined}>
-                  <span className="hp-th-name">{copy.names[plan.tier]}</span>
-                  <span className="hp-th-price">
-                    {usd(period === "year" ? plan.yearlyPerMonthUsd : plan.monthlyPriceUsd)}
-                    {copy.perMonth}
-                  </span>
-                  {action({ productId: idFor(plan), label: copy.cta(copy.names[plan.tier]), className: "hp-th-cta" })}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {(["video", "image", "audio"] as Kind[]).map((kind) => (
-            <tbody key={kind}>
-              <tr className="hp-table-group">
-                <th scope="rowgroup" colSpan={2 + plans.length}>
-                  {kind === "video" ? <Video className="h-4 w-4" aria-hidden="true" /> : kind === "image" ? <ImageIcon className="h-4 w-4" aria-hidden="true" /> : <Music className="h-4 w-4" aria-hidden="true" />}
-                  {copy.kinds[kind]}
-                </th>
-              </tr>
-              {visibleUnits(kind).map((item) => (
-                <tr key={item.id}>
-                  <th scope="row">
-                    <span className="hp-row-name">{item.name}</span>
-                    <span className="hp-row-spec">
-                      {item.spec[zh ? "zh" : "en"]} · {item.credits} {copy.perUse}
-                    </span>
-                  </th>
-                  <td className="hp-col-free">{generationsFor(NEW_USER_GIFT.credits, item.credits) > 0 ? generationsFor(NEW_USER_GIFT.credits, item.credits) : "—"}</td>
-                  {plans.map((plan) => (
-                    <td key={plan.tier} className={plan.popular ? "hp-col-pick" : undefined}>
-                      <span className="hp-cell-count">{generationsFor(plan.creditsPerMonth, item.credits).toLocaleString()}</span>
-                      <span className="hp-cell-price">{usd(item.credits * creditPriceUsd(plan, period), 2)}</span>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
-        </div>
-        <button type="button" className="hp-more" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
-          {showAll ? copy.showLess : copy.showMore}
-          <ChevronDown className={showAll ? "h-4 w-4 rotate-180" : "h-4 w-4"} aria-hidden="true" />
-        </button>
-      </div>
-      ) : null}
-
-      {/* Credit packs */}
-      {asPage ? (
-      <div className="hp-packs" id="packs">
-        <div>
-          <p className="hp-packs-title">{copy.packs}</p>
-          <p className="hp-sub-sm">{copy.packsSub}</p>
-        </div>
-        <div className="hp-packs-list">
-          {packs.map((pack) => {
-            const body = (
-              <PackBody
-                key={pack.id}
-                price={usd(pack.priceUsd)}
-                badge={pack.popular ? copy.bestValue : null}
-                credits={pendingId === pack.id ? copy.redirecting : `${pack.credits.toLocaleString()} ${credits}`}
-                makes={copy.packMakes(generationsFor(pack.credits, headline.credits), headline.name, generationsFor(pack.credits, freeVideo.credits), freeVideo.name)}
-                per100={copy.per100(usd(pack.per100Usd, 2))}
-              />
-            );
-            return checkout ? (
-              <button key={pack.id} type="button" className="hp-pack" disabled={!checkout.enabled || pendingId !== null} onClick={() => void buy(pack.id)}>
-                {body}
-              </button>
-            ) : (
-              <Link key={pack.id} href={href("/pricing")} className="hp-pack">
-                {body}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      </details>
       ) : null}
 
       {/* Closing call to action */}
@@ -636,9 +693,9 @@ export function HomePricing({
           <div className="hp-bottom-actions">
             {(() => {
               const pro = plans.find((plan) => plan.popular) ?? plans[1];
-              return action({ productId: idFor(pro), label: copy.cta(copy.names[pro.tier]), className: "hp-cta hp-cta-accent" });
+              return action({ productId: idFor(pro), label: copy.cta(copy.names[pro.tier]), className: ctaClass(pro.tier) });
             })()}
-            <Link href={href("/video")} className="hp-cta hp-cta-ghost">
+            <Link href={href("/video")} className="hp-cta hp-cta-outline">
               {copy.freeCta}
             </Link>
           </div>
