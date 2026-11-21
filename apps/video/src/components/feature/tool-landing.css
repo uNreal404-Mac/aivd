@@ -1,0 +1,18 @@
+.tool-landing {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Wide screens: the tool layout's main area is the height of the window, so
+   the generator keeps its full-screen size and the text scrolls up under it. */
+@media (min-width: 1024px) {
+  .tool-landing {
+    overflow-y: auto;
+  }
+
+  .tool-landing > .vs-root {
+    flex-shrink: 0;
+  }
+}

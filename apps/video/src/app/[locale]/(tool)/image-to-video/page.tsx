@@ -1,4 +1,7 @@
 import { VideoStudioPage } from "@/components/hf/video-studio-page";
+import { FeatureContent } from "@/components/feature/feature-content";
+import { ToolLanding } from "@/components/feature/tool-landing";
+import { featureCopy } from "@/lib/feature-pages";
 import { getToolPageConfig } from "@/config/tool-pages";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates, openGraphLocale, resolveOgImage } from "@/lib/seo";
@@ -16,10 +19,8 @@ export async function generateMetadata({
   const { locale } = await params;
   const config = getToolPageConfig("image-to-video");
   const isChinese = locale.toLowerCase().startsWith("zh");
-  const title = isChinese ? "图片生成视频 - AI 动画工具" : config.seo?.title;
-  const description = isChinese
-    ? "上传照片并通过 AI 生成自然流畅的视频动画。"
-    : config.seo?.description;
+  // Title, description and H1 come from the feature copy (lib/feature-pages).
+  const { title, description } = featureCopy("image-to-video", isChinese);
   const alternates = buildAlternates("/image-to-video", locale);
   const ogImage = resolveOgImage(config.seo?.ogImage);
 
@@ -54,5 +55,10 @@ export default async function ImageToVideoPage({
   searchParams,
 }: ImageToVideoPageProps & { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [{ locale }, sp] = await Promise.all([params, searchParams]);
-  return <VideoStudioPage locale={locale} searchParams={sp} />;
+  return (
+    <ToolLanding>
+      <VideoStudioPage locale={locale} searchParams={sp} />
+      <FeatureContent kind="image-to-video" locale={locale} />
+    </ToolLanding>
+  );
 }
