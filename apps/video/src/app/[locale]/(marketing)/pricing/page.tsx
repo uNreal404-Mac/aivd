@@ -19,16 +19,17 @@ export async function generateMetadata({
 
   const isZh = locale === "zh";
   // Every figure comes from the pricing config, so a price change cannot leave the title behind.
+  // Titles and descriptions stay inside a search result (60 and 160 wide; pnpm check:site).
   // Titles use the short "$9.9" searchers type; the page itself writes US$.
   const short = (value: number) => usd(value).replace(/^US\$/, "$");
   const from = short(planOffers()[0].monthlyPriceUsd);
   const packFrom = short(Math.min(...packOffers().map((pack) => pack.priceUsd)));
   const title = isZh
-    ? `AI 视频生成器价格 — 月付 ${from} 起，支持免订阅积分包 | ${siteConfig.name}`
-    : `AI Video Generator Pricing — Plans from ${from}/mo & Pay-As-You-Go | ${siteConfig.name}`;
+    ? `AI 视频生成器价格与套餐：月付 ${from} 起 | ${siteConfig.name}`
+    : `AI Video Generator Pricing: Plans from ${from}/mo | ${siteConfig.name}`;
   const description = isZh
     ? `月付 ${from} 起，一站调用 Veo 3.1、Kling 4.0、Seedance 2.5、Wan 2.6 等全部模型。成片无水印、可商用，生成失败自动退积分；不想订阅可买 ${packFrom} 起的积分包。`
-    : `Plans from ${from}/mo for Veo 3.1, Kling 4.0, Seedance 2.5, Wan 2.6 and every other model. No watermark, commercial use, credits back on failed generations, and pay-as-you-go credit packs from ${packFrom}.`;
+    : `Plans from ${from}/mo for Veo 3.1, Kling 4.0, Seedance 2.5 and more, with credits back on failed generations. Or skip the plan: credit packs from ${packFrom}.`;
   const ogImage = resolveOgImage();
 
   return {
