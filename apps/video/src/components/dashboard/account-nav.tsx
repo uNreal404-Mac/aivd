@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCOUNT_COPY, planLabel } from "@/lib/account-view";
 import Link from "next/link";
 import { localizedHref } from "@/lib/locale-path";
 import { useEffect } from "react";
@@ -29,7 +30,6 @@ export function AccountNav({ lang }: { lang: string }) {
     { path: "/ai/video", label: zh ? "生成视频" : "Make a video", icon: Clapperboard },
     { path: "/ai/image", label: zh ? "生成图片" : "Make an image", icon: ImageIcon },
   ];
-  const plans = { FREE: zh ? "免费版" : "Free", PRO: zh ? "专业版" : "Pro", BUSINESS: zh ? "商业版" : "Business" } as const;
 
   return (
     <aside className="db-rail" aria-label={zh ? "账户中心" : "Account"}>
@@ -57,7 +57,7 @@ export function AccountNav({ lang }: { lang: string }) {
       })}
 
       <div className="db-rail-plan">
-        <span className="db-rail-plan-name">{balance?.plan ? plans[balance.plan] : plans.FREE}</span>
+        <span className="db-rail-plan-name">{planLabel(balance?.tier, zh ? ACCOUNT_COPY.zh : ACCOUNT_COPY.en)}</span>
         <span className="db-rail-plan-credits">
           {zh ? "可用积分 " : "Credits "}
           <strong>{balance ? balance.availableCredits.toLocaleString() : "—"}</strong>

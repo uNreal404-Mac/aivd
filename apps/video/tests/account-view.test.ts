@@ -409,6 +409,20 @@ describe("POST /api/payments/portal", () => {
     });
   });
 
+  it("returns 502 portal_unavailable when Stripe refuses the portal session", async () => {
+    portalCreate.mockRejectedValue(new Error("Permission denied"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "portal_unavailable" });
+    expect(parsePortalResponse(502, { error: "portal_unavailable" })).toEqual({
+      ok: false,
+      message: "The billing page could not be opened. Please try again later or contact support.",
+    });
+  });
+
   it("returns a Chinese portal to the Chinese account page", async () => {
     await POST(
       makeRequest(

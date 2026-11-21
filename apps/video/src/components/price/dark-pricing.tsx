@@ -65,8 +65,7 @@ export function DarkPricing({
   const [isPending, startTransition] = useTransition();
   const signInModal = useSigninModal();
   const { balance } = useCredits();
-  const userPlan = balance?.plan || "FREE";
-  const isFreeUser = !userPlan || userPlan === "FREE";
+  const isFreeUser = !balance?.tier || balance.tier === "free";
 
   // 组织产品数据
   const allSubscriptionProducts = useMemo(

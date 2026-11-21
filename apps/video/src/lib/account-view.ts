@@ -275,6 +275,7 @@ const PORTAL_ERROR_MESSAGES: Record<string, string> = {
   invalid_key: "Payments are not configured.",
   unauthorized: "You need to sign in to manage your subscription.",
   no_customer: "No billing account was found for this user.",
+  portal_unavailable: "The billing page could not be opened. Please try again later or contact support.",
   invalid_body: "The request could not be processed.",
   default: "Something went wrong. Please try again.",
 };

@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
+import type { PlanTier } from "@/config/pricing-user";
+
 export interface CreditBalance {
   totalCredits: number;
   usedCredits: number;
@@ -11,6 +13,8 @@ export interface CreditBalance {
   availableCredits: number;
   expiringSoon: number;
   plan?: "FREE" | "PRO" | "BUSINESS" | null;
+  /** Current plan tier; use this, not the legacy `plan`. */
+  tier?: PlanTier;
 }
 
 interface CreditsState {

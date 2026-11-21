@@ -61,11 +61,22 @@ export const POST = async (req: NextRequest) => {
   const origin = new URL(req.url).origin;
   const locale = req.headers.get("referer")?.match(/^https?:\/\/[^/]+\/zh(\/|$)/) ? "/zh" : "";
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: stripeCustomerId,
-    return_url: `${origin}${locale}/account`,
-    ...(locale ? { locale: "zh" as const } : {}),
-  });
+  let url: string;
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${origin}${locale}/account`,
+      ...(locale ? { locale: "zh" as const } : {}),
+    });
+    url = session.url;
+  } catch (error) {
+    // E.g. the key lacks Customer Portal write permission, or no portal
+    // configuration is saved in the Stripe dashboard. Logged for us; the
+    // subscriber gets a message pointing to support instead of a bare 500.
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.error(`[stripe] billing portal session failed: ${message}`);
+    return NextResponse.json({ error: "portal_unavailable" }, { status: 502 });
+  }
 
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url });
 };

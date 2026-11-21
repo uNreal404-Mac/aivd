@@ -167,7 +167,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         upgrade: "升级",
         language: "语言",
         languageName: "简体中文",
-        plans: { FREE: "免费套餐", PRO: "专业版", BUSINESS: "商业版" },
+        plans: { free: "免费套餐", basic: "基础版", pro: "专业版", ultimate: "旗舰版" },
       }
     : {
         explore: "Explore",
@@ -197,7 +197,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         upgrade: "Upgrade",
         language: "Language",
         languageName: "English",
-        plans: { FREE: "Free plan", PRO: "Pro plan", BUSINESS: "Business plan" },
+        plans: { free: "Free plan", basic: "Basic plan", pro: "Pro plan", ultimate: "Ultimate plan" },
       };
 
   const dropdowns = buildDropdowns(zh);
@@ -519,7 +519,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                     <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-[30px] w-[30px]" />
                     <span className="min-w-0 flex-1">
                       <span className="hf-acct-name">{user.name || user.email}</span>
-                      <span className="hf-acct-sub">{balance?.plan ? t.plans[balance.plan] : t.plans.FREE}</span>
+                      <span className="hf-acct-sub">{t.plans[balance?.tier ?? "free"]}</span>
                     </span>
                   </Link>
 
