@@ -423,6 +423,35 @@ button.vs-chip:disabled {
   gap: 8px;
 }
 
+.vs-duration-wrap { position: relative; min-width: 0; }
+
+.vs-duration-trigger { width: 100%; cursor: pointer; }
+
+.vs-duration-panel {
+  position: absolute;
+  z-index: 30;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: min(340px, calc(100vw - 56px));
+  padding: 16px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--du-surface);
+  box-shadow: 0 16px 36px rgb(0 0 0 / 0.38);
+}
+
+.vs-duration-heading,
+.vs-duration-limits { display: flex; justify-content: space-between; color: var(--ds-text-3); font-size: var(--ds-fs-sm); }
+.vs-duration-heading strong { color: white; font-size: var(--ds-fs-md); }
+.vs-duration-panel input[type="range"] { display: block; width: 100%; height: 42px; margin: 10px 0 2px; appearance: none; background: transparent; cursor: pointer; }
+.vs-duration-panel input[type="range"]::-webkit-slider-runnable-track { height: 34px; border: 1px solid var(--ds-line-2); border-radius: 7px; background: linear-gradient(90deg, color-mix(in srgb, var(--du-accent) 35%, var(--vs-card)) var(--vs-duration-progress), var(--vs-card) var(--vs-duration-progress)); }
+.vs-duration-panel input[type="range"]::-webkit-slider-thumb { width: 8px; height: 40px; margin-top: -4px; appearance: none; border-radius: 5px; background: white; box-shadow: 0 1px 3px rgb(0 0 0 / 0.45); }
+.vs-duration-panel input[type="range"]::-moz-range-track { height: 34px; border: 1px solid var(--ds-line-2); border-radius: 7px; background: var(--vs-card); }
+.vs-duration-panel input[type="range"]::-moz-range-progress { height: 34px; border-radius: 7px; background: color-mix(in srgb, var(--du-accent) 35%, var(--vs-card)); }
+.vs-duration-panel input[type="range"]::-moz-range-thumb { width: 8px; height: 40px; border: 0; border-radius: 5px; background: white; }
+.vs-duration-limits { font-size: var(--ds-fs-xs); }
+.vs-duration-warning { margin-top: 10px; color: var(--du-accent-text); font-size: var(--ds-fs-xs); line-height: 1.45; }
+
 .vs-generate {
   /* Always in reach: pinned to the bottom of the settings column while it scrolls. */
   position: sticky;

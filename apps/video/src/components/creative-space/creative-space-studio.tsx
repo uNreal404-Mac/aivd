@@ -611,8 +611,8 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
         </div>
       </section>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_340px]">
-        <aside className="order-2 border-t border-[#1f2833] bg-[#07090c] p-4 lg:order-none lg:border-r lg:border-t-0">
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(290px,340px)_minmax(0,1fr)]">
+        <aside className="order-2 min-h-0 overflow-y-auto border-t border-[#1f2833] bg-[#07090c] p-4 lg:order-none lg:border-r lg:border-t-0">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">{t.assets}</h2>
             <span className="rounded-full bg-[#10151b] px-2 py-0.5 text-[10px] text-[#7f8994]">
@@ -643,7 +643,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             </p>
           )}
 
-          <div className="mt-4 grid max-h-48 grid-cols-3 gap-2 overflow-auto lg:max-h-[calc(100svh-270px)] lg:grid-cols-2">
+          <div className="mt-4 grid max-h-48 grid-cols-3 gap-2 overflow-auto lg:max-h-48 lg:grid-cols-2">
             {assets.map((asset) => (
               <button
                 key={asset.id}
@@ -689,6 +689,147 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               {t.emptyAssets}
             </div>
           )}
+        <section className="mt-5 flex min-h-[360px] flex-col border-t border-[#1f2833] bg-[#07090c]">
+          <div className="border-b border-[#1f2833] p-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0b1f20] text-[#66fcf1]">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-white">{t.agent}</h2>
+                <p className="text-[10px] text-[#8b949e]">{t.agentSubtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4">
+            {assets.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {assets.map((asset) => (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    onClick={() => appendMention(asset.label)}
+                    className="rounded-md border border-[#214d4c] bg-[#0b1f20] px-2 py-1 text-[10px] text-[#66fcf1] hover:bg-[#123031]"
+                  >
+                    @{asset.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="rounded-xl border border-[#26303b] bg-[#0b0c10] p-2 focus-within:border-[#45a29e]">
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                    event.preventDefault();
+                    void buildPlan();
+                  }
+                }}
+                placeholder={t.inputPlaceholder}
+                rows={3}
+                className="w-full resize-none bg-transparent px-1 py-1 text-xs text-white outline-none placeholder:text-[#545d66]"
+              />
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPrompt(t.quickStart.replace(/^试试：|^Try:\s*/i, ""))}
+                  className="truncate px-1 text-left text-[9px] text-[#8b949e] hover:text-[#66fcf1]"
+                >
+                  {t.quickStart}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void buildPlan()}
+                  disabled={
+                    isPlanning ||
+                    !prompt.trim() ||
+                    assets.some((asset) => asset.safety === "checking")
+                  }
+                  title={
+                    assets.some((asset) => asset.safety === "checking")
+                      ? t.stillChecking
+                      : !prompt.trim()
+                        ? t.needPrompt
+                        : undefined
+                  }
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#66fcf1] px-3 py-2 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isPlanning ? (
+                    <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
+                  {isPlanning ? t.generating : t.createPlan}
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void startGeneration()}
+              disabled={!plan?.generationPrompt || isGenerating}
+              title={!plan?.generationPrompt ? t.needPlan : undefined}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#66fcf1] px-3 py-2.5 text-xs font-semibold text-black transition hover:bg-[#45a29e] disabled:cursor-not-allowed disabled:border disabled:border-[#1f2833] disabled:bg-[#101318] disabled:text-[#5d6670]"
+            >
+              {isGenerating ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isGenerating ? t.generatingVideo : t.generationDisabled}
+            </button>
+            <p className="mt-2 text-center text-[9px] leading-relaxed text-[#8b949e]">{t.generationHelp}</p>
+            {generationStarted && (
+              <div className="mt-3 rounded-xl border border-emerald-900/70 bg-emerald-950/25 p-3 text-center">
+                <p className="text-[10px] leading-relaxed text-emerald-200">
+                  {t.generationStarted}
+                </p>
+                <a
+                  href={localizedHref(language, "/my-creations")}
+                  className="mt-2 inline-flex text-[10px] font-semibold text-[#66fcf1] hover:underline"
+                >
+                  {t.openCreations}
+                </a>
+              </div>
+            )}
+          </div>
+          <div className="min-h-0 flex-1 space-y-4 overflow-auto border-t border-[#1f2833] p-4">
+            <div className="rounded-xl border border-[#1f2833] bg-[#0b0c10] p-3">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[#66fcf1]">
+                <ShieldCheck className="h-4 w-4" />
+                {t.safetyTitle}
+              </div>
+              <p className="text-[10px] leading-relaxed text-[#7f8994]">{t.safetyBody}</p>
+            </div>
+
+            {plan ? (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">{t.plan}</h3>
+                <div className="space-y-2">
+                  {plan.steps.map((step, index) => (
+                    <button
+                      key={`${step.assetId}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedId(step.assetId)}
+                      className="w-full rounded-xl border border-[#1f2833] bg-[#0b0c10] p-3 text-left transition hover:border-[#45a29e]"
+                    >
+                      <div className="mb-1 text-xs font-semibold text-white">{step.title}</div>
+                      <p className="text-[10px] leading-relaxed text-[#7f8994]">{step.instruction}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] leading-relaxed text-[#66fcf1]">{plan.summary}</p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-[11px] leading-relaxed text-[#8b949e]">
+                <Bot className="mx-auto mb-2 h-5 w-5" />
+                {t.noPlan}
+              </div>
+            )}
+          </div>
+
+        </section>
         </aside>
 
         <section className="relative order-1 min-h-[56svh] overflow-hidden bg-[#050708] lg:order-none lg:min-h-0">
@@ -850,147 +991,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           )}
         </section>
 
-        <aside className="order-3 flex min-h-[430px] flex-col border-t border-[#1f2833] bg-[#07090c] lg:min-h-0 lg:border-l lg:border-t-0">
-          <div className="border-b border-[#1f2833] p-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0b1f20] text-[#66fcf1]">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-white">{t.agent}</h2>
-                <p className="text-[10px] text-[#8b949e]">{t.agentSubtitle}</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
-            <div className="rounded-xl border border-[#1f2833] bg-[#0b0c10] p-3">
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[#66fcf1]">
-                <ShieldCheck className="h-4 w-4" />
-                {t.safetyTitle}
-              </div>
-              <p className="text-[10px] leading-relaxed text-[#7f8994]">{t.safetyBody}</p>
-            </div>
-
-            {plan ? (
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#8b949e]">{t.plan}</h3>
-                <div className="space-y-2">
-                  {plan.steps.map((step, index) => (
-                    <button
-                      key={`${step.assetId}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedId(step.assetId)}
-                      className="w-full rounded-xl border border-[#1f2833] bg-[#0b0c10] p-3 text-left transition hover:border-[#45a29e]"
-                    >
-                      <div className="mb-1 text-xs font-semibold text-white">{step.title}</div>
-                      <p className="text-[10px] leading-relaxed text-[#7f8994]">{step.instruction}</p>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-[10px] leading-relaxed text-[#66fcf1]">{plan.summary}</p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#1f2833] p-4 text-center text-[11px] leading-relaxed text-[#8b949e]">
-                <Bot className="mx-auto mb-2 h-5 w-5" />
-                {t.noPlan}
-              </div>
-            )}
-          </div>
-
-          <div className="border-t border-[#1f2833] p-4">
-            {assets.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {assets.map((asset) => (
-                  <button
-                    key={asset.id}
-                    type="button"
-                    onClick={() => appendMention(asset.label)}
-                    className="rounded-md border border-[#214d4c] bg-[#0b1f20] px-2 py-1 text-[10px] text-[#66fcf1] hover:bg-[#123031]"
-                  >
-                    @{asset.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="rounded-xl border border-[#26303b] bg-[#0b0c10] p-2 focus-within:border-[#45a29e]">
-              <textarea
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                    event.preventDefault();
-                    void buildPlan();
-                  }
-                }}
-                placeholder={t.inputPlaceholder}
-                rows={3}
-                className="w-full resize-none bg-transparent px-1 py-1 text-xs text-white outline-none placeholder:text-[#545d66]"
-              />
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPrompt(t.quickStart.replace(/^试试：|^Try:\s*/i, ""))}
-                  className="truncate px-1 text-left text-[9px] text-[#8b949e] hover:text-[#66fcf1]"
-                >
-                  {t.quickStart}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void buildPlan()}
-                  disabled={
-                    isPlanning ||
-                    !prompt.trim() ||
-                    assets.some((asset) => asset.safety === "checking")
-                  }
-                  title={
-                    assets.some((asset) => asset.safety === "checking")
-                      ? t.stillChecking
-                      : !prompt.trim()
-                        ? t.needPrompt
-                        : undefined
-                  }
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#66fcf1] px-3 py-2 text-[11px] font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {isPlanning ? (
-                    <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
-                  {isPlanning ? t.generating : t.createPlan}
-                </button>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void startGeneration()}
-              disabled={!plan?.generationPrompt || isGenerating}
-              title={!plan?.generationPrompt ? t.needPlan : undefined}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#66fcf1] px-3 py-2.5 text-xs font-semibold text-black transition hover:bg-[#45a29e] disabled:cursor-not-allowed disabled:border disabled:border-[#1f2833] disabled:bg-[#101318] disabled:text-[#5d6670]"
-            >
-              {isGenerating ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {isGenerating ? t.generatingVideo : t.generationDisabled}
-            </button>
-            <p className="mt-2 text-center text-[9px] leading-relaxed text-[#8b949e]">{t.generationHelp}</p>
-            {generationStarted && (
-              <div className="mt-3 rounded-xl border border-emerald-900/70 bg-emerald-950/25 p-3 text-center">
-                <p className="text-[10px] leading-relaxed text-emerald-200">
-                  {t.generationStarted}
-                </p>
-                <a
-                  href={localizedHref(language, "/my-creations")}
-                  className="mt-2 inline-flex text-[10px] font-semibold text-[#66fcf1] hover:underline"
-                >
-                  {t.openCreations}
-                </a>
-              </div>
-            )}
-          </div>
-        </aside>
       </div>
     </main>
   );

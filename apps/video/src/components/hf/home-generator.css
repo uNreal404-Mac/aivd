@@ -32,6 +32,87 @@
   color: white;
 }
 
+.du-canvas-entry {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.du-canvas-entry-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 190px;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--du-border);
+  border-radius: var(--ds-r-xl);
+  color: var(--du-text);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-weight: 600;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.du-canvas-entry-card:hover,
+.du-canvas-entry-card:focus-visible {
+  border-color: var(--du-accent);
+  transform: translateY(-2px);
+}
+
+.du-canvas-entry-new {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: var(--du-surface);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--du-text-muted) 32%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.du-canvas-entry-plus {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: var(--ds-r-md);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.du-canvas-entry-video {
+  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 85%, transparent), color-mix(in srgb, var(--du-accent) 25%, transparent)), url('/home/samples/rain-couple.webp') center / cover;
+}
+
+.du-canvas-entry-image {
+  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 85%, transparent), color-mix(in srgb, var(--du-accent) 25%, transparent)), url('/home/samples/cosmic-bloom.webp') center / cover;
+}
+
+.du-canvas-entry-visual {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--du-accent) 48%, transparent);
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  color: var(--du-accent-text);
+}
+
+.du-canvas-entry-visual > svg { width: 28px; height: 28px; }
+
+@media (max-width: 640px) {
+  .du-canvas-entry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .du-canvas-entry-new { grid-column: 1 / -1; min-height: 150px; }
+  .du-canvas-entry-card { min-height: 170px; padding: 14px; }
+}
+
 .du-composer {
   position: relative;
   margin-top: 16px;

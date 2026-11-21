@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { localizedHref } from "@/lib/locale-path";
 
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
@@ -296,6 +296,16 @@ export function AiVideoStudio({
     Boolean(initialSettings?.prompt),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [durationOpen, setDurationOpen] = useState(false);
+  const durationRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!durationOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!durationRef.current?.contains(event.target as Node)) setDurationOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, [durationOpen]);
   // Start on a model that can generate: the one in the URL when it is on sale,
   // otherwise whatever the settings resolved to.
   // Models from the catalogue open selected even when they cannot generate
@@ -330,7 +340,7 @@ export function AiVideoStudio({
   const durationOptions = selectedModelConnected
     ? model.durations
     : [4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const durationIndex = Math.max(0, durationOptions.indexOf(settings.duration));
+  const durationSupported = durationOptions.includes(settings.duration);
   const exampleCredits = selectedModelConnected
     ? estimateCredits(settings)
     : Math.ceil(settings.duration * 5 * (settings.resolution === "1080p" ? 1.5 : settings.resolution === "720p" ? 1.25 : 1));
@@ -444,6 +454,11 @@ export function AiVideoStudio({
     if (promptEmpty) {
       setNotice(isChinese ? "先写一句提示词，描述你想看到的画面。" : "Write a prompt describing what you want to see.");
       promptRef.current?.focus();
+      return;
+    }
+    if (!durationSupported) {
+      setDurationOpen(true);
+      setNotice(isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationOptions.join(", ")} seconds. Adjust the length before generating.`);
       return;
     }
 
@@ -802,21 +817,25 @@ export function AiVideoStudio({
               onChange={(id) => {
                 setUpcoming(undefined);
                 setCatalogModelId(id);
+                setDurationOpen(false);
                 // The picker only offers models that can generate.
                 setSettings((previous) => selectModel(previous, id));
               }}
             />
 
             <div className="vs-grid">
-              <SelectCard
-                id="studio-duration"
-                label={copy.duration}
-                fixedHint={isChinese ? `${model.name} 只支持这个时长` : `${model.name} only offers this length`}
-                value={settings.duration}
-                options={durationOptions}
-                format={(option) => `${option}s`}
-                onChange={(duration) => setSettings((previous) => ({ ...previous, duration }))}
-              />
+              <div ref={durationRef} className="vs-duration-wrap">
+                <button type="button" className="vs-card vs-duration-trigger" aria-expanded={durationOpen} aria-controls="studio-duration-panel" onClick={() => setDurationOpen((value) => !value)}>
+                  <span className="min-w-0 flex-1"><span className="vs-card-label">{copy.duration}</span><span className="vs-card-value">{settings.duration}s</span></span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
+                </button>
+                {durationOpen ? <div id="studio-duration-panel" className="vs-duration-panel">
+                  <label htmlFor="studio-duration" className="vs-duration-heading">{copy.duration}<strong>{settings.duration}s</strong></label>
+                  <input id="studio-duration" type="range" min="4" max="20" step="1" value={settings.duration} onChange={(event) => { setSettings((previous) => ({ ...previous, duration: Number(event.target.value) })); setNotice(null); }} style={{ "--vs-duration-progress": `${((settings.duration - 4) / 16) * 100}%` } as CSSProperties} />
+                  <div className="vs-duration-limits"><span>4s</span><span>20s</span></div>
+                  {!durationSupported ? <p className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒` : `${model.name} currently supports ${durationOptions.join(", ")}s`}</p> : null}
+                </div> : null}
+              </div>
               <SelectCard
                 id="studio-aspect"
                 label={copy.aspect}
@@ -843,6 +862,7 @@ export function AiVideoStudio({
                 onChange={(option) => setSettings((previous) => ({ ...previous, audio: option === "on" }))}
               />
             </div>
+            {!durationSupported ? <output className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationOptions.join(", ")} seconds. Adjust the length before generating.`}</output> : null}
 
             <button
               type="button"
@@ -854,7 +874,7 @@ export function AiVideoStudio({
               {submitting ? copy.submit : copy.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {selectedModelConnected ? exampleCredits : copy.soon}
+                {selectedModelConnected ? (durationSupported ? exampleCredits : "—") : copy.soon}
               </span>
             </button>
             {needsStartImage ? (

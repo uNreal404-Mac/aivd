@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowUp, Check, ChevronDown, Coins, Film, RefreshCw, Settings2, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Coins, Film, Image as ImageIcon, Plus, RefreshCw, Settings2, Volume2, VolumeX, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 
@@ -27,12 +27,13 @@ const VIDEO_MODES = ["reference", "text"] as const;
 export function HomeGenerator({ lang, models, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false }: Props) {
   const zh = lang.toLowerCase().startsWith("zh");
   const router = useRouter();
-  const [kind, setKind] = useState<"video" | "image">(initialKind);
+  const [kind, setKind] = useState<"video" | "image" | "canvas">(initialKind);
   const [panel, setPanel] = useState<Panel>(null);
   const [mode, setMode] = useState<(typeof VIDEO_MODES)[number]>("text");
   const [modelId, setModelId] = useState(models[0]?.id ?? "");
-  const [imageModelId, setImageModelId] = useState(IMAGE_MODEL_IDS[0] ?? "");
+  const [imageModelId, setImageModelId] = useState(IMAGE_MODEL_IDS.includes("grok-imagine-image-2-0/text-to-image") ? "grok-imagine-image-2-0/text-to-image" : (IMAGE_MODEL_IDS[0] ?? ""));
   const imageModel = getMarketModel(imageModelId);
+  const imageAvailable = IMAGE_MODEL_IDS.includes(imageModelId);
   const imageCredits = imageModel ? marketCredits(imageModel, { prompt: "", resolution: imageModel.options.resolutions?.[0] }) : null;
   const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
   const [videoReferences, setVideoReferences] = useState<{ file: File; preview: string }[]>([]);
@@ -163,7 +164,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       const supported = STUDIO_MODELS.find((item) => item.id === id);
       if (supported) { setResolution(supported.resolutions[0]); setSound(supported.audio); }
     }
-    setNotice("");
+    setNotice(selected ? "" : (zh ? "当前模型的生成接口尚未接入，请选择其他模型。" : "This model's generation endpoint is not connected yet. Choose another model."));
   };
 
   // An empty prompt gets a nudge instead of a silent no-op. A start image or
@@ -183,6 +184,7 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
     const params = new URLSearchParams();
     params.set("prompt", prompt.trim());
     if (kind === "image") {
+      if (!imageAvailable) { setNotice(zh ? "当前图片模型的生成接口尚未接入，请选择其他模型。" : "This image model's generation endpoint is not connected yet. Choose another model."); return; }
       params.set("model", imageModelId);
       params.set("aspect", aspect);
       params.set("resolution", resolution);
@@ -227,7 +229,23 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
     {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { setKind("video"); setPanel(null); setMentionOpen(false); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { setKind("image"); setPanel(null); setMentionOpen(false); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
+      <button type="button" role="tab" aria-selected={kind === "canvas"} onClick={() => { setKind("canvas"); setPanel(null); setMentionOpen(false); }} className={`du-composer-tab ${kind === "canvas" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "无限画布" : "Infinite Canvas"}</button>
     </div>}
+    {kind === "canvas" ? <div className="du-canvas-entry" role="tabpanel" aria-label={zh ? "无限画布" : "Infinite Canvas"}>
+      <a className="du-canvas-entry-card du-canvas-entry-new" href={localizedHref(lang, "/creative-space/canvas")}>
+        <span className="du-canvas-entry-plus"><Plus aria-hidden="true" /></span>
+        <span>{zh ? "新建画布" : "New canvas"}</span>
+      </a>
+      <a className="du-canvas-entry-card du-canvas-entry-video" href={localizedHref(lang, "/creative-space")}>
+        <span className="du-canvas-entry-visual"><Film aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
+        <span>{zh ? "视频创作" : "Video creation"}</span>
+      </a>
+      <a className="du-canvas-entry-card du-canvas-entry-image" href={localizedHref(lang, "/creative-space")}>
+        <span className="du-canvas-entry-visual"><ImageIcon aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
+        <span>{zh ? "图像创作" : "Image creation"}</span>
+      </a>
+    </div> : null}
+    {kind !== "canvas" ?
     <form onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
       <input ref={referencesRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addReferences(event.target.files); event.target.value = ""; }} />
@@ -262,13 +280,13 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
     </div> : null}
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
       {kind === "video" ? <div data-home-popover className="relative"><button type="button" className={chip} aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}><Film className="h-4 w-4 shrink-0" />{modeLabels[modeIndex]}<ChevronDown className="h-3 w-3 shrink-0" /></button>{panel === "mode" ? <div className="absolute bottom-11 left-0 z-50 w-[min(92vw,290px)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-2 shadow-2xl">{VIDEO_MODES.map((item, index) => <button key={item} type="button" onClick={() => { setMode(item); setPanel(null); }} className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[var(--du-text)] hover:bg-[var(--du-surface-2)]">{modeLabels[index]}{mode === item ? <Check className="h-4 w-4 text-[var(--du-accent-text)]" /> : null}</button>)}</div> : null}</div> : null}
-      {kind === "video" ? divider : null}<div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : setImageModelId} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="top" showConnectionStatus={false} compact /></div>
+      {kind === "video" ? divider : null}<div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "当前图片模型的生成接口尚未接入，请选择其他模型。" : "This image model's generation endpoint is not connected yet. Choose another model.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="top" showConnectionStatus={false} catalogSet="backup" compact /></div>
       {kind === "video" ? <>{divider}<button type="button" className={plainControl} onClick={() => setSound(!sound)} aria-pressed={sound} disabled={!studioModel?.audio}>{sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}{sound ? (zh ? "声音开" : "Sound on") : (zh ? "声音关" : "Sound off")}</button></> : null}
       {divider}<div data-home-popover className="relative"><button type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolution}` : `${aspect} / ${resolution}`} </button>{panel === "settings" ? <div className="absolute bottom-11 right-0 z-50 max-h-[min(42vh,320px)] w-[min(92vw,420px)] overflow-y-auto rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div><p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "画面比例" : "Aspect ratio"}</p><div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">{(kind === "video" ? VIDEO_ASPECTS : IMAGE_ASPECTS).map((item) => segment(item, aspect === item, () => setAspect(item), kind === "video" && !current?.aspects.includes(item)))}</div>{kind === "video" ? <><p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "视频时长" : "Video length"} · {duration}s</p><input type="range" min={4} max={15} value={duration} onChange={(event) => { const raw = Number(event.target.value); const allowed = current?.durations ?? [4]; setDuration(allowed.reduce((nearest, next) => Math.abs(next - raw) < Math.abs(nearest - raw) ? next : nearest, allowed[0])); }} className="mt-2 w-full accent-[var(--du-accent)]" /></> : null}<p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "分辨率" : "Resolution"}</p><div className="mt-2 grid grid-cols-4 gap-1 rounded-xl bg-[var(--du-surface-2)] p-1">{(kind === "video" ? ["480p", "720p", "1080p", "4K"] : ["1K", "2K", "4K"]).map((item) => segment(item, resolution === item, () => setResolution(item), kind === "video" ? !studioModel?.resolutions.includes(item) : false))}</div></div> : null}</div>
       <div className="ml-auto flex items-center gap-3">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{estimatedCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
         {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{imageCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
-        <button type="submit" disabled={submitting || (kind === "video" && !available)} aria-label={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "继续创建图片（Enter）" : "Continue to image (Enter)")} className="du-composer-send"><ArrowUp className="h-4 w-4" aria-hidden="true" /></button>
+        <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "准备中…" : "Preparing…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "继续创建图片（Enter）" : "Continue to image (Enter)")} className="du-composer-send"><ArrowUp className="h-4 w-4" aria-hidden="true" /></button>
       </div>
     </div>
     {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
@@ -279,6 +297,6 @@ export function HomeGenerator({ lang, models, onModelChange, preset, initialKind
       </div>
       {suggestions.map((item) => <button key={item.id} type="button" onClick={() => { setPrompt(zh ? item.prompt.zh : item.prompt.en); if (current?.aspects.includes(item.aspect)) setAspect(item.aspect); setNotice(""); promptRef.current?.focus({ preventScroll: true }); }} className="du-composer-suggestion"><img src={item.image} alt="" loading="lazy" /><span>{zh ? item.prompt.zh : item.prompt.en}</span></button>)}
     </div> : null}
-    </form>
+    </form> : null}
   </div>;
 }

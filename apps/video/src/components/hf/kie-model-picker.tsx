@@ -6,6 +6,7 @@ import {
   AudioLines,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clapperboard,
   Film,
@@ -30,7 +31,7 @@ type Props = {
   locale: string;
   value: string;
   onChange: (id: string) => void;
-  /** Models that can generate today. Everything else is listed as coming soon. */
+  /** Models with a connected generation endpoint. */
   connectedIds?: string[];
   /** "card" renders a settings card: a small label over the model name. */
   placement?: "top" | "inline" | "card";
@@ -43,6 +44,7 @@ type Props = {
   /** Kept for callers; availability is now always shown by section. */
   showConnectionStatus?: boolean;
   compact?: boolean;
+  catalogSet?: "backup" | "current";
 };
 
 function ModelIcon({ family }: { family: string }) {
@@ -62,6 +64,33 @@ function ModelIcon({ family }: { family: string }) {
                 : Film;
   return <Icon aria-hidden="true" className="h-5 w-5" />;
 }
+
+// Preserve the model selection and featured order from the macv-001 backup.
+const BACKUP_VIDEO_IDS = [
+  "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "bytedance/seedance-2",
+  "bytedance/seedance-2-fast", "bytedance/seedance-2-mini", "seedance-1.5-pro",
+  "kling/v4-reference-to-video", "kling/v4-flash-reference-to-video", "kling/kling-3-0",
+  "wan/3-0-video-prime", "wan/3-0-video", "wan2.6", "google/gemini-omni-flash-1-1",
+  "veo-3.1", "minimax-h3/text-to-video", "hailuo/02-text-to-video-pro",
+  "hailuo/02-text-to-video-standard", "grok-imagine/text-to-video",
+  "happyhorse/text-to-video", "sora-2",
+];
+const BACKUP_IMAGE_IDS = [
+  "grok-imagine-image-2-0/text-to-image", "flux3/klein-text-to-image",
+  "flux2/pro-text-to-image", "flux2/flex-text-to-image", "seedream/5-pro-text-to-image",
+  "seedream/5-flash-text-to-image", "google/imagen4", "google/imagen4-fast",
+  "ideogram/v3-text-to-image", "qwen3/text-to-image", "z-image/z-image",
+];
+const BACKUP_VIDEO_FEATURED = [
+  "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "kling/v4-reference-to-video",
+  "kling/v4-flash-reference-to-video", "wan/3-0-video-prime", "bytedance/seedance-2",
+  "minimax-h3/text-to-video", "google/gemini-omni-flash-1-1", "seedance-1.5-pro",
+];
+const BACKUP_IMAGE_FEATURED = [
+  "grok-imagine-image-2-0/text-to-image", "flux3/klein-text-to-image",
+  "flux2/pro-text-to-image", "seedream/5-pro-text-to-image", "google/imagen4",
+  "qwen3/text-to-image",
+];
 
 /** Cheapest credit price a video model can be run at, or null if unpriced. */
 function startingCredits(modelId: string): number | null {
@@ -96,18 +125,24 @@ export function KieModelPicker({
   open: controlledOpen,
   onOpenChange,
   compact = false,
+  catalogSet = "current",
   label,
   valueLabel,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
-  const catalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
-  const featuredIds = kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
+  const backupIds = kind === "video" ? BACKUP_VIDEO_IDS : BACKUP_IMAGE_IDS;
+  const fullCatalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
+  const catalog = catalogSet === "backup" ? fullCatalog.filter((item) => backupIds.includes(item.id)) : fullCatalog;
+  const displayCatalog = catalogSet === "backup" ? catalog : catalog.filter((item) => connectedIds.includes(item.id));
+  const featuredIds = catalogSet === "backup"
+    ? kind === "video" ? BACKUP_VIDEO_FEATURED : BACKUP_IMAGE_FEATURED
+    : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const [query, setQuery] = useState("");
-  const [showUpcoming, setShowUpcoming] = useState(false);
+  const [family, setFamily] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -115,67 +150,49 @@ export function KieModelPicker({
   const listRef = useRef<HTMLDivElement>(null);
   // In a studio's narrow settings column ("card") the list floats to the right
   // of the card, over the canvas, instead of being clipped by the column.
-  const [floatAt, setFloatAt] = useState<{ left: number; top: number } | null>(null);
+  const [floatAt, setFloatAt] = useState<{ left: number; top: number; maxHeight?: number } | null>(null);
 
   const copy = zh
     ? {
         choose: "选择模型",
         close: "关闭",
         search: "搜索模型",
-        available: "可生成",
-        upcoming: "即将上线",
-        showUpcoming: (count: number) => `查看 ${count} 个即将上线的模型`,
-        hideUpcoming: "收起即将上线的模型",
-        soon: "即将上线",
+        featured: "精选模型",
+        all: "全部模型",
+        models: "个模型",
         from: (credits: number) => `${credits} 积分起`,
         none: "没有匹配的模型",
-        noneAvailable: kind === "image" ? "图片模型即将上线" : "暂无可生成的模型",
+        noneAvailable: "暂无模型",
       }
     : {
         choose: "Choose model",
         close: "Close",
         search: "Search models",
-        available: "Ready to generate",
-        upcoming: "Coming soon",
-        showUpcoming: (count: number) => `Show ${count} models coming soon`,
-        hideUpcoming: "Hide models coming soon",
-        soon: "Soon",
+        featured: "Featured models",
+        all: "All models",
+        models: "models",
         from: (credits: number) => `From ${credits} credits`,
         none: "No models match",
-        noneAvailable: kind === "image" ? "Image models coming soon" : "No models available yet",
+        noneAvailable: "No models available",
       };
 
-  const { available, upcoming } = useMemo(() => {
+  const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const matches = (item: CatalogModel) =>
       needle === "" ||
       item.name.toLowerCase().includes(needle) ||
       item.family.toLowerCase().includes(needle);
-    const ordered = inDisplayOrder(catalog.filter(matches), featuredIds);
-    return {
-      available: ordered.filter((item) => connectedIds.includes(item.id)),
-      upcoming: ordered.filter((item) => !connectedIds.includes(item.id)),
-    };
-  }, [catalog, connectedIds, featuredIds, query]);
+    const ordered = inDisplayOrder(displayCatalog.filter(matches), featuredIds);
+    return ordered;
+  }, [kind, query, catalogSet, connectedIds]);
 
-  const current = catalog.find((item) => item.id === value);
-  const currentIsAvailable = current ? connectedIds.includes(current.id) : false;
-  const hasAnyAvailable = catalog.some((item) => connectedIds.includes(item.id));
-  const triggerLabel = valueLabel
-    ? valueLabel
-    : currentIsAvailable
-    ? current?.name
-    : hasAnyAvailable
-      ? (current?.name ?? copy.choose)
-      : compact
-        ? (current?.name ?? copy.noneAvailable)
-        : copy.noneAvailable;
-  // A search should reveal matches wherever they are.
-  const upcomingVisible = showUpcoming || query.trim() !== "";
+  const current = fullCatalog.find((item) => item.id === value);
+  const triggerLabel = valueLabel ?? current?.name ?? (compact ? copy.noneAvailable : copy.choose);
 
   const close = (returnFocus: boolean) => {
     setOpen(false);
     setQuery("");
+    setFamily(null);
     if (returnFocus) triggerRef.current?.focus();
   };
 
@@ -200,7 +217,7 @@ export function KieModelPicker({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || placement !== "card") {
+    if (!open || (placement !== "card" && placement !== "top")) {
       setFloatAt(null);
       return;
     }
@@ -209,9 +226,14 @@ export function KieModelPicker({
       if (!trigger) return;
       const width = panelRef.current?.offsetWidth ?? 400;
       const height = panelRef.current?.offsetHeight ?? 480;
-      const left = Math.min(trigger.right + 12, window.innerWidth - width - 16);
-      const top = Math.max(64, Math.min(trigger.top, window.innerHeight - height - 16));
-      setFloatAt({ left, top });
+      if (placement === "top") {
+        const maxHeight = Math.max(160, Math.min(420, trigger.top - 68));
+        setFloatAt({ left: Math.min(0, window.innerWidth - trigger.left - width - 16), top: -(maxHeight + 8), maxHeight });
+      } else {
+        const left = Math.min(trigger.right + 12, window.innerWidth - width - 16);
+        const top = Math.max(64, Math.min(trigger.top, window.innerHeight - height - 16));
+        setFloatAt({ left, top });
+      }
     };
     place();
     window.addEventListener("resize", place);
@@ -220,7 +242,7 @@ export function KieModelPicker({
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open, placement, showUpcoming, query]);
+  }, [open, placement, family, query]);
 
   // ↓ from the search box goes into the list; ↑/↓ move between models; Enter
   // in the search box picks the first match.
@@ -239,16 +261,16 @@ export function KieModelPicker({
     if (event.key === "ArrowDown") {
       event.preventDefault();
       rowButtons()[0]?.focus();
-    } else if (event.key === "Enter" && available[0]) {
+    } else if (event.key === "Enter" && matches[0]) {
       event.preventDefault();
-      onChange(available[0].id);
+      onChange(matches[0].id);
       close(true);
     }
   };
 
   const availableRow = (item: CatalogModel) => {
     const selected = item.id === value;
-    const credits = kind === "video" ? startingCredits(item.id) : null;
+    const credits = kind === "video" ? (startingCredits(item.id) ?? 70) : 20;
     return (
       <button
         key={item.id}
@@ -280,25 +302,6 @@ export function KieModelPicker({
       </button>
     );
   };
-
-  const upcomingRow = (item: CatalogModel) => (
-    <div
-      key={item.id}
-      aria-disabled="true"
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left opacity-60"
-    >
-      <span
-        aria-hidden="true"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-text-muted)]"
-      >
-        <ModelIcon family={item.family} />
-      </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-[var(--du-text)]">{item.name}</span>
-      <span className="shrink-0 rounded-md border border-[var(--du-border)] px-2 py-0.5 text-[11px] text-[var(--du-text-muted)]">
-        {copy.soon}
-      </span>
-    </div>
-  );
 
   const triggerClass =
     placement === "card"
@@ -344,8 +347,8 @@ export function KieModelPicker({
         <div
           ref={panelRef}
           onKeyDown={onListKeyDown}
-          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : undefined}
-          className={`${placement === "top" ? "absolute bottom-[calc(100%+8px)] left-0" : placement === "card" ? "" : "mt-2"} z-50 w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight, overflowY: "auto" } : undefined}
+          className={`${placement === "inline" ? "mt-2" : ""} z-50 w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
         >
           <div className="flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
@@ -365,36 +368,28 @@ export function KieModelPicker({
           </div>
 
           <div ref={listRef} className="max-h-[min(60vh,420px)] overflow-y-auto p-2">
-            <p className="px-3 pb-1 pt-2 text-xs font-semibold text-[var(--du-text-muted)]">{copy.available}</p>
-            {available.length > 0 ? (
-              <div>{available.map(availableRow)}</div>
+            {query.trim() ? (
+              matches.length ? matches.map(availableRow) : <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">{copy.none}</p>
+            ) : family ? (
+              <>
+                <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>
+                <p className="px-3 pb-1 text-xs font-semibold text-[var(--du-text-muted)]">{family}</p>
+                {displayCatalog.filter((item) => item.family === family).map(availableRow)}
+              </>
             ) : (
-              <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">
-                {query.trim() !== "" ? copy.none : copy.noneAvailable}
-              </p>
-            )}
-
-            {upcoming.length > 0 ? (
-              <div className="mt-2 border-t border-[var(--du-border)] pt-2">
-                {query.trim() === "" ? (
-                  <button
-                    type="button"
-                    aria-expanded={upcomingVisible}
-                    onClick={() => setShowUpcoming(!showUpcoming)}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-[var(--du-text-muted)] hover:text-[var(--du-text)]"
-                  >
-                    {upcomingVisible ? copy.hideUpcoming : copy.showUpcoming(upcoming.length)}
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={`h-4 w-4 transition-transform ${upcomingVisible ? "rotate-180" : ""}`}
-                    />
+              <>
+                <p className="px-3 pb-1 pt-2 text-xs font-semibold text-[var(--du-text-muted)]">{copy.featured}</p>
+                {featuredIds.map((id) => displayCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
+                <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{copy.all}</p>
+                {Array.from(new Set(displayCatalog.map((item) => item.family))).map((name) => (
+                  <button key={name} type="button" onClick={() => setFamily(name)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[var(--du-surface-2)]">
+                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={name} /></span>
+                    <span className="min-w-0 flex-1 text-sm text-[var(--du-text)]">{name}<span className="block text-xs text-[var(--du-text-muted)]">{displayCatalog.filter((item) => item.family === name).length} {copy.models}</span></span>
+                    <ChevronRight className="h-4 w-4 text-[var(--du-text-muted)]" />
                   </button>
-                ) : (
-                  <p className="px-3 pb-1 pt-1 text-xs font-semibold text-[var(--du-text-muted)]">{copy.upcoming}</p>
-                )}
-                {upcomingVisible ? upcoming.map(upcomingRow) : null}
-              </div>
-            ) : null}
+                ))}
+              </>
+            )}
           </div>
         </div>
       ) : null}
