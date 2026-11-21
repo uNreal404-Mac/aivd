@@ -538,3 +538,18 @@
     transition: none;
   }
 }
+
+/* "Use <model>" beside a shortfall: the cheaper way out, drawn as the
+   secondary choice next to "Get credits". */
+.cu-get-alt {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--du-accent);
+  color: var(--du-accent-text);
+}
+
+@media (max-width: 640px) {
+  .cu-get {
+    min-height: 44px;
+    margin-top: 6px;
+  }
+}

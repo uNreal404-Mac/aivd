@@ -1,0 +1,20 @@
+/*
+ * Phones: every text field at 16px.
+ *
+ * iOS Safari zooms the whole page when someone taps into a field whose text
+ * is smaller than 16px, and leaves it zoomed after they finish typing. The
+ * composer, the studio prompt and the sign-in email field were 13–14px.
+ * `!important` because several fields set their size with utility classes;
+ * desktop keeps the smaller sizes.
+ *
+ * Controls people tap are sized per component (44px on phones), next to
+ * their own styles: top-nav.css, home-generator.css, ai-video-studio.css,
+ * home-pricing.css and the dialog close button.
+ */
+@media (max-width: 640px), (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="hidden"]),
+  textarea,
+  select {
+    font-size: var(--ds-fs-md) !important;
+  }
+}

@@ -25,7 +25,6 @@ export function homeFaqs(zh: boolean): HomeFaq[] {
   const veo = PRICING_UNITS.find((unit) => unit.id === "veo-3.1");
   const dearVideo = PRICING_UNITS.filter((unit) => unit.kind === "video").sort((a, b) => b.credits - a.credits)[0];
   const gift = NEW_USER_GIFT.enabled ? NEW_USER_GIFT.credits : 0;
-  const freeVideos = cheapVideo ? Math.floor(gift / cheapVideo.credits) : 0;
   const freeImages = cheapImage ? Math.floor(gift / cheapImage.credits) : 0;
   const plan = SUBSCRIPTION_PRODUCTS.filter((item) => item.enabled !== false && item.period === "month").sort((a, b) => a.priceUsd - b.priceUsd)[0];
   const pack = CREDIT_PACKAGES.filter((item) => item.enabled !== false).sort((a, b) => a.priceUsd - b.priceUsd)[0];
@@ -39,21 +38,28 @@ export function homeFaqs(zh: boolean): HomeFaq[] {
         ? `目前没有免费额度。${plan ? `套餐每月 US$${plan.priceUsd} 起，含 ${num(plan.credits)} 积分。` : ""}`
         : `There are no free credits at the moment.${plan ? ` Plans start at US$${plan.priceUsd} a month for ${num(plan.credits)} credits.` : ""}`;
     }
-    const covers: string[] = [];
-    if (cheapVideo && freeVideos > 0) {
-      covers.push(
-        zh
-          ? `${freeVideos} 条 ${cheapVideo.name} 视频（${cheapVideo.spec.zh}，每条 ${cheapVideo.credits} 积分）`
-          : `${freeVideos === 1 ? "one" : freeVideos} ${cheapVideo.name} video${freeVideos === 1 ? "" : "s"} (${cheapVideo.spec.en}, ${cheapVideo.credits} credits${freeVideos === 1 ? "" : " each"})`,
-      );
-    }
+    // Every video model one clip of which the gift pays for, in the pricing
+    // table's order (the generator's default model comes first).
+    const covers = PRICING_UNITS.filter((unit) => unit.kind === "video" && unit.credits > 0 && unit.credits <= gift).map((unit) => {
+      const count = Math.floor(gift / unit.credits);
+      return zh
+        ? `${count} 条 ${unit.name} 视频（${unit.spec.zh}，每条 ${unit.credits} 积分）`
+        : `${count === 1 ? "one" : count} ${unit.name} video${count === 1 ? "" : "s"} (${unit.spec.en}, ${unit.credits} credits${count === 1 ? "" : " each"})`;
+    });
     if (cheapImage && freeImages > 0) {
       covers.push(zh ? `约 ${freeImages} 张 ${cheapImage.name} 图片` : `about ${freeImages} ${cheapImage.name} images`);
     }
-    const rest = zh ? "其他视频模型要的积分更多，需要订阅套餐或购买积分包。" : "Other video models cost more, so they need a plan or a credit pack.";
+    const either = (items: string[]) =>
+      items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(zh ? "、" : ", ")}${zh ? "或" : " or "}${items[items.length - 1]}`;
+    const dearer = PRICING_UNITS.some((unit) => unit.kind === "video" && unit.credits > gift);
+    const rest = !dearer
+      ? ""
+      : zh
+        ? `单条超过 ${gift} 积分的视频模型，需要订阅套餐或购买积分包。`
+        : ` Video models that cost more than ${gift} credits a clip need a plan or a credit pack.`;
     return zh
-      ? `新注册的账号送 ${gift} 积分，${NEW_USER_GIFT.validDays} 天内有效。${covers.length ? `够生成${covers.join("，或")}。` : ""}${rest}`
-      : `New accounts get ${gift} free credits, valid for ${NEW_USER_GIFT.validDays} days.${covers.length ? ` That covers ${covers.join(" or ")}.` : ""} ${rest}`;
+      ? `新注册的账号送 ${gift} 积分，${NEW_USER_GIFT.validDays} 天内有效。${covers.length ? `够生成 ${either(covers)}。` : ""}${rest}`
+      : `New accounts get ${gift} free credits, valid for ${NEW_USER_GIFT.validDays} days.${covers.length ? ` That covers ${either(covers)}.` : ""}${rest}`;
   })();
 
   const examples = [cheapVideo, veo, dearVideo].filter((unit, index, all): unit is PricingUnit => Boolean(unit) && all.findIndex((other) => other?.id === unit?.id) === index);

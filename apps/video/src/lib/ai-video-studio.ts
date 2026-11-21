@@ -568,3 +568,31 @@ export function toMillis(value: string | number | null | undefined): number | un
   if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
   return value ? Date.parse(value) || undefined : undefined;
 }
+
+/** A model the account could switch to, with what one clip would cost there. */
+export type ModelOption = { id: string; name: string; credits: number };
+
+/**
+ * What one clip costs on each of these models, keeping the current length,
+ * ratio, quality and sound where the model offers them (the same switch the
+ * model picker makes).
+ */
+export function modelOptions(settings: StudioSettings, modelIds: string[]): ModelOption[] {
+  return modelIds.flatMap((id) => {
+    const model = STUDIO_MODELS.find((item) => item.id === id && item.available);
+    if (!model) return [];
+    const credits = estimateCredits(selectModel(settings, id));
+    return credits > 0 ? [{ id, name: model.name, credits }] : [];
+  });
+}
+
+/**
+ * When the balance does not cover this clip: the dearest other model whose
+ * clip it does cover, the closest thing to what was asked for that the
+ * account can pay for. Undefined when nothing fits.
+ */
+export function bestAffordableModel(options: ModelOption[], currentId: string, available: number): ModelOption | undefined {
+  return options
+    .filter((option) => option.id !== currentId && option.credits <= available)
+    .sort((a, b) => b.credits - a.credits)[0];
+}

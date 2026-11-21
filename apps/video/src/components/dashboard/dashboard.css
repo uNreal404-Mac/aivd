@@ -609,3 +609,53 @@
   width: 14px;
   height: 14px;
 }
+
+/* Labels the column headings give on wider screens; phones hide the headings. */
+.db-phone-label {
+  display: none;
+}
+
+/* Phones: the five columns (icon, what, when, change, balance) did not fit
+   390px, so the title ran under the date. Each row becomes two lines: what
+   and the change on top, when and the balance (or a pack's status) under. */
+@media (max-width: 640px) {
+  .db-row-head {
+    display: none;
+  }
+
+  .db-row {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon main first"
+      "icon time second";
+    column-gap: var(--ds-space-3);
+    row-gap: 2px;
+    padding: var(--ds-space-3);
+  }
+
+  .db-row > :nth-child(1) {
+    grid-area: icon;
+    align-self: center;
+  }
+
+  .db-row > :nth-child(2) {
+    grid-area: main;
+  }
+
+  .db-row > :nth-child(3) {
+    grid-area: time;
+  }
+
+  .db-row > :nth-child(4) {
+    grid-area: first;
+  }
+
+  .db-row > :nth-child(5) {
+    grid-area: second;
+    font-size: var(--ds-fs-xs);
+  }
+
+  .db-phone-label {
+    display: inline;
+  }
+}

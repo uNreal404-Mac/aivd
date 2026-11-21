@@ -9,6 +9,7 @@ import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
 import { errorMessage } from "@/lib/media-studio";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
+import { useCreditsStore } from "@/stores/credits-store";
 import {
   AtSign,
   BookOpen,
@@ -31,6 +32,7 @@ import {
   RIGHT_TABS,
   STUDIO_MODELS,
   applyResultStatus,
+  bestAffordableModel,
   canGenerate,
   defaultSettings,
   estimateCredits,
@@ -38,6 +40,7 @@ import {
   fetchResultStatus,
   isResultPending,
   mergeResults,
+  modelOptions,
   selectModel,
   submitGeneration,
 } from "@/lib/ai-video-studio";
@@ -327,6 +330,13 @@ export function AiVideoStudio({
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(isChinese);
+  // Signed in: the balance, so a clip it cannot pay for is caught before it
+  // is sent and a model it can pay for is offered.
+  const balance = useCreditsStore((state) => state.balance);
+  const fetchBalance = useCreditsStore((state) => state.fetchBalance);
+  useEffect(() => {
+    if (session) void fetchBalance();
+  }, [session, fetchBalance]);
   const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("How it works");
@@ -346,6 +356,20 @@ export function AiVideoStudio({
   const exampleCredits = selectedModelConnected
     ? estimateCredits(settings)
     : Math.ceil(settings.duration * 5 * (settings.resolution === "1080p" ? 1.5 : settings.resolution === "720p" ? 1.25 : 1));
+
+  const available = session && balance ? Math.max(0, balance.availableCredits) : null;
+  const shortBy = available !== null && selectedModelConnected && durationSupported ? Math.max(0, exampleCredits - available) : 0;
+  const referenceCount = homeReferences.length || (imageKey ? 1 : 0);
+  const affordable = useMemo(() => {
+    if (!shortBy || available === null) return undefined;
+    // Only models this clip could run on: enough room for its images, and an
+    // image when the model needs one.
+    const usable = availableModelIds.filter(
+      (id) => referenceCount <= maxVideoReferences(id) && !(getMarketModel(id)?.options.requiresImage && referenceCount === 0),
+    );
+    return bestAffordableModel(modelOptions(settings, usable), catalogModelId, available);
+  }, [shortBy, available, availableModelIds, referenceCount, settings, catalogModelId]);
+  const num = (value: number) => value.toLocaleString(isChinese ? "zh-CN" : "en-US");
 
   const check = canGenerate(settings, generationEnabled);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
@@ -448,6 +472,15 @@ export function AiVideoStudio({
     };
   }, [pendingKey]);
 
+  function switchModel(id: string) {
+    setUpcoming(undefined);
+    setCatalogModelId(id);
+    setDurationOpen(false);
+    setNotice(null);
+    // The picker only offers models that can generate.
+    setSettings((previous) => selectModel(previous, id));
+  }
+
   async function handleGenerate() {
     if (submitting || !availableModelIds.includes(catalogModelId)) {
       return;
@@ -475,6 +508,17 @@ export function AiVideoStudio({
       return;
     }
 
+    // Signed in and the balance does not cover this clip: say so, with the
+    // cost and the balance, before anything is sent.
+    if (shortBy > 0 && available !== null) {
+      const message = isChinese
+        ? `积分不够：这条视频要 ${num(exampleCredits)} 积分，你还有 ${num(available)}。`
+        : `Not enough credits: this clip takes ${num(exampleCredits)} credits and you have ${num(available)}.`;
+      setNotice(message);
+      creditsShortfall.note(message, exampleCredits);
+      return;
+    }
+
     if (!generationEnabled) {
       setNotice(
         copy.paused,
@@ -498,6 +542,8 @@ export function AiVideoStudio({
         setNotice(errorMessage(result.code, result.message, isChinese));
         if (result.code === "INSUFFICIENT_CREDITS") {
           creditsShortfall.report(errorMessage(result.code, result.message, isChinese), result.requiredCredits);
+          useCreditsStore.getState().invalidate();
+          void fetchBalance();
         }
         // Signed out: open sign-in and come back to this studio with the
         // prompt and settings still filled in.
@@ -816,13 +862,7 @@ export function AiVideoStudio({
               placement="card"
               label={copy.model}
               valueLabel={upcoming?.name}
-              onChange={(id) => {
-                setUpcoming(undefined);
-                setCatalogModelId(id);
-                setDurationOpen(false);
-                // The picker only offers models that can generate.
-                setSettings((previous) => selectModel(previous, id));
-              }}
+              onChange={switchModel}
             />
 
             <div className="vs-grid">
@@ -879,6 +919,12 @@ export function AiVideoStudio({
                 {selectedModelConnected ? (durationSupported ? exampleCredits : "—") : copy.soon}
               </span>
             </button>
+            {available !== null && selectedModelConnected ? (
+              <p className={shortBy ? "vs-balance vs-balance-short" : "vs-balance"}>
+                {isChinese ? `余额 ${num(available)} 积分` : `Balance: ${num(available)} credits`}
+                {shortBy ? (isChinese ? `，这条还差 ${num(shortBy)}` : ` · ${num(shortBy)} short for this clip`) : null}
+              </p>
+            ) : null}
             {needsStartImage ? (
               <output className="vs-notice">
                 {isChinese ? `${bannerName} 需要先上传一张起始帧。` : `${bannerName} needs a start frame. Upload one above.`}
@@ -892,7 +938,17 @@ export function AiVideoStudio({
               </output>
             )}
 
-            {notice ? <output aria-live="polite" className="vs-notice">{notice}{creditsShortfall.action(notice)}</output> : null}
+            {notice ? (
+              <output aria-live="polite" className="vs-notice">
+                {notice}
+                {creditsShortfall.isShortfall(notice) && affordable ? (
+                  <button type="button" className="cu-get cu-get-alt" onClick={() => switchModel(affordable.id)}>
+                    {isChinese ? `换成 ${affordable.name}（${num(affordable.credits)} 积分）` : `Use ${affordable.name} (${num(affordable.credits)} credits)`}
+                  </button>
+                ) : null}
+                {creditsShortfall.action(notice)}
+              </output>
+            ) : null}
           </>
         ) : (
           <div className="flex flex-col gap-2">

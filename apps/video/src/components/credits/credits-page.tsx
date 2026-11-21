@@ -136,7 +136,7 @@ export function CreditsPage({ locale }: { locale: string }) {
                     {item.credits > 0 ? "+" : ""}
                     {n(item.credits)}
                   </span>
-                  <span className="db-num db-muted">{n(item.balanceAfter)}</span>
+                  <span className="db-num db-muted"><span className="db-phone-label">{zh ? "余额 " : "Balance "}</span>{n(item.balanceAfter)}</span>
                 </div>
               );
             })}
@@ -189,7 +189,7 @@ export function CreditsPage({ locale }: { locale: string }) {
                     <span className="db-row-title">{creditKindLabel(kind, zh)}</span>
                     <span className="db-row-note">{zh ? `获得于 ${formatDate(invoice.createdAt)}` : `Received ${formatDate(invoice.createdAt)}`}</span>
                   </span>
-                  <span className="db-row-time">{pack?.expiredAt ? formatDate(pack.expiredAt) : zh ? "长期有效" : "Never"}</span>
+                  <span className="db-row-time"><span className="db-phone-label">{zh ? "到期 " : "Expires "}</span>{pack?.expiredAt ? formatDate(pack.expiredAt) : zh ? "长期有效" : "Never"}</span>
                   <span className="db-num">
                     {n(pack?.remaining)} <span className="db-muted">/ {n(pack?.initial ?? invoice.items[0]?.quantity)}</span>
                   </span>

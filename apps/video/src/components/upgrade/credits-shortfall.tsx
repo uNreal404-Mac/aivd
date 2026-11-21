@@ -7,9 +7,11 @@ import "./credits-upgrade-modal.css";
 
 /**
  * For a studio whose generation was refused for lack of credits: `report`
- * opens the upgrade dialog and remembers which notice that was, and `action`
- * gives a "Get credits" button to show beside that notice (nothing beside any
- * other notice), which opens the dialog again.
+ * opens the upgrade dialog and remembers which notice that was, `note` only
+ * remembers it (for a shortfall the studio caught before sending), and
+ * `action` gives a "Get credits" button to show beside that notice (nothing
+ * beside any other notice), which opens the dialog. `isShortfall` tells the
+ * studio whether a notice is that one.
  */
 export function useCreditsShortfall(zh: boolean) {
   const openModal = useUpgradeModal((state) => state.openModal);
@@ -23,6 +25,10 @@ export function useCreditsShortfall(zh: boolean) {
     [openModal],
   );
 
+  const note = useCallback((notice: string, requiredCredits?: number) => setShortfall({ notice, requiredCredits }), []);
+
+  const isShortfall = (notice: string | null) => Boolean(notice && shortfall?.notice === notice);
+
   const action = (notice: string | null) =>
     notice && shortfall?.notice === notice ? (
       <button
@@ -34,5 +40,5 @@ export function useCreditsShortfall(zh: boolean) {
       </button>
     ) : null;
 
-  return { report, action };
+  return { report, note, isShortfall, action };
 }

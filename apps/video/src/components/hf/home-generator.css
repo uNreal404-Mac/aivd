@@ -365,3 +365,21 @@
     animation-duration: 1ms;
   }
 }
+
+/* Phones: the composer's tabs, send button and prompt suggestions are at
+   least 44px tall, so a thumb lands on the one it aims at. */
+@media (max-width: 640px) {
+  .du-composer-tab {
+    min-height: 44px;
+  }
+
+  .du-composer-send {
+    width: 44px;
+    height: 44px;
+  }
+
+  .du-composer-suggestions-label,
+  .du-composer-suggestion {
+    min-height: 44px;
+  }
+}

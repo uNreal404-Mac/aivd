@@ -1376,3 +1376,24 @@ button.vs-chip:disabled {
   font-weight: 600;
   backdrop-filter: blur(8px);
 }
+
+/* Phones: the prompt's chips and the History / How it works tabs are 44px
+   tall to tap. */
+@media (max-width: 640px) {
+  .vs-chip,
+  .vs-stage-tab {
+    height: 44px;
+  }
+}
+
+/* The balance under the Generate button, signed in. */
+.vs-balance {
+  margin: 8px 0 0;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  text-align: center;
+}
+
+.vs-balance-short {
+  color: var(--hfv-danger);
+}

@@ -983,9 +983,11 @@ button.hp-pack {
     text-align: left;
   }
 
+  /* Two lines on a 390px phone (34px took three). */
   .hp-title {
-    font-size: var(--ds-fs-3xl);
+    font-size: var(--ds-fs-2xl);
     line-height: 1.15;
+    text-wrap: balance;
   }
 
   .hp-toggle button {

@@ -10,6 +10,7 @@ import "@/styles/ds.css";
 import "@/styles/typography.css";
 import "@/styles/motion.css";
 import "@/styles/states.css";
+import "@/styles/touch.css";
 
 import { NextIntlClientProvider } from "next-intl";
 

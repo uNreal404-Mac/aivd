@@ -330,7 +330,7 @@ export function KieModelPicker({
       : placement === "inline"
       ? "w-full rounded-xl border border-[var(--du-border)] bg-[var(--du-surface-2)] px-3 py-3"
       : compact
-        ? "h-9 max-w-[min(46vw,230px)] px-1 text-xs hover:text-[var(--du-accent-text)] sm:text-sm"
+        ? "h-9 max-sm:h-11 max-w-[min(46vw,230px)] px-1 text-xs hover:text-[var(--du-accent-text)] sm:text-sm"
         : "h-9 w-full rounded-xl bg-[var(--du-surface-2)] px-3 text-xs xl:h-10 xl:text-sm";
 
   return (

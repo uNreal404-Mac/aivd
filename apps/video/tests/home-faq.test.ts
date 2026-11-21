@@ -48,6 +48,23 @@ describe("homepage questions", () => {
     expect(answer(zh, /免费/)).toContain(`${NEW_USER_GIFT.credits} 积分`);
   });
 
+  it("names every video model the free credits pay for, so it never says they all need a plan", () => {
+    const freeEn = answer(en, /free/i);
+    const freeZh = answer(zh, /免费/);
+    const affordable = PRICING_UNITS.filter((unit) => unit.kind === "video" && unit.credits > 0 && unit.credits <= NEW_USER_GIFT.credits);
+    for (const unit of affordable) {
+      expect(freeEn).toContain(`${unit.name} video`);
+      expect(freeEn).toContain(`${unit.credits} credits`);
+      expect(freeZh).toContain(`${unit.name} 视频`);
+    }
+    // The old wording claimed every other model needed a plan.
+    expect(freeEn).not.toMatch(/other video models/i);
+    expect(freeZh).not.toContain("其他视频模型");
+    if (PRICING_UNITS.some((unit) => unit.kind === "video" && unit.credits > NEW_USER_GIFT.credits)) {
+      expect(freeEn).toContain(`more than ${NEW_USER_GIFT.credits} credits a clip`);
+    }
+  });
+
   it("quotes prices from the plans and packs on sale", () => {
     const cost = answer(en, /cost/i);
     const plan = SUBSCRIPTION_PRODUCTS.filter((item) => item.enabled !== false && item.period === "month").sort((a, b) => a.priceUsd - b.priceUsd)[0];

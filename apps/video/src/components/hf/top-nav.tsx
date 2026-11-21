@@ -389,11 +389,12 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     router.refresh();
   };
 
-  // The narrow-screen menu opens on the current section, closes on Escape
-  // and holds the page still underneath.
+  // The narrow-screen menu opens on the current section (on a page outside
+  // every section, on Video: this is a video site, and Image comes first in
+  // the list), closes on Escape and holds the page still underneath.
   useEffect(() => {
     if (!menuOpen) return;
-    setMenuSection((current) => current ?? activeSection?.id ?? dropdowns[0]?.id ?? null);
+    setMenuSection((current) => current ?? activeSection?.id ?? dropdowns.find((menu) => menu.id === "video")?.id ?? dropdowns[0]?.id ?? null);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
     };

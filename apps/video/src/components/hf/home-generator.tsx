@@ -249,8 +249,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     }
   }
 
-  const chip = "inline-flex min-h-9 max-w-full items-center gap-1.5 whitespace-nowrap rounded-xl bg-[var(--du-surface-2)] px-3 text-xs text-[var(--du-text)] transition-colors hover:bg-[var(--du-border-strong)] sm:text-sm";
-  const plainControl = "inline-flex min-h-9 max-w-full items-center gap-1.5 whitespace-nowrap px-1 text-xs text-[var(--du-text)] transition-colors hover:text-[var(--du-accent-text)] sm:text-sm disabled:cursor-not-allowed disabled:opacity-45";
+  const chip = "inline-flex min-h-9 max-sm:min-h-11 max-w-full items-center gap-1.5 whitespace-nowrap rounded-xl bg-[var(--du-surface-2)] px-3 text-xs text-[var(--du-text)] transition-colors hover:bg-[var(--du-border-strong)] sm:text-sm";
+  const plainControl = "inline-flex min-h-9 max-sm:min-h-11 max-w-full items-center gap-1.5 whitespace-nowrap px-1 text-xs text-[var(--du-text)] transition-colors hover:text-[var(--du-accent-text)] sm:text-sm disabled:cursor-not-allowed disabled:opacity-45";
   const divider = <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />;
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 

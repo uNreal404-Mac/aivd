@@ -431,3 +431,22 @@ button.is-chip:hover:not(:disabled) {
   background: var(--du-accent);
   color: var(--du-on-accent);
 }
+
+/* Phones: the four overlapping photos were 560px across and pushed the page
+   36px past a 390px screen. Smaller, they fit with room for their tilt. */
+@media (max-width: 640px) {
+  .is-collage {
+    height: 130px;
+  }
+
+  .is-photo {
+    width: 96px;
+    height: 104px;
+    margin-left: -16px;
+  }
+
+  .is-3 {
+    width: 92px;
+    height: 92px;
+  }
+}
