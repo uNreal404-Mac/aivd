@@ -1,3 +1,4 @@
+import { HOME_SEO } from "@/lib/home-seo";
 import { DuHome } from "@/components/hf/du-home";
 import { HomeFaq } from "@/components/hf/home-faq";
 
@@ -23,18 +24,10 @@ interface PageMetadataProps {
 export async function generateMetadata({ params }: PageMetadataProps) {
   const { locale } = await params;
 
-  // With the " | aivd.ai" the layout adds, the title stays inside the 60
-  // characters a search result shows. The model names are in the description.
-  const titles = {
-    en: "AI Video Generator: Text & Image to Video",
-    zh: "AI视频生成器：文字、图片生成视频",
-  };
-
-  // Under 160 characters, so it is not cut off either.
-  const descriptions = {
-    en: "Turn a prompt or a photo into video with AI. Veo 3.1, Seedance 2.5, Kling 4.0 and more in one place, plus images and audio. See the cost before you generate.",
-    zh: "用AI把一句话或一张图片变成视频。Veo 3.1、Seedance 2.5、Kling 4.0、Wan 2.6等模型一站可用，还能生成AI图片和音频。生成前就能看到要消耗的积分。",
-  };
+  // Title and description live in lib/home-seo with the H1; with the
+  // " | aivd.ai" the layout adds, the title fits a search result.
+  const titles = { en: HOME_SEO.en.title, zh: HOME_SEO.zh.title };
+  const descriptions = { en: HOME_SEO.en.description, zh: HOME_SEO.zh.description };
 
   const canonicalUrl = `${siteConfig.url}${locale === i18n.defaultLocale ? "" : `/${locale}`}`;
   const alternates = buildAlternates("/", locale);

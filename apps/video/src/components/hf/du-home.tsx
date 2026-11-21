@@ -8,6 +8,7 @@ import { BackToCreate, HomeShowcase } from "@/components/hf/home-showcase";
 import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "./du-home.css";
+import { homeSeo } from "@/lib/home-seo";
 
 type HomeVideoModel = {
   id: string;
@@ -38,11 +39,11 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       <section className="du-hero">
         <div className="du-hero-glow" aria-hidden="true" />
         <div className="du-hero-inner">
-          <h1 className="du-hero-title">{isChinese ? "AI 视频生成器 从创意开始创作" : "AI Video Generator — Create from Your Idea"}</h1>
+          <h1 className="du-hero-title">{homeSeo(isChinese ? "zh" : "en").h1}</h1>
           <p className="du-hero-sub">
             {isChinese
-              ? "写下你的视频想法，探索脚本、视觉、配音、字幕与音乐的创作方向，选择模型开始生成"
-              : "Describe your video idea, explore directions for the script, visuals, voiceover, subtitles, and music, then choose a model to start generating."}
+              ? "写下你的视频想法，探索脚本、视觉、配音与音乐的创作方向，选择模型开始生成"
+              : "Describe your video idea, explore directions for the script, visuals, voiceover and music, then choose a model to start generating."}
           </p>
           <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
         </div>
