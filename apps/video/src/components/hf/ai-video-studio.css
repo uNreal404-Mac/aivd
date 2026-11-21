@@ -1394,6 +1394,20 @@ button.vs-chip:disabled {
   text-align: center;
 }
 
+/* The theme has no red; the shortfall reads in full white and bold. */
 .vs-balance-short {
-  color: var(--hfv-danger);
+  color: var(--du-text);
+  font-weight: 600;
+}
+
+/* "Use <model>" and "Get credits" on their own row under the notice. */
+.vs-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.vs-notice-actions .cu-get {
+  margin: 0;
 }

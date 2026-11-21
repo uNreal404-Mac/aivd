@@ -997,8 +997,9 @@ a.hf-dd-row:active {
 }
 
 /* Phones: the header controls stay 32px to look at (44px boxes would push
-   the actions past a 390px screen once signed in), but each one answers taps
-   across a 44px square. The 8px gaps between them take the overlap. */
+   the actions past a 390px screen once signed in), but each answers taps 6px
+   above and below what it shows, 44px tall, and 4px to each side, half of
+   the 8px gap, so no control takes a tap meant for the next. */
 @media (max-width: 640px) {
   .hf-brand,
   .hf-auth {
@@ -1009,7 +1010,7 @@ a.hf-dd-row:active {
   .hf-act::after,
   .hf-auth::after {
     position: absolute;
-    inset: -6px;
+    inset: -6px -4px;
     content: "";
   }
 

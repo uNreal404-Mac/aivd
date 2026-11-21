@@ -941,12 +941,16 @@ export function AiVideoStudio({
             {notice ? (
               <output aria-live="polite" className="vs-notice">
                 {notice}
-                {creditsShortfall.isShortfall(notice) && affordable ? (
-                  <button type="button" className="cu-get cu-get-alt" onClick={() => switchModel(affordable.id)}>
-                    {isChinese ? `换成 ${affordable.name}（${num(affordable.credits)} 积分）` : `Use ${affordable.name} (${num(affordable.credits)} credits)`}
-                  </button>
+                {creditsShortfall.isShortfall(notice) ? (
+                  <span className="vs-notice-actions">
+                    {affordable ? (
+                      <button type="button" className="cu-get cu-get-alt" onClick={() => switchModel(affordable.id)}>
+                        {isChinese ? `换成 ${affordable.name}（${num(affordable.credits)} 积分）` : `Use ${affordable.name} (${num(affordable.credits)} credits)`}
+                      </button>
+                    ) : null}
+                    {creditsShortfall.action(notice)}
+                  </span>
                 ) : null}
-                {creditsShortfall.action(notice)}
               </output>
             ) : null}
           </>
