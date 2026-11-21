@@ -45,6 +45,7 @@ import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
+import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
@@ -337,6 +338,7 @@ export function AiVideoStudio({
     STUDIO_MODELS[0];
   const selectedModelConnected = !upcoming && availableModelIds.includes(catalogModelId);
   const catalogEntry = VIDEO_CATALOG.find((item) => item.id === catalogModelId);
+  const catalogDetail = useCatalogDetail();
   const durationOptions = selectedModelConnected
     ? model.durations
     : [4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -538,7 +540,7 @@ export function AiVideoStudio({
     upcoming?.desc ??
     (selectedModelConnected
       ? (copy.modelTaglines[model.id] ?? (model.tagline || (navEntry ? (isChinese ? navEntry.desc.zh : navEntry.desc.en) : "")))
-      : (catalogEntry?.detail ?? ""));
+      : (catalogEntry ? catalogDetail(catalogEntry) : ""));
   // Some models (Grok Imagine 1.5 on KIE) only run from a start image.
   const needsStartImage = Boolean(getMarketModel(catalogModelId)?.options.requiresImage) && !imageKey;
   const cover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";

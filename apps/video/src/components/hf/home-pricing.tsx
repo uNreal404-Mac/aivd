@@ -341,6 +341,7 @@ export function HomePricing({
                   <span className="hp-price-now">{usd(period === "year" ? plan.yearlyPerMonthUsd : plan.monthlyPriceUsd)}</span>
                   <span className="hp-price-unit">{copy.perMonth}</span>
                 </p>
+                <div className="hp-billing-area">
                 {period === "year" ? (
                   <>
                     <p className="hp-billing hp-billing-strong">{copy.payToday(usd(plan.yearlyPriceUsd))}</p>
@@ -354,6 +355,7 @@ export function HomePricing({
                 ) : (
                   <p className="hp-billing">{copy.billedMonthly}</p>
                 )}
+                </div>
                 {action({
                   productId: idFor(plan),
                   label: copy.cta(name),
@@ -544,7 +546,7 @@ export function HomePricing({
               <th scope="col">{copy.model}</th>
               <th scope="col" className="hp-col-free">{copy.free}</th>
               {plans.map((plan) => (
-                <th key={plan.tier} scope="col" className={plan.tier === recommended ? "hp-col-pick" : undefined}>
+                <th key={plan.tier} scope="col" className={plan.popular ? "hp-col-pick" : undefined}>
                   <span className="hp-th-name">{copy.names[plan.tier]}</span>
                   <span className="hp-th-price">
                     {usd(period === "year" ? plan.yearlyPerMonthUsd : plan.monthlyPriceUsd)}
@@ -573,7 +575,7 @@ export function HomePricing({
                   </th>
                   <td className="hp-col-free">{generationsFor(NEW_USER_GIFT.credits, item.credits) > 0 ? generationsFor(NEW_USER_GIFT.credits, item.credits) : "—"}</td>
                   {plans.map((plan) => (
-                    <td key={plan.tier} className={plan.tier === recommended ? "hp-col-pick" : undefined}>
+                    <td key={plan.tier} className={plan.popular ? "hp-col-pick" : undefined}>
                       <span className="hp-cell-count">{generationsFor(plan.creditsPerMonth, item.credits).toLocaleString()}</span>
                       <span className="hp-cell-price">{usd(item.credits * creditPriceUsd(plan, period), 2)}</span>
                     </td>

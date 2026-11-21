@@ -106,7 +106,9 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
     body: { zh: "新一代 AI 视频模型", en: "The next-generation AI video model" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
     cta: { zh: "用 Seedance 2.5 生成", en: "Create with Seedance 2.5" },
-    media: [MEDIA.showcase2, MEDIA.rain, MEDIA.boyDog, MEDIA.autumn, MEDIA.wind, MEDIA.mech, MEDIA.dancer, MEDIA.valley],
+    // None of the template covers shown just above it (boy and dog, autumn
+    // walk, rain couple, mountain wind, cosmic bloom), so the rows never repeat.
+    media: [MEDIA.showcase2, MEDIA.tomb, MEDIA.valley, MEDIA.mech, MEDIA.dancer, MEDIA.planet, MEDIA.sea, MEDIA.studio],
   },
   {
     id: "nano-banana",
@@ -115,7 +117,9 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
     body: { zh: "4K 图像，细节与文字渲染出色", en: "4K images with fine detail and text" },
     href: navModelHref("image", "nano-banana-pro"),
     cta: { zh: "用 Nano Banana Pro 生成", en: "Create with Nano Banana Pro" },
-    media: [MEDIA.carpet, MEDIA.studio, MEDIA.bloom, MEDIA.dreaming, MEDIA.tomb, MEDIA.planet, MEDIA.sea],
+    // Further down the page, past the canvas banner, so it can carry the
+    // story samples the first wall leaves out.
+    media: [MEDIA.carpet, MEDIA.rain, MEDIA.dreaming, MEDIA.boyDog, MEDIA.bloom, MEDIA.autumn, MEDIA.wind],
   },
 ];
 

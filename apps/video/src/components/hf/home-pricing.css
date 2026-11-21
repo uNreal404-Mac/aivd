@@ -154,15 +154,22 @@
 }
 
 /* Plan cards */
+/* The three cards share two grid rows (top, body) through subgrid, so each
+   card's top block is as tall as the tallest one. Inside it the button is
+   pushed to the bottom, which keeps the three buttons level in both the
+   monthly and the yearly view. */
 .hp-plans {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  grid-auto-rows: auto;
+  column-gap: 24px;
+  row-gap: 0;
 }
 
 .hp-plan {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
   border-radius: var(--ds-r-3xl);
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
@@ -174,16 +181,28 @@
   border-radius: var(--ds-r-3xl);
 }
 
+/* The lines under the price: one or two depending on the period and the
+   first-month offer. A fixed minimum keeps every card's button on one line. */
+.hp-billing-area {
+  min-height: 52px;
+  margin-bottom: 22px;
+}
+
+.hp-plan-top .hp-cta {
+  margin-top: auto;
+}
+
 .hp-plan-basic .hp-plan-top {
   background: linear-gradient(160deg, color-mix(in srgb, white 14%, var(--du-bg-elev)), var(--du-bg-elev));
 }
 
+/* Most popular: a dark card with a single accent edge (it used to be a bright
+   gradient inside a second ring). */
 .hp-plan-pro .hp-plan-top {
-  background:
-    radial-gradient(80% 80% at 20% 0%, color-mix(in srgb, white 35%, transparent), transparent 60%),
-    linear-gradient(165deg, var(--du-accent), var(--du-accent-hover));
-  box-shadow: 0 24px 60px -18px color-mix(in srgb, var(--du-accent) 60%, transparent);
-  color: var(--du-on-accent);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--du-accent) 10%, var(--du-bg-elev)), var(--du-bg-elev));
+  box-shadow:
+    inset 0 0 0 2px var(--du-accent),
+    0 24px 60px -24px color-mix(in srgb, var(--du-accent) 45%, transparent);
 }
 
 /* Top tier: black with an accent edge, so the three plans read apart at a
@@ -197,14 +216,6 @@
     0 24px 60px -24px color-mix(in srgb, var(--du-accent) 40%, transparent);
 }
 
-.hp-plan-pick {
-  transform: translateY(-6px);
-}
-
-.hp-plan-pick .hp-plan-top {
-  outline: 2px solid var(--du-accent);
-  outline-offset: 4px;
-}
 
 .hp-plan-name {
   display: flex;
@@ -230,7 +241,8 @@
 }
 
 .hp-plan-pro .hp-pill {
-  background: color-mix(in srgb, var(--du-on-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--du-accent) 18%, transparent);
+  color: var(--du-accent-text);
 }
 
 .hp-pill-pick {
@@ -256,10 +268,13 @@
   white-space: nowrap;
 }
 
+/* The struck-through regular price: readable on the dark cards. */
 .hp-price-was {
+  color: var(--ds-text-2);
   font-size: var(--ds-fs-xl);
   font-weight: 800;
-  opacity: 0.45;
+  text-decoration-color: var(--ds-text-3);
+  text-decoration-thickness: 2px;
 }
 
 .hp-price-now {
@@ -654,6 +669,17 @@
   .hp-estimator {
     grid-template-columns: 1fr;
   }
+
+  /* One column: cards stack, so they need no shared rows. */
+  .hp-plans {
+    row-gap: 24px;
+  }
+
+  .hp-plan {
+    display: flex;
+    flex-direction: column;
+    grid-row: auto;
+  }
 }
 
 /* Pricing page mode */
@@ -712,10 +738,6 @@ button.hp-pack {
   text-align: left;
 }
 
-/* The most popular plan stands out whichever plan the estimator suggests. */
-.hp-plan-popular {
-  box-shadow: 0 0 0 2px var(--du-accent), 0 24px 60px -30px color-mix(in srgb, var(--du-accent) 70%, transparent);
-}
 
 .hp-billing-strong {
   font-weight: 700;
@@ -728,9 +750,6 @@ button.hp-pack {
   opacity: 1;
 }
 
-.hp-plan-pro .hp-billing-save {
-  color: inherit;
-}
 
 .hp-credits {
   flex-wrap: wrap;

@@ -10,6 +10,7 @@ import { SlideCover } from "@/components/hf/slide-cover";
 import { CarouselArrows } from "@/components/hf/home-showcase";
 import { useCarousel } from "@/components/hf/use-carousel";
 import { modelIcon } from "@/components/hf/nav-menus";
+import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
 import { EFFECT_TEMPLATES, labelFor, useHref as effectHref } from "@/lib/effects-data";
@@ -85,6 +86,7 @@ function TemplateRow({ lang, onUse }: { lang: string; onUse: (template: HomeTemp
 }
 
 function ModelCardBody({ zh, kind, item, live, credits }: { zh: boolean; kind: "video" | "image"; item: CatalogModel; live: boolean; credits: number | null }) {
+  const detailOf = useCatalogDetail();
   return (
     <>
       <span className="sp-model-icon" aria-hidden="true">
@@ -97,7 +99,7 @@ function ModelCardBody({ zh, kind, item, live, credits }: { zh: boolean; kind: "
           {!live ? <span className="sp-badge">{zh ? "即将上线" : "Soon"}</span> : null}
           {item.badge === "New" ? <span className="sp-badge sp-badge-new">{zh ? "最新" : "New"}</span> : null}
         </span>
-        <span className="sp-model-detail">{item.detail}</span>
+        <span className="sp-model-detail">{detailOf(item)}</span>
       </span>
     </>
   );

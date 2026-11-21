@@ -18,13 +18,13 @@ import {
   X,
 } from "lucide-react";
 
+import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import {
   IMAGE_CATALOG,
   IMAGE_FEATURED_IDS,
   VIDEO_CATALOG,
   VIDEO_FEATURED_IDS,
-  catalogDetailKey,
   type CatalogModel,
 } from "@/lib/kie-model-catalog";
 
@@ -147,10 +147,7 @@ export function KieModelPicker({
     : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
   // Without a connected list every entry counts as ready (older callers).
   const isConnected = (id: string) => connectedIds.length === 0 || connectedIds.includes(id);
-  const detailOf = (item: CatalogModel) => {
-    const key = `details.${catalogDetailKey(item.id)}`;
-    return t.has(key) ? t(key) : item.detail;
-  };
+  const detailOf = useCatalogDetail();
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
