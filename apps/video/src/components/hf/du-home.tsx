@@ -38,12 +38,11 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       <section className="du-hero">
         <div className="du-hero-glow" aria-hidden="true" />
         <div className="du-hero-inner">
-          <h1 className="du-hero-eyebrow">{isChinese ? "AI 视频生成器" : "AI Video Generator"}</h1>
-          <p className="du-hero-tagline">{isChinese ? "今天想创作什么？" : "What will you create today?"}</p>
+          <h1 className="du-hero-title">{isChinese ? "AI 视频生成器 从创意开始创作" : "AI Video Generator — Create from Your Idea"}</h1>
           <p className="du-hero-sub">
             {isChinese
-              ? "输入一句话或添加参考图片，就能生成视频，还可以带声音。Veo 3.1、Seedance 2.5、Kling 4.0 等模型一站可用，生成前先显示要花多少积分。"
-              : "Type a prompt or add reference images and get a video, with sound if you want it. Veo 3.1, Seedance 2.5, Kling 4.0 and more in one place, with the credit cost shown before you generate."}
+              ? "写下你的视频想法，探索脚本、视觉、配音、字幕与音乐的创作方向，选择模型开始生成"
+              : "Describe your video idea, explore directions for the script, visuals, voiceover, subtitles, and music, then choose a model to start generating."}
           </p>
           <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
         </div>
