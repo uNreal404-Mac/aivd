@@ -130,3 +130,10 @@ describe("pages kept out of search", () => {
     expect(read("src/components/hf/wall-card.tsx")).toContain('href.includes("prompt=") ? "nofollow"');
   });
 });
+
+describe("pricing questions", () => {
+  it("never print a missing setting", async () => {
+    const { faqItemsFor } = await import("@/components/pricing/pricing-data");
+    for (const locale of ["en", "zh"]) expect(JSON.stringify(faqItemsFor(locale))).not.toMatch(/undefined|null/);
+  });
+});
