@@ -187,7 +187,7 @@
   overflow: hidden;
   padding: 3px;
   color: var(--du-text-muted);
-  font-size: 10px;
+  font-size: var(--ds-fs-2xs);
 }
 
 .du-composer-reference img {
