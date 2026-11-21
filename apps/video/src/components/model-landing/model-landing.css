@@ -646,9 +646,12 @@
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  border-collapse: collapse;
+  /* separate, so the rounded border has no square corners behind it */
+  border-collapse: separate;
+  border-spacing: 0;
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-xl);
+  overflow: hidden;
   background: var(--ds-surface-1);
   font-size: var(--ds-fs-sm);
 }
