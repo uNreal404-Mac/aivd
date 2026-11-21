@@ -36,7 +36,7 @@ export const LEGAL_CONFIG = {
     7,
   ),
   /** Date shown as "Last updated" / "最后更新" on every legal page. */
-  lastUpdated: "2026-10-16",
+  lastUpdated: "2026-11-21",
 } as const;
 
 /**

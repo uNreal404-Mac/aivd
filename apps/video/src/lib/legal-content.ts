@@ -117,6 +117,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
           paragraphs: [
             "你拥有所生成内容的所有权，但需遵守生成所用模型提供方的条款以及适用法律。",
             "你仅授予我们为托管、处理和展示你的内容所必需的有限许可，以便向你提供本服务。未经你同意，我们不会将你的内容用于其他用途。",
+            "商业使用：在付费套餐下生成的内容可以用于商业用途，导出没有水印。商用时你仍需对上传的素材拥有相应权利（例如人物照片、商标、视频片段），在发布前检查生成结果，并遵守发布平台的规则，例如对 AI 生成或修改内容的标注要求。",
           ],
         },
         {
@@ -200,6 +201,7 @@ function termsDoc(locale: LegalLocale, ctx: LegalContext): LegalDoc {
         paragraphs: [
           "You own the content you generate, subject to the terms of the model providers that power the generation and to applicable law.",
           "You grant us only the limited licence we need to host, process, and display your content so that we can provide the service to you. We do not use your content for anything else without your permission.",
+          "Commercial use: content you generate on a paid plan may be used commercially and is exported without a watermark. When you use it commercially, you still need the rights to anything you uploaded (such as photos of people, logos or footage), should check the result before you publish it, and must follow the rules of the platform you publish on, for example disclosure rules for AI-generated or altered content.",
         ],
       },
       {

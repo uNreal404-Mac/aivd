@@ -107,3 +107,18 @@ describe("help articles", () => {
     ]);
   });
 });
+
+describe("uploads and privacy answer", () => {
+  it("claims only what our own terms and storage do", () => {
+    const en = allText("uploads-and-privacy", "en");
+    const zh = allText("uploads-and-privacy", "zh");
+    expect(en).toContain("does not train AI models");
+    expect(en).toContain("private object storage");
+    expect(en).toContain("its own policy");
+    // Providers' training policies are theirs, and deleting a video only hides it.
+    expect(en).not.toMatch(/providers? (do|will) not (train|use)/i);
+    expect(en).not.toMatch(/delet\w* (it|the file|your files?) (permanently|from storage)/i);
+    expect(zh).toContain("以其自身政策为准");
+    expect(zh).not.toMatch(/服务商不会/);
+  });
+});

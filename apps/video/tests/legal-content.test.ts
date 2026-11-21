@@ -126,3 +126,13 @@ describe("getLegalDoc", () => {
         }
     });
 });
+
+describe("commercial use in the terms", () => {
+  it("says paid-plan content may be used commercially, in both languages", () => {
+    const en = getLegalDoc("terms", "en", buildContext());
+    const zh = getLegalDoc("terms", "zh", buildContext());
+    const text = (doc: typeof en) => doc.sections.flatMap((section) => section.paragraphs).join("\n");
+    expect(text(en)).toContain("content you generate on a paid plan may be used commercially");
+    expect(text(zh)).toContain("在付费套餐下生成的内容可以用于商业用途");
+  });
+});

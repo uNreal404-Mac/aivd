@@ -6,8 +6,9 @@
  *
  * Only questions whose answer is implemented and checked in the code are
  * listed. Left out until they are: generation time (no measured data yet),
- * watermark on free credits, whether model providers train on uploads, the
- * phone flow, and stuck-task timeouts.
+ * watermark on free credits, what model providers do with what they receive
+ * (their own policies, not ours), deleting stored files from the app (a
+ * delete only hides the video), the phone flow, and stuck-task timeouts.
  */
 import { CONTENT_UPDATED } from "@/config/content-dates";
 import { LEGAL_CONFIG } from "@/config/legal";
@@ -27,6 +28,7 @@ export const HELP_SLUGS = [
   "refund-policy",
   "cancel-subscription",
   "commercial-use",
+  "uploads-and-privacy",
   "available-models",
   "concurrent-generations",
 ] as const;
@@ -237,6 +239,32 @@ function enCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
           },
         ],
       };
+    case "uploads-and-privacy":
+      return {
+        question: "Do you use my uploads to train AI models?",
+        description: "No. aivd.ai uses your prompts, uploads and videos only to provide the service to you. They are kept in private storage and are not publicly listed.",
+        answer: "No. aivd.ai does not train AI models on your prompts, uploaded images or generated videos: under our terms we use your content only to host, process and show it to you while providing the service, and for nothing else without your permission.",
+        sections: [
+          {
+            heading: "Where your files are kept",
+            paragraphs: [
+              "Your uploads and generated videos are kept in private object storage. They are not publicly listed, and they can be opened only through short-lived signed links created for you when you view or download them.",
+            ],
+          },
+          {
+            heading: "Who receives them",
+            paragraphs: [
+              "To run a generation, your prompt and any images you add are sent to the AI model provider that makes the video, image or audio. How that provider handles them is governed by its own policy. Payments go through Stripe, and hosting providers run and store the service. We do not sell your personal information.",
+            ],
+          },
+          {
+            heading: "Removing your content",
+            paragraphs: [
+              "Deleting a video in My creations removes it from your account. To have your stored files and account data erased, contact us; some information may be kept where the law requires it.",
+            ],
+          },
+        ],
+      };
     case "available-models":
       return {
         question: "Which AI models can I use?",
@@ -409,6 +437,28 @@ function zhCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
           },
         ],
       };
+    case "uploads-and-privacy":
+      return {
+        question: "会用我上传的素材训练 AI 吗？",
+        description: "不会。aivd.ai 只把你的提示词、上传素材和生成的视频用于为你提供服务，文件存放在私有存储中，不会公开列出。",
+        answer: "不会。aivd.ai 不会用你的提示词、上传的图片或生成的视频训练 AI 模型：按照我们的条款，你的内容只用于在提供服务时托管、处理和展示给你，未经你同意不会用于其他用途。",
+        sections: [
+          {
+            heading: "文件存在哪里",
+            paragraphs: ["你上传的素材和生成的视频保存在私有对象存储中，不会公开列出，只有在你查看或下载时生成的短时效签名链接才能打开。"],
+          },
+          {
+            heading: "谁会收到这些内容",
+            paragraphs: [
+              "为了完成生成，你的提示词和添加的图片会发送给负责生成视频、图片或音频的 AI 模型服务商，服务商如何处理以其自身政策为准。付款由 Stripe 处理，托管服务商负责运行和存储服务。我们不会出售你的个人信息。",
+            ],
+          },
+          {
+            heading: "怎么删除",
+            paragraphs: ["在“我的作品”里删除视频后，它会从你的账号中移除。如果需要彻底删除存储的文件和账号数据，请联系我们；法律要求保留的部分信息可能会被保留。"],
+          },
+        ],
+      };
     case "available-models":
       return {
         question: "可以用哪些 AI 模型？",
@@ -452,7 +502,8 @@ const RELATED: Record<HelpSlug, HelpSlug[]> = {
   "credit-expiry": ["pay-as-you-go-credits", "refund-policy", "free-credits"],
   "refund-policy": ["cancel-subscription", "failed-generation-credits", "credit-expiry"],
   "cancel-subscription": ["refund-policy", "credit-expiry", "pay-as-you-go-credits"],
-  "commercial-use": ["available-models", "pay-as-you-go-credits", "refund-policy"],
+  "commercial-use": ["uploads-and-privacy", "available-models", "pay-as-you-go-credits"],
+  "uploads-and-privacy": ["commercial-use", "cancel-subscription", "refund-policy"],
   "available-models": ["credits-per-video", "concurrent-generations", "free-credits"],
   "concurrent-generations": ["available-models", "pay-as-you-go-credits", "credits-per-video"],
 };
@@ -461,6 +512,7 @@ const PAGES = {
   pricing: { path: "/pricing", en: "Pricing", zh: "定价" },
   refund: { path: "/refund-policy", en: "Refund policy", zh: "退款政策" },
   terms: { path: "/terms", en: "Terms of service", zh: "服务条款" },
+  privacy: { path: "/privacy", en: "Privacy policy", zh: "隐私政策" },
   contact: { path: "/contact", en: "Contact", zh: "联系我们" },
   account: { path: "/account", en: "Account", zh: "账户" },
   generator: { path: "/text-to-video", en: "Text to video generator", zh: "文字生成视频" },
@@ -475,6 +527,7 @@ const LINKS: Record<HelpSlug, (keyof typeof PAGES)[]> = {
   "refund-policy": ["refund", "contact"],
   "cancel-subscription": ["account", "refund"],
   "commercial-use": ["terms", "pricing"],
+  "uploads-and-privacy": ["privacy", "terms", "contact"],
   "available-models": ["generator", "pricing"],
   "concurrent-generations": ["pricing"],
 };
