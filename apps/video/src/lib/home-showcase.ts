@@ -1,6 +1,7 @@
 // Content for the homepage sections below the generator. Media are the site's
 // own samples; swap them for real generations as the gallery grows.
 import { navModelHref } from "@/lib/nav-models";
+import featurePrompts from "@/lib/home-feature-prompts.json";
 
 export type Bi = { zh: string; en: string };
 export type ShowMedia = { src: string; video?: boolean; poster?: string };
@@ -59,7 +60,7 @@ export const FEATURE_SLIDES: {
     cover: { main: "SEEDANCE 2.5", sub: { zh: "1080P · 有声", en: "1080P · SOUND" } },
     title: { zh: "SEEDANCE 2.5 已上线", en: "SEEDANCE 2.5 IS LIVE" },
     body: { zh: "电影级画面和同步声音，最高 1080p", en: "Cinematic video with synced sound, up to 1080p" },
-    href: navModelHref("video", "bytedance/seedance-2-5"),
+    href: withPrompt(navModelHref("video", "bytedance/seedance-2-5"), featurePrompts.whale),
   },
   {
     media: MEDIA.friedChicken,
@@ -73,7 +74,7 @@ export const FEATURE_SLIDES: {
     cover: { main: "AGENT", sub: { zh: "一句话 · 一条片", en: "ONE LINE · ONE FILM" } },
     title: { zh: "创作空间 AGENT", en: "CREATIVE SPACE AGENT" },
     body: { zh: "说出想法，自动拆成分镜再生成", en: "Say the idea; it plans the shots" },
-    href: "/creative-space",
+    href: "/creative-space/canvas",
   },
   {
     media: MEDIA.carpet,
