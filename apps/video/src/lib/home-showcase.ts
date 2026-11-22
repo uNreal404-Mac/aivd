@@ -10,6 +10,7 @@ const V = (name: string, poster?: string): ShowMedia => ({ src: `/home/${name}.m
 
 export const MEDIA = {
   marina: V("hero-marina-loop", "/home/hero-marina-poster.webp"),
+  japan: V("example-japan"),
   showcase2: V("hero-showcase-02"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
@@ -39,7 +40,7 @@ export const FEATURE_SLIDES: {
   accent?: boolean;
 }[] = [
   {
-    media: MEDIA.marina,
+    media: MEDIA.japan,
     cover: { main: "+70", sub: { zh: "免费积分", en: "FREE CREDITS" } },
     title: { zh: "新用户注册即送 70 积分", en: "70 free credits for new accounts" },
     body: { zh: "免费生成你的第一条视频", en: "Make your first video free" },
