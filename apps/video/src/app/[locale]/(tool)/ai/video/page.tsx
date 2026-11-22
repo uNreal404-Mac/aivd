@@ -34,5 +34,5 @@ export default async function AiVideoPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [sp, { locale }] = await Promise.all([searchParams, params]);
-  return <VideoStudioPage locale={locale} searchParams={sp} />;
+  return <VideoStudioPage locale={locale} searchParams={sp} defaultModel="bytedance/seedance-2-5" />;
 }
