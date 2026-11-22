@@ -13,6 +13,8 @@ export const MEDIA = {
   // Silent first six seconds of example_videos/日本.mp4 for the homepage card.
   japan: V("example-japan-6s"),
   showcase2: V("hero-showcase-02"),
+  // Silent first seven seconds of example_videos/鲸鱼折纸.mp4 for the carousel.
+  whaleOrigami: V("example-whale-origami-7s"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
   autumn: S("autumn-walk"),
@@ -49,7 +51,7 @@ export const FEATURE_SLIDES: {
     accent: true,
   },
   {
-    media: MEDIA.showcase2,
+    media: MEDIA.whaleOrigami,
     cover: { main: "SEEDANCE 2.5", sub: { zh: "1080P · 有声", en: "1080P · SOUND" } },
     title: { zh: "SEEDANCE 2.5 已上线", en: "SEEDANCE 2.5 IS LIVE" },
     body: { zh: "电影级画面和同步声音，最高 1080p", en: "Cinematic video with synced sound, up to 1080p" },
