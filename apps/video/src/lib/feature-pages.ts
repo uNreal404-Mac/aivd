@@ -132,7 +132,7 @@ export function featureCopy(kind: FeatureKind, zh: boolean): FeatureCopy {
           q: "生成的视频有声音吗？",
           a: "Veo 3.1 和 Seedance 2.5 可以把声音和画面一起生成：生成前在设置里打开声音，并在提示词里写清楚想听到什么，比如雨声、脚步声或一句台词。其他模型生成的是无声视频。",
         },
-        { q: "生成的视频可以商用吗？", a: "付费套餐可以：成片没有水印，可以用在商业项目里。" },
+        { q: "生成的视频可以商用吗？", a: "可以，包括用免费积分生成的视频。付费套餐的成片没有水印。" },
         { q: "生成失败了怎么办？", a: "失败的那次所用的积分会自动退回到你的账号，不需要申请。" },
       ]
     : [
@@ -140,7 +140,7 @@ export function featureCopy(kind: FeatureKind, zh: boolean): FeatureCopy {
           q: `Can ${kind === "text-to-video" ? "text" : kind === "reference-to-video" ? "reference" : "image"} to video AI add sound?`,
           a: "Yes, on Veo 3.1 and Seedance 2.5: turn sound on in the settings before you generate and say in the prompt what we should hear, such as rain on pavement, footsteps or a line of dialogue. The other models make silent clips.",
         },
-        { q: "Can I use the videos commercially?", a: "Yes on paid plans: videos come without a watermark and can be used in commercial work." },
+        { q: "Can I use the videos commercially?", a: "Yes, including videos made with the free credits. Paid plans export without a watermark." },
         { q: "What happens if a generation fails?", a: "The credits it used go back to your account automatically; there is nothing to claim." },
       ];
 

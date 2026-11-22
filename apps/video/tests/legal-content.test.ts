@@ -128,11 +128,24 @@ describe("getLegalDoc", () => {
 });
 
 describe("commercial use in the terms", () => {
-  it("says paid-plan content may be used commercially, in both languages", () => {
+  // Decided 2026-11-21: everything generated may be used commercially, free credits included.
+  it("says all generated content, free credits included, may be used commercially, in both languages", () => {
     const en = getLegalDoc("terms", "en", buildContext());
     const zh = getLegalDoc("terms", "zh", buildContext());
     const text = (doc: typeof en) => doc.sections.flatMap((section) => section.paragraphs).join("\n");
-    expect(text(en)).toContain("content you generate on a paid plan may be used commercially");
-    expect(text(zh)).toContain("在付费套餐下生成的内容可以用于商业用途");
+    expect(text(en)).toContain("content you generate with the service may be used commercially, including content made with the free sign-up credits");
+    expect(text(zh)).toContain("你在本服务生成的内容都可以用于商业用途，包括用注册赠送的免费积分生成的内容");
+  });
+
+  it("is said the same way wherever the site answers it", async () => {
+    const { helpArticle } = await import("@/lib/help-articles");
+    const { featureCopy } = await import("@/lib/feature-pages");
+    for (const zh of [false, true]) {
+      const help = helpArticle("commercial-use", zh ? "zh" : "en");
+      expect(help?.answer).toMatch(zh ? /免费积分/ : /free sign-up credits/);
+      const faq = featureCopy("text-to-video", zh).faqs.find((item) => /commercial|商用/.test(item.q));
+      expect(faq?.a).toMatch(zh ? /免费积分/ : /free credits/);
+      expect(faq?.a).not.toMatch(/Yes on paid plans|付费套餐可以：/);
+    }
   });
 });

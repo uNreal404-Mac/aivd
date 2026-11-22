@@ -232,8 +232,8 @@ function enCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
     case "commercial-use":
       return {
         question: "Can I use the videos commercially?",
-        description: "Paid aivd.ai plans include commercial use and export without a watermark. You own what you generate, subject to the model providers' terms and the law.",
-        answer: "Yes on the paid plans: every plan includes commercial use and exports without a watermark. You own the content you generate, subject to the terms of the model providers that power the generation and to applicable law.",
+        description: "Yes, free credits included: what you generate on aivd.ai can be used commercially. You own it, subject to the model providers' terms and the law.",
+        answer: "Yes. Everything you generate on aivd.ai can be used commercially, whether you made it with a plan, a credit pack or the free sign-up credits, and paid plans export without a watermark. You own the content you generate, subject to the terms of the model providers that power the generation and to applicable law.",
         sections: [
           {
             heading: "What stays your responsibility",
@@ -434,8 +434,8 @@ function zhCopy(slug: HelpSlug, f: ReturnType<typeof facts>): Copy {
     case "commercial-use":
       return {
         question: "生成的视频可以商用吗？",
-        description: "aivd.ai 的付费套餐都包含商用授权，导出没有水印。生成的内容归你所有，但要遵守模型提供方的条款和法律。",
-        answer: "付费套餐可以：每个套餐都包含商用授权，导出没有水印。你生成的内容归你所有，但要遵守提供生成能力的模型方的条款和适用法律。",
+        description: "可以。无论用套餐、积分包还是注册送的免费积分生成，内容都可以商用。生成的内容归你所有，但要遵守模型提供方的条款和法律。",
+        answer: "可以。在 aivd.ai 生成的内容都可以商用，不论是用套餐、积分包还是注册送的免费积分生成的；付费套餐导出没有水印。你生成的内容归你所有，但要遵守提供生成能力的模型方的条款和适用法律。",
         sections: [
           {
             heading: "你需要自己负责的部分",

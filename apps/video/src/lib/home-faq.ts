@@ -87,7 +87,7 @@ export function homeFaqs(zh: boolean): HomeFaq[] {
           q: "生成的视频有声音吗？",
           a: "Veo 3.1 和 Seedance 2.5 可以把声音和画面一起生成，开始前在生成器里打开声音即可。不支持音频的模型生成的是无声视频。",
         },
-        { q: "生成的视频可以商用吗？", a: "付费套餐可以：成片没有水印，可以用在商业项目里。" },
+        { q: "生成的视频可以商用吗？", a: "可以，包括用免费积分生成的视频。付费套餐的成片没有水印。" },
         {
           q: "生成一条视频要多久？",
           a: "取决于模型和视频时长。生成在后台进行，你可以离开页面，完成的视频会保存在“我的作品”里。",
@@ -117,7 +117,7 @@ export function homeFaqs(zh: boolean): HomeFaq[] {
           q: "Do the videos have sound?",
           a: "Veo 3.1 and Seedance 2.5 can generate sound together with the picture. Turn sound on in the generator before you start. Models without audio make silent clips.",
         },
-        { q: "Can I use the videos commercially?", a: "Yes on paid plans: videos come without a watermark and can be used in commercial work." },
+        { q: "Can I use the videos commercially?", a: "Yes, including videos made with the free credits. Paid plans export without a watermark." },
         {
           q: "How long does it take to generate a video?",
           a: "That depends on the model and the length of the clip. Generation runs in the background, so you can leave the page; the finished video is saved in My creations.",
