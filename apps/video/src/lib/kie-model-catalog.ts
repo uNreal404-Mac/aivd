@@ -26,6 +26,7 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "google/gemini-omni-flash-1-1", name: "Gemini Omni Flash 1.1", family: "Gemini Omni Flash", icon: "G", detail: "Multimodal video", badge: "New" },
   { id: "veo-3.1", name: "Veo 3.1", family: "Google Veo", icon: "G", detail: "8s · sound" },
   { id: "minimax-h3/text-to-video", name: "MiniMax H3", family: "MiniMax Hailuo", icon: "M", detail: "Text to video" },
+  { id: "minimax-h3-max/text-to-video", name: "MiniMax H3 Max", family: "MiniMax Hailuo", icon: "M", detail: "Text · image to video", badge: "New" },
   { id: "hailuo/02-text-to-video-pro", name: "MiniMax Hailuo 02 Pro", family: "MiniMax Hailuo", icon: "M", detail: "Text to video" },
   { id: "hailuo/02-text-to-video-standard", name: "MiniMax Hailuo 02 Standard", family: "MiniMax Hailuo", icon: "M", detail: "Text to video" },
   { id: "grok-imagine/text-to-video", name: "Grok Imagine", family: "Grok Imagine", icon: "X", detail: "Text to video" },
@@ -44,6 +45,36 @@ export const VIDEO_FEATURED_IDS = [
   "kling/v4-flash-reference-to-video", "gemini-omni-flash-1-2", "minimax-h3/text-to-video",
   "wan/3-0-video", "grok-imagine/text-to-video", "grok-imagine-1-5", "happyhorse-1-1",
 ];
+
+/** Public KIE model capabilities for the video picker. These describe the model,
+ * not necessarily every setting currently exposed by this site's generator. */
+export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: string }> = {
+  "bytedance/seedance-2-5": { resolution: "4K", duration: "4–30s" },
+  "seedance-2-5-flash": { resolution: "720p", duration: "4–30s" },
+  "bytedance/seedance-2-5-draft": { resolution: "1080p", duration: "source" },
+  "bytedance/seedance-2": { resolution: "720p", duration: "4–15s" },
+  "bytedance/seedance-2-fast": { resolution: "720p", duration: "4–15s" },
+  "bytedance/seedance-2-mini": { resolution: "720p", duration: "4–15s" },
+  "kling/v4-reference-to-video": { resolution: "4K", duration: "3–30s" },
+  "kling/v4-flash-reference-to-video": { resolution: "720p", duration: "3–20s" },
+  "minimax-h3/text-to-video": { resolution: "2K", duration: "4–15s" },
+  "minimax-h3-max/text-to-video": { resolution: "768p", duration: "5–15s" },
+  "wan/3-0-video": { resolution: "1080p", duration: "2–30s" },
+  "wan/3-0-video-prime": { resolution: "1080p", duration: "2–30s" },
+  "wan2.6": { resolution: "1080p", duration: "5–15s" },
+  "veo-3.1": { resolution: "4K", duration: "4–8s" },
+  "google/gemini-omni-flash-1-1": { resolution: "4K", duration: "4–10s" },
+  "kling/kling-3-0": { resolution: "4K", duration: "3–15s" },
+  "seedance-1.5-pro": { resolution: "1080p", duration: "4–12s" },
+  "sora-2": { resolution: "720p", duration: "10–15s" },
+  "gemini-omni-flash-1-2": { resolution: "4K", duration: "3–15s" },
+  "grok-imagine/text-to-video": { resolution: "1080p", duration: "6–30s" },
+  "grok-imagine-1-5": { resolution: "1080p", duration: "1–15s" },
+  "happyhorse-1-1": { resolution: "1080p", duration: "3–15s" },
+  "happyhorse/text-to-video": { resolution: "1080p", duration: "3–15s" },
+  "hailuo/02-text-to-video-pro": { resolution: "1080p", duration: "6–10s" },
+  "hailuo/02-text-to-video-standard": { resolution: "768p", duration: "6–10s" },
+};
 
 export const IMAGE_CATALOG: CatalogModel[] = [
   { id: "grok-imagine-image-2-0/text-to-image", name: "Grok Imagine Image 2.0", family: "Grok Imagine", icon: "X", detail: "Text to image", badge: "New" },

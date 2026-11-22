@@ -25,6 +25,7 @@ import {
   IMAGE_FEATURED_IDS,
   VIDEO_CATALOG,
   VIDEO_FEATURED_IDS,
+  VIDEO_MODEL_SPECS,
   type CatalogModel,
 } from "@/lib/kie-model-catalog";
 
@@ -36,7 +37,7 @@ type Props = {
   /** Models with a connected generation endpoint. */
   connectedIds?: string[];
   /** "card" renders a settings card: a small label over the model name. */
-  placement?: "top" | "inline" | "card";
+  placement?: "top" | "bottom" | "inline" | "card";
   /** Label shown above the name when placement is "card". */
   label?: string;
   /** Name to show on the trigger instead of the selected catalogue entry. */
@@ -47,6 +48,8 @@ type Props = {
   showConnectionStatus?: boolean;
   compact?: boolean;
   catalogSet?: "backup" | "current";
+  glass?: boolean;
+  allowUnconnectedSelection?: boolean;
 };
 
 function ModelIcon({ family }: { family: string }) {
@@ -69,11 +72,11 @@ function ModelIcon({ family }: { family: string }) {
 
 // Preserve the model selection and featured order from the macv-001 backup.
 const BACKUP_VIDEO_IDS = [
-  "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "bytedance/seedance-2",
+  "bytedance/seedance-2-5", "seedance-2-5-flash", "bytedance/seedance-2-5-draft", "bytedance/seedance-2",
   "bytedance/seedance-2-fast", "bytedance/seedance-2-mini", "seedance-1.5-pro",
   "kling/v4-reference-to-video", "kling/v4-flash-reference-to-video", "kling/kling-3-0",
   "wan/3-0-video-prime", "wan/3-0-video", "wan2.6", "google/gemini-omni-flash-1-1",
-  "veo-3.1", "minimax-h3/text-to-video", "hailuo/02-text-to-video-pro",
+  "veo-3.1", "minimax-h3/text-to-video", "minimax-h3-max/text-to-video", "hailuo/02-text-to-video-pro",
   "hailuo/02-text-to-video-standard", "grok-imagine/text-to-video",
   "happyhorse/text-to-video", "sora-2",
 ];
@@ -84,9 +87,8 @@ const BACKUP_IMAGE_IDS = [
   "ideogram/v3-text-to-image", "qwen3/text-to-image", "z-image/z-image",
 ];
 const BACKUP_VIDEO_FEATURED = [
-  "bytedance/seedance-2-5", "bytedance/seedance-2-5-draft", "kling/v4-reference-to-video",
-  "kling/v4-flash-reference-to-video", "wan/3-0-video-prime", "bytedance/seedance-2",
-  "minimax-h3/text-to-video", "google/gemini-omni-flash-1-1", "seedance-1.5-pro",
+  "bytedance/seedance-2-5", "seedance-2-5-flash", "bytedance/seedance-2-5-draft",
+  "kling/v4-reference-to-video", "minimax-h3/text-to-video", "minimax-h3-max/text-to-video", "wan/3-0-video",
 ];
 const BACKUP_IMAGE_FEATURED = [
   "grok-imagine-image-2-0/text-to-image", "flux3/klein-text-to-image",
@@ -135,6 +137,8 @@ export function KieModelPicker({
   catalogSet = "current",
   label,
   valueLabel,
+  glass = false,
+  allowUnconnectedSelection = false,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const t = useTranslations("ModelPicker");
@@ -195,8 +199,8 @@ export function KieModelPicker({
       item.family.toLowerCase().includes(needle);
     return connectedFirst(inDisplayOrder(displayCatalog.filter(matches), featuredIds), isConnected);
   }, [kind, query, catalogSet, connectedIds]);
-  const readyCatalog = displayCatalog.filter((item) => isConnected(item.id));
-  const comingSoon = inDisplayOrder(displayCatalog.filter((item) => !isConnected(item.id)), featuredIds);
+  const readyCatalog = displayCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
+  const comingSoon = allowUnconnectedSelection ? [] : inDisplayOrder(displayCatalog.filter((item) => !isConnected(item.id)), featuredIds);
 
   const current = fullCatalog.find((item) => item.id === value);
   const triggerLabel = valueLabel ?? current?.name ?? (compact ? copy.noneAvailable : copy.choose);
@@ -229,7 +233,7 @@ export function KieModelPicker({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || (placement !== "card" && placement !== "top")) {
+    if (!open || (placement !== "card" && placement !== "top" && placement !== "bottom")) {
       setFloatAt(null);
       return;
     }
@@ -241,6 +245,9 @@ export function KieModelPicker({
       if (placement === "top") {
         const maxHeight = Math.max(160, Math.min(420, trigger.top - 68));
         setFloatAt({ left: Math.min(0, window.innerWidth - trigger.left - width - 16), top: -(maxHeight + 8), maxHeight });
+      } else if (placement === "bottom") {
+        const maxHeight = Math.max(160, Math.min(420, window.innerHeight - trigger.bottom - 20));
+        setFloatAt({ left: Math.min(0, window.innerWidth - trigger.left - width - 16), top: trigger.height + 8, maxHeight });
       } else {
         const left = Math.min(trigger.right + 12, window.innerWidth - width - 16);
         const top = Math.max(64, Math.min(trigger.top, window.innerHeight - height - 16));
@@ -273,7 +280,7 @@ export function KieModelPicker({
     if (event.key === "ArrowDown") {
       event.preventDefault();
       rowButtons()[0]?.focus();
-    } else if (event.key === "Enter" && matches[0] && isConnected(matches[0].id)) {
+    } else if (event.key === "Enter" && matches[0] && (allowUnconnectedSelection || isConnected(matches[0].id))) {
       event.preventDefault();
       onChange(matches[0].id);
       close(true);
@@ -283,21 +290,23 @@ export function KieModelPicker({
   const availableRow = (item: CatalogModel) => {
     const selected = item.id === value;
     const ready = isConnected(item.id);
+    const selectable = ready || allowUnconnectedSelection;
     const credits = !ready ? null : kind === "video" ? (startingCredits(item.id) ?? 70) : 20;
+    const specs = kind === "video" ? VIDEO_MODEL_SPECS[item.id] : undefined;
     return (
       <button
         key={item.id}
         type="button"
         data-model-row
         aria-pressed={selected}
-        aria-disabled={!ready || undefined}
-        disabled={!ready}
+        aria-disabled={!selectable || undefined}
+        disabled={!selectable}
         onClick={() => {
-          if (!ready) return;
+          if (!selectable) return;
           onChange(item.id);
           close(true);
         }}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${ready ? "hover:bg-[var(--du-surface-2)]" : "cursor-not-allowed opacity-55"} ${selected ? "bg-[var(--du-surface-2)]" : ""}`}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${selectable ? "hover:bg-[var(--du-surface-2)]" : "cursor-not-allowed opacity-55"} ${selected ? "bg-[var(--du-surface-2)]" : ""}`}
       >
         <span
           aria-hidden="true"
@@ -307,14 +316,14 @@ export function KieModelPicker({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
-          <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{detailOf(item)}</span>
+          {specs ? <span className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-[var(--du-text-muted)]"><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5">▣ {specs.resolution}</span><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5" title={item.id === "bytedance/seedance-2-5-draft" ? (zh ? "时长继承原样片任务" : "Duration follows the source draft task") : undefined}>◷ {specs.duration === "source" ? (zh ? "继承原片" : "Source clip") : specs.duration}</span></span> : <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{detailOf(item)}</span>}
         </span>
         {credits !== null ? (
           <span className="shrink-0 rounded-md bg-[var(--du-surface-2)] px-2 py-1 text-[11px] font-medium text-[var(--du-accent-text)]">
             {copy.from(credits)}
           </span>
         ) : null}
-        {!ready ? (
+        {!ready && !allowUnconnectedSelection ? (
           <span className="shrink-0 rounded-md border border-[var(--du-border)] px-2 py-1 text-[11px] font-medium text-[var(--du-text-muted)]">
             {t("comingSoon")}
           </span>
@@ -368,8 +377,8 @@ export function KieModelPicker({
         <div
           ref={panelRef}
           onKeyDown={onListKeyDown}
-          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] shadow-2xl`}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
+          className={`${placement === "inline" ? "mt-2" : ""} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[var(--du-border)] ${glass ? "du-home-popover" : "bg-[var(--du-surface)]"} shadow-2xl`}
         >
           <div className="flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />

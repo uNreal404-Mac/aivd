@@ -126,6 +126,14 @@
   backdrop-filter: blur(18px);
 }
 
+.du-home-popover,
+.du-composer-mentions {
+  background: color-mix(in srgb, var(--du-surface) 90%, transparent);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--du-bg) 72%, transparent);
+}
+
 .du-composer-cost {
   display: inline-flex;
   align-items: center;
@@ -263,8 +271,7 @@
   padding: 5px;
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-lg);
-  background: var(--du-surface);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--du-bg) 80%, transparent);
+  background: color-mix(in srgb, var(--du-surface) 90%, transparent);
 }
 
 .du-composer-mentions button {
@@ -369,6 +376,11 @@
 /* Phones: the composer's tabs, send button and prompt suggestions are at
    least 44px tall, so a thumb lands on the one it aims at. */
 @media (max-width: 640px) {
+  .du-home-settings {
+    right: auto;
+    left: 0;
+  }
+
   .du-composer-tab {
     min-height: 44px;
   }
