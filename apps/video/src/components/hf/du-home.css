@@ -2,7 +2,7 @@
 
 .du-hero {
   position: relative;
-  padding: 56px 24px 28px;
+  padding: 64px 24px 32px;
 }
 
 /* One soft glow behind the top of the page, as on the reference layout. */
@@ -35,23 +35,24 @@
 }
 
 .du-hero .du-composer {
-  padding: 10px 14px 8px;
+  margin-top: 22px;
+  padding: 14px 16px 12px;
 }
 
 .du-hero .du-composer-prompt-row {
-  min-height: 60px;
+  min-height: 68px;
 }
 
 .du-hero #home-generator-prompt {
-  min-height: 52px;
+  min-height: 60px;
 }
 
 .du-hero .du-composer-suggestions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2px 8px;
-  margin-top: 7px;
-  padding-top: 5px;
+  margin-top: 10px;
+  padding-top: 8px;
 }
 
 .du-hero .du-composer-suggestions > div:first-child {
@@ -72,11 +73,12 @@
 
 @media (max-width: 600px) {
   .du-hero {
-    padding: 40px 16px 24px;
+    padding: 44px 16px 28px;
   }
 
   .du-hero .du-composer {
-    padding: 12px 12px 10px;
+    margin-top: 18px;
+    padding: 14px 14px 12px;
   }
 
   .du-hero .du-composer-prompt-row {
@@ -100,8 +102,8 @@
 
 .du-hero-sub {
   max-width: 920px;
-  margin-top: 14px;
-  margin-bottom: 24px;
+  margin-top: 18px;
+  margin-bottom: 34px;
   color: var(--du-text-muted);
   font-size: clamp(0.9375rem, 1.25vw, 1.125rem);
   line-height: 1.55;
@@ -115,8 +117,8 @@
   }
 
   .du-hero-sub {
-    margin-top: 12px;
-    margin-bottom: 20px;
+    margin-top: 16px;
+    margin-bottom: 28px;
     font-size: 0.9375rem;
   }
 }

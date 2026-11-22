@@ -13,12 +13,12 @@ export const HOME_SEO = {
     title: "AI Video Generator with Sound, from Text or Images",
     description:
       "Turn a prompt or photo into a video with sound. Veo 3.1, Seedance 2.5, Kling 4.0 and more in one place, plus images and audio. See the cost before you generate.",
-    h1: "AI Video Generator with Sound",
+    h1: "AI Video Generator — Turn Dreams into Reality",
   },
   zh: {
     title: "AI 视频生成器：文字或图片生成有声视频",
     description: "用 AI 把一句话或一张图片变成带声音的视频。Veo 3.1、Seedance 2.5、Kling 4.0 等模型一站可用，还能生成图片和音频，生成前就能看到要花多少积分。",
-    h1: "AI 视频生成器：画面和声音一起生成",
+    h1: "AI视频生成器 把梦想照进现实",
   },
 } as const;
 

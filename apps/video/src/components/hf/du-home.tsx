@@ -42,8 +42,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
           <h1 className="du-hero-title">{homeSeo(isChinese ? "zh" : "en").h1}</h1>
           <p className="du-hero-sub">
             {isChinese
-              ? "写下你的视频想法，探索脚本、视觉、配音与音乐的创作方向，选择模型开始生成"
-              : "Describe your video idea, explore directions for the script, visuals, voiceover and music, then choose a model to start generating."}
+              ? "写下你的想法，添加视频、图片等参考，选择模型一键生成"
+              : "Write down your idea, add video, images, and other references, then choose a model to generate in one click."}
           </p>
           <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
         </div>

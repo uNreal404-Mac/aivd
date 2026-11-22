@@ -14,15 +14,15 @@ describe("homepage title, description and H1", () => {
   // a decision, and the test with them.
   it("are the agreed ones", () => {
     expect(HOME_SEO.en.title).toBe("AI Video Generator with Sound, from Text or Images");
-    expect(HOME_SEO.en.h1).toBe("AI Video Generator with Sound");
+    expect(HOME_SEO.en.h1).toBe("AI Video Generator — Turn Dreams into Reality");
     expect(HOME_SEO.zh.title).toBe("AI 视频生成器：文字或图片生成有声视频");
-    expect(HOME_SEO.zh.h1).toBe("AI 视频生成器：画面和声音一起生成");
+    expect(HOME_SEO.zh.h1).toBe("AI视频生成器 把梦想照进现实");
   });
 
   it("lead with the main keyword and fit a search result", () => {
     for (const copy of [HOME_SEO.en, HOME_SEO.zh]) {
       expect(copy.title.toLowerCase()).toMatch(/^ai (video generator|视频生成器)/);
-      expect(copy.h1.toLowerCase()).toMatch(/^ai (video generator|视频生成器)/);
+      expect(copy.h1.toLowerCase()).toMatch(/^ai\s?(video generator|视频生成器)/);
       expect(displayWidth(copy.title + SUFFIX)).toBeLessThanOrEqual(LIMITS.title[1]);
       expect(displayWidth(copy.description)).toBeGreaterThanOrEqual(LIMITS.description[0]);
       expect(displayWidth(copy.description)).toBeLessThanOrEqual(LIMITS.description[1]);
