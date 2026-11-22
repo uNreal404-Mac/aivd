@@ -15,6 +15,10 @@ export const MEDIA = {
   showcase2: V("hero-showcase-02"),
   // Silent first seven seconds of example_videos/鲸鱼折纸.mp4 for the carousel.
   whaleOrigami: V("example-whale-origami-7s"),
+  // Silent 22–29s cut of example_videos/炸鸡.mp4 for the carousel.
+  friedChicken: V("example-fried-chicken-22-29"),
+  // Silent 21–24s cut of example_videos/僵尸小猫.mp4 for the carousel.
+  zombieKitten: V("example-zombie-kitten-21-24"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
   autumn: S("autumn-walk"),
@@ -58,14 +62,14 @@ export const FEATURE_SLIDES: {
     href: navModelHref("video", "bytedance/seedance-2-5"),
   },
   {
-    media: MEDIA.valley,
+    media: MEDIA.friedChicken,
     cover: { main: "VEO 3.1", sub: { zh: "画面 + 声音", en: "WITH SOUND" } },
     title: { zh: "VEO 3.1 有声短片", en: "VEO 3.1 WITH SOUND" },
     body: { zh: "画面和声音一起生成", en: "Picture and sound in one pass" },
     href: navModelHref("video", "veo-3.1"),
   },
   {
-    media: MEDIA.bloom,
+    media: MEDIA.zombieKitten,
     cover: { main: "AGENT", sub: { zh: "一句话 · 一条片", en: "ONE LINE · ONE FILM" } },
     title: { zh: "创作空间 AGENT", en: "CREATIVE SPACE AGENT" },
     body: { zh: "说出想法，自动拆成分镜再生成", en: "Say the idea; it plans the shots" },
