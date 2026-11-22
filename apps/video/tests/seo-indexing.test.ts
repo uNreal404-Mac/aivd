@@ -1,3 +1,4 @@
+import { compareSlugs } from "@/lib/compare-pages";
 import { packOffers } from "@/lib/pricing-offers";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -82,6 +83,7 @@ describe("sitemap", () => {
       ...INDEXED_LANDING_SLUGS.map((slug) => `/models/${slug}`),
       "/help",
       ...HELP_SLUGS.map((slug) => `/help/${slug}`),
+      ...compareSlugs().map((slug) => `/compare/${slug}`),
     ];
     expect(entries).toHaveLength(paths.length * i18n.locales.length);
 

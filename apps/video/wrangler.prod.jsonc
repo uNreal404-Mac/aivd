@@ -10,7 +10,8 @@
   // this worker with `wrangler secret put <NAME> --config wrangler.prod.jsonc`
   // (BETTER_AUTH_SECRET, DEEPSEEK_API_KEY, KIE_API_KEY, FAL_KEY,
   // STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY, CALLBACK_HMAC_SECRET,
-  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET). Never commit them here.
+  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET; for sign-in also GOOGLE_CLIENT_ID,
+  // GOOGLE_CLIENT_SECRET, RESEND_API_KEY, RESEND_FROM). Never commit them here.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "REPLACE_production_worker_name",
   "main": ".open-next/worker.js",
@@ -49,6 +50,9 @@
     "BETTER_AUTH_URL": "https://aivd.ai",
     "NEXT_PUBLIC_IS_PREVIEW": "false",
     "NEXT_PUBLIC_NOINDEX": "false",
+    // Shown on the contact, about, pricing and help pages and in the
+    // Organization structured data; built into the bundle, so it lives here.
+    "NEXT_PUBLIC_SUPPORT_EMAIL": "REPLACE_support_email",
     // Decide before launch; kept off and in test mode until then.
     "VIDEO_GENERATION_ENABLED": "false",
     "DEFAULT_AI_PROVIDER": "kie",

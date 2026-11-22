@@ -1,0 +1,91 @@
+/* Model comparison pages: the help centre's layout, with a table and two "when to pick" columns. */
+.cmp-inner {
+  max-width: 920px;
+}
+
+.cmp-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--lg-border);
+  border-radius: var(--ds-r-lg);
+  background: var(--lg-surface);
+}
+
+.cmp-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: var(--ds-fs-sm);
+}
+
+.cmp-table th,
+.cmp-table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--lg-border);
+  color: var(--lg-text);
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cmp-table thead th {
+  border-top: 0;
+  font-weight: 600;
+}
+
+.cmp-table thead a {
+  color: var(--lg-accent);
+}
+
+.cmp-table .cmp-label {
+  width: 28%;
+  color: var(--lg-muted);
+}
+
+.cmp-note {
+  margin: 10px 0 0;
+  color: var(--lg-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.6;
+}
+
+.cmp-picks {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin: 0 0 24px;
+}
+
+.cmp-pick {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--lg-border);
+  border-radius: var(--ds-r-lg);
+  background: var(--lg-surface);
+}
+
+.cmp-more {
+  color: var(--lg-accent);
+  font-size: var(--ds-fs-sm);
+}
+
+.cmp-more:hover {
+  text-decoration: underline;
+}
+
+.cmp-faq details {
+  padding: 14px 0;
+  border-top: 1px solid var(--lg-border);
+}
+
+.cmp-faq summary {
+  color: var(--lg-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cmp-faq details p {
+  margin: 10px 0 0;
+  color: var(--lg-text);
+  line-height: 1.7;
+}

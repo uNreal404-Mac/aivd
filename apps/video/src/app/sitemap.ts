@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { i18n, localeConfig } from "@/config/i18n-config";
 import { PUBLIC_ROUTES, type PublicRoute } from "@/config/indexing-paths";
+import { compareSlugs } from "@/lib/compare-pages";
 import { HELP_SLUGS } from "@/lib/help-articles";
 import { isNoIndexEnvironment } from "@/lib/indexing";
 import { INDEXED_LANDING_SLUGS } from "@/lib/model-landing";
@@ -40,7 +41,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...HELP_SLUGS.map((slug): PublicRoute => ({ path: `/help/${slug}`, changeFrequency: "monthly", priority: 0.5 })),
   ];
 
-  return [...PUBLIC_ROUTES, ...modelRoutes, ...helpRoutes].flatMap((route) => {
+  // Model comparisons, while both of their models are live.
+  const compareRoutes: PublicRoute[] = compareSlugs().map((slug) => ({ path: `/compare/${slug}`, changeFrequency: "weekly", priority: 0.6 }));
+
+  return [...PUBLIC_ROUTES, ...modelRoutes, ...helpRoutes, ...compareRoutes].flatMap((route) => {
     const languages = languageAlternates(route.path);
     return i18n.locales.map((locale) => ({
       url: getLocaleUrl(route.path, locale),

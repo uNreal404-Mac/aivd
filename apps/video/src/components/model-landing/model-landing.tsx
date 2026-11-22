@@ -26,6 +26,7 @@ import {
   type LandingModel,
 } from "@/lib/model-landing";
 import { CONTENT_UPDATED, formatUpdated } from "@/config/content-dates";
+import { comparisonsFor } from "@/lib/compare-pages";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { breadcrumbList, faqPage, jsonLd } from "@/lib/structured-data";
 import "@/components/hf/home-showcase.css";
@@ -48,6 +49,7 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
   const media = landingMedia(model);
   const faqs = landingFaqs(model, zh);
   const related = relatedModels(model);
+  const comparisons = comparisonsFor(model.slug);
   const alternative = model.live ? undefined : liveAlternative(model);
   const target = model.live ? model : alternative;
   const title = landingTitle(model, zh);
@@ -302,13 +304,28 @@ export function ModelLanding({ model, lang }: { model: LandingModel; lang: strin
       </section>
 
       {/* 6. Other models */}
-      {related.length ? (
+      {related.length || comparisons.length ? (
         <section className="ml-section" aria-labelledby="ml-more">
           <div className="ml-head-c">
             <p className="ml-eyebrow">{zh ? "更多模型" : "More models"}</p>
-            <h2 id="ml-more" className="ml-h2">{zh ? `其他 AI ${kind.zh}模型` : `Other AI ${kind.en.toLowerCase()} models`}</h2>
+            <h2 id="ml-more" className="ml-h2">
+              {comparisons.length
+                ? zh
+                  ? "同类模型与对比"
+                  : `Similar models and comparisons`
+                : zh
+                  ? `其他 AI ${kind.zh}模型`
+                  : `Other AI ${kind.en.toLowerCase()} models`}
+            </h2>
           </div>
           <div className="ml-related">
+            {comparisons.map((item) => (
+              <Link key={item.slug} href={href(`/compare/${item.slug}`)} className="ml-rel">
+                <span className="ml-rel-name">{zh ? `${model.name} 和 ${item.other.name} 对比` : `${model.name} vs ${item.other.name}`}</span>
+                <span className="ml-rel-desc">{zh ? "价格、时长、分辨率和声音，逐项对比" : "Price, length, resolution and sound, side by side"}</span>
+                <ArrowRight className="ml-rel-go" aria-hidden="true" />
+              </Link>
+            ))}
             {related.map((item) => (
               <Link key={item.slug} href={href(landingHref(item.slug))} className="ml-rel">
                 <span className="ml-rel-name">
