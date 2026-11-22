@@ -40,7 +40,7 @@
     "BETTER_AUTH_URL": "https://aivd-preview.pages.dev",
     "NEXT_PUBLIC_IS_PREVIEW": "true",
     "NEXT_PUBLIC_NOINDEX": "true",
-    "VIDEO_GENERATION_ENABLED": "false",
+    "VIDEO_GENERATION_ENABLED": "true",
     "DEFAULT_AI_PROVIDER": "kie",
     "NEXT_PUBLIC_BILLING_PROVIDER": "stripe",
     "NEXT_PUBLIC_PAYMENTS_ENABLED": "true",
