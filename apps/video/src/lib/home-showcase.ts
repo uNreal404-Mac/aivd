@@ -10,7 +10,8 @@ const V = (name: string, poster?: string): ShowMedia => ({ src: `/home/${name}.m
 
 export const MEDIA = {
   marina: V("hero-marina-loop", "/home/hero-marina-poster.webp"),
-  japan: V("example-japan"),
+  // Silent first six seconds of example_videos/日本.mp4 for the homepage card.
+  japan: V("example-japan-6s"),
   showcase2: V("hero-showcase-02"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
