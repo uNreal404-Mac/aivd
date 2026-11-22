@@ -1,6 +1,7 @@
 // Content for the homepage sections below the generator. Media are the site's
 // own samples; swap them for real generations as the gallery grows.
 import { navModelHref } from "@/lib/nav-models";
+import featurePrompts from "@/lib/home-feature-prompts.json";
 
 export type Bi = { zh: string; en: string };
 export type ShowMedia = { src: string; video?: boolean; poster?: string };
@@ -10,7 +11,15 @@ const V = (name: string, poster?: string): ShowMedia => ({ src: `/home/${name}.m
 
 export const MEDIA = {
   marina: V("hero-marina-loop", "/home/hero-marina-poster.webp"),
+  // Silent first six seconds of example_videos/日本.mp4 for the homepage card.
+  japan: V("example-japan-6s"),
   showcase2: V("hero-showcase-02"),
+  // Silent first seven seconds of example_videos/鲸鱼折纸.mp4 for the carousel.
+  whaleOrigami: V("example-whale-origami-7s"),
+  // Silent 22–29s cut of example_videos/炸鸡.mp4 for the carousel.
+  friedChicken: V("example-fried-chicken-22-29"),
+  // Silent 21–24s cut of example_videos/僵尸小猫.mp4 for the carousel.
+  zombieKitten: V("example-zombie-kitten-21-24"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
   autumn: S("autumn-walk"),
@@ -39,7 +48,7 @@ export const FEATURE_SLIDES: {
   accent?: boolean;
 }[] = [
   {
-    media: MEDIA.marina,
+    media: MEDIA.japan,
     cover: { main: "+70", sub: { zh: "免费积分", en: "FREE CREDITS" } },
     title: { zh: "新用户注册即送 70 积分", en: "70 free credits for new accounts" },
     body: { zh: "免费生成你的第一条视频", en: "Make your first video free" },
@@ -47,25 +56,25 @@ export const FEATURE_SLIDES: {
     accent: true,
   },
   {
-    media: MEDIA.showcase2,
+    media: MEDIA.whaleOrigami,
     cover: { main: "SEEDANCE 2.5", sub: { zh: "1080P · 有声", en: "1080P · SOUND" } },
     title: { zh: "SEEDANCE 2.5 已上线", en: "SEEDANCE 2.5 IS LIVE" },
     body: { zh: "电影级画面和同步声音，最高 1080p", en: "Cinematic video with synced sound, up to 1080p" },
-    href: navModelHref("video", "bytedance/seedance-2-5"),
+    href: withPrompt(navModelHref("video", "bytedance/seedance-2-5"), featurePrompts.whale),
   },
   {
-    media: MEDIA.valley,
+    media: MEDIA.friedChicken,
     cover: { main: "VEO 3.1", sub: { zh: "画面 + 声音", en: "WITH SOUND" } },
     title: { zh: "VEO 3.1 有声短片", en: "VEO 3.1 WITH SOUND" },
     body: { zh: "画面和声音一起生成", en: "Picture and sound in one pass" },
     href: navModelHref("video", "veo-3.1"),
   },
   {
-    media: MEDIA.bloom,
+    media: MEDIA.zombieKitten,
     cover: { main: "AGENT", sub: { zh: "一句话 · 一条片", en: "ONE LINE · ONE FILM" } },
     title: { zh: "创作空间 AGENT", en: "CREATIVE SPACE AGENT" },
     body: { zh: "说出想法，自动拆成分镜再生成", en: "Say the idea; it plans the shots" },
-    href: "/creative-space",
+    href: "/creative-space/canvas",
   },
   {
     media: MEDIA.carpet,

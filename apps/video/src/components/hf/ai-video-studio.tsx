@@ -187,6 +187,8 @@ export function AiVideoStudio({
   upcomingModel?: { name: string; desc: string };
 }) {
   const isChinese = locale.toLowerCase().startsWith("zh");
+  // Keep the usual limit, while allowing a longer prompt supplied by a sample link to remain editable.
+  const promptMaxLength = Math.max(PROMPT_MAX_LENGTH, initialSettings?.prompt.length ?? 0);
   const signIn = useSigninModal();
   // Signed-out visitors have history too, once they sign in; say so instead of "nothing yet".
   const { data: session, isPending: sessionLoading } = useSession();
@@ -754,7 +756,7 @@ export function AiVideoStudio({
                 id="studio-prompt"
                 ref={promptRef}
                 value={settings.prompt}
-                maxLength={PROMPT_MAX_LENGTH}
+                maxLength={promptMaxLength}
                 placeholder={copy.promptPlaceholder}
                 onChange={(event) => {
                   setSettings((previous) => ({ ...previous, prompt: event.target.value }));
@@ -802,7 +804,7 @@ export function AiVideoStudio({
                   {model.audio && settings.audio ? copy.on : copy.off}
                 </button>
                 <span className="vs-count">
-                  {settings.prompt.length}/{PROMPT_MAX_LENGTH}
+                  {settings.prompt.length}/{promptMaxLength}
                 </span>
               </div>
             </div>
