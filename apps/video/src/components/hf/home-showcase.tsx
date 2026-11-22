@@ -9,7 +9,7 @@ import { GallerySection } from "@/components/gallery/gallery-section";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { CREATIVE_SKILLS, CREATIVE_SKILL_CATEGORIES } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
-import { FEATURE_SLIDES, HOW_STEPS, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
+import { FEATURE_SLIDES, HOW_STEPS, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withExamplePrompt, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
 import { SlideCover } from "@/components/hf/slide-cover";
 import { InViewVideo } from "@/components/hf/in-view-video";
@@ -282,8 +282,8 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
             <WallCard
               key={`${gallery.id}-${position}`}
               media={media}
-              href={localizedHref(lang, withPrompt(gallery.href, text))}
-              prompt={text}
+              href={localizedHref(lang, index === 0 ? withExamplePrompt(gallery.href, media.promptId) : withPrompt(gallery.href, text))}
+              prompt={index === 0 ? undefined : text}
               cta={zh ? "做同款" : "Make one like this"}
               ratio={WALL_RATIOS[(position + index) % WALL_RATIOS.length]}
               position={position + index}

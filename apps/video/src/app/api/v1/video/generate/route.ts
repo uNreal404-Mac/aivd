@@ -15,7 +15,7 @@ import {
 import "@/lib/proxy-config";
 
 const generateSchema = z.object({
-  prompt: z.string().min(1).max(5000),
+  prompt: z.string().min(1).max(10000),
   model: z.string().min(1),
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),

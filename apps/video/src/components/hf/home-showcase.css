@@ -987,6 +987,17 @@
   right: 10px;
 }
 
+@media (hover: none) {
+  .wc-video .wc-play {
+    display: inline-flex;
+  }
+
+  .wc-video .wc-info {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .wc img,
 .wc video {
   display: block;

@@ -1,6 +1,7 @@
 import { calculateModelCredits } from "@/config/credits";
 import { marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
+import examplePrompts from "@/lib/home-example-prompts.json";
 
 export type StudioModel = {
   id: string;
@@ -100,7 +101,7 @@ export type StudioSettings = {
   preset?: string;
 };
 
-export const PROMPT_PARAM_MAX = 5000;
+export const PROMPT_PARAM_MAX = 10000;
 export const PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export function defaultSettings(model?: StudioModel): StudioSettings {
@@ -172,7 +173,11 @@ export function settingsFromSearchParams(
     }
   }
 
-  const promptParam = firstParam(params.prompt) ?? "";
+  const sampleId = firstParam(params.sample) ?? "";
+  const samplePrompt = Object.prototype.hasOwnProperty.call(examplePrompts, sampleId)
+    ? examplePrompts[sampleId as keyof typeof examplePrompts]
+    : "";
+  const promptParam = firstParam(params.prompt) ?? samplePrompt;
   const prompt = promptParam.trim().slice(0, PROMPT_PARAM_MAX);
 
   const durationParam = Number(firstParam(params.duration));

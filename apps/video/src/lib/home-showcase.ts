@@ -4,22 +4,25 @@ import { navModelHref } from "@/lib/nav-models";
 import featurePrompts from "@/lib/home-feature-prompts.json";
 
 export type Bi = { zh: string; en: string };
-export type ShowMedia = { src: string; video?: boolean; poster?: string };
+export type ShowMedia = { src: string; video?: boolean; poster?: string; promptId?: string };
 
 const S = (name: string): ShowMedia => ({ src: `/home/samples/${name}.webp` });
-const V = (name: string, poster?: string): ShowMedia => ({ src: `/home/${name}.mp4`, video: true, poster });
+const V = (name: string, poster?: string, promptId?: string): ShowMedia => ({ src: `/home/${name}.mp4`, video: true, poster, promptId });
 
 export const MEDIA = {
   marina: V("hero-marina-loop", "/home/hero-marina-poster.webp"),
   // Silent first six seconds of example_videos/日本.mp4 for the homepage card.
-  japan: V("example-japan-6s"),
+  japan: V("example-japan-6s", "/home/example-japan-6s-poster.webp", "japan"),
   showcase2: V("hero-showcase-02"),
   // Silent first seven seconds of example_videos/鲸鱼折纸.mp4 for the carousel.
-  whaleOrigami: V("example-whale-origami-7s"),
+  whaleOrigami: V("example-whale-origami-7s", "/home/example-whale-origami-7s-poster.webp", "whale"),
   // Silent 22–29s cut of example_videos/炸鸡.mp4 for the carousel.
-  friedChicken: V("example-fried-chicken-22-29"),
+  friedChicken: V("example-fried-chicken-22-29", "/home/example-fried-chicken-22-29-poster.webp", "friedChicken"),
   // Silent 21–24s cut of example_videos/僵尸小猫.mp4 for the carousel.
-  zombieKitten: V("example-zombie-kitten-21-24"),
+  zombieKitten: V("example-zombie-kitten-21-24", "/home/example-zombie-kitten-21-24-poster.webp"),
+  dragon: V("example-dragon-full", "/home/example-dragon-full-poster.webp", "dragon"),
+  dress: V("example-dress-10-20", "/home/example-dress-10-20-poster.webp", "dress"),
+  samuraiCat: V("example-samurai-cat-7s", "/home/example-samurai-cat-7s-poster.webp", "samuraiCat"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
   autumn: S("autumn-walk"),
@@ -115,9 +118,7 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
     body: { zh: "新一代 AI 视频模型", en: "The next-generation AI video model" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
     cta: { zh: "用 Seedance 2.5 生成", en: "Create with Seedance 2.5" },
-    // None of the template covers shown just above it (boy and dog, autumn
-    // walk, rain couple, mountain wind, cosmic bloom), so the rows never repeat.
-    media: [MEDIA.showcase2, MEDIA.tomb, MEDIA.valley, MEDIA.mech, MEDIA.dancer, MEDIA.planet, MEDIA.sea, MEDIA.studio],
+    media: [MEDIA.zombieKitten, MEDIA.japan, MEDIA.whaleOrigami, MEDIA.friedChicken, MEDIA.dragon, MEDIA.dress, MEDIA.samuraiCat],
   },
   {
     id: "nano-banana",
@@ -180,4 +181,10 @@ export const SAMPLE_PROMPTS: Record<string, Bi> = {
 export function withPrompt(href: string, prompt: string | undefined): string {
   if (!prompt) return href;
   return `${href}${href.includes("?") ? "&" : "?"}prompt=${encodeURIComponent(prompt)}`;
+}
+
+/** Keep long example prompts out of the URL; the studio resolves the ID. */
+export function withExamplePrompt(href: string, promptId: string | undefined): string {
+  if (!promptId) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}sample=${encodeURIComponent(promptId)}`;
 }
