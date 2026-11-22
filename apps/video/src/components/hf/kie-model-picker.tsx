@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
+import "./kie-model-picker.css";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import {
   IMAGE_CATALOG,
@@ -377,10 +378,10 @@ export function KieModelPicker({
         <div
           ref={panelRef}
           onKeyDown={onListKeyDown}
-          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0 } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[var(--du-border)] ${glass ? "du-home-popover" : "bg-[var(--du-surface)]"} shadow-2xl`}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: "min(70vh, 520px)" } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
+          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
         >
-          <div className="flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
+          <div className="du-model-picker-search flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
             <input
               ref={searchRef}
@@ -397,8 +398,8 @@ export function KieModelPicker({
             </button>
           </div>
 
-          {/* Only the list scrolls; the panel itself clips, so there is one scrollbar. */}
-          <div ref={listRef} className="min-h-0 max-h-[320px] flex-1 overflow-y-auto overscroll-contain p-2">
+          {/* The panel is the only scrolling container, including on Windows. */}
+          <div ref={listRef} className="p-2">
             {query.trim() ? (
               matches.length ? matches.map(availableRow) : <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">{copy.none}</p>
             ) : family ? (

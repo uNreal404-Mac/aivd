@@ -477,7 +477,7 @@ export function AiVideoStudio({
     setCatalogModelId(id);
     setDurationOpen(false);
     setNotice(null);
-    // The picker only offers models that can generate.
+    // Keep the selected catalogue entry visible even if generation is not connected yet.
     setSettings((previous) => selectModel(previous, id));
   }
 
@@ -860,6 +860,9 @@ export function AiVideoStudio({
               open={pickerOpen}
               onOpenChange={setPickerOpen}
               placement="card"
+              catalogSet="backup"
+              allowUnconnectedSelection
+              glass
               label={copy.model}
               valueLabel={upcoming?.name}
               onChange={switchModel}
@@ -933,8 +936,8 @@ export function AiVideoStudio({
             {selectedModelConnected ? null : (
               <output className="vs-notice">
                 {isChinese
-                  ? `${bannerName} 即将上线。现在可以用 ${availableModels.map((item) => item.name).join(" 或 ")} 生成。`
-                  : `${bannerName} is coming soon. You can generate with ${availableModels.map((item) => item.name).join(" or ")} today.`}
+                  ? `${bannerName} 暂不可生成。现在可以用 ${availableModels.map((item) => item.name).join(" 或 ")} 生成。`
+                  : `${bannerName} cannot generate yet. You can use ${availableModels.map((item) => item.name).join(" or ")} today.`}
               </output>
             )}
 
