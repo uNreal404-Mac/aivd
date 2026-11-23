@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getMarketModel } from "@/ai/kie-market";
 import { requireAuth } from "@/lib/api/auth";
+import { canGenerateInPreview } from "@/lib/internal-test-account";
 import { apiError, apiSuccess, handleApiError } from "@/lib/api/response";
 import { isSafetyApproved, moderateContent, safetyMessage } from "@/lib/content-safety";
 import { imageRefSchema } from "@/lib/image-ref-schema";
@@ -27,13 +28,13 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.VIDEO_GENERATION_ENABLED !== "true") {
+    const user = await requireAuth(request);
+    if (!canGenerateInPreview(user)) {
       return apiError("Generation is coming soon on this preview. No credits were used.", 503, {
         code: "GENERATION_DISABLED",
       });
     }
 
-    const user = await requireAuth(request);
     const data = schema.parse(await request.json());
     const model = getMarketModel(data.model);
     if (!model || model.kind === "video") {

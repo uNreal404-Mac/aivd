@@ -6,6 +6,7 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
+import { useSession } from "@/lib/auth/client";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
@@ -140,6 +141,9 @@ export function AiImageStudio({
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
+  const { data: session } = useSession();
+  const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
+    session?.user?.isAdmin === true && session.user.isSuperAccount === true;
   const [modelId, setModelId] = useState(getMarketModel(initialModel)?.kind === "image" ? initialModel : IMAGE_MODELS[0].id);
   const model = getMarketModel(modelId) ?? IMAGE_MODELS[0];
   const options = model.options;
@@ -448,7 +452,7 @@ export function AiImageStudio({
           <span>{submitting ? (zh ? "提交中…" : "Submitting…") : zh ? "生成" : "Generate"}</span>
           <span className="is-generate-sub">
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            {credits}
+            {internalFree ? 0 : credits}
           </span>
         </button>
       </form>

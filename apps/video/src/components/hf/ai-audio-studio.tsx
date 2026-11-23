@@ -54,6 +54,8 @@ export function AiAudioStudio({
   const [script, setScript] = useState("");
   const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
+  const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
+    session?.user?.isAdmin === true && session.user.isSuperAccount === true;
   const draft = usePromptDraft("audio", script, setScript, false);
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -356,7 +358,7 @@ export function AiAudioStudio({
               {submitting ? t.submitting : t.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {credits}
+                {internalFree ? 0 : credits}
               </span>
             </button>
           </>
