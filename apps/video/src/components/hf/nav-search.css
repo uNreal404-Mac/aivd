@@ -178,7 +178,6 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 6px 8px 10px;
-  scrollbar-width: thin;
 }
 
 .ns-block {

@@ -2,25 +2,6 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--du-text-muted) 62%, transparent) transparent;
-}
-
-.du-model-picker-panel::-webkit-scrollbar {
-  width: 6px;
-}
-
-.du-model-picker-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.du-model-picker-panel::-webkit-scrollbar-thumb {
-  border-radius: var(--du-glass-radius-round);
-  background: color-mix(in srgb, var(--du-text-muted) 62%, transparent);
-}
-
-.du-model-picker-panel::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--du-text-muted) 80%, transparent);
 }
 
 .du-model-picker-glass {
