@@ -7,6 +7,7 @@
 import { ProviderRejectedError } from "./types";
 import { isDefiniteRejection } from "./providers/kie";
 import { audioCreditsFromCost, imageCreditsFromCost, videoCreditsFromCost } from "@/config/kie-pricing";
+import { secondsBetween } from "@/lib/video-durations";
 
 export type MarketKind = "video" | "image" | "audio";
 
@@ -129,7 +130,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "bytedance/seedance-2-5",
     kind: "video",
     name: "Seedance 2.5",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], durations: [5, 10, 15], maxImages: 1, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5",
@@ -148,7 +149,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "seedance-2-5-flash",
     kind: "video",
     name: "Seedance 2.5 Flash",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], durations: [5, 10, 15], maxImages: 1, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_FLASH_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5-flash",
@@ -168,7 +169,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "kling/v4-reference-to-video",
     kind: "video",
     name: "Kling 4.0",
-    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p", "1080p"], durations: [5, 10, 15], maxImages: 4 },
+    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 30), maxImages: 4 },
     costUsd: (req) => perSecond(KLING_4_USD, "720p")(req, 3, 30, 5),
     buildTask: (req) => ({
       model: "kling-4.0/reference-to-video",
@@ -185,7 +186,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "kling/v4-flash-reference-to-video",
     kind: "video",
     name: "Kling 4.0 Flash",
-    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p"], durations: [5, 10, 15], maxImages: 4 },
+    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p"], durations: secondsBetween(3, 20), maxImages: 4 },
     costUsd: (req) => perSecond(KLING_4_FLASH_USD, "720p")(req, 3, 20, 5),
     buildTask: (req) => ({
       model: "kling-4.0/flash-reference-to-video",
@@ -202,7 +203,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "gemini-omni-flash-1-2",
     kind: "video",
     name: "Gemini Omni Flash 1.2",
-    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: [5, 10, 15], maxImages: 1 },
+    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: secondsBetween(3, 15), maxImages: 1 },
     costUsd: (req) => perSecond(GEMINI_OMNI_12_USD, "720p")(req, 3, 15, 5),
     buildTask: (req) => ({
       model: "google/gemini-omni-flash-1-2",
@@ -219,7 +220,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "minimax-h3/text-to-video",
     kind: "video",
     name: "MiniMax H3",
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["768p", "2k"], durations: [6, 10, 15], maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["768p", "2k"], durations: secondsBetween(4, 15), maxImages: 1 },
     costUsd: (req) =>
       perSecond(MINIMAX_H3_USD, "768p")(req, 4, 15, 6) + (firstImage(req) ? MINIMAX_H3_IMAGE_INPUT_USD : 0),
     buildTask: (req) => {
@@ -234,7 +235,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "wan/3-0-video",
     kind: "video",
     name: "Wan 3.0",
-    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: [5, 10, 15], maxImages: 1, audioToggle: true },
+    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 1, audioToggle: true },
     costUsd: (req) => perSecond(WAN_3_USD, "720p")(req, 2, 30, 5),
     buildTask: (req) => ({
       model: "wan/3-0-video",
@@ -252,7 +253,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "grok-imagine/text-to-video",
     kind: "video",
     name: "Grok Imagine",
-    options: { aspects: ["16:9", "9:16", "1:1", "2:3", "3:2"], resolutions: ["480p", "720p", "1080p"], durations: [6, 10, 15], maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "2:3", "3:2"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(6, 30), maxImages: 1 },
     costUsd: (req) => perSecond(GROK_USD, "720p")(req, 6, 30, 6),
     buildTask: (req) => {
       // KIE's examples send the length as a string for both modes.
@@ -268,7 +269,7 @@ const VIDEO_MODELS: MarketModel[] = [
     kind: "video",
     name: "Grok Imagine 1.5",
     // KIE only offers 1.5 as an image-to-video preview: a start image is required.
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutions: ["480p", "720p", "1080p"], durations: [5, 8, 10, 15], maxImages: 1, audioToggle: true, requiresImage: true },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(1, 15), maxImages: 1, audioToggle: true, requiresImage: true },
     costUsd: (req) => perSecond(GROK_USD, "720p")(req, 1, 15, 8),
     buildTask: (req) => ({
       model: "grok-imagine-video-1-5-preview",
@@ -286,7 +287,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "happyhorse-1-1",
     kind: "video",
     name: "HappyHorse 1.1",
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["720p", "1080p"], durations: [5, 10, 15], maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1 },
     costUsd: (req) => perSecond(HAPPYHORSE_11_USD, "1080p")(req, 3, 15, 5),
     buildTask: (req) => {
       const resolution = req.resolution ?? "1080p";

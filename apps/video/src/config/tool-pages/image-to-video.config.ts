@@ -1,5 +1,6 @@
 import { ToolPageConfig } from "./types";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
+import { secondsBetween } from "@/lib/video-durations";
 
 /**
  * Image to Video 工具页面配置
@@ -53,7 +54,7 @@ export const imageToVideoConfig: ToolPageConfig = {
       showOutputNumber: false,
       showAudioGeneration: false,
 
-      durations: [2, 4, 5, 6, 8, 10, 12],
+      durations: secondsBetween(2, 12),
       aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     },
   },

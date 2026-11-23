@@ -50,7 +50,8 @@ import {
 } from "@/lib/ai-video-studio";
 import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
-import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
+import { VIDEO_CATALOG, catalogVideoDurations } from "@/lib/kie-model-catalog";
+import { closestDuration, durationLabel } from "@/lib/video-durations";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
@@ -358,9 +359,13 @@ export function AiVideoStudio({
   const selectedModelConnected = !upcoming && availableModelIds.includes(catalogModelId);
   const catalogEntry = VIDEO_CATALOG.find((item) => item.id === catalogModelId);
   const catalogDetail = useCatalogDetail();
-  const durationOptions = selectedModelConnected
-    ? model.durations
-    : [4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const durationOptions = STUDIO_MODELS.find((item) => item.id === catalogModelId)?.durations
+    ?? catalogVideoDurations(catalogModelId);
+  const durationMin = durationOptions[0] ?? settings.duration;
+  const durationMax = durationOptions.at(-1) ?? settings.duration;
+  const durationText = durationOptions.length
+    ? `${settings.duration}s`
+    : (isChinese ? "继承原片" : "Source clip");
   const durationSupported = durationOptions.includes(settings.duration);
   const exampleCredits = selectedModelConnected
     ? estimateCredits(settings)
@@ -502,7 +507,15 @@ export function AiVideoStudio({
     setDurationOpen(false);
     setNotice(null);
     // Keep the selected catalogue entry visible even if generation is not connected yet.
-    setSettings((previous) => selectModel(previous, id));
+    setSettings((previous) => {
+      const connected = selectModel(previous, id);
+      if (connected !== previous) return connected;
+      const durations = STUDIO_MODELS.find((item) => item.id === id)?.durations
+        ?? catalogVideoDurations(id);
+      return durations.length && !durations.includes(previous.duration)
+        ? { ...previous, duration: closestDuration(durations, previous.duration) }
+        : previous;
+    });
   }
 
   async function handleGenerate() {
@@ -517,7 +530,7 @@ export function AiVideoStudio({
     }
     if (!durationSupported) {
       setDurationOpen(true);
-      setNotice(isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationOptions.join(", ")} seconds. Adjust the length before generating.`);
+      setNotice(isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")} seconds. Adjust the length before generating.`);
       return;
     }
 
@@ -907,14 +920,16 @@ export function AiVideoStudio({
             <div className="vs-grid">
               <div ref={durationRef} className="vs-duration-wrap">
                 <button type="button" className="vs-card vs-duration-trigger" aria-expanded={durationOpen} aria-controls="studio-duration-panel" onClick={() => setDurationOpen((value) => !value)}>
-                  <span className="min-w-0 flex-1"><span className="vs-card-label">{copy.duration}</span><span className="vs-card-value">{settings.duration}s</span></span>
+                  <span className="min-w-0 flex-1"><span className="vs-card-label">{copy.duration}</span><span className="vs-card-value">{durationText}</span></span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
                 </button>
                 {durationOpen ? <div id="studio-duration-panel" className="vs-duration-panel">
-                  <label htmlFor="studio-duration" className="vs-duration-heading">{copy.duration}<strong>{settings.duration}s</strong></label>
-                  <input id="studio-duration" type="range" min="4" max="20" step="1" value={settings.duration} onChange={(event) => { setSettings((previous) => ({ ...previous, duration: Number(event.target.value) })); setNotice(null); }} style={{ "--vs-duration-progress": `${((settings.duration - 4) / 16) * 100}%` } as CSSProperties} />
-                  <div className="vs-duration-limits"><span>4s</span><span>20s</span></div>
-                  {!durationSupported ? <p className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒` : `${model.name} currently supports ${durationOptions.join(", ")}s`}</p> : null}
+                  <div className="vs-duration-heading">{copy.duration}<strong>{durationText}</strong></div>
+                  {durationOptions.length ? <>
+                    <input id="studio-duration" type="range" min={durationMin} max={durationMax} step="1" value={settings.duration} disabled={durationOptions.length < 2} aria-label={copy.duration} onChange={(event) => { setSettings((previous) => ({ ...previous, duration: closestDuration(durationOptions, Number(event.target.value)) })); setNotice(null); }} style={{ "--vs-duration-progress": `${durationMax === durationMin ? 0 : ((settings.duration - durationMin) / (durationMax - durationMin)) * 100}%` } as CSSProperties} />
+                    <div className="vs-duration-limits"><span>{durationMin}s</span><span>{durationMax}s</span></div>
+                  </> : null}
+                  {!durationSupported && durationOptions.length ? <p className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")}s`}</p> : null}
                 </div> : null}
               </div>
               <SelectCard
@@ -943,7 +958,7 @@ export function AiVideoStudio({
                 onChange={(option) => setSettings((previous) => ({ ...previous, audio: option === "on" }))}
               />
             </div>
-            {!durationSupported ? <output className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationOptions.join("、")} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationOptions.join(", ")} seconds. Adjust the length before generating.`}</output> : null}
+            {!durationSupported && durationOptions.length ? <output className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")} seconds. Adjust the length before generating.`}</output> : null}
 
             <button
               type="button"

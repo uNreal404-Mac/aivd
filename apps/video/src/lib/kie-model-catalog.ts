@@ -1,4 +1,5 @@
 // Models with a dedicated page in KIE's official Market documentation.
+import { secondsBetween } from "@/lib/video-durations";
 // This is a discovery catalogue. A model is only ready to generate when it is
 // also present in the app's server-side model mapping and pricing configuration.
 export type CatalogModel = {
@@ -22,7 +23,7 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "kling/kling-3-0", name: "Kling 3.0", family: "Kling", icon: "K", detail: "Text · image" },
   { id: "wan/3-0-video-prime", name: "Wan 3.0 Prime", family: "Wan", icon: "W", detail: "Video generation" },
   { id: "wan/3-0-video", name: "Wan 3.0", family: "Wan", icon: "W", detail: "Video generation" },
-  { id: "wan2.6", name: "Wan 2.6", family: "Wan", icon: "W", detail: "5–15s · 720p–1080p" },
+  { id: "wan2.6", name: "Wan 2.6", family: "Wan", icon: "W", detail: "5/10/15s · 720p–1080p" },
   { id: "google/gemini-omni-flash-1-1", name: "Gemini Omni Flash 1.1", family: "Gemini Omni Flash", icon: "G", detail: "Multimodal video", badge: "New" },
   { id: "veo-3.1", name: "Veo 3.1", family: "Google Veo", icon: "G", detail: "8s · sound" },
   { id: "minimax-h3/text-to-video", name: "MiniMax H3", family: "MiniMax Hailuo", icon: "M", detail: "Text to video" },
@@ -31,7 +32,7 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "hailuo/02-text-to-video-standard", name: "MiniMax Hailuo 02 Standard", family: "MiniMax Hailuo", icon: "M", detail: "Text to video" },
   { id: "grok-imagine/text-to-video", name: "Grok Imagine", family: "Grok Imagine", icon: "X", detail: "Text to video" },
   { id: "happyhorse/text-to-video", name: "HappyHorse", family: "HappyHorse", icon: "H", detail: "Text to video" },
-  { id: "sora-2", name: "Sora 2", family: "Sora", icon: "O", detail: "10–15s · sound" },
+  { id: "sora-2", name: "Sora 2", family: "Sora", icon: "O", detail: "10/15s · sound" },
   { id: "seedance-2-5-flash", name: "Seedance 2.5 Flash", family: "Seedance", icon: "S", detail: "Fast · 480p–720p", badge: "New" },
   { id: "gemini-omni-flash-1-2", name: "Gemini Omni Flash 1.2", family: "Gemini Omni Flash", icon: "G", detail: "Multimodal video · up to 4K", badge: "New" },
   { id: "grok-imagine-1-5", name: "Grok Imagine 1.5", family: "Grok Imagine", icon: "X", detail: "Image to video · sound" },
@@ -61,12 +62,12 @@ export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: s
   "minimax-h3-max/text-to-video": { resolution: "768p", duration: "5–15s" },
   "wan/3-0-video": { resolution: "1080p", duration: "2–30s" },
   "wan/3-0-video-prime": { resolution: "1080p", duration: "2–30s" },
-  "wan2.6": { resolution: "1080p", duration: "5–15s" },
-  "veo-3.1": { resolution: "4K", duration: "4–8s" },
+  "wan2.6": { resolution: "1080p", duration: "5/10/15s" },
+  "veo-3.1": { resolution: "720p", duration: "8s" },
   "google/gemini-omni-flash-1-1": { resolution: "4K", duration: "4–10s" },
   "kling/kling-3-0": { resolution: "4K", duration: "3–15s" },
   "seedance-1.5-pro": { resolution: "1080p", duration: "4–12s" },
-  "sora-2": { resolution: "720p", duration: "10–15s" },
+  "sora-2": { resolution: "720p", duration: "10/15s" },
   "gemini-omni-flash-1-2": { resolution: "4K", duration: "3–15s" },
   "grok-imagine/text-to-video": { resolution: "1080p", duration: "6–30s" },
   "grok-imagine-1-5": { resolution: "1080p", duration: "1–15s" },
@@ -75,6 +76,17 @@ export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: s
   "hailuo/02-text-to-video-pro": { resolution: "1080p", duration: "6–10s" },
   "hailuo/02-text-to-video-standard": { resolution: "768p", duration: "6–10s" },
 };
+
+/** Duration shown for catalogue entries that are not connected yet. */
+export function catalogVideoDurations(modelId: string): number[] {
+  const value = VIDEO_MODEL_SPECS[modelId]?.duration;
+  if (!value || value === "source") return [];
+  const range = value.match(/^(\d+)[–-](\d+)s$/);
+  if (range) return secondsBetween(Number(range[1]), Number(range[2]));
+  if (/^\d+(?:\/\d+)+s$/.test(value)) return value.slice(0, -1).split("/").map(Number);
+  const exact = value.match(/^(\d+)s$/);
+  return exact ? [Number(exact[1])] : [];
+}
 
 export const IMAGE_CATALOG: CatalogModel[] = [
   { id: "grok-imagine-image-2-0/text-to-image", name: "Grok Imagine Image 2.0", family: "Grok Imagine", icon: "X", detail: "Text to image", badge: "New" },

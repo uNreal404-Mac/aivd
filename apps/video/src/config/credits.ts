@@ -58,6 +58,7 @@ export interface ModelConfig {
 // 用户只需要修改那个文件即可
 import { kieVideoCostUsd, videoCreditsFromCost } from "./kie-pricing";
 import { getMarketModel, marketCredits } from "@/ai/kie-market";
+import { secondsBetween } from "@/lib/video-durations";
 import {
   NEW_USER_GIFT,
   CREDIT_EXPIRATION,
@@ -194,7 +195,7 @@ export const CREDITS_CONFIG = {
             description: "models.seedance.description",
             supportImageToVideo: true,
             maxDuration: 12,
-            durations: [4, 5, 6, 8, 10, 12],
+            durations: secondsBetween(4, 12),
             aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
             qualities: ["480P", "720P", "1080P"],
           },
@@ -205,7 +206,7 @@ export const CREDITS_CONFIG = {
             description: "models.seedance10fast.description",
             supportImageToVideo: true,
             maxDuration: 12,
-            durations: [2, 4, 5, 6, 8, 10, 12],
+            durations: secondsBetween(2, 12),
             aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
             qualities: ["480P", "720P", "1080P"],
           },
@@ -216,7 +217,7 @@ export const CREDITS_CONFIG = {
             description: "models.seedance10quality.description",
             supportImageToVideo: true,
             maxDuration: 12,
-            durations: [2, 4, 5, 6, 8, 10, 12],
+            durations: secondsBetween(2, 12),
             aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
             qualities: ["480P", "720P", "1080P"],
           },

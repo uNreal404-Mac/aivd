@@ -2,6 +2,7 @@ import { calculateModelCredits } from "@/config/credits";
 import { marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
 import examplePrompts from "@/lib/home-example-prompts.json";
+import { secondsBetween } from "@/lib/video-durations";
 
 export type StudioModel = {
   id: string;
@@ -44,7 +45,7 @@ export const STUDIO_MODELS: StudioModel[] = [
     id: "seedance-1.5-pro",
     name: "Seedance 1.5 Pro",
     tagline: "Fast, expressive motion for everyday clips.",
-    durations: [4, 5, 6, 8, 10, 12],
+    durations: secondsBetween(4, 12),
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     resolutions: ["480p", "720p", "1080p"],
     audio: false,
@@ -65,7 +66,7 @@ export const STUDIO_MODELS: StudioModel[] = [
     name: "Kling 3.0",
     tagline: "Cinematic detail with steady, natural movement.",
     badge: "New",
-    durations: [5, 8, 10],
+    durations: secondsBetween(3, 15),
     aspects: ["Auto", "16:9", "9:16", "1:1"],
     resolutions: ["720p", "1080p"],
     audio: true,

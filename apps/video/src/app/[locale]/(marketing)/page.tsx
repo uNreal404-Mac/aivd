@@ -72,7 +72,7 @@ export default async function HomePage({ params }: HomePageProps) {
         models={models.map(({ id, name, durations, aspectRatios }) => ({
           id,
           name,
-          durations: durations.filter((duration) => duration >= 4 && duration <= 15),
+          durations,
           aspects: aspectRatios.filter((aspect) => aspect !== "Auto"),
         }))}
       />
