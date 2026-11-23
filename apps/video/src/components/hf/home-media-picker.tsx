@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Film, Image as ImageIcon, Loader2, Plus, UploadCloud, X } from "lucide-react";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { listGuestAssets, saveGuestAsset, type PickerAsset } from "@/lib/home-media-library";
@@ -128,7 +129,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
     }
     setCreate(null); setName(""); setSourceId(""); setError("");
   };
-  return <div className="hmp-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  return createPortal(<div className="hmp-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <dialog open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog">
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
         {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("全部"); }} aria-current={tab === item ? "page" : undefined}>{({ upload: zh ? "上传内容" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" })[item]}</button>)}
@@ -148,5 +149,5 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
       <footer className="hmp-footer"><span>{busy ? <><Loader2 className="hmp-spin" size={16} />{zh ? "上传中…" : "Uploading…"}</> : error}</span><button type="button" disabled={!selected.length || busy} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{zh ? "选择" : "Select"}</button></footer>
       <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
     </dialog>
-  </div>;
+  </div>, document.body);
 }

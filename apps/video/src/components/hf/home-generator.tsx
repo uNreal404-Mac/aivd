@@ -93,12 +93,12 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, [panel]);
 
-  // Session storage keeps the text/settings; IndexedDB keeps guest file bytes.
+  // Local storage survives email sign-in opening a new tab; IndexedDB keeps guest file bytes.
   useEffect(() => {
     let live = true;
     void (async () => {
       try {
-        const saved = JSON.parse(sessionStorage.getItem("aivd:home-draft") || "null");
+        const saved = JSON.parse(localStorage.getItem("aivd:home-draft") || "null");
         if (saved && typeof saved === "object") {
           const local = await listGuestAssets();
           const restore = (items: unknown): PickerAsset[] => Array.isArray(items) ? items.flatMap((item) => {
@@ -128,12 +128,12 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   useEffect(() => {
     if (!draftReady) return;
     const compact = (items: PickerAsset[]) => items.map(({ id, name, mimeType, key, url }) => ({ id, name, mimeType, key, url: key ? url : "" }));
-    sessionStorage.setItem("aivd:home-draft", JSON.stringify({ kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
+    localStorage.setItem("aivd:home-draft", JSON.stringify({ kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
   }, [draftReady, kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences, referenceImages]);
 
   useEffect(() => {
-    if (!draftReady || !session || sessionStorage.getItem("aivd:home-pending-generate") !== "1") return;
-    sessionStorage.removeItem("aivd:home-pending-generate");
+    if (!draftReady || !session || localStorage.getItem("aivd:home-pending-generate") !== "1") return;
+    localStorage.removeItem("aivd:home-pending-generate");
     formRef.current?.requestSubmit();
   }, [draftReady, session]);
 
@@ -222,7 +222,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       return;
     }
     if (!session) {
-      sessionStorage.setItem("aivd:home-pending-generate", "1");
+      localStorage.setItem("aivd:home-pending-generate", "1");
       signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);
       return;
     }
