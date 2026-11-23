@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { MEDIA, MODEL_GALLERIES, SAMPLE_PROMPTS, withPrompt } from "@/lib/home-showcase";
+import { MODEL_GALLERIES, SAMPLE_PROMPTS, withPrompt } from "@/lib/home-showcase";
+import EXAMPLE_PROMPTS from "@/lib/home-example-prompts.json";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 
 describe("wall prompts", () => {
   it("cover every sample on the walls in both languages", () => {
-    const sources = new Set([...Object.values(MEDIA), ...MODEL_GALLERIES.flatMap((gallery) => gallery.media)].map((media) => media.src));
-    for (const src of sources) {
-      expect(SAMPLE_PROMPTS[src]?.zh, src).toBeTruthy();
-      expect(SAMPLE_PROMPTS[src]?.en, src).toBeTruthy();
+    // The walls, where every sample opens the generator with its prompt. Cover
+    // clips of feature cards (like the Creative Space Agent card) link elsewhere.
+    const media = MODEL_GALLERIES.flatMap((gallery) => gallery.media);
+    for (const item of media) {
+      // A sample with a promptId opens the generator with that example prompt
+      // (home-example-prompts.json); every other one has its own pair here.
+      if (item.promptId) {
+        expect((EXAMPLE_PROMPTS as Record<string, string>)[item.promptId], item.src).toBeTruthy();
+        continue;
+      }
+      expect(SAMPLE_PROMPTS[item.src]?.zh, item.src).toBeTruthy();
+      expect(SAMPLE_PROMPTS[item.src]?.en, item.src).toBeTruthy();
     }
   });
 

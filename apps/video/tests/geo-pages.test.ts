@@ -127,7 +127,7 @@ describe("pages kept out of search", () => {
 
   it("prompt links that fill in the generator are nofollow", () => {
     expect(read("src/components/feature/feature-content.tsx")).toMatch(/className="fc-try" rel="nofollow"/);
-    expect(read("src/components/hf/wall-card.tsx")).toContain('href.includes("prompt=") ? "nofollow"');
+    expect(read("src/components/hf/wall-card.tsx")).toMatch(/rel=\{href\.includes\("prompt="\)[^}]*\? "nofollow"/);
   });
 });
 
