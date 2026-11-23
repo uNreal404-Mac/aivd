@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { localizedHref } from "@/lib/locale-path";
 
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
+import { currentUploadUrls } from "@/lib/home-media-library";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
@@ -407,6 +409,21 @@ export function AiVideoStudio({
     sessionStorage.removeItem("aivd:home-start-image-preview");
   }, []);
 
+  useCreditReturnDraft("video", () => ({ settings, catalogModelId, imageKey, fileName, preview, homeReferences, mode, editTool }), (saved) => {
+    if (saved.settings && availableModelIds.includes(saved.settings.modelId)) setSettings(saved.settings);
+    if (saved.catalogModelId) setCatalogModelId(saved.catalogModelId);
+    setImageKey(saved.imageKey ?? null);
+    setFileName(saved.fileName ?? null);
+    setPreview(saved.preview ?? null);
+    setHomeReferences(Array.isArray(saved.homeReferences) ? saved.homeReferences : []);
+    void currentUploadUrls().then((urls) => {
+      setHomeReferences((items) => items.map((item) => ({ ...item, url: urls.get(item.key) ?? item.url })));
+      if (saved.imageKey) setPreview((current) => urls.get(saved.imageKey!) ?? current);
+    });
+    if (saved.mode === "Create" || saved.mode === "Edit") setMode(saved.mode);
+    if (typeof saved.editTool === "number") setEditTool(saved.editTool);
+  });
+
   useEffect(() => {
     if (!pickerOpen) {
       return;
@@ -630,7 +647,7 @@ export function AiVideoStudio({
       setHomeReferences([]);
       setFileName(file.name);
       setImageKey(result.key);
-      setPreview(URL.createObjectURL(file));
+      setPreview(result.url);
     } else {
       setNotice(result.message);
     }

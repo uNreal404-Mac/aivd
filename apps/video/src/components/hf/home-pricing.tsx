@@ -254,7 +254,7 @@ export function HomePricing({
     setCheckoutError(null);
     setPendingId(productId);
     try {
-      const result = await startStripeCheckout(productId);
+      const result = await startStripeCheckout(productId, { returnTo: new URLSearchParams(window.location.search).get("returnTo") });
       if (!result.ok) {
         // Signed-out buyers sign in and come back here; anything else gets a plain sentence.
         if (result.error === "unauthorized") signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);

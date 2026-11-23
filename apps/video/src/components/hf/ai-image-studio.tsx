@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
+import { currentUploadUrls } from "@/lib/home-media-library";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
@@ -172,6 +174,15 @@ export function AiImageStudio({
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image");
   const [viewing, setViewing] = useState<number | null>(null);
+  useCreditReturnDraft("image", () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
+    if (getMarketModel(saved.modelId)?.kind === "image") setModelId(saved.modelId);
+    setPrompt(saved.prompt ?? "");
+    setAspect(saved.aspect ?? "1:1");
+    setResolution(saved.resolution ?? "");
+    setCount(saved.count ?? 1);
+    setRefs(Array.isArray(saved.refs) ? saved.refs : []);
+    void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
+  });
 
   // Every finished image, in order, for the full-screen viewer.
   const gallery = useMemo<ViewerItem[]>(
@@ -239,7 +250,7 @@ export function AiImageStudio({
       const result = await uploadImage(file);
       setUploading(false);
       if (result.ok) {
-        setRefs((current) => [...current, { key: result.key, name: file.name, preview: URL.createObjectURL(file) }]);
+        setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url }]);
       } else {
         setNotice(result.message);
       }

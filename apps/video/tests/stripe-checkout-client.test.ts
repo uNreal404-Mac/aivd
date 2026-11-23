@@ -10,6 +10,13 @@ function jsonResponse(body: unknown, init: { ok?: boolean } = {}) {
 }
 
 describe("startStripeCheckout", () => {
+  it("sends the generator return path to checkout", async () => {
+    const fetchFn = vi.fn(async () => jsonResponse({ url: "https://checkout.stripe.com/c/pay_123" })) as unknown as typeof fetch;
+    await startStripeCheckout("pack-small", { fetchFn, redirect: vi.fn(), returnTo: "/zh/ai/image" });
+    const [, init] = (fetchFn as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ productId: "pack-small", returnTo: "/zh/ai/image" });
+  });
+
   it("redirects to the returned URL with a well-formed request", async () => {
     const fetchFn = vi.fn(async () =>
       jsonResponse({ url: "https://checkout.stripe.com/c/pay_123" })

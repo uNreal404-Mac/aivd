@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, mediaAssets } from "@/db";
 import { requireAuth } from "@/lib/api/auth";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
@@ -19,4 +19,17 @@ export async function GET(request: Request) {
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const user = await requireAuth(request);
+    const body = await request.json() as { key?: unknown };
+    if (typeof body.key !== "string" || !body.key.startsWith(`uploads/${user.id}/`)) return Response.json({ error: "invalid_key" }, { status: 400 });
+    const [asset] = await db.select().from(mediaAssets).where(and(eq(mediaAssets.userId, user.id), eq(mediaAssets.key, body.key))).limit(1);
+    if (!asset) return Response.json({ error: "not_found" }, { status: 404 });
+    await getStorage().deleteFile(asset.key);
+    await db.delete(mediaAssets).where(and(eq(mediaAssets.userId, user.id), eq(mediaAssets.key, asset.key)));
+    return apiSuccess({ deleted: true });
+  } catch (error) { return handleApiError(error); }
 }

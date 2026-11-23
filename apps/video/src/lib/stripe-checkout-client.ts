@@ -1,6 +1,7 @@
 export interface StartStripeCheckoutDeps {
   fetchFn?: typeof fetch;
   redirect?: (url: string) => void;
+  returnTo?: string | null;
 }
 
 export type StartStripeCheckoutResult =
@@ -28,7 +29,7 @@ export async function startStripeCheckout(
   const res = await fetchFn("/api/payments/checkout", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ productId }),
+    body: JSON.stringify(deps.returnTo ? { productId, returnTo: deps.returnTo } : { productId }),
   });
 
   const data = (await res.json().catch(() => null)) as {

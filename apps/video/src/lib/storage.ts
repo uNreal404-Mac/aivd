@@ -199,6 +199,10 @@ export class Storage {
     return { key: params.key };
   }
 
+  async deleteFile(key: string): Promise<void> {
+    if (!(await this.client.deleteObject(key))) throw new Error("Failed to delete file");
+  }
+
   /**
    * 从 URL 下载文件并上传到 R2/S3
    */

@@ -62,3 +62,15 @@ export async function removeGuestAsset(id: string): Promise<void> {
     });
   } finally { db.close(); const url = previewUrls.get(id); if (url) URL.revokeObjectURL(url); previewUrls.delete(id); }
 }
+
+/** Refresh signed upload previews after a visitor returns from checkout. */
+export async function currentUploadUrls(): Promise<Map<string, string>> {
+  try {
+    const response = await fetch("/api/v1/library", { cache: "no-store" });
+    if (!response.ok) return new Map();
+    const body = await response.json();
+    const assets = body?.data?.assets;
+    if (!Array.isArray(assets)) return new Map();
+    return new Map(assets.filter((asset) => typeof asset?.key === "string" && typeof asset?.url === "string").map((asset) => [asset.key, asset.url]));
+  } catch { return new Map(); }
+}

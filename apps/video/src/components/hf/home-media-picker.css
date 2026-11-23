@@ -29,6 +29,10 @@
 .hmp-drop span { font-size: .82rem; }
 .hmp-drop:hover { border-color: var(--du-accent); }
 .hmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.hmp-card-wrap { position: relative; min-width: 0; }
+.hmp-card-wrap .hmp-card { display: block; width: 100%; }
+.hmp-delete { position: absolute; top: 7px; left: 7px; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--du-border-strong); border-radius: 50%; background: var(--du-bg-elev); color: var(--du-text); }
+.hmp-delete:hover { border-color: var(--du-accent); color: var(--du-accent-text); }
 .hmp-card, .hmp-add { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--du-border); border-radius: .8rem; background: var(--du-surface-2); color: var(--du-text); text-align: left; }
 .hmp-card.selected { border-color: var(--du-accent); box-shadow: 0 0 0 1px var(--du-accent); }
 .hmp-card:hover, .hmp-add:hover { border-color: var(--du-accent-hover); }

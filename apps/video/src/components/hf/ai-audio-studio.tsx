@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, RotateCcw, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
@@ -69,6 +70,14 @@ export function AiAudioStudio({
     scriptRef.current?.focus();
   };
   const [tab, setTab] = useState<"history" | "how">("how");
+  useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab }), (saved) => {
+    if (MODES.includes(saved.mode)) setMode(saved.mode);
+    if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
+    setVoice(saved.voice ?? "");
+    setScript(saved.script ?? "");
+    setDetail(saved.detail ?? "");
+    if (saved.tab === "history" || saved.tab === "how") setTab(saved.tab);
+  });
   const shownTab = tab;
 
   const modeModels = MODE_MODELS[mode]

@@ -25,6 +25,7 @@ export default async function CheckoutSuccessPage({
   const query = await searchParams;
   const raw = query?.session_id;
   const sessionId = Array.isArray(raw) ? (raw[0] ?? null) : (raw ?? null);
+  const returnTo = Array.isArray(query?.returnTo) ? query.returnTo[0] : query?.returnTo;
 
-  return <CheckoutSuccess lang={locale} sessionId={sessionId} />;
+  return <CheckoutSuccess lang={locale} sessionId={sessionId} returnTo={returnTo} />;
 }

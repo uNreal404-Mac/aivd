@@ -122,6 +122,7 @@ export interface BuildCheckoutSessionParamsArgs {
   origin: string;
   /** Id of a one-time Stripe coupon to apply (the first-month offer). */
   couponId?: string;
+  returnTo?: string | null;
 }
 
 /**
@@ -134,6 +135,7 @@ export function buildCheckoutSessionParams({
   userId,
   origin,
   couponId,
+  returnTo,
 }: BuildCheckoutSessionParamsArgs): Stripe.Checkout.SessionCreateParams {
   const isSubscription = product.type === "subscription";
 
@@ -168,8 +170,8 @@ export function buildCheckoutSessionParams({
     ],
     client_reference_id: userId,
     metadata: { ...metadata },
-    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/checkout/cancel`,
+    success_url: `${origin}${returnTo?.startsWith("/zh/") ? "/zh" : ""}/checkout/success?session_id={CHECKOUT_SESSION_ID}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`,
+    cancel_url: `${origin}${returnTo?.startsWith("/zh/") ? "/zh" : ""}/checkout/cancel${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`,
   };
 
   if (couponId) {

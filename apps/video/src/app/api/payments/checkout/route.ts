@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
+import { safeReturnTo } from "@/lib/credit-return";
 
 import { getProductById } from "@/config/credits";
 import { getCurrentUser } from "@/lib/auth";
@@ -47,9 +48,9 @@ export const POST = async (req: NextRequest) => {
     );
   }
 
-  let body: { productId?: string };
+  let body: { productId?: string; returnTo?: string };
   try {
-    body = (await req.json()) as { productId?: string };
+    body = (await req.json()) as { productId?: string; returnTo?: string };
   } catch {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
@@ -86,7 +87,7 @@ export const POST = async (req: NextRequest) => {
     }
 
     session = await stripe.checkout.sessions.create(
-      buildCheckoutSessionParams({ product, userId: user.id, origin, couponId })
+      buildCheckoutSessionParams({ product, userId: user.id, origin, couponId, returnTo: safeReturnTo(body.returnTo) })
     );
   } catch (error) {
     // Never log the key or full error payload; keep the message short.

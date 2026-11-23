@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Film, Image as ImageIcon, Loader2, Plus, UploadCloud, X } from "lucide-react";
 import { uploadImage, validateImageFile } from "@/lib/image-to-video";
-import { listGuestAssets, saveGuestAsset, type PickerAsset } from "@/lib/home-media-library";
+import { listGuestAssets, removeGuestAsset, saveGuestAsset, type PickerAsset } from "@/lib/home-media-library";
 import "./home-media-picker.css";
 
 type Tab = "upload" | "elements" | "brand" | "works";
@@ -28,8 +28,8 @@ function saved<T>(key: string): T[] {
   catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, selectedIds, userId }: {
-  lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void;
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId }: {
+  lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
@@ -108,6 +108,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
       : current.length < maxSelected ? [...current, item.id] : current);
   };
   const addFiles = async (files: FileList | File[]) => {
+    if (!files.length || busy) return;
     setBusy(true); setError("");
     for (const file of Array.from(files)) {
       const invalid = validateImageFile(file);
@@ -129,6 +130,37 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
     }
     setBusy(false);
   };
+  const deleteAsset = async (item: PickerAsset) => {
+    setBusy(true); setError("");
+    try {
+      if (item.id.startsWith("upload:") && userId) {
+        const response = await fetch("/api/v1/library", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: item.key }) });
+        if (!response.ok) throw new Error("delete failed");
+      } else {
+        await removeGuestAsset(item.id);
+      }
+      setAssets((current) => current.filter((asset) => asset.id !== item.id));
+      setSelected((current) => current.filter((id) => id !== item.id));
+      const nextElements = elements.filter((element) => element.assetId !== item.id);
+      const nextBrands = brands.filter((brand) => brand.logoId !== item.id);
+      setElements(nextElements); setBrands(nextBrands);
+      localStorage.setItem(elementKey, JSON.stringify(nextElements));
+      localStorage.setItem(brandKey, JSON.stringify(nextBrands));
+      onDelete?.(item.id);
+    } catch { setError(zh ? "删除失败，请重试。" : "Could not delete this upload. Try again."); }
+    finally { setBusy(false); }
+  };
+  const acceptDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    if (event.dataTransfer.types.includes("Files")) event.dataTransfer.dropEffect = "copy";
+  };
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.dataTransfer.files.length) return;
+    setTab("upload"); setCreate(null); setFilter("all");
+    void addFiles(event.dataTransfer.files);
+  };
   const saveCreation = () => {
     if (!name.trim() || !sourceId) { setError(zh ? "请填写名称并选择一张已上传的图片。" : "Enter a name and choose an uploaded image."); return; }
     if (create === "element") {
@@ -140,7 +172,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
     }
     setCreate(null); setName(""); setSourceId(""); setError("");
   };
-  return createPortal(<div className="hmp-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  return createPortal(<div className="hmp-backdrop" onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <dialog open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog">
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
         {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{({ upload: zh ? "上传内容" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" })[item]}</button>)}
@@ -152,8 +184,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
           {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "all" ? "character" : category} onChange={(e) => setCategory(e.target.value)}>{ELEMENT_CATEGORIES.filter((item) => item.id !== "all").map((item) => <option key={item.id} value={item.id}>{zh ? item.zh : item.en}</option>)}</select></label> : <><label>{zh ? "品牌颜色" : "Brand colors"}<input value={colors} onChange={(e) => setColors(e.target.value)} placeholder={zh ? "例如：青绿色、深灰色" : "e.g. teal, charcoal"} /></label><label>{zh ? "字体" : "Fonts"}<input value={fonts} onChange={(e) => setFonts(e.target.value)} /></label><label>{zh ? "品牌指南" : "Guidelines"}<textarea value={guidelines} onChange={(e) => setGuidelines(e.target.value)} /></label></>}
           <label>{create === "element" ? (zh ? "元素图片" : "Element image") : (zh ? "Logo" : "Logo")}<select value={sourceId} onChange={(e) => setSourceId(e.target.value)}><option value="">{zh ? "选择已上传图片" : "Choose an uploaded image"}</option>{assets.filter((a) => a.mimeType.startsWith("image/")).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
           <div className="hmp-create-actions"><button type="button" onClick={() => setCreate(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" onClick={saveCreation}>{zh ? "保存" : "Save"}</button></div></div>
-        : tab === "upload" && !shown.length ? <button type="button" className="hmp-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void addFiles(event.dataTransfer.files); }} onClick={() => fileInput.current?.click()}><UploadCloud size={40} /><strong>{zh ? "将图片拖放到此处或点击上传" : "Drop images here or click to upload"}</strong><span>PNG · JPG · WebP · GIF · 10 MB</span></button>
-        : shown.length ? <div className="hmp-grid">{tab === "upload" ? <button type="button" className="hmp-add" onClick={() => fileInput.current?.click()}><Plus />{zh ? "上传图片" : "Upload image"}</button> : null}{shown.map((item) => <button type="button" key={item.id} className={`hmp-card ${selected.includes(item.id) ? "selected" : ""}`} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <Film />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check">{selected.includes(item.id) ? "✓" : ""}</span></button>)}</div>
+        : tab === "upload" && !shown.length ? <button type="button" className="hmp-drop" onClick={() => fileInput.current?.click()}><UploadCloud size={40} /><strong>{zh ? "将图片拖放到此处或点击上传" : "Drop images here or click to upload"}</strong><span>PNG · JPG · WebP · GIF · 10 MB</span></button>
+        : shown.length ? <div className="hmp-grid">{tab === "upload" ? <button type="button" className="hmp-add" onClick={() => fileInput.current?.click()}><Plus />{zh ? "上传图片" : "Upload image"}</button> : null}{shown.map((item) => <div key={item.id} className="hmp-card-wrap"><button type="button" className={`hmp-card ${selected.includes(item.id) ? "selected" : ""}`} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <Film />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check">{selected.includes(item.id) ? "✓" : ""}</span></button>{tab === "upload" ? <button type="button" className="hmp-delete" disabled={busy} onClick={() => void deleteAsset(item)} aria-label={zh ? `删除 ${item.name}` : `Delete ${item.name}`} title={zh ? "删除上传内容" : "Delete upload"}><X size={14} /></button> : null}</div>)}</div>
         : <div className="hmp-empty"><ImageIcon size={42} /><strong>{tab === "elements" ? (zh ? "暂无元素" : "No elements yet") : tab === "brand" ? (zh ? "暂无品牌工具箱" : "No brand kits yet") : (zh ? "暂无作品" : "No creations yet")}</strong><p>{tab === "works" ? (zh ? "生成的图片、视频和音频会显示在这里。" : "Your generated media will appear here.") : (zh ? "创建后可在多次生成中重复使用。" : "Create one to reuse it in future generations.")}</p>{tab !== "works" ? <button type="button" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={18} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>}
       </main>
       <div className="hmp-count">{zh ? "已选择" : "Selected"} {selected.length}/{maxSelected} · {zh ? "图像" : "Images"} {assets.filter((a) => a.mimeType.startsWith("image/")).length}</div>
