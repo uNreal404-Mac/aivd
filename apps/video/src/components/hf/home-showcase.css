@@ -665,12 +665,31 @@
 }
 
 .hs-wall.hs-wall-video {
-  columns: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  grid-template-areas:
+    "japan japan whale whale"
+    "dragon fried fried dress"
+    "dragon samurai samurai dress";
+  gap: 12px;
+  columns: auto;
+}
+
+.hs-wall-video > .hs-wall-item {
+  min-width: 0;
+  margin-bottom: 0;
 }
 
 .hs-wall-video .hs-wall-item video {
   object-fit: contain;
 }
+
+.hs-wall-video > :nth-child(1) { grid-area: japan; }
+.hs-wall-video > :nth-child(2) { grid-area: whale; }
+.hs-wall-video > :nth-child(3) { grid-area: fried; }
+.hs-wall-video > :nth-child(4) { grid-area: dragon; }
+.hs-wall-video > :nth-child(5) { grid-area: dress; }
+.hs-wall-video > :nth-child(6) { grid-area: samurai; }
 
 .hs-wall-item {
   position: relative;
@@ -983,13 +1002,24 @@
 
 @media (max-width: 1023px) {
   .hs-wall.hs-wall-video {
-    columns: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "japan whale"
+      "dragon dress"
+      "fried samurai";
   }
 }
 
 @media (max-width: 767px) {
   .hs-wall.hs-wall-video {
-    columns: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "japan"
+      "whale"
+      "fried"
+      "dragon"
+      "dress"
+      "samurai";
   }
 }
 
