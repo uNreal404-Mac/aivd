@@ -118,7 +118,7 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
     body: { zh: "新一代 AI 视频模型", en: "The next-generation AI video model" },
     href: navModelHref("video", "bytedance/seedance-2-5"),
     cta: { zh: "用 Seedance 2.5 生成", en: "Create with Seedance 2.5" },
-    media: [MEDIA.zombieKitten, MEDIA.japan, MEDIA.whaleOrigami, MEDIA.friedChicken, MEDIA.dragon, MEDIA.dress, MEDIA.samuraiCat],
+    media: [MEDIA.japan, MEDIA.whaleOrigami, MEDIA.friedChicken, MEDIA.dragon, MEDIA.dress, MEDIA.samuraiCat],
   },
   {
     id: "nano-banana",

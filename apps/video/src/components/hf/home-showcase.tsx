@@ -31,6 +31,8 @@ const TILE_ICONS: Record<(typeof PRODUCT_TILES)[number]["icon"], LucideIcon> = {
 
 // Aspect ratios cycled through the masonry walls so columns stagger.
 const WALL_RATIOS = ["3 / 4", "4 / 3", "1 / 1", "16 / 10", "4 / 5", "16 / 9", "3 / 4", "1 / 1"];
+// Native ratios of the six Seedance examples, in gallery order.
+const VIDEO_WALL_RATIOS = ["16 / 9", "16 / 9", "16 / 9", "9 / 16", "9 / 16", "16 / 9"];
 
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
@@ -274,7 +276,7 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
-      <div className="hs-wall">
+      <div className={index === 0 ? "hs-wall hs-wall-video" : "hs-wall"}>
         {gallery.media.map((media, position) => {
           const prompt = SAMPLE_PROMPTS[media.src];
           const text = prompt ? (zh ? prompt.zh : prompt.en) : undefined;
@@ -285,7 +287,7 @@ function ModelWall({ lang, index }: { lang: string; index: number }) {
               href={localizedHref(lang, index === 0 ? withExamplePrompt(gallery.href, media.promptId) : withPrompt(gallery.href, text))}
               prompt={index === 0 ? undefined : text}
               cta={zh ? "做同款" : "Make one like this"}
-              ratio={WALL_RATIOS[(position + index) % WALL_RATIOS.length]}
+              ratio={index === 0 ? VIDEO_WALL_RATIOS[position] : WALL_RATIOS[(position + index) % WALL_RATIOS.length]}
               position={position + index}
               zh={zh}
             />
