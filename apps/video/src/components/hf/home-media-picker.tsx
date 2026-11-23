@@ -11,6 +11,17 @@ type Tab = "upload" | "elements" | "brand" | "works";
 type Filter = "all" | "video" | "image" | "audio";
 type Element = { id: string; name: string; category: string; assetId: string };
 type Brand = { id: string; name: string; logoId: string; colors: string; fonts: string; guidelines: string };
+const ELEMENT_CATEGORIES = [
+  { id: "all", zh: "全部", en: "All" },
+  { id: "product", zh: "产品", en: "Product" },
+  { id: "character", zh: "角色", en: "Character" },
+  { id: "scene", zh: "场景", en: "Scene" },
+  { id: "style", zh: "风格", en: "Style" },
+  { id: "prop", zh: "道具", en: "Prop" },
+] as const;
+function categoryId(value: string): string {
+  return ELEMENT_CATEGORIES.find((item) => item.id === value || item.zh === value)?.id ?? "character";
+}
 
 function saved<T>(key: string): T[] {
   try { const value = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(value) ? value : []; }
@@ -31,7 +42,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
   const [brands, setBrands] = useState<Brand[]>([]);
   const [create, setCreate] = useState<"element" | "brand" | null>(null);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("全部");
+  const [category, setCategory] = useState("all");
   const [colors, setColors] = useState("");
   const [fonts, setFonts] = useState("");
   const [guidelines, setGuidelines] = useState("");
@@ -68,7 +79,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
         const rows: any[] = bodies.flatMap((body) => Array.isArray(body?.data?.videos) ? body.data.videos : []);
         setWorks(rows.flatMap((row) => {
           const urls = Array.isArray(row.mediaUrls) ? row.mediaUrls : row.videoUrl ? [row.videoUrl] : [];
-          return urls.map((url: string, index: number) => ({ id: `work:${row.uuid}:${index}`, name: row.prompt || row.model || "作品", mimeType: `${row.mediaType || "video"}/generated`, url, key: url }));
+          return urls.map((url: string, index: number) => ({ id: `work:${row.uuid}:${index}`, name: row.prompt || row.model || (zh ? "作品" : "Creation"), mimeType: `${row.mediaType || "video"}/generated`, url, key: url }));
         }));
       }).catch(() => {});
     }
@@ -89,7 +100,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
   const choices = [...assets, ...works,
     ...elements.map((item) => ({ ...assets.find((asset) => asset.id === item.assetId), id: `element:${item.id}`, name: item.name } as PickerAsset)),
     ...brands.map((item) => ({ ...assets.find((asset) => asset.id === item.logoId), id: `brand:${item.id}`, name: item.name } as PickerAsset))];
-  const shown = source.filter((item) => item.url && (tab === "elements" ? category === "全部" || elements.find((element) => `element:${element.id}` === item.id)?.category === category : (filter === "all" || item.mimeType?.startsWith(`${filter}/`))));
+  const shown = source.filter((item) => item.url && (tab === "elements" ? category === "all" || categoryId(elements.find((element) => `element:${element.id}` === item.id)?.category ?? "") === category : (filter === "all" || item.mimeType?.startsWith(`${filter}/`))));
   const selectAsset = (item: PickerAsset) => {
     if (!item.mimeType?.startsWith("image/")) { setError(zh ? "当前生成器只支持图片参考素材。" : "This generator accepts image references only."); return; }
     setError("");
@@ -121,8 +132,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
   const saveCreation = () => {
     if (!name.trim() || !sourceId) { setError(zh ? "请填写名称并选择一张已上传的图片。" : "Enter a name and choose an uploaded image."); return; }
     if (create === "element") {
-      const next = [{ id: crypto.randomUUID(), name: name.trim(), category: category === "全部" ? "角色" : category, assetId: sourceId }, ...elements];
-      setElements(next); localStorage.setItem(elementKey, JSON.stringify(next)); setTab("elements"); setCategory("全部");
+      const next = [{ id: crypto.randomUUID(), name: name.trim(), category: category === "all" ? "character" : category, assetId: sourceId }, ...elements];
+      setElements(next); localStorage.setItem(elementKey, JSON.stringify(next)); setTab("elements"); setCategory("all");
     } else {
       const next = [{ id: crypto.randomUUID(), name: name.trim(), logoId: sourceId, colors, fonts, guidelines }, ...brands];
       setBrands(next); localStorage.setItem(brandKey, JSON.stringify(next)); setTab("brand");
@@ -132,13 +143,13 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, maxSelected, se
   return createPortal(<div className="hmp-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <dialog open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog">
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
-        {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("全部"); }} aria-current={tab === item ? "page" : undefined}>{({ upload: zh ? "上传内容" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" })[item]}</button>)}
+        {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{({ upload: zh ? "上传内容" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" })[item]}</button>)}
       </nav><button type="button" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={22} /></button></header>
-      <div className="hmp-toolbar">{(tab === "upload" || tab === "works") ? (["all", "video", "image", "audio"] as Filter[]).map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图像" : "Image", audio: zh ? "音频" : "Audio" })[item]}</button>) : tab === "elements" ? ["全部", "产品", "角色", "场景", "风格", "道具"].map((item) => <button type="button" key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
+      <div className="hmp-toolbar">{(tab === "upload" || tab === "works") ? (["all", "video", "image", "audio"] as Filter[]).map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图像" : "Image", audio: zh ? "音频" : "Audio" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
       <main className="hmp-body">
         {create ? <div className="hmp-create"><h3>{create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</h3>
           <label>{zh ? "名称" : "Name"}<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></label>
-          {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "全部" ? "角色" : category} onChange={(e) => setCategory(e.target.value)}>{["产品", "角色", "场景", "风格", "道具"].map((item) => <option key={item}>{item}</option>)}</select></label> : <><label>{zh ? "品牌颜色" : "Brand colors"}<input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="#FF6600, #FFFFFF" /></label><label>{zh ? "字体" : "Fonts"}<input value={fonts} onChange={(e) => setFonts(e.target.value)} /></label><label>{zh ? "品牌指南" : "Guidelines"}<textarea value={guidelines} onChange={(e) => setGuidelines(e.target.value)} /></label></>}
+          {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "all" ? "character" : category} onChange={(e) => setCategory(e.target.value)}>{ELEMENT_CATEGORIES.filter((item) => item.id !== "all").map((item) => <option key={item.id} value={item.id}>{zh ? item.zh : item.en}</option>)}</select></label> : <><label>{zh ? "品牌颜色" : "Brand colors"}<input value={colors} onChange={(e) => setColors(e.target.value)} placeholder={zh ? "例如：青绿色、深灰色" : "e.g. teal, charcoal"} /></label><label>{zh ? "字体" : "Fonts"}<input value={fonts} onChange={(e) => setFonts(e.target.value)} /></label><label>{zh ? "品牌指南" : "Guidelines"}<textarea value={guidelines} onChange={(e) => setGuidelines(e.target.value)} /></label></>}
           <label>{create === "element" ? (zh ? "元素图片" : "Element image") : (zh ? "Logo" : "Logo")}<select value={sourceId} onChange={(e) => setSourceId(e.target.value)}><option value="">{zh ? "选择已上传图片" : "Choose an uploaded image"}</option>{assets.filter((a) => a.mimeType.startsWith("image/")).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
           <div className="hmp-create-actions"><button type="button" onClick={() => setCreate(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" onClick={saveCreation}>{zh ? "保存" : "Save"}</button></div></div>
         : tab === "upload" && !shown.length ? <button type="button" className="hmp-drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void addFiles(event.dataTransfer.files); }} onClick={() => fileInput.current?.click()}><UploadCloud size={40} /><strong>{zh ? "将图片拖放到此处或点击上传" : "Drop images here or click to upload"}</strong><span>PNG · JPG · WebP · GIF · 10 MB</span></button>

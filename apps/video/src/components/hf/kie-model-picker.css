@@ -15,7 +15,7 @@
 }
 
 .du-model-picker-panel::-webkit-scrollbar-thumb {
-  border-radius: 999px;
+  border-radius: var(--du-glass-radius-round);
   background: color-mix(in srgb, var(--du-text-muted) 62%, transparent);
 }
 
