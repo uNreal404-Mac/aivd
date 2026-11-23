@@ -30,6 +30,9 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
   const [signInClicked, setSignInClicked] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [internalLoginOpen, setInternalLoginOpen] = useState(false);
+  const [internalUsername, setInternalUsername] = useState("");
+  const [internalPassword, setInternalPassword] = useState("");
 
   const callbackURL = getSafeCallbackURL(
     landing ?? signInModal.callbackURL ?? searchParams?.get("callbackURL") ?? pathname,
@@ -93,6 +96,28 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
 
   const isLoading = signInClicked !== null;
 
+  const handleInternalLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!internalUsername.trim() || !internalPassword) return;
+    setSignInClicked("internal");
+    try {
+      const identifier = internalUsername.trim().toLowerCase();
+      const { error } = await authClient.signIn.email({
+        email: identifier === "admin" ? "admin@aivd.internal" : identifier,
+        password: internalPassword,
+      });
+      if (error) {
+        toast.error(lang.startsWith("zh") ? "账号或密码不正确" : "Incorrect account or password");
+        return;
+      }
+      window.location.assign(callbackURL);
+    } catch {
+      toast.error(lang.startsWith("zh") ? "登录失败，请重试" : "Sign in failed. Please try again.");
+    } finally {
+      setSignInClicked(null);
+    }
+  };
+
   const legal = (path: string) => localizedHref(lang, path);
 
   return (
@@ -153,6 +178,23 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
             </form>
           </>
         )}
+
+        {process.env.NEXT_PUBLIC_IS_PREVIEW === "true" ? (
+          <>
+            <button type="button" className="si-email" onClick={() => setInternalLoginOpen((open) => !open)}>
+              {lang.startsWith("zh") ? "内部测试账号登录" : "Internal test account"}
+            </button>
+            {internalLoginOpen ? (
+              <form onSubmit={handleInternalLogin} className="si-form">
+                <label className="sr-only" htmlFor="internal-username">{lang.startsWith("zh") ? "用户名" : "Username"}</label>
+                <input id="internal-username" className="si-input" type="text" autoComplete="username" placeholder={lang.startsWith("zh") ? "用户名" : "Username"} value={internalUsername} onChange={(event) => setInternalUsername(event.target.value)} disabled={isLoading} />
+                <label className="sr-only" htmlFor="internal-password">{lang.startsWith("zh") ? "密码" : "Password"}</label>
+                <input id="internal-password" className="si-input" type="password" autoComplete="current-password" placeholder={lang.startsWith("zh") ? "密码" : "Password"} value={internalPassword} onChange={(event) => setInternalPassword(event.target.value)} disabled={isLoading} />
+                <button type="submit" className="si-email" disabled={isLoading}>{lang.startsWith("zh") ? "登录" : "Sign in"}</button>
+              </form>
+            ) : null}
+          </>
+        ) : null}
 
         <p className="si-legal">
           {t("terms_prefix")} <a href={legal("/terms")}>{t("terms")}</a> {t("and")}{" "}

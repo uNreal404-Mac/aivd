@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { db, mediaAssets } from "@/db";
 
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
@@ -73,6 +74,11 @@ export async function POST(request: Request) {
       key,
       body: buffer,
       contentType: file.type,
+    });
+
+    await db.insert(mediaAssets).values({
+      id: nanoid(), userId: user.id, key, name: file.name,
+      mimeType: file.type, size: file.size,
     });
 
     return apiSuccess({

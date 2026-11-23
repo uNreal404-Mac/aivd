@@ -193,6 +193,9 @@ export function AiVideoStudio({
   // Signed-out visitors have history too, once they sign in; say so instead of "nothing yet".
   const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
+  const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
+    session?.user?.isAdmin === true && session.user.isSuperAccount === true;
+  const canUseGeneration = generationEnabled || internalFree;
   const copy = isChinese
     ? {
         modes: { Create: "创建视频", Edit: "编辑视频" } as Record<string, string>,
@@ -359,7 +362,7 @@ export function AiVideoStudio({
     ? estimateCredits(settings)
     : Math.ceil(settings.duration * 5 * (settings.resolution === "1080p" ? 1.5 : settings.resolution === "720p" ? 1.25 : 1));
 
-  const available = session && balance ? Math.max(0, balance.availableCredits) : null;
+  const available = session && balance && !internalFree ? Math.max(0, balance.availableCredits) : null;
   const shortBy = available !== null && selectedModelConnected && durationSupported ? Math.max(0, exampleCredits - available) : 0;
   const referenceCount = homeReferences.length || (imageKey ? 1 : 0);
   const affordable = useMemo(() => {
@@ -373,7 +376,7 @@ export function AiVideoStudio({
   }, [shortBy, available, availableModelIds, referenceCount, settings, catalogModelId]);
   const num = (value: number) => value.toLocaleString(isChinese ? "zh-CN" : "en-US");
 
-  const check = canGenerate(settings, generationEnabled);
+  const check = canGenerate(settings, canUseGeneration);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
   useEffect(() => {
@@ -521,7 +524,7 @@ export function AiVideoStudio({
       return;
     }
 
-    if (!generationEnabled) {
+    if (!canUseGeneration) {
       setNotice(
         copy.paused,
       );
@@ -916,12 +919,12 @@ export function AiVideoStudio({
               disabled={generateDisabled}
               onClick={handleGenerate}
               className="vs-generate"
-              title={selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}
+              title={internalFree ? (isChinese ? "内部测试账号免费" : "Free for internal test account") : selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}
             >
               {submitting ? copy.submit : copy.generate}
               <span className="vs-generate-cost">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {selectedModelConnected ? (durationSupported ? exampleCredits : "—") : copy.soon}
+                {selectedModelConnected ? (durationSupported ? (internalFree ? 0 : exampleCredits) : "—") : copy.soon}
               </span>
             </button>
             {available !== null && selectedModelConnected ? (

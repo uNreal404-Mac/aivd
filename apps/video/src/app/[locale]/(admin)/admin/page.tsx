@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { users, videos, creditPackages, creditTransactions, VideoStatus } from "@/db/schema";
-import { count, eq, and, sql, gt } from "drizzle-orm";
+import { count, eq, gt } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users as UsersIcon,
@@ -46,18 +46,17 @@ export default async function AdminDashboardPage() {
   // 获取最近注册用户（最近7天）
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString();
   const recentUsersResult = await db
     .select({ count: count() })
     .from(users)
-    .where(sql`${users.createdAt} >= ${sevenDaysAgoStr}::timestamp`);
+    .where(gt(users.createdAt, sevenDaysAgo));
   const recentUsers = recentUsersResult[0]?.count || 0;
 
   // 获取最近视频生成（最近7天）
   const recentVideosResult = await db
     .select({ count: count() })
     .from(videos)
-    .where(sql`${videos.createdAt} >= ${sevenDaysAgoStr}::timestamp`);
+    .where(gt(videos.createdAt, sevenDaysAgo));
   const recentVideos = recentVideosResult[0]?.count || 0;
 
   return (

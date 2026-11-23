@@ -26,6 +26,7 @@ import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } from "@/ai/kie-market";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
+import { isFreeInternalAccount } from "@/lib/internal-test-account";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -210,6 +211,8 @@ export class VideoService {
         model: params.model,
       });
     }
+    const freeInternal = await isFreeInternalAccount(params.userId);
+    const billedCredits = freeInternal ? 0 : creditsRequired;
 
     const hasImageInput =
       (params.imageUrls && params.imageUrls.length > 0) || Boolean(params.imageUrl);
@@ -294,7 +297,7 @@ export class VideoService {
     // Plan limit on videos in progress. After the idempotency lookup, so a
     // retried submit gets its existing job back; before the row is created
     // and credits are frozen.
-    await assertWithinConcurrencyLimit(params.userId);
+    if (!freeInternal) await assertWithinConcurrencyLimit(params.userId);
 
     const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
@@ -324,7 +327,7 @@ export class VideoService {
       idempotencyKey: idempotencyKey ?? null,
       status: VideoStatus.PENDING,
       startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
-      creditsUsed: creditsRequired,
+      creditsUsed: billedCredits,
       duration: effectiveDuration,
       aspectRatio: params.aspectRatio || null,
       provider: actualProvider,
@@ -375,11 +378,13 @@ export class VideoService {
 
     let freezeResult: { success: boolean; holdId: number };
     try {
-      freezeResult = await creditService.freeze({
-        userId: params.userId,
-        credits: creditsRequired,
-        videoUuid: videoResult.uuid,
-      });
+      freezeResult = freeInternal
+        ? { success: true, holdId: 0 }
+        : await creditService.freeze({
+            userId: params.userId,
+            credits: creditsRequired,
+            videoUuid: videoResult.uuid,
+          });
     } catch (error) {
       await db
         .update(videos)
@@ -450,7 +455,7 @@ export class VideoService {
     } catch (error) {
       if (error instanceof ProviderRejectedError) {
         // Definite failure: the provider did not create a task.
-        await creditService.release(videoResult.uuid);
+        if (!freeInternal) await creditService.release(videoResult.uuid);
 
         await db
           .update(videos)
@@ -538,7 +543,7 @@ export class VideoService {
       provider: actualProvider,
       status: "GENERATING",
       estimatedTime: providerResult.estimatedTime,
-      creditsUsed: creditsRequired,
+      creditsUsed: billedCredits,
     };
   }
 
@@ -594,6 +599,8 @@ export class VideoService {
     if (!(creditsRequired > 0)) {
       throw new ApiError(`Model ${model.id} has no price`, 400, { code: "MODEL_NOT_PRICED", model: model.id });
     }
+    const freeInternal = await isFreeInternalAccount(params.userId);
+    const billedCredits = freeInternal ? 0 : creditsRequired;
 
     const idempotencyKey = params.idempotencyKey;
     if (idempotencyKey) {
@@ -611,7 +618,7 @@ export class VideoService {
 
     // Only videos count against the plan's concurrency; images and audio are quick.
     if (model.kind === "video") {
-      await assertWithinConcurrencyLimit(params.userId);
+      if (!freeInternal) await assertWithinConcurrencyLimit(params.userId);
     }
 
     const prefix = model.kind === "image" ? "img" : model.kind === "audio" ? "aud" : "vid";
@@ -630,7 +637,7 @@ export class VideoService {
       idempotencyKey: idempotencyKey ?? null,
       status: VideoStatus.PENDING,
       startImageUrl: imageInputs[0] ?? null,
-      creditsUsed: creditsRequired,
+      creditsUsed: billedCredits,
       duration: model.kind === "video" ? (request.duration ?? null) : null,
       resolution: request.resolution ?? null,
       aspectRatio: request.aspectRatio ?? null,
@@ -656,7 +663,9 @@ export class VideoService {
 
     let frozen: { success: boolean };
     try {
-      frozen = await creditService.freeze({ userId: params.userId, credits: creditsRequired, videoUuid: uuid });
+      frozen = freeInternal
+        ? { success: true }
+        : await creditService.freeze({ userId: params.userId, credits: creditsRequired, videoUuid: uuid });
     } catch (error) {
       await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
       throw this.toInsufficientCreditsApiError(error, creditsRequired) ?? error;
@@ -680,7 +689,7 @@ export class VideoService {
       );
     } catch (error) {
       if (error instanceof ProviderRejectedError) {
-        await creditService.release(uuid);
+        if (!freeInternal) await creditService.release(uuid);
         await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
         throw error;
       }
@@ -713,7 +722,7 @@ export class VideoService {
       }
     }
 
-    return { videoUuid: uuid, taskId, provider: "kie", status: "GENERATING", creditsUsed: creditsRequired };
+    return { videoUuid: uuid, taskId, provider: "kie", status: "GENERATING", creditsUsed: billedCredits };
   }
 
   /**
@@ -946,7 +955,7 @@ export class VideoService {
       });
     }
 
-    await creditService.settle(videoUuid);
+    if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);
 
     const [completed] = await db
       .update(videos)
@@ -1014,7 +1023,7 @@ export class VideoService {
       return { status: video.status, errorMessage: video.errorMessage };
     }
 
-    await creditService.release(videoUuid);
+    if (video.creditsUsed > 0) await creditService.release(videoUuid);
 
     const message = errorMessage || "Generation failed";
     const [failed] = await db

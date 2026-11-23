@@ -58,18 +58,15 @@ class AnalyticsService {
   }
 
   private buildTimeCondition(timeFilter: Date | null) {
-    if (!timeFilter) return sql``;
-    return sql`${users.createdAt} >= ${timeFilter.toISOString()}::timestamp`;
+    return timeFilter ? gte(users.createdAt, timeFilter) : undefined;
   }
 
   private buildVideoTimeCondition(timeFilter: Date | null) {
-    if (!timeFilter) return sql``;
-    return sql`${videos.createdAt} >= ${timeFilter.toISOString()}::timestamp`;
+    return timeFilter ? gte(videos.createdAt, timeFilter) : undefined;
   }
 
   private buildTransactionTimeCondition(timeFilter: Date | null) {
-    if (!timeFilter) return sql``;
-    return sql`${creditTransactions.createdAt} >= ${timeFilter.toISOString()}::timestamp`;
+    return timeFilter ? gte(creditTransactions.createdAt, timeFilter) : undefined;
   }
 
   async getStats(range: TimeRange): Promise<Stats> {
@@ -262,13 +259,13 @@ class AnalyticsService {
     const dailyRegistrations: Record<string, number> = {};
     const registrationData = await db
       .select({
-        date: sql<string>`DATE(${users.createdAt})`.as("date"),
+        date: sql<string>`DATE(${users.createdAt}, 'unixepoch')`.as("date"),
         count: count(),
       })
       .from(users)
       .where(gte(users.createdAt, startDate))
-      .groupBy(sql`DATE(${users.createdAt})`)
-      .orderBy(sql`DATE(${users.createdAt})`);
+      .groupBy(sql`DATE(${users.createdAt}, 'unixepoch')`)
+      .orderBy(sql`DATE(${users.createdAt}, 'unixepoch')`);
 
     registrationData.forEach((row) => {
       dailyRegistrations[row.date] = row.count;

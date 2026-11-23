@@ -16,6 +16,7 @@ import {
   videos,
 } from "@/db";
 import { ApiError } from "@/lib/api/error";
+import { isFreeInternalAccount } from "@/lib/internal-test-account";
 
 const TIER_RANK: Record<PlanTier, number> = { free: 0, basic: 1, pro: 2, ultimate: 3 };
 
@@ -52,6 +53,7 @@ export function planTierOfGrant(grant: {
  * grants that have not expired and were not refunded. No such grant is "free".
  */
 export async function getUserPlanTier(userId: string, now: Date = new Date()): Promise<PlanTier> {
+  if (await isFreeInternalAccount(userId)) return "ultimate";
   const grants = await db
     .select({
       id: creditPackages.id,

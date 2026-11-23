@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { videoService } from "@/services/video";
 import { requireAuth } from "@/lib/api/auth";
+import { canGenerateInPreview } from "@/lib/internal-test-account";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
@@ -15,7 +16,7 @@ import {
 import "@/lib/proxy-config";
 
 const generateSchema = z.object({
-  prompt: z.string().min(1).max(5000),
+  prompt: z.string().min(1).max(10000),
   model: z.string().min(1),
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),
@@ -30,7 +31,8 @@ const generateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.VIDEO_GENERATION_ENABLED !== "true") {
+    const user = await requireAuth(request);
+    if (!canGenerateInPreview(user)) {
       return apiError(
         "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
         503,
@@ -38,7 +40,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await requireAuth(request);
     const body = await request.json();
     const data = generateSchema.parse(body);
 

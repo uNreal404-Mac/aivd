@@ -15,8 +15,8 @@ const MOVES = ["wc-move-push", "wc-move-left", "wc-move-right", "wc-move-rise"] 
 
 /**
  * One card in a model wall. Hovering plays a clip (or slowly moves the camera
- * over a still) and shows the prompt to make one like it; the card opens the
- * studio with that prompt and model filled in.
+ * over a still). The card opens the studio with its model and, where available,
+ * the matching example prompt filled in.
  *
  * With reduced motion a clip still plays on hover or keyboard focus, after a
  * short pause so a passing cursor does not start it, and the card shows a
@@ -60,8 +60,8 @@ export function WallCard({
     >
       <Link
         href={href}
-        // Prompt links fill in the generator; they are not pages for search engines.
-        rel={href.includes("prompt=") ? "nofollow" : undefined}
+        // Example links fill in the generator; they are not pages for search engines.
+        rel={href.includes("prompt=") || href.includes("sample=") ? "nofollow" : undefined}
         className="wc-link"
         // Same words, same order as on the card, so voice control can use them.
         aria-label={[media.video ? (zh ? "视频" : "Video") : null, prompt, cta].filter(Boolean).join(" ")}
@@ -69,12 +69,12 @@ export function WallCard({
         {media.video ? (
           <video
             ref={videoRef}
-            src={`${media.src}#t=0.1`}
+            src={media.src}
             poster={media.poster}
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="none"
           />
         ) : (
           <img src={media.src} alt="" loading="lazy" />
