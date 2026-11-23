@@ -21,7 +21,7 @@ import "./home-generator.css";
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 export type HomeGeneratorPreset = { prompt: string; aspect?: string; nonce: number };
-type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean };
+type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean; draftStorageKey?: string; showSuggestions?: boolean };
 type Panel = "mode" | "settings" | null;
 
 const VIDEO_ASPECTS = ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"];
@@ -44,8 +44,9 @@ function withStudioModels(models: Model[]): Model[] {
   return [...models, ...extra];
 }
 
-export function HomeGenerator({ lang, models: serverModels, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false }: Props) {
+export function HomeGenerator({ lang, models: serverModels, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false, draftStorageKey = "aivd:home-draft", showSuggestions = true }: Props) {
   const zh = lang.toLowerCase().startsWith("zh");
+  const pendingStorageKey = draftStorageKey === "aivd:home-draft" ? "aivd:home-pending-generate" : `${draftStorageKey}:pending-generate`;
   const router = useRouter();
   const signIn = useSigninModal();
   const { data: session } = useSession();
@@ -98,7 +99,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     let live = true;
     void (async () => {
       try {
-        const saved = JSON.parse(localStorage.getItem("aivd:home-draft") || "null");
+        const saved = JSON.parse(localStorage.getItem(draftStorageKey) || "null");
         if (saved && typeof saved === "object") {
           const local = await listGuestAssets();
           const restore = (items: unknown): PickerAsset[] => Array.isArray(items) ? items.flatMap((item) => {
@@ -107,7 +108,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
             return guest ? [guest] : item.key && item.url ? [item as PickerAsset] : [];
           }) : [];
           if (!live) return;
-          if (saved.kind === "video" || saved.kind === "image") setKind(saved.kind);
+          if (!hideKindTabs && (saved.kind === "video" || saved.kind === "image")) setKind(saved.kind);
           if (typeof saved.prompt === "string" && !initialPrompt) setPrompt(saved.prompt);
           if (typeof saved.mode === "string") setMode(saved.mode === "reference" ? "reference" : "text");
           if (typeof saved.modelId === "string") setModelId(saved.modelId);
@@ -128,12 +129,12 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   useEffect(() => {
     if (!draftReady) return;
     const compact = (items: PickerAsset[]) => items.map(({ id, name, mimeType, key, url }) => ({ id, name, mimeType, key, url: key ? url : "" }));
-    localStorage.setItem("aivd:home-draft", JSON.stringify({ kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
+    localStorage.setItem(draftStorageKey, JSON.stringify({ kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
   }, [draftReady, kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences, referenceImages]);
 
   useEffect(() => {
-    if (!draftReady || !session || localStorage.getItem("aivd:home-pending-generate") !== "1") return;
-    localStorage.removeItem("aivd:home-pending-generate");
+    if (!draftReady || !session || localStorage.getItem(pendingStorageKey) !== "1") return;
+    localStorage.removeItem(pendingStorageKey);
     formRef.current?.requestSubmit();
   }, [draftReady, session]);
 
@@ -222,7 +223,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       return;
     }
     if (!session) {
-      localStorage.setItem("aivd:home-pending-generate", "1");
+      localStorage.setItem(pendingStorageKey, "1");
       signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);
       return;
     }
@@ -344,7 +345,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       </div>
     </div>
     {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
-    {kind === "video" && !suggestionsHidden ? <div className="du-composer-suggestions">
+    {kind === "video" && showSuggestions && !suggestionsHidden ? <div className="du-composer-suggestions">
       <div className="flex items-center justify-between">
         <button type="button" onClick={() => setSuggestionOffset((value) => (value + 3) % HOME_TEMPLATES.length)} className="du-composer-suggestions-label">{zh ? "试试这些提示" : "Try these prompts"}<RefreshCw className="h-3 w-3" aria-hidden="true" /></button>
         <button type="button" onClick={() => setSuggestionsHidden(true)} className="du-composer-suggestions-label">{zh ? "不再显示" : "Hide"}</button>

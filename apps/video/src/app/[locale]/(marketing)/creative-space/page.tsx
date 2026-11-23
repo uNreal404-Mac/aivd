@@ -1,4 +1,6 @@
 import { CreativeSpaceHome } from "@/components/creative-space/creative-space-home";
+import { getConfiguredAIProvider } from "@/ai/provider-config";
+import { getAvailableModels } from "@/config/credits";
 import { buildAlternates } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -8,15 +10,18 @@ export async function generateMetadata({ params }: Props) {
   const zh = locale.startsWith("zh");
   const alternates = buildAlternates("/creative-space", locale as never);
   return {
-    title: zh ? "AI 视频创作 Agent - 说出想法自动拆分镜生成视频" : "AI Video Agent - Turn an Idea into Shots and Video",
+    title: zh ? "AI 创作空间 - 视频、图片和 Agent" : "AI Creative Space - Video, Images, and Agent",
     description: zh
-      ? "在创作空间里写下目标或上传素材，Agent 先拆分镜、写提示词，确认后用 Veo 3.1 生成有声视频。"
-      : "Write a goal or add assets in Creative Space. The agent plans the shots and prompt, then Veo 3.1 generates a video with sound once you approve.",
+      ? "在创作空间中选择视频、图片或 Agent，使用共享素材库，生成作品或让 DeepSeek 帮你规划创意。"
+      : "Choose video, image, or Agent in Creative Space. Use your shared media library to create or plan with DeepSeek.",
     alternates: { canonical: alternates.canonical, languages: alternates.languages },
   };
 }
 
 export default async function CreativeSpacePage({ params }: Props) {
   const { locale } = await params;
-  return <CreativeSpaceHome lang={locale} />;
+  const models = getAvailableModels({ provider: getConfiguredAIProvider() ?? "kie", mode: "text-to-video" }).map(
+    ({ id, name, durations, aspectRatios }) => ({ id, name, durations, aspects: aspectRatios.filter((aspect) => aspect !== "Auto") }),
+  );
+  return <CreativeSpaceHome lang={locale} models={models} />;
 }
