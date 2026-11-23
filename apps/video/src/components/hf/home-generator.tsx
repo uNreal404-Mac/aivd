@@ -4,12 +4,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowUp, Check, ChevronDown, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
+import { HomeMediaPicker } from "@/components/hf/home-media-picker";
+import { listGuestAssets, type PickerAsset } from "@/lib/home-media-library";
+import { useSession } from "@/lib/auth/client";
+import { useSigninModal } from "@/hooks/use-signin-modal";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 
 // Image models that can generate; the image tab hands off to /ai/image.
 const IMAGE_MODEL_IDS = marketModelsOf("image").map((model) => model.id);
 import { localizedHref } from "@/lib/du-home";
-import { uploadImage, validateImageFile } from "@/lib/image-to-video";
+import { uploadImage } from "@/lib/image-to-video";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { MAX_HOME_VIDEO_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
@@ -43,6 +47,8 @@ function withStudioModels(models: Model[]): Model[] {
 export function HomeGenerator({ lang, models: serverModels, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false }: Props) {
   const zh = lang.toLowerCase().startsWith("zh");
   const router = useRouter();
+  const signIn = useSigninModal();
+  const { data: session } = useSession();
   const models = useMemo(() => withStudioModels(serverModels), [serverModels]);
   const defaultVideoModel = models.find((item) => item.id === DEFAULT_VIDEO_MODEL_ID) ?? models[0];
   const [kind, setKind] = useState<"video" | "image" | "canvas">(initialKind);
@@ -54,18 +60,17 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const imageAvailable = IMAGE_MODEL_IDS.includes(imageModelId);
   const imageCredits = imageModel ? marketCredits(imageModel, { prompt: "", resolution: imageModel.options.resolutions?.[0] }) : null;
   const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
-  const [videoReferences, setVideoReferences] = useState<{ file: File; preview: string }[]>([]);
-  const [referenceImages, setReferenceImages] = useState<{ file: File; preview: string }[]>([]);
+  const [videoReferences, setVideoReferences] = useState<PickerAsset[]>([]);
+  const [referenceImages, setReferenceImages] = useState<PickerAsset[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (defaultVideoModel?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
   const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === defaultVideoModel?.id)?.resolutions[0] ?? "720p"));
   const [sound, setSound] = useState(false);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const startRef = useRef<HTMLInputElement>(null);
-  const videoPreviews = useRef<string[]>([]);
-  const referencesRef = useRef<HTMLInputElement>(null);
-  const referencePreviews = useRef<string[]>([]);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [suggestionsHidden, setSuggestionsHidden] = useState(false);
@@ -88,28 +93,51 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, [panel]);
 
-  useEffect(() => () => referencePreviews.current.forEach((preview) => URL.revokeObjectURL(preview)), []);
-  useEffect(() => () => videoPreviews.current.forEach((preview) => URL.revokeObjectURL(preview)), []);
+  // Session storage keeps the text/settings; IndexedDB keeps guest file bytes.
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem("aivd:home-draft") || "null");
+        if (saved && typeof saved === "object") {
+          const local = await listGuestAssets();
+          const restore = (items: unknown): PickerAsset[] => Array.isArray(items) ? items.flatMap((item) => {
+            if (!item || typeof item.id !== "string") return [];
+            const guest = local.find((asset) => asset.id === item.id);
+            return guest ? [guest] : item.key && item.url ? [item as PickerAsset] : [];
+          }) : [];
+          if (!live) return;
+          if (saved.kind === "video" || saved.kind === "image") setKind(saved.kind);
+          if (typeof saved.prompt === "string" && !initialPrompt) setPrompt(saved.prompt);
+          if (typeof saved.mode === "string") setMode(saved.mode === "reference" ? "reference" : "text");
+          if (typeof saved.modelId === "string") setModelId(saved.modelId);
+          if (typeof saved.imageModelId === "string") setImageModelId(saved.imageModelId);
+          if (typeof saved.aspect === "string") setAspect(saved.aspect);
+          if (typeof saved.resolution === "string") setResolution(saved.resolution);
+          if (typeof saved.duration === "number") setDuration(saved.duration);
+          setSound(Boolean(saved.sound));
+          setVideoReferences(restore(saved.videoReferences));
+          setReferenceImages(restore(saved.referenceImages));
+        }
+      } catch { /* An old draft must not prevent the composer opening. */ }
+      if (live) setDraftReady(true);
+    })();
+    return () => { live = false; };
+  }, []);
 
-  const addVideoReferences = (files: FileList | null) => {
-    if (!files?.length) return;
-    const selected = Array.from(files);
-    const invalid = selected.map(validateImageFile).find(Boolean);
-    if (invalid) { setNotice(invalid); return; }
-    const remaining = MAX_HOME_VIDEO_REFERENCES - videoReferences.length;
-    if (remaining <= 0) { setNotice(zh ? "最多添加 12 张参考图片。" : "Add up to 12 reference images."); return; }
-    const added = selected.slice(0, remaining).map((file) => ({ file, preview: URL.createObjectURL(file) }));
-    videoPreviews.current.push(...added.map((item) => item.preview));
-    setVideoReferences((previous) => [...previous, ...added]);
-    setNotice(selected.length > remaining ? (zh ? "只保留了前 12 张参考图片。" : "Only the first 12 reference images were kept.") : "");
-  };
+  useEffect(() => {
+    if (!draftReady) return;
+    const compact = (items: PickerAsset[]) => items.map(({ id, name, mimeType, key, url }) => ({ id, name, mimeType, key, url: key ? url : "" }));
+    sessionStorage.setItem("aivd:home-draft", JSON.stringify({ kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
+  }, [draftReady, kind, prompt, mode, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences, referenceImages]);
+
+  useEffect(() => {
+    if (!draftReady || !session || sessionStorage.getItem("aivd:home-pending-generate") !== "1") return;
+    sessionStorage.removeItem("aivd:home-pending-generate");
+    formRef.current?.requestSubmit();
+  }, [draftReady, session]);
 
   const removeVideoReference = (index: number) => {
-    const removed = videoReferences[index];
-    if (removed) {
-      URL.revokeObjectURL(removed.preview);
-      videoPreviews.current = videoPreviews.current.filter((preview) => preview !== removed.preview);
-    }
     setVideoReferences((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
     setPrompt((previous) => removeVideoReferenceToken(previous, index + 1));
     setNotice("");
@@ -149,26 +177,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     promptRef.current?.focus({ preventScroll: true });
   }, [preset?.nonce]);
 
-  const addReferences = (files: FileList | null) => {
-    if (!files?.length) return;
-    const selected = Array.from(files);
-    const invalid = selected.map(validateImageFile).find(Boolean);
-    if (invalid) { setNotice(invalid); return; }
-    const remaining = 5 - referenceImages.length;
-    if (remaining <= 0) { setNotice(zh ? "最多上传 5 张参考图。" : "Add up to 5 reference images."); return; }
-    const added = selected.slice(0, remaining).map((file) => ({ file, preview: URL.createObjectURL(file) }));
-    referencePreviews.current.push(...added.map((item) => item.preview));
-    setReferenceImages((previous) => [...previous, ...added]);
-    if (selected.length > remaining) setNotice(zh ? "最多保留 5 张参考图。" : "Only the first 5 reference images were kept.");
-    else setNotice("");
-  };
-
   const removeReference = (index: number) => {
-    const removed = referenceImages[index];
-    if (removed) {
-      URL.revokeObjectURL(removed.preview);
-      referencePreviews.current = referencePreviews.current.filter((preview) => preview !== removed.preview);
-    }
     setReferenceImages((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
   };
 
@@ -212,6 +221,11 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       promptRef.current?.focus({ preventScroll: true });
       return;
     }
+    if (!session) {
+      sessionStorage.setItem("aivd:home-pending-generate", "1");
+      signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);
+      return;
+    }
     const params = new URLSearchParams();
     params.set("prompt", prompt.trim());
     if (kind === "image") {
@@ -219,9 +233,17 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       params.set("model", imageModelId);
       params.set("aspect", aspect);
       params.set("resolution", resolution);
-      // Stays on until the studio replaces this page.
       setSubmitting(true);
-      router.push(`${localizedHref(lang, "/ai/image")}?${params}`);
+      try {
+        const uploaded = [];
+        for (const item of referenceImages) {
+          const result = item.key ? { ok: true as const, key: item.key, url: item.url } : item.file ? await uploadImage(item.file) : null;
+          if (!result?.ok) { setNotice(zh ? "参考图片上传失败，请重试。" : "Could not upload a reference image."); setSubmitting(false); return; }
+          uploaded.push({ key: result.key, name: item.name, url: result.url });
+        }
+        if (uploaded.length) sessionStorage.setItem("aivd:home-image-references", JSON.stringify(uploaded));
+        router.push(`${localizedHref(lang, "/ai/image")}?${params}`);
+      } catch { setNotice(zh ? "准备参考图片失败，请重试。" : "Could not prepare the reference images."); setSubmitting(false); }
       return;
     }
     if (!available) { setNotice(zh ? "请选择当前可用的视频模型。" : "Choose a currently available video model."); return; }
@@ -234,9 +256,9 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       if (videoReferences.length) {
         const uploaded = [];
         for (const item of videoReferences) {
-          const result = await uploadImage(item.file);
-          if (!result.ok) { setNotice(result.message); setSubmitting(false); return; }
-          uploaded.push({ key: result.key, name: item.file.name, url: result.url });
+          const result = item.key ? { ok: true as const, key: item.key, url: item.url } : item.file ? await uploadImage(item.file) : null;
+          if (!result?.ok) { setNotice(zh ? "参考图片上传失败，请重试。" : "Could not upload a reference image."); setSubmitting(false); return; }
+          uploaded.push({ key: result.key, name: item.name, url: result.url });
         }
         sessionStorage.setItem("aivd:home-video-references", JSON.stringify(uploaded));
       }
@@ -259,6 +281,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 
   return <div id="home-generator" className="relative z-20 w-full max-w-[720px] scroll-mt-24">
+    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") setVideoReferences(items); else setReferenceImages(items); setNotice(""); }} maxSelected={kind === "video" ? MAX_HOME_VIDEO_REFERENCES : 5} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
     {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
@@ -279,12 +302,11 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       </a>
     </div> : null}
     {kind !== "canvas" ?
-    <form onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
+    <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
-      <input ref={referencesRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addReferences(event.target.files); event.target.value = ""; }} />
-      <button type="button" onClick={() => referencesRef.current?.click()} disabled={referenceImages.length >= 5} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] disabled:opacity-40" aria-label={zh ? "添加参考图片" : "Add reference images"}><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
-      {referenceImages.map((item, index) => <div key={item.preview} className="relative h-14 w-14 shrink-0" title={item.file.name}>
-        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/20" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.preview} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[10px] text-white">@{index + 1}</span></button>
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)]" aria-label={zh ? "选择参考图片" : "Choose reference images"}><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
+      {referenceImages.map((item, index) => <div key={item.id} className="relative h-14 w-14 shrink-0" title={item.name}>
+        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/20" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[10px] text-white">@{index + 1}</span></button>
         <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="absolute -right-1 -top-1 rounded-full bg-black p-0.5 text-white"><X className="h-3 w-3" /></button>
       </div>)}
       <span className="text-xs text-white/55">{zh ? "最多 5 张 · 点击缩略图可插入 @编号" : "Up to 5 · click an image to insert its @number"}</span>
@@ -292,21 +314,20 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     <div className="du-composer-prompt-row flex min-h-[72px] gap-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
         {kind === "video" ? <div className="flex shrink-0 items-start gap-1.5">
-          <input ref={startRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { addVideoReferences(event.target.files); event.target.value = ""; }} />
-          <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => startRef.current?.click()} disabled={videoReferences.length >= MAX_HOME_VIDEO_REFERENCES} title={zh ? "添加参考图片" : "Add reference images"} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"><span className="text-xl leading-none">+</span><span className="mt-1">{zh ? "参考" : "Ref"}</span></button><span className="text-[10px] text-white/65">{videoReferences.length ? `${videoReferences.length}/12` : (zh ? "可选" : "Optional")}</span></div>
+          <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => setPickerOpen(true)} title={zh ? "选择参考图片" : "Choose reference images"} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white"><span className="text-xl leading-none">+</span><span className="mt-1">{zh ? "参考" : "Ref"}</span></button><span className="text-[10px] text-white/65">{videoReferences.length ? `${videoReferences.length}/12` : (zh ? "可选" : "Optional")}</span></div>
         </div> : null}
         <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
         <div className="relative min-w-[160px] flex-1">
           <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={2} maxLength={2000} placeholder={kind === "video" ? (zh ? "最多添加 12 张参考图片，输入文字或用 @图片1、@图片2 引用素材，自由组合画面与动作。" : "Add up to 12 reference images. Write a prompt and use @Image1, @Image2 to combine them into a scene.") : (zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…")} className="min-h-[64px] w-full resize-none bg-transparent px-2 py-1.5 text-[12px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-[14px]" />
           {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
-            {videoReferences.map((item, index) => <button key={item.preview} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.preview} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
+            {videoReferences.map((item, index) => <button key={item.id} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
           </div> : null}
         </div>
       </div>
     </div>
     {kind === "video" && videoReferences.length ? <div className="du-composer-references">
-      <div className="du-composer-reference-list">{videoReferences.map((item, index) => <div key={item.preview} className="du-composer-reference" title={item.file.name}>
-        <button type="button" onClick={() => insertVideoReference(index)} aria-label={zh ? `引用图片 ${index + 1}` : `Reference image ${index + 1}`}><img src={item.preview} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>
+      <div className="du-composer-reference-list">{videoReferences.map((item, index) => <div key={item.id} className="du-composer-reference" title={item.name}>
+        <button type="button" onClick={() => insertVideoReference(index)} aria-label={zh ? `引用图片 ${index + 1}` : `Reference image ${index + 1}`}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>
         <button type="button" onClick={() => removeVideoReference(index)} aria-label={zh ? `移除图片 ${index + 1}` : `Remove image ${index + 1}`} className="du-composer-reference-remove"><X className="h-3 w-3" /></button>
       </div>)}</div>
       <p>{zh ? `已添加 ${videoReferences.length}/12 张 · 当前模型每次最多使用 ${videoReferenceLimit} 张` : `${videoReferences.length}/12 added · This model accepts up to ${videoReferenceLimit} per generation`}</p>

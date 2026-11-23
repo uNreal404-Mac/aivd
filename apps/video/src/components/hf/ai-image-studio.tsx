@@ -153,6 +153,17 @@ export function AiImageStudio({
   const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
   const [count, setCount] = useState(1);
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string }[]>([]);
+  useEffect(() => {
+    const handoff = sessionStorage.getItem("aivd:home-image-references");
+    if (!handoff) return;
+    sessionStorage.removeItem("aivd:home-image-references");
+    try {
+      const rows: unknown = JSON.parse(handoff);
+      if (Array.isArray(rows)) setRefs(rows.filter((row): row is { key: string; name: string; url: string } =>
+        typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string"
+      ).map((row) => ({ key: row.key, name: row.name, preview: row.url })).slice(0, maxImages));
+    } catch { /* Ignore a stale handoff. */ }
+  }, []);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);

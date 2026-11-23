@@ -310,6 +310,17 @@ export const videos = sqliteTable(
   ]
 );
 
+/** Images uploaded to the reusable reference picker. The object remains private in R2. */
+export const mediaAssets = sqliteTable("media_assets", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  key: text("storage_key").notNull().unique(),
+  name: text("name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+}, (table) => [index("media_assets_user_created_idx").on(table.userId, table.createdAt)]);
+
 /** One score per account and published video; never exposed in public API rows. */
 export const videoRatings = sqliteTable(
   "video_ratings",
