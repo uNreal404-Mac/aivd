@@ -6,6 +6,8 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
+import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
+import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
@@ -154,7 +156,8 @@ export function AiImageStudio({
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
   const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
   const [count, setCount] = useState(1);
-  const [refs, setRefs] = useState<{ key: string; name: string; preview: string }[]>([]);
+  const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   useEffect(() => {
     const handoff = sessionStorage.getItem("aivd:home-image-references");
     if (!handoff) return;
@@ -170,7 +173,6 @@ export function AiImageStudio({
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
-  const fileRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image");
   const [viewing, setViewing] = useState<number | null>(null);
@@ -250,11 +252,21 @@ export function AiImageStudio({
       const result = await uploadImage(file);
       setUploading(false);
       if (result.ok) {
-        setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url }]);
+        setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
       } else {
         setNotice(result.message);
       }
     }
+  };
+
+  const selectMedia = async (items: PickerAsset[]) => {
+    setUploading(true);
+    setNotice(null);
+    try {
+      const selected = await Promise.all(items.map(readyPickerImage));
+      setRefs(selected.map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
+    } catch (error) { setNotice(error instanceof Error ? error.message : (zh ? "素材上传失败，请重试。" : "Could not prepare the media. Try again.")); }
+    finally { setUploading(false); }
   };
 
   const generate = async () => {
@@ -291,6 +303,16 @@ export function AiImageStudio({
 
   return (
     <main className="is-root">
+      <HomeMediaPicker
+        lang={locale}
+        open={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(items) => void selectMedia(items)}
+        onDelete={(id) => setRefs((current) => current.filter((item) => (item.sourceId ?? `upload:${item.key}`) !== id))}
+        maxSelected={maxImages}
+        selectedIds={refs.map((item) => item.sourceId ?? `upload:${item.key}`)}
+        userId={session?.user?.id}
+      />
       <div className="is-first">
       {jobs.length === 0 ? (
         <section className="is-hero">
@@ -404,10 +426,10 @@ export function AiImageStudio({
               <button
                 type="button"
                 className="is-chip is-chip-icon"
-                disabled={maxImages === 0 || refs.length >= maxImages || uploading}
+                disabled={maxImages === 0 || uploading}
                 title={maxImages === 0 ? (zh ? "该模型不支持参考图" : "This model takes no reference image") : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}
                 aria-label={zh ? "添加参考图" : "Add reference image"}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => setMediaPickerOpen(true)}
               >
                 {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}
               </button>
@@ -416,17 +438,6 @@ export function AiImageStudio({
                 <AtSign className="h-4 w-4" aria-hidden="true" />
               </button>
             </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                void onFiles(Array.from(event.target.files ?? []));
-                event.target.value = "";
-              }}
-            />
             <div className="is-model">
               <KieModelPicker kind="image" locale={locale} value={modelId} connectedIds={IMAGE_MODEL_IDS} onChange={chooseModel} placement="top" compact />
               <ChevronRight className="is-model-chevron" aria-hidden="true" />

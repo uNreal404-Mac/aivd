@@ -6,6 +6,8 @@ import { localizedHref } from "@/lib/locale-path";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
+import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
+import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
@@ -47,7 +49,6 @@ import {
   submitGeneration,
 } from "@/lib/ai-video-studio";
 import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
-import { uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
@@ -307,6 +308,7 @@ export function AiVideoStudio({
     Boolean(initialSettings?.prompt),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [durationOpen, setDurationOpen] = useState(false);
   const durationRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -632,25 +634,21 @@ export function AiVideoStudio({
         { title: "Get the video", body: "Hit generate, then play and download it from history." },
       ];
 
-  async function uploadStartFrame(file: File) {
-    const error = validateImageFile(file);
-    if (error) {
-      setNotice(error);
-      return;
-    }
+  async function selectMedia(items: PickerAsset[]) {
     setUploading(true);
     setNotice(null);
-    const result = await uploadImage(file);
-    setUploading(false);
-    if (result.ok) {
+    try {
+      const references = (await Promise.all(items.map(readyPickerImage))).map((item) => ({
+        ...item,
+        sourceId: item.sourceId.startsWith("direct:") ? `upload:${item.key}` : item.sourceId,
+      }));
       sessionStorage.removeItem("aivd:home-video-references");
-      setHomeReferences([]);
-      setFileName(file.name);
-      setImageKey(result.key);
-      setPreview(result.url);
-    } else {
-      setNotice(result.message);
-    }
+      setHomeReferences(references);
+      setFileName(references[0]?.name ?? null);
+      setImageKey(references[0]?.key ?? null);
+      setPreview(references[0]?.url ?? null);
+    } catch (error) { setNotice(error instanceof Error ? error.message : (isChinese ? "素材上传失败，请重试。" : "Could not prepare the media. Try again.")); }
+    finally { setUploading(false); }
   }
   const removeHomeReference = (index: number) => {
     const remaining = homeReferences.filter((_, itemIndex) => itemIndex !== index);
@@ -662,7 +660,15 @@ export function AiVideoStudio({
     setPreview(remaining[0]?.url ?? null);
     setSettings((previous) => ({ ...previous, prompt: removeVideoReferenceToken(previous.prompt, index + 1) }));
   };
-  const drop = useImageDrop((files) => void uploadStartFrame(files[0]), !uploading && mode === "Create");
+  const clearSelectedMedia = () => {
+    sessionStorage.removeItem("aivd:home-video-references");
+    setHomeReferences([]);
+    setImageKey(null);
+    setFileName(null);
+    setPreview(null);
+    setSettings((current) => ({ ...current, prompt: current.prompt.replace(/@(?:图片|image)\d+/gi, "") }));
+  };
+  const drop = useImageDrop((files) => void selectMedia(files.slice(0, maxVideoReferences(catalogModelId)).map((file) => ({ id: `direct:${crypto.randomUUID()}`, name: file.name, mimeType: file.type, url: "", file }))), !uploading && mode === "Create" && maxVideoReferences(catalogModelId) > 0);
 
   const reuse = (text: string | null | undefined) => {
     if (!text) return;
@@ -684,6 +690,20 @@ export function AiVideoStudio({
 
   return (
     <div className="vs-root" {...(mode === "Create" ? { onPaste: drop.bind.onPaste } : {})}>
+      <HomeMediaPicker
+        lang={locale}
+        open={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(items) => void selectMedia(items)}
+        onDelete={(id) => {
+          const index = homeReferences.findIndex((item) => (item.sourceId ?? `upload:${item.key}`) === id);
+          if (index >= 0) removeHomeReference(index);
+          else if (imageKey && id === `upload:${imageKey}`) clearSelectedMedia();
+        }}
+        maxSelected={maxVideoReferences(catalogModelId)}
+        selectedIds={homeReferences.map((item) => item.sourceId ?? `upload:${item.key}`)}
+        userId={session?.user?.id}
+      />
       <aside aria-label={copy.settings} className="vs-panel">
         <div className="vs-modes" role="tablist">
           {MODES.map((option) => (
@@ -715,13 +735,17 @@ export function AiVideoStudio({
               </span>
             </button>
 
-            <label
-              className={`vs-upload sr-drop ${drop.over ? "sr-drop-on" : ""} ${preview ? "vs-upload-has" : ""}`}
-              data-drop-label={isChinese ? "松开即可上传起始帧" : "Drop to upload the start frame"}
+            <button
+              type="button"
+              className={`vs-upload sr-drop w-full ${drop.over ? "sr-drop-on" : ""} ${preview ? "vs-upload-has" : ""}`}
+              onClick={() => setMediaPickerOpen(true)}
               onDragEnter={drop.bind.onDragEnter}
               onDragOver={drop.bind.onDragOver}
               onDragLeave={drop.bind.onDragLeave}
               onDrop={drop.bind.onDrop}
+              data-drop-label={isChinese ? "松开即可添加素材" : "Drop to add media"}
+              disabled={uploading || maxVideoReferences(catalogModelId) === 0}
+              aria-label={isChinese ? "上传素材" : "Upload media"}
             >
               {preview ? (
                 <img src={preview} alt="" className="vs-upload-preview" />
@@ -732,26 +756,16 @@ export function AiVideoStudio({
                   <span><Sparkles className="h-4 w-4" /></span>
                 </span>
               )}
-              <span className="vs-upload-title">{homeReferences.length > 1 ? (isChinese ? `已添加 ${homeReferences.length} 张参考图` : `${homeReferences.length} reference images added`) : fileName ?? (isChinese ? "上传起始帧" : "Upload a start frame")}</span>
+              <span className="vs-upload-title">{homeReferences.length > 1 ? (isChinese ? `已添加 ${homeReferences.length} 张参考图` : `${homeReferences.length} reference images added`) : fileName ?? (isChinese ? "上传素材" : "Upload media")}</span>
               <span className="vs-upload-sub">
                 {uploading
                   ? isChinese ? "上传中…" : "Uploading…"
                   : preview
-                    ? isChinese ? "点击更换，或拖入新图片" : "Click to replace, or drop a new image"
-                    : isChinese ? `拖入、粘贴或点击上传 · ${copy.fileTypes} · 可选` : `Drop, paste or click · ${copy.fileTypes} · optional`}
+                    ? isChinese ? "点击查看素材库或更换图片" : "Open your library to change the image"
+                    : isChinese ? `点击打开素材库，可在弹窗拖拽上传 · ${copy.fileTypes}` : `Open your library to click or drop an image · ${copy.fileTypes}`}
               </span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (file) void uploadStartFrame(file);
-                }}
-              />
-            </label>
-            {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "来自首页的参考图片" : "Reference images from the homepage"}>
+            </button>
+            {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "已选择的参考图片" : "Selected reference images"}>
               {homeReferences.map((item, index) => <div key={item.key} className="vs-home-reference" title={item.name}>
                 <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
                 <span>@{isChinese ? "图片" : "Image"}{index + 1}</span>
@@ -760,8 +774,8 @@ export function AiVideoStudio({
               <p>{isChinese ? `当前模型最多使用 ${maxVideoReferences(catalogModelId)} 张` : `This model accepts up to ${maxVideoReferences(catalogModelId)}`}</p>
             </div> : null}
             {imageKey ? (
-              <button type="button" onClick={() => { sessionStorage.removeItem("aivd:home-video-references"); setHomeReferences([]); setImageKey(null); setFileName(null); setPreview(null); }} className="vs-link">
-                {isChinese ? "移除起始帧" : "Remove start frame"}
+              <button type="button" onClick={clearSelectedMedia} className="vs-link">
+                {isChinese ? "移除素材" : "Remove media"}
               </button>
             ) : null}
 

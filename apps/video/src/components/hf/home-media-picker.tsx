@@ -69,11 +69,18 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       localStorage.removeItem("aivd:elements:guest"); localStorage.removeItem("aivd:brands:guest");
     }
     setError("");
-    void listGuestAssets().then((items) => { if (live) setAssets(items); }).catch(() => { if (live) setError(zh ? "无法读取本机素材库。" : "Could not read local uploads."); });
+    setAssets([]);
+    const local = listGuestAssets().catch(() => { if (live) setError(zh ? "无法读取本机素材库。" : "Could not read local uploads."); return [] as PickerAsset[]; });
+    const remote = userId
+      ? fetch("/api/v1/library", { cache: "no-store" }).then((response) => response.json()).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : []).catch(() => [] as PickerAsset[])
+      : Promise.resolve([] as PickerAsset[]);
+    void Promise.all([local, remote]).then(([localAssets, remoteAssets]) => {
+      if (live) setAssets((current) => {
+        const merged = [...current, ...localAssets, ...remoteAssets];
+        return merged.filter((asset, index) => merged.findIndex((item) => item.id === asset.id) === index);
+      });
+    });
     if (userId) {
-      void fetch("/api/v1/library", { cache: "no-store" }).then((r) => r.json()).then((body) => {
-        if (live && Array.isArray(body?.data?.assets)) setAssets((current) => [...current, ...body.data.assets]);
-      }).catch(() => {});
       void Promise.all((["video", "image", "audio"] as const).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
         if (!live) return;
         const rows: any[] = bodies.flatMap((body) => Array.isArray(body?.data?.videos) ? body.data.videos : []);

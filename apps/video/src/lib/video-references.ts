@@ -2,7 +2,7 @@ import { getMarketModel } from "@/ai/kie-market";
 
 export const MAX_HOME_VIDEO_REFERENCES = 12;
 
-export type UploadedVideoReference = { key: string; name: string; url: string };
+export type UploadedVideoReference = { key: string; name: string; url: string; sourceId?: string };
 
 // The two legacy video models accept a single start image. Market models
 // declare their own limit, which is currently at most four for video.

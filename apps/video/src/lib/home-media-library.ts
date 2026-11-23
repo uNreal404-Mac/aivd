@@ -1,4 +1,6 @@
 /** Files chosen before sign-in live in IndexedDB, never in sessionStorage. */
+import { uploadImage } from "@/lib/image-to-video";
+
 export type PickerAsset = {
   id: string;
   name: string;
@@ -73,4 +75,13 @@ export async function currentUploadUrls(): Promise<Map<string, string>> {
     if (!Array.isArray(assets)) return new Map();
     return new Map(assets.filter((asset) => typeof asset?.key === "string" && typeof asset?.url === "string").map((asset) => [asset.key, asset.url]));
   } catch { return new Map(); }
+}
+
+/** Guest files need a server upload before a studio can submit their key. */
+export async function readyPickerImage(asset: PickerAsset): Promise<{ key: string; name: string; url: string; sourceId: string }> {
+  if (asset.key) return { key: asset.key, name: asset.name, url: asset.url, sourceId: asset.id };
+  if (!asset.file) throw new Error("The selected image is no longer available.");
+  const result = await uploadImage(asset.file);
+  if (!result.ok) throw new Error(result.message);
+  return { key: result.key, name: asset.name, url: result.url, sourceId: asset.id };
 }
