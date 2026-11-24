@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { CreativeSpaceStudio } from "@/components/creative-space/creative-space-studio";
+import { CreativeWorkflowStudio } from "@/components/creative-space/creative-workflow-studio";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates } from "@/lib/seo";
 
@@ -38,5 +38,5 @@ export default async function CreativeSpacePage({
   const { prompt } = await searchParams;
   const initialPrompt = (Array.isArray(prompt) ? prompt[0] : prompt)?.slice(0, 2000) ?? "";
 
-  return <CreativeSpaceStudio locale={locale} initialPrompt={initialPrompt} />;
+  return <CreativeWorkflowStudio locale={locale} initialPrompt={initialPrompt} />;
 }
