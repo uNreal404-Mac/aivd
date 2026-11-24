@@ -15,7 +15,6 @@ import { errorMessage } from "@/lib/media-studio";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useCreditsStore } from "@/stores/credits-store";
 import {
-  ArrowLeftRight,
   AtSign,
   BookOpen,
   ChevronRight,
@@ -780,48 +779,41 @@ export function AiVideoStudio({
           )}
           <span className="vs-upload-title">
             {homeReferences.length > 1
-              ? (isChinese ? `已添加 ${homeReferences.length}/${maxVideoReferences(catalogModelId)} 张参考图` : `${homeReferences.length}/${maxVideoReferences(catalogModelId)} reference images`)
-              : fileName ?? (maxVideoReferences(catalogModelId) > 1
-                  ? (isChinese ? `添加参考图（最多 ${maxVideoReferences(catalogModelId)} 张）` : `Add references (up to ${maxVideoReferences(catalogModelId)})`)
-                  : copy.startFrame)}
+              ? (isChinese ? `已添加 ${homeReferences.length} 张参考图` : `${homeReferences.length} reference images added`)
+              : fileName ?? (isChinese ? "上传素材" : "Upload media")}
           </span>
           <span className="vs-upload-sub">
             {uploading
               ? isChinese ? "上传中…" : "Uploading…"
               : preview
-                ? isChinese ? "点击查看素材库或更换图片" : "Open your library to change the image"
-                : isChinese ? `点击打开素材库或拖拽上传 · ${copy.fileTypes}` : `Click or drop an image · ${copy.fileTypes}`}
+                ? isChinese ? "点击查看素材库或更换素材" : "Open your library to change the media"
+                : isChinese ? `点击打开素材库或拖拽上传（支持 @引用）· ${copy.fileTypes}` : `Click or drop media (supports @mention) · ${copy.fileTypes}`}
           </span>
         </button>
-            {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "已选择的参考图片" : "Selected reference images"}>
-              {homeReferences.map((item, index) => <div key={item.key} className="vs-home-reference" title={item.name}>
-                <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
-                <span>{index === 0 ? (isChinese ? "首帧 @1" : "Start @1") : index === homeReferences.length - 1 ? (isChinese ? `尾帧 @${index + 1}` : `End @${index + 1}`) : `@${isChinese ? "图" : "Img"}${index + 1}`}</span>
-                <button type="button" onClick={() => removeHomeReference(index)} aria-label={isChinese ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`}><X className="h-3 w-3" /></button>
-              </div>)}
-              <div className="flex w-full items-center justify-between gap-2 pt-0.5">
-                <p className="!w-auto">{isChinese ? `最多 ${maxVideoReferences(catalogModelId)} 张` : `Up to ${maxVideoReferences(catalogModelId)}`}</p>
-                <button
-                  type="button"
-                  className="vs-swap-btn"
-                  onClick={() => {
-                    setHomeReferences((prev) => {
-                      if (prev.length < 2) return prev;
-                      const next = [...prev];
-                      const first = next[0];
-                      next[0] = next[next.length - 1];
-                      next[next.length - 1] = first;
-                      setImageKey(next[0].key);
-                      setPreview(next[0].url);
-                      setFileName(next[0].name);
-                      return next;
-                    });
-                  }}
-                >
-                  <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-                  {isChinese ? "互换首尾帧" : "Swap Start/End"}
-                </button>
-              </div>
+            {homeReferences.length > 0 ? <div className="vs-home-references" aria-label={isChinese ? "已选择的参考素材" : "Selected reference media"}>
+              {homeReferences.map((item, index) => {
+                const token = `@${isChinese ? "图片" : "Image"}${index + 1}`;
+                return (
+                  <div key={item.key} className="vs-home-reference" title={isChinese ? `点击在提示词中插入 ${token}` : `Click to insert ${token} into prompt`}>
+                    <button
+                      type="button"
+                      className="vs-home-reference-pick"
+                      onClick={() => {
+                        setSettings((previous) => ({
+                          ...previous,
+                          prompt: `${previous.prompt}${previous.prompt.trim() ? " " : ""}${token} `,
+                        }));
+                        promptRef.current?.focus();
+                      }}
+                    >
+                      <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
+                      <span>{token}</span>
+                    </button>
+                    <button type="button" className="vs-home-reference-remove" onClick={() => removeHomeReference(index)} aria-label={isChinese ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`}><X className="h-3 w-3" /></button>
+                  </div>
+                );
+              })}
+              <p>{isChinese ? `当前模型最多引用 ${maxVideoReferences(catalogModelId)} 张，点击标签可插入 @引用` : `Up to ${maxVideoReferences(catalogModelId)} assets — click a tag to insert @mention`}</p>
             </div> : null}
             {imageKey ? (
               <button type="button" onClick={clearSelectedMedia} className="vs-link">
@@ -1005,7 +997,7 @@ export function AiVideoStudio({
             ) : null}
             {needsStartImage ? (
               <output className="vs-notice">
-                {isChinese ? `${bannerName} 需要先上传一张起始帧。` : `${bannerName} needs a start frame. Upload one above.`}
+                {isChinese ? `${bannerName} 需要先上传素材。` : `${bannerName} needs reference media. Upload above.`}
               </output>
             ) : null}
             {selectedModelConnected ? null : (
@@ -1196,8 +1188,8 @@ export function AiVideoStudio({
             <h2 className="vs-howto-title">{isChinese ? "一键制作视频" : "Make a video in one click"}</h2>
             <p className="vs-howto-sub">
               {isChinese
-                ? "写一句提示词或上传一张起始帧，选好模型就能生成，生成前就能看到要消耗的积分。"
-                : "Write a prompt or upload a start frame, pick a model and generate. You see the credit cost before you start."}
+                ? "写一句提示词或上传素材（支持 @图片1 引用），选好模型就能生成，生成前就能看到要消耗的积分。"
+                : "Write a prompt or upload media (supports @Image1 mentions), pick a model and generate. You see the credit cost before you start."}
             </p>
             <ol className="vs-steps vs-steps-illus">
               {stepCopy.map((step, index) => (

@@ -257,7 +257,15 @@
   white-space: nowrap;
 }
 
-.vs-home-reference button {
+.vs-home-reference-pick {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.vs-home-reference-remove {
   position: absolute;
   top: -5px;
   right: -5px;
@@ -1492,30 +1500,6 @@ button.vs-chip:disabled {
 
 .vs-notice-actions .cu-get {
   margin: 0;
-}
-
-/* Pollo-style Start <-> End Keyframe Swap Button */
-.vs-swap-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 140ms var(--ds-ease-spring);
-}
-
-.vs-swap-btn:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 50%, transparent);
-  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
-}
-
-.vs-swap-btn:active {
-  transform: scale(0.96);
 }
 
 /* Higgsfield x Pollo Hover-to-Recreate Cinema Templates inside Empty Stage */
