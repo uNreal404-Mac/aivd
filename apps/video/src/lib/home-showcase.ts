@@ -132,8 +132,8 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
     href: navModelHref("image", "nano-banana-pro"),
     cta: { zh: "用 Nano Banana Pro 生成", en: "Create with Nano Banana Pro" },
     // Further down the page, past the canvas banner, so it can carry the
-    // story samples the first wall leaves out.
-    media: [MEDIA.carpet, MEDIA.rain, MEDIA.dreaming, MEDIA.boyDog, MEDIA.bloom, MEDIA.autumn, MEDIA.wind],
+    // story samples the first wall leaves out (8 balanced cards across 4 columns).
+    media: [MEDIA.carpet, MEDIA.rain, MEDIA.dreaming, MEDIA.boyDog, MEDIA.bloom, MEDIA.autumn, MEDIA.wind, MEDIA.valley],
   },
 ];
 
@@ -314,8 +314,8 @@ export const SHORTS_PRESETS: {
   },
   {
     id: "short-fx-01",
-    image: "/effects/effect-01.webp",
-    pip: "/home/samples/cosmic-bloom.webp",
+    image: "/home/samples/cosmic-bloom.webp",
+    pip: "/home/samples/storm-sea.webp",
     title: { zh: "光粒子爆裂转场", en: "Particle Burst VFX" },
     views: { zh: "8.7万", en: "87K" },
     likes: "4.1K",
@@ -324,8 +324,8 @@ export const SHORTS_PRESETS: {
   },
   {
     id: "short-fx-05",
-    image: "/effects/effect-05.webp",
-    pip: "/home/samples/autumn-walk.webp",
+    image: "/home/samples/autumn-walk.webp",
+    pip: "/home/samples/boy-and-dog.webp",
     title: { zh: "胶片柔光人像", en: "35mm Film Portrait" },
     views: { zh: "11.3万", en: "113K" },
     likes: "5.7K",
@@ -334,8 +334,8 @@ export const SHORTS_PRESETS: {
   },
   {
     id: "short-fx-09",
-    image: "/effects/effect-09.webp",
-    pip: "/home/samples/mountain-wind.webp",
+    image: "/home/samples/mountain-wind.webp",
+    pip: "/home/samples/mountain-valley.webp",
     title: { zh: "360° 环绕运镜", en: "360 Orbit Camera" },
     views: { zh: "14.0万", en: "140K" },
     likes: "7.3K",
@@ -344,8 +344,8 @@ export const SHORTS_PRESETS: {
   },
   {
     id: "short-fx-11",
-    image: "/effects/effect-11.webp",
-    pip: "/home/samples/tomb-light.webp",
+    image: "/home/samples/tomb-light.webp",
+    pip: "/home/samples/planet-impact.webp",
     title: { zh: "丁达尔体积光", en: "Volumetric Godrays" },
     views: { zh: "7.8万", en: "78K" },
     likes: "3.6K",
@@ -354,8 +354,8 @@ export const SHORTS_PRESETS: {
   },
   {
     id: "short-fx-14",
-    image: "/effects/effect-14.webp",
-    pip: "/home/samples/dreaming.webp",
+    image: "/home/samples/dreaming.webp",
+    pip: "/home/samples/studio-room.webp",
     title: { zh: "超现实梦境慢推", en: "Surreal Dream Push" },
     views: { zh: "10.4万", en: "104K" },
     likes: "5.2K",
