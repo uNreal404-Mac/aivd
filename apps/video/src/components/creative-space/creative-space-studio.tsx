@@ -1504,58 +1504,50 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     const origin = worldCenter();
     const ts = Date.now();
     const groupId = `tpl-grp-${tpl.id}-${ts}`;
-    const newCards: CanvasTextNode[] = [];
-    const newEdges: CanvasEdge[] = [];
-    setNodes((prev) => {
-      let z = maxZIndex(prev);
-      const all = [...prev];
-      tpl.steps.forEach((step, idx) => {
-        const card: CanvasTextNode = {
-          id: `tpl-step-${tpl.id}-${ts}-${idx}`,
-          kind: "text",
-          label: nextAlphaLabel(all),
-          name: zh ? step.titleZh : step.titleEn,
-          title: zh ? step.titleZh : step.titleEn,
-          content: zh ? step.contentZh : step.contentEn,
-          tone: "storyboard",
-          x: origin.x + idx * 284,
-          y: origin.y + 48,
-          width: 256,
-          zIndex: ++z,
-          status: "ready",
-          createdAt: ts,
-        };
-        all.push(card);
-        newCards.push(card);
-      });
-      const group: CanvasGroupNode = {
-        id: groupId,
-        kind: "group",
+    const existing = nodesRef.current;
+    let z = maxZIndex(existing);
+    const all = [...existing];
+    const newCards: CanvasTextNode[] = tpl.steps.map((step, idx) => {
+      const card: CanvasTextNode = {
+        id: `tpl-step-${tpl.id}-${ts}-${idx}`,
+        kind: "text",
         label: nextAlphaLabel(all),
-        name: zh ? tpl.groupZh : tpl.groupEn,
-        title: zh ? tpl.groupZh : tpl.groupEn,
-        x: origin.x - 24,
-        y: origin.y - 8,
-        width: tpl.steps.length * 284 + 20,
-        height: 280,
-        zIndex: 0,
+        name: zh ? step.titleZh : step.titleEn,
+        title: zh ? step.titleZh : step.titleEn,
+        content: zh ? step.contentZh : step.contentEn,
+        tone: "storyboard",
+        x: origin.x + idx * 284,
+        y: origin.y + 48,
+        width: 256,
+        zIndex: ++z,
         status: "ready",
         createdAt: ts,
       };
-      return [group, ...all];
+      all.push(card);
+      return card;
     });
-    tpl.steps.slice(0, -1).forEach((step, idx) => {
-      const from = newCards[idx];
-      const to = newCards[idx + 1];
-      if (!from || !to) return;
-      newEdges.push({
-        id: `tpl-edge-${ts}-${idx}`,
-        fromId: from.id,
-        toId: to.id,
-        kind: "story",
-        label: zh ? (step.edgeZh ?? "下一步") : (step.edgeEn ?? "Next"),
-      });
-    });
+    const group: CanvasGroupNode = {
+      id: groupId,
+      kind: "group",
+      label: nextAlphaLabel(all),
+      name: zh ? tpl.groupZh : tpl.groupEn,
+      title: zh ? tpl.groupZh : tpl.groupEn,
+      x: origin.x - 24,
+      y: origin.y - 8,
+      width: tpl.steps.length * 284 + 20,
+      height: 280,
+      zIndex: 0,
+      status: "ready",
+      createdAt: ts,
+    };
+    const newEdges: CanvasEdge[] = tpl.steps.slice(0, -1).map((step, idx) => ({
+      id: `tpl-edge-${ts}-${idx}`,
+      fromId: newCards[idx].id,
+      toId: newCards[idx + 1].id,
+      kind: "story",
+      label: zh ? (step.edgeZh ?? "下一步") : (step.edgeEn ?? "Next"),
+    }));
+    setNodes((prev) => [group, ...prev, ...newCards]);
     if (newEdges.length > 0) setEdges((prev) => [...prev, ...newEdges]);
     setTemplatesOpen(false);
     showToast(zh ? `已载入工作流模板「${tpl.zh}」` : `Loaded workflow template "${tpl.en}"`);
