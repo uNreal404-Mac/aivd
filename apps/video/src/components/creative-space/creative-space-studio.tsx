@@ -4,8 +4,10 @@ import {
   AlignCenterHorizontal,
   ArrowLeft,
   AtSign,
+  Bookmark,
   Bot,
   Camera,
+  Clapperboard,
   Copy,
   Download,
   Eraser,
@@ -31,6 +33,7 @@ import {
   PanelRightOpen,
   Plus,
   Redo2,
+  Save,
   Scissors,
   Search,
   Send,
@@ -110,6 +113,91 @@ interface LibraryEntry {
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_HISTORY = 40;
+const CANVAS_TEMPLATES_KEY = "aivd:canvas-templates:v1";
+
+interface CameraAngleSpec {
+  id: string;
+  zh: string;
+  en: string;
+  promptZh: string;
+  promptEn: string;
+}
+
+const CAMERA_ANGLES: CameraAngleSpec[] = [
+  { id: "closeup", zh: "特写镜头", en: "Close-up", promptZh: "保持原主体外观与服装完全一致，改为电影级近景特写构图，突出表情与细节质感，浅景深", promptEn: "Keep exact same subject identity and wardrobe, reframe as a cinematic close-up shot focusing on facial detail and texture, shallow depth of field" },
+  { id: "medium", zh: "中景半身", en: "Medium Shot", promptZh: "保持原主体与光影风格一致，改为经典电影中景半身构图，人物姿态自然有叙事感", promptEn: "Keep exact same subject and lighting style, reframe as a classic cinematic medium waist-up shot with natural storytelling posture" },
+  { id: "wide", zh: "广角全景", en: "Wide Establishing", promptZh: "保持原主体与场景美术风格一致，拉远改为 24mm 电影广角全景镜头，展现完整环境氛围", promptEn: "Keep exact same subject and art direction, pull back to a 24mm cinematic wide establishing shot revealing the full atmospheric environment" },
+  { id: "low", zh: "低角度仰拍", en: "Low-Angle Hero", promptZh: "保持原主体完全一致，改为低机位仰拍英雄视角，凸显戏剧张力与电影史诗感", promptEn: "Keep exact same subject, reframe from a dramatic low-angle hero perspective looking upward with cinematic grandeur" },
+  { id: "over-shoulder", zh: "过肩镜头", en: "Over-the-Shoulder", promptZh: "保持原主体与环境一致，改为电影过肩对话视角，前景柔和虚化增强沉浸感", promptEn: "Keep exact same subject and setting, reframe as a cinematic over-the-shoulder shot with soft foreground bokeh" },
+  { id: "topdown", zh: "高空俯拍", en: "Top-Down Overhead", promptZh: "保持原主体与道具风格一致，改为 90 度垂直高空俯拍构图，线条几何感极强", promptEn: "Keep exact same subject and styling, reframe as a crisp 90-degree overhead top-down bird's-eye composition" },
+];
+
+interface BuiltinWorkflowTemplate {
+  id: string;
+  zh: string;
+  en: string;
+  descZh: string;
+  descEn: string;
+  groupZh: string;
+  groupEn: string;
+  steps: { titleZh: string; titleEn: string; contentZh: string; contentEn: string; edgeZh?: string; edgeEn?: string }[];
+}
+
+const BUILTIN_WORKFLOW_TEMPLATES: BuiltinWorkflowTemplate[] = [
+  {
+    id: "ecom-ad",
+    zh: "电商大片全流程",
+    en: "E-commerce Ad Pipeline",
+    descZh: "商品主图 → 抠图换景 → 多机位展示 → 15s 宣传短片 + 配音",
+    descEn: "Hero product → Cutout & scene → Multi-angle shots → 15s ad clip + VO",
+    groupZh: "电商广告工作流",
+    groupEn: "E-commerce Ad Flow",
+    steps: [
+      { titleZh: "1. 商品主图锚点", titleEn: "1. Product Hero Anchor", contentZh: "上传产品实拍图或下方直接生成棚拍主图，设为 @A 主视觉。", contentEn: "Upload a product photo or generate a studio hero shot below as @A.", edgeZh: "抠图换景", edgeEn: "Cutout" },
+      { titleZh: "2. 多机位卖点分镜", titleEn: "2. Multi-Angle Details", contentZh: "选中 @A 点击「多机位分镜」，一键生成特写、中景与广角场景图。", contentEn: "Select @A and run Multi-Angle Shots for close-up, medium, and wide frames.", edgeZh: "图生视频", edgeEn: "Animate" },
+      { titleZh: "3. 动效宣传短片", titleEn: "3. Hero Video Clip", contentZh: "多选分镜图点击「多图参考生视频」，选用 Kling 4.0 / Seedance 2.5 出片。", contentEn: "Multi-select frames and trigger Multi-Ref Video with Kling 4.0 or Seedance 2.5.", edgeZh: "配音配乐", edgeEn: "Score" },
+      { titleZh: "4. 品牌口播与 BGM", titleEn: "4. Voiceover & BGM", contentZh: "切换底部「配音与音乐」生成 15 秒高端旁白与 Suno 节奏 BGM。", contentEn: "Switch bottom dock to Audio for a crisp 15s voiceover and Suno BGM." },
+    ],
+  },
+  {
+    id: "cinema-3act",
+    zh: "电影三幕分镜短片",
+    en: "3-Act Cinema Storyboard",
+    descZh: "建立全景 → 冲突中景 → 情绪特写 → 电影原声配乐",
+    descEn: "Establishing wide → Conflict medium → Emotional close-up → Film score",
+    groupZh: "电影三幕剧分镜",
+    groupEn: "3-Act Film Storyboard",
+    steps: [
+      { titleZh: "第一幕 · 建立全景", titleEn: "Act I · Establishing Wide", contentZh: "用 21:9 宽银幕建立世界观与光影基调，奠定整片视觉锚点。", contentEn: "Establish world-building and lighting mood in 21:9 widescreen.", edgeZh: "推镜切中景", edgeEn: "Cut to Med" },
+      { titleZh: "第二幕 · 动作推进", titleEn: "Act II · Rising Action", contentZh: "引用 @A 保持角色服装与环境一致，加入明确运镜动作与情绪张力。", contentEn: "Reference @A for character continuity and introduce camera movement.", edgeZh: "情绪高潮", edgeEn: "Climax" },
+      { titleZh: "第三幕 · 高潮特写", titleEn: "Act III · Climax Close-up", contentZh: "浅景深面部特写 + 慢动作光影变化，完成情感定格。", contentEn: "Shallow DOF close-up with slow-motion lighting shift for emotional payoff.", edgeZh: "管弦配乐", edgeEn: "Score" },
+      { titleZh: "电影配乐与环境音", titleEn: "Cinematic Score & SFX", contentZh: "使用 Suno V6 纯音乐 BGM 或 Suno Sounds 补充环境拟音。", contentEn: "Generate instrumental BGM via Suno V6 or ambient foley via Suno Sounds." },
+    ],
+  },
+  {
+    id: "ip-drama",
+    zh: "角色一致性 IP 漫剧",
+    en: "Consistent IP Series",
+    descZh: "锁角色定妆照 → 3 场次连续分镜 → 角色专属配音",
+    descEn: "Character sheet lock → 3 continuous scene beats → Dedicated voice track",
+    groupZh: "IP 漫剧制作管线",
+    groupEn: "IP Character Pipeline",
+    steps: [
+      { titleZh: "角色定妆锚点", titleEn: "Character Anchor Sheet", contentZh: "生成角色三视图/高清正脸照，作为所有场次一致性的核心参考。", contentEn: "Generate a clean character sheet as the visual identity lock.", edgeZh: "场次 1", edgeEn: "Scene 1" },
+      { titleZh: "场次 1 · 日常开场", titleEn: "Scene 1 · Hook Beat", contentZh: "引用角色锚点，设定前 3 秒强情绪冲突画面并生成首段视频。", contentEn: "Reference the character anchor for a high-retention 3-second hook clip.", edgeZh: "场次 2", edgeEn: "Scene 2" },
+      { titleZh: "场次 2 · 反转对白", titleEn: "Scene 2 · Plot Twist", contentZh: "用「局部重绘」微调表情或道具细节，再转视频衔接。", contentEn: "Use Inpaint to refine expression or props, then animate smoothly.", edgeZh: "角色配音", edgeEn: "Dialogue" },
+      { titleZh: "角色专属声线", titleEn: "Signature Voice Track", contentZh: "在底部音频模式固定同一 ElevenLabs 声线录制全集台词。", contentEn: "Lock one ElevenLabs voice in the bottom audio dock for consistent dialogue." },
+    ],
+  },
+];
+
+interface UserCanvasTemplate {
+  id: string;
+  name: string;
+  createdAt: number;
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+}
 
 const IMAGE_MODELS = marketModelsOf("image");
 const AUDIO_MODELS = marketModelsOf("audio");
@@ -230,6 +318,13 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [userTemplates, setUserTemplates] = useState<UserCanvasTemplate[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [shotsModalNodeId, setShotsModalNodeId] = useState<string | null>(null);
+  const [selectedAngles, setSelectedAngles] = useState<string[]>(["closeup", "medium", "wide"]);
+  const [shotsResolution, setShotsResolution] = useState("1K");
+  const [shotsSubmitting, setShotsSubmitting] = useState(false);
   const [editModal, setEditModal] = useState<{ nodeId: string; action: CanvasEditAction } | null>(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -319,30 +414,74 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           }
         }
       }
-      // Optional handoff image from Image Studio ("在画布中编辑").
+      // Load user's saved workflow templates.
+      const savedTemplates = localStorage.getItem(CANVAS_TEMPLATES_KEY);
+      if (savedTemplates) {
+        const list = JSON.parse(savedTemplates) as UserCanvasTemplate[];
+        if (Array.isArray(list)) setUserTemplates(list);
+      }
+      // Optional handoff media from Image / Video / Audio Studios ("在无限画布中打开").
       const handoff = sessionStorage.getItem("aivd:canvas-handoff");
       if (handoff) {
         sessionStorage.removeItem("aivd:canvas-handoff");
-        const item = JSON.parse(handoff) as { url?: string; prompt?: string; model?: string; kind?: "image" | "video" };
+        const item = JSON.parse(handoff) as { url?: string; prompt?: string; model?: string; kind?: "image" | "video" | "audio" };
         if (item?.url) {
           setNodes((prev) => {
             const label = nextAlphaLabel(prev);
-            const node: CanvasImageNode = {
-              id: `handoff-${Date.now()}`,
-              kind: "image",
-              label,
-              name: item.model || (zh ? "工作台作品" : "Studio image"),
-              url: item.url!,
-              prompt: item.prompt,
-              model: item.model,
-              x: 100 + prev.length * 40,
-              y: 80 + prev.length * 30,
-              width: 300,
-              zIndex: maxZIndex(prev) + 1,
-              status: "ready",
-              safety: "allowed",
-              createdAt: Date.now(),
-            };
+            const zIndex = maxZIndex(prev) + 1;
+            const slot = prev.filter((n) => n.kind !== "group").length;
+            const x = 100 + (slot % 3) * 320;
+            const y = 80 + Math.floor(slot / 3) * 260;
+            const node: CanvasNode =
+              item.kind === "video"
+                ? {
+                    id: `handoff-vid-${Date.now()}`,
+                    kind: "video",
+                    label,
+                    name: item.model || (zh ? "视频工作室作品" : "Studio video"),
+                    url: item.url!,
+                    prompt: item.prompt,
+                    model: item.model,
+                    x,
+                    y,
+                    width: 320,
+                    zIndex,
+                    status: "ready",
+                    safety: "allowed",
+                    createdAt: Date.now(),
+                  }
+                : item.kind === "audio"
+                  ? {
+                      id: `handoff-aud-${Date.now()}`,
+                      kind: "audio",
+                      label,
+                      name: item.model || (zh ? "音频工作室作品" : "Studio audio"),
+                      url: item.url!,
+                      prompt: item.prompt,
+                      model: item.model,
+                      x,
+                      y,
+                      width: 290,
+                      zIndex,
+                      status: "ready",
+                      createdAt: Date.now(),
+                    }
+                  : {
+                      id: `handoff-img-${Date.now()}`,
+                      kind: "image",
+                      label,
+                      name: item.model || (zh ? "图片工作室作品" : "Studio image"),
+                      url: item.url!,
+                      prompt: item.prompt,
+                      model: item.model,
+                      x,
+                      y,
+                      width: 300,
+                      zIndex,
+                      status: "ready",
+                      safety: "allowed",
+                      createdAt: Date.now(),
+                    };
             setSelectedIds([node.id]);
             return [...prev, node];
           });
@@ -433,6 +572,8 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
       if (event.key === "Escape") {
         setSearchOpen(false);
         setShortcutsOpen(false);
+        setTemplatesOpen(false);
+        setShotsModalNodeId(null);
         setConnectFromId(null);
         setTool("select");
         setSelectedIds([]);
@@ -1357,6 +1498,211 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     showToast(zh ? `已自动整理 ${contentNodes.length} 个画布节点` : `Auto-arranged ${contentNodes.length} canvas nodes`);
   }, [commitHistory, showToast, zh]);
 
+  // Higgsfield Canvas: load a curated multi-step workflow template onto the board.
+  const loadBuiltinTemplate = useCallback((tpl: BuiltinWorkflowTemplate) => {
+    commitHistory();
+    const origin = worldCenter();
+    const ts = Date.now();
+    const groupId = `tpl-grp-${tpl.id}-${ts}`;
+    const newCards: CanvasTextNode[] = [];
+    const newEdges: CanvasEdge[] = [];
+    setNodes((prev) => {
+      let z = maxZIndex(prev);
+      const all = [...prev];
+      tpl.steps.forEach((step, idx) => {
+        const card: CanvasTextNode = {
+          id: `tpl-step-${tpl.id}-${ts}-${idx}`,
+          kind: "text",
+          label: nextAlphaLabel(all),
+          name: zh ? step.titleZh : step.titleEn,
+          title: zh ? step.titleZh : step.titleEn,
+          content: zh ? step.contentZh : step.contentEn,
+          tone: "storyboard",
+          x: origin.x + idx * 284,
+          y: origin.y + 48,
+          width: 256,
+          zIndex: ++z,
+          status: "ready",
+          createdAt: ts,
+        };
+        all.push(card);
+        newCards.push(card);
+      });
+      const group: CanvasGroupNode = {
+        id: groupId,
+        kind: "group",
+        label: nextAlphaLabel(all),
+        name: zh ? tpl.groupZh : tpl.groupEn,
+        title: zh ? tpl.groupZh : tpl.groupEn,
+        x: origin.x - 24,
+        y: origin.y - 8,
+        width: tpl.steps.length * 284 + 20,
+        height: 280,
+        zIndex: 0,
+        status: "ready",
+        createdAt: ts,
+      };
+      return [group, ...all];
+    });
+    tpl.steps.slice(0, -1).forEach((step, idx) => {
+      const from = newCards[idx];
+      const to = newCards[idx + 1];
+      if (!from || !to) return;
+      newEdges.push({
+        id: `tpl-edge-${ts}-${idx}`,
+        fromId: from.id,
+        toId: to.id,
+        kind: "story",
+        label: zh ? (step.edgeZh ?? "下一步") : (step.edgeEn ?? "Next"),
+      });
+    });
+    if (newEdges.length > 0) setEdges((prev) => [...prev, ...newEdges]);
+    setTemplatesOpen(false);
+    showToast(zh ? `已载入工作流模板「${tpl.zh}」` : `Loaded workflow template "${tpl.en}"`);
+  }, [commitHistory, showToast, worldCenter, zh]);
+
+  const saveCurrentAsTemplate = () => {
+    if (nodes.length === 0) {
+      showToast(zh ? "当前画布为空，无法保存模板" : "Canvas is empty — add nodes first");
+      return;
+    }
+    const cleanName = templateName.trim() || projectTitle.trim() || (zh ? `自定义工作流 ${userTemplates.length + 1}` : `Custom Workflow ${userTemplates.length + 1}`);
+    const cleaned = stripTransientForStorage({
+      version: 2,
+      title: cleanName,
+      viewport,
+      nodes,
+      edges,
+      sessions: [],
+      activeSessionId: "",
+      updatedAt: Date.now(),
+    });
+    const nextItem: UserCanvasTemplate = {
+      id: `utpl-${Date.now()}`,
+      name: cleanName,
+      createdAt: Date.now(),
+      nodes: cleaned.nodes,
+      edges: cleaned.edges,
+    };
+    const nextList = [nextItem, ...userTemplates].slice(0, 12);
+    setUserTemplates(nextList);
+    setTemplateName("");
+    try {
+      localStorage.setItem(CANVAS_TEMPLATES_KEY, JSON.stringify(nextList));
+    } catch {
+      // Ignore quota errors.
+    }
+    showToast(zh ? `已保存工作流模板「${cleanName}」` : `Saved workflow template "${cleanName}"`);
+  };
+
+  const loadUserTemplate = (tpl: UserCanvasTemplate) => {
+    commitHistory();
+    setNodes(tpl.nodes);
+    setEdges(tpl.edges);
+    setProjectTitle(tpl.name);
+    setSelectedIds([]);
+    setTemplatesOpen(false);
+    showToast(zh ? `已恢复自定义模板「${tpl.name}」` : `Restored template "${tpl.name}"`);
+  };
+
+  const deleteUserTemplate = (id: string) => {
+    const nextList = userTemplates.filter((item) => item.id !== id);
+    setUserTemplates(nextList);
+    try {
+      localStorage.setItem(CANVAS_TEMPLATES_KEY, JSON.stringify(nextList));
+    } catch {
+      // Ignore storage errors.
+    }
+  };
+
+  // Pollo Shots: 1-click Multi-Angle cinematic shot expansion from a single canvas image!
+  const shotsSourceNode = shotsModalNodeId
+    ? nodes.find((n): n is CanvasImageNode => n.id === shotsModalNodeId && n.kind === "image") ?? null
+    : null;
+  const shotsModel = getMarketModel(imageModelId) ?? IMAGE_MODELS[0];
+  const singleShotCredits = useMemo(
+    () =>
+      shotsModel
+        ? marketCredits(shotsModel, { prompt: "multi-angle shot", aspectRatio: imageAspect, resolution: shotsResolution, count: 1, imageUrls: ["ref"] })
+        : 6,
+    [shotsModel, imageAspect, shotsResolution],
+  );
+
+  const generateMultiAngleShots = async () => {
+    if (!shotsSourceNode || selectedAngles.length === 0 || shotsSubmitting) return;
+    if (!session) {
+      signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);
+      return;
+    }
+    setShotsSubmitting(true);
+    try {
+      const baseRef = shotsSourceNode.file ? await uploadImage(shotsSourceNode.file) : shotsSourceNode.url;
+      const chosen = CAMERA_ANGLES.filter((a) => selectedAngles.includes(a.id));
+      commitHistory();
+      const spawned: CanvasImageNode[] = [];
+      const newEdges: CanvasEdge[] = [];
+      for (let i = 0; i < chosen.length; i += 1) {
+        const angle = chosen[i];
+        const prompt = `${zh ? angle.promptZh : angle.promptEn}${shotsSourceNode.prompt ? `。${shotsSourceNode.prompt}` : ""}`;
+        const res = await submitMedia(
+          {
+            model: shotsModel?.id ?? DEFAULT_IMAGE_MODEL,
+            prompt,
+            aspectRatio: shotsSourceNode.aspectRatio || imageAspect,
+            resolution: shotsResolution,
+            count: 1,
+            imageUrls: [baseRef],
+          },
+          zh,
+        );
+        if (!res.ok) {
+          showToast(res.message);
+          if (res.needsLogin) signIn.onOpen();
+          if (res.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(res.message, res.requiredCredits);
+          break;
+        }
+        const id = `shot-${angle.id}-${Date.now()}-${i}`;
+        spawned.push({
+          id,
+          kind: "image",
+          label: nextAlphaLabel([...nodesRef.current, ...spawned]),
+          name: `${zh ? angle.zh : angle.en} · @${shotsSourceNode.label}`,
+          url: "",
+          prompt,
+          model: shotsModel?.name ?? DEFAULT_IMAGE_MODEL,
+          resolution: shotsResolution,
+          aspectRatio: shotsSourceNode.aspectRatio || imageAspect,
+          x: shotsSourceNode.x + shotsSourceNode.width + 88,
+          y: shotsSourceNode.y + i * 268,
+          width: 268,
+          zIndex: maxZIndex(nodesRef.current) + i + 1,
+          status: "generating",
+          jobUuid: res.uuid,
+          safety: "allowed",
+          createdAt: Date.now(),
+        });
+        newEdges.push({
+          id: `edge-shot-${Date.now()}-${i}`,
+          fromId: shotsSourceNode.id,
+          toId: id,
+          kind: "edit",
+          label: zh ? angle.zh : angle.en,
+        });
+      }
+      if (spawned.length > 0) {
+        setNodes((prev) => [...prev, ...spawned]);
+        setEdges((prev) => [...prev, ...newEdges]);
+        setSelectedIds(spawned.map((n) => n.id));
+        setShotsModalNodeId(null);
+        showToast(zh ? `已并发提交 ${spawned.length} 个机位分镜到画布` : `Spawned ${spawned.length} multi-angle shots on canvas`);
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : zh ? "多机位生成失败" : "Multi-angle generation failed");
+    } finally {
+      setShotsSubmitting(false);
+    }
+  };
+
   // Visual port-to-port Bezier edge wiring directly from node handles.
   const handlePortClick = (nodeId: string, side: "in" | "out", event: ReactPointerEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -1980,6 +2326,19 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           </button>
           <button
             type="button"
+            className={`cc-icon-btn${templatesOpen ? " cc-icon-btn-on" : ""}`}
+            onClick={() => {
+              setTemplatesOpen((v) => !v);
+              setSearchOpen(false);
+              setShortcutsOpen(false);
+            }}
+            title={zh ? "工作流模板库（保存/载入）" : "Workflow templates"}
+          >
+            <Bookmark className="h-4 w-4" />
+            <span className="hidden lg:inline">{zh ? "模板" : "Templates"}</span>
+          </button>
+          <button
+            type="button"
             className={`cc-icon-btn${libraryOpen ? " cc-icon-btn-on" : ""}`}
             onClick={() => setLibraryOpen((v) => !v)}
           >
@@ -2229,6 +2588,14 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               <button
                 type="button"
                 className="cc-ctx-btn cc-ctx-btn-accent"
+                onClick={() => setShotsModalNodeId(singleSelected.id)}
+              >
+                <Clapperboard className="h-3.5 w-3.5" />
+                {zh ? "多机位分镜" : "Multi-Angle"}
+              </button>
+              <button
+                type="button"
+                className="cc-ctx-btn cc-ctx-btn-accent"
                 onClick={() => setEditModal({ nodeId: singleSelected.id, action: "animate" })}
               >
                 <Film className="h-3.5 w-3.5" />
@@ -2401,6 +2768,10 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                 <button type="button" className="cc-secondary-btn" onClick={() => spawnTextNode()}>
                   <StickyNote className="h-4 w-4" />
                   {zh ? "新建分镜便签" : "New Storyboard Note"}
+                </button>
+                <button type="button" className="cc-secondary-btn" onClick={() => setTemplatesOpen(true)}>
+                  <Bookmark className="h-4 w-4" />
+                  {zh ? "载入工作流模板" : "Workflow Templates"}
                 </button>
               </div>
             </div>
@@ -2733,6 +3104,149 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                       <kbd className="cc-kbd">{k}</kbd>
                     </div>
                   ))}
+                </div>
+              </div>
+            </dialog>
+          ) : null}
+
+          {/* Workflow Templates Library Modal (Higgsfield Canvas Pipelines) */}
+          {templatesOpen ? (
+            <dialog open className="cc-cmd-backdrop" aria-label={zh ? "工作流模板库" : "Workflow templates"} onClick={() => setTemplatesOpen(false)}>
+              <div className="cc-cmd-modal cc-tpl-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="cc-cmd-head">
+                  <Bookmark className="h-4 w-4 text-[var(--du-accent-text)]" />
+                  <span className="flex-1 text-sm font-semibold">{zh ? "工作流模板库" : "Workflow Templates"}</span>
+                  <button type="button" className="cc-icon-btn" onClick={() => setTemplatesOpen(false)} aria-label={zh ? "关闭" : "Close"}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="cc-tpl-body">
+                  <div className="cc-tpl-save-row">
+                    <input
+                      type="text"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder={zh ? "输入名称，将当前画布保存为可复用模板…" : "Name current canvas to save as reusable template…"}
+                      className="cc-tpl-input"
+                    />
+                    <button type="button" className="cc-primary-btn" onClick={saveCurrentAsTemplate}>
+                      <Save className="h-3.5 w-3.5" />
+                      {zh ? "保存当前画布" : "Save Canvas"}
+                    </button>
+                  </div>
+
+                  <p className="cc-tpl-section">{zh ? "官方制片工作流模板（一键铺入画布）" : "Production Workflow Templates"}</p>
+                  <div className="cc-tpl-grid">
+                    {BUILTIN_WORKFLOW_TEMPLATES.map((tpl) => (
+                      <button key={tpl.id} type="button" className="cc-tpl-card" onClick={() => loadBuiltinTemplate(tpl)}>
+                        <span className="cc-tpl-card-head">
+                          <strong>{zh ? tpl.zh : tpl.en}</strong>
+                          <span className="cc-pill">{tpl.steps.length} {zh ? "节点" : "steps"}</span>
+                        </span>
+                        <span className="cc-tpl-card-desc">{zh ? tpl.descZh : tpl.descEn}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {userTemplates.length > 0 ? (
+                    <>
+                      <p className="cc-tpl-section">{zh ? "我保存的自定义模板" : "My Saved Templates"}</p>
+                      <div className="cc-tpl-user-list">
+                        {userTemplates.map((tpl) => (
+                          <div key={tpl.id} className="cc-tpl-user-row">
+                            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => loadUserTemplate(tpl)}>
+                              <strong className="block truncate text-xs font-semibold text-[var(--ds-text-1)]">{tpl.name}</strong>
+                              <span className="text-[11px] text-[var(--ds-text-3)]">
+                                {tpl.nodes.length} {zh ? "节点" : "nodes"} · {tpl.edges.length} {zh ? "连线" : "wires"}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="cc-icon-btn"
+                              onClick={() => deleteUserTemplate(tpl.id)}
+                              aria-label={zh ? "删除模板" : "Delete template"}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </dialog>
+          ) : null}
+
+          {/* Pollo Shots: Single-Image Multi-Angle Cinematography Modal */}
+          {shotsSourceNode ? (
+            <dialog open className="cc-cmd-backdrop" aria-label={zh ? "单图多机位分镜" : "Multi-Angle Shots"} onClick={() => setShotsModalNodeId(null)}>
+              <div className="cc-cmd-modal cc-tpl-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="cc-cmd-head">
+                  <Clapperboard className="h-4 w-4 text-[var(--du-accent-text)]" />
+                  <span className="flex-1 text-sm font-semibold">
+                    {zh ? `多机位分镜 · 基于 @${shotsSourceNode.label}` : `Multi-Angle Shots · @${shotsSourceNode.label}`}
+                  </span>
+                  <button type="button" className="cc-icon-btn" onClick={() => setShotsModalNodeId(null)} aria-label={zh ? "关闭" : "Close"}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="cc-tpl-body">
+                  <p className="cc-hint">
+                    {zh
+                      ? "保持角色与场景高度一致，从同一张锚点图并发生成多角度电影机位，自动以贝塞尔连线排布在右侧。"
+                      : "Keep character and lighting consistent across multiple camera angles. Generated frames spawn connected to the right."}
+                  </p>
+                  <div className="cc-angle-grid">
+                    {CAMERA_ANGLES.map((angle) => {
+                      const active = selectedAngles.includes(angle.id);
+                      return (
+                        <button
+                          key={angle.id}
+                          type="button"
+                          aria-pressed={active}
+                          className={`cc-option-btn${active ? " cc-option-btn-on" : ""}`}
+                          onClick={() =>
+                            setSelectedAngles((cur) =>
+                              cur.includes(angle.id)
+                                ? cur.length > 1
+                                  ? cur.filter((id) => id !== angle.id)
+                                  : cur
+                                : [...cur, angle.id].slice(0, 4),
+                            )
+                          }
+                        >
+                          <strong className="block text-xs">{zh ? angle.zh : angle.en}</strong>
+                          <span className="block truncate text-[10px] opacity-75">{zh ? angle.en : angle.zh}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="cc-modal-foot">
+                    <select
+                      aria-label={zh ? "机位分辨率" : "Shot resolution"}
+                      value={shotsResolution}
+                      onChange={(e) => setShotsResolution(e.target.value)}
+                      className="cc-select mr-auto"
+                    >
+                      <option value="1K">1K</option>
+                      <option value="2K">2K</option>
+                    </select>
+                    <button type="button" className="cc-secondary-btn" onClick={() => setShotsModalNodeId(null)}>
+                      {zh ? "取消" : "Cancel"}
+                    </button>
+                    <button
+                      type="button"
+                      className="cc-primary-btn"
+                      disabled={shotsSubmitting || selectedAngles.length === 0}
+                      onClick={() => void generateMultiAngleShots()}
+                    >
+                      {shotsSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {zh
+                        ? `一键生成 ${selectedAngles.length} 个机位 · ${singleShotCredits * selectedAngles.length} 分`
+                        : `Generate ${selectedAngles.length} Shots · ${singleShotCredits * selectedAngles.length} cr`}
+                    </button>
+                  </div>
                 </div>
               </div>
             </dialog>

@@ -121,6 +121,17 @@ function startingCredits(modelId: string): number | null {
   return lowest;
 }
 
+const MODEL_BADGES: Record<string, { label: string; tone: "top" | "new" | "fast" }> = {
+  "bytedance/seedance-2-5": { label: "TOP", tone: "top" },
+  "kling/v4-reference-to-video": { label: "NEW", tone: "new" },
+  "seedance-2-5-flash": { label: "FAST", tone: "fast" },
+  "kling/v4-flash-reference-to-video": { label: "FAST", tone: "fast" },
+  "veo-3.1": { label: "TOP", tone: "top" },
+  "seedream-5-5": { label: "TOP", tone: "top" },
+  "gpt-image-2-6-sunburst": { label: "NEW", tone: "new" },
+  "minimax-h3-image": { label: "FAST", tone: "fast" },
+};
+
 /** Cheapest credit price an image model can be run at, from live KIE market pricing. */
 function startingImageCredits(modelId: string): number | null {
   const model = getMarketModel(modelId);
@@ -318,6 +329,7 @@ export function KieModelPicker({
     const selectable = ready || allowUnconnectedSelection;
     const credits = !ready ? null : kind === "video" ? startingCredits(item.id) : startingImageCredits(item.id);
     const specs = kind === "video" ? VIDEO_MODEL_SPECS[item.id] : undefined;
+    const badge = MODEL_BADGES[item.id];
     return (
       <button
         key={item.id}
@@ -340,11 +352,26 @@ export function KieModelPicker({
           <ModelIcon family={item.family} kind={kind} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
+            {badge ? (
+              <span
+                className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${
+                  badge.tone === "top"
+                    ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
+                    : badge.tone === "new"
+                      ? "bg-[var(--du-accent-soft)] text-[var(--du-accent-text)]"
+                      : "bg-[var(--du-surface-2)] text-[var(--du-text-muted)]"
+                }`}
+              >
+                {badge.label}
+              </span>
+            ) : null}
+          </span>
           {specs ? <span className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-[var(--du-text-muted)]"><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5">▣ {specs.resolution}</span><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5" title={item.id === "bytedance/seedance-2-5-draft" ? (zh ? "时长继承原样片任务" : "Duration follows the source draft task") : undefined}>◷ {specs.duration === "source" ? (zh ? "继承原片" : "Source clip") : specs.duration}</span></span> : <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{detailOf(item)}</span>}
         </span>
         {credits !== null ? (
-          <span className="shrink-0 rounded-md bg-[var(--du-surface-2)] px-2 py-1 text-[11px] font-medium text-[var(--du-accent-text)]">
+          <span className="shrink-0 rounded-md bg-[var(--du-surface-2)] px-2 py-1 text-[11px] font-medium tabular-nums text-[var(--du-accent-text)]">
             {copy.from(credits)}
           </span>
         ) : null}

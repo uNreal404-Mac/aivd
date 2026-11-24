@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Music, Play, RotateCcw, Sparkles, Square } from "lucide-react";
+import { AudioLines, BookOpen, ChevronRight, Clock, Music, Paintbrush, Play, RotateCcw, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { localizedHref } from "@/lib/locale-path";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { useSigninModal } from "@/hooks/use-signin-modal";
@@ -419,16 +420,23 @@ export function AiAudioStudio({
                       type="button"
                       aria-pressed={voice === item.id}
                       onClick={() => setVoice(item.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left"
                     >
                       <span className="as-voice-avatar shrink-0" aria-hidden="true">
                         {item.name.slice(0, 1)}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold">{item.name}</span>
+                        <span className="flex items-center gap-1">
+                          <span className="truncate text-xs font-semibold">{item.name}</span>
+                          {meta ? (
+                            <span className="shrink-0 rounded bg-[var(--ds-fill-2)] px-1 text-[9px] text-[var(--ds-text-3)]">
+                              {zh ? (meta.gender === "M" ? "男" : "女") : meta.gender}
+                            </span>
+                          ) : null}
+                        </span>
                         {meta ? (
-                          <span className="block truncate text-[10px] opacity-70">
-                            {zh ? meta.tagZh : meta.tagEn}
+                          <span className="block truncate text-[10px] opacity-75">
+                            {zh ? meta.tagZh.replace(/^[男女]声\s*·\s*/, "") : meta.tagEn.replace(/^(Male|Female)\s*·\s*/, "")}
                           </span>
                         ) : null}
                       </span>
@@ -441,9 +449,18 @@ export function AiAudioStudio({
                         e.stopPropagation();
                         auditionVoice(item.name);
                       }}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center opacity-75 transition hover:opacity-100"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center opacity-80 transition hover:opacity-100"
                     >
-                      {isPlaying ? <Square className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                      {isPlaying ? (
+                        <span className="as-wave-bars" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                      ) : (
+                        <Play className="h-3 w-3" />
+                      )}
                     </button>
                   </div>
                 );
@@ -593,21 +610,52 @@ export function AiAudioStudio({
                   </button>
                 ))}
               </div>
+              <a href={localizedHref(locale, "/creative-space/canvas")} className="as-canvas-banner">
+                <span className="flex flex-col gap-0.5">
+                  <strong className="text-sm font-semibold text-[var(--ds-text-1)]">
+                    {zh ? "需要给视频分镜配音或加 BGM？" : "Pairing voiceovers or BGM with video shots?"}
+                  </strong>
+                  <span className="text-xs text-[var(--ds-text-3)]">
+                    {zh ? "前往无限画布，把图片、视频镜头与音频轨道连线编排" : "Open Infinite Canvas to connect images, video clips, and audio tracks"}
+                  </span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-[var(--du-accent-text)]" aria-hidden="true" />
+              </a>
             </StateBlock>
           ) : (
             <div className="as-list">
               {jobs.map((job) => {
                 const done = job.status === "completed" && job.urls.length > 0;
+                const modelLabel = getMarketModel(job.model)?.name ?? job.model;
                 return (
                   <div key={job.uuid} className="as-item">
                     <div className="as-item-head">
-                      <span className="as-item-model">{getMarketModel(job.model)?.name ?? job.model}</span>
+                      <span className="as-item-model">{modelLabel}</span>
                       <span className="as-item-prompt" title={job.prompt}>{job.prompt}</span>
                       {done ? (
                         <span className="as-item-tools">
                           <CopyPromptButton prompt={job.prompt} zh={zh} />
                           <button type="button" className="sr-icon" title={zh ? "复用文本" : "Reuse text"} aria-label={zh ? "复用文本" : "Reuse text"} onClick={() => reuse(job.prompt)}>
                             <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="sr-icon"
+                            title={zh ? "发送到无限画布编排" : "Send to Infinite Canvas"}
+                            aria-label={zh ? "发送到无限画布" : "Send to Infinite Canvas"}
+                            onClick={() => {
+                              try {
+                                sessionStorage.setItem(
+                                  "aivd:canvas-handoff",
+                                  JSON.stringify({ kind: "audio", url: job.urls[0], prompt: job.prompt, model: modelLabel }),
+                                );
+                              } catch {
+                                // Ignore storage errors.
+                              }
+                              window.location.assign(localizedHref(locale, "/creative-space/canvas"));
+                            }}
+                          >
+                            <Paintbrush className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </span>
                       ) : null}

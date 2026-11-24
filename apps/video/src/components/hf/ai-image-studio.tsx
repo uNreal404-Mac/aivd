@@ -40,13 +40,24 @@ const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
 
 const IMAGE_STYLE_PRESETS = [
-  { id: "cinematic", zh: "电影质感", en: "Cinematic", suffixZh: "，电影级光影，35mm 胶片颗粒，景深细腻", suffixEn: ", cinematic lighting, 35mm film grain, shallow depth of field" },
-  { id: "commercial", zh: "商业棚拍", en: "Studio Product", suffixZh: "，高端商业摄影棚布光，极简干净背景，8K 细节", suffixEn: ", luxury studio product photography, softbox rim light, crisp 8K detail" },
-  { id: "cyber", zh: "赛博霓虹", en: "Cyber Neon", suffixZh: "，雨夜霓虹反射，青紫电影色调，高对比氛围", suffixEn: ", neon rain reflections, cyan and magenta cinema grade, atmospheric" },
-  { id: "toy", zh: "3D 潮玩", en: "3D Designer Toy", suffixZh: "，盲盒潮玩 3D 渲染，磨砂 PVC 材质，柔和棚拍光", suffixEn: ", 3D designer vinyl toy render, matte PVC texture, soft studio glow" },
-  { id: "anime", zh: "动画电影", en: "Anime Film", suffixZh: "，高水准剧场版动画风格，通透光影，细腻背景", suffixEn: ", theatrical anime film key visual, luminous lighting, painterly background" },
-  { id: "editorial", zh: "时尚杂志", en: "Editorial", suffixZh: "，Vogue 时尚大片构图，自然肤质纹理，高定美学", suffixEn: ", high-fashion editorial portrait, natural skin texture, clean composition" },
+  { id: "cinematic", zh: "电影质感", en: "Cinematic", thumb: "/home/samples/red-carpet.webp", suffixZh: "，电影级光影，35mm 胶片颗粒，景深细腻", suffixEn: ", cinematic lighting, 35mm film grain, shallow depth of field" },
+  { id: "commercial", zh: "商业棚拍", en: "Studio Product", thumb: "/home/samples/studio-room.webp", suffixZh: "，高端商业摄影棚布光，极简干净背景，8K 细节", suffixEn: ", luxury studio product photography, softbox rim light, crisp 8K detail" },
+  { id: "cyber", zh: "赛博霓虹", en: "Cyber Neon", thumb: "/home/samples/rain-couple.webp", suffixZh: "，雨夜霓虹反射，青紫电影色调，高对比氛围", suffixEn: ", neon rain reflections, cyan and magenta cinema grade, atmospheric" },
+  { id: "toy", zh: "3D 潮玩", en: "3D Designer Toy", thumb: "/home/samples/cosmic-bloom.webp", suffixZh: "，盲盒潮玩 3D 渲染，磨砂 PVC 材质，柔和棚拍光", suffixEn: ", 3D designer vinyl toy render, matte PVC texture, soft studio glow" },
+  { id: "anime", zh: "动画电影", en: "Anime Film", thumb: "/home/samples/dancer.webp", suffixZh: "，高水准剧场版动画风格，通透光影，细腻背景", suffixEn: ", theatrical anime film key visual, luminous lighting, painterly background" },
+  { id: "editorial", zh: "时尚杂志", en: "Editorial", thumb: "/home/samples/autumn-walk.webp", suffixZh: "，Vogue 时尚大片构图，自然肤质纹理，高定美学", suffixEn: ", high-fashion editorial portrait, natural skin texture, clean composition" },
 ];
+
+/** Visual wireframe rectangle dimensions for Pollo-style aspect ratio tiles. */
+function aspectTileSize(option: string): { w: number; h: number; auto?: boolean } {
+  if (option === "auto") return { w: 18, h: 18, auto: true };
+  const parts = option.split(":").map(Number);
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return { w: 18, h: 18 };
+  const ratio = parts[0] / parts[1];
+  const maxSide = 22;
+  if (ratio >= 1) return { w: maxSide, h: Math.max(9, Math.round(maxSide / ratio)) };
+  return { w: Math.max(9, Math.round(maxSide * ratio)), h: maxSide };
+}
 
 /**
  * Toolbar chip that opens a small menu of its options above the composer.
@@ -60,6 +71,7 @@ function MenuChip({
   format,
   onChange,
   label,
+  visualAspect = false,
 }: {
   icon: React.ReactNode;
   value: string;
@@ -67,6 +79,7 @@ function MenuChip({
   format: (option: string) => string;
   onChange: (option: string) => void;
   label: string;
+  visualAspect?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -116,24 +129,34 @@ function MenuChip({
         {format(value)}
       </button>
       {open ? (
-        <fieldset className="is-menu">
+        <fieldset className={visualAspect ? "is-menu is-menu-aspect" : "is-menu"}>
           <legend className="is-menu-title">{label}</legend>
           <span className="is-menu-grid">
-            {options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className="is-menu-item"
-                aria-pressed={option === value}
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                  buttonRef.current?.focus();
-                }}
-              >
-                {format(option)}
-              </button>
-            ))}
+            {options.map((option) => {
+              const box = visualAspect ? aspectTileSize(option) : null;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  className={visualAspect ? "is-menu-item is-menu-item-aspect" : "is-menu-item"}
+                  aria-pressed={option === value}
+                  onClick={() => {
+                    onChange(option);
+                    setOpen(false);
+                    buttonRef.current?.focus();
+                  }}
+                >
+                  {box ? (
+                    <span
+                      className={box.auto ? "is-ratio-box is-ratio-box-auto" : "is-ratio-box"}
+                      style={{ width: box.w, height: box.h }}
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  <span>{format(option)}</span>
+                </button>
+              );
+            })}
           </span>
         </fieldset>
       ) : null}
@@ -165,6 +188,7 @@ export function AiImageStudio({
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
   const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
   const [count, setCount] = useState(1);
+  const [gridCols, setGridCols] = useState<2 | 3 | 4>(4);
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   useEffect(() => {
@@ -346,7 +370,24 @@ export function AiImageStudio({
           </p>
         </section>
       ) : (
-        <section className="is-results" aria-label={zh ? "生成结果" : "Results"}>
+        <div className="is-results-wrap">
+          <div className="is-results-bar">
+            <span className="is-results-count">{zh ? `共 ${jobs.length} 组作品` : `${jobs.length} creations`}</span>
+            <fieldset className="is-density m-0" aria-label={zh ? "网格视图密度" : "Grid view density"}>
+              {([2, 3, 4] as const).map((cols) => (
+                <button
+                  key={cols}
+                  type="button"
+                  aria-pressed={gridCols === cols}
+                  className={gridCols === cols ? "is-density-btn is-density-btn-on" : "is-density-btn"}
+                  onClick={() => setGridCols(cols)}
+                >
+                  {cols} {zh ? "列" : "col"}
+                </button>
+              ))}
+            </fieldset>
+          </div>
+          <section className={`is-results is-results-${gridCols}`} aria-label={zh ? "生成结果" : "Results"}>
           {jobs.map((job) =>
             job.status === "completed" && job.urls.length > 0 ? (
               job.urls.map((url, index) => {
@@ -389,6 +430,7 @@ export function AiImageStudio({
             ),
           )}
         </section>
+        </div>
       )}
 
       <form
@@ -439,21 +481,31 @@ export function AiImageStudio({
                   </button>
                 </p>
               ) : null}
-          <div className="mb-2 flex flex-wrap items-center gap-1.5" aria-label={zh ? "风格预设" : "Style presets"}>
-            {IMAGE_STYLE_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                className="is-chip"
-                onClick={() => {
-                  const suffix = zh ? preset.suffixZh : preset.suffixEn;
-                  setPrompt((cur) => (cur.includes(suffix) ? cur : `${cur.trim()}${cur.trim() ? suffix : suffix.replace(/^[，,\s]+/, "")}`));
-                  promptRef.current?.focus();
-                }}
-              >
-                + {zh ? preset.zh : preset.en}
-              </button>
-            ))}
+          <div className="is-style-strip" aria-label={zh ? "风格预设" : "Style presets"}>
+            {IMAGE_STYLE_PRESETS.map((preset) => {
+              const suffix = zh ? preset.suffixZh : preset.suffixEn;
+              const bare = suffix.replace(/^[，,\s]+/, "");
+              const active = prompt.includes(bare);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  className={active ? "is-style-pill is-style-pill-on" : "is-style-pill"}
+                  onClick={() => {
+                    setPrompt((cur) => {
+                      if (cur.includes(suffix)) return cur.replace(suffix, "").trim();
+                      if (cur.includes(bare)) return cur.replace(bare, "").replace(/^[，,\s]+|[，,\s]+$/g, "").trim();
+                      return `${cur.trim()}${cur.trim() ? suffix : bare}`;
+                    });
+                    promptRef.current?.focus();
+                  }}
+                >
+                  <img src={preset.thumb} alt="" className="is-style-swatch" loading="eager" />
+                  <span>{zh ? preset.zh : preset.en}</span>
+                </button>
+              );
+            })}
           </div>
           <div className="is-toolbar">
             <span className="is-chip-group">
@@ -480,6 +532,7 @@ export function AiImageStudio({
                 options={options.aspects}
                 format={(option) => (option === "auto" ? (zh ? "自动" : "Auto") : option)}
                 onChange={setAspect}
+                visualAspect
               />
             ) : null}
             {options.resolutions?.length ? (

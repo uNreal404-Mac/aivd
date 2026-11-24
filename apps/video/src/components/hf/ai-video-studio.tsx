@@ -15,6 +15,7 @@ import { errorMessage } from "@/lib/media-studio";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useCreditsStore } from "@/stores/credits-store";
 import {
+  ArrowLeftRight,
   AtSign,
   BookOpen,
   ChevronRight,
@@ -22,6 +23,7 @@ import {
   Clock,
   Film,
   ImagePlus,
+  Paintbrush,
   Pencil,
   Play,
   RotateCcw,
@@ -794,10 +796,32 @@ export function AiVideoStudio({
             {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "已选择的参考图片" : "Selected reference images"}>
               {homeReferences.map((item, index) => <div key={item.key} className="vs-home-reference" title={item.name}>
                 <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
-                <span>@{isChinese ? "图片" : "Image"}{index + 1}</span>
+                <span>{index === 0 ? (isChinese ? "首帧 @1" : "Start @1") : index === homeReferences.length - 1 ? (isChinese ? `尾帧 @${index + 1}` : `End @${index + 1}`) : `@${isChinese ? "图" : "Img"}${index + 1}`}</span>
                 <button type="button" onClick={() => removeHomeReference(index)} aria-label={isChinese ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`}><X className="h-3 w-3" /></button>
               </div>)}
-              <p>{isChinese ? `当前模型最多使用 ${maxVideoReferences(catalogModelId)} 张` : `This model accepts up to ${maxVideoReferences(catalogModelId)}`}</p>
+              <div className="flex w-full items-center justify-between gap-2 pt-0.5">
+                <p className="!w-auto">{isChinese ? `最多 ${maxVideoReferences(catalogModelId)} 张` : `Up to ${maxVideoReferences(catalogModelId)}`}</p>
+                <button
+                  type="button"
+                  className="vs-swap-btn"
+                  onClick={() => {
+                    setHomeReferences((prev) => {
+                      if (prev.length < 2) return prev;
+                      const next = [...prev];
+                      const first = next[0];
+                      next[0] = next[next.length - 1];
+                      next[next.length - 1] = first;
+                      setImageKey(next[0].key);
+                      setPreview(next[0].url);
+                      setFileName(next[0].name);
+                      return next;
+                    });
+                  }}
+                >
+                  <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
+                  {isChinese ? "互换首尾帧" : "Swap Start/End"}
+                </button>
+              </div>
             </div> : null}
             {imageKey ? (
               <button type="button" onClick={clearSelectedMedia} className="vs-link">
@@ -1067,17 +1091,34 @@ export function AiVideoStudio({
               }
               actions={signedOut ? [{ label: isChinese ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
             >
-              <div className="st-ideas">
-                {HOME_TEMPLATES.slice(0, 4).map((template) => (
+              <div className="vs-recreate-grid" aria-label={isChinese ? "一键做同款灵感模板" : "One-click recreate templates"}>
+                {HOME_TEMPLATES.slice(0, 4).map((template, idx) => (
                   <button
                     key={template.id}
                     type="button"
-                    className="st-idea"
+                    className="vs-recreate-card"
                     title={isChinese ? template.prompt.zh : template.prompt.en}
-                    onClick={() => reuse(isChinese ? template.prompt.zh : template.prompt.en)}
+                    onClick={() => {
+                      const presetId = VIDEO_PRESETS[idx % VIDEO_PRESETS.length]?.id;
+                      setSettings((previous) => ({
+                        ...previous,
+                        prompt: isChinese ? template.prompt.zh : template.prompt.en,
+                        aspect: model.aspects.includes(template.aspect) ? template.aspect : previous.aspect,
+                        preset: presetId ?? previous.preset,
+                      }));
+                      promptRef.current?.focus();
+                    }}
                   >
-                    <Sparkles aria-hidden="true" />
-                    {isChinese ? template.title.zh : template.title.en}
+                    <img src={template.image} alt={isChinese ? template.title.zh : template.title.en} loading="eager" />
+                    <span className="vs-recreate-shade" aria-hidden="true" />
+                    <span className="vs-recreate-pill">
+                      <Sparkles className="h-3 w-3" aria-hidden="true" />
+                      {isChinese ? "做同款" : "Recreate"}
+                    </span>
+                    <span className="vs-recreate-meta">
+                      <strong>{isChinese ? template.title.zh : template.title.en}</strong>
+                      <span>{template.aspect}</span>
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1111,6 +1152,25 @@ export function AiVideoStudio({
                         <span className="sr-card-prompt">{result.prompt}</span>
                         <button type="button" className="sr-icon" title={isChinese ? "复用提示词" : "Reuse prompt"} aria-label={isChinese ? "复用提示词" : "Reuse prompt"} onClick={() => reuse(result.prompt)}>
                           <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="sr-icon"
+                          title={isChinese ? "在无限画布中截帧 / 配音 / 编排" : "Open in Infinite Canvas"}
+                          aria-label={isChinese ? "在无限画布中打开" : "Open in Infinite Canvas"}
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem(
+                                "aivd:canvas-handoff",
+                                JSON.stringify({ kind: "video", url: result.videoUrl, prompt: result.prompt, model: model.name }),
+                              );
+                            } catch {
+                              // Ignore storage errors.
+                            }
+                            window.location.assign(localizedHref(locale, "/creative-space/canvas"));
+                          }}
+                        >
+                          <Paintbrush className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </span>
                     </figure>
