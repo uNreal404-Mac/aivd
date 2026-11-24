@@ -381,7 +381,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
 
   const chip = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-white/[0.06] px-3 text-xs font-medium text-[var(--du-text)] transition-colors hover:bg-white/[0.11] sm:text-[13px]";
   const plainControl = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 text-xs text-[var(--du-text-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--du-text)] sm:text-[13px] disabled:cursor-not-allowed disabled:opacity-40";
-  const divider = <span aria-hidden="true" className="hidden h-3.5 w-px shrink-0 bg-white/[0.08] sm:block" />;
+  const divider = <span aria-hidden="true" className="du-composer-divider hidden h-3.5 w-px shrink-0 bg-white/[0.08] sm:block" />;
   const segment = (value: string, selected: boolean, onClick: () => void, label = value) => <button key={value} type="button" onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{label}</button>;
   const resolutionLabel = (value: string) => value.replace(/k$/, "K");
   const settingRow = (title: string, items: string[], selected: string, choose: (value: string) => void, format: (value: string) => string = (value) => value) =>
@@ -432,7 +432,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
           className="du-composer-ref-slot"
         >
           <Plus className="h-4 w-4 opacity-75" aria-hidden="true" />
-          <span>{videoReferences.length ? `${videoReferences.length}/${videoReferenceLimit}` : (zh ? "参考图" : "Ref")}</span>
+          {videoReferences.length ? <span className="du-composer-ref-label du-num">{`${videoReferences.length}/${videoReferenceLimit}`}</span> : <span className="sr-only">{zh ? "参考图" : "Reference images"}</span>}
         </button>
       ) : null}
       <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
@@ -463,7 +463,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       <div className="ml-auto flex items-center gap-3">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3.5 w-3.5" aria-hidden="true" /><span className="du-num">{estimatedCredits}</span>{zh ? " 积分" : " credits"}</span> : null}
         {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3.5 w-3.5" aria-hidden="true" /><span className="du-num">{imageCredits}</span>{zh ? " 积分" : " credits"}</span> : null}
-        <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <Loader2 key="busy" data-swap className="du-composer-spinner" aria-hidden="true" /> : <ArrowUp key="go" data-swap className="h-4 w-4" aria-hidden="true" />}</button>
+        <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} data-ready={hasInput || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <Loader2 key="busy" data-swap className="du-composer-spinner" aria-hidden="true" /> : <ArrowUp key="go" data-swap className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </div>
     {notice ? <output key={notice} data-presence="fade" aria-live="polite" className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}

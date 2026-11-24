@@ -427,6 +427,7 @@ export function KieModelPicker({
         aria-label={triggerLabel ? `${copy.choose}：${triggerLabel}` : copy.choose}
         aria-expanded={open}
         onClick={() => (open ? close(false) : setOpen(true))}
+        data-model-trigger
         className={`flex items-center gap-2 text-left ${triggerClass}`}
       >
         {placement === "card" ? (

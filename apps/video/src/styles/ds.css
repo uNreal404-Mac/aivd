@@ -9,6 +9,8 @@
      for badges and tags only; running text starts at 12. */
   --ds-fs-2xs: 11px;
   --ds-fs-xs: 12px;
+  /* Control text (pills, chips, compact inputs): Apple's 13pt control size. */
+  --ds-fs-ui: 13px;
   --ds-fs-sm: 14px;
   --ds-fs-md: 16px;
   --ds-fs-lg: 20px;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { Camera, ChevronRight, Clapperboard, CloudRain, Footprints, LayoutGrid, Repeat2, Sparkles, type LucideIcon } from "lucide-react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { HomePricing } from "@/components/hf/home-pricing";
@@ -28,14 +28,15 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   const href = (path: string) => localizedHref(lang, path);
 
   // One calm, Jimeng-style external row of slash skills right below the composer.
-  const slashSkills: { label: string; templateIndex?: number; href?: string }[] = [
-    { label: isChinese ? "创意视频复刻" : "Viral Remake", templateIndex: 0 },
-    { label: isChinese ? "电影雨夜大片" : "Neon Rain Film", templateIndex: 2 },
-    { label: isChinese ? "秋日叙事跟拍" : "Autumn Follow", templateIndex: 1 },
-    { label: isChinese ? "星云视觉特效" : "Cosmic VFX", templateIndex: 4 },
-    { label: isChinese ? "高定慢动作棚拍" : "Couture Slow-Mo", templateIndex: 7 },
-    { label: isChinese ? "导演分镜 Agent" : "Director Agent", href: "/creative-space" },
-    { label: isChinese ? "无限画布" : "Infinite Canvas", href: "/creative-space/canvas" },
+  // Quick actions under the composer, each with its own icon (Pollo-style row).
+  const slashSkills: { label: string; icon: LucideIcon; templateIndex?: number; href?: string }[] = [
+    { label: isChinese ? "创意视频复刻" : "Viral Remake", icon: Repeat2, templateIndex: 0 },
+    { label: isChinese ? "电影雨夜大片" : "Neon Rain Film", icon: CloudRain, templateIndex: 2 },
+    { label: isChinese ? "秋日叙事跟拍" : "Autumn Follow", icon: Footprints, templateIndex: 1 },
+    { label: isChinese ? "星云视觉特效" : "Cosmic VFX", icon: Sparkles, templateIndex: 4 },
+    { label: isChinese ? "高定慢动作棚拍" : "Couture Slow-Mo", icon: Camera, templateIndex: 7 },
+    { label: isChinese ? "导演分镜 Agent" : "Director Agent", icon: Clapperboard, href: "/creative-space" },
+    { label: isChinese ? "无限画布" : "Infinite Canvas", icon: LayoutGrid, href: "/creative-space/canvas" },
   ];
 
   // A template card or skill pill loads its prompt into the generator and scrolls smoothly up.
@@ -60,7 +61,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
             {slashSkills.map((skill) =>
               skill.href ? (
                 <Link key={skill.label} href={href(skill.href)} className="du-hero-skill-pill">
-                  <span className="du-hero-skill-slash" aria-hidden="true">/</span>
+                  <skill.icon className="du-hero-skill-icon" aria-hidden="true" />
                   <span>{skill.label}</span>
                 </Link>
               ) : (
@@ -73,7 +74,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
                     if (tpl) applyTemplate(tpl);
                   }}
                 >
-                  <span className="du-hero-skill-slash" aria-hidden="true">/</span>
+                  <skill.icon className="du-hero-skill-icon" aria-hidden="true" />
                   <span>{skill.label}</span>
                 </button>
               ),

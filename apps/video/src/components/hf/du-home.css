@@ -34,36 +34,169 @@
 
 .du-hero-title {
   max-width: 100%;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   color: white;
-  font-family: var(--du-font-display);
-  font-size: clamp(1.65rem, 2.3vw, 2.15rem);
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  /* Pollo's opening line: one light, quiet sentence, not a shout. */
+  font-size: var(--ds-fs-xl);
+  font-weight: 300;
+  line-height: 1.5;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
-/* Exact Jimeng wide horizontal slate proportion (~1060px wide × ~168px tall ≈ 6.2:1). */
+/* Generator on the homepage: Pollo's composer, laid out at the proportions of
+   ByteDance's Jimeng box (1010 × 158 at a 1440 window, about 6.4 : 1). */
 .du-hero #home-generator {
-  max-width: 1060px;
+  max-width: 1010px;
+}
+
+/* Tabs: a 40px pill holding 64 × 32 tabs; the chosen one sits on a faint
+   fill with a soft inner tint (hooks/use-segment-indicator). */
+.du-hero .du-composer-tabs {
+  --seg-bg: color-mix(in srgb, white 7%, transparent);
+  --seg-shadow: inset 4px 4px 5px color-mix(in srgb, black 8%, transparent), inset 0 -3px 8px color-mix(in srgb, var(--du-accent) 18%, transparent);
+  height: 40px;
+  padding: 3px;
+  border: 1px solid var(--ds-line-1);
+  background: color-mix(in srgb, black 40%, transparent);
+  backdrop-filter: none;
+}
+
+.du-hero .du-composer-tab {
+  display: inline-flex;
+  min-width: 64px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
+}
+
+.du-hero .du-composer-tab-active,
+.du-hero .du-composer-tab-active:hover {
+  color: white;
+  font-weight: 500;
 }
 
 .du-hero .du-composer {
-  margin-top: 22px;
-  padding: 18px 20px 14px;
-  min-height: 168px;
   display: flex;
+  min-height: 158px;
   flex-direction: column;
   justify-content: space-between;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-3xl);
+  background: color-mix(in srgb, black 66%, transparent);
+  box-shadow: 0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent);
+  backdrop-filter: blur(17px);
+  -webkit-backdrop-filter: blur(17px);
+}
+
+.du-hero .du-composer:focus-within {
+  border-color: var(--ds-line-2);
+  box-shadow: 0 -4px 10px color-mix(in srgb, var(--du-accent) 12%, transparent);
 }
 
 .du-hero .du-composer-prompt-row {
-  min-height: 82px;
+  min-height: 84px;
+  gap: 15px;
 }
 
 .du-hero #home-generator-prompt {
-  min-height: 76px;
+  min-height: 72px;
+  padding: 0;
+  font-size: var(--ds-fs-ui);
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.du-hero #home-generator-prompt::placeholder {
+  color: var(--ds-text-4);
+}
+
+/* The reference slot: a small upright card with a plus (Pollo), the count
+   shows once images are attached. */
+.du-hero .du-composer-ref-slot {
+  width: 39px;
+  height: 52px;
+  margin-top: 0;
+  border: 1px solid color-mix(in srgb, white 16%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-3);
+  transform: none;
+}
+
+.du-hero .du-composer-ref-slot:hover {
+  border-color: color-mix(in srgb, white 28%, transparent);
+  background: var(--ds-fill-2);
+  color: white;
+  transform: none;
+}
+
+.du-hero .du-composer-ref-label {
+  font-size: var(--ds-fs-2xs);
+}
+
+
+/* Bottom row: quiet 28px pills, no dividers; the model pill is the one with
+   a fill, the rest read as text until hovered. */
+.du-hero .du-composer-divider {
+  display: none;
+}
+
+.du-hero .du-composer > div:has(> .ml-auto) {
+  gap: 4px;
+  margin-top: 0;
+}
+
+.du-hero .du-composer [data-model-trigger],
+.du-hero .du-composer > div:has(> .ml-auto) button:not(.du-composer-send) {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-ui);
+  font-weight: 400;
+}
+
+.du-hero .du-composer [data-model-trigger] {
+  gap: 6px;
+  background: var(--ds-fill-1);
+  color: white;
+}
+
+.du-hero .du-composer [data-model-trigger]:hover {
+  background: var(--ds-fill-2);
+}
+
+.du-hero .du-composer-cost {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+}
+
+/* Send: a quiet 32px circle until there is something to send. */
+.du-hero .du-composer-send {
+  width: 32px;
+  height: 32px;
+  background: color-mix(in srgb, white 4%, transparent);
+  box-shadow: none;
+  color: var(--ds-text-4);
+}
+
+.du-hero .du-composer-send[data-ready],
+.du-hero .du-composer-send.du-composer-send-busy {
+  background: var(--du-accent);
+  box-shadow: var(--du-glow);
+  color: var(--du-on-accent);
 }
 
 /* One calm, single horizontal row of Jimeng-style slash-skill pills right below the composer. */
@@ -72,10 +205,10 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  max-width: 1060px;
-  margin-top: 18px;
+  max-width: 1010px;
+  margin-top: 12px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -84,32 +217,33 @@
   display: none;
 }
 
+/* Quick actions: 32px pills on a faint fill, icon then label (Pollo). */
 .du-hero-skill-pill {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 15px;
-  border: 1px solid var(--ds-line-1);
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, white 3.5%, transparent);
+  background: var(--ds-fill-1);
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
   font-weight: 400;
   white-space: nowrap;
-  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .du-hero-skill-pill:hover {
-  border-color: var(--ds-line-2);
-  background: color-mix(in srgb, white 7.5%, transparent);
+  background: var(--ds-fill-2);
   color: white;
 }
 
-.du-hero-skill-slash {
-  color: var(--ds-text-4);
-  font-family: var(--du-font-mono, inherit);
+.du-hero-skill-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--ds-text-3);
 }
 
 .du-hero-skill-more {
@@ -129,12 +263,12 @@
 
   .du-hero-title {
     margin-bottom: 16px;
-    font-size: clamp(1.35rem, 6vw, 1.7rem);
+    font-size: var(--ds-fs-lg);
   }
 
   .du-hero .du-composer {
     margin-top: 16px;
-    padding: 14px 14px 12px;
     min-height: 152px;
+    border-radius: var(--ds-r-2xl);
   }
 }
