@@ -425,11 +425,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   return (
     <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")} data-compact-nav={!zh || undefined}>
       <div className="hf-nav-inner">
-        <Link href={href("/")} className="hf-brand">
-          <img src="/logo.svg" alt="" width={28} height={28} className="hf-brand-logo" />
-          <span className="hf-brand-word">aivd.ai</span>
-          <PreviewBadge lang={lang} />
-        </Link>
+        <div className="hf-brand-group">
+          <Link href={href("/")} className="hf-brand">
+            <img src="/logo.svg" alt="" width={26} height={26} className="hf-brand-logo" />
+            <span className="hf-brand-word">aivd.ai</span>
+            <PreviewBadge lang={lang} />
+          </Link>
+          <Link href={href("/ai/video?model=bytedance%2Fseedance-2-5")} className="hf-drops-pill">
+            <span>{zh ? "最新上线" : "New drops"}</span>
+            <span className="hf-drops-count">{zh ? "3 新模型" : "3 New"}</span>
+          </Link>
+        </div>
 
         <div ref={listRef} className="hf-nav-scroll" data-fade-start={fade.start || undefined} data-fade-end={fade.end || undefined}>
           <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>

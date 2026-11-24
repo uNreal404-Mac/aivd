@@ -4,18 +4,21 @@
   width: fit-content;
   margin: 0 auto;
   padding: 3px;
-  border: 1px solid var(--ds-line-2);
+  border: 1px solid color-mix(in srgb, var(--du-accent) 26%, var(--ds-line-2));
   border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
+  background: color-mix(in srgb, var(--du-bg-elev) 82%, transparent);
+  box-shadow: 0 0 28px -8px color-mix(in srgb, var(--du-accent) 34%, transparent);
+  backdrop-filter: blur(16px);
 }
 
 .du-composer-tab {
-  min-width: 68px;
-  padding: 6px 16px;
+  min-width: 72px;
+  padding: 6px 18px;
   border-radius: var(--ds-r-full);
-  color: var(--du-text-muted);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
-  transition: color 160ms ease, background 160ms ease;
+  font-weight: 500;
+  transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .du-composer-tab:hover {
@@ -26,10 +29,12 @@
 .du-composer-tab-active:hover {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--du-accent) 34%, transparent),
-    color-mix(in srgb, var(--du-accent) 12%, transparent)
+    color-mix(in srgb, var(--du-accent) 28%, var(--ds-surface-2)),
+    color-mix(in srgb, var(--du-accent-2) 14%, var(--ds-surface-1))
   );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--du-accent) 45%, white);
   color: white;
+  font-weight: 600;
 }
 
 .du-canvas-entry {

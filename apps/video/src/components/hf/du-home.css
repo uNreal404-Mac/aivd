@@ -1,21 +1,37 @@
-/* Homepage layout. Colours come from theme tokens only. */
+/* Homepage Hero layout — Pollo.ai Jewel-Box Composer + Higgsfield Atmospheric Cyan Studio Glow. */
 
 .du-hero {
   position: relative;
-  padding: 28px 24px 16px;
+  overflow-x: clip;
+  padding: 26px 20px 22px;
 }
 
-/* One soft obsidian-cyan studio spotlight behind the top of the page. */
+/* Dramatic Pollo-style studio aura radiating directly behind the active tab & composer box. */
 .du-hero-glow {
   position: absolute;
-  inset: -80px 0 auto 0;
-  height: 740px;
-  background: radial-gradient(
-    560px 420px at 50% 14%,
-    color-mix(in srgb, var(--du-accent) 13%, transparent) 0%,
-    color-mix(in srgb, var(--du-accent-2) 6%, transparent) 46%,
-    transparent 100%
-  );
+  inset: -60px 0 auto 0;
+  height: 520px;
+  background:
+    radial-gradient(
+      520px 230px at 50% 42%,
+      color-mix(in srgb, var(--du-accent) 26%, transparent) 0%,
+      color-mix(in srgb, var(--du-accent-2) 13%, transparent) 44%,
+      transparent 76%
+    ),
+    radial-gradient(
+      860px 300px at 50% 10%,
+      color-mix(in srgb, var(--du-accent-2) 10%, transparent) 0%,
+      transparent 70%
+    );
+  pointer-events: none;
+}
+
+.du-hero-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, color-mix(in srgb, white 5%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(60% 70% at 50% 35%, black 20%, transparent 100%);
   pointer-events: none;
 }
 
@@ -25,30 +41,36 @@
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
-  max-width: 1280px;
+  max-width: 1120px;
   text-align: center;
 }
 
-/* Give the homepage composer the wider, flatter proportions of the hero layout. */
+/* Pollo.ai jewel-box proportion: focused 820px composer instead of a stretched 1200px void. */
 .du-hero #home-generator {
-  max-width: 1200px;
+  max-width: 820px;
 }
 
 .du-hero .du-composer {
-  margin-top: 14px;
-  padding: 13px 16px 11px;
+  margin-top: 12px;
+  padding: 13px 15px 10px;
+  border-color: color-mix(in srgb, var(--du-accent) 22%, var(--ds-line-2));
+  border-top-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
+  background: color-mix(in srgb, var(--du-bg-elev) 90%, transparent);
+  box-shadow:
+    var(--ds-specular),
+    0 24px 64px -16px color-mix(in srgb, var(--du-bg) 90%, transparent),
+    0 0 60px -18px color-mix(in srgb, var(--du-accent) 34%, transparent);
 }
 
 .du-hero .du-composer-prompt-row {
-  min-height: 58px;
+  min-height: 56px;
 }
 
 .du-hero #home-generator-prompt {
-  min-height: 52px;
+  min-height: 50px;
 }
 
-/* Krea × Pollo: lock quick inspiration pills to ONE sleek horizontal line so
-   the live video showcase enters above the fold on 1440×900 screens. */
+/* Lock quick inspiration pills to ONE sleek horizontal strip inside the focused composer. */
 .du-hero .du-composer-suggestions {
   display: flex;
   flex-wrap: nowrap;
@@ -67,7 +89,7 @@
 .du-hero .du-composer-suggestion {
   flex-shrink: 0;
   min-width: 0;
-  padding: 4px 10px 4px 5px;
+  padding: 3px 10px 3px 4px;
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-full);
   background: var(--ds-fill-1);
@@ -80,12 +102,60 @@
   transform: translateY(-1px);
 }
 
+/* Pollo-style centered quick-tool dock floating cleanly below the composer. */
+.du-hero-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 860px;
+}
+
+.du-hero-dock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-surface) 84%, transparent);
+  box-shadow: var(--ds-specular);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  backdrop-filter: blur(14px);
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 150ms var(--ds-ease-spring);
+}
+
+.du-hero-dock-pill:hover {
+  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
+  background: var(--ds-surface-2);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.du-hero-dock-pill-accent {
+  border-color: color-mix(in srgb, var(--du-accent) 34%, var(--ds-line-2));
+  background: color-mix(in srgb, var(--du-accent) 10%, var(--du-surface));
+  color: var(--du-accent-text);
+}
+
+.du-hero-dock-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.82;
+}
+
 .du-hero-trust {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 6px 16px;
+  gap: 6px 18px;
   margin-top: 12px;
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
@@ -103,6 +173,7 @@
   height: 5px;
   border-radius: var(--ds-r-full);
   background: var(--du-accent);
+  box-shadow: 0 0 8px var(--du-accent);
 }
 
 @media (max-width: 900px) {
@@ -113,20 +184,20 @@
 
 @media (max-width: 600px) {
   .du-hero {
-    padding: 44px 16px 28px;
+    padding: 32px 14px 20px;
   }
 
   .du-hero .du-composer {
-    margin-top: 18px;
-    padding: 14px 14px 12px;
+    margin-top: 14px;
+    padding: 12px 12px 10px;
   }
 
   .du-hero .du-composer-prompt-row {
-    min-height: 72px;
+    min-height: 68px;
   }
 
   .du-hero #home-generator-prompt {
-    min-height: 96px;
+    min-height: 82px;
   }
 }
 
@@ -134,33 +205,33 @@
   max-width: 100%;
   color: white;
   font-family: var(--du-font-display);
-  font-size: clamp(2rem, 3.3vw, 3rem);
-  font-weight: 800;
-  line-height: 1.15;
+  font-size: clamp(1.65rem, 2.4vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.16;
   letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
 .du-hero-sub {
-  max-width: 820px;
-  margin-top: 10px;
-  margin-bottom: 18px;
-  color: var(--du-text-muted);
-  font-size: clamp(0.9375rem, 1.15vw, 1.0625rem);
-  line-height: 1.5;
+  max-width: 720px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.45;
   text-wrap: balance;
 }
 
 @media (max-width: 600px) {
   .du-hero-title {
-    font-size: clamp(1.625rem, 7vw, 2rem);
-    line-height: 1.25;
+    font-size: clamp(1.45rem, 6.2vw, 1.85rem);
+    line-height: 1.22;
   }
 
   .du-hero-sub {
-    margin-top: 16px;
-    margin-bottom: 28px;
-    font-size: 0.9375rem;
+    margin-top: 8px;
+    margin-bottom: 14px;
+    font-size: var(--ds-fs-xs);
   }
 }
 

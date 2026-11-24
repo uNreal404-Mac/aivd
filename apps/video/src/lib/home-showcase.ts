@@ -192,3 +192,199 @@ export function withExamplePrompt(href: string, promptId: string | undefined): s
   if (!promptId) return href;
   return `${href}${href.includes("?") ? "&" : "?"}sample=${encodeURIComponent(promptId)}`;
 }
+
+/** Pollo-style 1-click Viral Templates horizontal strip (real MP4 + curated stills). */
+export const VIRAL_TEMPLATES: {
+  id: string;
+  media: ShowMedia;
+  title: Bi;
+  prompt: Bi;
+  aspect: "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
+  tag: Bi;
+}[] = [
+  {
+    id: "marina-toast",
+    media: MEDIA.marina,
+    title: { zh: "游艇日落香槟大片", en: "Sunset Marina Toast" },
+    prompt: SAMPLE_PROMPTS["/home/hero-marina-loop.mp4"],
+    aspect: "16:9",
+    tag: { zh: "热门", en: "Viral" },
+  },
+  {
+    id: "samurai-katana",
+    media: MEDIA.samuraiCat,
+    title: { zh: "武士猫樱花拔刀", en: "Samurai Cat Katana" },
+    prompt: {
+      zh: "浅景深近景特写，身穿精致甲胄的武士猫站在飘落的樱花雨中缓缓拔刀，微风吹动披风，电影级布光",
+      en: "Shallow DOF close-up of an armored samurai cat in drifting cherry blossoms slowly drawing its katana, cinematic lighting",
+    },
+    aspect: "16:9",
+    tag: { zh: "电影感", en: "Cinema" },
+  },
+  {
+    id: "crimson-transform",
+    media: MEDIA.showcase2,
+    title: { zh: "霓虹裂纹变身特效", en: "Crimson Crack VFX" },
+    prompt: SAMPLE_PROMPTS["/home/hero-showcase-02.mp4"],
+    aspect: "16:9",
+    tag: { zh: "特效", en: "VFX" },
+  },
+  {
+    id: "fried-chicken-ad",
+    media: MEDIA.friedChicken,
+    title: { zh: "高速微距美食广告", en: "Macro Food Commercial" },
+    prompt: {
+      zh: "高速升格微距商业广告镜头，金黄酥脆炸鸡热气升腾，辣椒粉与香料颗粒在慢动作中凌空洒落，诱人高光",
+      en: "High-speed macro commercial shot of crispy fried chicken with rising steam and spices falling in slow motion",
+    },
+    aspect: "16:9",
+    tag: { zh: "商业广告", en: "Commercial" },
+  },
+];
+
+/** Higgsfield Shorts Studio style 5-column vertical presets with PiP reference frame & metrics. */
+export const SHORTS_PRESETS: {
+  id: string;
+  image: string;
+  pip: string;
+  video?: string;
+  title: Bi;
+  views: Bi;
+  likes: string;
+  href: string;
+  prompt: Bi;
+}[] = [
+  {
+    id: "short-couture",
+    image: "/home/example-dress-10-20-poster.webp",
+    video: "/home/example-dress-10-20.mp4",
+    pip: "/home/samples/red-carpet.webp",
+    title: { zh: "高定流光丝绸", en: "Couture Silk Flow" },
+    views: { zh: "18.4万", en: "184K" },
+    likes: "9.2K",
+    href: "/effects",
+    prompt: {
+      zh: "高级时装棚拍慢动作，流光丝绸礼服随风舒展飘动，暗调极简背景，轮廓光勾勒织物质感",
+      en: "High-fashion slow-motion editorial of flowing iridescent silk couture against an obsidian studio backdrop",
+    },
+  },
+  {
+    id: "short-dragon",
+    image: "/home/example-dragon-full-poster.webp",
+    video: "/home/example-dragon-full.mp4",
+    pip: "/home/samples/storm-sea.webp",
+    title: { zh: "苍穹巨龙破云", en: "Sky Dragon Ascent" },
+    views: { zh: "26.1万", en: "261K" },
+    likes: "14.5K",
+    href: "/effects",
+    prompt: {
+      zh: "史诗级航拍环绕镜头，东方巨龙破开金色云海翱翔，鳞片在逆光中折射金属光泽，气势磅礴",
+      en: "Epic aerial orbiting shot of a dragon soaring through golden storm clouds, sunlight catching iridescent scales",
+    },
+  },
+  {
+    id: "short-rain",
+    image: "/home/samples/rain-couple.webp",
+    pip: "/home/samples/boy-and-dog.webp",
+    title: { zh: "雨夜霓虹电影感", en: "Neon Rain Cinema" },
+    views: { zh: "12.9万", en: "129K" },
+    likes: "6.8K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/rain-couple.webp"],
+  },
+  {
+    id: "short-dancer",
+    image: "/home/samples/dancer.webp",
+    pip: "/home/samples/studio-room.webp",
+    title: { zh: "影棚高速悬停舞", en: "Studio Freeze Dance" },
+    views: { zh: "9.6万", en: "96K" },
+    likes: "4.9K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/dancer.webp"],
+  },
+  {
+    id: "short-mech",
+    image: "/home/samples/mech-warrior.webp",
+    pip: "/home/samples/planet-impact.webp",
+    title: { zh: "科幻机甲大片", en: "Sci-Fi Mech Shot" },
+    views: { zh: "15.2万", en: "152K" },
+    likes: "8.1K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/mech-warrior.webp"],
+  },
+  {
+    id: "short-fx-01",
+    image: "/effects/effect-01.webp",
+    pip: "/home/samples/cosmic-bloom.webp",
+    title: { zh: "光粒子爆裂转场", en: "Particle Burst VFX" },
+    views: { zh: "8.7万", en: "87K" },
+    likes: "4.1K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/cosmic-bloom.webp"],
+  },
+  {
+    id: "short-fx-05",
+    image: "/effects/effect-05.webp",
+    pip: "/home/samples/autumn-walk.webp",
+    title: { zh: "胶片柔光人像", en: "35mm Film Portrait" },
+    views: { zh: "11.3万", en: "113K" },
+    likes: "5.7K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/autumn-walk.webp"],
+  },
+  {
+    id: "short-fx-09",
+    image: "/effects/effect-09.webp",
+    pip: "/home/samples/mountain-wind.webp",
+    title: { zh: "360° 环绕运镜", en: "360 Orbit Camera" },
+    views: { zh: "14.0万", en: "140K" },
+    likes: "7.3K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/mountain-wind.webp"],
+  },
+  {
+    id: "short-fx-11",
+    image: "/effects/effect-11.webp",
+    pip: "/home/samples/tomb-light.webp",
+    title: { zh: "丁达尔体积光", en: "Volumetric Godrays" },
+    views: { zh: "7.8万", en: "78K" },
+    likes: "3.6K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/tomb-light.webp"],
+  },
+  {
+    id: "short-fx-14",
+    image: "/effects/effect-14.webp",
+    pip: "/home/samples/dreaming.webp",
+    title: { zh: "超现实梦境慢推", en: "Surreal Dream Push" },
+    views: { zh: "10.4万", en: "104K" },
+    likes: "5.2K",
+    href: "/effects",
+    prompt: SAMPLE_PROMPTS["/home/samples/dreaming.webp"],
+  },
+];
+
+/** Higgsfield bottom elevated AI capabilities pill cloud for instant discovery & SEO. */
+export const AI_CAPABILITY_PILLS: { label: Bi; href: string }[] = [
+  { label: { zh: "Seedance 2.5 视频", en: "Seedance 2.5 Video" }, href: navModelHref("video", "bytedance/seedance-2-5") },
+  { label: { zh: "Veo 3.1 有声短片", en: "Veo 3.1 With Sound" }, href: navModelHref("video", "veo-3.1") },
+  { label: { zh: "Kling 4.0 参考图控图", en: "Kling 4.0 Reference" }, href: navModelHref("video", "kling/v4-reference-to-video") },
+  { label: { zh: "Nano Banana Pro 4K", en: "Nano Banana Pro 4K" }, href: navModelHref("image", "nano-banana-pro") },
+  { label: { zh: "Kling Image 4.0", en: "Kling Image 4.0" }, href: "/ai/image?model=kling-image-4" },
+  { label: { zh: "GPT Image 2.6", en: "GPT Image 2.6" }, href: navModelHref("image", "gpt-image-2-6-sunburst") },
+  { label: { zh: "Eleven v3 智能配音", en: "Eleven v3 Voiceover" }, href: navModelHref("audio", "elevenlabs-v3") },
+  { label: { zh: "Suno v6 AI 作曲", en: "Suno v6 AI Music" }, href: "/audio?voiceMode=music" },
+  { label: { zh: "无限画布 Canvas", en: "Infinite Canvas" }, href: "/creative-space/canvas" },
+  { label: { zh: "节点工作流", en: "Node Workflow" }, href: "/creative-space" },
+  { label: { zh: "AI 导演分镜 Agent", en: "Director Storyboard Agent" }, href: "/creative-space" },
+  { label: { zh: "文字生成视频", en: "Text to Video" }, href: "/ai/video" },
+  { label: { zh: "图片生成视频", en: "Image to Video" }, href: "/ai/video" },
+  { label: { zh: "多参考图 @元素引用", en: "Multi-Ref @Mentions" }, href: "/ai/video" },
+  { label: { zh: "AI 特效库", en: "AI Effects Library" }, href: "/effects" },
+  { label: { zh: "爆款视频模板", en: "Viral Video Templates" }, href: "/templates" },
+  { label: { zh: "图像高清放大", en: "Image Upscale" }, href: "/creative-space/canvas" },
+  { label: { zh: "局部重绘 Inpaint", en: "Inpaint & Edit" }, href: "/creative-space/canvas" },
+  { label: { zh: "智能背景去除", en: "Background Removal" }, href: "/creative-space/canvas" },
+  { label: { zh: "社区精选广场", en: "Community Showcase" }, href: "/gallery" },
+  { label: { zh: "积分与定价方案", en: "Credits & Pricing" }, href: "/pricing" },
+];

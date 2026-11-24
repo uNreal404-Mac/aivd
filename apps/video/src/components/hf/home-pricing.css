@@ -11,11 +11,11 @@
   --hp-muted: var(--ds-text-3);
   position: relative;
   display: flex;
-  max-width: 1180px;
+  max-width: 1360px;
   flex-direction: column;
   gap: 44px;
   margin: 0 auto;
-  padding: 40px 24px 56px;
+  padding: 40px 20px 56px;
   color: var(--ds-text-1);
 }
 

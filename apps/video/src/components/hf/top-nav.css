@@ -20,17 +20,24 @@
 /* Three columns: brand, the links centred in the space between, then
    actions. The side columns take only their own width, so the wide actions
    group no longer pushes "More" up against the search button. */
-/* 56px tall: the 32px controls keep 12px clear above and below. */
+/* 52px tall: Higgsfield-grade razor-sharp single-row chrome. */
 .hf-nav-inner {
   display: grid;
-  height: 56px;
+  height: 52px;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
-  padding: 0 16px;
+  padding: 0 18px;
 }
 
-/* Brand */
+/* Brand + Higgsfield-style New Drops pill */
+.hf-brand-group {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
 .hf-brand {
   display: inline-flex;
   flex: none;
@@ -39,8 +46,8 @@
 }
 
 .hf-brand-logo {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--ds-r-sm);
 }
 
@@ -48,8 +55,49 @@
   color: white;
   font-size: var(--ds-fs-lg);
   font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1;
   white-space: nowrap;
+}
+
+.hf-drops-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 5px 0 10px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.hf-drops-pill:hover {
+  border-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
+  background: var(--ds-fill-2);
+  color: white;
+}
+
+.hf-drops-count {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .hf-drops-pill {
+    display: none;
+  }
 }
 
 /* Link row: scrolls sideways when it does not fit, with faded ends. */
