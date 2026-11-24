@@ -1,56 +1,195 @@
-/* Homepage pricing: plan cards with colour gradients, a usage estimator that
-   picks a plan, a per-model comparison table and credit packs. Theme tokens
-   only. */
+/* High-conversion AI studio pricing page (Mitte × Krea × OpenArt DNA).
+   Seamless dark obsidian canvas, value-first card anatomy (credit box above price),
+   luminous sky-mint Pro crown, champagne-gold Ultimate accent, solid high-contrast
+   CTAs, and attached savings strips.
+   Strictly uses --ds-* scale tokens and --du-* theme variables (no raw px
+   font-size/border-radius, no hardcoded hex/rgba). */
 
 .hp {
-  --hp-card: var(--ds-surface-1);
-  --hp-muted: color-mix(in srgb, white 58%, transparent);
+  --hp-card: color-mix(in srgb, var(--du-surface-2) 26%, var(--du-bg-elev));
+  --hp-card-hover: color-mix(in srgb, var(--du-surface-2) 38%, var(--du-bg-elev));
+  --hp-muted: var(--ds-text-3);
+  position: relative;
   display: flex;
-  max-width: 1320px;
+  max-width: 1180px;
   flex-direction: column;
-  gap: 40px;
+  gap: 44px;
   margin: 0 auto;
-  padding: 24px 20px 120px;
-  color: white;
+  padding: 40px 24px 56px;
+  color: var(--ds-text-1);
 }
 
-/* Title on the left, billing toggle on the right, as on the reference. */
-.hp-head {
-  display: grid;
-  align-items: end;
-  column-gap: var(--ds-space-6);
-  grid-template-columns: minmax(0, 1fr) auto;
-  text-align: left;
+.hp-page {
+  padding-top: 24px;
+  padding-bottom: 48px;
 }
 
-.hp-head > :not(.hp-toggle-wrap) {
-  grid-column: 1;
-  justify-self: start;
+/* Soft studio dome wash on /pricing */
+.hp-page::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 520px;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 64% 58% at 50% 0%,
+    color-mix(in srgb, var(--du-tier-pro-from) 14%, transparent),
+    color-mix(in srgb, var(--du-accent) 5%, transparent) 44%,
+    transparent 74%
+  );
+  z-index: 0;
 }
 
-.hp-head > .hp-toggle-wrap {
+.hp > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================
+   1. Editorial Hero + Annual-First Toggle
+   ========================================================= */
+
+.hp-hero {
   display: flex;
-  max-width: 340px;
+  max-width: 760px;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  grid-column: 2;
-  grid-row: 1 / span 5;
-  align-self: end;
+  align-items: center;
+  margin: 0 auto;
+  text-align: center;
 }
 
-.hp-toggle-wrap .hp-toggle {
-  margin-top: 0;
-}
-
-.hp-assure {
-  color: var(--hp-muted);
+.hp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-tier-pro-from) 12%, var(--du-bg-elev));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-tier-pro-from) 34%, transparent);
+  color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
-  line-height: 1.5;
-  text-align: right;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
-/* Launch offer: shown only while the configured end date is in the future. */
+.hp-eyebrow svg {
+  color: var(--du-accent-text);
+}
+
+.hp-kicker {
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.hp-title {
+  margin-top: 16px;
+  color: var(--ds-text-1);
+  font-size: clamp(var(--ds-fs-3xl), 4vw, var(--ds-fs-4xl));
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.hp-sub {
+  max-width: 640px;
+  margin-top: 12px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+  text-wrap: balance;
+}
+
+.hp-sub-sm {
+  margin-top: 6px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.55;
+}
+
+.hp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.hp-toggle {
+  min-width: 0;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-bg-elev);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+}
+
+.hp-toggle button {
+  display: inline-flex;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.hp-toggle button:hover {
+  color: var(--ds-text-1);
+}
+
+.hp-toggle button[aria-pressed="true"] {
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
+.hp-toggle-save {
+  padding: 2px 9px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-save-bg);
+  color: var(--du-save-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.hp-toggle button[aria-pressed="true"] .hp-toggle-save {
+  background: color-mix(in srgb, var(--du-tier-pro-from) 22%, var(--du-bg));
+  color: var(--du-accent-text);
+}
+
+.hp-packs-jump {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.hp-packs-jump:hover {
+  background: var(--ds-fill-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--ds-text-1);
+}
+
 .hp-offer {
   display: flex;
   align-items: center;
@@ -58,92 +197,1098 @@
   gap: 8px;
   padding: 12px 18px;
   border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--du-accent) 12%, var(--du-bg-elev));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 35%, transparent);
   color: var(--du-accent-text);
   font-size: var(--ds-fs-sm);
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
 }
 
-.hp-kicker {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-sm);
-  font-weight: 800;
-  letter-spacing: 0.12em;
+/* =========================================================
+   2. Flagship 3-Tier Cards (Mitte × Krea × OpenArt × Swagga)
+   ========================================================= */
+
+.hp-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+  padding-top: 34px;
+  margin-top: -12px;
 }
 
-.hp-title {
-  margin-top: 8px;
-  font-size: var(--ds-fs-4xl);
-  font-weight: 900;
+.hp-tier {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+  box-shadow:
+    inset 0 2px 0 var(--ds-line-3),
+    inset 0 0 0 1px var(--ds-line-2),
+    var(--ds-shadow-1);
+  transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+
+.hp-tier:hover {
+  background: var(--hp-card-hover);
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, white 30%, transparent),
+    inset 0 0 0 1px var(--ds-line-3),
+    var(--ds-shadow-2);
+}
+
+/* Pro: Electric sky-to-mint top crown + rich studio top glow (Krea × Mitte).
+   Negative top margin equals crown height (34px) so Pro's crown rises above
+   Basic/Ultimate while all 3 cards' inner headers, boxes, prices & CTAs align
+   to the exact same horizontal eye-line. */
+.hp-tier-featured {
+  margin-top: -34px;
+  background:
+    radial-gradient(
+      ellipse 100% 52% at 50% 0%,
+      var(--du-tier-pro-glow),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--du-surface-2) 34%, var(--du-bg-elev));
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--du-tier-pro-from) 72%, var(--du-accent)),
+    0 22px 48px -18px color-mix(in srgb, var(--du-tier-pro-from) 32%, transparent);
+}
+
+.hp-tier-featured:hover {
+  background:
+    radial-gradient(
+      ellipse 100% 56% at 50% 0%,
+      color-mix(in srgb, var(--du-tier-pro-from) 28%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg-elev));
+  box-shadow:
+    inset 0 0 0 1.5px var(--du-accent),
+    0 26px 56px -16px color-mix(in srgb, var(--du-tier-pro-from) 40%, transparent);
+}
+
+/* Ultimate: Warm champagne-gold top hairline + subtle luxury sheen (OpenArt × Mitte) */
+.hp-tier-ultimate {
+  background:
+    radial-gradient(
+      ellipse 90% 38% at 50% 0%,
+      color-mix(in srgb, var(--du-tier-ultimate) 11%, transparent),
+      transparent 72%
+    ),
+    var(--hp-card);
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--du-tier-ultimate) 75%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--du-tier-ultimate) 28%, var(--ds-line-2)),
+    var(--ds-shadow-1);
+}
+
+.hp-tier-ultimate:hover {
+  box-shadow:
+    inset 0 2px 0 var(--du-tier-ultimate),
+    inset 0 0 0 1px color-mix(in srgb, var(--du-tier-ultimate) 50%, transparent),
+    var(--ds-shadow-2);
+}
+
+/* Pro full-width crown bar (exact 34px matches desktop negative margin) */
+.hp-tier-crown {
+  display: flex;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 16px;
+  background: linear-gradient(90deg, var(--du-tier-pro-from), var(--du-tier-pro-to));
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.hp-tier-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 24px 24px 22px;
+}
+
+.hp-tier-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hp-tier-name {
+  font-size: var(--ds-fs-lg);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.hp-tier-name-basic {
+  color: var(--ds-text-1);
+}
+
+.hp-tier-name-pro {
+  color: var(--du-accent-text);
+}
+
+.hp-tier-name-ultimate {
+  color: var(--du-tier-ultimate);
+}
+
+.hp-discount-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--ds-r-full);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.hp-discount-basic {
+  background: var(--ds-fill-3);
+  color: var(--ds-text-1);
+}
+
+.hp-discount-pro {
+  background: var(--du-badge-hot);
+  color: white;
+}
+
+.hp-discount-ultimate {
+  background: color-mix(in srgb, var(--du-tier-ultimate) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-tier-ultimate) 50%, transparent);
+  color: var(--du-tier-ultimate);
+}
+
+.hp-ultimate-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-tier-ultimate) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-tier-ultimate) 45%, transparent);
+  color: var(--du-tier-ultimate);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.hp-tier-blurb {
+  margin-top: 6px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+/* VALUE-FIRST Credit Box ABOVE Price (Mitte + Swagga killer pattern) */
+.hp-value-box {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-tier-featured .hp-value-box {
+  background: color-mix(in srgb, var(--du-bg) 56%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-tier-pro-from) 30%, transparent);
+}
+
+.hp-credits-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hp-credits {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+}
+
+.hp-credits svg {
+  align-self: center;
+  color: var(--du-accent-text);
+  flex-shrink: 0;
+}
+
+.hp-tier-ultimate .hp-credits svg {
+  color: var(--du-tier-ultimate);
+}
+
+.hp-credits strong {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xl);
+  font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-.hp-sub {
-  max-width: 620px;
-  margin-top: 12px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-md);
-  line-height: 1.6;
-}
-
-.hp-sub-sm {
-  margin-top: 6px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-h3 {
-  font-size: var(--ds-fs-xl);
-  font-weight: 800;
-}
-
-/* Billing toggle */
-.hp-toggle {
-  min-width: 0;
-  border: 0;
-  display: inline-flex;
-  align-items: center;
+.hp-output-list {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
-  margin-top: 26px;
-  padding: 4px;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 10%, transparent);
+  margin-top: 10px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
 }
 
-.hp-toggle button {
-  height: 36px;
-  padding: 0 18px;
-  border-radius: var(--ds-r-full);
+.hp-rate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--ds-line-1);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-rate-label {
+  color: var(--ds-text-4);
+}
+
+.hp-rate-val {
+  color: var(--ds-text-2);
+  font-weight: 700;
+}
+
+.hp-rate-val-save {
+  color: var(--du-save-text);
+}
+
+/* Price Block */
+.hp-price-block {
+  margin-top: 20px;
+}
+
+.hp-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.hp-price-was {
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xl);
+  font-weight: 700;
+  text-decoration-color: var(--ds-text-3);
+  text-decoration-thickness: 2px;
+}
+
+.hp-price-now {
+  color: var(--ds-text-1);
+  font-size: clamp(var(--ds-fs-3xl), 2.9vw, var(--ds-fs-4xl));
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.hp-price-unit {
   color: var(--hp-muted);
   font-size: var(--ds-fs-sm);
   font-weight: 600;
-  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.hp-toggle button[aria-pressed="true"] {
-  background: white;
+.hp-billed-note {
+  min-height: 36px;
+  margin-top: 6px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+/* Solid High-Contrast CTAs + Attached Savings Strip (Mitte DNA) */
+.hp-cta-stack {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
+
+.hp-cta {
+  display: inline-flex;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-radius: var(--ds-r-lg);
+  font-size: var(--ds-fs-sm);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 140ms ease, filter 150ms ease, box-shadow 150ms ease;
+}
+
+.hp-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+/* Crisp Pure White Button on Basic (Mitte / OpenArt / Krea) */
+.hp-cta-white {
+  width: 100%;
+  background: var(--ds-text-1);
   color: var(--du-bg);
+  box-shadow: 0 4px 16px -4px color-mix(in srgb, white 22%, transparent);
 }
 
-.hp-toggle-save {
-  padding: 5px 12px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-accent) 16%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
+.hp-cta-white:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* Luminous Sky-to-Mint Gradient Button on Pro */
+.hp-cta-pro {
+  width: 100%;
+  background: linear-gradient(95deg, var(--du-tier-pro-from), var(--du-tier-pro-to));
+  color: var(--du-on-accent);
+  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--du-tier-pro-from) 55%, transparent);
+}
+
+.hp-cta-pro:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+/* Warm Champagne Gold Button on Ultimate (OpenArt Wonder / Seedance Plus) */
+.hp-cta-ultimate {
+  width: 100%;
+  background: var(--du-tier-ultimate);
+  color: var(--du-on-accent);
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--du-tier-ultimate) 45%, transparent);
+}
+
+.hp-cta-ultimate:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.hp-cta-block {
+  width: 100%;
+}
+
+.hp-cta-ghost {
+  height: 42px;
+  background: var(--ds-fill-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--ds-text-1);
+}
+
+.hp-cta-ghost:hover {
+  background: var(--ds-fill-3);
+}
+
+.hp-save-strip {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: var(--ds-r-sm);
+  background: color-mix(in srgb, var(--du-bg) 48%, transparent);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.hp-save-strip-hi {
+  background: var(--du-save-bg);
+  color: var(--du-save-text);
+}
+
+/* Feature Checklist with Clear Upgrade Contrast */
+.hp-includes {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 18px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ds-line-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-includes li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ds-line-1);
+  line-height: 1.45;
+}
+
+.hp-includes li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.hp-includes svg {
+  color: var(--du-accent-text);
+  flex-shrink: 0;
+}
+
+.hp-tier-ultimate .hp-includes svg {
+  color: var(--du-tier-ultimate);
+}
+
+.hp-inc-hi {
+  color: var(--ds-text-1);
+  font-weight: 700;
+}
+
+.hp-inc-muted {
+  color: var(--ds-text-4);
+}
+
+.hp-inc-muted svg {
+  color: var(--ds-text-4);
+}
+
+/* Trust Bar */
+.hp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 28px;
+  margin-top: -20px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hp-trust svg {
+  color: var(--du-save-text);
+}
+
+.hp-error {
+  padding: 12px 16px;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  text-align: center;
+}
+
+.hp-home-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: var(--ds-r-xl);
+  background: var(--hp-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-home-more .hp-sub-sm {
+  margin-top: 0;
+}
+
+/* =========================================================
+   3. Pay-As-You-Go Credit Packs
+   ========================================================= */
+
+.hp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hp-section-kicker {
   color: var(--du-accent-text);
   font-size: var(--ds-fs-xs);
   font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hp-h3 {
+  margin-top: 4px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.hp-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hp-free-link {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.hp-free-link svg:first-child {
+  color: var(--du-accent-text);
+}
+
+.hp-free-link:hover {
+  background: var(--ds-fill-3);
+}
+
+.hp-packs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.hp-pack {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: var(--ds-r-xl);
+  background: var(--hp-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+  color: var(--ds-text-1);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.hp-pack:hover:not(:disabled) {
+  background: var(--hp-card-hover);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+}
+
+.hp-pack:disabled {
+  cursor: not-allowed;
+}
+
+.hp-pack-popular {
+  background:
+    radial-gradient(
+      ellipse 90% 45% at 50% 0%,
+      color-mix(in srgb, var(--du-tier-pro-from) 14%, transparent),
+      transparent 74%
+    ),
+    var(--hp-card);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--du-tier-pro-from) 55%, var(--du-accent));
+}
+
+.hp-pack-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hp-pack-name {
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+}
+
+.hp-pack-badge {
+  padding: 2px 9px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-badge-hot);
+  color: white;
+  font-size: var(--ds-fs-2xs);
+  font-weight: 800;
+}
+
+.hp-pack-price {
+  margin-top: 14px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xl);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hp-pack-credits {
+  margin-top: 8px;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+}
+
+.hp-pack-makes {
+  margin-top: 4px;
+  margin-bottom: 16px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+.hp-pack-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--ds-line-1);
+}
+
+.hp-pack-unit {
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-pack-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+  font-size: var(--ds-fs-xs);
+  font-weight: 800;
+}
+
+.hp-pack-popular .hp-pack-cta {
+  background: linear-gradient(95deg, var(--du-tier-pro-from), var(--du-tier-pro-to));
+  color: var(--du-on-accent);
+}
+
+.hp-pack:disabled .hp-pack-cta {
+  opacity: 0.72;
+}
+
+/* =========================================================
+   4. Transparent Model Credit Matrix & Folded Estimator
+   ========================================================= */
+
+.hp-compare {
+  padding: 28px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--hp-card);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-compare-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hp-filter-bar {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-bg);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-filter-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.hp-filter-btn:hover {
+  color: var(--ds-text-1);
+}
+
+.hp-filter-btn[aria-selected="true"] {
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
+.hp-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.hp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hp-table th,
+.hp-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--ds-line-1);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.hp-table thead th {
+  padding: 12px 12px 14px;
+  border-bottom: 1px solid var(--ds-line-2);
+  background: color-mix(in srgb, var(--du-bg) 42%, var(--du-bg-elev));
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+  vertical-align: bottom;
+}
+
+.hp-table thead th:not(:first-child),
+.hp-table tbody td {
   text-align: right;
 }
 
-/* Plan cards */
-/* The three cards share two grid rows (top, body) through subgrid, so each
-   card's top block is as tall as the tallest one. Inside it the button is
-   pushed to the bottom, which keeps the three buttons level in both the
-   monthly and the yearly view. */
+.hp-th-name,
+.hp-th-price {
+  display: block;
+}
+
+.hp-th-price {
+  margin-top: 2px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+}
+
+.hp-col-pick {
+  background: color-mix(in srgb, var(--du-tier-pro-from) 8%, transparent);
+}
+
+.hp-table thead th.hp-col-pick {
+  background: color-mix(in srgb, var(--du-tier-pro-from) 16%, var(--du-bg-elev));
+  color: var(--du-accent-text);
+}
+
+.hp-table-group th {
+  padding: 18px 12px 8px;
+  border-bottom: 1px solid var(--ds-line-1);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.hp-table-group th svg {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--du-accent-text);
+  vertical-align: -2px;
+}
+
+.hp-row-name {
+  display: block;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.hp-row-spec {
+  display: block;
+  margin-top: 2px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
+}
+
+.hp-col-free {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+}
+
+.hp-cell-count {
+  display: block;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 700;
+}
+
+.hp-col-pick .hp-cell-count {
+  color: var(--du-accent-text);
+}
+
+.hp-cell-price {
+  display: block;
+  margin-top: 2px;
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-more {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 6px;
+  padding: 0 18px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.hp-more:hover {
+  background: var(--ds-fill-3);
+}
+
+/* Folded Estimator */
+.hp-est-fold {
+  margin-top: 4px;
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, var(--du-bg) 50%, transparent);
+  box-shadow: inset 0 0 0 1px var(--ds-line-1);
+}
+
+.hp-est-fold > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.hp-est-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hp-est-fold > summary svg:first-child {
+  color: var(--du-accent-text);
+}
+
+.hp-est-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  transition: transform 160ms ease;
+}
+
+.hp-est-fold[open] .hp-est-chevron {
+  transform: rotate(180deg);
+}
+
+.hp-estimator {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 28px;
+  padding: 4px 20px 22px;
+  align-items: center;
+}
+
+.hp-est-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-lg);
+  font-weight: 700;
+}
+
+.hp-est-left {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hp-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hp-slider-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--ds-fs-sm);
+}
+
+.hp-slider-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ds-text-2);
+  font-weight: 600;
+}
+
+.hp-slider-label svg {
+  color: var(--du-accent-text);
+}
+
+.hp-slider-label select {
+  padding: 4px 10px;
+  border-radius: var(--ds-r-sm);
+  background: var(--du-bg-elev);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-slider-value {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+}
+
+.hp-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--du-accent);
+  cursor: pointer;
+}
+
+.hp-slider-note {
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-retakes {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+  cursor: pointer;
+}
+
+.hp-retakes input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--du-accent);
+}
+
+.hp-est-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev);
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+}
+
+.hp-need-label {
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+.hp-need {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hp-need span {
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.hp-dots {
+  display: grid;
+  grid-template-columns: repeat(32, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.hp-dots span {
+  height: 6px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+}
+
+.hp-dots span[data-on] {
+  background: var(--du-accent);
+}
+
+.hp-fit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+}
+
+.hp-overflow {
+  color: var(--hp-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+/* =========================================================
+   5. Closing Studio Banner (after FAQ)
+   ========================================================= */
+
+.hp-closing-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+.hp-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 32px;
+  border-radius: var(--ds-r-2xl);
+  background:
+    radial-gradient(
+      ellipse 70% 110% at 100% 50%,
+      color-mix(in srgb, var(--du-tier-pro-from) 16%, transparent),
+      transparent 70%
+    ),
+    var(--hp-card);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-tier-pro-from) 28%, var(--ds-line-2));
+}
+
+.hp-bottom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hp-bottom-actions .hp-cta {
+  width: auto;
+  min-width: 156px;
+}
+
+/* =========================================================
+   6. Shared Legacy Step-Card Compatibility
+      Used by creative-space-home.tsx & section-pages.tsx
+   ========================================================= */
+
 .hp-plans {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -167,1091 +1312,186 @@
   border-radius: var(--ds-r-3xl);
 }
 
-/* The lines under the price: one or two depending on the period and the
-   first-month offer. A fixed minimum keeps every card's button on one line. */
-.hp-billing-area {
-  min-height: 52px;
-  margin-bottom: 22px;
-}
-
-.hp-plan-top .hp-cta {
-  margin-top: auto;
-}
-
 .hp-plan-basic .hp-plan-top {
-  background: linear-gradient(160deg, color-mix(in srgb, white 14%, var(--du-bg-elev)), var(--du-bg-elev));
+  background: linear-gradient(160deg, color-mix(in srgb, white 12%, var(--du-bg-elev)), var(--du-bg-elev));
 }
 
-/* Most popular: a flat dark card with one accent edge, and the only accented
-   card on the page. */
 .hp-plan-pro .hp-plan-top {
   background: var(--du-bg-elev);
-  box-shadow: inset 0 0 0 2px var(--du-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
 }
 
-/* Top tier: near-black with a plain hairline, so only Pro carries the accent. */
 .hp-plan-ultimate .hp-plan-top {
   background: color-mix(in srgb, var(--du-surface-2) 40%, var(--du-bg));
   box-shadow: inset 0 0 0 1px var(--ds-line-3);
 }
-
 
 .hp-plan-name {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  font-size: var(--ds-fs-4xl);
-  font-weight: 900;
+  font-size: var(--ds-fs-3xl);
+  font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.hp-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-4);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.hp-plan-pro .hp-pill {
-  background: color-mix(in srgb, var(--du-accent) 18%, transparent);
-  color: var(--du-accent-text);
-}
-
-.hp-pill-pick {
-  background: var(--du-bg);
-  color: var(--du-accent-text);
-}
-
-.hp-plan-pro .hp-pill-pick {
-  background: var(--du-bg);
+  line-height: 1.1;
 }
 
 .hp-plan-blurb {
   margin-top: 12px;
-  font-size: var(--ds-fs-md);
-  opacity: 0.75;
-}
-
-.hp-price {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 28px;
-  white-space: nowrap;
-}
-
-/* The struck-through regular price: readable on the dark cards. */
-.hp-price-was {
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-xl);
-  font-weight: 800;
-  text-decoration-color: var(--ds-text-3);
-  text-decoration-thickness: 2px;
-}
-
-.hp-price-now {
-  /* A little smaller on narrow laptops so "/月" stays on the same line. */
-  font-size: clamp(var(--ds-fs-3xl), 2.9vw, var(--ds-fs-4xl));
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.hp-price-unit {
-  font-size: var(--ds-fs-md);
-  opacity: 0.75;
-}
-
-.hp-billing {
-  margin-top: 6px;
-  font-size: var(--ds-fs-sm);
-  opacity: 0.7;
-}
-
-.hp-cta {
-  display: inline-flex;
-  height: 50px;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 22px;
-  border-radius: var(--ds-r-lg);
-  background: white;
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-bg) 15%, transparent);
-  color: var(--du-bg);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  transition: filter 150ms ease;
-}
-
-.hp-cta:hover {
-  filter: brightness(0.92);
-}
-
-.hp-cta-save {
-  padding: 2px 8px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-accent-hover);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.hp-cta-accent {
-  width: 100%;
-  background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
-  color: var(--du-on-accent);
-}
-
-.hp-cta-block {
-  width: 100%;
-}
-
-/* Secondary buttons: an outline, so Pro's solid accent button is the one that stands out. */
-.hp-cta-outline {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ds-line-3);
-  color: var(--du-text);
-}
-
-.hp-cta-outline:hover {
-  background: var(--ds-fill-2);
-  filter: none;
-}
-
-.hp-cta-ghost {
-  height: 44px;
-  margin-top: 0;
-  padding: 0 20px;
-  background: var(--ds-fill-2);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
-  color: white;
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-plan-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px 28px 4px;
-}
-
-.hp-credits {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-md);
-}
-
-.hp-credits strong {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-lg);
-}
-
-.hp-approx {
-  margin-top: 6px;
-  padding-left: 24px;
   color: var(--ds-text-2);
   font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.hp-tree {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-left: 7px;
-  padding-left: 18px;
-  border-left: 2px solid var(--ds-line-3);
-  font-size: var(--ds-fs-md);
-}
-
-.hp-tree strong {
-  color: white;
-}
-
-.hp-tree span {
-  margin-left: 8px;
-  color: var(--hp-muted);
-}
-
-.hp-includes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid var(--ds-line-2);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-includes li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hp-includes svg {
-  color: var(--du-accent-text);
-}
-
-/* Estimator */
-.hp-estimator {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  gap: 24px;
-  padding: 28px;
-  border-radius: var(--ds-r-3xl);
-  background: var(--hp-card);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
-}
-
-.hp-est-left {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.hp-slider {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px;
-  border-radius: var(--ds-r-xl);
-  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
-}
-
-.hp-slider-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.hp-slider-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-}
-
-.hp-slider-label select {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-2);
-  color: white;
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-slider-label option {
-  background: var(--du-bg-elev);
-}
-
-.hp-slider-value {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-}
-
-.hp-slider input[type="range"] {
-  width: 100%;
-  accent-color: var(--du-accent);
-}
-
-.hp-slider-note {
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-}
-
-.hp-est-right {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: 28px;
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--du-accent) 22%, transparent), transparent 70%),
-    var(--du-bg-elev);
-}
-
-.hp-need-label {
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-need {
-  font-size: var(--ds-fs-4xl);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.hp-need span {
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-md);
-  font-weight: 500;
-}
-
-.hp-dots {
-  display: grid;
-  grid-template-columns: repeat(20, 1fr);
-  gap: 4px;
-  margin: 6px 0 4px;
-}
-
-.hp-dots span {
-  aspect-ratio: 1;
-  border-radius: var(--ds-r-xs);
-  background: var(--ds-fill-3);
-}
-
-.hp-dots span[data-on] {
-  background: var(--du-accent);
-}
-
-.hp-fit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-}
-
-.hp-overflow {
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-}
-
-/* Comparison table */
-.hp-compare {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 28px;
-  border-radius: var(--ds-r-3xl);
-  background: var(--hp-card);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
-}
-
-.hp-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--ds-fs-sm);
-}
-
-.hp-table thead th {
-  padding: 0 12px 14px;
-  color: white;
-  font-size: var(--ds-fs-lg);
-  font-weight: 800;
-  text-align: left;
-}
-
-.hp-table th[scope="row"] {
-  padding: 14px 12px;
-  text-align: left;
-}
-
-.hp-table td {
-  padding: 14px 12px;
-  color: var(--ds-text-2);
-}
-
-.hp-table tbody tr:not(.hp-table-group) {
-  border-top: 1px solid var(--ds-line-1);
-}
-
-.hp-table-group th {
-  padding: 22px 12px 8px;
-  color: white;
-  font-size: var(--ds-fs-lg);
-  font-weight: 800;
-  text-align: left;
-}
-
-.hp-table-group th svg {
-  display: inline;
-  margin-right: 8px;
-  color: var(--du-accent-text);
-  vertical-align: -2px;
-}
-
-.hp-row-name {
-  display: block;
-  color: white;
-  font-weight: 600;
-}
-
-.hp-row-spec {
-  display: block;
-  margin-top: 2px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-  font-weight: 400;
-}
-
-.hp-col-pick {
-  background: color-mix(in srgb, var(--du-accent) 8%, transparent);
-  color: var(--du-accent-text) !important;
-}
-
-.hp-more {
-  display: inline-flex;
-  align-self: center;
-  align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-fill-1);
-  color: white;
-  font-size: var(--ds-fs-sm);
-}
-
-/* Credit packs */
-.hp-packs {
-  scroll-margin-top: 88px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 22px 28px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-}
-
-.hp-packs-title {
-  font-size: var(--ds-fs-xl);
-  font-weight: 800;
-}
-
-.hp-packs-list {
-  display: flex;
-  gap: 10px;
-}
-
-.hp-pack {
-  display: flex;
-  flex-direction: column;
-  padding: 10px 18px;
-  border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 8%, transparent);
-  transition: box-shadow 150ms ease;
-}
-
-.hp-pack:hover {
-  box-shadow: inset 0 0 0 1px var(--du-accent);
-}
-
-.hp-pack strong {
-  font-size: var(--ds-fs-lg);
-}
-
-.hp-pack span {
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-}
-
-@media (max-width: 1023px) {
-  .hp-plans,
-  .hp-estimator {
-    grid-template-columns: 1fr;
-  }
-
-  /* One column: cards stack, so they need no shared rows. */
-  .hp-plans {
-    row-gap: 24px;
-  }
-
-  .hp-plan {
-    display: flex;
-    flex-direction: column;
-    grid-row: auto;
-  }
-}
-
-/* Pricing page mode */
-/* Homepage: under the plans, one line and the way to the full pricing page. */
-.hp-home-more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
-  padding: 18px 28px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-}
-
-.hp-home-more .hp-sub-sm {
-  max-width: 68ch;
-  margin-top: 0;
   line-height: 1.6;
 }
 
-.hp-home-more .hp-cta {
-  flex-shrink: 0;
+/* =========================================================
+   7. Pricing FAQ Harmonization (.pr-page--under-pricing)
+   ========================================================= */
+
+.pr-page.pr-page--under-pricing {
+  padding: 8px 24px 56px;
 }
 
-.hp-page {
-  padding-top: 56px;
-  padding-bottom: 32px;
+.pr-page--under-pricing .pr-shell {
+  max-width: 920px;
 }
 
-.hp-note {
-  margin-top: 10px;
-  padding: 4px 12px;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-2);
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-sm);
+.pr-page--under-pricing .pr-section {
+  margin-top: 0;
 }
 
-.hp-error {
-  align-self: center;
-  padding: 10px 16px;
-  border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, var(--du-accent) 12%, transparent);
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-sm);
+.pr-page--under-pricing .pr-faq-head {
+  margin-bottom: 28px;
+  text-align: center;
 }
 
-button.hp-cta:disabled,
-button.hp-pack:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-button.hp-pack {
-  text-align: left;
-}
-
-
-.hp-billing-strong {
-  font-weight: 700;
-  opacity: 1;
-}
-
-.hp-billing-save {
-  color: var(--du-accent-text);
-  font-weight: 600;
-  opacity: 1;
-}
-
-
-.hp-credits {
-  flex-wrap: wrap;
-}
-
-.hp-unit-price {
-  margin-left: auto;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-}
-
-.hp-upfront {
-  margin-top: -8px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-}
-
-.hp-tree span {
-  display: block;
-}
-
-/* Under the cards: what stands behind every plan, in one quiet line. */
-.hp-trust {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px 20px;
-  margin-top: -16px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.hp-trust li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hp-trust svg {
-  width: 14px;
-  height: 14px;
-  color: var(--du-accent-text);
-}
-
-/* For people not ready to subscribe: the free credits, or a pack. */
-.hp-split {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: -12px;
-}
-
-.hp-split-card {
-  display: grid;
-  align-items: center;
-  gap: 16px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  padding: 20px 24px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-  box-shadow: inset 0 0 0 1px var(--ds-line-2);
-}
-
-.hp-split-icon {
-  width: 22px;
-  height: 22px;
-  color: var(--du-accent-text);
-}
-
-.hp-split-title {
-  font-size: var(--ds-fs-md);
+.pr-page--under-pricing .pr-section__title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xl);
   font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-.hp-split-card .hp-sub-sm {
-  margin-top: 4px;
-}
-
-.hp-split-card .hp-cta {
-  height: 44px;
-  margin-top: 0;
-  padding: 0 18px;
-  font-size: var(--ds-fs-sm);
-  white-space: nowrap;
-}
-
-/* The closing call to action */
-.hp-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
-  padding: 22px 28px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-}
-
-.hp-bottom .hp-cta {
-  width: auto;
-  flex-shrink: 0;
-  margin-top: 0;
-  padding: 0 22px;
-}
-
-.hp-bottom {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 35%, transparent);
-}
-
-.hp-bottom-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-
-
-/* Why aivd.ai: a four-row table, plain HTML so it is in the server render. */
-.hp-why {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px 28px;
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-}
-
-.hp-why-scroll {
-  overflow-x: auto;
-}
-
-.hp-why-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--ds-fs-sm);
-  text-align: left;
-}
-
-.hp-why-table th,
-.hp-why-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--ds-line-2);
-  vertical-align: top;
-}
-
-.hp-why-table tbody tr:last-child > * {
-  border-bottom: 0;
-}
-
-.hp-why-table thead th {
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.hp-why-table tbody th {
-  width: 22%;
-  color: var(--ds-text-2);
-  font-weight: 600;
-}
-
-.hp-why-table td {
-  color: var(--ds-text-2);
-}
-
-.hp-why-table .hp-why-us {
-  width: 39%;
-  background: color-mix(in srgb, var(--du-accent) 8%, transparent);
-  color: var(--du-text);
-  font-weight: 700;
-}
-
-.hp-why-table thead .hp-why-us {
-  color: var(--du-accent-text);
-}
-
-.hp-why-table td.hp-why-us svg {
-  display: inline-block;
-  margin: -2px 8px 0 0;
-  color: var(--du-accent-text);
-  vertical-align: middle;
-}
-
-.hp-why-note {
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.6;
-}
-
-/* The estimator is folded by default; its summary is a full-width row. */
-.hp-est-fold {
-  border-radius: var(--ds-r-2xl);
-  background: var(--hp-card);
-}
-
-.hp-est-fold > summary {
-  display: flex;
-  min-height: 56px;
-  align-items: center;
-  gap: 10px;
-  padding: 0 24px;
-  color: var(--du-text);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  cursor: pointer;
-  list-style: none;
-}
-
-.hp-est-fold > summary::-webkit-details-marker {
-  display: none;
-}
-
-.hp-est-fold > summary svg:first-child {
-  color: var(--du-accent-text);
-}
-
-.hp-est-chevron {
-  flex-shrink: 0;
-  margin-left: auto;
-  transition: transform 150ms ease;
-}
-
-.hp-est-fold[open] .hp-est-chevron {
-  transform: rotate(180deg);
-}
-
-.hp-est-fold .hp-estimator {
-  padding-top: 4px;
-  background: transparent;
-  box-shadow: none;
-}
-
-.hp-retakes {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 10px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-sm);
-  cursor: pointer;
-}
-
-.hp-retakes input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--du-accent);
-}
-
-/* Comparison table: the plan row stays in view, and narrow screens scroll the
-   table inside its card instead of widening the page. */
-.hp-table-scroll {
-  max-width: 100%;
-}
-
-.hp-table thead th {
-  position: sticky;
-  z-index: 1;
-  top: var(--hp-sticky-top, 64px);
-  padding-top: 12px;
-  background: var(--hp-card);
-  vertical-align: bottom;
-}
-
-.hp-th-name,
-.hp-th-price {
-  display: block;
-}
-
-.hp-table thead th[scope="col"] {
-  padding-bottom: 14px;
-  line-height: 1.2;
-}
-
-.hp-th-price {
-  margin-top: 2px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.hp-th-cta {
-  display: inline-flex;
-  min-height: 36px;
-  align-items: center;
+.pr-page--under-pricing .pr-section__sub {
   margin-top: 8px;
-  padding: 0 14px;
-  border-radius: var(--ds-r-lg);
-  background: white;
-  color: var(--du-bg);
+  margin-bottom: 0;
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  white-space: nowrap;
 }
 
-.hp-th-cta:not(.hp-th-cta-pick) {
-  background: transparent;
+.pr-page--under-pricing .pr-faq {
+  gap: 10px;
+}
+
+.pr-page--under-pricing .pr-faq details {
+  padding: 2px 22px;
+  border: 0;
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, var(--du-surface-2) 20%, var(--du-bg-elev));
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+  transition: box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.pr-page--under-pricing .pr-faq details[open] {
+  background: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
   box-shadow: inset 0 0 0 1px var(--ds-line-3);
-  color: var(--du-text);
 }
 
-.hp-th-cta-pick {
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-}
-
-.hp-th-cta:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.hp-cell-count {
-  display: block;
-  color: white;
+.pr-page--under-pricing .pr-faq summary {
+  padding: 18px 0;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
   font-weight: 600;
 }
 
-.hp-col-pick .hp-cell-count {
-  color: inherit;
-}
-
-.hp-cell-price {
-  display: block;
-  margin-top: 2px;
-  color: var(--hp-muted);
-  font-size: var(--ds-fs-xs);
-}
-
-/* Credit packs: four across on wide screens, wrapping below. */
-.hp-packs-list {
-  flex-wrap: wrap;
-}
-
-.hp-pack {
-  min-width: 190px;
-  flex: 1 1 190px;
-  gap: 2px;
-  padding: 14px 18px;
-}
-
-.hp-pack strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hp-pack em {
-  padding: 1px 8px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-style: normal;
-  font-weight: 700;
-}
-
-.hp-pack .hp-pack-credits {
-  color: white;
+.pr-page--under-pricing .pr-faq p {
+  padding-bottom: 4px;
+  color: var(--ds-text-2);
   font-size: var(--ds-fs-sm);
-  font-weight: 600;
+  line-height: 1.7;
 }
+
+/* =========================================================
+   8. Responsive Breakpoints (Tablet & 390px Mobile)
+   ========================================================= */
 
 @media (max-width: 1023px) {
-  .hp-split {
-    grid-template-columns: 1fr;
+  .hp-tier-grid,
+  .hp-plans {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+    padding-top: 0;
+    align-items: stretch;
+  }
+
+  .hp-tier-featured {
+    margin-top: 0;
+  }
+
+  .hp-packs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hp-estimator {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/* Phones: one column, the title on full-width lines, the toggle under it. */
 @media (max-width: 767px) {
-  .hp-head {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 0;
+  .hp {
+    gap: 36px;
+    padding: 32px 16px 56px;
   }
 
-  .hp-head > .hp-toggle-wrap {
-    max-width: none;
-    align-items: flex-start;
-    grid-column: 1;
-    grid-row: auto;
-    margin-top: 22px;
-  }
-
-  .hp-assure {
-    text-align: left;
-  }
-
-  /* Two lines on a 390px phone (34px took three). */
   .hp-title {
     font-size: var(--ds-fs-2xl);
     line-height: 1.15;
-    text-wrap: balance;
   }
 
   .hp-toggle button {
     height: 44px;
+    padding: 0 14px;
   }
 
-  .hp-compare,
-  .hp-packs,
-  .hp-why,
-  .hp-bottom {
-    padding: 20px 16px;
-  }
-
-  .hp-split-card {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: 18px 16px;
-  }
-
-  .hp-split-card .hp-cta {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  /* Phones: each row's label on its own line, the two answers side by side under it. */
-  .hp-why-table,
-  .hp-why-table thead,
-  .hp-why-table tbody {
-    display: block;
-  }
-
-  .hp-why-table tr {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-bottom: 1px solid var(--ds-line-2);
-  }
-
-  .hp-why-table tbody tr:last-child {
-    border-bottom: 0;
-  }
-
-  .hp-why-table thead td {
-    display: none;
-  }
-
-  .hp-why-table th,
-  .hp-why-table td {
-    padding: 10px;
-    border-bottom: 0;
-  }
-
-  .hp-why-table tbody th {
-    grid-column: 1 / -1;
-    width: auto;
-    padding: 12px 10px 2px;
-  }
-
-  .hp-why-table .hp-why-us {
-    width: auto;
-  }
-
-  .hp-est-fold > summary {
-    padding: 12px 16px;
-  }
-
-  .hp-table {
-    min-width: 560px;
-  }
-
-  .hp-table thead th {
-    position: static;
-  }
-
-  .hp-th-cta {
-    min-height: 44px;
-  }
-
-  /* 44px targets, and 16px text in the pickers so iOS does not zoom the page. */
+  .hp-packs-jump,
+  .hp-free-link,
   .hp-more {
     height: 44px;
   }
 
-  .hp-slider-label select {
-    min-height: 44px;
-    font-size: var(--ds-fs-md);
-  }
-
-  .hp-bottom .hp-cta,
-  .hp-bottom-actions {
-    width: 100%;
-  }
-}
-
-/* The FAQ under the pricing block shares its width and sits close to it. */
-.pr-page.pr-page--under-pricing {
-  padding: 24px 20px 104px;
-}
-
-.pr-page--under-pricing .pr-shell {
-  max-width: 1280px;
-}
-
-/* Phones: the most popular plan comes first, and the table fits all three
-   plans side by side (the free column and the header buttons go). */
-@media (max-width: 767px) {
   .hp-plan-popular {
     order: -1;
+  }
+
+  .hp-tier-inner {
+    padding: 20px 18px;
+  }
+
+  .hp-trust {
+    margin-top: -14px;
+    justify-content: flex-start;
+    gap: 10px 18px;
+  }
+
+  .hp-packs-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hp-compare {
+    padding: 20px 14px;
+  }
+
+  .hp-filter-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .hp-filter-btn {
+    flex: 1 1 0;
+    height: 40px;
+    padding: 0 8px;
   }
 
   .hp-table {
@@ -1259,45 +1499,29 @@ button.hp-pack {
     table-layout: fixed;
   }
 
-  .hp-table .hp-col-free,
-  .hp-th-cta {
+  .hp-table .hp-col-free {
     display: none;
   }
 
-  /* A fixed-layout table takes its column widths from the header row. */
-  .hp-table thead th:first-child {
-    width: 34%;
+  .hp-table thead th {
+    padding: 10px 6px;
+    font-size: var(--ds-fs-xs);
   }
 
-  /* The plan prices are on the cards above; here the columns need the room. */
+  .hp-table thead th:first-child {
+    width: 40%;
+  }
+
   .hp-th-price {
     display: none;
-  }
-
-  .hp-compare {
-    padding-right: 10px;
-    padding-left: 10px;
-  }
-
-  .hp-table td {
-    font-size: var(--ds-fs-sm);
-  }
-
-  .hp-cell-price {
-    white-space: nowrap;
   }
 
   .hp-table th,
   .hp-table td {
-    padding-right: 4px;
-    padding-left: 4px;
+    padding: 12px 6px;
   }
 
-  .hp-table thead th {
-    font-size: var(--ds-fs-md);
-  }
-
-  .hp-th-price {
+  .hp-row-name {
     font-size: var(--ds-fs-xs);
   }
 
@@ -1305,17 +1529,57 @@ button.hp-pack {
     overflow-wrap: anywhere;
   }
 
-  .pr-page.pr-page--under-pricing {
-    padding: 16px 16px 88px;
+  .hp-cell-count {
+    font-size: var(--ds-fs-sm);
+  }
+
+  .hp-cell-price {
+    white-space: nowrap;
+  }
+
+  .hp-est-fold > summary {
+    padding: 12px 16px;
   }
 
   .hp-estimator {
-    padding: 20px 16px;
+    padding: 4px 14px 18px;
+  }
+
+  .hp-slider-label select {
+    min-height: 44px;
+    font-size: var(--ds-fs-md);
+  }
+
+  .hp-closing-wrap {
+    padding: 0 16px 40px;
+  }
+
+  .hp-bottom {
+    padding: 22px 18px;
+  }
+
+  .hp-bottom-actions,
+  .hp-bottom-actions .hp-cta {
+    width: 100%;
+  }
+
+  .pr-page.pr-page--under-pricing {
+    padding: 8px 16px 56px;
+  }
+
+  .pr-page--under-pricing .pr-faq details {
+    padding: 2px 16px;
   }
 }
 
-/* Small phones: a per-clip price may wrap after the currency rather than
-   spill into the next column. */
+@media (max-width: 480px) {
+  .hp-eyebrow {
+    padding: 5px 10px;
+    font-size: var(--ds-fs-2xs);
+    letter-spacing: 0.01em;
+  }
+}
+
 @media (max-width: 400px) {
   .hp-cell-price {
     white-space: normal;
@@ -1323,7 +1587,6 @@ button.hp-pack {
   }
 }
 
-/* The "see packs" link scrolls to them smoothly, unless motion is reduced. */
 @media (prefers-reduced-motion: no-preference) {
   :root:has(.hp-page) {
     scroll-behavior: smooth;

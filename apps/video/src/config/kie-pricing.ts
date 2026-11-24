@@ -22,7 +22,7 @@ export const KIE_PRICES_CHECKED_AT = "2026-11-20";
 /** What one credit is worth on the price list, in USD. Video prices are quoted in it. */
 export const CREDIT_LIST_USD = 0.01;
 
-const VIDEO_MARKUP = 1.55;
+const VIDEO_MARKUP = 1.95;
 const VIDEO_FIXED_USD = 0.15;
 
 /** The most KIE cost one video credit can ever stand for. */

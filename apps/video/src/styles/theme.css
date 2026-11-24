@@ -36,6 +36,15 @@
   --du-glass-fallback-bg: #0B0C10;
   --du-glass-text: #C5C6C7;
   --du-glass-overlay-scrim: rgba(0, 0, 0, 0.64);
+
+  /* Pricing tier visual accents (used on /pricing) */
+  --du-tier-pro-from: #38BDF8;
+  --du-tier-pro-to: #66FCF1;
+  --du-tier-pro-glow: rgba(56, 189, 248, 0.22);
+  --du-tier-ultimate: #F5B841;
+  --du-save-bg: rgba(16, 185, 129, 0.16);
+  --du-save-text: #34D399;
+  --du-badge-hot: #F43F5E;
 }
 
 .du-glass {

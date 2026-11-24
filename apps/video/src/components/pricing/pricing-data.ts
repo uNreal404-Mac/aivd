@@ -134,7 +134,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: "cancel",
     question: "Can I cancel my subscription anytime?",
-    answer: `Yes. ${SUPPORT_EMAIL ? `Email ${SUPPORT_EMAIL}` : "Write to us through the contact page"} from the address you signed up with and we cancel the renewal. Your plan stays active until the end of the period you already paid for and does not renew after that; credits you already have stay usable until they expire.`,
+    answer: `Yes. Open your Account page and click Manage subscription to cancel renewal in one click, or ${SUPPORT_EMAIL ? `email ${SUPPORT_EMAIL}` : "write to us through the contact page"}. Your plan stays active until the end of the period you already paid for and does not renew after that; credits you already have stay usable until they expire.`,
   },
 ];
 
@@ -179,7 +179,7 @@ export const FAQ_ITEMS_ZH: FaqItem[] = [
   {
     id: "cancel",
     question: "我可以随时取消订阅吗？",
-    answer: `可以。用注册邮箱${SUPPORT_EMAIL ? `发邮件到 ${SUPPORT_EMAIL}` : "通过联系页联系我们"}，我们会取消自动续费。套餐会持续到你已付费的周期结束，之后不再续订；已有的积分在过期前仍可使用。`,
+    answer: `可以。进入「账户」页面点击「管理订阅」即可一键取消自动续费，也可以用注册邮箱${SUPPORT_EMAIL ? `发邮件到 ${SUPPORT_EMAIL}` : "通过联系页联系我们"}。套餐会持续到你已付费的周期结束，之后不再续订；已有的积分在过期前仍可使用。`,
   },
 ];
 

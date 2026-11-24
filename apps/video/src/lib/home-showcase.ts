@@ -1,5 +1,6 @@
 // Content for the homepage sections below the generator. Media are the site's
 // own samples; swap them for real generations as the gallery grows.
+import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { navModelHref } from "@/lib/nav-models";
 import featurePrompts from "@/lib/home-feature-prompts.json";
 
@@ -52,8 +53,11 @@ export const FEATURE_SLIDES: {
 }[] = [
   {
     media: MEDIA.japan,
-    cover: { main: "+70", sub: { zh: "免费积分", en: "FREE CREDITS" } },
-    title: { zh: "新用户注册即送 70 积分", en: "70 free credits for new accounts" },
+    cover: { main: `+${NEW_USER_GIFT.credits}`, sub: { zh: "免费积分", en: "FREE CREDITS" } },
+    title: {
+      zh: `新用户注册即送 ${NEW_USER_GIFT.credits} 积分`,
+      en: `${NEW_USER_GIFT.credits} free credits for new accounts`,
+    },
     body: { zh: "免费生成你的第一条视频", en: "Make your first video free" },
     href: "/pricing",
     accent: true,

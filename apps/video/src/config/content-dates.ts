@@ -7,7 +7,7 @@
  * build would claim checks that never happened.
  */
 export const CONTENT_UPDATED = {
-  pricing: "2026-11-21",
+  pricing: "2026-11-23",
   models: "2026-11-21",
   features: "2026-11-21",
 } as const;
