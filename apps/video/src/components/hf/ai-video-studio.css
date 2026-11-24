@@ -75,8 +75,19 @@
   display: block;
   height: 104px;
   overflow: hidden;
-  border-radius: var(--ds-r-lg);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-xl);
+  box-shadow: var(--ds-specular), var(--ds-shadow-1);
   text-align: left;
+  transition: border-color 180ms ease, transform 180ms var(--ds-ease-spring);
+}
+
+.vs-banner:hover {
+  border-color: var(--ds-line-3);
+}
+
+.vs-banner:active {
+  transform: scale(0.99);
 }
 
 .vs-banner-img {
@@ -85,17 +96,22 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 400ms ease;
+  transition: transform 420ms var(--ds-ease-spring);
 }
 
 .vs-banner:hover .vs-banner-img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 .vs-banner-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent 70%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--du-bg) 92%, transparent) 0%,
+    color-mix(in srgb, var(--du-bg) 38%, transparent) 55%,
+    transparent 100%
+  );
 }
 
 .vs-banner-change {
@@ -106,11 +122,19 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: var(--ds-r-sm);
-  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
-  color: white;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-xs);
-  backdrop-filter: blur(8px);
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.vs-banner:hover .vs-banner-change {
+  border-color: var(--ds-line-3);
+  background: color-mix(in srgb, var(--du-surface-2) 82%, transparent);
 }
 
 .vs-banner-text {
@@ -127,10 +151,10 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  color: var(--du-accent-text);
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-xl);
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   text-transform: uppercase;
 }
@@ -267,15 +291,27 @@
   min-height: 54px;
   flex-shrink: 0;
   padding: 8px 12px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-lg);
-  background: var(--vs-card);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-specular);
   text-align: left;
-  transition: background-color 150ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 140ms var(--ds-ease-spring);
 }
 
 button.vs-card:hover,
 label.vs-select:hover {
-  background: var(--vs-card-hover);
+  border-color: var(--ds-line-2);
+  background: var(--ds-surface-2);
+}
+
+button.vs-card:active {
+  transform: scale(0.99);
+}
+
+.vs-prompt:focus-within {
+  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
+  box-shadow: var(--ds-specular), 0 0 0 1px color-mix(in srgb, var(--du-accent) 16%, transparent);
 }
 
 .vs-card-label {
@@ -466,19 +502,25 @@ button.vs-chip:disabled {
   gap: 10px;
   margin-top: 4px;
   border-radius: var(--ds-r-lg);
-  background: var(--du-accent);
+  background: radial-gradient(110% 150% at 50% 0%, var(--du-accent-hover) 0%, var(--du-accent) 62%);
   box-shadow:
-    inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent),
+    var(--du-glow),
     0 4px 0 var(--du-bg),
-    0 -14px 14px -2px var(--du-bg);
+    0 -14px 18px -2px var(--du-bg);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-md);
-  font-weight: 600;
-  transition: filter 150ms ease;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  transition: filter 160ms ease, transform 160ms var(--ds-ease-spring), box-shadow 180ms ease;
 }
 
-.vs-generate:hover {
-  filter: brightness(1.05);
+.vs-generate:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.vs-generate:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .vs-generate:disabled {
@@ -534,8 +576,9 @@ button.vs-chip:disabled {
   padding: var(--ds-space-4);
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-2xl);
-  background: var(--du-bg-elev);
-  box-shadow: var(--ds-shadow-2);
+  background: color-mix(in srgb, var(--du-surface) 95%, transparent);
+  box-shadow: var(--ds-specular), var(--ds-shadow-float);
+  backdrop-filter: blur(26px);
 }
 
 .vs-tool {
@@ -561,9 +604,13 @@ button.vs-chip:disabled {
   min-width: 0;
   flex: 1;
   overflow-y: auto;
-  padding: 14px 20px 28px;
+  padding: 16px 22px 28px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-2xl);
-  background: var(--vs-panel);
+  background:
+    radial-gradient(640px 260px at 50% 0%, color-mix(in srgb, var(--du-accent) 6%, transparent), transparent 72%),
+    var(--du-bg-elev);
+  box-shadow: var(--ds-specular);
 }
 
 .vs-stage-tabs {
@@ -571,6 +618,7 @@ button.vs-chip:disabled {
   width: fit-content;
   gap: 4px;
   padding: 3px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-lg);
   background: var(--ds-fill-1);
 }
@@ -1115,9 +1163,10 @@ button.vs-chip:disabled {
   gap: 8px;
   margin: 0;
   padding: 12px;
-  border: 0;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-lg);
-  background: var(--vs-card);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-specular);
 }
 
 .as-voice-pick legend {
@@ -1137,26 +1186,29 @@ button.vs-chip:disabled {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-md);
   background: var(--ds-fill-1);
   color: var(--ds-text-2);
   font-size: var(--ds-fs-sm);
   text-align: left;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    border-color var(--du-dur-fast, 180ms) ease;
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 140ms var(--ds-ease-spring);
 }
 
 .as-voice-opt:hover {
+  border-color: var(--ds-line-2);
   background: var(--ds-fill-2);
 }
 
 .as-voice-opt-on {
-  border-color: color-mix(in srgb, var(--du-accent) 60%, transparent);
-  background: color-mix(in srgb, var(--du-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--du-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--du-accent) 11%, transparent);
+  box-shadow: var(--ds-specular);
   color: white;
 }
 

@@ -116,14 +116,20 @@
 .du-composer {
   position: relative;
   margin-top: 16px;
-  padding: 12px 12px 10px;
+  padding: 13px 13px 11px;
   border: 1px solid var(--ds-line-2);
-  border-top-color: color-mix(in srgb, var(--du-accent) 45%, transparent);
+  border-top-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
   border-radius: var(--ds-r-2xl);
-  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
-  box-shadow: 0 -18px 48px -22px color-mix(in srgb, var(--du-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--du-surface) 84%, transparent);
+  box-shadow: var(--ds-specular), var(--ds-shadow-float), 0 -16px 42px -22px color-mix(in srgb, var(--du-accent) 45%, transparent);
   text-align: left;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(26px) saturate(175%);
+  -webkit-backdrop-filter: blur(26px) saturate(175%);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.du-composer:focus-within {
+  border-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
 }
 
 .du-home-popover,

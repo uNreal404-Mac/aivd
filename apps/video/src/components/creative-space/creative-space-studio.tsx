@@ -2,6 +2,7 @@
 
 import {
   AlignCenterHorizontal,
+  ArrowLeft,
   AtSign,
   Bot,
   Camera,
@@ -9,14 +10,19 @@ import {
   Download,
   Eraser,
   Expand,
+  Eye,
+  EyeOff,
   Film,
   FolderOpen,
   Frame,
   Hand,
   Image as ImageIcon,
+  Keyboard,
   Layers,
+  LayoutGrid,
   Link2,
   Loader2,
+  Map as MapIcon,
   Maximize2,
   MousePointer2,
   Music,
@@ -26,6 +32,7 @@ import {
   Plus,
   Redo2,
   Scissors,
+  Search,
   Send,
   Sparkles,
   StickyNote,
@@ -39,6 +46,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import Link from "next/link";
 import {
   type ChangeEvent,
   type DragEvent,
@@ -212,11 +220,16 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
   nodesRef.current = nodes;
   edgesRef.current = edges;
 
-  // Drawers & modals
+  // Drawers, overlays & view toggles (Jimeng / open-source infinite-canvas primitives)
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryItems, setLibraryItems] = useState<LibraryEntry[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [agentOpen, setAgentOpen] = useState(true);
+  const [showEdges, setShowEdges] = useState(true);
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [editModal, setEditModal] = useState<{ nodeId: string; action: CanvasEditAction } | null>(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -395,11 +408,17 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     });
   }, []);
 
-  // Keyboard shortcuts (V, H, Space, Cmd+Z, Cmd+Shift+Z, Delete, Cmd+D, Cmd+0).
+  // Keyboard shortcuts (V, H, C, M, E, L, ?, Space, Cmd+K, Cmd+Z, Cmd+Shift+Z, Delete, Cmd+D).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       const typing = Boolean(target?.closest("input, textarea, select, [contenteditable='true']"));
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen((v) => !v);
+        setShortcutsOpen(false);
+        return;
+      }
       if (event.code === "Space" && !typing) {
         event.preventDefault();
         setSpacePressed(true);
@@ -411,14 +430,23 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
         else undo();
         return;
       }
-      if (typing) return;
-      if (event.key.toLowerCase() === "v") setTool("select");
-      else if (event.key.toLowerCase() === "h") setTool("hand");
-      else if (event.key === "Escape") {
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setShortcutsOpen(false);
         setConnectFromId(null);
         setTool("select");
         setSelectedIds([]);
-      } else if ((event.key === "Delete" || event.key === "Backspace") && selectedIds.length > 0) {
+        return;
+      }
+      if (typing) return;
+      const lower = event.key.toLowerCase();
+      if (lower === "v") setTool("select");
+      else if (lower === "h") setTool("hand");
+      else if (lower === "c") setTool((cur) => (cur === "connect" ? "select" : "connect"));
+      else if (lower === "m") setShowMinimap((v) => !v);
+      else if (lower === "e") setShowEdges((v) => !v);
+      else if (event.key === "?") setShortcutsOpen((v) => !v);
+      else if ((event.key === "Delete" || event.key === "Backspace") && selectedIds.length > 0) {
         event.preventDefault();
         commitHistory();
         const delSet = new Set(selectedIds);
@@ -1272,6 +1300,118 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     );
   };
 
+  // Focus & smoothly center viewport on a specific node (used by ⌘K Search).
+  const focusNode = useCallback((node: CanvasNode) => {
+    const rect = stageRef.current?.getBoundingClientRect();
+    const w = rect?.width ?? 960;
+    const h = rect?.height ?? 620;
+    const nodeH = node.height ?? 220;
+    const nextScale = clamp(viewport.scale, 0.75, 1.15);
+    setViewport({
+      scale: nextScale,
+      x: Math.round(w / 2 - (node.x + node.width / 2) * nextScale),
+      y: Math.round(h * 0.44 - (node.y + nodeH / 2) * nextScale),
+    });
+    setSelectedIds([node.id]);
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [viewport.scale]);
+
+  // One-click full-canvas auto-arrange (Jimeng / infinite-canvas standard primitive).
+  const autoArrangeNodes = useCallback(() => {
+    const contentNodes = nodesRef.current.filter((n) => n.kind !== "group");
+    if (contentNodes.length === 0) {
+      showToast(zh ? "画布上还没有可整理的节点" : "No nodes to arrange yet");
+      return;
+    }
+    commitHistory();
+    const cols = Math.min(3, Math.max(1, Math.ceil(Math.sqrt(contentNodes.length))));
+    const gapX = 44;
+    const gapY = 48;
+    const colWidths = Array.from({ length: cols }, () => 300);
+    contentNodes.forEach((n, idx) => {
+      const col = idx % cols;
+      colWidths[col] = Math.max(colWidths[col], n.width);
+    });
+    const positions = new Map<string, { x: number; y: number }>();
+    let curY = 80;
+    for (let row = 0; row * cols < contentNodes.length; row += 1) {
+      let curX = 96;
+      let rowH = 220;
+      for (let col = 0; col < cols; col += 1) {
+        const item = contentNodes[row * cols + col];
+        if (!item) break;
+        positions.set(item.id, { x: curX, y: curY });
+        curX += colWidths[col] + gapX;
+        rowH = Math.max(rowH, item.height ?? (item.kind === "audio" ? 132 : item.kind === "text" ? 190 : 250));
+      }
+      curY += rowH + gapY;
+    }
+    setNodes((prev) =>
+      prev.map((n) => {
+        const p = positions.get(n.id);
+        return p ? { ...n, x: p.x, y: p.y } : n;
+      }),
+    );
+    showToast(zh ? `已自动整理 ${contentNodes.length} 个画布节点` : `Auto-arranged ${contentNodes.length} canvas nodes`);
+  }, [commitHistory, showToast, zh]);
+
+  // Visual port-to-port Bezier edge wiring directly from node handles.
+  const handlePortClick = (nodeId: string, side: "in" | "out", event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!connectFromId) {
+      setConnectFromId(nodeId);
+      setTool("connect");
+      showToast(zh ? "请点击目标节点的左侧端口或卡片完成连线" : "Click a target node port to connect");
+      return;
+    }
+    if (connectFromId === nodeId) {
+      setConnectFromId(null);
+      setTool("select");
+      return;
+    }
+    const fromId = side === "in" ? connectFromId : nodeId;
+    const toId = side === "in" ? nodeId : connectFromId;
+    commitHistory();
+    setEdges((prev) => {
+      if (prev.some((e) => e.fromId === fromId && e.toId === toId)) return prev;
+      return [...prev, { id: `edge-${Date.now()}`, fromId, toId, kind: "reference", label: zh ? "参考" : "Ref" }];
+    });
+    setConnectFromId(null);
+    setTool("select");
+    showToast(zh ? "已建立节点参考连线" : "Reference wire connected");
+  };
+
+  const filteredSearchNodes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return nodes;
+    return nodes.filter((n) => {
+      const prompt = "prompt" in n && n.prompt ? n.prompt : "";
+      const title = "title" in n && n.title ? n.title : "";
+      const hay = `@${n.label} ${n.name} ${n.kind} ${prompt} ${title}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [nodes, searchQuery]);
+
+  const minimapBounds = useMemo(() => {
+    if (nodes.length === 0) return null;
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const n of nodes) {
+      const h = n.height ?? 210;
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.width);
+      maxY = Math.max(maxY, n.y + h);
+    }
+    const pad = 160;
+    const worldW = Math.max(600, maxX - minX + pad * 2);
+    const worldH = Math.max(420, maxY - minY + pad * 2);
+    return { minX: minX - pad, minY: minY - pad, worldW, worldH };
+  }, [nodes]);
+
   // Pointer handlers for Infinite Canvas pan, marquee box-select, drag, resize.
   const handleStagePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 && event.button !== 1) return;
@@ -1708,6 +1848,15 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
       {/* Top Studio Bar */}
       <div className="cc-topbar">
         <div className="cc-topbar-left">
+          <Link
+            href={localizedHref(locale, "/creative-space")}
+            className="cc-back-link"
+            title={zh ? "返回创意空间" : "Back to Creative Space"}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{zh ? "创意空间" : "Space"}</span>
+          </Link>
+          <span className="cc-divider" />
           <span className="cc-badge-brand">
             <Sparkles className="h-3.5 w-3.5" />
             {zh ? "无限画布" : "Infinite Canvas"}
@@ -1771,9 +1920,63 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
           </div>
+          <span className="cc-divider" />
+          <button
+            type="button"
+            className="cc-icon-btn"
+            onClick={autoArrangeNodes}
+            title={zh ? "一键自动整理节点" : "Auto-arrange nodes"}
+            aria-label={zh ? "自动整理" : "Auto-arrange"}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span className="hidden xl:inline">{zh ? "自动整理" : "Arrange"}</span>
+          </button>
+          <button
+            type="button"
+            className={`cc-icon-btn${!showEdges ? " cc-icon-btn-on" : ""}`}
+            onClick={() => setShowEdges((v) => !v)}
+            title={zh ? "显示 / 隐藏参考连线 (E)" : "Toggle edges (E)"}
+            aria-label={zh ? "显隐连线" : "Toggle edges"}
+          >
+            {showEdges ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            className={`cc-icon-btn${searchOpen ? " cc-icon-btn-on" : ""}`}
+            onClick={() => {
+              setSearchOpen((v) => !v);
+              setShortcutsOpen(false);
+            }}
+            title={zh ? "搜索画布节点 (⌘K)" : "Search canvas nodes (⌘K)"}
+            aria-label={zh ? "搜索节点" : "Search nodes"}
+          >
+            <Search className="h-4 w-4" />
+            <kbd className="cc-kbd hidden xl:inline">⌘K</kbd>
+          </button>
         </div>
 
         <div className="cc-topbar-right">
+          <button
+            type="button"
+            className={`cc-icon-btn${showMinimap ? " cc-icon-btn-on" : ""}`}
+            onClick={() => setShowMinimap((v) => !v)}
+            title={zh ? "显示 / 隐藏小地图 (M)" : "Toggle minimap (M)"}
+            aria-label={zh ? "小地图" : "Minimap"}
+          >
+            <MapIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={`cc-icon-btn${shortcutsOpen ? " cc-icon-btn-on" : ""}`}
+            onClick={() => {
+              setShortcutsOpen((v) => !v);
+              setSearchOpen(false);
+            }}
+            title={zh ? "快捷键说明 (?)" : "Keyboard shortcuts (?)"}
+            aria-label={zh ? "快捷键" : "Shortcuts"}
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
           <button
             type="button"
             className={`cc-icon-btn${libraryOpen ? " cc-icon-btn-on" : ""}`}
@@ -2208,27 +2411,29 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}
           >
             {/* SVG Bezier Edge Wires */}
-            <svg className="cc-edges-svg" aria-hidden="true">
-              {edges.map((edge) => {
-                const src = nodes.find((n) => n.id === edge.fromId);
-                const dst = nodes.find((n) => n.id === edge.toId);
-                if (!src || !dst) return null;
-                const p1 = nodeAnchor(src, "right");
-                const p2 = nodeAnchor(dst, "left");
-                const midX = (p1.x + p2.x) / 2;
-                const midY = (p1.y + p2.y) / 2 - 8;
-                return (
-                  <g key={edge.id}>
-                    <path d={bezierPath(p1, p2)} className="cc-edge-path" />
-                    {edge.label ? (
-                      <text x={midX} y={midY} textAnchor="middle" className="cc-edge-label">
-                        {edge.label}
-                      </text>
-                    ) : null}
-                  </g>
-                );
-              })}
-            </svg>
+            {showEdges ? (
+              <svg className="cc-edges-svg" aria-hidden="true">
+                {edges.map((edge) => {
+                  const src = nodes.find((n) => n.id === edge.fromId);
+                  const dst = nodes.find((n) => n.id === edge.toId);
+                  if (!src || !dst) return null;
+                  const p1 = nodeAnchor(src, "right");
+                  const p2 = nodeAnchor(dst, "left");
+                  const midX = (p1.x + p2.x) / 2;
+                  const midY = (p1.y + p2.y) / 2 - 8;
+                  return (
+                    <g key={edge.id}>
+                      <path d={bezierPath(p1, p2)} className="cc-edge-path" />
+                      {edge.label ? (
+                        <text x={midX} y={midY} textAnchor="middle" className="cc-edge-label">
+                          {edge.label}
+                        </text>
+                      ) : null}
+                    </g>
+                  );
+                })}
+              </svg>
+            ) : null}
 
             {/* Nodes */}
             {nodes.map((node) => {
@@ -2379,6 +2584,21 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                     </div>
                   )}
 
+                  {/* Visual Input / Output Connection Ports */}
+                  <button
+                    type="button"
+                    className="cc-port cc-port-in"
+                    title={zh ? "参考输入端口" : "Reference input port"}
+                    aria-label={zh ? "输入端口" : "Input port"}
+                    onPointerDown={(e) => handlePortClick(node.id, "in", e)}
+                  />
+                  <button
+                    type="button"
+                    className="cc-port cc-port-out"
+                    title={zh ? "点击连线到下一个节点" : "Connect to another node"}
+                    aria-label={zh ? "输出端口" : "Output port"}
+                    onPointerDown={(e) => handlePortClick(node.id, "out", e)}
+                  />
                   <div
                     className="cc-resize-handle"
                     onPointerDown={(e) => {
@@ -2398,6 +2618,124 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
               );
             })}
           </div>
+
+          {/* Live Interactive Minimap (bottom-right) */}
+          {showMinimap && minimapBounds ? (
+            <div
+              className="cc-minimap"
+              aria-label={zh ? "画布小地图" : "Canvas minimap"}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                const box = e.currentTarget.getBoundingClientRect();
+                const ratioX = (e.clientX - box.left) / box.width;
+                const ratioY = (e.clientY - box.top) / box.height;
+                const targetWorldX = minimapBounds.minX + ratioX * minimapBounds.worldW;
+                const targetWorldY = minimapBounds.minY + ratioY * minimapBounds.worldH;
+                const stageRect = stageRef.current?.getBoundingClientRect();
+                const sw = stageRect?.width ?? 960;
+                const sh = stageRect?.height ?? 620;
+                setViewport((v) => ({
+                  ...v,
+                  x: Math.round(sw / 2 - targetWorldX * v.scale),
+                  y: Math.round(sh / 2 - targetWorldY * v.scale),
+                }));
+              }}
+            >
+              <div className="cc-minimap-label">
+                <span>{zh ? "画布导航" : "Minimap"}</span>
+                <span>{nodes.length}</span>
+              </div>
+              <div className="cc-minimap-board">
+                {nodes.map((n) => {
+                  const leftPct = ((n.x - minimapBounds.minX) / minimapBounds.worldW) * 100;
+                  const topPct = ((n.y - minimapBounds.minY) / minimapBounds.worldH) * 100;
+                  const wPct = Math.max(4, (n.width / minimapBounds.worldW) * 100);
+                  const hPct = Math.max(4, ((n.height ?? 200) / minimapBounds.worldH) * 100);
+                  const active = selectedIds.includes(n.id);
+                  return (
+                    <span
+                      key={n.id}
+                      className={`cc-minimap-node cc-minimap-${n.kind}${active ? " cc-minimap-node-on" : ""}`}
+                      style={{ left: `${leftPct}%`, top: `${topPct}%`, width: `${wPct}%`, height: `${hPct}%` }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Node Quick Search Palette (⌘K) */}
+          {searchOpen ? (
+            <dialog open className="cc-cmd-backdrop" aria-label={zh ? "搜索画布节点" : "Search canvas nodes"} onClick={() => setSearchOpen(false)}>
+              <div className="cc-cmd-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="cc-cmd-head">
+                  <Search className="h-4 w-4 text-[var(--ds-text-3)]" />
+                  <input
+                    ref={(el) => el?.focus()}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={zh ? "搜索 @A、节点名称、提示词或类型…" : "Search @A, node title, prompt, or kind…"}
+                    className="cc-cmd-input"
+                  />
+                  <button type="button" className="cc-icon-btn" onClick={() => setSearchOpen(false)} aria-label={zh ? "关闭" : "Close"}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="cc-cmd-list">
+                  {filteredSearchNodes.length === 0 ? (
+                    <p className="cc-hint px-3 py-4 text-center">
+                      {nodes.length === 0
+                        ? zh ? "画布为空，先生成或上传素材吧" : "Canvas is empty — upload or generate a node first"
+                        : zh ? "没有匹配的画布节点" : "No matching nodes"}
+                    </p>
+                  ) : (
+                    filteredSearchNodes.map((n) => (
+                      <button key={n.id} type="button" className="cc-cmd-item" onClick={() => focusNode(n)}>
+                        <span className="cc-node-tag">@{n.label}</span>
+                        <span className="min-w-0 flex-1 truncate">{n.name}</span>
+                        <span className="cc-cmd-kind">{n.kind}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </dialog>
+          ) : null}
+
+          {/* Keyboard Shortcuts Sheet (?) */}
+          {shortcutsOpen ? (
+            <dialog open className="cc-cmd-backdrop" aria-label={zh ? "画布快捷键" : "Canvas shortcuts"} onClick={() => setShortcutsOpen(false)}>
+              <div className="cc-cmd-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="cc-cmd-head">
+                  <Keyboard className="h-4 w-4 text-[var(--du-accent-text)]" />
+                  <span className="flex-1 text-sm font-semibold">{zh ? "无限画布快捷键" : "Canvas Shortcuts"}</span>
+                  <button type="button" className="cc-icon-btn" onClick={() => setShortcutsOpen(false)} aria-label={zh ? "关闭" : "Close"}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="cc-shortcuts-grid">
+                  {[
+                    ["V", zh ? "选择 / 框选工具" : "Select / Marquee"],
+                    ["H / Space", zh ? "抓手平移画布" : "Pan canvas"],
+                    ["C", zh ? "节点参考连线" : "Connect reference wire"],
+                    ["⌘ K", zh ? "快速搜索并定位节点" : "Quick search & jump"],
+                    ["M", zh ? "显示 / 隐藏小地图" : "Toggle minimap"],
+                    ["E", zh ? "显示 / 隐藏参考连线" : "Toggle edges"],
+                    ["⌘ Z / ⌘ ⇧ Z", zh ? "撤销 / 重做" : "Undo / Redo"],
+                    ["⌘ D", zh ? "复制选中节点" : "Duplicate selection"],
+                    ["Delete", zh ? "删除选中节点" : "Delete selection"],
+                    ["?", zh ? "打开快捷键面板" : "Shortcuts sheet"],
+                  ].map(([k, desc]) => (
+                    <div key={k} className="cc-shortcut-row">
+                      <span className="cc-shortcut-desc">{desc}</span>
+                      <kbd className="cc-kbd">{k}</kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </dialog>
+          ) : null}
 
           {/* Marquee Selection Overlay */}
           {marquee ? (

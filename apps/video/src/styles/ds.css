@@ -30,32 +30,36 @@
   --ds-r-full: 999px;
 
   /* Surfaces, from the page up: panel, card, raised. */
-  --ds-surface-1: color-mix(in srgb, var(--du-surface-2) 30%, var(--du-bg-elev));
-  --ds-surface-2: color-mix(in srgb, var(--du-surface-2) 50%, var(--du-bg-elev));
-  --ds-surface-3: color-mix(in srgb, var(--du-surface-2) 75%, var(--du-bg-elev));
+  --ds-surface-1: color-mix(in srgb, var(--du-surface-2) 34%, var(--du-bg-elev));
+  --ds-surface-2: color-mix(in srgb, var(--du-surface-2) 64%, var(--du-bg-elev));
+  --ds-surface-3: color-mix(in srgb, var(--du-surface-2) 92%, var(--du-bg-elev));
 
   /* Translucent fills on top of a surface (chips, hovers, pressed). */
-  --ds-fill-1: color-mix(in srgb, white 5%, transparent);
+  --ds-fill-1: color-mix(in srgb, white 4.5%, transparent);
   --ds-fill-2: color-mix(in srgb, white 8%, transparent);
-  --ds-fill-3: color-mix(in srgb, white 12%, transparent);
-  --ds-fill-4: color-mix(in srgb, white 18%, transparent);
+  --ds-fill-3: color-mix(in srgb, white 13%, transparent);
+  --ds-fill-4: color-mix(in srgb, white 19%, transparent);
 
   /* Hairlines. */
-  --ds-line-1: color-mix(in srgb, white 6%, transparent);
-  --ds-line-2: color-mix(in srgb, white 10%, transparent);
-  --ds-line-3: color-mix(in srgb, white 18%, transparent);
+  --ds-line-1: color-mix(in srgb, white 7%, transparent);
+  --ds-line-2: color-mix(in srgb, white 12%, transparent);
+  --ds-line-3: color-mix(in srgb, white 22%, transparent);
 
   /* Text: primary, secondary, muted, dim. */
-  --ds-text-1: white;
-  --ds-text-2: color-mix(in srgb, white 80%, transparent);
-  --ds-text-3: color-mix(in srgb, white 55%, transparent);
+  --ds-text-1: var(--du-text);
+  --ds-text-2: color-mix(in srgb, white 82%, transparent);
+  --ds-text-3: color-mix(in srgb, white 56%, transparent);
   /* Faintest text that still reads (4.5:1 on the page and card surfaces). */
-  --ds-text-4: color-mix(in srgb, white 48%, transparent);
+  --ds-text-4: color-mix(in srgb, white 46%, transparent);
 
-  /* Elevation. */
-  --ds-shadow-1: 0 2px 6px color-mix(in srgb, var(--du-bg) 35%, transparent);
-  --ds-shadow-2: 0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent),
-    0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
+  /* Elevation & Specular Craft. */
+  --ds-specular: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+  --ds-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-shadow-1: 0 2px 10px color-mix(in srgb, var(--du-bg) 45%, transparent);
+  --ds-shadow-2: 0 20px 44px -8px color-mix(in srgb, var(--du-bg) 78%, transparent),
+    0 6px 16px -4px color-mix(in srgb, var(--du-bg) 62%, transparent);
+  --ds-shadow-float: 0 28px 64px -12px color-mix(in srgb, var(--du-bg) 86%, transparent),
+    0 4px 16px color-mix(in srgb, var(--du-bg) 55%, transparent);
 
   /* Spacing, for new work: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 72. */
   --ds-space-1: 4px;

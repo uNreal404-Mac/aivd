@@ -904,7 +904,7 @@ export function AiVideoStudio({
                         }}
                       >
                         <span className={`vs-preset-media vs-move-${preset.motion}`}>
-                          <img src={preset.image} alt="" loading="lazy" />
+                          <img src={preset.image} alt="" loading="eager" decoding="async" />
                         </span>
                         <span className="vs-preset-name">{isChinese ? preset.zh : preset.en}</span>
                       </button>
