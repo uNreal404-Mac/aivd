@@ -131,8 +131,8 @@ export function HomePricing({
   const copy = zh
     ? {
         eyebrow: "支持 Veo 3.1 · Kling 4.0 · Seedance 2.5 · Wan\u00A02.6",
-        title: "选择适合你的创作方案",
-        homeTitle: "选择适合你的创作方案",
+        title: "选择适合你的 AI 视频套餐",
+        homeTitle: "选择适合你的 AI 视频套餐",
         sub: "一套积分畅用全部视频、图像与音频模型 · 成片无水印可商用 · 生成失败自动退积分",
         homeNote: "想查看每个模型具体扣多少积分，或不订阅直接购买积分包？",
         offer: (percent: number, date: string) =>
@@ -225,8 +225,8 @@ export function HomePricing({
       }
     : {
         eyebrow: "INCLUDES VEO 3.1 · KLING 4.0 · SEEDANCE 2.5 · WAN 2.6",
-        title: "Pick your creative plan",
-        homeTitle: "Pick your creative plan",
+        title: "AI Video Pricing & Plans",
+        homeTitle: "AI Video Pricing & Plans",
         sub: "One credit balance for every video, image & audio model · No watermark · Commercial rights · Auto-refund on failures",
         homeNote: "Want exact per-model credit rates or one-time credit packs without a subscription?",
         offer: (percent: number, date: string) =>

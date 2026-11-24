@@ -21,6 +21,7 @@ import {
   type HomeTemplate,
 } from "@/lib/home-templates";
 import { IMAGE_CATALOG, VIDEO_CATALOG, type CatalogModel } from "@/lib/kie-model-catalog";
+import { navModelHref } from "@/lib/nav-models";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "@/components/hf/home-showcase.css";
 import "@/components/hf/home-pricing.css";
@@ -110,7 +111,20 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
   const zh = isZh(lang);
   const catalog: CatalogModel[] = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const ordered = [...catalog].sort((a, b) => Number(connectedIds.includes(b.id)) - Number(connectedIds.includes(a.id)));
-  const pageFor: Record<string, string> = { "veo-3.1": "/models/veo-3-1", "wan2.6": "/models/wan-2-6" };
+  const pageFor: Record<string, string> = {
+    "veo-3.1": "/models/veo-3-1",
+    "wan2.6": "/models/wan-2-6",
+    "bytedance/seedance-2-5": "/models/seedance-2-5",
+    "seedance-2-5-flash": "/models/seedance-2-5-flash",
+    "kling/v4-reference-to-video": "/models/kling-4-0",
+    "kling/v4-flash-reference-to-video": "/models/kling-4-0-flash",
+    "wan/3-0-video": "/models/wan-3-0",
+    "minimax-h3/text-to-video": "/models/minimax-h3",
+    "grok-imagine/text-to-video": "/models/grok-imagine",
+    "grok-imagine-1-5": "/models/grok-imagine-1-5",
+    "happyhorse-1-1": "/models/happyhorse-1-1",
+    "gemini-omni-flash-1-2": "/models/gemini-omni-flash-1-2",
+  };
   return (
     <section className="sp-models" aria-labelledby={`sp-models-${kind}`}>
       <h2 id={`sp-models-${kind}`} className="sp-h2">{zh ? "模型" : "Models"}</h2>
@@ -119,12 +133,13 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
           const live = connectedIds.includes(item.id);
           const credits = kind === "video" ? startingCredits(item.id) : null;
           const body = <ModelCardBody key={item.id} zh={zh} kind={kind} item={item} live={live} credits={credits} />;
-          return live && pageFor[item.id] ? (
-            <Link key={item.id} href={localizedHref(lang, pageFor[item.id])} className="sp-model sp-model-live">
+          const targetHref = pageFor[item.id] ?? navModelHref(kind, item.id);
+          return live ? (
+            <Link key={item.id} href={localizedHref(lang, targetHref)} className="sp-model sp-model-live">
               {body}
             </Link>
           ) : (
-            <div key={item.id} className={live ? "sp-model sp-model-live" : "sp-model"} aria-disabled={!live}>
+            <div key={item.id} className="sp-model" aria-disabled>
               {body}
             </div>
           );
@@ -181,7 +196,16 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
           </div>
         </section>
       ))}
-      <ModelGrid lang={lang} kind="video" connectedIds={models.map((model) => model.id)} />
+      <ModelGrid
+        lang={lang}
+        kind="video"
+        connectedIds={Array.from(
+          new Set([
+            ...models.map((model) => model.id),
+            ...STUDIO_MODELS.filter((model) => model.available).map((model) => model.id),
+          ]),
+        )}
+      />
     </div>
   );
 }
