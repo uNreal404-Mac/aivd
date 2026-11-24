@@ -1,37 +1,24 @@
-/* Homepage Hero layout — Pollo.ai Jewel-Box Composer + Higgsfield Atmospheric Cyan Studio Glow. */
+/* Homepage Hero — Jimeng 6.2:1 Wide Slate Proportion × Pollo Soft Diffused Studio Aura.
+   Zero noisy grid dots, zero loud neon outlines, zero double-stacked clutter. */
 
 .du-hero {
   position: relative;
   overflow-x: clip;
-  padding: 26px 20px 22px;
+  padding: 52px 24px 44px;
 }
 
-/* Dramatic Pollo-style studio aura radiating directly behind the active tab & composer box. */
+/* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
 .du-hero-glow {
   position: absolute;
-  inset: -60px 0 auto 0;
-  height: 520px;
-  background:
-    radial-gradient(
-      520px 230px at 50% 42%,
-      color-mix(in srgb, var(--du-accent) 26%, transparent) 0%,
-      color-mix(in srgb, var(--du-accent-2) 13%, transparent) 44%,
-      transparent 76%
-    ),
-    radial-gradient(
-      860px 300px at 50% 10%,
-      color-mix(in srgb, var(--du-accent-2) 10%, transparent) 0%,
-      transparent 70%
-    );
-  pointer-events: none;
-}
-
-.du-hero-grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, color-mix(in srgb, white 5%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(60% 70% at 50% 35%, black 20%, transparent 100%);
+  inset: -40px 0 auto 0;
+  height: 460px;
+  background: radial-gradient(
+    540px 210px at 50% 48%,
+    color-mix(in srgb, var(--du-accent) 18%, transparent) 0%,
+    color-mix(in srgb, var(--du-accent-2) 9%, transparent) 44%,
+    transparent 76%
+  );
+  filter: blur(28px);
   pointer-events: none;
 }
 
@@ -45,390 +32,109 @@
   text-align: center;
 }
 
-/* Pollo.ai jewel-box proportion: focused 820px composer instead of a stretched 1200px void. */
+.du-hero-title {
+  max-width: 100%;
+  margin-bottom: 22px;
+  color: white;
+  font-family: var(--du-font-display);
+  font-size: clamp(1.65rem, 2.3vw, 2.15rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Exact Jimeng wide horizontal slate proportion (~1060px wide × ~168px tall ≈ 6.2:1). */
 .du-hero #home-generator {
-  max-width: 820px;
+  max-width: 1060px;
 }
 
 .du-hero .du-composer {
-  margin-top: 12px;
-  padding: 13px 15px 10px;
-  border-color: color-mix(in srgb, var(--du-accent) 22%, var(--ds-line-2));
-  border-top-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
-  background: color-mix(in srgb, var(--du-bg-elev) 90%, transparent);
-  box-shadow:
-    var(--ds-specular),
-    0 24px 64px -16px color-mix(in srgb, var(--du-bg) 90%, transparent),
-    0 0 60px -18px color-mix(in srgb, var(--du-accent) 34%, transparent);
+  margin-top: 22px;
+  padding: 18px 20px 14px;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .du-hero .du-composer-prompt-row {
-  min-height: 56px;
+  min-height: 82px;
 }
 
 .du-hero #home-generator-prompt {
-  min-height: 50px;
+  min-height: 76px;
 }
 
-/* Lock quick inspiration pills to ONE sleek horizontal strip inside the focused composer. */
-.du-hero .du-composer-suggestions {
+/* One calm, single horizontal row of Jimeng-style slash-skill pills right below the composer. */
+.du-hero-skills {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding-top: 8px;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1060px;
+  margin-top: 18px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
-.du-hero .du-composer-suggestions::-webkit-scrollbar {
+.du-hero-skills::-webkit-scrollbar {
   display: none;
 }
 
-.du-hero .du-composer-suggestion {
+.du-hero-skill-pill {
+  display: inline-flex;
   flex-shrink: 0;
-  min-width: 0;
-  padding: 3px 10px 3px 4px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
-  transition: border-color 160ms ease, background-color 160ms ease, transform 140ms var(--ds-ease-spring);
-}
-
-.du-hero .du-composer-suggestion:hover {
-  border-color: var(--ds-line-3);
-  background: var(--ds-fill-2);
-  transform: translateY(-1px);
-}
-
-/* Pollo-style centered quick-tool dock floating cleanly below the composer. */
-.du-hero-dock {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  max-width: 860px;
-}
-
-.du-hero-dock-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 13px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-surface) 84%, transparent);
-  box-shadow: var(--ds-specular);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-xs);
-  font-weight: 500;
-  white-space: nowrap;
-  backdrop-filter: blur(14px);
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 150ms var(--ds-ease-spring);
-}
-
-.du-hero-dock-pill:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
-  background: var(--ds-surface-2);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.du-hero-dock-pill-accent {
-  border-color: color-mix(in srgb, var(--du-accent) 34%, var(--ds-line-2));
-  background: color-mix(in srgb, var(--du-accent) 10%, var(--du-surface));
-  color: var(--du-accent-text);
-}
-
-.du-hero-dock-icon {
-  width: 14px;
-  height: 14px;
-  opacity: 0.82;
-}
-
-.du-hero-trust {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 6px 18px;
-  margin-top: 12px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.du-hero-trust span {
-  display: inline-flex;
   align-items: center;
   gap: 5px;
+  height: 34px;
+  padding: 0 15px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, white 3.5%, transparent);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
   white-space: nowrap;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
-.du-hero-trust-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-accent);
-  box-shadow: 0 0 8px var(--du-accent);
+.du-hero-skill-pill:hover {
+  border-color: var(--ds-line-2);
+  background: color-mix(in srgb, white 7.5%, transparent);
+  color: white;
+}
+
+.du-hero-skill-slash {
+  color: var(--ds-text-4);
+  font-family: var(--du-font-mono, inherit);
+}
+
+.du-hero-skill-more {
+  color: var(--ds-text-3);
 }
 
 @media (max-width: 900px) {
-  .du-hero .du-composer-suggestions {
-    display: flex;
+  .du-hero-skills {
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 600px) {
   .du-hero {
-    padding: 32px 14px 20px;
+    padding: 32px 14px 28px;
+  }
+
+  .du-hero-title {
+    margin-bottom: 16px;
+    font-size: clamp(1.35rem, 6vw, 1.7rem);
   }
 
   .du-hero .du-composer {
-    margin-top: 14px;
-    padding: 12px 12px 10px;
-  }
-
-  .du-hero .du-composer-prompt-row {
-    min-height: 68px;
-  }
-
-  .du-hero #home-generator-prompt {
-    min-height: 82px;
-  }
-}
-
-.du-hero-title {
-  max-width: 100%;
-  color: white;
-  font-family: var(--du-font-display);
-  font-size: clamp(1.65rem, 2.4vw, 2.35rem);
-  font-weight: 700;
-  line-height: 1.16;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
-}
-
-.du-hero-sub {
-  max-width: 720px;
-  margin-top: 6px;
-  margin-bottom: 14px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.45;
-  text-wrap: balance;
-}
-
-@media (max-width: 600px) {
-  .du-hero-title {
-    font-size: clamp(1.45rem, 6.2vw, 1.85rem);
-    line-height: 1.22;
-  }
-
-  .du-hero-sub {
-    margin-top: 8px;
-    margin-bottom: 14px;
-    font-size: var(--ds-fs-xs);
-  }
-}
-
-/* Feature cards */
-.du-features {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 auto;
-  max-width: 1280px;
-  padding: 12px 24px 40px;
-}
-
-.du-feature {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: var(--ds-r-xl);
-  background: var(--ds-fill-1);
-  transition: background 160ms ease;
-}
-
-.du-feature:hover {
-  background: var(--ds-fill-2);
-}
-
-.du-feature-media {
-  position: relative;
-  display: block;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-}
-
-.du-feature-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 500ms ease;
-}
-
-.du-feature:hover .du-feature-media img {
-  transform: scale(1.04);
-}
-
-.du-feature-media::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 70%, transparent), transparent 60%);
-  content: "";
-}
-
-.du-feature-art {
-  position: absolute;
-  bottom: 14px;
-  left: 0;
-  z-index: 1;
-  width: 100%;
-  color: white;
-  font-size: clamp(1.6rem, 3vw, 2.6rem);
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-align: center;
-  text-shadow: 0 4px 18px color-mix(in srgb, var(--du-bg) 80%, transparent);
-}
-
-.du-feature-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px 16px;
-}
-
-.du-feature-title {
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 500;
-}
-
-.du-feature-text {
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-xs);
-  font-weight: 300;
-  line-height: 1.5;
-}
-
-.du-section-eyebrow {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-align: center;
-}
-
-.du-section-title {
-  margin-top: 10px;
-  color: white;
-  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  text-align: center;
-}
-
-.du-steps {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 24px 24px 72px;
-}
-
-.du-steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 32px;
-}
-
-.du-step {
-  padding: 24px;
-}
-
-.du-step-index {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-}
-
-.du-step-title {
-  margin-top: 14px;
-  color: white;
-  font-size: var(--ds-fs-lg);
-  font-weight: 600;
-}
-
-.du-step-body {
-  margin-top: 8px;
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.65;
-}
-
-.du-cta {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 0 24px 88px;
-}
-
-.du-cta-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 36px 40px;
-  border: 1px solid var(--du-border);
-  border-radius: var(--ds-r-3xl);
-  background:
-    radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 60%),
-    var(--du-surface);
-}
-
-.du-cta-title {
-  color: white;
-  font-size: clamp(1.4rem, 2vw, 1.9rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.du-cta-body {
-  margin-top: 8px;
-  max-width: 560px;
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.6;
-}
-
-.du-cta-actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 12px;
-}
-
-@media (max-width: 900px) {
-  .du-features {
-    grid-template-columns: 1fr;
-  }
-
-  .du-steps-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .du-cta-inner {
-    flex-direction: column;
-    align-items: flex-start;
+    margin-top: 16px;
+    padding: 14px 14px 12px;
+    min-height: 152px;
   }
 }

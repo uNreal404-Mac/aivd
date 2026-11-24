@@ -1,11 +1,11 @@
 :root {
-  /* Flagship Obsidian Carbon Palette + Exact Logo Cyan-Blue (#20F4F4 -> #1DE8F0 -> #29CFF4 -> #359FF7) */
-  --du-bg: #070709;
-  --du-bg-elev: #0c0c10;
-  --du-surface: #111116;
-  --du-surface-2: #18181f;
+  /* Flagship Pure Obsidian Palette + Exact Logo Cyan-Blue (#20F4F4 -> #1DE8F0 -> #29CFF4 -> #359FF7) */
+  --du-bg: #050608;
+  --du-bg-elev: #0b0c10;
+  --du-surface: #111318;
+  --du-surface-2: #171920;
   --du-border: rgba(255, 255, 255, 0.06);
-  --du-border-strong: rgba(255, 255, 255, 0.14);
+  --du-border-strong: rgba(255, 255, 255, 0.12);
   --du-text: #f5f5f7;
   --du-text-muted: rgba(245, 245, 247, 0.62);
   --du-text-dim: rgba(245, 245, 247, 0.44);

@@ -1,14 +1,15 @@
-/* Higgsfield × Pollo 2026 Flagship Homepage Showcase.
+/* Unified Frameless Gallery Design System (Jimeng × Pollo × Higgsfield × Linear).
+   Pure obsidian void canvas, zero decorative CSS gimmicks, zero filmstrip checker bars,
+   zero neon outlines, generous breathing room, and pure media-first hierarchy.
    Strict design-scale variables (--ds-*) and theme tokens (--du-*) only. */
 
 .hs {
-  --hs-card: var(--ds-surface-2);
-  --hs-card-hover: var(--ds-surface-3);
-  --hs-muted: color-mix(in srgb, white 56%, transparent);
+  --hs-card: var(--ds-surface-1);
+  --hs-muted: color-mix(in srgb, white 52%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 36px;
-  padding: 0 0 64px;
+  gap: 72px;
+  padding: 8px 0 84px;
   color: white;
 }
 
@@ -16,13 +17,13 @@
   width: 100%;
   max-width: 1480px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 .hs-stack {
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 84px;
 }
 
 .hs-accent {
@@ -30,43 +31,17 @@
 }
 
 /* ============================================================================
-   1. Pollo-Inspired Cinema Filmstrip Band + Framed 16:9 Feature Rail
+   1. Frameless 16:9 Cinema Rail — zero outer borders, zero filmstrip bars
    ============================================================================ */
-.hs-filmstrip {
-  position: relative;
-  width: 100%;
-  background:
-    radial-gradient(62% 130% at 50% 0%, color-mix(in srgb, var(--du-accent) 14%, transparent), transparent 68%),
-    linear-gradient(180deg, color-mix(in srgb, var(--du-bg-elev) 96%, transparent), var(--du-bg));
-  border-top: 1px solid color-mix(in srgb, var(--du-accent) 18%, var(--ds-line-1));
-  border-bottom: 1px solid color-mix(in srgb, var(--du-accent) 16%, var(--ds-line-1));
-}
-
-.hs-filmstrip-perf {
-  height: 14px;
-  width: 100%;
-  background-color: color-mix(in srgb, var(--du-accent) 12%, transparent);
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--du-bg) 0,
-    var(--du-bg) 16px,
-    transparent 16px,
-    transparent 34px
-  );
-  opacity: 0.72;
-}
-
 .hs-carousel {
   position: relative;
-  padding-top: 16px;
-  padding-bottom: 16px;
 }
 
 .hs-carousel-track {
   display: grid;
-  grid-auto-columns: calc((100% - 2 * 18px) / 3);
+  grid-auto-columns: calc((100% - 2 * 20px) / 3);
   grid-auto-flow: column;
-  gap: 18px;
+  gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -76,37 +51,24 @@
   display: none;
 }
 
-/* Framed dark cinema card (media + embedded footer panel inside one crisp container) */
 .hs-slide {
   position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-xl);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
   scroll-snap-align: start;
-  transition: border-color 180ms ease, transform 220ms var(--ds-ease-spring), box-shadow 220ms ease;
-}
-
-.hs-slide:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 36%, var(--ds-line-2));
-  transform: translateY(-2px);
-  box-shadow: var(--ds-specular), var(--ds-shadow-2);
 }
 
 .hs-slide-link {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  height: 100%;
+  gap: 12px;
 }
 
 .hs-slide-play {
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
 }
 
 .hs-slide-media {
@@ -114,7 +76,8 @@
   display: block;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  background: var(--hs-card);
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev);
 }
 
 .hs-slide-media img,
@@ -123,29 +86,27 @@
   height: 100%;
   object-fit: cover;
   object-position: center 22%;
-  transition: transform 520ms var(--ds-ease-spring);
+  transition: transform 600ms var(--ds-ease-spring);
 }
 
 .hs-slide:hover .hs-slide-media img,
 .hs-slide:hover .hs-slide-media video {
-  transform: scale(1.07);
+  transform: scale(1.045);
 }
 
-.hs-slide-foot {
+.hs-slide-caption {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 12px 15px 14px;
-  background: linear-gradient(180deg, var(--ds-surface-1), var(--du-bg-elev));
+  padding: 0 2px;
 }
 
 .hs-slide-title {
   color: white;
   font-family: var(--du-font-display, inherit);
   font-size: var(--ds-fs-sm);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -161,31 +122,30 @@
 
 .hs-arrow {
   position: absolute;
-  top: calc(50% - 22px);
-  right: 10px;
+  top: calc(50% - 42px);
+  right: 12px;
   z-index: 4;
   display: flex;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--ds-line-3);
+  border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 82%, transparent);
-  box-shadow: var(--ds-shadow-1);
+  background: color-mix(in srgb, var(--du-bg) 78%, transparent);
   color: white;
   backdrop-filter: blur(12px);
-  transition: opacity 200ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: opacity 180ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 
 .hs-arrow:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 48%, var(--ds-line-3));
-  background: color-mix(in srgb, var(--du-surface-2) 94%, transparent);
+  border-color: var(--ds-line-3);
+  background: color-mix(in srgb, var(--du-surface-2) 92%, transparent);
 }
 
 .hs-arrow-prev {
   right: auto;
-  left: 10px;
+  left: 12px;
 }
 
 .hs-arrow[data-hidden] {
@@ -194,843 +154,12 @@
 }
 
 /* ============================================================================
-   2. Pollo One-Click Viral Templates Anchor Strip (Screen 2 Visual Punch)
-   ============================================================================ */
-.hs-viral {
-  display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  gap: 14px;
-  align-items: stretch;
-}
-
-.hs-viral-lead {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
-  overflow: hidden;
-  padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 28%, var(--ds-line-2));
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(90% 80% at 95% 100%, color-mix(in srgb, var(--du-accent) 34%, transparent), transparent 68%),
-    var(--du-bg-elev);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-  transition: border-color 180ms ease, transform 200ms var(--ds-ease-spring);
-}
-
-.hs-viral-lead:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
-  transform: translateY(-2px);
-}
-
-.hs-viral-lead-glow {
-  position: absolute;
-  inset: auto -30px -30px auto;
-  width: 140px;
-  height: 140px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-accent-2) 26%, transparent);
-  filter: blur(36px);
-  pointer-events: none;
-}
-
-.hs-viral-lead-title {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: white;
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-xl);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.08;
-  text-transform: uppercase;
-}
-
-.hs-viral-lead-cta {
-  position: relative;
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  box-shadow:
-    inset 0 -2px 0 color-mix(in srgb, var(--du-bg) 32%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
-    var(--du-glow);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.hs-viral-cards {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.hs-viral-card {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-2xl);
-  background: var(--hs-card);
-  text-align: left;
-  transition: border-color 180ms ease, transform 200ms var(--ds-ease-spring);
-}
-
-.hs-viral-card:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
-  transform: translateY(-2px);
-}
-
-.hs-viral-media {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 500ms var(--ds-ease-spring);
-}
-
-.hs-viral-card:hover .hs-viral-media {
-  transform: scale(1.06);
-}
-
-.hs-viral-shade {
-  position: absolute;
-  inset: 35% 0 0;
-  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 92%, transparent), transparent);
-  pointer-events: none;
-}
-
-.hs-viral-tag {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 2px 8px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-}
-
-.hs-viral-meta {
-  position: absolute;
-  right: 12px;
-  bottom: 11px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hs-viral-name {
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hs-viral-arrow {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  color: var(--ds-text-2);
-  transition: transform 180ms ease, color 180ms ease;
-}
-
-.hs-viral-card:hover .hs-viral-arrow {
-  color: var(--du-accent-text);
-  transform: translateX(3px);
-}
-
-/* ============================================================================
-   3. Higgsfield Bento: Cosmic-Horizon Offer Card + 3×2 Sleek Utility Grid
-   ============================================================================ */
-.hs-offer-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 2.85fr);
-  gap: 16px;
-}
-
-.hs-offer {
-  position: relative;
-  display: flex;
-  min-height: 288px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  overflow: hidden;
-  padding: 24px 20px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 26%, var(--ds-line-2));
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(95% 75% at 50% 95%, color-mix(in srgb, var(--du-accent-2) 28%, transparent), transparent 68%),
-    var(--du-bg-elev);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-  text-align: center;
-  transition: border-color 180ms ease, transform 200ms var(--ds-ease-spring);
-}
-
-.hs-offer:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
-  transform: translateY(-2px);
-}
-
-/* Higgsfield signature glowing planet-horizon arc in Logo cyan-blue */
-.hs-offer-horizon {
-  position: absolute;
-  bottom: -115px;
-  left: 50%;
-  width: 148%;
-  height: 190px;
-  border-top: 2px solid color-mix(in srgb, var(--du-accent) 85%, white);
-  border-radius: 50% 50% 0 0;
-  background: radial-gradient(60% 90% at 50% 0%, color-mix(in srgb, var(--du-accent) 22%, transparent), var(--du-bg) 72%);
-  box-shadow: 0 -10px 34px color-mix(in srgb, var(--du-accent) 40%, transparent);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.hs-offer-kicker {
-  position: relative;
-  padding: 2px 10px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 70%, transparent);
-  color: var(--ds-text-2);
-  font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.hs-offer-num {
-  position: relative;
-  background: linear-gradient(180deg, white 15%, var(--du-accent-text) 95%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-family: var(--du-font-display, inherit);
-  font-size: clamp(2.5rem, 3.6vw, 3.5rem);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
-}
-
-.hs-offer-title {
-  position: relative;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.hs-offer-body {
-  position: relative;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.hs-offer-cta {
-  position: relative;
-  margin-top: 10px;
-  padding: 9px 22px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  box-shadow:
-    inset 0 -2px 0 color-mix(in srgb, var(--du-bg) 32%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
-    var(--du-glow);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring);
-}
-
-.hs-offer-cta:hover {
-  filter: brightness(1.07);
-  transform: translateY(-1px);
-}
-
-.hs-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 12px;
-}
-
-.hs-tile {
-  display: flex;
-  min-height: 138px;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-2xl);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
-  transition: background-color 180ms ease, border-color 180ms ease, transform 200ms var(--ds-ease-spring);
-}
-
-.hs-tile:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 34%, var(--ds-line-2));
-  background: var(--ds-surface-2);
-  transform: translateY(-2px);
-}
-
-.hs-tile-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hs-tile-badges {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* Krea × Higgsfield 3D glossy obsidian squircle icon */
-.hs-tile-squircle {
-  display: inline-flex;
-  width: 38px;
-  height: 38px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-lg);
-  background: linear-gradient(155deg, var(--ds-surface-3) 0%, var(--du-bg-elev) 100%);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-  transition: border-color 200ms ease, transform 220ms var(--ds-ease-spring);
-}
-
-.hs-tile:hover .hs-tile-squircle {
-  border-color: color-mix(in srgb, var(--du-accent) 48%, var(--ds-line-2));
-  transform: scale(1.06);
-}
-
-.hs-tile-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--ds-text-1);
-  transition: color 180ms ease;
-}
-
-.hs-tile:hover .hs-tile-icon {
-  color: var(--du-accent-text);
-}
-
-.hs-tile-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.hs-tile-title {
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.hs-tile-body {
-  color: var(--hs-muted);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.4;
-}
-
-.hs-badge {
-  padding: 2px 7px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-2);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.hs-badge-live {
-  border-color: color-mix(in srgb, var(--du-accent) 36%, var(--ds-line-2));
-  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
-  color: var(--du-accent-text);
-}
-
-.hs-badge-tag {
-  border-color: color-mix(in srgb, var(--du-accent-2) 40%, var(--ds-line-2));
-  background: color-mix(in srgb, var(--du-accent-2) 16%, transparent);
-  color: white;
-}
-
-/* ============================================================================
-   4. Pollo × Higgsfield Framed Flagship Showcase Modules
-   ============================================================================ */
-.hs-framed-module {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow: hidden;
-  padding: 24px 24px 20px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-3xl);
-  background: var(--du-bg-elev);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-}
-
-.hs-framed-glow {
-  position: absolute;
-  inset: -40px -20px auto auto;
-  width: 560px;
-  height: 260px;
-  background: radial-gradient(
-    ellipse at 75% 20%,
-    color-mix(in srgb, var(--du-accent) 16%, transparent),
-    color-mix(in srgb, var(--du-accent-2) 7%, transparent) 48%,
-    transparent 74%
-  );
-  pointer-events: none;
-}
-
-.hs-head-framed {
-  position: relative;
-  z-index: 1;
-}
-
-.hs-wall-wrap,
-.hs-shorts-wrap {
-  position: relative;
-}
-
-/* Signature Higgsfield & Pollo bottom gradient fade + centered frosted explore pill */
-.hs-fade-cta-bar {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin-top: -54px;
-  padding: 58px 0 6px;
-  background: linear-gradient(to top, var(--du-bg-elev) 26%, color-mix(in srgb, var(--du-bg-elev) 78%, transparent) 64%, transparent);
-  pointer-events: none;
-  z-index: 3;
-}
-
-.hs-fade-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 18px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 28%, var(--ds-line-2));
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-surface) 88%, transparent);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-  color: white;
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  backdrop-filter: blur(14px);
-  pointer-events: auto;
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 150ms var(--ds-ease-spring);
-}
-
-.hs-fade-pill:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 56%, var(--ds-line-3));
-  background: var(--ds-surface-2);
-  color: var(--du-accent-text);
-  transform: translateY(-1px);
-}
-
-/* ============================================================================
-   5. Higgsfield Shorts Studio 5-Column Vertical 9:16 Presets Wall
-   ============================================================================ */
-.hs-shorts-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.hs-short-card {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 9 / 15;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  text-align: left;
-  transition: border-color 180ms ease, transform 220ms var(--ds-ease-spring);
-}
-
-.hs-short-card:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
-  transform: translateY(-2px);
-}
-
-.hs-short-media {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 20%;
-  transition: transform 520ms var(--ds-ease-spring);
-}
-
-.hs-short-card:hover .hs-short-media {
-  transform: scale(1.05);
-}
-
-.hs-short-shade {
-  position: absolute;
-  inset: 42% 0 0;
-  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 92%, transparent), transparent);
-  pointer-events: none;
-}
-
-.hs-short-cta {
-  position: absolute;
-  left: 50%;
-  bottom: 66px;
-  padding: 7px 16px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  box-shadow: var(--du-glow);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translate(-50%, 6px);
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.hs-short-card:hover .hs-short-cta,
-.hs-short-card:focus-visible .hs-short-cta {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-.hs-short-footer {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  left: 10px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hs-short-meta {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hs-short-name {
-  color: white;
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hs-short-stats {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ds-text-2);
-  font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-2xs);
-}
-
-.hs-short-stats > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-/* Higgsfield signature bottom-right PiP reference thumbnail */
-.hs-short-pip {
-  width: 34px;
-  height: 46px;
-  flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, white 34%, transparent);
-  border-radius: var(--ds-r-sm);
-  object-fit: cover;
-  box-shadow: var(--ds-shadow-1);
-}
-
-/* ============================================================================
-   6. Pollo Fluted Spotlight Banner & Agent Use Cases
-   ============================================================================ */
-.hs-chrome {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-  padding: 56px 24px 68px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 22%, var(--ds-line-2));
-  border-radius: var(--ds-r-3xl);
-  background:
-    radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--du-accent) 16%, transparent), transparent 64%),
-    radial-gradient(46% 90% at 88% 90%, color-mix(in srgb, var(--du-accent-2) 14%, transparent), transparent 62%),
-    var(--du-bg-elev);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
-  text-align: center;
-}
-
-/* Pollo-inspired vertical fluted studio light-streak texture */
-.hs-chrome-flutes {
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--du-accent) 5%, transparent) 0,
-    color-mix(in srgb, var(--du-accent) 5%, transparent) 2px,
-    transparent 2px,
-    transparent 26px
-  );
-  mask-image: radial-gradient(70% 80% at 50% 50%, black 20%, transparent 100%);
-  pointer-events: none;
-}
-
-.hs-chrome-edge {
-  position: absolute;
-  width: 38%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--du-accent) 75%, white), transparent);
-}
-
-.hs-chrome-edge-a {
-  top: 0;
-  left: 31%;
-}
-
-.hs-chrome-edge-b {
-  right: 31%;
-  bottom: 0;
-}
-
-.hs-chrome-kicker {
-  position: relative;
-  color: var(--du-accent-text);
-  font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hs-chrome-title {
-  position: relative;
-  margin-top: 8px;
-  background: linear-gradient(180deg, white 15%, color-mix(in srgb, white 65%, var(--du-accent-text)) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-family: var(--du-font-display, inherit);
-  font-size: clamp(2rem, 3.6vw, 3.25rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-}
-
-.hs-chrome-body {
-  position: relative;
-  max-width: 560px;
-  margin-top: 12px;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.6;
-}
-
-.hs-chrome-actions {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-/* Pollo tactile hardware-button shader for primary buttons */
-.hs-btn {
-  display: inline-flex;
-  height: 42px;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 0 20px;
-  border-radius: var(--ds-r-full);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  white-space: nowrap;
-  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring), border-color 150ms ease;
-}
-
-.hs-btn:hover {
-  transform: translateY(-1px);
-}
-
-.hs-btn-light {
-  background: white;
-  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--du-bg) 22%, transparent);
-  color: var(--du-bg);
-}
-
-.hs-btn-light:hover {
-  filter: brightness(0.94);
-}
-
-.hs-btn-dark {
-  border: 1px solid var(--ds-line-2);
-  background: var(--ds-fill-2);
-  color: white;
-}
-
-.hs-btn-dark:hover {
-  border-color: var(--ds-line-3);
-  background: var(--ds-fill-3);
-}
-
-.hs-btn-accent {
-  background: var(--du-gradient);
-  box-shadow:
-    inset 0 -2px 0 color-mix(in srgb, var(--du-bg) 34%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 36%, transparent),
-    var(--du-glow);
-  color: var(--du-on-accent);
-}
-
-.hs-btn-accent:hover {
-  filter: brightness(1.07);
-}
-
-.hs-usecases {
-  position: relative;
-  margin-top: -46px;
-}
-
-.hs-usecase-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.hs-usecase {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  transition: border-color 180ms ease;
-}
-
-.hs-usecase:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
-}
-
-.hs-usecase img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 420ms var(--ds-ease-spring);
-}
-
-.hs-usecase:hover img {
-  transform: scale(1.05);
-}
-
-.hs-usecase-faded {
-  aspect-ratio: 3 / 1;
-  opacity: 0.32;
-  pointer-events: none;
-  mask-image: linear-gradient(to bottom, black, transparent);
-}
-
-.hs-usecase-shade {
-  position: absolute;
-  inset: 30% 0 0 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 92%, transparent),
-    color-mix(in srgb, var(--du-bg) 52%, transparent) 46%,
-    transparent
-  );
-}
-
-.hs-usecase-title {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 44px;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.hs-usecase-faded .hs-usecase-title,
-.hs-usecase-faded .hs-usecase-tags {
-  display: none;
-}
-
-.hs-usecase-tags {
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
-  display: flex;
-  gap: 6px;
-}
-
-.hs-chip {
-  padding: 3px 9px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 68%, transparent);
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-2xs);
-  backdrop-filter: blur(8px);
-}
-
-.hs-see-all {
-  position: absolute;
-  left: 50%;
-  bottom: 16%;
-  transform: translateX(-50%);
-}
-
-.hs-see-all:hover {
-  transform: translate(-50%, -1px);
-}
-
-/* ============================================================================
-   7. Section Headers & Edge-to-Edge Model Walls (object-fit: cover ALWAYS)
+   2. Section Headers & Quiet Filter Tabs
    ============================================================================ */
 .hs-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .hs-head {
@@ -1038,68 +167,80 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 14px 24px;
-}
-
-.hs-kicker {
-  margin-bottom: 4px;
-  color: var(--du-accent-text);
-  font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  gap: 16px 24px;
 }
 
 .hs-title {
   color: white;
   font-family: var(--du-font-display, inherit);
-  font-size: clamp(1.5rem, 2.2vw, 2rem);
-  font-weight: 900;
+  font-size: clamp(1.375rem, 1.9vw, 1.75rem);
+  font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.08;
-  text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .hs-sub {
-  margin-top: 5px;
+  margin-top: 6px;
   color: var(--hs-muted);
   font-size: var(--ds-fs-sm);
 }
 
-/* Dense 4-column Higgsfield masonry walls */
-.hs-wall {
+.hs-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--du-bg-elev);
+}
+
+.hs-tab {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.hs-tab:hover {
+  color: white;
+}
+
+.hs-tab-active {
+  background: var(--ds-fill-2);
+  color: white;
+}
+
+.hs-quiet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition: color 150ms ease;
+}
+
+.hs-quiet-link:hover {
+  color: white;
+}
+
+.hs-more-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+/* ============================================================================
+   3. Frameless Edge-to-Edge Discovery Masonry (Pure Moving Cinema & 4K Art)
+   ============================================================================ */
+.hs-discover-masonry {
   columns: 4;
   column-gap: 12px;
 }
-
-.hs-wall.hs-wall-video {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
-  grid-template-areas:
-    "japan japan whale whale"
-    "dragon fried fried dress"
-    "dragon samurai samurai dress";
-  gap: 12px;
-  columns: auto;
-}
-
-.hs-wall-video > .hs-wall-item {
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-/* Strictly full-bleed cover so zero black letterbox bars ever appear on video walls */
-.hs-wall-video .hs-wall-item video {
-  object-fit: cover;
-}
-
-.hs-wall-video > :nth-child(1) { grid-area: japan; }
-.hs-wall-video > :nth-child(2) { grid-area: whale; }
-.hs-wall-video > :nth-child(3) { grid-area: fried; }
-.hs-wall-video > :nth-child(4) { grid-area: dragon; }
-.hs-wall-video > :nth-child(5) { grid-area: dress; }
-.hs-wall-video > :nth-child(6) { grid-area: samurai; }
 
 .hs-wall-item {
   position: relative;
@@ -1107,14 +248,8 @@
   overflow: hidden;
   margin-bottom: 12px;
   break-inside: avoid;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  transition: border-color 180ms ease;
-}
-
-.hs-wall-item:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 40%, var(--ds-line-2));
+  border-radius: var(--ds-r-lg);
+  background: var(--du-bg-elev);
 }
 
 .hs-wall-item img,
@@ -1122,312 +257,428 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 460ms var(--ds-ease-spring);
+  transition: transform 520ms var(--ds-ease-spring);
 }
 
 .hs-wall-item:hover img,
 .hs-wall-item:hover video {
-  transform: scale(1.04);
-}
-
-.hs-wall-hover {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 65%, transparent);
-  color: white;
-  font-size: var(--ds-fs-sm);
-  white-space: nowrap;
-  opacity: 0;
-  backdrop-filter: blur(10px);
-  transform: translateX(-50%);
-  transition: opacity 200ms ease;
-}
-
-.hs-wall-item:hover .hs-wall-hover {
-  opacity: 1;
+  transform: scale(1.03);
 }
 
 /* ============================================================================
-   8. Higgsfield Architectural Node-Canvas Banner & Kling Editorial Banner
+   4. Quiet Matte Studio Suite (Linear × Krea Restraint)
    ============================================================================ */
-.hs-banner {
-  position: relative;
+.hs-suite-grid {
   display: grid;
-  min-height: 296px;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.45fr);
-  align-items: center;
-  overflow: hidden;
-  border-radius: var(--ds-r-3xl);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr);
+  gap: 14px;
 }
 
-.hs-banner-canvas {
-  border: 1px solid color-mix(in srgb, var(--du-accent) 32%, var(--ds-line-2));
-  background:
-    radial-gradient(64% 120% at 14% 0%, color-mix(in srgb, var(--du-accent) 26%, transparent), transparent 64%),
-    radial-gradient(54% 110% at 88% 100%, color-mix(in srgb, var(--du-accent-2) 28%, transparent), transparent 64%),
-    linear-gradient(125deg, color-mix(in srgb, var(--du-accent-2) 18%, var(--du-bg-elev)), var(--du-bg-elev));
-  box-shadow: var(--ds-specular), var(--ds-shadow-2);
-}
-
-.hs-banner-dots {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, color-mix(in srgb, white 10%, transparent) 1px, transparent 1px);
-  background-size: 22px 22px;
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.hs-banner-photo {
-  border: 1px solid var(--ds-line-2);
-  background:
-    radial-gradient(56% 100% at 85% 20%, color-mix(in srgb, var(--du-accent) 14%, transparent), transparent 62%),
-    linear-gradient(115deg, var(--du-bg-elev), var(--du-surface));
-  box-shadow: var(--ds-specular), var(--ds-shadow-2);
-}
-
-.hs-banner-text {
-  position: relative;
-  z-index: 2;
+.hs-welcome-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 34px 38px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 26px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background:
+    radial-gradient(90% 80% at 100% 100%, color-mix(in srgb, var(--du-accent) 11%, transparent), transparent 68%),
+    var(--du-bg-elev);
+  transition: border-color 180ms ease, background-color 180ms ease;
 }
 
-.hs-banner-kicker {
+.hs-welcome-card:hover {
+  border-color: var(--ds-line-2);
+}
+
+.hs-welcome-kicker {
   color: var(--du-accent-text);
   font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
 }
 
-.hs-banner-tag {
-  padding: 4px 12px;
+.hs-welcome-num {
+  margin-top: 8px;
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(2.4rem, 3.2vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.hs-welcome-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.hs-welcome-body {
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+.hs-welcome-cta {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin-top: 14px;
+  padding: 0 18px;
   border-radius: var(--ds-r-full);
   background: var(--du-gradient);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  transition: filter 150ms ease;
 }
 
-.hs-banner-title {
-  color: white;
-  font-family: var(--du-font-display, inherit);
-  font-size: clamp(1.75rem, 2.8vw, 2.75rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.06;
+.hs-welcome-card:hover .hs-welcome-cta {
+  filter: brightness(1.06);
 }
 
-.hs-banner-body {
-  max-width: 440px;
-  margin-bottom: 8px;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.55;
+.hs-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 14px;
 }
 
-/* Crafted interactive-looking Node-Canvas diorama */
-.hs-banner-art {
-  position: relative;
-  height: 100%;
-  min-height: 296px;
-}
-
-.hs-banner-wire {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--du-accent-text);
-  opacity: 0.78;
-  pointer-events: none;
-}
-
-.hs-banner-node {
-  position: absolute;
-  overflow: hidden;
-  border: 2px solid color-mix(in srgb, white 75%, var(--du-accent));
-  border-radius: var(--ds-r-xl);
+.hs-tile {
+  display: flex;
+  min-height: 132px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
   background: var(--du-bg-elev);
-  box-shadow: var(--ds-shadow-float);
+  transition: border-color 180ms ease, background-color 180ms ease;
 }
 
-.hs-banner-node-head {
-  display: block;
-  padding: 5px 10px;
-  background: color-mix(in srgb, var(--du-surface) 94%, transparent);
+.hs-tile:hover {
+  border-color: var(--ds-line-2);
+  background: var(--du-surface);
+}
+
+.hs-tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hs-tile-icon-box {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+}
+
+.hs-tile-icon {
+  width: 17px;
+  height: 17px;
   color: var(--ds-text-2);
+  transition: color 160ms ease;
+}
+
+.hs-tile:hover .hs-tile-icon {
+  color: var(--du-accent-text);
+}
+
+.hs-tile-arrow {
+  width: 15px;
+  height: 15px;
+  color: var(--ds-text-4);
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.hs-tile:hover .hs-tile-arrow {
+  color: white;
+  transform: translate(2px, -2px);
+}
+
+.hs-tile-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hs-tile-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.hs-tile-tag {
+  padding: 1px 6px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xs);
+  color: var(--ds-text-3);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+}
+
+.hs-tile-body {
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+/* ============================================================================
+   5. Two Calm Editorial Spotlights (Infinite Canvas & Director Agent)
+   ============================================================================ */
+.hs-spotlights {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hs-spot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 32px;
+  align-items: center;
+  padding: 36px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+}
+
+.hs-spot-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hs-spot-kicker {
+  color: var(--du-accent-text);
   font-family: var(--du-font-mono, inherit);
   font-size: var(--ds-fs-2xs);
   font-weight: 600;
-  border-bottom: 1px solid var(--ds-line-2);
+  letter-spacing: 0.12em;
 }
 
-.hs-banner-node img {
-  display: block;
+.hs-spot-title {
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(1.6rem, 2.4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.hs-spot-body {
+  max-width: 420px;
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.65;
+}
+
+.hs-spot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hs-btn {
+  display: inline-flex;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-radius: var(--ds-r-full);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: filter 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.hs-btn-light {
+  background: white;
+  color: var(--du-bg);
+}
+
+.hs-btn-light:hover {
+  filter: brightness(0.92);
+}
+
+.hs-btn-accent {
+  background: var(--du-gradient);
+  color: var(--du-on-accent);
+}
+
+.hs-btn-accent:hover {
+  filter: brightness(1.06);
+}
+
+.hs-btn-ghost {
+  border: 1px solid var(--ds-line-2);
+  background: transparent;
+  color: var(--ds-text-2);
+}
+
+.hs-btn-ghost:hover {
+  border-color: var(--ds-line-3);
+  color: white;
+}
+
+.hs-spot-canvas-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hs-spot-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hs-spot-frame {
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface);
+}
+
+.hs-spot-frame img {
   width: 100%;
-  height: 146px;
+  height: 100%;
   object-fit: cover;
   object-position: center 20%;
 }
 
-.hs-banner-node-a {
-  top: 42px;
-  left: 8%;
-  width: 215px;
-}
-
-.hs-banner-node-b {
-  top: 24px;
-  right: 7%;
-  width: 225px;
-}
-
-.hs-banner-chip {
-  position: absolute;
-  z-index: 3;
-  padding: 5px 12px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 44%, white);
+.hs-spot-prompt-pill {
+  align-self: center;
+  padding: 9px 18px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg-elev) 88%, transparent);
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 700;
-  backdrop-filter: blur(12px);
+  background: var(--du-surface);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
 }
 
-.hs-banner-chip-a {
-  top: 22px;
-  left: 38%;
+.hs-spot-quad {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.hs-banner-bubble {
-  position: absolute;
-  right: 12%;
-  bottom: 20px;
-  z-index: 3;
-  max-width: 290px;
-  padding: 10px 15px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 48%, var(--ds-line-2));
+.hs-spot-quad-item {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
   border-radius: var(--ds-r-xl);
-  background: color-mix(in srgb, var(--du-bg-elev) 90%, transparent);
-  box-shadow: var(--ds-specular), var(--ds-shadow-float);
+  background: var(--du-surface);
+}
+
+.hs-spot-quad-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 460ms var(--ds-ease-spring);
+}
+
+.hs-spot-quad-item:hover img {
+  transform: scale(1.04);
+}
+
+.hs-spot-quad-shade {
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 86%, transparent), transparent);
+}
+
+.hs-spot-quad-label {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  left: 12px;
   color: white;
   font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  backdrop-filter: blur(18px);
-}
-
-.hs-banner-fan {
-  position: relative;
-  height: 100%;
-  min-height: 296px;
-}
-
-.hs-banner-fan img {
-  position: absolute;
-  top: calc(16% + var(--i) * 3%);
-  left: calc(4% + var(--i) * 18%);
-  width: 29%;
-  aspect-ratio: 4 / 5;
-  border: 1px solid var(--ds-line-3);
-  border-radius: var(--ds-r-2xl);
-  object-fit: cover;
-  box-shadow: var(--ds-shadow-2);
-  transform: rotate(calc(-12deg + var(--i) * 5.5deg));
+  font-weight: 500;
 }
 
 /* ============================================================================
-   9. Compact 3-Step Horizontal Workflow Bar & Higgsfield AI Pill Cloud
+   6. Quiet 3-Step Guide & Minimal Capabilities Index
    ============================================================================ */
-.hs-how-bar {
+.hs-how-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 28px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-3xl);
-  background: var(--ds-surface-1);
+  gap: 28px;
 }
 
 .hs-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 32px;
 }
 
 .hs-step {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 16px;
-  border-top: 1px solid var(--ds-line-2);
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ds-line-1);
 }
 
 .hs-step-num {
-  color: var(--du-accent-text);
+  color: var(--ds-text-4);
   font-family: var(--du-font-mono, inherit);
-  font-size: var(--ds-fs-lg);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
 }
 
 .hs-step-title {
-  margin-top: 4px;
   color: white;
   font-size: var(--ds-fs-md);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hs-step-body {
-  max-width: 44ch;
+  max-width: 42ch;
   color: var(--hs-muted);
   font-size: var(--ds-fs-sm);
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
-/* Higgsfield bottom elevated AI capabilities pill cloud */
-.hs-pill-cloud {
-  margin-top: 12px;
-  padding: 48px 0;
-  border-top: 1px solid var(--ds-line-1);
-  border-bottom: 1px solid var(--ds-line-1);
-  background: var(--du-bg-elev);
-}
-
-.hs-pill-cloud-inner {
+.hs-cloud-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
+  padding-top: 40px;
+  border-top: 1px solid var(--ds-line-1);
   text-align: center;
 }
 
-.hs-pill-cloud-title {
-  color: white;
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-xl);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
+.hs-cloud-title {
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
 }
 
-.hs-pill-cloud-list {
+.hs-cloud-list {
   display: flex;
-  max-width: 1080px;
+  max-width: 1040px;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
@@ -1436,25 +687,24 @@
 .hs-cloud-pill {
   display: inline-flex;
   align-items: center;
-  height: 34px;
+  height: 32px;
   padding: 0 14px;
   border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-md);
-  background: var(--ds-surface-1);
-  color: var(--ds-text-2);
+  border-radius: var(--ds-r-full);
+  background: transparent;
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
-  font-weight: 500;
-  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
 }
 
 .hs-cloud-pill:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 40%, var(--ds-line-2));
-  background: var(--ds-surface-2);
-  color: var(--du-accent-text);
+  border-color: var(--ds-line-2);
+  background: var(--ds-fill-1);
+  color: white;
 }
 
 /* ============================================================================
-   10. Shared FAQ, Mini Composer, Back-To-Create, Living Wall Cards & Slide Cover
+   7. Shared FAQ, Mini Composer, Back-To-Create, Living Wall Cards & Slide Cover
    ============================================================================ */
 .hs-faq {
   display: grid;
@@ -1580,16 +830,15 @@
   bottom: 24px;
   z-index: 30;
   display: flex;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-surface) 90%, transparent);
-  color: var(--ds-text-1);
-  box-shadow: var(--ds-specular), var(--ds-shadow-float);
-  backdrop-filter: blur(18px);
+  color: var(--ds-text-2);
+  backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
@@ -1603,8 +852,8 @@
 }
 
 .hs-back-to-create:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 50%, var(--ds-line-2));
-  color: var(--du-accent-text);
+  border-color: var(--ds-line-3);
+  color: white;
 }
 
 .hs-back-to-create:focus-visible {
@@ -1612,7 +861,7 @@
   outline-offset: 3px;
 }
 
-/* Living wall cards */
+/* Living wall cards — pure imagery at rest; hover unveils prompt + Recreate pill */
 .wc-link {
   position: absolute;
   inset: 0;
@@ -1622,11 +871,18 @@
 .wc-play {
   top: 10px;
   right: 10px;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.wc:hover .wc-play {
+  opacity: 1;
 }
 
 @media (hover: none) {
   .wc-video .wc-play {
     display: inline-flex;
+    opacity: 1;
   }
 
   .wc-video .wc-info {
@@ -1639,48 +895,19 @@
 .wc video {
   display: block;
   transform-origin: center;
-  transition: transform 700ms var(--du-ease, ease);
+  transition: transform 640ms var(--ds-ease-spring);
 }
 
-.wc-move-push:hover img { transform: scale(1.1); transition-duration: 5s; }
-.wc-move-left:hover img { transform: scale(1.1) translateX(-3%); transition-duration: 5s; }
-.wc-move-right:hover img { transform: scale(1.1) translateX(3%); transition-duration: 5s; }
-.wc-move-rise:hover img { transform: scale(1.1) translateY(-3%); transition-duration: 5s; }
+.wc-move-push:hover img { transform: scale(1.06); }
+.wc-move-left:hover img { transform: scale(1.06) translateX(-2%); }
+.wc-move-right:hover img { transform: scale(1.06) translateX(2%); }
+.wc-move-rise:hover img { transform: scale(1.06) translateY(-2%); }
 .wc-video:hover video { transform: scale(1.03); }
 
-.wc-sheen {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 35%, color-mix(in srgb, white 12%, transparent) 50%, transparent 65%);
-  background-position: 160% 0;
-  background-size: 250% 100%;
-  pointer-events: none;
-}
-
-.wc:hover .wc-sheen {
-  background-position: -60% 0;
-  transition: background-position 900ms var(--du-ease, ease);
-}
-
+/* Quiet: hide permanent video badge & shiny sweep so images feel like a museum gallery */
+.wc-sheen,
 .wc-kind {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
-  color: white;
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-  transition: opacity 260ms ease;
-}
-
-.wc-video:hover .wc-kind {
-  opacity: 0;
+  display: none;
 }
 
 .wc-info {
@@ -1690,11 +917,11 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 40px 14px 14px;
+  padding: 44px 14px 14px;
   background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 88%, transparent), transparent);
   opacity: 0;
-  transform: translateY(8px);
-  transition: opacity var(--du-dur, 320ms) var(--du-ease, ease), transform var(--du-dur, 320ms) var(--du-ease, ease);
+  transform: translateY(6px);
+  transition: opacity 220ms ease, transform 220ms ease;
 }
 
 .wc:hover .wc-info,
@@ -1710,61 +937,45 @@
   font-size: var(--ds-fs-xs);
   line-height: 1.5;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .wc-cta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 5px;
+  padding: 6px 13px;
   border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  box-shadow: var(--du-glow);
-  color: var(--du-on-accent);
+  background: white;
+  color: var(--du-bg);
   font-size: var(--ds-fs-xs);
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* Editorial slide cover */
+/* Kept for sub-pages importing SlideCover */
 .hs-slide-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 88%, transparent) 0%,
-    color-mix(in srgb, var(--du-bg) 32%, transparent) 38%,
-    transparent 68%
-  );
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 82%, transparent) 0%, transparent 55%);
   pointer-events: none;
 }
 
-.hs-slide-pill {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-  padding: 3px 10px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 68%, transparent);
-  color: var(--ds-text-1);
+.hs-slide-subtag {
+  color: var(--ds-text-2);
   font-family: var(--du-font-mono, inherit);
   font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  backdrop-filter: blur(12px);
-  pointer-events: none;
+  font-weight: 500;
+  letter-spacing: 0.06em;
 }
 
 .hs-slide-cover {
   position: absolute;
-  right: 14px;
-  bottom: 12px;
-  left: 14px;
+  right: 16px;
+  bottom: 14px;
+  left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   pointer-events: none;
 }
 
@@ -1772,71 +983,40 @@
   overflow: hidden;
   color: white;
   font-family: var(--du-font-display, inherit);
-  font-size: clamp(var(--ds-fs-lg), 1.8vw, var(--ds-fs-2xl));
-  font-weight: 800;
+  font-size: clamp(var(--ds-fs-lg), 1.6vw, var(--ds-fs-xl));
+  font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.08;
+  line-height: 1.1;
   text-overflow: ellipsis;
-  text-shadow: 0 4px 20px color-mix(in srgb, var(--du-bg) 82%, transparent);
   white-space: nowrap;
 }
 
 /* ============================================================================
-   11. Responsive Breakpoints
+   8. Responsive Breakpoints
    ============================================================================ */
 @media (max-width: 1199px) {
   .hs-carousel-track {
-    grid-auto-columns: calc((100% - 18px) / 2);
+    grid-auto-columns: calc((100% - 20px) / 2);
   }
 
-  .hs-viral {
-    grid-template-columns: 1fr;
-  }
-
-  .hs-viral-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-offer-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hs-shorts-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hs-usecase-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-wall {
+  .hs-discover-masonry {
     columns: 3;
   }
 
-  .hs-banner {
+  .hs-suite-grid {
     grid-template-columns: 1fr;
   }
 
-  .hs-banner-art,
-  .hs-banner-fan {
-    display: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  .hs-wall.hs-wall-video {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "japan whale"
-      "dragon dress"
-      "fried samurai";
+  .hs-spot {
+    grid-template-columns: 1fr;
+    padding: 26px;
   }
 }
 
 @media (max-width: 899px) {
   .hs-steps {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 20px;
   }
 
   .hs-faq {
@@ -1850,31 +1030,21 @@
     padding: 0 14px;
   }
 
-  .hs-framed-module {
-    padding: 18px 14px 16px;
+  .hs-stack {
+    gap: 56px;
+  }
+
+  .hs-discover-masonry {
+    columns: 2;
+    column-gap: 8px;
+  }
+
+  .hs-wall-item {
+    margin-bottom: 8px;
   }
 
   .hs-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-shorts-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-wall {
-    columns: 2;
-  }
-
-  .hs-wall.hs-wall-video {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "japan"
-      "whale"
-      "fried"
-      "dragon"
-      "dress"
-      "samurai";
   }
 }
 
@@ -1882,9 +1052,5 @@
   .wc:hover img,
   .wc:hover video {
     transform: none;
-  }
-
-  .wc:hover .wc-sheen {
-    background-position: 160% 0;
   }
 }

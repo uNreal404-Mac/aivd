@@ -1,24 +1,25 @@
-/* Composer used by the home page and the section pages. */
+/* Pollo × 字节即梦 Jimeng Flagship Composer:
+   Wide 6.2:1 slate proportion, velvety matte obsidian surface, whisper hairline border,
+   soft ambient backlight, and tilted reference dropzone. */
 .du-composer-tabs {
   display: flex;
   width: fit-content;
   margin: 0 auto;
   padding: 3px;
-  border: 1px solid color-mix(in srgb, var(--du-accent) 26%, var(--ds-line-2));
+  border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg-elev) 82%, transparent);
-  box-shadow: 0 0 28px -8px color-mix(in srgb, var(--du-accent) 34%, transparent);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--du-surface) 76%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .du-composer-tab {
-  min-width: 72px;
-  padding: 6px 18px;
+  min-width: 78px;
+  padding: 6px 20px;
   border-radius: var(--ds-r-full);
   color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
-  transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition: color 160ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .du-composer-tab:hover {
@@ -29,12 +30,46 @@
 .du-composer-tab-active:hover {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--du-accent) 28%, var(--ds-surface-2)),
-    color-mix(in srgb, var(--du-accent-2) 14%, var(--ds-surface-1))
+    color-mix(in srgb, var(--du-accent) 22%, var(--ds-surface-3)),
+    color-mix(in srgb, var(--du-accent-2) 10%, var(--ds-surface-2))
   );
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--du-accent) 45%, white);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
+    0 2px 12px color-mix(in srgb, var(--du-accent) 18%, transparent);
   color: white;
   font-weight: 600;
+}
+
+/* Jimeng-style subtly tilted matte reference upload card on left of prompt */
+.du-composer-ref-slot {
+  display: flex;
+  width: 56px;
+  height: 68px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 2px;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, white 3%, transparent);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+  transform: rotate(-3deg);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 220ms var(--ds-ease-spring);
+}
+
+.du-composer-ref-slot:hover {
+  border-color: color-mix(in srgb, var(--du-accent) 55%, var(--ds-line-3));
+  background: color-mix(in srgb, var(--du-accent) 7%, transparent);
+  color: white;
+  transform: rotate(0deg) translateY(-1px);
 }
 
 .du-canvas-entry {
@@ -121,21 +156,24 @@
 
 .du-composer {
   position: relative;
-  margin-top: 16px;
-  padding: 13px 13px 11px;
-  border: 1px solid var(--ds-line-2);
-  border-top-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
+  margin-top: 22px;
+  padding: 18px 20px 14px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-2xl);
-  background: color-mix(in srgb, var(--du-surface) 84%, transparent);
-  box-shadow: var(--ds-specular), var(--ds-shadow-float), 0 -16px 42px -22px color-mix(in srgb, var(--du-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--du-bg-elev) 92%, var(--du-surface));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+    0 24px 64px -20px color-mix(in srgb, black 85%, transparent);
   text-align: left;
-  backdrop-filter: blur(26px) saturate(175%);
-  -webkit-backdrop-filter: blur(26px) saturate(175%);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  transition: border-color 200ms ease, box-shadow 220ms ease;
 }
 
 .du-composer:focus-within {
-  border-color: color-mix(in srgb, var(--du-accent) 52%, var(--ds-line-2));
+  border-color: var(--ds-line-2);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent),
+    0 24px 72px -18px color-mix(in srgb, black 90%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--du-accent) 16%, transparent);
 }
 
 .du-home-popover,

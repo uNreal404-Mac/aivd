@@ -287,19 +287,19 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     }
   }
 
-  const chip = "inline-flex min-h-9 max-sm:min-h-11 max-w-full items-center gap-1.5 whitespace-nowrap rounded-xl bg-[var(--du-surface-2)] px-3 text-xs text-[var(--du-text)] transition-colors hover:bg-[var(--du-border-strong)] sm:text-sm";
-  const plainControl = "inline-flex min-h-9 max-sm:min-h-11 max-w-full items-center gap-1.5 whitespace-nowrap px-1 text-xs text-[var(--du-text)] transition-colors hover:text-[var(--du-accent-text)] sm:text-sm disabled:cursor-not-allowed disabled:opacity-45";
-  const divider = <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />;
+  const chip = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-white/[0.06] px-3 text-xs font-medium text-[var(--du-text)] transition-colors hover:bg-white/[0.11] sm:text-[13px]";
+  const plainControl = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 text-xs text-[var(--du-text-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--du-text)] sm:text-[13px] disabled:cursor-not-allowed disabled:opacity-40";
+  const divider = <span aria-hidden="true" className="hidden h-3.5 w-px shrink-0 bg-white/[0.08] sm:block" />;
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 
   const imageRefLimit = imageModel?.options.maxImages ?? 10;
 
-  return <div id="home-generator" className="relative z-20 w-full max-w-[720px] scroll-mt-24">
+  return <div id="home-generator" className="relative z-20 w-full max-w-[1060px] scroll-mt-24">
     <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") setVideoReferences(items); else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferences.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? MAX_HOME_VIDEO_REFERENCES : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
     {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution(imageModel?.options.resolutions?.[0] ?? "1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
-      <button type="button" role="tab" aria-selected={kind === "canvas"} onClick={() => switchKind("canvas")} className={`du-composer-tab ${kind === "canvas" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "无限画布" : "Infinite Canvas"}</button>
+      <button type="button" role="tab" aria-selected={kind === "canvas"} onClick={() => switchKind("canvas")} className={`du-composer-tab ${kind === "canvas" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "画布" : "Canvas"}</button>
     </div>}
     {kind === "canvas" ? <div className="du-canvas-entry" role="tabpanel" aria-label={zh ? "无限画布" : "Infinite Canvas"}>
       <a className="du-canvas-entry-card du-canvas-entry-new" href={localizedHref(lang, "/creative-space/canvas")}>
@@ -317,26 +317,32 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     {kind !== "canvas" ?
     <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
-    {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/30 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)]" aria-label={zh ? "选择参考图片" : "Choose reference images"}><span className="text-xl leading-none">+</span><span>{zh ? "参考图" : "Images"}</span></button>
-      {referenceImages.map((item, index) => <div key={item.id} className="relative h-14 w-14 shrink-0" title={item.name}>
-        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/20" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[10px] text-white">@{index + 1}</span></button>
+    {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-2">
+      <button type="button" onClick={() => setPickerOpen(true)} className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/70 transition-colors hover:border-[var(--du-accent)] hover:text-white" aria-label={zh ? "选择参考图片" : "Choose reference images"}><Plus className="h-4 w-4" /></button>
+      {referenceImages.map((item, index) => <div key={item.id} className="relative h-12 w-12 shrink-0" title={item.name}>
+        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/15" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[10px] text-white">@{index + 1}</span></button>
         <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="absolute -right-1 -top-1 rounded-full bg-black p-0.5 text-white"><X className="h-3 w-3" /></button>
       </div>)}
-      <span className="text-xs text-white/55">{zh ? `最多 ${imageRefLimit} 张 · 点击缩略图可插入 @编号` : `Up to ${imageRefLimit} · click an image to insert its @number`}</span>
+      <span className="text-xs text-white/45">{zh ? `最多 ${imageRefLimit} 张参考图 · 点击插入 @编号` : `Up to ${imageRefLimit} refs · click to insert @number`}</span>
     </div> : null}
-    <div className="du-composer-prompt-row flex min-h-[72px] gap-3">
-      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
-        {kind === "video" ? <div className="flex shrink-0 items-start gap-1.5">
-          <div className="flex flex-col items-center gap-1"><button type="button" onClick={() => setPickerOpen(true)} title={zh ? "选择参考图片" : "Choose reference images"} className="flex h-[56px] w-[46px] flex-col items-center justify-center rounded-xl border border-dashed border-white/25 bg-black/25 text-xs text-white/75 transition-colors hover:border-[var(--du-accent)] hover:text-white"><span className="text-xl leading-none">+</span><span className="mt-1">{zh ? "参考" : "Ref"}</span></button><span className="text-[10px] text-white/65">{videoReferences.length ? `${videoReferences.length}/12` : (zh ? "可选" : "Optional")}</span></div>
+    <div className="du-composer-prompt-row flex min-h-[84px] items-start gap-3.5">
+      {kind === "video" ? (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          title={zh ? "上传参考素材（最多 12 张）" : "Upload reference media (up to 12)"}
+          className="du-composer-ref-slot"
+        >
+          <Plus className="h-4 w-4 opacity-75" aria-hidden="true" />
+          <span>{videoReferences.length ? `${videoReferences.length}/12` : (zh ? "参考内容" : "Ref")}</span>
+        </button>
+      ) : null}
+      <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
+      <div className="relative min-w-[160px] flex-1">
+        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={3} maxLength={2000} placeholder={kind === "video" ? (zh ? "上传最多 12 张参考素材，输入文字或 @图片1 引用内容，自由组合画面与动作……" : "Upload images or videos and @ them as references to guide your video…") : (zh ? "描述你想生成的画面细节、光影与构图……" : "Describe the scene, lighting, and composition you want to create…")} className="min-h-[80px] w-full resize-none bg-transparent py-1 text-[14px] font-normal leading-relaxed text-[var(--du-text)] outline-none placeholder:text-white/38" />
+        {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
+          {videoReferences.map((item, index) => <button key={item.id} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
         </div> : null}
-        <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
-        <div className="relative min-w-[160px] flex-1">
-          <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={2} maxLength={2000} placeholder={kind === "video" ? (zh ? "最多添加 12 张参考图片，输入文字或用 @图片1、@图片2 引用素材，自由组合画面与动作。" : "Add up to 12 reference images. Write a prompt and use @Image1, @Image2 to combine them into a scene.") : (zh ? "描述你的创意，选择模型开始创作……" : "Describe your idea, then choose a model…")} className="min-h-[64px] w-full resize-none bg-transparent px-2 py-1.5 text-[12px] font-light text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)] sm:text-[14px]" />
-          {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
-            {videoReferences.map((item, index) => <button key={item.id} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
-          </div> : null}
-        </div>
       </div>
     </div>
     {kind === "video" && videoReferences.length ? <div className="du-composer-references">
