@@ -6,8 +6,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: calc(100svh - var(--hf-header-h, 56px));
-  min-height: 620px;
+  height: calc(100svh - var(--hf-header-h, 56px) - 38px);
+  min-height: 580px;
   overflow: hidden;
   background: var(--du-bg);
   color: var(--ds-text-1);

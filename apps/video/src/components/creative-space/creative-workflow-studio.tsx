@@ -468,7 +468,7 @@ export function CreativeWorkflowStudio({ locale, initialPrompt = "" }: { locale:
     }
   };
 
-  return <main className="cw-shell">
+  return <div className="cw-shell">
     <HomeMediaPicker lang={locale} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={addAssets} maxSelected={12} selectedIds={[]} userId={session?.user?.id} acceptedTypes={ACCEPTED_MEDIA} />
     <div className="cw-topbar">
       <Link href={localizedHref(locale, "/creative-space")} className="cw-back" aria-label={zh ? "返回创作空间" : "Back to Creative Space"}><ArrowLeft size={18} /></Link>
@@ -527,5 +527,5 @@ export function CreativeWorkflowStudio({ locale, initialPrompt = "" }: { locale:
       </aside>
     </div>
     {(notice || error) ? <div className={`cw-toast${error ? " cw-toast-error" : ""}`} role={error ? "alert" : "status"}>{error || notice}<button type="button" onClick={() => { setNotice(""); setError(""); }} aria-label={zh ? "关闭" : "Dismiss"}><X size={14} /></button></div> : null}
-  </main>;
+  </div>;
 }

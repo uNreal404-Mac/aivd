@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
-import { CreativeWorkflowStudio } from "@/components/creative-space/creative-workflow-studio";
+import { CanvasWorkspaceSwitcher } from "@/components/creative-space/canvas-workspace-switcher";
 import type { Locale } from "@/config/i18n-config";
 import { buildAlternates } from "@/lib/seo";
 
 interface CreativeSpacePageProps {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ prompt?: string | string[] }>;
+  searchParams: Promise<{ prompt?: string | string[]; mode?: string | string[] }>;
 }
 
 export async function generateMetadata({
@@ -35,8 +35,10 @@ export default async function CreativeSpacePage({
   searchParams,
 }: CreativeSpacePageProps) {
   const { locale } = await params;
-  const { prompt } = await searchParams;
+  const { prompt, mode } = await searchParams;
   const initialPrompt = (Array.isArray(prompt) ? prompt[0] : prompt)?.slice(0, 2000) ?? "";
+  const rawMode = Array.isArray(mode) ? mode[0] : mode;
+  const initialMode = rawMode === "workflow" ? "workflow" : "canvas";
 
-  return <CreativeWorkflowStudio locale={locale} initialPrompt={initialPrompt} />;
+  return <CanvasWorkspaceSwitcher locale={locale} initialPrompt={initialPrompt} initialMode={initialMode} />;
 }
