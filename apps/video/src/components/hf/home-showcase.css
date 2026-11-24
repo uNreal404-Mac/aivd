@@ -70,6 +70,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 22%;
   transition: transform 400ms ease;
 }
 
@@ -182,11 +183,17 @@
   margin-top: 8px;
   padding: 10px 22px;
   border-radius: var(--ds-r-md);
-  background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-md);
   font-weight: 700;
+  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring);
+}
+
+.hs-offer-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
 }
 
 .hs-tiles {
@@ -749,13 +756,20 @@
 }
 
 .hs-banner-canvas {
+  border: 1px solid color-mix(in srgb, var(--du-accent) 24%, var(--ds-line-2));
   background:
-    radial-gradient(70% 120% at 0% 0%, color-mix(in srgb, var(--du-accent) 45%, transparent), transparent 60%),
-    linear-gradient(120deg, var(--du-accent-hover), var(--du-surface-2) 70%);
+    radial-gradient(62% 115% at 14% 0%, color-mix(in srgb, var(--du-accent-2) 22%, transparent), transparent 64%),
+    radial-gradient(48% 90% at 88% 100%, color-mix(in srgb, var(--du-accent) 16%, transparent), transparent 62%),
+    var(--du-bg-elev);
+  box-shadow: var(--ds-specular), var(--ds-shadow-2);
 }
 
 .hs-banner-photo {
-  background: linear-gradient(110deg, var(--du-surface-2), color-mix(in srgb, white 25%, var(--du-surface-2)));
+  border: 1px solid var(--ds-line-2);
+  background:
+    radial-gradient(56% 100% at 85% 20%, color-mix(in srgb, var(--du-accent) 12%, transparent), transparent 62%),
+    linear-gradient(115deg, var(--du-bg-elev), var(--du-surface));
+  box-shadow: var(--ds-specular), var(--ds-shadow-2);
 }
 
 .hs-banner-text {
@@ -827,15 +841,19 @@
 
 .hs-banner-bubble {
   position: absolute;
-  top: 60px;
-  left: 2%;
-  max-width: 220px;
+  bottom: 24px;
+  left: 24px;
+  z-index: 2;
+  max-width: 260px;
   padding: 10px 14px;
-  border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, white 88%, transparent);
-  color: var(--du-bg);
-  font-size: var(--ds-fs-sm);
-  transform: rotate(-4deg);
+  border: 1px solid color-mix(in srgb, var(--du-accent) 45%, var(--ds-line-2));
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, var(--du-surface) 90%, transparent);
+  box-shadow: var(--ds-specular), var(--ds-shadow-float);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  backdrop-filter: blur(18px);
 }
 
 .hs-banner-fan {
@@ -930,13 +948,13 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
   color: var(--du-on-accent);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--du-bg) 60%, transparent);
+  box-shadow: var(--du-glow);
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity 200ms ease, transform 200ms ease, background 160ms ease;
+  transition: opacity 200ms ease, transform 200ms ease, filter 160ms ease;
 }
 
 .hs-back-to-create-on {

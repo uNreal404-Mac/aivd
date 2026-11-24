@@ -472,14 +472,10 @@ export function HomePricing({
               ) : null}
 
               <div className="hp-tier-inner">
-                {/* Tier Header */}
+                {/* Tier Header — single clean badge policy (Annual toggle already carries Save 30%) */}
                 <div className="hp-tier-head">
                   <h3 className={`hp-tier-name hp-tier-name-${plan.tier}`}>{copy.names[plan.tier]}</h3>
-                  {period === "year" ? (
-                    <span className={`hp-discount-pill hp-discount-${plan.tier}`}>
-                      {copy.pctOff(plan.yearlySavingPercent)}
-                    </span>
-                  ) : firstMonth !== null ? (
+                  {firstMonth !== null ? (
                     <span className="hp-discount-pill hp-discount-pro">{copy.firstMonthBadge}</span>
                   ) : plan.tier === "ultimate" ? (
                     <span className="hp-ultimate-tag">{copy.ultimateBadge}</span>

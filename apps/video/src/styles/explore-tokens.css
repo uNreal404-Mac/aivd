@@ -8,7 +8,7 @@
   --ex-accent-hover: var(--du-accent-hover);
   --ex-on-accent: var(--du-on-accent);
   --ex-chip-bg: var(--du-glass-bg);
-  --ex-overlay: rgba(0, 0, 0, 0.58);
+  --ex-overlay: color-mix(in srgb, var(--du-bg) 58%, transparent);
   --ex-radius-card: 16px;
   --ex-radius-chip: 999px;
   --ex-gap: 16px;

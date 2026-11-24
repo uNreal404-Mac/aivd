@@ -70,10 +70,10 @@ export const FEATURE_SLIDES: {
     href: withPrompt(navModelHref("video", "bytedance/seedance-2-5"), featurePrompts.whale),
   },
   {
-    media: MEDIA.friedChicken,
+    media: MEDIA.dragon,
     cover: { main: "VEO 3.1", sub: { zh: "画面 + 声音", en: "WITH SOUND" } },
     title: { zh: "VEO 3.1 有声短片", en: "VEO 3.1 WITH SOUND" },
-    body: { zh: "画面和声音一起生成", en: "Picture and sound in one pass" },
+    body: { zh: "电影级动态画面与原生音效同步生成", en: "Cinema picture and native sound in one pass" },
     href: navModelHref("video", "veo-3.1"),
   },
   {
@@ -141,7 +141,7 @@ export const MODEL_GALLERIES: { id: string; title: string; heading: Bi; body: Bi
 export const HOW_STEPS: { title: Bi; body: Bi }[] = [
   {
     title: { zh: "描述你想要的画面", en: "Describe it" },
-    body: { zh: "写一句想看到的画面，或者上传一张起始图片让它动起来。", en: "Type what you want to see, or add a start image for the model to animate." },
+    body: { zh: "写一句想看到的画面，或上传参考素材（支持 @图片1 引用）精准控图。", en: "Type what you want to see, or attach reference media (supports @Image1 mentions)." },
   },
   {
     title: { zh: "选一个模型", en: "Pick a model" },

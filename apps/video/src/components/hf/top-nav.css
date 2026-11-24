@@ -201,6 +201,19 @@ a.hf-item:hover,
 }
 
 .hf-act-accent,
+.hf-act-pricing {
+  background: transparent;
+  box-shadow: none;
+  padding: 0 8px;
+}
+
+.hf-act-accent:hover,
+.hf-act-pricing:hover {
+  background: var(--ds-fill-1);
+  box-shadow: none;
+}
+
+.hf-act-accent,
 .hf-act-accent svg {
   color: var(--du-accent-text);
 }
@@ -274,13 +287,25 @@ a.hf-item:hover,
 }
 
 .hf-auth-login {
-  background: color-mix(in srgb, var(--du-accent) 15%, transparent);
-  color: var(--du-accent-text);
+  border: 1px solid var(--ds-line-2);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.hf-auth-login:hover {
+  border-color: var(--ds-line-3);
+  background: var(--ds-fill-2);
+  filter: none;
 }
 
 .hf-auth-signup {
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
+}
+
+.hf-auth-signup:hover {
+  filter: brightness(1.07);
 }
 
 .hf-avatar {

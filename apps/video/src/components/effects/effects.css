@@ -157,7 +157,7 @@
 
 .fx-new {
   right: 10px;
-  background: var(--du-accent);
+  background: var(--du-gradient);
   color: var(--du-on-accent);
 }
 
@@ -176,7 +176,12 @@
   align-items: flex-end;
   gap: var(--ds-space-2);
   padding: var(--ds-space-7) var(--ds-space-3) var(--ds-space-3);
-  background: linear-gradient(to top, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0.35) 55%, transparent);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--du-bg) 86%, transparent),
+    color-mix(in srgb, var(--du-bg) 36%, transparent) 55%,
+    transparent
+  );
 }
 
 .fx-text {
@@ -188,7 +193,7 @@
 }
 
 .fx-name {
-  color: #fff;
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
   font-weight: 600;
   line-height: 1.3;
@@ -198,7 +203,7 @@
   display: -webkit-box;
   overflow: hidden;
   max-height: 0;
-  color: rgb(255 255 255 / 0.72);
+  color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
   line-height: 1.45;
   opacity: 0;
@@ -217,24 +222,28 @@
 
 .fx-go {
   display: inline-flex;
-  width: 28px;
   height: 28px;
   flex: none;
   align-items: center;
   justify-content: center;
+  gap: 3px;
+  padding: 0 10px;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 700;
   opacity: 0;
-  transform: scale(0.8);
+  transform: scale(0.9);
   transition:
     opacity var(--du-dur-fast, 180ms) ease,
     transform var(--du-dur-fast, 180ms) ease;
 }
 
 .fx-go svg {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
 }
 
 .fx-card:hover .fx-go,

@@ -9,15 +9,15 @@
 .home-showcase-frame {
   padding: 1px;
   border-radius: var(--ds-r-3xl);
-  background: linear-gradient(125deg, var(--du-accent-hover) 0%, rgba(69, 162, 158, 0.22) 28%, var(--du-border) 68%, var(--du-accent-hover) 100%);
-  box-shadow: 0 0 34px rgba(69, 162, 158, 0.1);
+  background: linear-gradient(125deg, var(--du-accent-hover) 0%, color-mix(in srgb, var(--du-accent) 22%, transparent) 28%, var(--du-border) 68%, var(--du-accent-hover) 100%);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--du-accent) 10%, transparent);
 }
 
 .home-showcase-inner {
   overflow: hidden;
   border-radius: var(--ds-r-3xl);
   background:
-    radial-gradient(ellipse at 50% -20%, rgba(69, 162, 158, 0.12), transparent 50%),
+    radial-gradient(ellipse at 50% -20%, color-mix(in srgb, var(--du-accent) 12%, transparent), transparent 50%),
     var(--du-bg-elev);
   padding: clamp(20px, 3vw, 48px);
 }
@@ -259,7 +259,7 @@
   overflow: hidden;
   border: 1px solid var(--du-border);
   border-radius: var(--ds-r-2xl);
-  background: #07090c;
+  background: var(--du-bg);
 }
 
 .home-creative-chat-header {
@@ -278,7 +278,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--ds-r-md);
-  background: #0b1f20;
+  background: color-mix(in srgb, var(--du-accent) 12%, var(--du-bg-elev));
   color: var(--du-accent-text);
 }
 
@@ -400,7 +400,7 @@
   min-width: 0;
   border: 1px solid var(--du-border);
   border-radius: var(--ds-r-2xl);
-  background: #030507;
+  background: var(--du-bg);
   padding: 24px;
 }
 

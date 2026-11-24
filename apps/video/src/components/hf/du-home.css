@@ -48,21 +48,27 @@
 }
 
 .du-hero .du-composer-suggestions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin-top: 10px;
-  padding-top: 8px;
-}
-
-.du-hero .du-composer-suggestions > div:first-child {
-  grid-column: 1 / -1;
+  padding-top: 10px;
 }
 
 .du-hero .du-composer-suggestion {
   min-width: 0;
-  padding-top: 3px;
-  padding-bottom: 3px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 140ms var(--ds-ease-spring);
+}
+
+.du-hero .du-composer-suggestion:hover {
+  border-color: var(--ds-line-3);
+  background: var(--ds-fill-2);
+  transform: translateY(-1px);
 }
 
 @media (max-width: 900px) {
@@ -93,10 +99,11 @@
 .du-hero-title {
   max-width: 100%;
   color: white;
-  font-size: clamp(1.875rem, 3vw, 2.75rem);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+  font-family: var(--du-font-display);
+  font-size: clamp(2rem, 3.3vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 

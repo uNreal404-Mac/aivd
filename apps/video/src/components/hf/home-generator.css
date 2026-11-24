@@ -78,7 +78,8 @@
   height: 42px;
   place-items: center;
   border-radius: var(--ds-r-md);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
 }
 
@@ -150,19 +151,21 @@
 
 .du-composer-send {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
-  transition: background 160ms ease, opacity 160ms ease;
+  transition: filter 160ms ease, transform 140ms var(--ds-ease-spring), opacity 160ms ease;
 }
 
-.du-composer-send:hover {
-  background: var(--du-accent-hover);
+.du-composer-send:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: scale(1.04);
 }
 
 .du-composer-send:disabled {

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUp, Check, ChevronDown, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, X } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { listGuestAssets, type PickerAsset } from "@/lib/home-media-library";
@@ -76,7 +76,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [suggestionsHidden, setSuggestionsHidden] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
-  const suggestions = [0, 1, 2].map((step) => HOME_TEMPLATES[(suggestionOffset + step) % HOME_TEMPLATES.length]);
+  const suggestions = [0, 1, 2, 3, 4].map((step) => HOME_TEMPLATES[(suggestionOffset + step) % HOME_TEMPLATES.length]);
   const current = models.find((item) => item.id === modelId);
   const studioModel = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
   const available = Boolean(current && studioModel);
@@ -359,11 +359,34 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div>
     {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
     {kind === "video" && showSuggestions && !suggestionsHidden ? <div className="du-composer-suggestions">
-      <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setSuggestionOffset((value) => (value + 3) % HOME_TEMPLATES.length)} className="du-composer-suggestions-label">{zh ? "试试这些提示" : "Try these prompts"}<RefreshCw className="h-3 w-3" aria-hidden="true" /></button>
-        <button type="button" onClick={() => setSuggestionsHidden(true)} className="du-composer-suggestions-label">{zh ? "不再显示" : "Hide"}</button>
-      </div>
-      {suggestions.map((item) => <button key={item.id} type="button" onClick={() => { setPrompt(zh ? item.prompt.zh : item.prompt.en); if (current?.aspects.includes(item.aspect)) setAspect(item.aspect); setNotice(""); promptRef.current?.focus({ preventScroll: true }); }} className="du-composer-suggestion"><img src={item.image} alt="" loading="lazy" /><span>{zh ? item.prompt.zh : item.prompt.en}</span></button>)}
+      <span className="du-composer-suggestions-label mr-1">{zh ? "快捷灵感" : "Quick ideas"}</span>
+      {suggestions.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          title={zh ? item.prompt.zh : item.prompt.en}
+          onClick={() => {
+            setPrompt(zh ? item.prompt.zh : item.prompt.en);
+            if (current?.aspects.includes(item.aspect)) setAspect(item.aspect);
+            setNotice("");
+            promptRef.current?.focus({ preventScroll: true });
+          }}
+          className="du-composer-suggestion"
+        >
+          <img src={item.image} alt="" loading="lazy" />
+          <span>{zh ? item.title.zh : item.title.en}</span>
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => switchKind("canvas")}
+        className="du-composer-suggestion"
+      >
+        <Sparkles className="h-3.5 w-3.5 text-[var(--du-accent-text)]" aria-hidden="true" />
+        <span>{zh ? "试试无限画布" : "Try Canvas"}</span>
+      </button>
+      <button type="button" onClick={() => setSuggestionOffset((value) => (value + 3) % HOME_TEMPLATES.length)} className="du-composer-suggestions-label ml-auto" title={zh ? "换一批灵感" : "Refresh"} aria-label={zh ? "换一批灵感" : "Refresh"}><RefreshCw className="h-3 w-3" aria-hidden="true" /></button>
+      <button type="button" onClick={() => setSuggestionsHidden(true)} className="du-composer-suggestions-label">{zh ? "收起" : "Hide"}</button>
     </div> : null}
     </form> : null}
   </div>;

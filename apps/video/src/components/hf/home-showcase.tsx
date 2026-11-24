@@ -241,9 +241,9 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
         <div className="hs-banner-text">
           <span className="hs-banner-tag">KLING IMAGE 4.0</span>
           <h2 id="hs-photo-title" className="hs-banner-title">
-            {zh ? <>不同场景<br />同一主角</> : <>Consistent characters,{" "}<br />new scenes</>}
+            {zh ? <>多风格大片<br />一键成片</> : <>Multi-style cinema<br />stills in one click</>}
           </h2>
-          <p className="hs-banner-body">{zh ? "上传角色参考图，一次生成整组画面" : "Upload a character reference and get a whole set at once"}</p>
+          <p className="hs-banner-body">{zh ? "从电影雨夜、红毯高定到商业棚拍，支持参考图与 4K 精细出图" : "From neon rain and couture editorials to studio shoots with reference guidance & 4K detail"}</p>
           <Link href={href("/ai/image?model=kling-image-4")} className="hs-btn hs-btn-light">
             {zh ? "试试 Kling Image 4.0" : "Try Kling Image 4.0"}
           </Link>

@@ -111,10 +111,10 @@
 
 .hp-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 22px;
 }
 
@@ -171,23 +171,20 @@
 
 .hp-packs-jump {
   display: inline-flex;
-  height: 40px;
+  height: 30px;
   align-items: center;
-  gap: 6px;
-  padding: 0 16px;
+  gap: 5px;
+  padding: 0 10px;
   border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
-  box-shadow: inset 0 0 0 1px var(--ds-line-2);
-  color: var(--ds-text-2);
+  background: transparent;
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  font-weight: 500;
+  transition: color 150ms ease;
 }
 
 .hp-packs-jump:hover {
-  background: var(--ds-fill-2);
-  box-shadow: inset 0 0 0 1px var(--ds-line-3);
-  color: var(--ds-text-1);
+  color: var(--du-accent-text);
 }
 
 .hp-offer {
@@ -302,7 +299,7 @@
   justify-content: center;
   gap: 6px;
   padding: 0 16px;
-  background: linear-gradient(90deg, var(--du-tier-pro-from), var(--du-tier-pro-to));
+  background: var(--du-gradient);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-xs);
   font-weight: 800;
@@ -549,12 +546,12 @@
   filter: brightness(0.92);
 }
 
-/* Luminous Sky-to-Mint Gradient Button on Pro */
+/* Luminous Logo Cyan-Blue Gradient Button on Pro */
 .hp-cta-pro {
   width: 100%;
-  background: linear-gradient(95deg, var(--du-tier-pro-from), var(--du-tier-pro-to));
+  background: var(--du-gradient);
   color: var(--du-on-accent);
-  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--du-tier-pro-from) 55%, transparent);
+  box-shadow: var(--du-glow);
 }
 
 .hp-cta-pro:hover:not(:disabled) {

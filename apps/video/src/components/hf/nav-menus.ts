@@ -98,12 +98,12 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           items: [
             { title: zh ? "创建图像" : "Create image", desc: zh ? "用文字生成 AI 图像" : "Generate AI images from text", icon: ImageIcon, href: "/ai/image" },
             { title: zh ? "图片转视频" : "Image to video", desc: zh ? "让一张静态图片动起来" : "Bring a still image to life", icon: ImagePlus, href: "/image-to-video", badge: "hot" },
-            { title: zh ? "编辑图像" : "Edit image", desc: zh ? "用一句话修改图片内容" : "Change an image with one sentence", icon: Layers },
-            { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "选中区域，描述修改内容" : "Select an area and describe the change", icon: Brush },
+            { title: zh ? "编辑图像" : "Edit image", desc: zh ? "在无限画布中用一句话修改画面" : "Edit any image inside Infinite Canvas", icon: Layers, href: "/creative-space/canvas" },
+            { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "涂抹选区，精准重绘局部细节" : "Paint a mask and regenerate details", icon: Brush, href: "/creative-space/canvas", badge: "new" },
             { title: zh ? "重新打光" : "Relight", desc: zh ? "调整光源位置、颜色和亮度" : "Move the light, change its colour and strength", icon: SunMedium },
-            { title: zh ? "背景去除" : "Remove background", desc: zh ? "一键抠出主体" : "Cut out the subject in one click", icon: Eraser },
-            { title: zh ? "图像高清放大" : "Upscale image", desc: zh ? "提升图像清晰度" : "Sharpen and enlarge images", icon: ZoomIn },
-            { title: zh ? "图片扩展" : "Expand image", desc: zh ? "向画面外延展内容" : "Extend the picture beyond its edges", icon: Expand },
+            { title: zh ? "背景去除" : "Remove background", desc: zh ? "一键透明 PNG 抠出主体" : "One-click transparent cutout on canvas", icon: Eraser, href: "/creative-space/canvas" },
+            { title: zh ? "图像高清放大" : "Upscale image", desc: zh ? "4K 超清放大与前后对比滑块" : "4K upscale with Before/After slider", icon: ZoomIn, href: "/creative-space/canvas" },
+            { title: zh ? "图片扩展" : "Expand image", desc: zh ? "向四周无缝延展画面构图" : "Extend the picture beyond its edges", icon: Expand, href: "/creative-space/canvas" },
           ],
         },
         {
