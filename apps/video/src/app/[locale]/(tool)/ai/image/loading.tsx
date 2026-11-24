@@ -1,5 +1,5 @@
-import { ImageStudioSkeleton } from "@/components/states/skeletons";
+import { ImageStudioLoading } from "@/components/hf/image-studio/studio-skeleton";
 
 export default function Loading() {
-  return <ImageStudioSkeleton />;
+  return <ImageStudioLoading />;
 }

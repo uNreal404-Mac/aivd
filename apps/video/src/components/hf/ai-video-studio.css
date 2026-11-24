@@ -1,96 +1,116 @@
-/* Video studio, laid out after the reference site's video page: a settings
-   column on the left, a stage with history and how-it-works on the right. */
-.vs-root {
-  --vs-panel: var(--ds-surface-1);
-  /* Settings cards sit straight on the page, as on the reference. */
-  --vs-card: var(--ds-fill-1);
-  --vs-card-hover: var(--ds-fill-2);
+/* Video studio, laid out after the reference's video page: a 320px settings
+   column in a rounded panel (title, preset card, reference images, prompt,
+   model, settings, Generate pinned at the foot) and a stage beside it with
+   History and How it works. Measurements follow the reference capture; the
+   finish (type, hairlines, motion) follows ds.css and motion.css. */
+
+/* ---------- Layout ---------- */
+
+/* `vs-root` stays on the element for the tool landing pages, which size the
+   studio by that name (components/feature/tool-landing.css). */
+.vst-root {
   display: flex;
   width: 100%;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--ds-space-3);
+  padding: 0 var(--ds-space-4) var(--ds-space-4);
   background: var(--du-bg);
-  color: white;
+  color: var(--ds-text-1);
+}
+
+/* On the tool pages the studio sits above text that scrolls on below it; it
+   keeps its own height there (a flex basis would otherwise squeeze it). */
+.tool-landing > .vst-root {
+  flex: none;
 }
 
 @media (min-width: 1024px) {
-  .vs-root {
-    height: calc(100svh - var(--hf-header-h, 52px));
+  .vst-root {
+    height: calc(100svh - var(--hf-header-h, 56px));
     flex-direction: row;
+    gap: var(--ds-space-2);
+    padding: 0 var(--ds-space-4) 20px;
   }
 }
 
-/* No backing panel: the reference lets the settings cards sit on the page. */
-.vs-panel {
+.vst-panel {
+  position: relative;
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 8px;
-  padding: 4px 4px 4px 0;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
 }
 
-/* The column scrolls when it is taller than the window; nothing in it may be
-   squeezed instead (the banner used to collapse to nothing on short screens). */
-.vs-panel > * {
+@media (min-width: 1024px) {
+  .vst-panel {
+    width: 320px;
+    min-height: 0;
+    flex-shrink: 0;
+  }
+}
+
+.vst-panel-head {
+  display: flex;
+  height: 48px;
+  flex-shrink: 0;
+  align-items: flex-end;
+  padding: 0 var(--ds-space-4);
+}
+
+.vst-panel-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  line-height: 36px;
+}
+
+.vst-panel-scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-2) 0;
+  border-radius: 0 0 var(--ds-r-2xl) var(--ds-r-2xl);
+}
+
+/* Nothing in the column is squeezed; it scrolls instead. */
+.vst-panel-scroll > * {
   flex-shrink: 0;
 }
 
 @media (min-width: 1024px) {
-  .vs-panel {
-    width: 334px;
-    flex-shrink: 0;
+  .vst-panel-scroll {
     overflow-y: auto;
+    overscroll-behavior: contain;
     scrollbar-width: none;
   }
 }
 
-.vs-modes {
-  display: flex;
-  gap: 4px;
-  padding: 0 4px;
-}
+/* ---------- Preset card ---------- */
 
-.vs-mode {
-  padding: 10px 6px 12px;
-  border-bottom: 2px solid transparent;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
-  transition: color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
-}
-
-.vs-mode:hover {
-  color: white;
-}
-
-.vs-mode-on {
-  border-bottom-color: white;
-  color: white;
-}
-
-.vs-banner {
+.vst-preset-card {
   position: relative;
   display: block;
-  height: 104px;
+  width: 100%;
+  height: 130px;
   overflow: hidden;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-xl);
-  box-shadow: var(--ds-specular), var(--ds-shadow-1);
+  isolation: isolate;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
   text-align: left;
-  transition: border-color var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
+  transition: transform var(--m-instant) var(--m-ease-out);
 }
 
-.vs-banner:hover {
-  border-color: var(--ds-line-3);
+.vst-preset-card:active {
+  transform: scale(0.98);
 }
 
-.vs-banner:active {
-  transform: scale(0.99);
-}
-
-.vs-banner-img {
+.vst-preset-cover {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -99,1441 +119,1373 @@
   transition: transform var(--m-slow) var(--m-ease-out);
 }
 
-.vs-banner:hover .vs-banner-img {
-  transform: scale(1.05);
+@media (hover: hover) and (pointer: fine) {
+  .vst-preset-card:hover .vst-preset-cover {
+    transform: scale(1.03);
+  }
 }
 
-.vs-banner-shade {
+.vst-preset-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 92%, transparent) 0%,
-    color-mix(in srgb, var(--du-bg) 38%, transparent) 55%,
-    transparent 100%
-  );
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 82%, transparent), transparent 64%);
 }
 
-.vs-banner-change {
+.vst-preset-change {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 6px;
+  right: 6px;
   display: inline-flex;
+  height: 24px;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
+  gap: var(--ds-space-1);
+  padding: 0 var(--ds-space-2);
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-sm);
+  background: color-mix(in srgb, var(--du-bg) 45%, transparent);
   color: var(--ds-text-1);
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   backdrop-filter: blur(12px);
-  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
 }
 
-.vs-banner:hover .vs-banner-change {
-  border-color: var(--ds-line-3);
-  background: color-mix(in srgb, var(--du-surface-2) 82%, transparent);
+.vst-preset-change svg {
+  width: 12px;
+  height: 12px;
 }
 
-.vs-banner-text {
+.vst-preset-card:hover .vst-preset-change {
+  background: color-mix(in srgb, var(--du-bg) 65%, transparent);
+}
+
+.vst-preset-card[data-open] .vst-preset-change {
+  border-color: transparent;
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.vst-preset-text {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 12px;
+  right: var(--ds-space-3);
+  bottom: var(--ds-space-3);
+  left: var(--ds-space-3);
   display: grid;
-  gap: 2px;
 }
 
-.vs-banner-title {
-  display: -webkit-box;
+.vst-preset-name {
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  color: var(--du-accent-text);
+  font-family: var(--du-font-display);
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 28px;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.vs-banner-sub {
+.vst-preset-model {
   overflow: hidden;
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.vs-upload {
+/* ---------- Reference images ---------- */
+
+.vst-ref {
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+}
+
+.vst-ref-drop {
   display: flex;
-  min-height: 108px;
+  width: 100%;
+  min-height: 160px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 14px;
   border: 1px dashed var(--ds-line-2);
-  border-radius: var(--ds-r-lg);
-  background: var(--vs-card);
-  cursor: pointer;
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
   text-align: center;
-  transition: border-color var(--m-instant) var(--m-ease-out);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out);
 }
 
-.vs-upload:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 50%, transparent);
+.vst-ref-drop:hover:not(:disabled) {
+  border-color: var(--ds-line-3);
+  background: var(--ds-fill-1);
 }
 
-.vs-upload-icons {
-  display: flex;
-  margin-bottom: 6px;
-}
-
-.vs-upload-icons span {
-  display: flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  margin-left: -6px;
-  border: 2px solid var(--vs-card);
-  border-radius: var(--ds-r-full);
-  background: var(--du-surface-2);
-  color: white;
-}
-
-.vs-upload-icons span:first-child {
-  margin-left: 0;
-}
-
-.vs-upload-title {
-  max-width: 100%;
-  overflow: hidden;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vs-upload-sub {
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.vs-home-references {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding: 4px;
-}
-
-.vs-home-reference {
-  position: relative;
-  width: 62px;
-  padding: 3px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-md);
-  background: var(--vs-card);
-  text-align: center;
-}
-
-.vs-home-reference img {
-  width: 100%;
-  height: 42px;
-  border-radius: var(--ds-r-xs);
-  object-fit: cover;
-}
-
-.vs-home-reference span {
-  display: block;
-  overflow: hidden;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-2xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vs-home-reference-pick {
-  display: block;
-  width: 100%;
-  padding: 0;
-  background: transparent;
-  text-align: center;
-}
-
-.vs-home-reference-remove {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  display: grid;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border-radius: var(--ds-r-full);
-  background: var(--du-surface-2);
-  color: var(--du-text);
-}
-
-.vs-home-references p {
-  width: 100%;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.vs-link {
-  align-self: flex-start;
-  padding: 0 4px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-}
-
-.vs-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
-  text-align: left;
-  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
-}
-
-button.vs-card:hover,
-label.vs-select:hover {
-  border-color: var(--ds-line-2);
-  background: var(--ds-surface-2);
-}
-
-button.vs-card:active {
-  transform: scale(0.99);
-}
-
-.vs-prompt:focus-within {
-  border-color: color-mix(in srgb, var(--du-accent) 44%, var(--ds-line-2));
-  box-shadow: var(--ds-specular), 0 0 0 1px color-mix(in srgb, var(--du-accent) 16%, transparent);
-}
-
-.vs-card-label {
-  display: block;
-  overflow: hidden;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vs-card-value {
-  display: block;
-  overflow: hidden;
-  margin-top: 2px;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vs-card-off {
-  opacity: 0.5;
-}
-
-.vs-select {
-  cursor: pointer;
-}
-
-/* A setting the model fixes: no arrow, no hover, the value just reads. */
-.vs-card-fixed {
-  cursor: default;
-}
-
-.vs-select select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.vs-select select:disabled {
+.vst-ref-drop:disabled {
   cursor: not-allowed;
 }
 
-.vs-select:has(select:focus-visible) {
-  outline: 2px solid var(--du-accent-text);
-  outline-offset: 2px;
+.vst-ref-drop:disabled .vst-ref-icons {
+  opacity: 0.5;
 }
 
-.vs-prompt {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 12px 14px 10px;
-}
-
-.vs-prompt-head {
+.vst-ref-icons {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  margin-bottom: var(--ds-space-3);
 }
 
-.vs-prompt-label {
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
+.vst-ref-icons span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  margin-left: -8px;
+  place-items: center;
+  border: 1px solid var(--ds-line-3);
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface-2);
+  box-shadow: 0 0 0 2px var(--du-bg-elev);
+  color: var(--ds-text-1);
 }
 
-.vs-prompt textarea {
-  min-height: 84px;
-  resize: none;
-  border: 0;
-  background: transparent;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  line-height: 1.55;
-  outline: none;
+.vst-ref-icons span:first-child {
+  margin-left: 0;
 }
 
-.vs-prompt textarea::placeholder {
-  color: var(--ds-text-4);
+.vst-ref-icons svg {
+  width: 15px;
+  height: 15px;
 }
 
-.vs-prompt-foot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.vs-chip {
+.vst-ref-title {
   display: inline-flex;
-  flex-shrink: 0;
-  height: 28px;
-  white-space: nowrap;
   align-items: center;
-  gap: 5px;
-  padding: 0 10px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-2);
-  color: white;
+  gap: 6px;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.vst-ref-sub {
+  margin-top: 6px;
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
+  line-height: 16px;
+}
+
+.vst-spin {
+  width: 14px;
+  height: 14px;
+}
+
+.vst-ref-filled {
+  padding: var(--ds-space-3);
+}
+
+.vst-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ds-space-2);
+}
+
+.vst-ref-thumb {
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.vst-ref-pick {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-surface-2);
+  transition: transform var(--m-instant) var(--m-ease-out);
+}
+
+.vst-ref-pick:active {
+  transform: scale(0.97);
+}
+
+.vst-ref-pick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vst-ref-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 1px 5px;
+  border-radius: var(--ds-r-xs);
+  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+  line-height: 14px;
+}
+
+.vst-ref-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface-2);
+  color: var(--ds-text-1);
   transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
-button.vs-chip:hover {
+/* A finger-sized target around the small round button. */
+.vst-ref-remove::after {
+  position: absolute;
+  inset: -12px;
+  content: "";
+}
+
+.vst-ref-remove:hover {
+  background: var(--ds-surface-3);
+}
+
+.vst-ref-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.vst-ref-add {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-3);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
+}
+
+.vst-ref-add:hover:not(:disabled) {
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+}
+
+.vst-ref-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+.vst-ref-hint {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 16px;
+}
+
+/* ---------- Prompt ---------- */
+
+.vst-prompt {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+  transition: box-shadow var(--m-fast) var(--m-ease-out);
+}
+
+.vst-prompt:focus-within {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 45%, transparent);
+}
+
+.vst-prompt-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-3) var(--ds-space-3) 0;
+}
+
+.vst-prompt-label {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.vst-prompt textarea {
+  min-height: 80px;
+  max-height: 240px;
+  padding: 0;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-1);
+  field-sizing: content;
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
+  outline: none;
+}
+
+.vst-prompt textarea::placeholder {
+  color: var(--ds-text-4);
+}
+
+.vst-draft {
+  margin: 0;
+}
+
+.vst-prompt-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--ds-space-2) var(--ds-space-3) var(--ds-space-3);
+}
+
+.vst-chip {
+  position: relative;
+  display: inline-flex;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ds-space-1);
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.vst-chip svg {
+  width: 14px;
+  height: 14px;
+  color: var(--ds-text-2);
+}
+
+.vst-chip:hover:not(:disabled),
+.vst-chip[aria-expanded="true"] {
   background: var(--ds-fill-3);
 }
 
-button.vs-chip:disabled {
+.vst-chip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.vst-chip:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-.vs-chip-static {
-  color: var(--ds-text-2);
+.vst-chip[aria-pressed="false"] {
+  color: var(--ds-text-3);
 }
 
-.vs-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.vst-count {
   margin-left: auto;
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
 }
 
-.vs-kbd {
-  padding: 1px 6px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-xs);
-  color: var(--ds-text-3);
-  font-family: inherit;
-  font-size: var(--ds-fs-2xs);
+/* ---------- Model and settings cards ---------- */
+
+.vst-model {
+  position: relative;
 }
 
-.vs-grid {
+.vst-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-space-2);
 }
 
-.vs-duration-wrap { position: relative; min-width: 0; }
+.vst-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: 0 var(--ds-space-3);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+  text-align: left;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
 
-.vs-duration-trigger { width: 100%; cursor: pointer; }
+.vst-card-button:hover,
+.vst-card-button[aria-expanded="true"] {
+  background: var(--ds-fill-2);
+}
 
-.vs-duration-panel {
-  position: absolute;
-  z-index: 30;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: min(300px, calc(100vw - 56px));
-  padding: 15px 16px 13px;
+.vst-card-button:active {
+  transform: scale(0.98);
+}
+
+.vst-card-fixed {
+  cursor: default;
+}
+
+.vst-card-fixed:hover {
+  background: var(--ds-fill-1);
+}
+
+.vst-card-fixed:active {
+  transform: none;
+}
+
+/* The third settings card takes the whole row. */
+.vst-card-span {
+  grid-column: 1 / -1;
+}
+
+.vst-card-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.vst-card-label,
+.vst-card-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vst-card-label {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.vst-card-value {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.vst-card-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ds-text-3);
+}
+
+/* ---------- Popover menus (ratio, resolution, length, mentions) ---------- */
+
+.vst-menu {
+  z-index: 60;
+  display: flex;
+  min-width: 160px;
+  max-width: min(280px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 16px));
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--ds-space-2);
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-lg);
   background: var(--du-surface);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-float);
+  transform-origin: bottom left;
 }
 
-.vs-duration-heading,
-.vs-duration-limits { display: flex; justify-content: space-between; color: var(--ds-text-3); font-size: var(--ds-fs-sm); }
-.vs-duration-heading strong { color: white; font-size: var(--ds-fs-md); }
-.vs-duration-panel input[type="range"] { display: block; width: 100%; height: 28px; margin: 12px 0 3px; appearance: none; background: transparent; cursor: pointer; }
-.vs-duration-panel input[type="range"]::-webkit-slider-runnable-track { height: 6px; border: 1px solid var(--ds-line-2); border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--du-accent) 42%, var(--vs-card)) 0, color-mix(in srgb, var(--du-accent) 84%, var(--vs-card)) var(--vs-duration-progress), var(--ds-fill-3) var(--vs-duration-progress), var(--ds-fill-3) 100%); }
-.vs-duration-panel input[type="range"]::-webkit-slider-thumb { width: 18px; height: 18px; margin-top: -7px; appearance: none; border: 2px solid var(--du-surface); border-radius: 50%; background: var(--du-text); box-shadow: 0 1px 5px color-mix(in srgb, var(--du-bg) 45%, transparent); }
-.vs-duration-panel input[type="range"]::-moz-range-track { height: 6px; border: 1px solid var(--ds-line-2); border-radius: 999px; background: var(--ds-fill-3); }
-.vs-duration-panel input[type="range"]::-moz-range-progress { height: 6px; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--du-accent) 42%, var(--vs-card)), color-mix(in srgb, var(--du-accent) 84%, var(--vs-card))); }
-.vs-duration-panel input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 2px solid var(--du-surface); border-radius: 50%; background: var(--du-text); box-shadow: 0 1px 5px color-mix(in srgb, var(--du-bg) 45%, transparent); }
-.vs-duration-panel input[type="range"]:disabled { cursor: default; opacity: 0.5; }
-.vs-duration-limits { font-size: var(--ds-fs-xs); }
-.vs-duration-warning { margin-top: 10px; color: var(--du-accent-text); font-size: var(--ds-fs-xs); line-height: 1.45; }
+.vst-menu-title {
+  padding: var(--ds-space-1) var(--ds-space-2) var(--ds-space-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 16px;
+}
 
-.vs-generate {
-  /* Always in reach: pinned to the bottom of the settings column while it scrolls. */
+.vst-menu-item {
+  display: flex;
+  min-height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  text-align: left;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.vst-menu-item:hover,
+.vst-menu-item[aria-pressed="true"] {
+  background: var(--ds-fill-2);
+}
+
+.vst-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.vst-menu-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.vst-menu-note {
+  max-width: 220px;
+  padding: 0 var(--ds-space-2) var(--ds-space-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
+}
+
+.vst-menu-warning {
+  margin: var(--ds-space-2) var(--ds-space-2) 0;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+.vst-menu-slider {
+  width: 264px;
+  padding: var(--ds-space-3) var(--ds-space-4);
+}
+
+.vst-menu-slider .vst-menu-title {
+  padding: 0;
+}
+
+.vst-menu-slider .vst-menu-warning {
+  margin: var(--ds-space-2) 0 0;
+}
+
+.vst-slider-value {
+  margin-top: 2px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.vst-slider {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: var(--ds-space-2);
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.vst-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--ds-r-full);
+  background: linear-gradient(to right, var(--du-accent) 0 var(--vst-progress), var(--ds-fill-3) var(--vst-progress) 100%);
+}
+
+.vst-slider::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  appearance: none;
+  border: 2px solid var(--du-surface);
+  border-radius: 50%;
+  background: var(--ds-text-1);
+  box-shadow: var(--ds-shadow-1);
+}
+
+.vst-slider::-moz-range-track {
+  height: 6px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-3);
+}
+
+.vst-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+}
+
+.vst-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--du-surface);
+  border-radius: 50%;
+  background: var(--ds-text-1);
+}
+
+/* Tick labels sit under the thumb's centre at each value. */
+.vst-slider-ticks {
+  position: relative;
+  display: block;
+  height: 14px;
+  margin: 2px 9px 0;
+}
+
+.vst-slider-ticks span {
+  position: absolute;
+  top: 0;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+  line-height: 14px;
+  transform: translateX(-50%);
+}
+
+.vst-mentions {
+  width: 248px;
+  transform-origin: bottom left;
+}
+
+.vst-mention {
+  justify-content: flex-start;
+}
+
+.vst-mention img,
+.vst-mention-add {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-xs);
+  object-fit: cover;
+}
+
+.vst-mention-add {
+  display: grid;
+  place-items: center;
+  background: var(--ds-fill-2);
+}
+
+.vst-mention-add svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vst-mention-token {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.vst-mention-name {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Generate, pinned to the foot of the column ---------- */
+
+.vst-footer {
   position: sticky;
   bottom: 0;
-  z-index: 2;
+  z-index: 3;
   display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  margin: auto calc(-1 * var(--ds-space-2)) 0;
+  padding: var(--ds-space-1) var(--ds-space-2) var(--ds-space-3);
+  border-radius: 0 0 var(--ds-r-2xl) var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+}
+
+.vst-generate {
+  display: flex;
+  width: 100%;
   height: 48px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-top: 4px;
   border-radius: var(--ds-r-lg);
-  background: var(--du-gradient);
-  box-shadow:
-    var(--du-glow),
-    0 4px 0 var(--du-bg),
-    0 -14px 18px -2px var(--du-bg);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
-}
-
-.vs-generate:hover:not(:disabled) {
-  filter: brightness(1.06);
-}
-
-.vs-generate:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.vs-generate:disabled {
-  cursor: not-allowed;
-  /* Solid underneath: the column scrolls behind this pinned button. */
-  background: linear-gradient(var(--ds-fill-2), var(--ds-fill-2)), var(--du-bg-elev);
-  box-shadow:
-    0 4px 0 var(--du-bg),
-    0 -14px 14px -2px var(--du-bg);
-  color: var(--ds-text-3);
-  filter: none;
-}
-
-.vs-generate-cost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.vs-notice,
-.vs-hint {
-  padding: 10px 12px;
-  border-radius: var(--ds-r-lg);
-  background: var(--vs-card);
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.6;
-}
-
-.vs-presets-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100vw;
-  height: 100dvh;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  border: 0;
-  padding: var(--ds-space-4);
-  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
-  color: inherit;
-  backdrop-filter: blur(8px);
-}
-
-.vs-presets-modal {
-  width: min(560px, 100%);
-  max-height: 82svh;
-  overflow-y: auto;
-  padding: var(--ds-space-4);
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-2xl);
-  background: color-mix(in srgb, var(--du-surface) 95%, transparent);
-  box-shadow: var(--ds-specular), var(--ds-shadow-float);
-  backdrop-filter: blur(26px);
-}
-
-.vs-tool {
-  width: 100%;
-}
-
-.vs-tool-on {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 60%, transparent);
-}
-
-.vs-soon {
-  flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-2);
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-2xs);
-}
-
-/* Stage */
-.vs-stage {
-  position: relative;
-  min-width: 0;
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 22px 28px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(640px 260px at 50% 0%, color-mix(in srgb, var(--du-accent) 6%, transparent), transparent 72%),
-    var(--du-bg-elev);
-  box-shadow: var(--ds-specular);
-}
-
-.vs-stage-tabs {
-  display: flex;
-  width: fit-content;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-fill-1);
-}
-
-.vs-stage-tab {
-  display: inline-flex;
-  height: 32px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border-radius: var(--ds-r-md);
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
-}
-
-.vs-stage-tab:hover {
-  color: white;
-}
-
-.vs-stage-tab-on {
-  background: var(--vs-card-hover);
-  color: white;
-}
-
-.vs-stage-count {
-  padding: 0 6px;
-  border-radius: var(--ds-r-sm);
   background: var(--du-accent);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-weight: 700;
-}
-
-.vs-howto {
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 64px 36px 24px;
-}
-
-.vs-howto-title {
-  color: white;
-  font-size: var(--ds-fs-4xl);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.vs-howto-sub {
-  margin-top: 14px;
-  color: var(--ds-text-3);
   font-size: var(--ds-fs-md);
-}
-
-.vs-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 28px;
-  margin-top: 44px;
-}
-
-.vs-howto-media {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 16 / 12;
-  border-radius: var(--ds-r-2xl);
-  background: var(--vs-card);
-}
-
-.vs-howto-wide {
-  max-width: 900px;
-  margin-top: 36px;
-  aspect-ratio: 16 / 9;
-}
-
-.vs-howto-media img,
-.vs-howto-media video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.vs-step-title {
-  margin-top: 18px;
-  color: white;
-  font-size: var(--ds-fs-xl);
-  font-weight: 700;
-}
-
-.vs-step-body {
-  margin-top: 8px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-}
-
-.vs-empty {
-  display: flex;
-  min-height: 60%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 80px 0;
-  color: var(--ds-text-4);
-  font-size: var(--ds-fs-sm);
-}
-
-.vs-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.vs-result {
-  width: 100%;
-  margin: 0;
-  aspect-ratio: 16 / 9;
-}
-
-.vs-result-wait {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px;
-  background: var(--vs-card);
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  text-align: center;
-}
-
-/* Extras shared with the audio studio */
-.vs-upload-off {
-  position: relative;
-  cursor: default;
-}
-
-.vs-upload-off:hover {
-  border-color: var(--ds-line-2);
-}
-
-.vs-upload-tag {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 2px 8px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-2);
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.vs-prompt-label-muted {
-  color: var(--ds-text-3);
-  font-weight: 400;
-}
-
-.vs-textarea-short {
-  min-height: 72px !important;
-}
-
-.vs-stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 500;
-}
-
-.vs-stepper button {
-  display: inline-flex;
-  color: var(--ds-text-3);
-}
-
-.vs-stepper button:disabled {
-  opacity: 0.35;
-}
-
-.vs-generate-soon {
-  background: color-mix(in srgb, var(--du-accent) 55%, var(--du-bg-elev));
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 50%, transparent);
-}
-
-.vs-howto-center {
-  text-align: center;
-}
-
-.as-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 40px;
-  text-align: left;
-}
-
-.as-card {
-  overflow: hidden;
-  padding: 28px 28px 0;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-2xl);
-  background: var(--vs-card);
-}
-
-.as-voices {
-  position: relative;
-  display: flex;
-  height: 300px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 24px -28px 0;
-  background:
-    radial-gradient(60% 70% at 50% 55%, color-mix(in srgb, var(--du-accent) 22%, transparent), transparent 75%),
-    color-mix(in srgb, var(--du-bg) 50%, transparent);
-}
-
-.as-voice {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 18px 8px 8px;
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
-  backdrop-filter: blur(10px);
-  opacity: 0.7;
-}
-
-.as-voice-main {
-  padding: 12px 28px 12px 12px;
-  border-color: var(--ds-line-3);
-  opacity: 1;
-  transform: scale(1.12);
-}
-
-.as-voice-wave {
-  display: flex;
-  width: 42px;
-  height: 42px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ds-r-full);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-}
-
-.as-voice-name {
-  display: block;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-}
-
-.as-voice-tag {
-  display: block;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.as-mock {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 24px -28px 0;
-  padding: 24px;
-  background: color-mix(in srgb, var(--du-bg) 50%, transparent);
-}
-
-.as-mock-box {
-  padding: 14px 16px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-lg);
-  background: var(--vs-panel);
-}
-
-.as-mock-text {
-  margin-top: 6px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  line-height: 1.6;
-}
-
-.as-mock-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.as-mock-slider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: white;
-  font-size: var(--ds-fs-sm);
-}
-
-.as-mock-track {
-  height: 4px;
-  flex: 1;
-  border-radius: var(--ds-r-full);
-  background: linear-gradient(90deg, var(--du-accent) 50%, color-mix(in srgb, white 12%, transparent) 50%);
-}
-
-/* Audio history */
-.as-list {
-  display: flex;
-  max-width: 980px;
-  flex-direction: column;
-  gap: 10px;
-  margin: 18px auto 0;
-}
-
-.as-item {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: var(--ds-r-xl);
-  background: var(--vs-card);
-}
-
-.as-item-head {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.as-item-model {
-  flex-shrink: 0;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-sm);
   font-weight: 600;
-}
-
-.as-item-prompt {
-  overflow: hidden;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.as-item-player {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.as-item-player audio {
-  width: 100%;
-  height: 36px;
-}
-
-.as-item-dl {
-  display: flex;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ds-r-md);
-  background: var(--ds-fill-2);
-  color: white;
-}
-
-.as-item-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-sm);
-}
-
-/* ---------- Start frame preview ---------- */
-.vs-upload-has {
-  min-height: 0;
-  padding: 10px 10px 14px;
-  border-style: solid;
-}
-
-.vs-upload-preview {
-  width: 100%;
-  max-height: 180px;
-  margin-bottom: 6px;
-  border-radius: var(--ds-r-md);
-  object-fit: cover;
-}
-
-/* ---------- Camera presets ---------- */
-.vs-chip-on {
-  background: color-mix(in srgb, var(--du-accent) 22%, transparent);
-  color: var(--du-accent-text);
-}
-
-.vs-presets {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-radius: var(--ds-r-xl);
-  background: var(--vs-card);
-  animation: du-pop var(--du-dur, 400ms) var(--du-ease, ease) both;
-}
-
-.vs-presets-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.vs-presets-head .vs-link {
-  align-self: auto;
-}
-
-.vs-presets-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.vs-preset {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 5px;
-  text-align: left;
-  animation: du-row-in var(--m-fast) var(--m-ease-out) both;
-}
-
-.vs-preset:nth-child(2) { animation-delay: 30ms; }
-.vs-preset:nth-child(3) { animation-delay: 60ms; }
-.vs-preset:nth-child(4) { animation-delay: 90ms; }
-.vs-preset:nth-child(5) { animation-delay: 120ms; }
-.vs-preset:nth-child(6) { animation-delay: 150ms; }
-.vs-preset:nth-child(7) { animation-delay: 180ms; }
-.vs-preset:nth-child(8) { animation-delay: 210ms; }
-
-.vs-preset-media {
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 1;
-  border: 2px solid transparent;
-  border-radius: var(--ds-r-md);
-  background: var(--du-bg);
-  transition: border-color var(--m-instant) var(--m-ease-out);
-}
-
-.vs-preset-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.vs-preset-on .vs-preset-media,
-.vs-preset:focus-visible .vs-preset-media {
-  border-color: var(--du-accent);
-}
-
-.vs-preset-name {
-  overflow: hidden;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vs-preset-on .vs-preset-name {
-  color: var(--du-accent-text);
-}
-
-.vs-presets-note {
-  color: var(--ds-text-4);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.5;
-}
-
-/* Hovering a preset plays its camera move on the thumbnail. */
-.vs-preset:hover .vs-move-push img { animation: vs-push 1.6s var(--du-ease, ease) infinite alternate; }
-.vs-preset:hover .vs-move-pull img { animation: vs-pull 1.6s var(--du-ease, ease) infinite alternate; }
-.vs-preset:hover .vs-move-pan img { animation: vs-pan 1.8s ease-in-out infinite alternate; }
-.vs-preset:hover .vs-move-orbit img { animation: vs-orbit 2.4s ease-in-out infinite alternate; }
-.vs-preset:hover .vs-move-rise img { animation: vs-rise 1.8s var(--du-ease, ease) infinite alternate; }
-.vs-preset:hover .vs-move-tilt img { animation: vs-tilt 1.8s var(--du-ease, ease) infinite alternate; }
-.vs-preset:hover .vs-move-shake img { animation: vs-shake 0.9s ease-in-out infinite; }
-.vs-preset:hover .vs-move-drift img { animation: vs-drift 1.8s ease-in-out infinite alternate; }
-
-@keyframes vs-push { from { transform: scale(1); } to { transform: scale(1.35); } }
-@keyframes vs-pull { from { transform: scale(1.4); } to { transform: scale(1); } }
-@keyframes vs-pan { from { transform: scale(1.3) translateX(-10%); } to { transform: scale(1.3) translateX(10%); } }
-@keyframes vs-orbit { from { transform: perspective(200px) scale(1.25) rotateY(-14deg); } to { transform: perspective(200px) scale(1.25) rotateY(14deg); } }
-@keyframes vs-rise { from { transform: scale(1.3) translateY(10%); } to { transform: scale(1.1) translateY(-10%); } }
-@keyframes vs-tilt { from { transform: scale(1.3) translateY(-12%); } to { transform: scale(1.3) translateY(12%); } }
-@keyframes vs-shake {
-  0%, 100% { transform: scale(1.15) translate(0, 0) rotate(0); }
-  25% { transform: scale(1.15) translate(-2%, 1%) rotate(-0.6deg); }
-  50% { transform: scale(1.15) translate(1.5%, -1%) rotate(0.5deg); }
-  75% { transform: scale(1.15) translate(-1%, -1.5%) rotate(-0.3deg); }
-}
-@keyframes vs-drift { from { transform: scale(1.4); filter: blur(0); } to { transform: scale(1.05); filter: blur(0.4px); } }
-
-/* ---------- Audio results ---------- */
-.as-item-player .sr-wave {
-  padding: 4px 0;
-}
-
-.as-item-tools {
-  display: flex;
-  flex-shrink: 0;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.as-item-tools .sr-icon {
-  width: 30px;
-  height: 30px;
-  background: var(--ds-fill-2);
-}
-
-.as-pending {
-  min-height: 64px;
-  align-items: center;
-}
-
-.as-item-head {
-  align-items: center;
-}
-
-
-/* Audio: voices as a scannable grid, generate pinned to the panel bottom. */
-.as-voice-pick {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 12px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
-}
-
-.as-voice-pick legend {
-  float: left;
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-.as-voice-grid {
-  display: grid;
-  clear: both;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.as-voice-opt {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-md);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-  text-align: left;
   transition:
     background-color var(--m-instant) var(--m-ease-out),
-    border-color var(--m-instant) var(--m-ease-out),
     transform var(--m-instant) var(--m-ease-out);
 }
 
-.as-voice-opt:hover {
-  border-color: var(--ds-line-2);
-  background: var(--ds-fill-2);
+.vst-generate:hover:not(:disabled) {
+  background: var(--du-accent-hover);
 }
 
-.as-voice-opt-on {
-  border-color: color-mix(in srgb, var(--du-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--du-accent) 11%, transparent);
-  box-shadow: var(--ds-specular);
-  color: white;
+.vst-generate:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-.as-voice-avatar {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-3);
-  color: white;
-  font-size: var(--ds-fs-2xs);
-  font-weight: 700;
-}
-
-.as-voice-opt-on .as-voice-avatar {
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-}
-
-.as-generate {
-  margin-top: auto;
-}
-
-/* First visit: three illustrated steps drawn like the studio itself, then a
-   way into the templates, after the reference's how-it-works. */
-.vs-steps-illus {
-  max-width: 1100px;
-  margin-top: var(--ds-space-6);
-  gap: var(--ds-space-4);
-  list-style: none;
-  padding: 0;
-}
-
-.vs-illus {
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  aspect-ratio: 16 / 11;
-  margin-bottom: var(--ds-space-4);
-  place-items: center;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
-  background:
-    radial-gradient(70% 70% at 50% 30%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 70%),
-    var(--ds-surface-2);
-}
-
-.vs-illus-upload {
-  position: relative;
-  width: 70%;
-  height: 64%;
-}
-
-.vs-illus-drop {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px dashed var(--ds-line-3);
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
-}
-
-.vs-illus-drop svg {
-  width: 22px;
-  height: 22px;
-  color: var(--ds-text-2);
-}
-
-.vs-illus-drop small {
-  color: var(--ds-text-4);
-  font-size: var(--ds-fs-xs);
-  font-weight: 400;
-}
-
-.vs-illus-photo {
-  position: absolute;
-  bottom: -18%;
-  left: -8%;
-  width: 46%;
-  aspect-ratio: 4 / 3;
-  border: 2px solid var(--du-accent);
-  border-radius: var(--ds-r-md);
-  box-shadow: var(--ds-shadow-2);
-  object-fit: cover;
-  transform: rotate(-8deg);
-  transition: transform var(--m-base) var(--m-ease-out);
-}
-
-.vs-step:hover .vs-illus-photo {
-  transform: rotate(-4deg) translateY(-6px);
-}
-
-.vs-illus-presets {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.vs-illus-preset {
-  display: flex;
-  width: 92px;
-  flex-direction: column;
-  gap: 6px;
+.vst-generate:disabled {
+  cursor: not-allowed;
+  background: var(--ds-surface-3);
+  box-shadow: none;
   color: var(--ds-text-3);
-  font-size: var(--ds-fs-2xs);
-  text-align: center;
-  transition: transform var(--m-base) var(--m-ease-out);
 }
 
-.vs-illus-preset img {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  border: 2px solid transparent;
-  border-radius: var(--ds-r-md);
-  object-fit: cover;
+.vst-generate-label,
+.vst-generate-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.vs-illus-preset-on {
-  color: var(--ds-text-1);
-  transform: translateY(-6px) scale(1.06);
+.vst-generate-cost {
+  font-variant-numeric: tabular-nums;
 }
 
-.vs-illus-preset-on img {
-  border-color: var(--du-accent);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--du-accent) 25%, transparent);
-}
-
-.vs-step:hover .vs-illus-preset-on img {
-  animation: vs-push 1.6s var(--du-ease, ease) infinite alternate;
-}
-
-.vs-illus-result {
-  position: relative;
-  width: 74%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border: 2px solid color-mix(in srgb, var(--du-accent) 70%, transparent);
-  border-radius: var(--ds-r-lg);
-  box-shadow: 0 0 40px color-mix(in srgb, var(--du-accent) 25%, transparent);
-}
-
-.vs-illus-result img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.vs-illus-play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 55%, transparent);
-  color: var(--ds-text-1);
-  backdrop-filter: blur(6px);
-  transform: translate(-50%, -50%);
-}
-
-.vs-illus-play svg {
+.vst-generate-cost svg {
   width: 16px;
   height: 16px;
 }
 
-.vs-help {
-  display: flex;
-  max-width: 1100px;
-  align-items: center;
-  gap: var(--ds-space-4);
-  margin-top: var(--ds-space-6);
-  padding: var(--ds-space-3) var(--ds-space-5) var(--ds-space-3) var(--ds-space-3);
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
+.vst-notice {
+  display: block;
+  padding: 10px var(--ds-space-3);
+  border-radius: var(--ds-r-lg);
   background: var(--ds-fill-1);
-  transition: background-color var(--m-instant) var(--m-ease-out);
-}
-
-.vs-help:hover {
-  background: var(--ds-fill-2);
-}
-
-.vs-help-art {
-  display: flex;
-}
-
-.vs-help-art img {
-  width: 44px;
-  height: 56px;
-  border: 2px solid var(--du-bg);
-  border-radius: var(--ds-r-sm);
-  object-fit: cover;
-}
-
-.vs-help-art img + img {
-  margin-left: -14px;
-  transform: rotate(6deg);
-}
-
-.vs-help-text {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-}
-
-.vs-help-text strong {
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-}
-
-.vs-help > svg {
-  width: 18px;
-  height: 18px;
-  color: var(--ds-text-3);
-}
-
-.vs-howto-play {
-  right: 12px;
-  bottom: 12px;
-}
-
-.vs-howto-tag {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 2px 8px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
   color: var(--ds-text-2);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  backdrop-filter: blur(8px);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.6;
 }
 
-/* Phones: the prompt's chips and the History / How it works tabs are 44px
-   tall to tap. */
-@media (max-width: 640px) {
-  .vs-chip,
-  .vs-stage-tab {
-    height: 44px;
-  }
+.vst-notice-link {
+  color: var(--du-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-/* The balance under the Generate button, signed in. */
-.vs-balance {
-  margin: 8px 0 0;
+.vst-notice-link:disabled {
+  opacity: 0.5;
+}
+
+.vst-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+  margin-top: 10px;
+}
+
+.vst-notice-actions .cu-get {
+  margin: 0;
+}
+
+.vst-balance {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
 /* The theme has no red; the shortfall reads in full white and bold. */
-.vs-balance-short {
-  color: var(--du-text);
+.vst-balance-short {
+  color: var(--ds-text-1);
   font-weight: 600;
 }
 
-/* "Use <model>" and "Get credits" on their own row under the notice. */
-.vs-notice-actions {
+/* ---------- Stage ---------- */
+
+.vst-stage {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg);
 }
 
-.vs-notice-actions .cu-get {
+.vst-stage-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 10px var(--ds-space-4) 0;
+}
+
+.vst-stage-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .vst-stage-body {
+    overflow-y: auto;
+  }
+}
+
+.vst-tabs {
+  --seg-bg: var(--ds-fill-2);
+  --seg-r: var(--ds-r-sm);
+  --seg-shadow: inset 0 0 0 1px var(--ds-line-1), 0 2px 2px color-mix(in srgb, black 12%, transparent);
+  display: flex;
+  gap: var(--ds-space-1);
+}
+
+.vst-tab {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.vst-tab svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vst-tab:hover,
+.vst-tab[aria-pressed="true"] {
+  color: var(--ds-text-1);
+}
+
+.vst-tab-count {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+}
+
+/* How it works */
+.vst-howto {
+  display: flex;
+  min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+}
+
+.vst-howto-main {
+  padding: 108px 48px var(--ds-space-6);
+}
+
+.vst-howto-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-4xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 48px;
+}
+
+.vst-howto-sub {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
+}
+
+.vst-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  margin: var(--ds-space-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vst-illus {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 301 / 228;
+  place-items: center;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev);
+}
+
+.vst-step-title {
+  margin-top: var(--ds-space-4);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.vst-step-body {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
+}
+
+/* Step one: a drop area with a picture landing in it. */
+.vst-step:first-child .vst-illus {
+  border: 1px dashed var(--ds-line-2);
+  background: transparent;
+}
+
+.vst-illus-upload {
+  position: absolute;
+  inset: 0;
+}
+
+.vst-illus-drop {
+  position: absolute;
+  top: 14%;
+  right: -1px;
+  bottom: -1px;
+  left: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 0 22% 30%;
+  border: 1px dashed var(--ds-line-3);
+  border-radius: var(--ds-r-lg) 0 0 0;
+  color: var(--ds-text-1);
+}
+
+.vst-illus-drop svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: var(--ds-space-2);
+}
+
+.vst-illus-drop strong {
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.vst-illus-drop small {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+}
+
+.vst-illus-photo {
+  position: absolute;
+  bottom: -8%;
+  left: 5%;
+  width: 46%;
+  aspect-ratio: 4 / 3;
+  border: 2px solid var(--du-accent);
+  border-radius: var(--ds-r-md);
+  object-fit: cover;
+  box-shadow: var(--ds-shadow-2);
+  transform: rotate(-6deg);
+  transition: transform var(--m-base) var(--m-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vst-step:hover .vst-illus-photo {
+    transform: rotate(-3deg) translateY(-6px);
+  }
+}
+
+/* Step two: three presets, the middle one chosen. */
+.vst-illus-presets {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+}
+
+.vst-illus-preset {
+  position: relative;
+  width: 42%;
+  height: 76%;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--ds-r-md);
+  opacity: 0.45;
+}
+
+.vst-illus-preset img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vst-illus-preset small {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  overflow: hidden;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vst-illus-preset-on {
+  opacity: 1;
+  transition: transform var(--m-base) var(--m-ease-out);
+}
+
+.vst-illus-preset-on img {
+  border: 2px solid var(--du-accent);
+  border-radius: var(--ds-r-md);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vst-step:hover .vst-illus-preset-on {
+    transform: translateY(-4px);
+  }
+}
+
+/* Step three: the finished clip, framed. */
+.vst-step:last-child .vst-illus {
+  background: black;
+}
+
+.vst-illus-result {
+  width: 90%;
+  height: 88%;
+  overflow: hidden;
+  border: 4px solid var(--ds-text-1);
+  border-radius: var(--ds-r-xl);
+}
+
+.vst-illus-result img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--m-slow) var(--m-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vst-step:hover .vst-illus-result img {
+    transform: scale(1.04);
+  }
+}
+
+/* The way into templates, along the foot of the stage. */
+.vst-tip {
+  display: flex;
+  height: 66px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  margin-top: auto;
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.vst-tip:hover {
+  background: var(--ds-fill-2);
+}
+
+/* The cards lean out of the top of the strip and are cut off at its foot. */
+.vst-tip-art {
+  position: relative;
+  width: 192px;
+  height: 86px;
+  flex-shrink: 0;
+  align-self: flex-end;
+  overflow: hidden;
+}
+
+.vst-tip-art img {
+  position: absolute;
+  width: 86px;
+  height: 128px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  object-fit: cover;
+  filter: brightness(0.62);
+  transition: transform var(--m-base) var(--m-ease-out);
+}
+
+.vst-tip-art img:nth-child(1) {
+  top: 18px;
+  left: 0;
+  transform: rotate(-8deg);
+}
+
+.vst-tip-art img:nth-child(2) {
+  z-index: 1;
+  top: 0;
+  left: 54px;
+}
+
+.vst-tip-art img:nth-child(3) {
+  top: 14px;
+  left: 104px;
+  transform: rotate(8deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vst-tip:hover .vst-tip-art img:nth-child(2) {
+    transform: translateY(-4px);
+  }
+}
+
+.vst-tip-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vst-tip-text strong {
+  font-size: var(--ds-fs-md);
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.vst-tip-text span {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 16px;
+}
+
+.vst-tip-arrow {
+  width: 16px;
+  height: 16px;
+  margin-left: -36px;
+  color: var(--ds-text-3);
+}
+
+/* History */
+.vst-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-4);
+}
+
+.vst-result {
+  width: 100%;
   margin: 0;
+  aspect-ratio: 16 / 9;
 }
 
-/* Higgsfield x Pollo Living Hover-Play Cinema Reel inside Empty Stage */
-.vs-empty-stage {
+.vst-empty {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-4);
-  width: 100%;
-  max-width: 1120px;
-  margin: var(--ds-space-3) auto 0;
+  padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-4);
 }
 
-.vs-empty-strip {
+.vst-empty-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ds-space-3);
-  padding: 14px 18px;
-  border: 1px solid var(--ds-line-1);
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4) 20px;
   border-radius: var(--ds-r-xl);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
+  background: var(--ds-fill-1);
 }
 
-.vs-empty-strip-copy {
+.vst-empty-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.vst-empty-sub {
+  margin-top: 2px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 18px;
+}
+
+.vst-pill-button {
+  display: inline-flex;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  box-shadow: var(--du-glow);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.vst-pill-button:hover {
+  background: var(--du-accent-hover);
+}
+
+.vst-pill-button:active {
+  transform: scale(0.97);
+}
+
+.vst-reels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-3);
+}
+
+.vst-reel {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface);
+  text-align: left;
+  transition: transform var(--m-instant) var(--m-ease-out);
+}
+
+.vst-reel:active {
+  transform: scale(0.98);
+}
+
+.vst-reel-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--m-slow) var(--m-ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vst-reel:hover .vst-reel-video {
+    transform: scale(1.03);
+  }
+}
+
+.vst-reel-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent 55%);
+}
+
+.vst-reel-meta {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px var(--ds-space-2);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 65%, transparent);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+}
+
+.vst-reel-use {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  gap: var(--ds-space-1);
+  padding: 0 10px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--m-fast) var(--m-ease-out),
+    transform var(--m-fast) var(--m-ease-out);
+}
+
+.vst-reel-use svg {
+  width: 13px;
+  height: 13px;
+}
+
+.vst-reel:hover .vst-reel-use,
+.vst-reel:focus-visible .vst-reel-use {
+  opacity: 1;
+  transform: none;
+}
+
+/* Without a pointer to hover with, the action is always shown. */
+@media (hover: none) {
+  .vst-reel-use {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vst-reel-title {
+  position: absolute;
+  right: var(--ds-space-3);
+  bottom: 10px;
+  left: var(--ds-space-3);
+  overflow: hidden;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Preset library, over the stage ---------- */
+
+.vst-library {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  left: 0;
   display: flex;
+  max-height: 100%;
+  flex-direction: column;
+  border-bottom: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-float);
+  transform-origin: top center;
+}
+
+.vst-library-head {
+  display: flex;
+  min-height: 60px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) var(--ds-space-3) var(--ds-space-2) var(--ds-space-5);
+}
+
+.vst-library-title {
+  flex-shrink: 0;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.vst-library-note {
+  overflow: hidden;
   min-width: 0;
   flex: 1;
-  align-items: center;
-  gap: 12px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.vs-empty-strip-icon {
+.vst-icon-button {
   display: grid;
   width: 36px;
   height: 36px;
@@ -1541,382 +1493,255 @@ button.vs-chip:disabled {
   place-items: center;
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-md);
-  background: var(--ds-fill-1);
-  color: var(--du-accent-text);
+  color: var(--ds-text-2);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
-.vs-stage-title {
-  color: var(--ds-text-1);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.3;
+.vst-icon-button:hover {
+  background: var(--ds-fill-2);
 }
 
-.vs-empty-strip-sub {
-  margin-top: 2px;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.45;
+.vst-icon-button:active {
+  transform: scale(0.95);
 }
 
-.vs-empty-signin {
-  display: inline-flex;
-  height: 34px;
-  flex-shrink: 0;
-  align-items: center;
-  padding: 0 14px;
-  border-radius: var(--ds-r-md);
-  background: var(--du-gradient);
-  box-shadow: var(--du-glow);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-weight: 700;
-  white-space: nowrap;
-  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+.vst-icon-button svg {
+  width: 18px;
+  height: 18px;
 }
 
-.vs-empty-signin:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-}
-
-.vs-living-grid {
+.vst-library-grid {
   display: grid;
-  width: 100%;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: var(--ds-space-3);
+  overflow-y: auto;
+  padding: var(--ds-space-1) var(--ds-space-5) var(--ds-space-5);
 }
 
-@media (max-width: 900px) {
-  .vs-living-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.vs-living-card {
+.vst-library-item {
   position: relative;
-  display: flex;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 12px;
-  border: 1px solid transparent;
-  border-radius: var(--ds-r-xl);
-  background: var(--du-surface);
+  aspect-ratio: 3 / 4;
+  isolation: isolate;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
   text-align: left;
-  transition: border-color var(--m-fast) var(--m-ease-out), transform var(--m-base) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
+  transition: transform var(--m-instant) var(--m-ease-out);
 }
 
-.vs-living-video {
+.vst-library-item:active {
+  transform: scale(0.98);
+}
+
+.vst-library-item::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ds-line-1);
+  content: "";
+  pointer-events: none;
+}
+
+.vst-library-item[aria-pressed="true"]::after {
+  box-shadow: inset 0 0 0 2px var(--du-accent);
+}
+
+.vst-library-media {
   position: absolute;
   inset: 0;
+  display: block;
+  overflow: hidden;
+}
+
+.vst-library-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
-.vs-living-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-  padding: 3px 8px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 68%, transparent);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-}
-
-.vs-living-card:hover,
-.vs-living-card:focus-visible {
-  border-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
-  box-shadow: var(--ds-shadow-float);
-  transform: translateY(-2px);
-}
-
-.vs-living-card:hover .vs-living-video {
-  transform: scale(1.04);
-}
-
-.vs-living-card:hover .vs-recreate-pill,
-.vs-living-card:focus-visible .vs-recreate-pill {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.vs-recreate-shade {
+.vst-library-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 88%, transparent) 0%,
-    color-mix(in srgb, var(--du-bg) 22%, transparent) 52%,
-    transparent 100%
-  );
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 80%, transparent), transparent 50%);
 }
 
-.vs-recreate-pill {
+.vst-library-name {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  box-shadow: var(--du-glow);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-weight: 700;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translate(-50%, -42%) scale(0.94);
-  transition: opacity var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
-}
-
-.vs-recreate-meta {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.vs-recreate-meta strong {
+  right: var(--ds-space-3);
+  bottom: 10px;
+  left: var(--ds-space-3);
   overflow: hidden;
   color: var(--ds-text-1);
-  font-size: var(--ds-fs-sm);
+  font-size: var(--ds-fs-md);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Animated Audio Preview Equalizer Bars */
-.as-wave-bars {
-  display: inline-flex;
-  height: 12px;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.as-wave-bars span {
-  width: 2px;
+.vst-library-check {
+  position: absolute;
+  z-index: 3;
+  top: var(--ds-space-2);
+  right: var(--ds-space-2);
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
   border-radius: var(--ds-r-full);
   background: var(--du-accent);
-  animation: as-wave-pulse 0.7s ease-in-out infinite alternate;
+  color: var(--du-on-accent);
 }
 
-.as-wave-bars span:nth-child(1) { height: 5px; animation-delay: 0ms; }
-.as-wave-bars span:nth-child(2) { height: 11px; animation-delay: 140ms; }
-.as-wave-bars span:nth-child(3) { height: 7px; animation-delay: 280ms; }
-.as-wave-bars span:nth-child(4) { height: 10px; animation-delay: 420ms; }
-
-@keyframes as-wave-pulse {
-  from { transform: scaleY(0.35); }
-  to { transform: scaleY(1); }
+.vst-library-check svg {
+  width: 14px;
+  height: 14px;
 }
 
-.as-canvas-banner {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
-  text-align: left;
-  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out);
-}
+/* Hovering a preset plays its camera move on the picture. */
+.vst-library-item:hover .vst-move-push img { animation: vst-push 1.6s var(--m-ease-out) infinite alternate; }
+.vst-library-item:hover .vst-move-pull img { animation: vst-pull 1.6s var(--m-ease-out) infinite alternate; }
+.vst-library-item:hover .vst-move-pan img { animation: vst-pan 1.8s var(--m-ease-in-out) infinite alternate; }
+.vst-library-item:hover .vst-move-orbit img { animation: vst-orbit 2.4s var(--m-ease-in-out) infinite alternate; }
+.vst-library-item:hover .vst-move-rise img { animation: vst-rise 1.8s var(--m-ease-out) infinite alternate; }
+.vst-library-item:hover .vst-move-tilt img { animation: vst-tilt 1.8s var(--m-ease-out) infinite alternate; }
+.vst-library-item:hover .vst-move-shake img { animation: vst-shake 0.9s var(--m-ease-in-out) infinite; }
+.vst-library-item:hover .vst-move-drift img { animation: vst-drift 1.8s var(--m-ease-in-out) infinite alternate; }
 
-.as-canvas-banner:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
-  background: var(--ds-surface-2);
+@keyframes vst-push { from { transform: scale(1); } to { transform: scale(1.3); } }
+@keyframes vst-pull { from { transform: scale(1.35); } to { transform: scale(1); } }
+@keyframes vst-pan { from { transform: scale(1.3) translateX(-10%); } to { transform: scale(1.3) translateX(10%); } }
+@keyframes vst-orbit { from { transform: perspective(200px) scale(1.25) rotateY(-14deg); } to { transform: perspective(200px) scale(1.25) rotateY(14deg); } }
+@keyframes vst-rise { from { transform: scale(1.3) translateY(10%); } to { transform: scale(1.1) translateY(-10%); } }
+@keyframes vst-tilt { from { transform: scale(1.3) translateY(-12%); } to { transform: scale(1.3) translateY(12%); } }
+@keyframes vst-shake {
+  0%, 100% { transform: scale(1.15) translate(0, 0) rotate(0); }
+  25% { transform: scale(1.15) translate(-2%, 1%) rotate(-0.6deg); }
+  50% { transform: scale(1.15) translate(1.5%, -1%) rotate(0.5deg); }
+  75% { transform: scale(1.15) translate(-1%, -1.5%) rotate(-0.3deg); }
 }
+@keyframes vst-drift { from { transform: scale(1.35); } to { transform: scale(1.05); } }
 
-/* Suno × ElevenLabs Playable Audio Showcase Wall */
-.as-showcase-grid {
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
+/* ---------- Narrow windows: the column first, then the stage ---------- */
 
-@media (max-width: 780px) {
-  .as-showcase-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 1023px) {
+  .vst-panel-scroll {
+    padding-bottom: 0;
+  }
+
+  /* Generate stays in reach at the bottom of the screen while the column
+     is in view. */
+  .vst-footer {
+    padding-bottom: max(var(--ds-space-3), env(safe-area-inset-bottom));
+  }
+
+  .vst-stage {
+    overflow: visible;
+  }
+
+  .vst-howto-main {
+    padding: 72px var(--ds-space-5) var(--ds-space-6);
+  }
+
+  .vst-library {
+    position: fixed;
+    z-index: 70;
+    inset: 0;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
   }
 }
 
-.as-showcase-card {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
-  padding: 12px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
-  background: var(--ds-surface-1);
-  box-shadow: var(--ds-specular);
-  transition: border-color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
-}
+@media (max-width: 640px) {
+  .vst-root {
+    gap: var(--ds-space-3);
+  }
 
-.as-showcase-card:hover {
-  border-color: var(--ds-line-2);
-  background: var(--ds-surface-2);
-  transform: translateY(-1px);
-}
+  .vst-howto-main {
+    padding: 56px var(--ds-space-5) var(--ds-space-5);
+  }
 
-.as-showcase-card-on {
-  border-color: color-mix(in srgb, var(--du-accent) 48%, var(--ds-line-2));
-  background: color-mix(in srgb, var(--du-accent) 6%, var(--ds-surface-2));
-}
+  .vst-howto-title {
+    font-size: var(--ds-fs-2xl);
+    line-height: 36px;
+  }
 
-.as-showcase-cover {
-  position: relative;
-  width: 96px;
-  min-height: 96px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--ds-r-lg);
-  background: var(--du-bg-elev);
-}
+  .vst-steps {
+    grid-template-columns: 1fr;
+    gap: var(--ds-space-5);
+  }
 
-.as-showcase-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--m-slow) var(--m-ease-out);
-}
+  .vst-tip {
+    gap: var(--ds-space-4);
+    padding: 0 var(--ds-space-4);
+    border-radius: 0 0 var(--ds-r-2xl) var(--ds-r-2xl);
+  }
 
-.as-showcase-cover:hover img {
-  transform: scale(1.06);
-}
+  .vst-tip-art {
+    width: 120px;
+  }
 
-.as-showcase-play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 74%, transparent);
-  border: 1px solid var(--ds-line-2);
-  color: var(--ds-text-1);
-  backdrop-filter: blur(8px);
-  transform: translate(-50%, -50%);
-  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
-}
+  .vst-tip-art img {
+    width: 56px;
+    height: 84px;
+  }
 
-.as-showcase-card-on .as-showcase-play,
-.as-showcase-cover:hover .as-showcase-play {
-  border-color: transparent;
-  background: var(--du-gradient);
-  color: var(--du-on-accent);
-}
+  .vst-tip-art img:nth-child(2) {
+    left: 32px;
+  }
 
-.as-showcase-body {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 5px;
-}
+  .vst-tip-art img:nth-child(3) {
+    left: 64px;
+  }
 
-.as-showcase-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
+  .vst-tip-arrow {
+    display: none;
+  }
 
-.as-showcase-tag {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-2xs);
-  font-weight: 600;
-}
+  .vst-reels {
+    grid-template-columns: 1fr;
+  }
 
-.as-showcase-title {
-  color: var(--ds-text-1);
-  font-family: var(--du-font-display);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  line-height: 1.3;
-}
+  .vst-empty-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-.as-showcase-script {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-xs);
-  line-height: 1.5;
-}
+  .vst-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--ds-space-1) var(--ds-space-4) var(--ds-space-4);
+  }
 
-.as-showcase-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 4px;
-}
+  .vst-library-head {
+    padding-left: var(--ds-space-4);
+  }
 
-.as-showcase-btn,
-.as-showcase-recreate {
-  display: inline-flex;
-  height: 28px;
-  align-items: center;
-  gap: 5px;
-  padding: 0 10px;
-  border-radius: var(--ds-r-md);
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  transition: background-color var(--m-instant) var(--m-ease-out), filter var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
-}
+  .vst-library-note {
+    display: none;
+  }
 
-.as-showcase-btn {
-  border: 1px solid var(--ds-line-2);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-2);
-}
+  /* Finger-sized targets: the chips grow, the tabs and cards already are. */
+  .vst-chip {
+    height: 32px;
+    padding: 0 10px;
+  }
 
-.as-showcase-btn:hover {
-  background: var(--ds-fill-2);
-  color: var(--ds-text-1);
-}
+  .vst-chip::after {
+    position: absolute;
+    inset: -6px -2px;
+    content: "";
+  }
 
-.as-showcase-recreate {
-  background: var(--ds-fill-2);
-  color: var(--ds-text-1);
-}
+  .vst-tab {
+    height: 40px;
+    padding: 0 var(--ds-space-3);
+  }
 
-.as-showcase-recreate:hover {
-  background: var(--du-gradient);
-  color: var(--du-on-accent);
-}
-
-/* Generate: a spinner sits beside the label while it submits, so the button
-   keeps its size and the cost does not shift. */
-.vs-generate-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ds-space-2);
-}
-
-/* Settings cards are two to a row; an odd last card takes the full row
-   (the sound card is left out for models without sound). */
-.vs-grid > :last-child:nth-child(odd) {
-  grid-column: 1 / -1;
+  .vst-ref-remove {
+    width: 24px;
+    height: 24px;
+  }
 }
