@@ -41,7 +41,7 @@
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   white-space: nowrap;
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 140ms var(--ds-ease-spring);
+  transition: background var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .cc-back-link:hover {
@@ -148,7 +148,7 @@
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: background var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .cc-icon-btn:hover:not(:disabled) {
@@ -276,7 +276,7 @@
   color: var(--ds-text-2);
   font-size: var(--ds-fs-2xs);
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: background var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .cc-dock-btn:hover {
@@ -349,7 +349,7 @@
   color: var(--ds-text-1);
   text-align: left;
   cursor: pointer;
-  transition: border-color 140ms ease, transform 140ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .cc-lib-item:hover {
@@ -382,7 +382,7 @@
   background: color-mix(in srgb, var(--du-surface) 94%, transparent);
   box-shadow: var(--ds-specular), var(--ds-shadow-2);
   backdrop-filter: blur(18px);
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), box-shadow var(--m-instant) var(--m-ease-out);
 }
 
 .cc-node:hover {
@@ -578,7 +578,7 @@
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
+  transition: background var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .cc-ctx-btn:hover {
@@ -644,7 +644,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 280ms var(--ds-ease-spring);
+  transition: transform var(--m-base) var(--m-ease-out);
 }
 
 .cc-empty-preview-card:hover img {
@@ -736,7 +736,7 @@
   box-shadow: var(--ds-specular), var(--ds-shadow-float);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  transition: border-color var(--m-fast) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .cc-composer:focus-within {
@@ -876,7 +876,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: pointer;
-  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring), box-shadow 160ms ease;
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), box-shadow var(--m-instant) var(--m-ease-out);
 }
 
 .cc-primary-btn:hover:not(:disabled) {
@@ -1340,7 +1340,7 @@
   cursor: crosshair;
   opacity: 0;
   transform: translateY(-50%) scale(0.8);
-  transition: opacity 160ms ease, transform 160ms var(--ds-ease-spring), background 160ms ease, box-shadow 160ms ease;
+  transition: opacity var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), background var(--m-instant) var(--m-ease-out), box-shadow var(--m-instant) var(--m-ease-out);
 }
 
 .cc-port-in {
@@ -1511,7 +1511,7 @@
   font-size: var(--ds-fs-sm);
   text-align: left;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition: background var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .cc-cmd-item:hover {
@@ -1612,7 +1612,7 @@
   background: var(--ds-fill-1);
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, background-color 160ms ease, transform 140ms var(--ds-ease-spring);
+  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .cc-tpl-card:hover {

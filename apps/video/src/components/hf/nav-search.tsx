@@ -152,8 +152,11 @@ export function NavSearch({
   lang,
   localize,
   onClose,
+  state = "open",
 }: {
   lang: string;
+  /** "closed" while it plays its exit (hooks/use-presence in the nav). */
+  state?: "open" | "closed";
   /** Turns a site path into a localized link. */
   localize: (path: string) => string;
   onClose: () => void;
@@ -291,7 +294,7 @@ export function NavSearch({
   };
 
   return (
-    <div className="ns" onKeyDown={onKeyDown}>
+    <div className="ns" data-state={state} onKeyDown={onKeyDown}>
       <button type="button" className="ns-scrim" aria-label={zh ? "关闭搜索" : "Close search"} tabIndex={-1} onClick={onClose} />
       <div className="ns-bar">
         <Search className="ns-bar-icon" aria-hidden="true" />

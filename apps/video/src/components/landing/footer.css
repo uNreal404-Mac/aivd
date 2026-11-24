@@ -25,7 +25,7 @@
   gap: 10px;
   color: var(--ds-text-1);
   font-size: var(--ds-fs-2xl);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -70,7 +70,7 @@
   color: var(--ds-text-2);
   font-size: var(--ds-fs-sm);
   font-weight: 500;
-  transition: color 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
 .ft-link:hover {
@@ -98,7 +98,7 @@
 
 .ft-bottom-links a {
   color: white;
-  transition: color 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
 .ft-lang {

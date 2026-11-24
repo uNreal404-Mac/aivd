@@ -383,7 +383,7 @@
     "signin_subtitle": "One account for video, images and audio",
     "privacy": "By continuing, you agree to our Terms of Service and Privacy Policy.",
     "continue_google": "Continue with Google",
-    "continue_email": "Continue with Email",
+    "continue_email": "Send sign-in link",
     "or_continue_with": "or continue with",
     "email_placeholder": "name@example.com",
     "terms_notice": "By continuing, you agree to our Terms of Service and Privacy Policy.",
@@ -482,7 +482,7 @@
   },
   "dashboard": {
     "myCreations": {
-      "title": "My Creations",
+      "title": "My creations",
       "tabs": {
         "all": "All",
         "queued": "Queued",
@@ -528,21 +528,65 @@
         "retry": "Retry",
         "viewDetails": "View Details",
         "downloadSuccess": "Download started",
-        "downloadError": "Failed to download video",
-        "deleteSuccess": "Video deleted successfully",
-        "deleteError": "Failed to delete video",
+        "downloadError": "Download failed. Try again.",
+        "downloadErrorOpen": "Still can't download. Open it in a new tab to save it.",
+        "downloading": "Downloading…",
+        "downloaded": "Downloaded",
+        "openFile": "Open in new tab",
+        "confirmDelete": "Confirm delete",
+        "regenerate": "Generate again",
+        "deleteSuccess": "Deleted",
+        "deleteError": "Couldn't delete. Try again.",
         "retrySuccess": "Retry initiated",
         "retryError": "Failed to retry"
       },
       "empty": {
         "title": "No creations yet",
-        "description": "Your generated videos will appear here",
+        "description": "Everything you generate will appear here",
         "cta": "Start creating",
-        "ctaStart": "Start Creating"
+        "ctaStart": "Start Creating",
+        "video": {
+          "title": "No videos yet",
+          "description": "Videos you generate will appear here",
+          "cta": "Create a video"
+        },
+        "image": {
+          "title": "No images yet",
+          "description": "Images you generate will appear here",
+          "cta": "Create an image"
+        },
+        "audio": {
+          "title": "No audio yet",
+          "description": "Audio you generate will appear here",
+          "cta": "Create audio"
+        },
+        "filtered": {
+          "queued": "No {kind} in the queue",
+          "generating": "No {kind} generating right now",
+          "done": "No finished {kind} yet",
+          "failed": "No failed {kind}",
+          "description": "Pick another status, or show all your {kind}.",
+          "showAll": "Show all"
+        }
+      },
+      "kindNoun": {
+        "video": "videos",
+        "image": "images",
+        "audio": "audio"
+      },
+      "processing": {
+        "title": "Generating…",
+        "queuedTitle": "In the queue…",
+        "hint": "It will show up here when it's ready. No need to refresh."
+      },
+      "credits": "{count, plural, one {# credit} other {# credits}}",
+      "loadError": {
+        "title": "Couldn't load your creations",
+        "description": "The connection may have dropped for a moment. Trying again usually works."
       },
       "deleteConfirm": {
-        "title": "Delete video?",
-        "message": "This action cannot be undone.",
+        "title": "Delete this creation?",
+        "message": "This can't be undone.",
         "confirm": "Delete",
         "cancel": "Cancel"
       },
@@ -552,7 +596,8 @@
         "aspectRatio": "Aspect Ratio",
         "prompt": "Prompt",
         "createdAt": "Created",
-        "creditsUsed": "Credits Used"
+        "creditsUsed": "Credits Used",
+        "cost": "Cost"
       }
     },
     "credits": {

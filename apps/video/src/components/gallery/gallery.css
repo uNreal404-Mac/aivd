@@ -69,7 +69,7 @@
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
   font-weight: 600;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .gl-chip:hover {
@@ -114,7 +114,7 @@
 
 .gl-open img,
 .gl-open video {
-  transition: transform 700ms var(--du-ease, ease);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .gl-card:hover .gl-open img,
@@ -219,7 +219,7 @@
   font-weight: 700;
   opacity: 0;
   pointer-events: auto;
-  transition: opacity var(--du-dur-fast, 180ms) ease, transform 160ms var(--ds-ease-spring);
+  transition: opacity var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .gl-use svg {

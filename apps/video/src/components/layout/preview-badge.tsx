@@ -16,7 +16,7 @@ export function PreviewBadge({
     {
       "data-testid": "preview-badge",
       className:
-        "rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300",
+        "rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-300",
     },
     lang.toLowerCase().startsWith("zh") ? "预览" : "Preview",
   );

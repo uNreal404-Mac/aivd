@@ -53,7 +53,7 @@
   background: var(--du-glass-bg-strong);
   color: var(--du-text);
   box-shadow: var(--du-glass-shadow);
-  transition: background 180ms ease, opacity 180ms ease;
+  transition: background var(--m-fast) var(--m-ease-out), opacity var(--m-fast) var(--m-ease-out);
 }
 
 .home-gallery-arrow:hover:not(:disabled) {

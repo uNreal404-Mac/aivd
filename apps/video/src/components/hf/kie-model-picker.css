@@ -6,8 +6,8 @@
 
 .du-model-picker-glass {
   background: color-mix(in srgb, var(--du-surface) 92%, transparent);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   box-shadow: var(--ds-specular), var(--ds-shadow-float);
 }
 
@@ -16,7 +16,6 @@
   z-index: 1;
   top: 0;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--du-surface) 92%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* Solid, not a second blur inside the blurred panel (costly on phones). */
+  background: var(--du-surface);
 }

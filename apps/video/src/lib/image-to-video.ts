@@ -84,6 +84,91 @@ export const UPLOAD_ENDPOINT = "/api/v1/upload";
 export const GENERATE_ENDPOINT = "/api/v1/video/generate";
 
 /* -------------------------------------------------------------------------- */
+/* Upload errors                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Stable reasons an image upload can fail. Code compares these; people read
+ * them through uploadErrorText, in the page's language, with a next step.
+ */
+export type UploadErrorCode =
+  | "not_image"
+  | "unsupported_type"
+  | "too_large"
+  | "unauthorized"
+  | "upload_unavailable"
+  | "upload_failed"
+  | "content_blocked"
+  | "missing_item";
+
+const MAX_MB = MAX_BYTES / 1024 / 1024;
+
+const UPLOAD_ERROR_TEXT: Record<UploadErrorCode, { zh: string; en: string }> = {
+  not_image: { zh: "请选择图片文件", en: "Choose an image file." },
+  unsupported_type: {
+    zh: "不支持这个图片格式，请换用 JPG、PNG、WebP 或 GIF",
+    en: "That format isn't supported. Use a JPG, PNG, WebP or GIF.",
+  },
+  too_large: {
+    zh: `图片超过 ${MAX_MB} MB，请换一张小一点的`,
+    en: `That image is over ${MAX_MB} MB. Choose a smaller one.`,
+  },
+  unauthorized: { zh: "请先登录再上传", en: "Sign in to upload." },
+  upload_unavailable: {
+    zh: "暂时无法上传，请稍后再试",
+    en: "Uploads aren't available right now. Try again later.",
+  },
+  upload_failed: { zh: "上传失败，请重试", en: "Upload failed. Try again." },
+  content_blocked: {
+    zh: "这张图片没有通过内容审核，请换一张",
+    en: "This image didn't pass the content check. Try a different one.",
+  },
+  missing_item: {
+    zh: "这张图片已失效，请重新上传",
+    en: "This image is no longer available. Upload it again.",
+  },
+};
+
+export function isUploadErrorCode(value: unknown): value is UploadErrorCode {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(UPLOAD_ERROR_TEXT, value)
+  );
+}
+
+/** Thrown when a picked image cannot be made ready. `message` is English. */
+export class UploadError extends Error {
+  readonly code: UploadErrorCode;
+
+  constructor(code: UploadErrorCode) {
+    super(UPLOAD_ERROR_TEXT[code].en);
+    this.name = "UploadError";
+    this.code = code;
+  }
+}
+
+/**
+ * What to tell the reader about an upload problem, in their language.
+ * Accepts a code, an UploadFailure, an UploadError, or anything else that
+ * was thrown (which reads as a plain "upload failed, try again").
+ * `lang` is a locale ("zh", "en-US") or the usual `zh` flag.
+ */
+export function uploadErrorText(reason: unknown, lang: string | boolean): string {
+  const zh =
+    typeof lang === "boolean" ? lang : lang.toLowerCase().startsWith("zh");
+  const nested =
+    reason && typeof reason === "object"
+      ? (reason as { code?: unknown }).code
+      : undefined;
+  const code: UploadErrorCode = isUploadErrorCode(reason)
+    ? reason
+    : isUploadErrorCode(nested)
+      ? nested
+      : "upload_failed";
+  return UPLOAD_ERROR_TEXT[code][zh ? "zh" : "en"];
+}
+
+/* -------------------------------------------------------------------------- */
 /* File validation                                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -92,21 +177,35 @@ export interface ImageFileLike {
   size: number;
 }
 
-/** Returns an inline error message, or `null` when the file is acceptable. */
-export function validateImageFile(file: ImageFileLike): string | null {
-  if (!file) {
-    return "Please choose an image file.";
+/** Why a file can't be uploaded as an image, or `null` when it can. */
+export function imageFileError(
+  file: ImageFileLike | null | undefined,
+): UploadErrorCode | null {
+  if (!file || !file.type?.startsWith("image/")) {
+    return "not_image";
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return "That file type is not supported. Use a JPG, PNG, WEBP or GIF.";
+    return "unsupported_type";
   }
 
   if (file.size > MAX_BYTES) {
-    return "That image is larger than 10MB. Please choose a smaller file.";
+    return "too_large";
   }
 
   return null;
+}
+
+/**
+ * Inline error text for a file, or `null` when it is acceptable. English
+ * unless a locale or `zh` flag is passed.
+ */
+export function validateImageFile(
+  file: ImageFileLike | null | undefined,
+  lang: string | boolean = "en",
+): string | null {
+  const code = imageFileError(file);
+  return code ? uploadErrorText(code, lang) : null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -121,6 +220,8 @@ export interface UploadSuccess {
 
 export interface UploadFailure {
   ok: false;
+  code: UploadErrorCode;
+  /** English text for the code; show uploadErrorText(result, lang) instead. */
   message: string;
 }
 
@@ -134,17 +235,21 @@ interface UploadEnvelope {
     publicUrl?: string;
     expiresIn?: number;
   };
-  error?: { message?: string };
+  error?: { message?: string; details?: { code?: string } };
+}
+
+function uploadFailure(code: UploadErrorCode): UploadFailure {
+  return { ok: false, code, message: UPLOAD_ERROR_TEXT[code].en };
 }
 
 /** Maps a raw upload response onto a stable, UI-friendly result. */
 export function parseUploadResponse(status: number, json: unknown): UploadResult {
   if (status === 401) {
-    return { ok: false, message: "Sign in to upload" };
+    return uploadFailure("unauthorized");
   }
 
   if (status === 503) {
-    return { ok: false, message: "Uploads are not available yet" };
+    return uploadFailure("upload_unavailable");
   }
 
   const payload = (json ?? null) as UploadEnvelope | null;
@@ -159,15 +264,21 @@ export function parseUploadResponse(status: number, json: unknown): UploadResult
     }
   }
 
-  const message = payload?.error?.message;
+  if (status === 422 || payload?.error?.details?.code === "CONTENT_BLOCKED") {
+    return uploadFailure("content_blocked");
+  }
 
-  return {
-    ok: false,
-    message:
-      typeof message === "string" && message.trim().length > 0
-        ? message
-        : "Upload failed. Please try again.",
-  };
+  // The route rejects these before storing anything; the browser checks
+  // first, so they only show if the two ever disagree.
+  const message = payload?.error?.message ?? "";
+  if (status === 413 || /too large/i.test(message)) {
+    return uploadFailure("too_large");
+  }
+  if (status === 415 || /content type/i.test(message)) {
+    return uploadFailure("unsupported_type");
+  }
+
+  return uploadFailure("upload_failed");
 }
 
 /** Minimal structural type so tests can pass a stub in place of `fetch`. */
@@ -205,7 +316,7 @@ export async function uploadImage(
 
     return parseUploadResponse(response.status, await readJson(response));
   } catch {
-    return { ok: false, message: "Upload failed. Please try again." };
+    return uploadFailure("upload_failed");
   }
 }
 

@@ -98,7 +98,7 @@
   font-size: var(--ds-fs-xs);
   font-weight: 400;
   white-space: nowrap;
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .du-hero-skill-pill:hover {

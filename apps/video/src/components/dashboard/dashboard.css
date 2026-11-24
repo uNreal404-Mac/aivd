@@ -44,8 +44,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    color var(--du-dur-fast, 180ms) ease;
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
 }
 
 .db-rail-link svg {
@@ -180,8 +180,8 @@
   font-weight: 500;
   white-space: nowrap;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .db-btn:hover {
@@ -519,8 +519,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    color var(--du-dur-fast, 180ms) ease;
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
 }
 
 .cr-kind svg {
@@ -597,7 +597,7 @@
   justify-content: center;
   border-radius: var(--ds-r-sm);
   color: var(--ds-text-3);
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .db-copy:hover {

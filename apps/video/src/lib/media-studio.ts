@@ -48,7 +48,7 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
     case "UNAUTHORIZED":
       return zh ? "请先登录再生成。" : "Sign in to generate.";
     case "INSUFFICIENT_CREDITS":
-      return zh ? "积分不足，请先购买积分。" : "Not enough credits. Buy credits to continue.";
+      return zh ? "积分不够，可以换个省积分的模型，或购买积分" : "Not enough credits. Switch to a lower-cost model or buy credits.";
     case "GENERATION_DISABLED":
       return zh ? "预览站暂未开放生成，没有扣除积分。" : "Generation is not open on this preview. No credits were used.";
     case "NETWORK":

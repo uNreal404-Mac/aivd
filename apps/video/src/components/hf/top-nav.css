@@ -9,7 +9,7 @@
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
   border-bottom: 1px solid var(--ds-line-1);
-  transition: border-color 200ms ease, background-color 200ms ease;
+  transition: border-color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out);
 }
 
 .hf-nav-scrolled {
@@ -73,7 +73,7 @@
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   white-space: nowrap;
-  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .hf-drops-pill:hover {
@@ -151,7 +151,7 @@
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
-  transition: color 150ms ease, background-color 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out);
 }
 
 a.hf-item:hover,
@@ -225,7 +225,7 @@ a.hf-item:hover,
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
-  transition: background-color 180ms ease, color 180ms ease, transform 150ms var(--ds-ease-spring), box-shadow 180ms ease;
+  transition: background-color var(--m-fast) var(--m-ease-out), color var(--m-fast) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .hf-act:hover {
@@ -327,7 +327,7 @@ a.hf-item:hover,
   font-weight: 600;
   line-height: 20px;
   white-space: nowrap;
-  transition: filter 150ms ease;
+  transition: filter var(--m-instant) var(--m-ease-out);
 }
 
 .hf-auth:hover {
@@ -379,6 +379,8 @@ a.hf-item:hover,
 }
 
 .hf-dd .hf-dd-col-secondary + .hf-dd-col {
+  /* A new menu's columns cross-fade in when the pointer moves to it. */
+  animation: du-fade-in var(--m-instant) var(--m-ease-out) both;
   padding: 12px 8px 8px;
 }
 
@@ -474,7 +476,12 @@ a.hf-item:hover,
 .hf-dd {
   position: absolute;
   top: calc(56px + 8px);
+  left: 0;
   z-index: 50;
+  /* Placed with a transform (--dd-x is the trigger's left edge), so moving
+     from one menu to the next glides without re-laying out the page. */
+  transform: translateX(var(--dd-x, 16px));
+  transition: transform var(--m-fast) var(--m-ease-out);
   display: grid;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 100px);
@@ -531,7 +538,7 @@ a.hf-item:hover,
   gap: 12px;
   padding: 8px;
   border-radius: var(--ds-r-xl);
-  transition: background-color 150ms ease, filter 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), filter var(--m-instant) var(--m-ease-out);
 }
 
 a.hf-dd-row:hover {
@@ -659,7 +666,7 @@ a.hf-dd-row:active {
   gap: 12px;
   padding: 6px 8px;
   border-radius: var(--ds-r-lg);
-  transition: background-color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 .hf-acct-profile:hover {
@@ -766,7 +773,7 @@ a.hf-dd-row:active {
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   text-align: left;
-  transition: background-color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 .hf-acct-upgrade {
@@ -829,7 +836,19 @@ a.hf-dd-row:active {
   inset: 0;
   background: color-mix(in srgb, var(--du-bg) 60%, transparent);
   backdrop-filter: blur(4px);
-  animation: hf-mm-fade 200ms ease both;
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+.hf-nav-mobile[data-state="closed"] {
+  pointer-events: none;
+}
+
+.hf-nav-mobile[data-state="closed"] .hf-mm-backdrop {
+  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
+}
+
+.hf-nav-mobile[data-state="closed"] .hf-mm {
+  animation: hf-mm-out var(--m-fast) var(--m-ease-exit) both;
 }
 
 .hf-mm {
@@ -847,7 +866,7 @@ a.hf-dd-row:active {
   border-left: 1px solid var(--ds-line-1);
   background: var(--du-bg-elev);
   box-shadow: var(--ds-shadow-2);
-  animation: hf-mm-in 260ms var(--du-ease, ease) both;
+  animation: hf-mm-in var(--m-base) var(--m-ease-out) both;
 }
 
 .hf-mm-quick {
@@ -869,7 +888,7 @@ a.hf-dd-row:active {
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
   font-weight: 500;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .hf-mm-quick-item svg {
@@ -931,11 +950,34 @@ a.hf-dd-row:active {
   width: 18px;
   height: 18px;
   color: var(--ds-text-3);
-  transition: transform 200ms ease;
+  transition: transform var(--m-base) var(--m-ease-in-out);
 }
 
 .hf-mm-sec[data-open] .hf-mm-chev {
   transform: rotate(180deg);
+}
+
+/* A section opens by growing to its content's height (grid rows 0fr → 1fr)
+   with the chevron turning in step; closed sections are inert. */
+.hf-mm-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--m-base) var(--m-ease-in-out);
+}
+
+.hf-mm-sec[data-open] .hf-mm-collapse {
+  grid-template-rows: 1fr;
+}
+
+.hf-mm-collapse > .hf-mm-body {
+  min-height: 0;
+  opacity: 0;
+  transition: opacity var(--m-fast) var(--m-ease-out);
+}
+
+.hf-mm-sec[data-open] .hf-mm-collapse > .hf-mm-body {
+  opacity: 1;
 }
 
 .hf-mm-body {
@@ -1054,6 +1096,13 @@ a.hf-dd-row:active {
 
 @keyframes hf-mm-in {
   from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes hf-mm-out {
+  to {
     opacity: 0;
     transform: translateX(24px);
   }

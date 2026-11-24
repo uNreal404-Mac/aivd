@@ -50,7 +50,7 @@
   border-radius: var(--ds-r-xl);
   object-fit: cover;
   box-shadow: var(--ds-shadow-float);
-  transition: transform 420ms var(--ds-ease-spring), border-color 200ms ease;
+  transition: transform var(--m-slow) var(--m-ease-out), border-color var(--m-fast) var(--m-ease-out);
 }
 
 .is-photo:first-child {
@@ -91,7 +91,7 @@
   align-items: center;
   color: white;
   font-size: var(--ds-fs-4xl);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.12;
 }
@@ -127,7 +127,7 @@
   box-shadow: var(--ds-specular), var(--ds-shadow-float);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  transition: border-color var(--m-fast) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .is-composer:focus-within {
@@ -176,7 +176,7 @@
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-md);
   background: var(--ds-fill-1);
-  transition: background-color 160ms ease, border-color 160ms ease, transform 140ms var(--ds-ease-spring);
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .is-chip {
@@ -278,7 +278,7 @@ button.is-chip:active:not(:disabled) {
   font-size: var(--ds-fs-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  transition: filter 160ms ease, transform 150ms var(--ds-ease-spring), box-shadow 180ms ease;
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .is-generate:hover:not(:disabled) {
@@ -350,7 +350,7 @@ button.is-chip:active:not(:disabled) {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   font-weight: 500;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .is-density-btn:hover {
@@ -503,7 +503,7 @@ button.is-chip:active:not(:disabled) {
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   white-space: nowrap;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .is-menu-item:hover {
@@ -571,7 +571,7 @@ button.is-chip:active:not(:disabled) {
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   white-space: nowrap;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 140ms var(--ds-ease-spring);
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .is-style-pill:hover {

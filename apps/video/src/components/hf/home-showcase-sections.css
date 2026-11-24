@@ -67,7 +67,7 @@
   font-size: var(--ds-fs-sm);
   font-weight: 700;
   text-decoration: none;
-  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background var(--m-fast) var(--m-ease-out), color var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .home-showcase-primary {
@@ -124,7 +124,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 500ms ease;
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .home-showcase-card:hover img {
@@ -227,7 +227,7 @@
   border-radius: var(--ds-r-full);
   color: var(--du-text-muted);
   font-size: var(--ds-fs-sm);
-  transition: background 180ms ease, color 180ms ease;
+  transition: background var(--m-fast) var(--m-ease-out), color var(--m-fast) var(--m-ease-out);
 }
 
 .home-creative-tab:hover,

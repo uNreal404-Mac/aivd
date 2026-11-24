@@ -9,6 +9,20 @@ import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, X } from "lucide-react";
 import "./studio-results.css";
 
+/** Result media fades in once it has something to show, instead of popping
+ * in over an empty box. `readyRef` covers media already loaded (from cache)
+ * before React attached the handler; an error also counts as ready, so a
+ * broken file is visible rather than invisible. */
+export function markReady(event: { currentTarget: HTMLElement }) {
+  event.currentTarget.dataset.ready = "";
+}
+
+export function readyRef(element: HTMLImageElement | HTMLVideoElement | null) {
+  if (!element) return;
+  const ready = element instanceof HTMLImageElement ? element.complete : element.readyState >= 1;
+  if (ready) element.dataset.ready = "";
+}
+
 /* -------------------------------------------------------------------------- */
 /* Elapsed time and the card shown while a job runs                           */
 /* -------------------------------------------------------------------------- */
@@ -116,7 +130,7 @@ export function CopyPromptButton({
         }
       }}
     >
-      {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+      {copied ? <Check key="done" data-swap className="h-4 w-4" aria-hidden="true" /> : <Copy key="copy" data-swap className="h-4 w-4" aria-hidden="true" />}
       {className.includes("sr-pill") ? (copied ? (zh ? "已复制" : "Copied") : zh ? "复制提示词" : "Copy prompt") : null}
     </button>
   );
@@ -373,7 +387,7 @@ export function WaveformPlayer({ url, zh }: { url: string; zh: boolean }) {
           <span
             key={index}
             className={index / BARS < progress ? "sr-bar sr-bar-on" : "sr-bar"}
-            style={{ height: `${Math.round(height * 100)}%` }}
+            style={{ transform: `scaleY(${Math.max(0.06, height).toFixed(3)})` }}
           />
         ))}
       </div>

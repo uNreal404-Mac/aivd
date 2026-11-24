@@ -14,7 +14,27 @@
   background: color-mix(in srgb, var(--du-bg) 62%, transparent);
   backdrop-filter: blur(4px);
   cursor: default;
-  animation: ns-fade var(--du-dur, 400ms) var(--du-ease, ease) both;
+  animation: ns-fade var(--m-base) var(--m-ease-out) both;
+}
+
+.ns[data-state="closed"] {
+  pointer-events: none;
+}
+
+.ns[data-state="closed"] .ns-scrim {
+  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
+}
+
+.ns[data-state="closed"] .ns-bar,
+.ns[data-state="closed"] .ns-panel {
+  animation: ns-out var(--m-instant) var(--m-ease-exit) both;
+}
+
+@keyframes ns-out {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-2px) scale(0.985);
+  }
 }
 
 @keyframes ns-fade {
@@ -38,13 +58,15 @@
   border-radius: var(--ds-r-lg);
   background: var(--ds-surface-3);
   transform: translateX(-50%);
-  animation: ns-bar-in var(--du-dur, 400ms) var(--du-ease, ease) both;
+  animation: ns-bar-in var(--m-fast) var(--m-ease-out) both;
 }
 
+/* The bar grows out of the middle with a transform (animating its width
+   re-laid the page out every frame). */
 @keyframes ns-bar-in {
   from {
     opacity: 0;
-    width: 120px;
+    transform: translateX(-50%) scaleX(0.92);
   }
 }
 
@@ -135,7 +157,7 @@
     0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent),
     0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
   transform: translateX(-50%);
-  animation: ns-panel-in var(--du-dur, 400ms) var(--du-ease, ease) both;
+  animation: ns-panel-in var(--m-fast) var(--m-ease-out) both;
 }
 
 @keyframes ns-panel-in {
@@ -159,8 +181,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    color var(--du-dur-fast, 180ms) ease;
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
 }
 
 .ns-tab:hover {
@@ -336,8 +358,8 @@
   opacity: 0;
   transform: translateX(-4px);
   transition:
-    opacity var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    opacity var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .ns-row-on .ns-go {
@@ -405,7 +427,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 600ms var(--du-ease, ease);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .ns-card:hover .ns-card-media img,

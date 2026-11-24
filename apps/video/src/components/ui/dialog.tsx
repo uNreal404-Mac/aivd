@@ -10,17 +10,11 @@ const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
-const DialogPortal = ({
-  children,
-  ...props
-}: DialogPrimitive.DialogPortalProps) => (
-  <DialogPrimitive.Portal {...props}>
-    <div className="fixed inset-0 z-50 flex items-start justify-center md:items-center">
-      {children}
-    </div>
-  </DialogPrimitive.Portal>
-);
-DialogPortal.displayName = DialogPrimitive.Portal.displayName;
+// Overlay and content are direct children of the portal, so Radix can let
+// each play its closing animation (styles/motion.css: .du-dialog,
+// .du-dialog-overlay) before it unmounts. Content is centred with inset and
+// margin, never a transform, which the animation owns.
+const DialogPortal = DialogPrimitive.Portal;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -28,10 +22,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn(
-      "fixed inset-0 z-50 bg-background/60 backdrop-blur-sm transition-all duration-100 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:fade-in",
-      className,
-    )}
+    className={cn("du-dialog-overlay fixed inset-0 z-50 bg-background/60 backdrop-blur-sm", className)}
     {...props}
   />
 ));
@@ -46,8 +37,8 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed bottom-0 z-50 grid w-full gap-4 rounded-b-lg border bg-background p-6 shadow-lg animate-in md:bottom-auto",
-        "data-[state=open]:fade-in-90 data-[state=open]:slide-in-from-bottom-10 md:max-w-lg md:rounded-lg md:zoom-in-90 data-[state=open]:md:slide-in-from-bottom-0",
+        "du-dialog fixed inset-x-0 bottom-0 z-50 grid max-h-[calc(100svh-2rem)] w-full gap-4 overflow-y-auto rounded-t-2xl border bg-background p-6 shadow-lg",
+        "md:inset-0 md:m-auto md:h-fit md:max-w-lg md:rounded-2xl",
         className,
       )}
       {...props}

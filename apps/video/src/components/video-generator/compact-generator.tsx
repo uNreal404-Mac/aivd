@@ -167,7 +167,7 @@ function CompactRenderer() {
 
     return (
       <span
-        className="w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold"
+        className="w-4 h-4 rounded flex items-center justify-center text-[11px] font-bold"
         style={{ backgroundColor: color, color: "#fff" }}
       >
         {icon}
@@ -301,7 +301,7 @@ function CompactRenderer() {
                     )}
                   </div>
                   {model.description && (
-                    <div className="text-[10px] text-zinc-500 mt-0.5 ml-6">{model.description}</div>
+                    <div className="text-[11px] text-zinc-500 mt-0.5 ml-6">{model.description}</div>
                   )}
                 </DropdownMenuItem>
               ))}

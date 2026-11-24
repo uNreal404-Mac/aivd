@@ -530,7 +530,7 @@ export function GallerySection({
                     <article key={sample.image} className="home-gallery-card overflow-hidden rounded-[20px] border border-[var(--du-border-strong)] bg-[var(--du-surface)]">
                       <div className="relative aspect-[16/9] overflow-hidden">
                         <img src={sample.image} alt="" loading={index < 3 ? "eager" : "lazy"} className="h-full w-full object-cover" />
-                        <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--du-accent-text)]">
+                        <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[11px] font-semibold text-[var(--du-accent-text)]">
                           {isChinese ? "示例" : "Example"}
                         </span>
                       </div>

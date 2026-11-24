@@ -3348,7 +3348,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: Cr
                           }
                         >
                           <strong className="block text-xs">{zh ? angle.zh : angle.en}</strong>
-                          <span className="block truncate text-[10px] opacity-75">{zh ? angle.en : angle.zh}</span>
+                          <span className="block truncate text-[11px] opacity-75">{zh ? angle.en : angle.zh}</span>
                         </button>
                       );
                     })}

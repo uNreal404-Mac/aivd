@@ -607,7 +607,7 @@ export function AiAudioStudio({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-semibold">{item.name}</span>
                         {meta ? (
-                          <span className="block truncate text-[10px] opacity-75">
+                          <span className="block truncate text-[11px] opacity-75">
                             {zh ? meta.tagZh.replace(/^([男女])声\s*·\s*/, "$1·") : meta.tagEn.replace(/^(Male|Female)\s*·\s*/, (_, g: string) => `${g[0]}·`)}
                           </span>
                         ) : null}

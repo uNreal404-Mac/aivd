@@ -7,13 +7,16 @@ import {
   MAX_BYTES,
   MAX_PROMPT_LENGTH,
   UPLOAD_ENDPOINT,
+  UploadError,
   aspectRatiosFor,
   canSubmit,
   durationsFor,
+  imageFileError,
   isI2VGenerationEnabled,
   normalizeSettings,
   parseUploadResponse,
   submitImageToVideo,
+  uploadErrorText,
   uploadImage,
   validateImageFile,
 } from "../src/lib/image-to-video";
@@ -89,27 +92,98 @@ describe("constants", () => {
   });
 });
 
-describe("validateImageFile", () => {
+describe("imageFileError", () => {
   it("accepts every allowed image type", () => {
     for (const type of ALLOWED_TYPES) {
-      expect(validateImageFile({ type, size: 1024 })).toBeNull();
+      expect(imageFileError({ type, size: 1024 })).toBeNull();
     }
   });
 
-  it("rejects unsupported types", () => {
-    expect(validateImageFile({ type: "application/pdf", size: 1024 })).toEqual(
-      expect.any(String),
+  it("tells a non-image apart from an unsupported image format", () => {
+    expect(imageFileError({ type: "application/pdf", size: 1024 })).toBe(
+      "not_image",
     );
-    expect(validateImageFile({ type: "", size: 1024 })).toEqual(
-      expect.any(String),
+    expect(imageFileError({ type: "", size: 1024 })).toBe("not_image");
+    expect(imageFileError(null)).toBe("not_image");
+    expect(imageFileError({ type: "image/heic", size: 1024 })).toBe(
+      "unsupported_type",
     );
   });
 
   it("rejects files above the size limit", () => {
-    expect(validateImageFile({ type: "image/png", size: MAX_BYTES })).toBeNull();
+    expect(imageFileError({ type: "image/png", size: MAX_BYTES })).toBeNull();
+    expect(imageFileError({ type: "image/png", size: MAX_BYTES + 1 })).toBe(
+      "too_large",
+    );
+  });
+});
+
+describe("validateImageFile", () => {
+  it("returns null for an acceptable file", () => {
+    expect(validateImageFile({ type: "image/png", size: 1024 })).toBeNull();
+  });
+
+  it("stays English by default so older callers keep working", () => {
+    expect(validateImageFile({ type: "image/png", size: MAX_BYTES + 1 })).toBe(
+      "That image is over 10 MB. Choose a smaller one.",
+    );
+  });
+
+  it("speaks the page's language when asked", () => {
     expect(
-      validateImageFile({ type: "image/png", size: MAX_BYTES + 1 }),
-    ).toEqual(expect.any(String));
+      validateImageFile({ type: "image/heic", size: 1024 }, true),
+    ).toBe("不支持这个图片格式，请换用 JPG、PNG、WebP 或 GIF");
+    expect(
+      validateImageFile({ type: "image/png", size: MAX_BYTES + 1 }, "zh"),
+    ).toBe("图片超过 10 MB，请换一张小一点的");
+    expect(
+      validateImageFile({ type: "text/plain", size: 1 }, "en-US"),
+    ).toBe("Choose an image file.");
+  });
+});
+
+describe("uploadErrorText", () => {
+  it("turns every code into Chinese and English text", () => {
+    expect(uploadErrorText("not_image", "zh")).toBe("请选择图片文件");
+    expect(uploadErrorText("unsupported_type", "zh")).toBe(
+      "不支持这个图片格式，请换用 JPG、PNG、WebP 或 GIF",
+    );
+    expect(uploadErrorText("too_large", "zh")).toBe(
+      "图片超过 10 MB，请换一张小一点的",
+    );
+    expect(uploadErrorText("unauthorized", "zh")).toBe("请先登录再上传");
+    expect(uploadErrorText("upload_unavailable", "zh")).toBe(
+      "暂时无法上传，请稍后再试",
+    );
+    expect(uploadErrorText("upload_failed", "zh")).toBe("上传失败，请重试");
+    expect(uploadErrorText("missing_item", "zh")).toBe(
+      "这张图片已失效，请重新上传",
+    );
+    expect(uploadErrorText("unauthorized", "en")).toBe("Sign in to upload.");
+    expect(uploadErrorText("missing_item", false)).toBe(
+      "This image is no longer available. Upload it again.",
+    );
+  });
+
+  it("reads the code off an upload result or a thrown UploadError", () => {
+    expect(uploadErrorText(parseUploadResponse(401, null), true)).toBe(
+      "请先登录再上传",
+    );
+    const error = new UploadError("missing_item");
+    expect(error).toBeInstanceOf(Error);
+    expect(error.code).toBe("missing_item");
+    expect(error.message).toBe(
+      "This image is no longer available. Upload it again.",
+    );
+    expect(uploadErrorText(error, "zh-CN")).toBe("这张图片已失效，请重新上传");
+  });
+
+  it("falls back to a plain retry message for anything unknown", () => {
+    expect(uploadErrorText(new Error("socket hang up"), "zh")).toBe(
+      "上传失败，请重试",
+    );
+    expect(uploadErrorText("toString", "en")).toBe("Upload failed. Try again.");
+    expect(uploadErrorText(undefined, "en")).toBe("Upload failed. Try again.");
   });
 });
 
@@ -151,33 +225,53 @@ describe("parseUploadResponse", () => {
         success: false,
         error: { message: "unauthenticated" },
       }),
-    ).toEqual({ ok: false, message: "Sign in to upload" });
+    ).toEqual({ ok: false, code: "unauthorized", message: "Sign in to upload." });
   });
 
-  it("maps 503 to the unavailable message", () => {
+  it("maps 503 to the unavailable code", () => {
     expect(parseUploadResponse(503, null)).toEqual({
       ok: false,
-      message: "Uploads are not available yet",
+      code: "upload_unavailable",
+      message: "Uploads aren't available right now. Try again later.",
     });
   });
 
-  it("surfaces the server error message for other failures", () => {
+  it("maps a content-safety block to its own code", () => {
+    expect(
+      parseUploadResponse(422, {
+        success: false,
+        error: { message: "内容不符合安全规则", details: { code: "CONTENT_BLOCKED" } },
+      }),
+    ).toMatchObject({ ok: false, code: "content_blocked" });
+  });
+
+  it("recognises the route's size and type rejections", () => {
+    expect(
+      parseUploadResponse(400, { success: false, error: { message: "File too large" } }),
+    ).toMatchObject({ ok: false, code: "too_large" });
+    expect(
+      parseUploadResponse(400, {
+        success: false,
+        error: { message: "Invalid content type. Allowed: image/jpeg" },
+      }),
+    ).toMatchObject({ ok: false, code: "unsupported_type" });
+  });
+
+  it("never shows raw server text for other failures", () => {
     expect(
       parseUploadResponse(500, { success: false, error: { message: "boom" } }),
-    ).toEqual({ ok: false, message: "boom" });
+    ).toEqual({ ok: false, code: "upload_failed", message: "Upload failed. Try again." });
 
     expect(
       parseUploadResponse(200, {
         success: false,
         error: { message: "no key returned" },
       }),
-    ).toEqual({ ok: false, message: "no key returned" });
-  });
+    ).toMatchObject({ ok: false, code: "upload_failed" });
 
-  it("falls back to a generic failure message", () => {
-    expect(parseUploadResponse(500, null)).toEqual({
+    expect(parseUploadResponse(500, null)).toMatchObject({
       ok: false,
-      message: "Upload failed. Please try again.",
+      code: "upload_failed",
     });
   });
 });
@@ -215,7 +309,7 @@ describe("uploadImage", () => {
     });
 
     await expect(uploadImage(stubFile(), fetchFn as FetchLike)).resolves.toEqual(
-      { ok: false, message: "Upload failed. Please try again." },
+      { ok: false, code: "upload_failed", message: "Upload failed. Try again." },
     );
   });
 });

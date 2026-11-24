@@ -1,5 +1,5 @@
 /** Files chosen before sign-in live in IndexedDB, never in sessionStorage. */
-import { uploadImage } from "@/lib/image-to-video";
+import { UploadError, uploadImage } from "@/lib/image-to-video";
 
 export type PickerAsset = {
   id: string;
@@ -77,11 +77,15 @@ export async function currentUploadUrls(): Promise<Map<string, string>> {
   } catch { return new Map(); }
 }
 
-/** Guest files need a server upload before a studio can submit their key. */
+/**
+ * Guest files need a server upload before a studio can submit their key.
+ * Throws an UploadError (code "missing_item" or the upload's own code);
+ * show it with uploadErrorText(error, lang).
+ */
 export async function readyPickerImage(asset: PickerAsset): Promise<{ key: string; name: string; url: string; sourceId: string }> {
   if (asset.key) return { key: asset.key, name: asset.name, url: asset.url, sourceId: asset.id };
-  if (!asset.file) throw new Error("The selected image is no longer available.");
+  if (!asset.file) throw new UploadError("missing_item");
   const result = await uploadImage(asset.file);
-  if (!result.ok) throw new Error(result.message);
+  if (!result.ok) throw new UploadError(result.code);
   return { key: result.key, name: asset.name, url: result.url, sourceId: asset.id };
 }

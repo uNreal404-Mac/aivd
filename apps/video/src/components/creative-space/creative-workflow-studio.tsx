@@ -17,6 +17,7 @@ import { useSession } from "@/lib/auth/client";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { listGuestAssets, readyPickerImage, saveGuestAsset, type PickerAsset } from "@/lib/home-media-library";
 import { localizedHref } from "@/lib/locale-path";
+import { UploadError, uploadErrorText } from "@/lib/image-to-video";
 import { previewFrame, uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
 import { maxVideoReferences } from "@/lib/video-references";
 import "./creative-workflow-studio.css";
@@ -263,7 +264,7 @@ export function CreativeWorkflowStudio({ locale, initialPrompt = "" }: { locale:
         if (!id) { setWorkflowId(savedId); workflowIdRef.current = savedId; window.history.replaceState(null, "", `${currentPath}?id=${encodeURIComponent(savedId)}`); }
         setNotice(zh ? "画布已保存" : "Canvas saved"); void syncList();
         return savedId;
-      } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save canvas."); return null; }
+      } catch (cause) { setError(cause instanceof UploadError ? uploadErrorText(cause, zh) : cause instanceof Error ? cause.message : "Could not save canvas."); return null; }
       finally { setSaving(false); }
     })();
     savePromiseRef.current = task;
@@ -413,7 +414,7 @@ export function CreativeWorkflowStudio({ locale, initialPrompt = "" }: { locale:
     if (busyNode) return;
     setBusyNode(id); setError(""); setNotice("");
     try { await runOne(id); await saveCanvas(); }
-    catch (cause) { patchNode(id, { status: "FAILED" }); setError(cause instanceof Error ? cause.message : "Generation failed."); }
+    catch (cause) { patchNode(id, { status: "FAILED" }); setError(cause instanceof UploadError ? uploadErrorText(cause, zh) : cause instanceof Error ? cause.message : "Generation failed."); }
     finally { setBusyNode(null); }
   };
 
@@ -432,7 +433,7 @@ export function CreativeWorkflowStudio({ locale, initialPrompt = "" }: { locale:
         await saveCanvas();
       }
       setNotice(zh ? "流程执行完成" : "Workflow complete");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Workflow failed."); }
+    } catch (cause) { setError(cause instanceof UploadError ? uploadErrorText(cause, zh) : cause instanceof Error ? cause.message : "Workflow failed."); }
     finally { setBusyNode(null); }
   };
 

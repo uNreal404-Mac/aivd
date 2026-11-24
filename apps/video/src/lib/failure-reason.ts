@@ -16,5 +16,9 @@ export function failureReason(raw: string | null | undefined, zh: boolean): stri
   const text = (raw ?? "").replace(PROVIDER_PREFIX, "").trim();
   if (!text) return null;
   const known = KNOWN.find((item) => item.test.test(text));
-  return known ? (zh ? known.zh : known.en) : text;
+  if (known) return zh ? known.zh : known.en;
+  // A Chinese page does not show raw English from a provider: say what to do,
+  // and keep the original after it for anyone reporting the problem.
+  if (zh && !/[\u4e00-\u9fff]/.test(text)) return `生成没有成功，可以再试一次，或换一个模型。（${text}）`;
+  return text;
 }

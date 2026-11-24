@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import {
   ArrowDown,
   ArrowRight,
@@ -91,6 +92,7 @@ export function HomePricing({
   // Annual by default: matches 8/8 top-converting AI video & model-keyword sites,
   // surfacing discounted monthly-equivalent prices and upfront savings on first view.
   const [period, setPeriod] = useState<Period>("year");
+  const periodRef = useSegmentIndicator<HTMLFieldSetElement>(period);
   const [tableFilter, setTableFilter] = useState<TableFilter>("all");
   const [showAll, setShowAll] = useState(false);
 
@@ -409,7 +411,7 @@ export function HomePricing({
         <p className="hp-sub">{copy.sub}</p>
 
         <div className="hp-controls">
-          <fieldset className="hp-toggle">
+          <fieldset ref={periodRef} className="hp-toggle du-seg">
             <legend className="sr-only">{zh ? "计费周期" : "Billing period"}</legend>
             <button type="button" aria-pressed={period === "month"} onClick={() => setPeriod("month")}>
               {copy.monthly}

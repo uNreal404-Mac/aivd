@@ -61,7 +61,7 @@ const HOW_STEPS: { title: string; body: string }[] = [
 
 function DemoChip({ label = "Demo" }: { label?: string }) {
   return (
-    <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
+    <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       {label}
     </span>
   );
@@ -69,7 +69,7 @@ function DemoChip({ label = "Demo" }: { label?: string }) {
 
 function SoonChip({ label = "Soon" }: { label?: string }) {
   return (
-    <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
+    <span className="rounded-[6px] bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--du-text-muted)]">
       {label}
     </span>
   );

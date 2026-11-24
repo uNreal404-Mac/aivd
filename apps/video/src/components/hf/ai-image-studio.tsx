@@ -12,7 +12,7 @@ import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
-import { uploadImage, validateImageFile } from "@/lib/image-to-video";
+import { uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { ImageShowcase } from "@/components/hf/image-showcase";
 import {
@@ -23,6 +23,8 @@ import {
   sendImageToVideo,
   useImageDrop,
   type ViewerItem,
+  markReady,
+  readyRef,
 } from "@/components/hf/studio-results";
 import { localizedHref } from "@/lib/du-home";
 import { scrollMotion } from "@/lib/reduced-motion";
@@ -282,7 +284,7 @@ export function AiImageStudio({
     }
     const room = maxImages - refs.length;
     for (const file of files.slice(0, Math.max(0, room))) {
-      const error = validateImageFile(file);
+      const error = validateImageFile(file, zh ? "zh" : "en");
       if (error) {
         setNotice(error);
         continue;
@@ -293,7 +295,7 @@ export function AiImageStudio({
       if (result.ok) {
         setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
       } else {
-        setNotice(result.message);
+        setNotice(uploadErrorText(result, zh));
       }
     }
   };
@@ -304,7 +306,7 @@ export function AiImageStudio({
     try {
       const selected = await Promise.all(items.map(readyPickerImage));
       setRefs(selected.map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
-    } catch (error) { setNotice(error instanceof Error ? error.message : (zh ? "素材上传失败，请重试。" : "Could not prepare the media. Try again.")); }
+    } catch (error) { setNotice(uploadErrorText(error, zh)); }
     finally { setUploading(false); }
   };
 
@@ -394,7 +396,7 @@ export function AiImageStudio({
                 const position = gallery.findIndex((item) => item.key === `${job.uuid}-${index}`);
                 return (
                   <figure key={`${job.uuid}-${index}`} className="sr-card is-result">
-                    <img src={url} alt={job.prompt} loading="lazy" />
+                    <img ref={readyRef} onLoad={markReady} onError={markReady} src={url} alt={job.prompt} loading="lazy" />
                     <button type="button" className="sr-card-open" aria-label={zh ? "查看大图" : "Open image"} onClick={() => setViewing(position)} />
                     <span className="sr-card-shade" aria-hidden="true" />
                     <span className="sr-card-top">

@@ -11,7 +11,14 @@ describe("failureReason", () => {
   });
 
   it("keeps an unknown reason but without the provider", () => {
-    expect(failureReason("evolink error: upstream returned an empty file", true)).toBe("upstream returned an empty file");
+    expect(failureReason("evolink error: upstream returned an empty file", false)).toBe("upstream returned an empty file");
+  });
+
+  it("puts an unknown English reason in plain Chinese on a Chinese page, original kept", () => {
+    expect(failureReason("evolink error: upstream returned an empty file", true)).toBe(
+      "生成没有成功，可以再试一次，或换一个模型。（upstream returned an empty file）",
+    );
+    expect(failureReason("模型返回了空文件", true)).toBe("模型返回了空文件");
   });
 
   it("returns null for nothing to say", () => {

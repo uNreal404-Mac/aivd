@@ -35,7 +35,7 @@ export async function PricingSection({
     <section className="relative overflow-hidden bg-[#0f1113] py-16 md:py-20 text-[#f7f7f8]">
       <div className="mx-auto max-w-[1400px] px-3 sm:px-4">
         <div className="mb-8 max-w-3xl text-left">
-          <Heading className="text-3xl md:text-5xl font-black uppercase tracking-tight">
+          <Heading className="text-3xl md:text-5xl font-bold uppercase tracking-tight">
             {t("pricing")}
           </Heading>
           <p className="mt-2 text-base text-[#9a9ba0]">

@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { localizedHref } from "@/lib/locale-path";
 
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { usePresence } from "@/hooks/use-presence";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
+import { uploadErrorText } from "@/lib/image-to-video";
 import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
@@ -20,16 +22,16 @@ import {
   ChevronRight,
   Clapperboard,
   Clock,
+  Coins,
   Film,
   ImagePlus,
   Paintbrush,
   Pencil,
+  Loader2,
   Play,
   RotateCcw,
   Sparkles,
   Wand2,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import {
@@ -67,6 +69,8 @@ import {
   PendingCard,
   useImageDrop,
   type ViewerItem,
+  markReady,
+  readyRef,
 } from "@/components/hf/studio-results";
 import "./ai-video-studio.css";
 
@@ -298,7 +302,7 @@ export function AiVideoStudio({
         audio: "声音",
         on: "开启",
         off: "关闭",
-        submit: "提交中…",
+        submit: "正在提交…",
         generate: "生成",
         credits: "积分",
         creditEstimate: "预计消耗积分 · 示例",
@@ -350,7 +354,7 @@ export function AiVideoStudio({
         audio: "Audio",
         on: "On",
         off: "Off",
-        submit: "Submitting…",
+        submit: "Starting…",
         generate: "Generate",
         credits: "credits",
         creditEstimate: "Estimated credits · example",
@@ -385,6 +389,7 @@ export function AiVideoStudio({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [durationOpen, setDurationOpen] = useState(false);
+  const durationPanel = usePresence(durationOpen);
   const durationRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!durationOpen) return;
@@ -616,7 +621,7 @@ export function AiVideoStudio({
     }
     const preparedPrompt = prepareVideoReferencePrompt(settings.prompt, homeReferences.length || (imageKey ? 1 : 0));
     if (!preparedPrompt.ok) {
-      setNotice(isChinese ? `@图片${preparedPrompt.index} 没有对应的素材，请检查引用。` : `@Image${preparedPrompt.index} has no matching image. Check the reference.`);
+      setNotice(isChinese ? `找不到 @图片${preparedPrompt.index} 对应的参考图，请补传图片或删掉这个引用` : `No reference image for @Image${preparedPrompt.index}. Add one or remove it from the prompt.`);
       return;
     }
 
@@ -624,7 +629,7 @@ export function AiVideoStudio({
     // cost and the balance, before anything is sent.
     if (shortBy > 0 && available !== null) {
       const message = isChinese
-        ? `积分不够：这条视频要 ${num(exampleCredits)} 积分，你还有 ${num(available)}。`
+        ? `积分不够：这条视频需要 ${num(exampleCredits)} 积分，你目前还有 ${num(available)} 积分`
         : `Not enough credits: this clip takes ${num(exampleCredits)} credits and you have ${num(available)}.`;
       setNotice(message);
       creditsShortfall.note(message, exampleCredits);
@@ -691,6 +696,33 @@ export function AiVideoStudio({
     }
   }
 
+  // "Generate" on the homepage arrives here with autostart=1 and starts that
+  // generation, so the visitor does not press Generate a second time. It waits
+  // for the session, the handed-over reference images and (briefly) the
+  // balance, runs once, and drops the flag from the address so a reload or
+  // Back never starts it again. Every check in handleGenerate still applies.
+  const autostartDone = useRef(false);
+  const [autostartWaited, setAutostartWaited] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setAutostartWaited(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (autostartDone.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("autostart") !== "1") {
+      autostartDone.current = true;
+      return;
+    }
+    if (sessionLoading) return;
+    if (sessionStorage.getItem("aivd:home-video-references") && homeReferences.length === 0 && !autostartWaited) return;
+    if (session && !balance && !autostartWaited) return;
+    autostartDone.current = true;
+    url.searchParams.delete("autostart");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    if (session) void handleGenerate();
+  }, [sessionLoading, session, balance, homeReferences, autostartWaited]);
+
   const coverModelId = selectedModelConnected ? catalogModelId : "";
   const bannerName = upcoming?.name ?? (selectedModelConnected ? model.name : (catalogEntry?.name ?? model.name));
   const navEntry = findNavModel("video", catalogModelId);
@@ -735,7 +767,7 @@ export function AiVideoStudio({
       setFileName(references[0]?.name ?? null);
       setImageKey(references[0]?.key ?? null);
       setPreview(references[0]?.url ?? null);
-    } catch (error) { setNotice(error instanceof Error ? error.message : (isChinese ? "素材上传失败，请重试。" : "Could not prepare the media. Try again.")); }
+    } catch (error) { setNotice(uploadErrorText(error, isChinese)); }
     finally { setUploading(false); }
   }
   const removeHomeReference = (index: number) => {
@@ -814,8 +846,7 @@ export function AiVideoStudio({
             open={pickerOpen}
             onOpenChange={setPickerOpen}
             placement="card"
-            catalogSet="backup"
-            allowUnconnectedSelection
+            catalogSet="current"
             glass
             label={copy.model}
             valueLabel={upcoming?.name}
@@ -933,16 +964,6 @@ export function AiVideoStudio({
                   <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
                   {activePreset ? (isChinese ? activePreset.zh : activePreset.en) : copy.preset}
                 </button>
-                <button
-                  type="button"
-                  className="vs-chip"
-                  disabled={!model.audio}
-                  aria-pressed={model.audio && settings.audio}
-                  onClick={() => setSettings((previous) => ({ ...previous, audio: !previous.audio }))}
-                >
-                  {model.audio && settings.audio ? <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> : <VolumeX className="h-3.5 w-3.5" aria-hidden="true" />}
-                  {model.audio && settings.audio ? copy.on : copy.off}
-                </button>
                 <span className="vs-count">
                   {settings.prompt.length}/{promptMaxLength}
                 </span>
@@ -1002,12 +1023,20 @@ export function AiVideoStudio({
             ) : null}
 
             <div className="vs-grid">
-              <div ref={durationRef} className="vs-duration-wrap">
+              {durationOptions.length === 1 && durationSupported ? <SelectCard
+                id="studio-duration"
+                label={copy.duration}
+                fixedHint={isChinese ? `${model.name} 只支持这个时长` : `${model.name} only offers this length`}
+                value={settings.duration}
+                options={durationOptions}
+                format={(value) => `${value}s`}
+                onChange={() => undefined}
+              /> : <div ref={durationRef} className="vs-duration-wrap">
                 <button type="button" className="vs-card vs-duration-trigger" aria-expanded={durationOpen} aria-controls="studio-duration-panel" onClick={() => setDurationOpen((value) => !value)}>
                   <span className="min-w-0 flex-1"><span className="vs-card-label">{copy.duration}</span><span className="vs-card-value">{durationText}</span></span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
                 </button>
-                {durationOpen ? <div id="studio-duration-panel" className="vs-duration-panel">
+                {durationPanel.mounted ? <div id="studio-duration-panel" className="vs-duration-panel" data-presence="pop" data-state={durationPanel.state}>
                   <div className="vs-duration-heading">{copy.duration}<strong>{durationText}</strong></div>
                   {durationOptions.length ? <>
                     <input id="studio-duration" type="range" min={durationMin} max={durationMax} step="1" value={settings.duration} disabled={durationOptions.length < 2} aria-label={copy.duration} onChange={(event) => { setSettings((previous) => ({ ...previous, duration: closestDuration(durationOptions, Number(event.target.value)) })); setNotice(null); }} style={{ "--vs-duration-progress": `${durationMax === durationMin ? 0 : ((settings.duration - durationMin) / (durationMax - durationMin)) * 100}%` } as CSSProperties} />
@@ -1015,7 +1044,7 @@ export function AiVideoStudio({
                   </> : null}
                   {!durationSupported && durationOptions.length ? <p className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")}s`}</p> : null}
                 </div> : null}
-              </div>
+              </div>}
               <SelectCard
                 id="studio-aspect"
                 label={copy.aspect}
@@ -1026,21 +1055,20 @@ export function AiVideoStudio({
               />
               <SelectCard
                 id="studio-resolution"
-                label={isChinese ? "画质" : "Quality"}
-                fixedHint={isChinese ? `${model.name} 只支持这个画质` : `${model.name} only offers this quality`}
+                label={isChinese ? "分辨率" : "Resolution"}
+                fixedHint={isChinese ? `${model.name} 只支持这个分辨率` : `${model.name} only offers this resolution`}
                 value={settings.resolution}
                 options={model.resolutions}
                 onChange={(resolution) => setSettings((previous) => ({ ...previous, resolution }))}
               />
-              <SelectCard
+              {model.audio ? <SelectCard
                 id="studio-audio"
                 label={copy.audio}
-                value={model.audio && settings.audio ? "on" : "off"}
+                value={settings.audio ? "on" : "off"}
                 options={["on", "off"] as const}
                 format={(option) => (option === "on" ? copy.on : copy.off)}
-                disabled={!model.audio}
                 onChange={(option) => setSettings((previous) => ({ ...previous, audio: option === "on" }))}
-              />
+              /> : null}
             </div>
             {!durationSupported && durationOptions.length ? <output className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")} seconds. Adjust the length before generating.`}</output> : null}
 
@@ -1048,19 +1076,23 @@ export function AiVideoStudio({
               type="button"
               disabled={generateDisabled}
               onClick={handleGenerate}
+              aria-busy={submitting || undefined}
               className="vs-generate"
               title={internalFree ? (isChinese ? "内部测试账号免费" : "Free for internal test account") : selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}
             >
-              {submitting ? copy.submit : copy.generate}
+              <span className="vs-generate-label">
+                {submitting ? <Loader2 key="busy" data-swap className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                {submitting ? copy.submit : copy.generate}
+              </span>
               <span className="vs-generate-cost">
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {selectedModelConnected ? (durationSupported ? (internalFree ? 0 : exampleCredits) : "—") : copy.soon}
+                <Coins className="h-4 w-4" aria-hidden="true" />
+                {selectedModelConnected ? (durationSupported ? <><span className="du-num">{internalFree ? 0 : num(exampleCredits)}</span>{isChinese ? " 积分" : " credits"}</> : "—") : copy.soon}
               </span>
             </button>
             {available !== null && selectedModelConnected ? (
               <p className={shortBy ? "vs-balance vs-balance-short" : "vs-balance"}>
                 {isChinese ? `余额 ${num(available)} 积分` : `Balance: ${num(available)} credits`}
-                {shortBy ? (isChinese ? `，这条还差 ${num(shortBy)}` : ` · ${num(shortBy)} short for this clip`) : null}
+                {shortBy ? (isChinese ? `，还差 ${num(shortBy)} 积分` : ` (${num(shortBy)} more needed)`) : null}
               </p>
             ) : null}
             {needsStartImage ? (
@@ -1070,20 +1102,25 @@ export function AiVideoStudio({
             ) : null}
             {selectedModelConnected ? null : (
               <output className="vs-notice">
-                {isChinese
-                  ? `${bannerName} 暂不可生成。现在可以用 ${availableModels.map((item) => item.name).join(" 或 ")} 生成。`
-                  : `${bannerName} cannot generate yet. You can use ${availableModels.map((item) => item.name).join(" or ")} today.`}
+                {isChinese ? `${bannerName} 暂未开放，先试试现在能用的模型：` : `${bannerName} isn't available yet. Try one of these:`}
+                <span className="vs-notice-actions">
+                  {availableModels.slice(0, 3).map((item) => (
+                    <button key={item.id} type="button" className="cu-get cu-get-alt" onClick={() => switchModel(item.id)}>
+                      {item.name}
+                    </button>
+                  ))}
+                </span>
               </output>
             )}
 
             {notice ? (
-              <output aria-live="polite" className="vs-notice">
+              <output key={notice} data-presence="fade" aria-live="polite" className="vs-notice">
                 {notice}
                 {creditsShortfall.isShortfall(notice) ? (
                   <span className="vs-notice-actions">
                     {affordable ? (
                       <button type="button" className="cu-get cu-get-alt" onClick={() => switchModel(affordable.id)}>
-                        {isChinese ? `换成 ${affordable.name}（${num(affordable.credits)} 积分）` : `Use ${affordable.name} (${num(affordable.credits)} credits)`}
+                        {isChinese ? `换成 ${affordable.name}（${num(affordable.credits)} 积分）` : `Switch to ${affordable.name} (${num(affordable.credits)} credits)`}
                       </button>
                     ) : null}
                     {creditsShortfall.action(notice)}
@@ -1218,6 +1255,9 @@ export function AiVideoStudio({
                   return (
                     <figure key={result.id} className="sr-card vs-result">
                       <video
+                        ref={readyRef}
+                        onLoadedMetadata={markReady}
+                        onError={markReady}
                         src={result.videoUrl}
                         muted
                         loop

@@ -58,7 +58,7 @@
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
   font-weight: 500;
-  transition: color 150ms ease, border-color 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-mode:hover {
@@ -79,7 +79,7 @@
   border-radius: var(--ds-r-xl);
   box-shadow: var(--ds-specular), var(--ds-shadow-1);
   text-align: left;
-  transition: border-color 180ms ease, transform 180ms var(--ds-ease-spring);
+  transition: border-color var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .vs-banner:hover {
@@ -96,7 +96,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 420ms var(--ds-ease-spring);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .vs-banner:hover .vs-banner-img {
@@ -129,7 +129,7 @@
   font-size: var(--ds-fs-xs);
   font-weight: 500;
   backdrop-filter: blur(12px);
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-banner:hover .vs-banner-change {
@@ -153,7 +153,7 @@
   -webkit-line-clamp: 2;
   color: var(--ds-text-1);
   font-size: var(--ds-fs-xl);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   text-transform: uppercase;
@@ -180,7 +180,7 @@
   background: var(--vs-card);
   cursor: pointer;
   text-align: center;
-  transition: border-color 150ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-upload:hover {
@@ -304,7 +304,7 @@
   background: var(--ds-surface-1);
   box-shadow: var(--ds-specular);
   text-align: left;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 140ms var(--ds-ease-spring);
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 button.vs-card:hover,
@@ -427,7 +427,7 @@ button.vs-card:active {
   background: var(--ds-fill-2);
   color: white;
   font-size: var(--ds-fs-xs);
-  transition: background-color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 button.vs-chip:hover {
@@ -520,7 +520,7 @@ button.vs-chip:disabled {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
-  transition: filter 160ms ease, transform 160ms var(--ds-ease-spring), box-shadow 180ms ease;
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .vs-generate:hover:not(:disabled) {
@@ -640,7 +640,7 @@ button.vs-chip:disabled {
   border-radius: var(--ds-r-md);
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-stage-tab:hover {
@@ -670,7 +670,7 @@ button.vs-chip:disabled {
 .vs-howto-title {
   color: white;
   font-size: var(--ds-fs-4xl);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -1079,7 +1079,7 @@ button.vs-chip:disabled {
   border: 2px solid transparent;
   border-radius: var(--ds-r-md);
   background: var(--du-bg);
-  transition: border-color var(--du-dur-fast, 180ms) ease;
+  transition: border-color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-preset-media img {
@@ -1203,9 +1203,9 @@ button.vs-chip:disabled {
   font-size: var(--ds-fs-sm);
   text-align: left;
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    transform 140ms var(--ds-ease-spring);
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .as-voice-opt:hover {
@@ -1311,7 +1311,7 @@ button.vs-chip:disabled {
   box-shadow: var(--ds-shadow-2);
   object-fit: cover;
   transform: rotate(-8deg);
-  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+  transition: transform var(--m-base) var(--m-ease-out);
 }
 
 .vs-step:hover .vs-illus-photo {
@@ -1332,7 +1332,7 @@ button.vs-chip:disabled {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-2xs);
   text-align: center;
-  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+  transition: transform var(--m-base) var(--m-ease-out);
 }
 
 .vs-illus-preset img {
@@ -1403,7 +1403,7 @@ button.vs-chip:disabled {
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-xl);
   background: var(--ds-fill-1);
-  transition: background-color var(--du-dur-fast, 180ms) ease;
+  transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 .vs-help:hover {
@@ -1573,7 +1573,7 @@ button.vs-chip:disabled {
   font-size: var(--ds-fs-xs);
   font-weight: 700;
   white-space: nowrap;
-  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring);
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .vs-empty-signin:hover {
@@ -1606,7 +1606,7 @@ button.vs-chip:disabled {
   border-radius: var(--ds-r-xl);
   background: var(--du-surface);
   text-align: left;
-  transition: border-color 200ms ease, transform 240ms var(--ds-ease-spring), box-shadow 220ms ease;
+  transition: border-color var(--m-fast) var(--m-ease-out), transform var(--m-base) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .vs-living-video {
@@ -1615,7 +1615,7 @@ button.vs-chip:disabled {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 420ms var(--ds-ease-spring);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .vs-living-badge {
@@ -1678,7 +1678,7 @@ button.vs-chip:disabled {
   white-space: nowrap;
   opacity: 0;
   transform: translate(-50%, -42%) scale(0.94);
-  transition: opacity 180ms ease, transform 200ms var(--ds-ease-spring);
+  transition: opacity var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .vs-recreate-meta {
@@ -1736,7 +1736,7 @@ button.vs-chip:disabled {
   background: var(--ds-surface-1);
   box-shadow: var(--ds-specular);
   text-align: left;
-  transition: border-color 160ms ease, background-color 160ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out);
 }
 
 .as-canvas-banner:hover {
@@ -1767,7 +1767,7 @@ button.vs-chip:disabled {
   border-radius: var(--ds-r-xl);
   background: var(--ds-surface-1);
   box-shadow: var(--ds-specular);
-  transition: border-color 180ms ease, background-color 180ms ease, transform 200ms var(--ds-ease-spring);
+  transition: border-color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .as-showcase-card:hover {
@@ -1795,7 +1795,7 @@ button.vs-chip:disabled {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 320ms var(--ds-ease-spring);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .as-showcase-cover:hover img {
@@ -1816,7 +1816,7 @@ button.vs-chip:disabled {
   color: var(--ds-text-1);
   backdrop-filter: blur(8px);
   transform: translate(-50%, -50%);
-  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .as-showcase-card-on .as-showcase-play,
@@ -1883,7 +1883,7 @@ button.vs-chip:disabled {
   border-radius: var(--ds-r-md);
   font-size: var(--ds-fs-xs);
   font-weight: 600;
-  transition: background-color 150ms ease, filter 150ms ease, color 150ms ease;
+  transition: background-color var(--m-instant) var(--m-ease-out), filter var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .as-showcase-btn {
@@ -1905,4 +1905,18 @@ button.vs-chip:disabled {
 .as-showcase-recreate:hover {
   background: var(--du-gradient);
   color: var(--du-on-accent);
+}
+
+/* Generate: a spinner sits beside the label while it submits, so the button
+   keeps its size and the cost does not shift. */
+.vs-generate-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+/* Settings cards are two to a row; an odd last card takes the full row
+   (the sound card is left out for models without sound). */
+.vs-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }

@@ -5,8 +5,9 @@
    it that way. */
 
 :root {
-  /* Type: 10 / 12 / 14 / 16 / 20 / 24 / 28 / 34 / 40. */
-  --ds-fs-2xs: 10px;
+  /* Type: 11 / 12 / 14 / 16 / 20 / 24 / 28 / 34 / 40. 11px is the floor,
+     for badges and tags only; running text starts at 12. */
+  --ds-fs-2xs: 11px;
   --ds-fs-xs: 12px;
   --ds-fs-sm: 14px;
   --ds-fs-md: 16px;
@@ -40,26 +41,25 @@
   --ds-fill-3: color-mix(in srgb, white 13%, transparent);
   --ds-fill-4: color-mix(in srgb, white 19%, transparent);
 
-  /* Hairlines — 94-4-2 quiet obsidian discipline. */
-  --ds-line-1: color-mix(in srgb, white 5.5%, transparent);
+  /* Hairlines. */
+  --ds-line-1: color-mix(in srgb, white 7%, transparent);
   --ds-line-2: color-mix(in srgb, white 10%, transparent);
   --ds-line-3: color-mix(in srgb, white 18%, transparent);
 
   /* Text: primary, secondary, muted, dim. */
   --ds-text-1: var(--du-text);
   --ds-text-2: color-mix(in srgb, white 82%, transparent);
-  --ds-text-3: color-mix(in srgb, white 56%, transparent);
+  --ds-text-3: color-mix(in srgb, white 60%, transparent);
   /* Faintest text that still reads (4.5:1 on the page and card surfaces). */
-  --ds-text-4: color-mix(in srgb, white 46%, transparent);
+  --ds-text-4: color-mix(in srgb, white 50%, transparent);
 
-  /* Elevation & Specular Craft. */
-  --ds-specular: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
-  --ds-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Elevation: depth comes from the surface steps; shadows are for things
+     that float (menus, dialogs). The easing lives in motion.css. */
+  --ds-specular: inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+  --ds-ease-spring: var(--m-ease-out);
   --ds-shadow-1: 0 2px 10px color-mix(in srgb, var(--du-bg) 45%, transparent);
-  --ds-shadow-2: 0 20px 44px -8px color-mix(in srgb, var(--du-bg) 78%, transparent),
-    0 6px 16px -4px color-mix(in srgb, var(--du-bg) 62%, transparent);
-  --ds-shadow-float: 0 28px 64px -12px color-mix(in srgb, var(--du-bg) 86%, transparent),
-    0 4px 16px color-mix(in srgb, var(--du-bg) 55%, transparent);
+  --ds-shadow-2: 0 12px 32px -8px color-mix(in srgb, black 55%, transparent);
+  --ds-shadow-float: 0 16px 40px -8px color-mix(in srgb, black 60%, transparent);
 
   /* Spacing, for new work: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 72. */
   --ds-space-1: 4px;

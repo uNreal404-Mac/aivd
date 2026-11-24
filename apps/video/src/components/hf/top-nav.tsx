@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePresence } from "@/hooks/use-presence";
 import { localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -418,6 +419,15 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     { label: t.account, href: "/account", icon: UserRound },
   ];
   const openMenu = open === "more" ? moreMenu : dropdowns.find((menu) => menu.id === open);
+  // Menus stay mounted long enough to leave (hooks/use-presence); the panel
+  // keeps showing the last menu while it fades out.
+  const lastMenu = useRef(openMenu);
+  if (openMenu) lastMenu.current = openMenu;
+  const shownMenu = openMenu ?? lastMenu.current;
+  const panel = usePresence(Boolean(openMenu));
+  const account = usePresence(open === "account");
+  const mobile = usePresence(menuOpen);
+  const search = usePresence(searchOpen);
   const dots = 30;
   const filledDots =
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
@@ -498,10 +508,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <Folder aria-hidden="true" />
             </Link>
           ) : null}
-          <Link href={href("/pricing")} title={t.offerTitle} className="hf-act hf-act-pricing">
+          <Link href={href("/pricing")} title={user ? undefined : t.offerTitle} className="hf-act hf-act-pricing">
             <Crown aria-hidden="true" />
             {t.pricing}
-            <span className="hf-act-discount">{t.offerTag}</span>
+            {/* The sign-up gift only means something to someone not signed in yet. */}
+            {user ? null : <span className="hf-act-discount">{t.offerTag}</span>}
           </Link>
           <span className="hf-lang">
             <LocaleChange />
@@ -518,8 +529,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               >
                 <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-7 w-7" />
               </button>
-              {open === "account" ? (
-                <div className="hf-acct">
+              {account.mounted ? (
+                <div className="hf-acct" data-state={account.state}>
                   <Link href={href("/account")} className="hf-acct-profile">
                     <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-[30px] w-[30px]" />
                     <span className="min-w-0 flex-1">
@@ -604,15 +615,25 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             onClick={() => setMenuOpen((value) => !value)}
             className="hf-act hf-act-icon hf-burger"
           >
-            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            {menuOpen ? <X key="close" data-swap aria-hidden="true" /> : <Menu key="open" data-swap aria-hidden="true" />}
           </button>
         </div>
       </div>
 
-      {openMenu ? (
-        <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)} {...panelKeys}>
-          {openMenu.columns.map((column) => (
-            <div key={column.title} className={cn("hf-dd-col", "secondary" in column && column.secondary === true && "hf-dd-col-secondary")}>
+      {panel.mounted && shownMenu ? (
+        <div
+          ref={panelRef}
+          className="hf-dd"
+          data-state={panel.state}
+          style={{ ["--dd-x" as string]: `${panelLeft}px` }}
+          {...keepOpen(shownMenu.id)}
+          {...panelKeys}
+        >
+          {shownMenu.columns.map((column) => (
+            <div
+              key={`${shownMenu.id}:${column.title}`}
+              className={cn("hf-dd-col", "secondary" in column && column.secondary === true && "hf-dd-col-secondary")}
+            >
               <p className="hf-dd-col-title">{column.title}</p>
               {column.items.map(row)}
             </div>
@@ -620,10 +641,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         </div>
       ) : null}
 
-      {searchOpen ? <NavSearch lang={lang} localize={href} onClose={() => setSearchOpen(false)} /> : null}
+      {search.mounted ? <NavSearch lang={lang} localize={href} state={search.state} onClose={() => setSearchOpen(false)} /> : null}
 
-      {menuOpen ? (
-        <div className="hf-nav-mobile">
+      {mobile.mounted ? (
+        <div className="hf-nav-mobile" data-state={mobile.state}>
           <button type="button" className="hf-mm-backdrop" aria-label={t.closeMenu} onClick={() => setMenuOpen(false)} />
           <nav
             className="hf-mm"
@@ -675,7 +696,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                     </span>
                     <ChevronDown className="hf-mm-chev" aria-hidden="true" />
                   </button>
-                  {expanded ? (
+                  <div className="hf-mm-collapse" inert={!expanded}>
                     <div className="hf-mm-body">
                       {menu.columns.map((column) => (
                         <div key={column.title} className="hf-mm-col">
@@ -690,7 +711,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                         </Link>
                       ) : null}
                     </div>
-                  ) : null}
+                  </div>
                 </section>
               );
             })}

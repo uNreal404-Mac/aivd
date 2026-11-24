@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { usePresence } from "@/hooks/use-presence";
 import {
   Aperture,
   AudioLines,
@@ -191,6 +192,7 @@ export function KieModelPicker({
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
+  const panelPresence = usePresence(open);
   const setOpen = onOpenChange ?? setInternalOpen;
   const [query, setQuery] = useState("");
   const [family, setFamily] = useState<string | null>(null);
@@ -287,7 +289,9 @@ export function KieModelPicker({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || (placement !== "card" && placement !== "top" && placement !== "bottom")) {
+    // While closing, the panel keeps its last position for its exit.
+    if (!open) return;
+    if (placement !== "card" && placement !== "top" && placement !== "bottom") {
       setFloatAt(null);
       return;
     }
@@ -374,7 +378,7 @@ export function KieModelPicker({
             <span className="truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
             {badge ? (
               <span
-                className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${
+                className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold tracking-wide ${
                   badge.tone === "top"
                     ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
                     : badge.tone === "new"
@@ -447,12 +451,14 @@ export function KieModelPicker({
       </button>
       )}
 
-      {open ? (
+      {panelPresence.mounted ? (
         <div
           ref={panelRef}
+          data-presence="pop"
+          data-state={panelPresence.state}
           onKeyDown={onListKeyDown}
           style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: "min(70vh, 520px)" } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
+          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel ${placement === "top" ? "origin-bottom-left" : "origin-top-left"} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
         >
           <div className="du-model-picker-search flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
