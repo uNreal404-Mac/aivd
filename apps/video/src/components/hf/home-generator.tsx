@@ -18,6 +18,7 @@ import { localizedHref } from "@/lib/du-home";
 import { uploadErrorText, uploadImage } from "@/lib/image-to-video";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
+import { AUTOSTART_STORAGE_KEY } from "@/lib/autostart";
 import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
 import "./home-generator.css";
 
@@ -53,7 +54,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const pendingStorageKey = draftStorageKey === "aivd:home-draft" ? "aivd:home-pending-generate" : `${draftStorageKey}:pending-generate`;
   const router = useRouter();
   const signIn = useSigninModal();
-  const { data: session } = useSession();
+  const { data: session, isPending: sessionPending } = useSession();
   const models = useMemo(() => withStudioModels(serverModels), [serverModels]);
   const defaultVideoModel = models.find((item) => item.id === DEFAULT_VIDEO_MODEL_ID) ?? models[0];
   const [kind, setKind] = useState<"video" | "image" | "canvas">(initialKind);
@@ -66,6 +67,10 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
   const [videoReferences, setVideoReferences] = useState<PickerAsset[]>([]);
   const [referenceImages, setReferenceImages] = useState<PickerAsset[]>([]);
+  // A delete in the library finishes later: it must find the image where it
+  // is now, not where it was when the delete started.
+  const videoReferencesRef = useRef(videoReferences);
+  videoReferencesRef.current = videoReferences;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -73,6 +78,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
   const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === defaultVideoModel?.id)?.resolutions[0] ?? "720p"));
   const [sound, setSound] = useState(false);
+  const soundChosen = useRef(false);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement>(null);
@@ -83,7 +89,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const current = models.find((item) => item.id === modelId);
   const studioModel = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
   const available = Boolean(current && studioModel);
-  const estimatedCredits = studioModel ? estimateCredits({ modelId, duration, resolution }) : null;
+  const estimatedCredits = studioModel ? estimateCredits({ modelId, duration, resolution }, { images: videoReferences.length, audio: sound }) : null;
   const videoReferenceLimit = Math.max(1, maxVideoReferences(modelId));
   // The settings offer what the chosen model can actually do, nothing greyed out.
   const videoAspects = current?.aspects ?? [];
@@ -186,9 +192,11 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     if (pending && typeof pending.at === "number" && Date.now() - pending.at < PENDING_TTL_MS && pending.path === window.location.pathname) formRef.current?.requestSubmit();
   }, [draftReady, session]);
 
+  // Only once the session is known: right after a Google or email sign-in
+  // the page loads with the dialog closed and the session still loading.
   useEffect(() => {
-    if (!signIn.isOpen && !session) localStorage.removeItem(pendingStorageKey);
-  }, [signIn.isOpen, session]);
+    if (!signIn.isOpen && !session && !sessionPending) localStorage.removeItem(pendingStorageKey);
+  }, [signIn.isOpen, session, sessionPending]);
 
   const removeVideoReference = (index: number) => {
     setVideoReferences((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
@@ -246,7 +254,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       const supported = STUDIO_MODELS.find((item) => item.id === id);
       if (supported) {
         if (!supported.resolutions.includes(resolution)) setResolution(supported.resolutions[0]);
-        setSound(supported.audio);
+        // Sound follows the visitor's own choice once they made one.
+        setSound((current) => supported.audio && (soundChosen.current ? current : true));
       }
       const limit = Math.max(1, maxVideoReferences(id));
       if (videoReferences.length > limit) {
@@ -324,6 +333,9 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     if (!preparedPrompt.ok) { setNotice(zh ? `找不到 @图片${preparedPrompt.index} 对应的参考图，请补传图片或删掉这个引用` : `No reference image for @Image${preparedPrompt.index}. Add one or remove it from the prompt.`); return; }
     setSubmitting(true);
     try {
+      // A new task replaces anything left from an earlier handoff in this tab:
+      // reference images, a start image, a draft saved for a trip to pricing.
+      for (const key of ["aivd:home-video-references", "aivd:home-start-image", "aivd:home-start-image-name", "aivd:home-start-image-preview", "aivd:credit-draft:video"]) sessionStorage.removeItem(key);
       if (videoReferences.length) {
         const uploaded = [];
         for (const item of videoReferences) {
@@ -338,8 +350,12 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       params.set("aspect", aspect);
       params.set("resolution", resolution);
       params.set("audio", String(sound));
-      // The studio starts this generation on arrival, once (it removes the flag).
-      params.set("autostart", "1");
+      // The studio starts this generation on arrival, once: it needs this
+      // one-time token from storage, deletes it, and uses it as the request's
+      // idempotency key, so a reload, Back or a second tab never charges twice.
+      const token = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(AUTOSTART_STORAGE_KEY, JSON.stringify({ token, at: Date.now() }));
+      params.set("autostart", token);
       // Leave the button in its loading state; the studio page replaces this one.
       router.push(`${localizedHref(lang, "/ai/video")}?${params}`);
     } catch {
@@ -362,7 +378,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const imageRefLimit = imageModel?.options.maxImages ?? 10;
 
   return <div id="home-generator" className="relative z-20 w-full max-w-[1060px] scroll-mt-24">
-    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") setVideoReferences(items); else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferences.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? videoReferenceLimit : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
+    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") { setVideoReferences(items); setTrimmed(null); } else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferencesRef.current.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? videoReferenceLimit : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
     {hideKindTabs ? null : <div ref={kindTabsRef} className="du-composer-tabs du-seg" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution(imageModel?.options.resolutions?.[0] ?? "1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
@@ -421,7 +437,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
       <div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" glass showConnectionStatus={false} catalogSet="current" compact /></div>
-      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => setSound(!sound)} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
+      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChosen.current = true; setSound(!sound); }} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
       {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolutionLabel(resolution)}` : imageResolutions.length ? `${aspect} / ${resolutionLabel(resolution)}` : aspect}</button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
         {settingRow(zh ? "画面比例" : "Aspect ratio", kind === "video" ? videoAspects : imageAspects, aspect, setAspect)}
         {kind === "video" ? (videoDurations.length > 6

@@ -162,8 +162,8 @@ export function emptyStateFor({
 /**
  * Studio link that starts a new generation from a creation, carrying over
  * what that studio accepts: prompt, model, length and aspect for video;
- * prompt, model and aspect for images; the model for audio (the audio studio
- * takes the script from its draft instead, see AUDIO_DRAFT_STORAGE_KEY).
+ * prompt, model and aspect for images; prompt and model for audio (the audio
+ * studio keeps an unsent draft of its own and offers it back).
  * Null when there is no prompt to reuse.
  */
 export function regenerateHref(
@@ -176,6 +176,7 @@ export function regenerateHref(
   const params = new URLSearchParams();
   if (kind === "audio") {
     if (video.model) params.set("audioModel", video.model);
+    params.set("prompt", prompt);
     const query = params.toString();
     return localizedHref(locale, query ? `/audio?${query}` : "/audio");
   }

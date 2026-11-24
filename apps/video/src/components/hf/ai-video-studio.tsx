@@ -8,6 +8,7 @@ import { usePresence } from "@/hooks/use-presence";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
 import { uploadErrorText } from "@/lib/image-to-video";
+import { claimAutostart } from "@/lib/autostart";
 import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { EFFECT_TEMPLATES, labelFor } from "@/lib/effects-data";
@@ -419,6 +420,7 @@ export function AiVideoStudio({
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(isChinese);
+  const autostartDone = useRef(false);
   // Signed in: the balance, so a clip it cannot pay for is caught before it
   // is sent and a model it can pay for is offered.
   const balance = useCreditsStore((state) => state.balance);
@@ -446,8 +448,10 @@ export function AiVideoStudio({
     ? `${settings.duration}s`
     : (isChinese ? "继承原片" : "Source clip");
   const durationSupported = durationOptions.includes(settings.duration);
+  // What the server will freeze: reference images and sound included.
+  const quotedImages = homeReferences.length || (imageKey ? 1 : 0);
   const exampleCredits = selectedModelConnected
-    ? estimateCredits(settings)
+    ? estimateCredits(settings, { images: quotedImages, audio: settings.audio })
     : Math.ceil(settings.duration * 5 * (settings.resolution === "1080p" ? 1.5 : settings.resolution === "720p" ? 1.25 : 1));
 
   const available = session && balance && !internalFree ? Math.max(0, balance.availableCredits) : null;
@@ -598,7 +602,35 @@ export function AiVideoStudio({
     });
   }
 
-  async function handleGenerate() {
+  // One request at a time, whether it came from the button or from autostart:
+  // the lock is taken before anything is awaited, so a double click or an
+  // autostart landing during a click cannot send a second, separately charged
+  // request.
+  const inFlight = useRef(false);
+
+  async function handleGenerate(presetKey?: string) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    try {
+      await generateOnce(presetKey);
+    } finally {
+      inFlight.current = false;
+    }
+  }
+
+  async function generateOnce(presetKey?: string) {
+    // Pressing Generate yourself takes over from a pending homepage autostart:
+    // its token is used up and leaves the address.
+    if (!presetKey && !autostartDone.current) {
+      autostartDone.current = true;
+      const url = new URL(window.location.href);
+      const token = url.searchParams.get("autostart");
+      if (token) {
+        claimAutostart(token, localStorage);
+        url.searchParams.delete("autostart");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+      }
+    }
     if (submitting || !availableModelIds.includes(catalogModelId)) {
       return;
     }
@@ -647,10 +679,10 @@ export function AiVideoStudio({
     setNotice(null);
 
     const idempotencyKey =
-      typeof crypto !== "undefined" &&
-      typeof crypto.randomUUID === "function"
+      presetKey ??
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
-        : String(Date.now());
+        : String(Date.now()));
 
     try {
       const result = await submitGeneration({ ...settings, prompt: preparedPrompt.prompt }, idempotencyKey, fetch, homeReferences.length ? homeReferences.map((item) => item.key) : imageKey);
@@ -696,32 +728,40 @@ export function AiVideoStudio({
     }
   }
 
-  // "Generate" on the homepage arrives here with autostart=1 and starts that
-  // generation, so the visitor does not press Generate a second time. It waits
-  // for the session, the handed-over reference images and (briefly) the
-  // balance, runs once, and drops the flag from the address so a reload or
-  // Back never starts it again. Every check in handleGenerate still applies.
-  const autostartDone = useRef(false);
+  // "Generate" on the homepage arrives with ?autostart=<token> and starts that
+  // generation here, so the visitor does not press Generate twice (see
+  // lib/autostart). It waits for the session, the handed-over references and,
+  // briefly, the balance; claims the one-time token (a reload, Back or a second
+  // tab has none); drops it from the address; and uses it as the idempotency
+  // key. Every check in handleGenerate still applies.
   const [autostartWaited, setAutostartWaited] = useState(false);
+  const [sessionWaited, setSessionWaited] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setAutostartWaited(true), 2000);
-    return () => clearTimeout(timer);
+    const short = setTimeout(() => setAutostartWaited(true), 2000);
+    const long = setTimeout(() => setSessionWaited(true), 8000);
+    return () => {
+      clearTimeout(short);
+      clearTimeout(long);
+    };
   }, []);
   useEffect(() => {
     if (autostartDone.current) return;
     const url = new URL(window.location.href);
-    if (url.searchParams.get("autostart") !== "1") {
+    const token = url.searchParams.get("autostart");
+    if (!token) {
       autostartDone.current = true;
       return;
     }
-    if (sessionLoading) return;
+    // Right after a client-side navigation the session can read "not signed
+    // in" for a moment: wait for it (or the short timeout) before deciding.
+    if (sessionLoading || (!session && !sessionWaited)) return;
     if (sessionStorage.getItem("aivd:home-video-references") && homeReferences.length === 0 && !autostartWaited) return;
     if (session && !balance && !autostartWaited) return;
     autostartDone.current = true;
     url.searchParams.delete("autostart");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-    if (session) void handleGenerate();
-  }, [sessionLoading, session, balance, homeReferences, autostartWaited]);
+    if (session && claimAutostart(token, localStorage)) void handleGenerate(`autostart:${token}`);
+  }, [sessionLoading, session, balance, homeReferences, autostartWaited, sessionWaited]);
 
   const coverModelId = selectedModelConnected ? catalogModelId : "";
   const bannerName = upcoming?.name ?? (selectedModelConnected ? model.name : (catalogEntry?.name ?? model.name));
@@ -1105,7 +1145,7 @@ export function AiVideoStudio({
             <button
               type="button"
               disabled={generateDisabled}
-              onClick={handleGenerate}
+              onClick={() => void handleGenerate()}
               aria-busy={submitting || undefined}
               className="vs-generate"
               title={internalFree ? (isChinese ? "内部测试账号免费" : "Free for internal test account") : selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}

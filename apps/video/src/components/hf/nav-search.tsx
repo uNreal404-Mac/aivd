@@ -226,6 +226,11 @@ export function NavSearch({
   ];
 
   const onKeyDown = (event: React.KeyboardEvent) => {
+    // Leaving: the exit is still on screen, but it no longer takes keys.
+    if (state === "closed") {
+      event.preventDefault();
+      return;
+    }
     const count = fallbacks ? fallbackLinks.length : rows.length;
     if (event.key === "Escape") {
       event.preventDefault();

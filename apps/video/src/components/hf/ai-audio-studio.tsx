@@ -151,10 +151,13 @@ export function AiAudioStudio({
   locale,
   initialVoiceMode = "",
   initialModelId = "",
+  initialPrompt = "",
 }: {
   locale: string;
   initialVoiceMode?: string;
   initialModelId?: string;
+  /** A script to open with ("Generate again" from My creations). */
+  initialPrompt?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
@@ -169,7 +172,19 @@ export function AiAudioStudio({
   );
   const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
   const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
-  const [script, setScript] = useState("");
+  const [script, setScript] = useState(initialPrompt);
+  // Opening with a script of its own must not lose an unsent draft: it is
+  // kept here and offered back.
+  const [earlierDraft, setEarlierDraft] = useState<string | null>(null);
+  useEffect(() => {
+    if (!initialPrompt) return;
+    try {
+      const saved = localStorage.getItem("aivd:draft:audio");
+      if (saved?.trim() && saved.trim() !== initialPrompt.trim()) setEarlierDraft(saved);
+    } catch {
+      // Storage can be blocked; nothing to offer back then.
+    }
+  }, [initialPrompt]);
   const [speed, setSpeed] = useState(1);
   const [instrumental, setInstrumental] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -181,7 +196,7 @@ export function AiAudioStudio({
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
     session?.user?.isAdmin === true && session.user.isSuperAccount === true;
-  const draft = usePromptDraft("audio", script, setScript, false);
+  const draft = usePromptDraft("audio", script, setScript, Boolean(initialPrompt));
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -548,6 +563,20 @@ export function AiAudioStudio({
               setNotice(null);
             }}
           />
+          {earlierDraft !== null ? (
+            <p className="draft-note">
+              {zh ? "已填入作品里的文案" : "Filled in from your creation"}
+              <button
+                type="button"
+                onClick={() => {
+                  setScript(earlierDraft);
+                  setEarlierDraft(null);
+                }}
+              >
+                {zh ? "换回上次没生成的草稿" : "Use your unsent draft instead"}
+              </button>
+            </p>
+          ) : null}
           {draft.restored ? (
             <p className="draft-note">
               {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}

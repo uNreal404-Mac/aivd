@@ -209,6 +209,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     return `Also deletes ${[inElements ? `${inElements} element${inElements === 1 ? "" : "s"}` : "", inBrands ? `${inBrands} brand kit${inBrands === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")}`;
   };
   const disarm = () => { if (armTimer.current) clearTimeout(armTimer.current); armTimer.current = null; setArmed(null); };
+  // Closing the library cancels a half-done delete: reopening never starts
+  // with a bin already armed.
+  useEffect(() => { if (!open) disarm(); }, [open]);
   const deleteAsset = async (item: PickerAsset) => {
     setDeleting(item.id); setError("");
     try {

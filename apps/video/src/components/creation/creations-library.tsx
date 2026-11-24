@@ -26,7 +26,6 @@ import type { CreationMediaType } from "@/lib/types/dashboard";
 import { PRESENCE_EXIT_MS, usePresence } from "@/hooks/use-presence";
 import { useDownloadVideo, useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
 import {
-  AUDIO_DRAFT_STORAGE_KEY,
   DEFAULT_KIND,
   DEFAULT_VIEW_MODE,
   STATUS_TABS,
@@ -767,15 +766,6 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                   <a
                     className="cr-button cr-button--ghost"
                     href={againHref}
-                    onClick={() => {
-                      // The audio studio takes its script from the draft it restores.
-                      if (kind !== "audio" || !shownVideo.prompt?.trim()) return;
-                      try {
-                        window.localStorage.setItem(AUDIO_DRAFT_STORAGE_KEY, shownVideo.prompt.trim());
-                      } catch {
-                        // Storage can be blocked; the studio still opens on the same model.
-                      }
-                    }}
                   >
                     <Sparkles aria-hidden="true" />
                     {t("actions.regenerate")}

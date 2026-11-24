@@ -1,5 +1,5 @@
 import { calculateModelCredits } from "@/config/credits";
-import { marketModelsOf } from "@/ai/kie-market";
+import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
 import examplePrompts from "@/lib/home-example-prompts.json";
 import { secondsBetween } from "@/lib/video-durations";
@@ -223,9 +223,26 @@ export function settingsFromSearchParams(
  * shown in the UI is the number frozen on submit. Audio does not change the
  * price; resolution is passed as the server's `quality`.
  */
+/**
+ * Credits a clip will take. Pass `images` (reference images sent with it) and
+ * `audio` where they are known: some models charge for an input image or for
+ * sound, and the quote shown before Generate must be what the server freezes
+ * (services/video.ts prices market models the same way).
+ */
 export function estimateCredits(
   settings: Pick<StudioSettings, "modelId" | "duration" | "resolution">,
+  extras?: { images?: number; audio?: boolean },
 ): number {
+  const market = extras ? getMarketModel(settings.modelId) : undefined;
+  if (market) {
+    return marketCredits(market, {
+      prompt: "",
+      duration: settings.duration,
+      resolution: settings.resolution,
+      audio: market.options.audioToggle ? (extras?.audio ?? true) : undefined,
+      imageUrls: Array.from({ length: extras?.images ?? 0 }, (_, index) => `reference-${index}`),
+    });
+  }
   return calculateModelCredits(settings.modelId, {
     duration: settings.duration,
     quality: settings.resolution,

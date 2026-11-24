@@ -305,9 +305,12 @@ describe("regenerateHref", () => {
     expect(params.has("duration")).toBe(false);
   });
 
-  it("opens the audio studio on the same model", () => {
+  it("opens the audio studio on the same model with the same script", () => {
     const href = regenerateHref({ ...base, model: "elevenlabs-v3" }, "audio", "en");
-    expect(href).toBe("/audio?audioModel=elevenlabs-v3");
+    expect(href?.startsWith("/audio?")).toBe(true);
+    const params = query(href);
+    expect(params.get("audioModel")).toBe("elevenlabs-v3");
+    expect(params.get("prompt")).toBe(base.prompt);
   });
 
   it("returns null without a prompt", () => {

@@ -58,8 +58,15 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
       // A refresh already on its way (processing items poll every few
       // seconds) would put the deleted item back, so it is called off first.
       await queryClient.cancelQueries({ queryKey: ["videos", filter] });
-      // 乐观删除
-      const previousVideos = queryClient.getQueryData(["videos", filter]);
+      // 乐观删除. Remember only this item and where it was: if the delete
+      // fails, it alone comes back (a whole-list snapshot would also bring back
+      // anything deleted successfully in the meantime).
+      const previous: any = queryClient.getQueryData(["videos", filter]);
+      let removed: { item: any; page: number; index: number } | null = null;
+      previous?.pages?.forEach((page: any, pageIndex: number) => {
+        const index = page.videos?.findIndex((v: any) => v.uuid === uuid) ?? -1;
+        if (index >= 0 && !removed) removed = { item: page.videos[index], page: pageIndex, index };
+      });
       queryClient.setQueryData(
         ["videos", filter],
         (old: any) => {
@@ -74,15 +81,27 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
         }
       );
 
-      return { previousVideos };
+      return { removed };
     },
     onSuccess: (_data, uuid) => {
       toast.success(t("actions.deleteSuccess"), { id: `delete:${uuid}` });
     },
     onError: (_error, uuid, context) => {
-      // 回滚
-      if (context) {
-        queryClient.setQueryData(["videos", filter], context.previousVideos);
+      // 回滚: put back just this item, where it was.
+      const removed = context?.removed as { item: any; page: number; index: number } | null | undefined;
+      if (removed) {
+        queryClient.setQueryData(["videos", filter], (old: any) => {
+          if (!old?.pages?.[removed.page] || old.pages.some((page: any) => page.videos?.some((v: any) => v.uuid === uuid))) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any, pageIndex: number) => {
+              if (pageIndex !== removed.page) return page;
+              const videos = [...page.videos];
+              videos.splice(Math.min(removed.index, videos.length), 0, removed.item);
+              return { ...page, videos };
+            }),
+          };
+        });
       }
       toast.error(t("actions.deleteError"), {
         id: `delete:${uuid}`,
