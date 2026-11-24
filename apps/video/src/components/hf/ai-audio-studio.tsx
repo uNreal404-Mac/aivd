@@ -147,6 +147,9 @@ const AUDIO_SHOWCASE: AudioShowcaseItem[] = [
   },
 ];
 
+/** An unsent script set aside when the studio opens with another one. */
+const EARLIER_AUDIO_DRAFT_KEY = "aivd:draft:audio:earlier";
+
 export function AiAudioStudio({
   locale,
   initialVoiceMode = "",
@@ -179,8 +182,15 @@ export function AiAudioStudio({
   useEffect(() => {
     if (!initialPrompt) return;
     try {
+      // Kept under its own key: the draft key soon holds the new script, and
+      // a reload must still offer the earlier one back.
       const saved = localStorage.getItem("aivd:draft:audio");
-      if (saved?.trim() && saved.trim() !== initialPrompt.trim()) setEarlierDraft(saved);
+      let earlier = localStorage.getItem(EARLIER_AUDIO_DRAFT_KEY);
+      if (saved?.trim() && saved.trim() !== initialPrompt.trim()) {
+        earlier = saved;
+        localStorage.setItem(EARLIER_AUDIO_DRAFT_KEY, saved);
+      }
+      if (earlier?.trim() && earlier.trim() !== initialPrompt.trim()) setEarlierDraft(earlier);
     } catch {
       // Storage can be blocked; nothing to offer back then.
     }
@@ -571,6 +581,11 @@ export function AiAudioStudio({
                 onClick={() => {
                   setScript(earlierDraft);
                   setEarlierDraft(null);
+                  try {
+                    localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
+                  } catch {
+                    // Nothing kept to clear.
+                  }
                 }}
               >
                 {zh ? "换回上次没生成的草稿" : "Use your unsent draft instead"}

@@ -600,11 +600,13 @@ export type ModelOption = { id: string; name: string; credits: number };
  * ratio, quality and sound where the model offers them (the same switch the
  * model picker makes).
  */
-export function modelOptions(settings: StudioSettings, modelIds: string[]): ModelOption[] {
+export function modelOptions(settings: StudioSettings, modelIds: string[], images = 0): ModelOption[] {
   return modelIds.flatMap((id) => {
     const model = STUDIO_MODELS.find((item) => item.id === id && item.available);
     if (!model) return [];
-    const credits = estimateCredits(selectModel(settings, id));
+    // Priced with this clip's reference images and sound, as it would be frozen.
+    const switched = selectModel(settings, id);
+    const credits = estimateCredits(switched, { images, audio: switched.audio });
     return credits > 0 ? [{ id, name: model.name, credits }] : [];
   });
 }

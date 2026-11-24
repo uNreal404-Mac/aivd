@@ -92,6 +92,14 @@
   }
 }
 
+/* A row arriving in a list (camera presets). */
+@keyframes du-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
 @keyframes du-rise {
   from {
     opacity: 0;

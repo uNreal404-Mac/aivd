@@ -54,6 +54,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const unit = zh ? (allowVideo ? "个" : "张") : "";
   const { mounted, state } = usePresence(open);
   const [tab, setTab] = useState<Tab>("upload");
+  // Until the library has loaded, a selection cannot be confirmed: chosen
+  // items not listed yet would otherwise be dropped from the prompt.
+  const [loadingAssets, setLoadingAssets] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [assets, setAssets] = useState<PickerAsset[]>([]);
   const [works, setWorks] = useState<PickerAsset[]>([]);
@@ -98,19 +101,21 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     setError("");
     setAssets([]);
+    setLoadingAssets(true);
     const local = listGuestAssets().catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return [] as PickerAsset[]; });
     const remote = userId
       ? fetch("/api/v1/library", { cache: "no-store" }).then((response) => response.json()).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : []).catch(() => [] as PickerAsset[])
       : Promise.resolve([] as PickerAsset[]);
-    void Promise.all([local, remote]).then(([localAssets, remoteAssets]) => {
+    const libraryLoaded = Promise.all([local, remote]).then(([localAssets, remoteAssets]) => {
       if (live) setAssets((current) => {
         const merged = [...current, ...localAssets, ...remoteAssets];
         return merged.filter((asset, index) => merged.findIndex((item) => item.id === asset.id) === index);
       });
     });
+    let worksLoaded: Promise<unknown> = Promise.resolve();
     if (userId) {
       // Only ask for the kinds of creations this caller can use.
-      void Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
+      worksLoaded = Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
         if (!live) return;
         const rows: any[] = bodies.flatMap((body) => Array.isArray(body?.data?.videos) ? body.data.videos : []);
         setWorks(rows.flatMap((row) => {
@@ -119,6 +124,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         }));
       }).catch(() => {});
     }
+    void Promise.allSettled([libraryLoaded, worksLoaded]).then(() => { if (live) setLoadingAssets(false); });
     return () => { live = false; };
   }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey]);
 
@@ -136,6 +142,15 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
 
   useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
 
+  // Closing the library, or moving to another source, cancels a half-done
+  // delete: the library never reopens with a bin already armed. (Above the
+  // early return: hooks run in the same order every render.)
+  useEffect(() => {
+    if (armTimer.current) clearTimeout(armTimer.current);
+    armTimer.current = null;
+    setArmed(null);
+  }, [open, tab]);
+
   if (!mounted) return null;
   const acceptable = (item: PickerAsset) => Boolean(item.url) && acceptedTypes.some((type) => item.mimeType?.startsWith(`${type}/`));
   const elementAssets = elements.map((item) => ({ ...assets.find((asset) => asset.id === item.assetId), id: `element:${item.id}`, name: item.name } as PickerAsset));
@@ -147,7 +162,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const filters: Filter[] = acceptedTypes.length > 1 ? ["all", ...(["video", "image"] as const).filter((type) => acceptedTypes.includes(type))] : [];
   const shown = source.filter((item) => acceptable(item) && (tab === "elements" ? category === "all" || categoryId(elements.find((element) => `element:${element.id}` === item.id)?.category ?? "") === category : (filter === "all" || item.mimeType.startsWith(`${filter}/`))));
   const changed = selected.join("|") !== initial.join("|");
-  const canConfirm = !uploading && (selected.length > 0 || changed);
+  const resolved = selected.every((id) => choices.some((item) => item.id === id && item.url));
+  const canConfirm = !uploading && !loadingAssets && resolved && (selected.length > 0 || changed);
   const limitText = maxSelected <= 0
     ? (zh ? "当前模型不支持添加参考图" : "This model doesn't support reference images")
     : zh ? `最多选 ${maxSelected} ${unit}，先取消一${unit}再选` : `Up to ${maxSelected} selected — deselect one first`;
@@ -209,9 +225,6 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     return `Also deletes ${[inElements ? `${inElements} element${inElements === 1 ? "" : "s"}` : "", inBrands ? `${inBrands} brand kit${inBrands === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ")}`;
   };
   const disarm = () => { if (armTimer.current) clearTimeout(armTimer.current); armTimer.current = null; setArmed(null); };
-  // Closing the library cancels a half-done delete: reopening never starts
-  // with a bin already armed.
-  useEffect(() => { if (!open) disarm(); }, [open]);
   const deleteAsset = async (item: PickerAsset) => {
     setDeleting(item.id); setError("");
     try {
@@ -303,7 +316,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           const note = isArmed ? usageNote(item.id) : "";
           return <div key={item.id} className="hmp-card-wrap" data-leaving={leaving.includes(item.id) || undefined}>
             <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <Film />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
-            {tab === "upload" ? <button type="button" className="hmp-delete" data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting)} onClick={() => pressDelete(item)}
+            {tab === "upload" ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting)} onClick={() => pressDelete(item)}
               aria-label={isArmed ? (zh ? `再按一次删除 ${item.name}${note ? `，${note}` : ""}` : `Press again to delete ${item.name}${note ? `. ${note}` : ""}`) : (zh ? `删除 ${item.name}` : `Delete ${item.name}`)}
               title={isArmed ? undefined : (zh ? "删除这个素材" : "Delete this file")}>
               {deleting === item.id ? <Loader2 className="hmp-spin" size={14} aria-hidden="true" /> : isArmed ? <span key="confirm" data-swap className="hmp-delete-confirm"><strong>{zh ? "确认删除" : "Confirm delete"}</strong>{note ? <small>{note}</small> : null}</span> : <Trash2 key="bin" size={14} aria-hidden="true" />}

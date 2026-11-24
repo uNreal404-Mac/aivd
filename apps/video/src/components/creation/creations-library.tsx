@@ -209,6 +209,12 @@ function DeleteButton({ variant, onConfirm }: { variant: ActionVariant; onConfir
       }}
       onBlur={() => setArmed(false)}
       onKeyDown={(event) => {
+        // A held Enter or Space repeats: one key press is one intent, never
+        // "delete" and then "confirm".
+        if (event.repeat && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          return;
+        }
         if (event.key === "Escape" && armed) {
           event.preventDefault();
           event.stopPropagation();

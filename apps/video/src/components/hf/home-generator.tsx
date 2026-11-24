@@ -78,7 +78,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
   const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === defaultVideoModel?.id)?.resolutions[0] ?? "720p"));
   const [sound, setSound] = useState(false);
-  const soundChosen = useRef(false);
+  const soundChoice = useRef<boolean | null>(null);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement>(null);
@@ -200,6 +200,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
 
   const removeVideoReference = (index: number) => {
     setVideoReferences((previous) => previous.filter((_, itemIndex) => itemIndex !== index));
+    // Removing one by hand ends the offer to go back to the trimmed set.
+    setTrimmed(null);
     setPrompt((previous) => removeVideoReferenceToken(previous, index + 1));
     setNotice("");
     setMentionOpen(false);
@@ -254,8 +256,9 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       const supported = STUDIO_MODELS.find((item) => item.id === id);
       if (supported) {
         if (!supported.resolutions.includes(resolution)) setResolution(supported.resolutions[0]);
-        // Sound follows the visitor's own choice once they made one.
-        setSound((current) => supported.audio && (soundChosen.current ? current : true));
+        // Sound follows the visitor's own choice once they made one, even
+        // after passing through a model without sound.
+        setSound(supported.audio && (soundChoice.current ?? true));
       }
       const limit = Math.max(1, maxVideoReferences(id));
       if (videoReferences.length > limit) {
@@ -293,6 +296,15 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   // an image can start from reference images.
   const hasInput = Boolean(prompt.trim()) || (kind === "image" && referenceImages.length > 0);
 
+  // A new task replaces anything an earlier handoff left in this tab: its
+  // reference images, a start image, and a draft saved for a trip to pricing.
+  const clearHandoff = (target: "video" | "image") => {
+    const keys = target === "video"
+      ? ["aivd:home-video-references", "aivd:home-start-image", "aivd:home-start-image-name", "aivd:home-start-image-preview", "aivd:credit-draft:video"]
+      : ["aivd:home-image-references", "aivd:credit-draft:image"];
+    for (const key of keys) sessionStorage.removeItem(key);
+  };
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -322,6 +334,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
           if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); setSubmitting(false); return; }
           uploaded.push({ key: result.key, name: item.name, url: result.url });
         }
+        clearHandoff("image");
         if (uploaded.length) sessionStorage.setItem("aivd:home-image-references", JSON.stringify(uploaded));
         router.push(`${localizedHref(lang, "/ai/image")}?${params}`);
       } catch { setNotice(zh ? "准备参考图片失败，请重试。" : "Could not prepare the reference images."); setSubmitting(false); }
@@ -333,9 +346,6 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     if (!preparedPrompt.ok) { setNotice(zh ? `找不到 @图片${preparedPrompt.index} 对应的参考图，请补传图片或删掉这个引用` : `No reference image for @Image${preparedPrompt.index}. Add one or remove it from the prompt.`); return; }
     setSubmitting(true);
     try {
-      // A new task replaces anything left from an earlier handoff in this tab:
-      // reference images, a start image, a draft saved for a trip to pricing.
-      for (const key of ["aivd:home-video-references", "aivd:home-start-image", "aivd:home-start-image-name", "aivd:home-start-image-preview", "aivd:credit-draft:video"]) sessionStorage.removeItem(key);
       if (videoReferences.length) {
         const uploaded = [];
         for (const item of videoReferences) {
@@ -343,7 +353,12 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
           if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); setSubmitting(false); return; }
           uploaded.push({ key: result.key, name: item.name, url: result.url });
         }
+        // Uploads done: only now does this task replace what an earlier
+        // handoff left in the tab (a failed upload keeps everything as it was).
+        clearHandoff("video");
         sessionStorage.setItem("aivd:home-video-references", JSON.stringify(uploaded));
+      } else {
+        clearHandoff("video");
       }
       params.set("model", modelId);
       params.set("duration", String(duration));
@@ -354,7 +369,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       // one-time token from storage, deletes it, and uses it as the request's
       // idempotency key, so a reload, Back or a second tab never charges twice.
       const token = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      localStorage.setItem(AUTOSTART_STORAGE_KEY, JSON.stringify({ token, at: Date.now() }));
+      sessionStorage.setItem(AUTOSTART_STORAGE_KEY, JSON.stringify({ token, at: Date.now() }));
       params.set("autostart", token);
       // Leave the button in its loading state; the studio page replaces this one.
       router.push(`${localizedHref(lang, "/ai/video")}?${params}`);
@@ -437,7 +452,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
       <div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" glass showConnectionStatus={false} catalogSet="current" compact /></div>
-      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChosen.current = true; setSound(!sound); }} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
+      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChoice.current = !sound; setSound(!sound); }} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
       {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolutionLabel(resolution)}` : imageResolutions.length ? `${aspect} / ${resolutionLabel(resolution)}` : aspect}</button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
         {settingRow(zh ? "画面比例" : "Aspect ratio", kind === "video" ? videoAspects : imageAspects, aspect, setAspect)}
         {kind === "video" ? (videoDurations.length > 6

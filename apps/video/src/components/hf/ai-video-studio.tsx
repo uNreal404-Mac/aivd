@@ -464,7 +464,7 @@ export function AiVideoStudio({
     const usable = availableModelIds.filter(
       (id) => referenceCount <= maxVideoReferences(id) && !(getMarketModel(id)?.options.requiresImage && referenceCount === 0),
     );
-    return bestAffordableModel(modelOptions(settings, usable), catalogModelId, available);
+    return bestAffordableModel(modelOptions(settings, usable, referenceCount), catalogModelId, available);
   }, [shortBy, available, availableModelIds, referenceCount, settings, catalogModelId]);
   const num = (value: number) => value.toLocaleString(isChinese ? "zh-CN" : "en-US");
 
@@ -607,6 +607,7 @@ export function AiVideoStudio({
   // autostart landing during a click cannot send a second, separately charged
   // request.
   const inFlight = useRef(false);
+  const lastAttempt = useRef<{ key: string; signature: string } | null>(null);
 
   async function handleGenerate(presetKey?: string) {
     if (inFlight.current) return;
@@ -626,7 +627,7 @@ export function AiVideoStudio({
       const url = new URL(window.location.href);
       const token = url.searchParams.get("autostart");
       if (token) {
-        claimAutostart(token, localStorage);
+        claimAutostart(token, sessionStorage);
         url.searchParams.delete("autostart");
         window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
       }
@@ -678,14 +679,23 @@ export function AiVideoStudio({
     setSubmitting(true);
     setNotice(null);
 
+    // A request whose answer was lost (network error) is sent again under the
+    // same key when nothing changed, so the server answers with the task it
+    // may already have created instead of charging a second time.
+    const signature = JSON.stringify([settings, preparedPrompt.prompt, homeReferences.map((item) => item.key), imageKey]);
     const idempotencyKey =
       presetKey ??
-      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : String(Date.now()));
+      (lastAttempt.current?.signature === signature
+        ? lastAttempt.current.key
+        : typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : String(Date.now()));
+    lastAttempt.current = { key: idempotencyKey, signature };
 
     try {
       const result = await submitGeneration({ ...settings, prompt: preparedPrompt.prompt }, idempotencyKey, fetch, homeReferences.length ? homeReferences.map((item) => item.key) : imageKey);
+      // Only a lost answer keeps its key for a retry; anything else is final.
+      if (result.ok || result.code !== "NETWORK") lastAttempt.current = null;
 
       if (!result.ok) {
         setNotice(errorMessage(result.code, result.message, isChinese));
@@ -760,7 +770,7 @@ export function AiVideoStudio({
     autostartDone.current = true;
     url.searchParams.delete("autostart");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-    if (session && claimAutostart(token, localStorage)) void handleGenerate(`autostart:${token}`);
+    if (session && claimAutostart(token, sessionStorage)) void handleGenerate(`autostart:${token}`);
   }, [sessionLoading, session, balance, homeReferences, autostartWaited, sessionWaited]);
 
   const coverModelId = selectedModelConnected ? catalogModelId : "";
@@ -810,8 +820,12 @@ export function AiVideoStudio({
     } catch (error) { setNotice(uploadErrorText(error, isChinese)); }
     finally { setUploading(false); }
   }
+  // A delete in the library finishes later: it works on the references as they
+  // are now, not as they were when the delete started.
+  const latestMedia = useRef({ homeReferences, imageKey });
+  latestMedia.current = { homeReferences, imageKey };
   const removeHomeReference = (index: number) => {
-    const remaining = homeReferences.filter((_, itemIndex) => itemIndex !== index);
+    const remaining = latestMedia.current.homeReferences.filter((_, itemIndex) => itemIndex !== index);
     setHomeReferences(remaining);
     if (remaining.length) sessionStorage.setItem("aivd:home-video-references", JSON.stringify(remaining));
     else sessionStorage.removeItem("aivd:home-video-references");
@@ -877,9 +891,10 @@ export function AiVideoStudio({
         onClose={() => setMediaPickerOpen(false)}
         onSelect={(items) => void selectMedia(items)}
         onDelete={(id) => {
-          const index = homeReferences.findIndex((item) => (item.sourceId ?? `upload:${item.key}`) === id);
+          const { homeReferences: current, imageKey: currentKey } = latestMedia.current;
+          const index = current.findIndex((item) => (item.sourceId ?? `upload:${item.key}`) === id);
           if (index >= 0) removeHomeReference(index);
-          else if (imageKey && id === `upload:${imageKey}`) clearSelectedMedia();
+          else if (currentKey && id === `upload:${currentKey}`) clearSelectedMedia();
         }}
         maxSelected={maxVideoReferences(catalogModelId)}
         selectedIds={homeReferences.map((item) => item.sourceId ?? `upload:${item.key}`)}

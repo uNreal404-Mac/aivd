@@ -1,10 +1,12 @@
 /**
  * "Generate" on the homepage hands the task to the video studio, which starts
- * it on arrival. The homepage stores a one-time token under this key and puts
- * it in the address (?autostart=<token>); the studio starts only when the two
- * match and the token is fresh, deletes it first, and sends it as the
- * idempotency key. A reload, Back, a copied link or a second tab finds no token
- * (or the server answers with the first task), so nothing is charged twice.
+ * it on arrival. The homepage stores a one-time token under this key in the
+ * tab's sessionStorage (where the handed-over reference images also are) and
+ * puts it in the address (?autostart=<token>); the studio starts only when the
+ * two match and the token is fresh, deletes it first, and sends it as the
+ * idempotency key. A reload or Back finds no token, a link pasted into another
+ * tab has none (and none of the images), and a repeated request is answered
+ * with the first task, so nothing is charged twice.
  */
 export const AUTOSTART_STORAGE_KEY = "aivd:autostart";
 export const AUTOSTART_TTL_MS = 10 * 60 * 1000;
