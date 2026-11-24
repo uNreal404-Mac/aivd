@@ -510,7 +510,7 @@ button.vs-chip:disabled {
   gap: 10px;
   margin-top: 4px;
   border-radius: var(--ds-r-lg);
-  background: radial-gradient(110% 150% at 50% 0%, var(--du-accent-hover) 0%, var(--du-accent) 62%);
+  background: var(--du-gradient);
   box-shadow:
     var(--du-glow),
     0 4px 0 var(--du-bg),
@@ -1222,14 +1222,14 @@ button.vs-chip:disabled {
 
 .as-voice-avatar {
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   place-items: center;
   border-radius: var(--ds-r-full);
   background: var(--ds-fill-3);
   color: white;
-  font-size: var(--ds-fs-xs);
+  font-size: var(--ds-fs-2xs);
   font-weight: 700;
 }
 
@@ -1502,37 +1502,114 @@ button.vs-chip:disabled {
   margin: 0;
 }
 
-/* Higgsfield x Pollo Hover-to-Recreate Cinema Templates inside Empty Stage */
-.vs-recreate-grid {
-  display: grid;
-  width: min(760px, 100%);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+/* Higgsfield x Pollo Living Hover-Play Cinema Reel inside Empty Stage */
+.vs-empty-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  width: 100%;
+  max-width: 1120px;
+  margin: var(--ds-space-3) auto 0;
 }
 
-@media (max-width: 720px) {
-  .vs-recreate-grid {
+.vs-empty-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  padding: 14px 18px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-specular);
+}
+
+.vs-empty-strip-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+}
+
+.vs-empty-strip-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+  color: var(--du-accent-text);
+}
+
+.vs-stage-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.vs-empty-strip-sub {
+  margin-top: 2px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+.vs-empty-signin {
+  display: inline-flex;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: var(--ds-r-md);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  transition: filter 150ms ease, transform 140ms var(--ds-ease-spring);
+}
+
+.vs-empty-signin:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.vs-living-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .vs-living-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.vs-recreate-card {
+.vs-living-card {
   position: relative;
   display: flex;
   overflow: hidden;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 16 / 10;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 10px;
-  border: 1px solid var(--ds-line-1);
+  padding: 12px;
+  border: 1px solid transparent;
   border-radius: var(--ds-r-xl);
   background: var(--du-surface);
   text-align: left;
-  transition: border-color 180ms ease, transform 220ms var(--ds-ease-spring), box-shadow 220ms ease;
+  transition: border-color 200ms ease, transform 240ms var(--ds-ease-spring), box-shadow 220ms ease;
 }
 
-.vs-recreate-card img {
+.vs-living-video {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1541,13 +1618,44 @@ button.vs-chip:disabled {
   transition: transform 420ms var(--ds-ease-spring);
 }
 
+.vs-living-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 68%, transparent);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.vs-living-card:hover,
+.vs-living-card:focus-visible {
+  border-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
+  box-shadow: var(--ds-shadow-float);
+  transform: translateY(-2px);
+}
+
+.vs-living-card:hover .vs-living-video {
+  transform: scale(1.04);
+}
+
+.vs-living-card:hover .vs-recreate-pill,
+.vs-living-card:focus-visible .vs-recreate-pill {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .vs-recreate-shade {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--du-bg) 90%, transparent) 0%,
-    color-mix(in srgb, var(--du-bg) 25%, transparent) 55%,
+    color-mix(in srgb, var(--du-bg) 88%, transparent) 0%,
+    color-mix(in srgb, var(--du-bg) 22%, transparent) 52%,
     transparent 100%
   );
 }
@@ -1560,9 +1668,9 @@ button.vs-chip:disabled {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
   box-shadow: var(--du-glow);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-xs);
@@ -1585,34 +1693,10 @@ button.vs-chip:disabled {
 .vs-recreate-meta strong {
   overflow: hidden;
   color: var(--ds-text-1);
-  font-size: var(--ds-fs-xs);
+  font-size: var(--ds-fs-sm);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.vs-recreate-meta span {
-  flex-shrink: 0;
-  color: var(--ds-text-3);
-  font-size: var(--ds-fs-2xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.vs-recreate-card:hover,
-.vs-recreate-card:focus-visible {
-  border-color: color-mix(in srgb, var(--du-accent) 45%, var(--ds-line-2));
-  box-shadow: var(--ds-shadow-2);
-  transform: translateY(-2px);
-}
-
-.vs-recreate-card:hover img {
-  transform: scale(1.06);
-}
-
-.vs-recreate-card:hover .vs-recreate-pill,
-.vs-recreate-card:focus-visible .vs-recreate-pill {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
 /* Animated Audio Preview Equalizer Bars */
@@ -1642,13 +1726,12 @@ button.vs-chip:disabled {
 
 .as-canvas-banner {
   display: flex;
-  max-width: 760px;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--ds-line-2);
+  padding: 14px 18px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-xl);
   background: var(--ds-surface-1);
   box-shadow: var(--ds-specular);
@@ -1657,6 +1740,169 @@ button.vs-chip:disabled {
 }
 
 .as-canvas-banner:hover {
-  border-color: color-mix(in srgb, var(--du-accent) 45%, var(--ds-line-2));
+  border-color: color-mix(in srgb, var(--du-accent) 42%, var(--ds-line-2));
   background: var(--ds-surface-2);
+}
+
+/* Suno × ElevenLabs Playable Audio Showcase Wall */
+.as-showcase-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 780px) {
+  .as-showcase-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.as-showcase-card {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-specular);
+  transition: border-color 180ms ease, background-color 180ms ease, transform 200ms var(--ds-ease-spring);
+}
+
+.as-showcase-card:hover {
+  border-color: var(--ds-line-2);
+  background: var(--ds-surface-2);
+  transform: translateY(-1px);
+}
+
+.as-showcase-card-on {
+  border-color: color-mix(in srgb, var(--du-accent) 48%, var(--ds-line-2));
+  background: color-mix(in srgb, var(--du-accent) 6%, var(--ds-surface-2));
+}
+
+.as-showcase-cover {
+  position: relative;
+  width: 96px;
+  min-height: 96px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--ds-r-lg);
+  background: var(--du-bg-elev);
+}
+
+.as-showcase-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms var(--ds-ease-spring);
+}
+
+.as-showcase-cover:hover img {
+  transform: scale(1.06);
+}
+
+.as-showcase-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 74%, transparent);
+  border: 1px solid var(--ds-line-2);
+  color: var(--ds-text-1);
+  backdrop-filter: blur(8px);
+  transform: translate(-50%, -50%);
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.as-showcase-card-on .as-showcase-play,
+.as-showcase-cover:hover .as-showcase-play {
+  border-color: transparent;
+  background: var(--du-gradient);
+  color: var(--du-on-accent);
+}
+
+.as-showcase-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.as-showcase-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.as-showcase-tag {
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+}
+
+.as-showcase-title {
+  color: var(--ds-text-1);
+  font-family: var(--du-font-display);
+  font-size: var(--ds-fs-sm);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.as-showcase-script {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+.as-showcase-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.as-showcase-btn,
+.as-showcase-recreate {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-md);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  transition: background-color 150ms ease, filter 150ms ease, color 150ms ease;
+}
+
+.as-showcase-btn {
+  border: 1px solid var(--ds-line-2);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+}
+
+.as-showcase-btn:hover {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.as-showcase-recreate {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.as-showcase-recreate:hover {
+  background: var(--du-gradient);
+  color: var(--du-on-accent);
 }

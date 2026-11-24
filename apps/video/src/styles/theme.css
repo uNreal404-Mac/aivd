@@ -1,47 +1,47 @@
 :root {
-  /* Flagship Obsidian Carbon Palette (Higgsfield × Pollo × Pro Dark Craft) */
+  /* Flagship Obsidian Carbon Palette + Exact Logo Cyan-Blue (#20F4F4 -> #1DE8F0 -> #29CFF4 -> #359FF7) */
   --du-bg: #070709;
-  --du-bg-elev: #0d0d11;
-  --du-surface: #121217;
-  --du-surface-2: #1a1a21;
-  --du-border: rgba(255, 255, 255, 0.08);
-  --du-border-strong: rgba(255, 255, 255, 0.17);
-  --du-text: #f4f4f6;
-  --du-text-muted: rgba(244, 244, 246, 0.66);
-  --du-text-dim: rgba(244, 244, 246, 0.46);
-  --du-accent: #66fcf1;
-  --du-accent-hover: #8efffa;
-  --du-accent-soft: rgba(102, 252, 241, 0.11);
-  --du-accent-text: #72fdf3;
-  --du-accent-2: #38bdf8;
-  --du-gradient: linear-gradient(135deg, #98fff9 0%, #66fcf1 46%, #38bdf8 100%);
-  --du-glow: 0 0 26px rgba(102, 252, 241, 0.24), 0 10px 26px -8px rgba(56, 189, 248, 0.28);
-  --du-on-accent: #05080a;
+  --du-bg-elev: #0c0c10;
+  --du-surface: #111116;
+  --du-surface-2: #18181f;
+  --du-border: rgba(255, 255, 255, 0.06);
+  --du-border-strong: rgba(255, 255, 255, 0.14);
+  --du-text: #f5f5f7;
+  --du-text-muted: rgba(245, 245, 247, 0.62);
+  --du-text-dim: rgba(245, 245, 247, 0.44);
+  --du-accent: #1de8f0;
+  --du-accent-hover: #53f3f8;
+  --du-accent-soft: rgba(29, 232, 240, 0.1);
+  --du-accent-text: #29cff4;
+  --du-accent-2: #359ff7;
+  --du-gradient: linear-gradient(135deg, #20f4f4 0%, #1de8f0 43%, #29cff4 72%, #359ff7 100%);
+  --du-glow: 0 0 24px rgba(29, 232, 240, 0.22), 0 10px 26px -8px rgba(53, 159, 247, 0.28);
+  --du-on-accent: #04070a;
   --du-success: #34d399;
   --du-danger: #f87171;
   --du-warning: #fbbf24;
 
   /* Frosted Obsidian Glass (Specular Rim + Deep Ambient Shadow) */
-  --du-glass-blur: 26px;
+  --du-glass-blur: 28px;
   --du-glass-saturate: 175%;
-  --du-glass-bg: rgba(15, 15, 20, 0.78);
-  --du-glass-bg-hover: rgba(24, 24, 31, 0.88);
-  --du-glass-bg-strong: rgba(19, 19, 25, 0.92);
-  --du-glass-border: rgba(255, 255, 255, 0.09);
-  --du-glass-border-hover: rgba(255, 255, 255, 0.18);
-  --du-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.09);
-  --du-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.64), 0 2px 8px rgba(0, 0, 0, 0.36);
+  --du-glass-bg: rgba(14, 14, 19, 0.78);
+  --du-glass-bg-hover: rgba(22, 22, 29, 0.88);
+  --du-glass-bg-strong: rgba(17, 17, 23, 0.92);
+  --du-glass-border: rgba(255, 255, 255, 0.075);
+  --du-glass-border-hover: rgba(255, 255, 255, 0.16);
+  --du-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --du-glass-shadow: 0 20px 52px rgba(0, 0, 0, 0.68), 0 2px 8px rgba(0, 0, 0, 0.36);
   --du-glass-radius-card: 20px;
   --du-glass-radius-btn: 12px;
   --du-glass-radius-round: 9999px;
   --du-glass-fallback-bg: #111116;
-  --du-glass-text: #f4f4f6;
-  --du-glass-overlay-scrim: rgba(7, 7, 9, 0.7);
+  --du-glass-text: #f5f5f7;
+  --du-glass-overlay-scrim: rgba(7, 7, 9, 0.72);
 
   /* Pricing tier visual accents (used on /pricing) */
-  --du-tier-pro-from: #38bdf8;
-  --du-tier-pro-to: #66fcf1;
-  --du-tier-pro-glow: rgba(56, 189, 248, 0.22);
+  --du-tier-pro-from: #359ff7;
+  --du-tier-pro-to: #1de8f0;
+  --du-tier-pro-glow: rgba(53, 159, 247, 0.22);
   --du-tier-ultimate: #f5b841;
   --du-save-bg: rgba(16, 185, 129, 0.16);
   --du-save-text: #34d399;

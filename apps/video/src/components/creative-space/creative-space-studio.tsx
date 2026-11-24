@@ -31,6 +31,7 @@ import {
   Paintbrush,
   PanelRightClose,
   PanelRightOpen,
+  Play,
   Plus,
   Redo2,
   Save,
@@ -38,6 +39,7 @@ import {
   Search,
   Send,
   Sparkles,
+  SplitSquareHorizontal,
   StickyNote,
   Trash2,
   Type,
@@ -54,6 +56,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type WheelEvent,
   useCallback,
   useEffect,
@@ -63,10 +66,12 @@ import {
 } from "react";
 
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { estimateCredits, STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { useSession } from "@/lib/auth/client";
+import type { PickerAsset } from "@/lib/home-media-library";
 import { localizedHref } from "@/lib/locale-path";
 import { submitMedia } from "@/lib/media-studio";
 import { generateVideo, uploadImage } from "@/lib/video-api";
@@ -98,6 +103,7 @@ import "./creative-canvas.css";
 interface CreativeSpaceStudioProps {
   locale: string;
   initialPrompt?: string;
+  modeSlot?: ReactNode;
 }
 
 type ComposerKind = "image" | "video" | "audio";
@@ -284,7 +290,7 @@ function makeDefaultSession(zh: boolean): AgentSession {
   };
 }
 
-export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpaceStudioProps) {
+export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: CreativeSpaceStudioProps) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
   const { data: session } = useSession();
@@ -327,6 +333,14 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
   const [shotsSubmitting, setShotsSubmitting] = useState(false);
   const [editModal, setEditModal] = useState<{ nodeId: string; action: CanvasEditAction } | null>(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [comparePair, setComparePair] = useState<{
+    beforeUrl: string;
+    afterUrl: string;
+    beforeLabel: string;
+    afterLabel: string;
+  } | null>(null);
+  const [compareSplit, setCompareSplit] = useState(50);
+  const [elementPickerOpen, setElementPickerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   // Bottom multi-modal generation dock
@@ -2173,6 +2187,179 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     ? nodes.find((n): n is CanvasImageNode => n.id === editModal.nodeId && n.kind === "image") ?? null
     : null;
 
+  // Parent image for Before/After comparison slider (if an image node was derived from another image)
+  const singleSelectedParentImage = useMemo(() => {
+    if (!singleSelected || singleSelected.kind !== "image" || singleSelected.status !== "ready") return null;
+    const incoming = edges.find((e) => e.toId === singleSelected.id);
+    if (!incoming) return null;
+    const parent = nodes.find((n): n is CanvasImageNode => n.id === incoming.fromId && n.kind === "image" && n.status === "ready");
+    return parent ?? null;
+  }, [singleSelected, edges, nodes]);
+
+  // 1-click visual demo board using real local studio media (for instant pro first impression)
+  const loadCinematicDemoBoard = () => {
+    commitHistory();
+    const now = Date.now();
+    const groupId = `demo-grp-${now}`;
+    const imgAId = `demo-img-a-${now}`;
+    const imgBId = `demo-img-b-${now}`;
+    const vidCId = `demo-vid-c-${now}`;
+    const noteDId = `demo-note-d-${now}`;
+
+    const demoNodes: CanvasNode[] = [
+      {
+        id: groupId,
+        kind: "group",
+        label: "G",
+        name: zh ? "霓虹雨夜广告分镜组" : "Neon Rain Commercial Board",
+        title: zh ? "霓虹雨夜 · 品牌电影分镜" : "Neon Rain · Brand Film Storyboard",
+        x: 72,
+        y: 52,
+        width: 1090,
+        height: 410,
+        zIndex: 0,
+        status: "ready",
+        createdAt: now,
+      },
+      {
+        id: imgAId,
+        kind: "image",
+        label: "A",
+        name: zh ? "开场锚点帧 · 雨夜街景" : "Hero Frame · Rain Street",
+        url: "/home/samples/rain-couple.webp",
+        prompt: zh ? "霓虹雨夜东京街头电影感中景，湿润反光柏油路面，浅景深" : "Neon Tokyo rain street cinematic medium shot, wet reflections, shallow DOF",
+        model: "Nano Banana 2",
+        resolution: "2K",
+        aspectRatio: "16:9",
+        x: 102,
+        y: 112,
+        width: 268,
+        zIndex: 2,
+        status: "ready",
+        safety: "allowed",
+        createdAt: now,
+      },
+      {
+        id: imgBId,
+        kind: "image",
+        label: "B",
+        name: zh ? "重绘变体 · 星云氛围升级" : "Style Relight · Cosmic Mood",
+        url: "/home/samples/cosmic-bloom.webp",
+        prompt: zh ? "保持构图节奏，注入青蓝色星云体积光与电影调色" : "Keep framing rhythm, infuse cyan-blue volumetric bloom and film grading",
+        model: "Nano Banana Pro",
+        resolution: "4K",
+        aspectRatio: "16:9",
+        x: 424,
+        y: 112,
+        width: 268,
+        zIndex: 3,
+        status: "ready",
+        safety: "allowed",
+        createdAt: now,
+      },
+      {
+        id: vidCId,
+        kind: "video",
+        label: "C",
+        name: zh ? "图生视频成片 · 6s 推镜" : "I2V Render · 6s Push-In",
+        url: "/home/example-japan-6s.mp4",
+        prompt: zh ? "镜头缓慢推近，雨丝飘落，霓虹倒影微微晃动，电影配乐" : "Slow cinematic push-in, rain falling, shimmering neon reflections",
+        model: "Seedance 2.0",
+        duration: 6,
+        resolution: "1080p",
+        x: 752,
+        y: 112,
+        width: 312,
+        zIndex: 4,
+        status: "ready",
+        safety: "allowed",
+        createdAt: now,
+      },
+      {
+        id: noteDId,
+        kind: "text",
+        label: "D",
+        name: zh ? "导演剪辑备忘" : "Director Cut Note",
+        title: zh ? "试一试：选中 @B 点击「前后对比」" : "Try: Select @B → Compare Before/After",
+        content: zh
+          ? "1. 点击任意图片卡片顶部工具条可局部重绘、扩图、抠图或生成多机位分镜。\n2. 选中 @B 后点击顶部「前后对比」可左右拖动查看原图与变体差异。\n3. 在右侧 Agent 输入 @A @B 可自动拆解完整广告分镜。"
+          : "1. Select any image card for Inpaint, Outpaint, Cutout, or Multi-Angle Shots.\n2. Select @B and click Compare to drag the Before/After divider.\n3. Mention @A @B in the right Agent to draft full commercial storyboards.",
+        tone: "storyboard",
+        x: 102,
+        y: 326,
+        width: 590,
+        zIndex: 5,
+        status: "ready",
+        createdAt: now,
+      },
+    ];
+
+    const demoEdges: CanvasEdge[] = [
+      { id: `demo-e1-${now}`, fromId: imgAId, toId: imgBId, kind: "edit", label: zh ? "重绘 / 4K" : "Relight / 4K" },
+      { id: `demo-e2-${now}`, fromId: imgBId, toId: vidCId, kind: "animate", label: zh ? "图生视频" : "I2V 6s" },
+    ];
+
+    setNodes(demoNodes);
+    setEdges(demoEdges);
+    setSelectedIds([imgBId]);
+    setViewport({ x: 36, y: 24, scale: 0.86 });
+    showToast(zh ? "已载入电影样板画布，选中 @B 可直接体验前后对比与后编辑" : "Loaded cinematic sample board — select @B to try Compare & edits");
+  };
+
+  // Add assets picked from shared HomeMediaPicker (@元素 / 品牌工具箱 / 我的作品)
+  const handlePickedElements = (picked: PickerAsset[]) => {
+    if (picked.length === 0) return;
+    commitHistory();
+    const origin = worldCenter();
+    const addedIds: string[] = [];
+    setNodes((prev) => {
+      let z = maxZIndex(prev);
+      const next = [...prev];
+      picked.forEach((asset, index) => {
+        const isVideo = asset.mimeType.startsWith("video/");
+        const id = `pick-${isVideo ? "video" : "image"}-${Date.now()}-${index}`;
+        addedIds.push(id);
+        const label = nextAlphaLabel(next);
+        if (isVideo) {
+          next.push({
+            id,
+            kind: "video",
+            label,
+            name: asset.name || (zh ? "素材视频" : "Picked Video"),
+            url: asset.url,
+            x: origin.x + index * 320,
+            y: origin.y,
+            width: 320,
+            zIndex: ++z,
+            status: "ready",
+            safety: "allowed",
+            createdAt: Date.now(),
+          });
+        } else {
+          next.push({
+            id,
+            kind: "image",
+            label,
+            name: asset.name || (zh ? "元素素材" : "Element Asset"),
+            url: asset.url,
+            storageKey: asset.key,
+            file: asset.file,
+            x: origin.x + index * 290,
+            y: origin.y,
+            width: 268,
+            zIndex: ++z,
+            status: "ready",
+            safety: "allowed",
+            createdAt: Date.now(),
+          });
+        }
+      });
+      return next;
+    });
+    if (addedIds.length > 0) setSelectedIds(addedIds);
+    showToast(zh ? `已将 ${picked.length} 项 @元素 加入画布并设为参考` : `Added ${picked.length} element(s) to canvas as reference`);
+  };
+
   return (
     <div className="cc-root">
       <input
@@ -2185,7 +2372,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
         aria-label={zh ? "上传图片或视频素材" : "Upload image or video assets"}
       />
 
-      {/* Top Studio Bar */}
+      {/* Slim Single Floating Studio Top Bar (6 essential controls) */}
       <div className="cc-topbar">
         <div className="cc-topbar-left">
           <Link
@@ -2194,13 +2381,15 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             title={zh ? "返回创意空间" : "Back to Creative Space"}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">{zh ? "创意空间" : "Space"}</span>
+            <span className="hidden lg:inline">{zh ? "返回" : "Back"}</span>
           </Link>
-          <span className="cc-divider" />
-          <span className="cc-badge-brand">
-            <Sparkles className="h-3.5 w-3.5" />
-            {zh ? "无限画布" : "Infinite Canvas"}
-          </span>
+          {modeSlot ?? (
+            <span className="cc-badge-brand">
+              <Sparkles className="h-3.5 w-3.5" />
+              {zh ? "无限画布" : "Infinite Canvas"}
+            </span>
+          )}
+          <span className="cc-divider hidden sm:inline-block" />
           <input
             type="text"
             value={projectTitle}
@@ -2231,92 +2420,9 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           >
             <Redo2 className="h-4 w-4" />
           </button>
-          <span className="cc-divider" />
-          <div className="cc-zoom-pill">
-            <button
-              type="button"
-              className="cc-icon-btn"
-              onClick={() => setViewport((v) => ({ ...v, scale: clamp(v.scale - 0.15, 0.25, 3) }))}
-              aria-label={zh ? "缩小" : "Zoom out"}
-            >
-              <ZoomOut className="h-3.5 w-3.5" />
-            </button>
-            <span className="cc-zoom-val">{Math.round(viewport.scale * 100)}%</span>
-            <button
-              type="button"
-              className="cc-icon-btn"
-              onClick={() => setViewport((v) => ({ ...v, scale: clamp(v.scale + 0.15, 0.25, 3) }))}
-              aria-label={zh ? "放大" : "Zoom in"}
-            >
-              <ZoomIn className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              className="cc-icon-btn"
-              onClick={fitAllNodes}
-              title={zh ? "自适应画布" : "Fit all"}
-              aria-label={zh ? "自适应画布" : "Fit all"}
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <span className="cc-divider" />
-          <button
-            type="button"
-            className="cc-icon-btn"
-            onClick={autoArrangeNodes}
-            title={zh ? "一键自动整理节点" : "Auto-arrange nodes"}
-            aria-label={zh ? "自动整理" : "Auto-arrange"}
-          >
-            <LayoutGrid className="h-4 w-4" />
-            <span className="hidden xl:inline">{zh ? "自动整理" : "Arrange"}</span>
-          </button>
-          <button
-            type="button"
-            className={`cc-icon-btn${!showEdges ? " cc-icon-btn-on" : ""}`}
-            onClick={() => setShowEdges((v) => !v)}
-            title={zh ? "显示 / 隐藏参考连线 (E)" : "Toggle edges (E)"}
-            aria-label={zh ? "显隐连线" : "Toggle edges"}
-          >
-            {showEdges ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
-          <button
-            type="button"
-            className={`cc-icon-btn${searchOpen ? " cc-icon-btn-on" : ""}`}
-            onClick={() => {
-              setSearchOpen((v) => !v);
-              setShortcutsOpen(false);
-            }}
-            title={zh ? "搜索画布节点 (⌘K)" : "Search canvas nodes (⌘K)"}
-            aria-label={zh ? "搜索节点" : "Search nodes"}
-          >
-            <Search className="h-4 w-4" />
-            <kbd className="cc-kbd hidden xl:inline">⌘K</kbd>
-          </button>
         </div>
 
         <div className="cc-topbar-right">
-          <button
-            type="button"
-            className={`cc-icon-btn${showMinimap ? " cc-icon-btn-on" : ""}`}
-            onClick={() => setShowMinimap((v) => !v)}
-            title={zh ? "显示 / 隐藏小地图 (M)" : "Toggle minimap (M)"}
-            aria-label={zh ? "小地图" : "Minimap"}
-          >
-            <MapIcon className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            className={`cc-icon-btn${shortcutsOpen ? " cc-icon-btn-on" : ""}`}
-            onClick={() => {
-              setShortcutsOpen((v) => !v);
-              setSearchOpen(false);
-            }}
-            title={zh ? "快捷键说明 (?)" : "Keyboard shortcuts (?)"}
-            aria-label={zh ? "快捷键" : "Shortcuts"}
-          >
-            <Keyboard className="h-4 w-4" />
-          </button>
           <button
             type="button"
             className={`cc-icon-btn${templatesOpen ? " cc-icon-btn-on" : ""}`}
@@ -2328,7 +2434,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             title={zh ? "工作流模板库（保存/载入）" : "Workflow templates"}
           >
             <Bookmark className="h-4 w-4" />
-            <span className="hidden lg:inline">{zh ? "模板" : "Templates"}</span>
+            <span className="hidden md:inline">{zh ? "模板" : "Templates"}</span>
           </button>
           <button
             type="button"
@@ -2337,21 +2443,6 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           >
             <FolderOpen className="h-4 w-4" />
             <span className="hidden sm:inline">{zh ? "资产库" : "Assets"}</span>
-          </button>
-          <button
-            type="button"
-            className="cc-icon-btn"
-            onClick={() => {
-              if (nodes.length === 0) return;
-              commitHistory();
-              setNodes([]);
-              setEdges([]);
-              setSelectedIds([]);
-              showToast(zh ? "画布已清空（可 ⌘Z 撤销）" : "Canvas cleared (⌘Z to undo)");
-            }}
-            title={zh ? "清空画布" : "Clear canvas"}
-          >
-            <Trash2 className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -2594,6 +2685,24 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                 <Film className="h-3.5 w-3.5" />
                 {zh ? "图生视频" : "Animate"}
               </button>
+              {singleSelectedParentImage ? (
+                <button
+                  type="button"
+                  className="cc-ctx-btn cc-ctx-btn-accent"
+                  onClick={() => {
+                    setCompareSplit(50);
+                    setComparePair({
+                      beforeUrl: singleSelectedParentImage.url,
+                      afterUrl: singleSelected.url,
+                      beforeLabel: `@${singleSelectedParentImage.label} ${singleSelectedParentImage.name}`,
+                      afterLabel: `@${singleSelected.label} ${singleSelected.name}`,
+                    });
+                  }}
+                >
+                  <SplitSquareHorizontal className="h-3.5 w-3.5" />
+                  {zh ? "前后对比" : "Compare"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="cc-ctx-btn"
@@ -2713,6 +2822,24 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                     <Film className="h-3.5 w-3.5" />
                     {zh ? "多图参考生视频" : "Multi-Ref Video"}
                   </button>
+                  {selectedImages.length === 2 ? (
+                    <button
+                      type="button"
+                      className="cc-ctx-btn"
+                      onClick={() => {
+                        setCompareSplit(50);
+                        setComparePair({
+                          beforeUrl: selectedImages[0].url,
+                          afterUrl: selectedImages[1].url,
+                          beforeLabel: `@${selectedImages[0].label} ${selectedImages[0].name}`,
+                          afterLabel: `@${selectedImages[1].label} ${selectedImages[1].name}`,
+                        });
+                      }}
+                    >
+                      <SplitSquareHorizontal className="h-3.5 w-3.5" />
+                      {zh ? "双图对比" : "Compare"}
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               <button type="button" className="cc-ctx-btn" onClick={() => spawnGroupNode(true)}>
@@ -2740,31 +2867,42 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             </div>
           ) : null}
 
-          {/* Empty Canvas Onboarding */}
+          {/* Empty Canvas Onboarding — Visual Sample Strip + 1-Click Cinematic Demo Board */}
           {nodes.length === 0 ? (
             <div className="cc-empty">
-              <div className="cc-empty-title">{zh ? "欢迎来到无限多模态画布" : "Infinite Multimodal Canvas"}</div>
+              <div className="cc-empty-preview" aria-hidden="true">
+                <div className="cc-empty-preview-card">
+                  <img src="/home/samples/rain-couple.webp" alt="" />
+                </div>
+                <div className="cc-empty-preview-card">
+                  <img src="/home/samples/mech-warrior.webp" alt="" />
+                </div>
+                <div className="cc-empty-preview-card">
+                  <img src="/home/samples/cosmic-bloom.webp" alt="" />
+                </div>
+              </div>
+              <div className="cc-empty-title">{zh ? "无限多模态创意画布" : "Infinite Multimodal Canvas"}</div>
               <p className="cc-empty-sub">
                 {zh
-                  ? "像即梦画布一样自由排版：直接在下方生图/生视频/配音，或把本地图片视频拖进来，点击图片即可局部重绘、扩图、消除、抠图、超清放大与图生视频。"
-                  : "Generate images, videos, and audio directly on an infinite board. Click any image for Inpaint, Outpaint, Erase, Cutout, HD Upscale, or Image-to-Video."}
+                  ? "像即梦画布一样自由排版：直接在下方生图 / 生视频 / 配音，拖入素材后支持局部重绘、扩图、抠图、多机位分镜与前后对比。"
+                  : "Generate images, videos, and audio on an infinite board with Inpaint, Outpaint, Cutout, Multi-Angle Shots, and Before/After Compare."}
               </p>
               <div className="cc-empty-actions">
-                <button type="button" className="cc-primary-btn" onClick={() => fileInputRef.current?.click()}>
+                <button type="button" className="cc-primary-btn" onClick={loadCinematicDemoBoard}>
+                  <Play className="h-4 w-4" />
+                  {zh ? "体验电影样板画布" : "Explore Sample Board"}
+                </button>
+                <button type="button" className="cc-secondary-btn" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="h-4 w-4" />
                   {zh ? "上传素材" : "Upload Media"}
                 </button>
-                <button type="button" className="cc-secondary-btn" onClick={() => setLibraryOpen(true)}>
-                  <FolderOpen className="h-4 w-4" />
-                  {zh ? "从我的作品导入" : "Import My Creations"}
-                </button>
-                <button type="button" className="cc-secondary-btn" onClick={() => spawnTextNode()}>
-                  <StickyNote className="h-4 w-4" />
-                  {zh ? "新建分镜便签" : "New Storyboard Note"}
+                <button type="button" className="cc-secondary-btn" onClick={() => setElementPickerOpen(true)}>
+                  <AtSign className="h-4 w-4" />
+                  {zh ? "@元素 / 作品" : "@Elements"}
                 </button>
                 <button type="button" className="cc-secondary-btn" onClick={() => setTemplatesOpen(true)}>
                   <Bookmark className="h-4 w-4" />
-                  {zh ? "载入工作流模板" : "Workflow Templates"}
+                  {zh ? "工作流模板" : "Templates"}
                 </button>
               </div>
             </div>
@@ -3258,6 +3396,105 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
             />
           ) : null}
 
+          {/* Floating Bottom-Left Spatial HUD (Zoom / Fit / Arrange / Edges / Search / Minimap / Help / Clear) */}
+          <div className="cc-hud-bar" role="toolbar" aria-label={zh ? "画布空间控制" : "Canvas viewport controls"}>
+            <button
+              type="button"
+              className="cc-icon-btn"
+              onClick={() => setViewport((v) => ({ ...v, scale: clamp(v.scale - 0.15, 0.25, 3) }))}
+              aria-label={zh ? "缩小" : "Zoom out"}
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <span className="cc-zoom-val">{Math.round(viewport.scale * 100)}%</span>
+            <button
+              type="button"
+              className="cc-icon-btn"
+              onClick={() => setViewport((v) => ({ ...v, scale: clamp(v.scale + 0.15, 0.25, 3) }))}
+              aria-label={zh ? "放大" : "Zoom in"}
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className="cc-icon-btn"
+              onClick={fitAllNodes}
+              title={zh ? "自适应画布" : "Fit all"}
+              aria-label={zh ? "自适应画布" : "Fit all"}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+            <span className="cc-divider" />
+            <button
+              type="button"
+              className="cc-icon-btn"
+              onClick={autoArrangeNodes}
+              title={zh ? "一键自动整理节点" : "Auto-arrange nodes"}
+              aria-label={zh ? "自动整理" : "Auto-arrange"}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className={`cc-icon-btn${!showEdges ? " cc-icon-btn-on" : ""}`}
+              onClick={() => setShowEdges((v) => !v)}
+              title={zh ? "显示 / 隐藏参考连线 (E)" : "Toggle edges (E)"}
+              aria-label={zh ? "显隐连线" : "Toggle edges"}
+            >
+              {showEdges ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              type="button"
+              className={`cc-icon-btn${searchOpen ? " cc-icon-btn-on" : ""}`}
+              onClick={() => {
+                setSearchOpen((v) => !v);
+                setShortcutsOpen(false);
+              }}
+              title={zh ? "搜索画布节点 (⌘K)" : "Search canvas nodes (⌘K)"}
+              aria-label={zh ? "搜索节点" : "Search nodes"}
+            >
+              <Search className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className={`cc-icon-btn${showMinimap ? " cc-icon-btn-on" : ""}`}
+              onClick={() => setShowMinimap((v) => !v)}
+              title={zh ? "显示 / 隐藏小地图 (M)" : "Toggle minimap (M)"}
+              aria-label={zh ? "小地图" : "Minimap"}
+            >
+              <MapIcon className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className={`cc-icon-btn${shortcutsOpen ? " cc-icon-btn-on" : ""}`}
+              onClick={() => {
+                setShortcutsOpen((v) => !v);
+                setSearchOpen(false);
+              }}
+              title={zh ? "快捷键说明 (?)" : "Keyboard shortcuts (?)"}
+              aria-label={zh ? "快捷键" : "Shortcuts"}
+            >
+              <Keyboard className="h-3.5 w-3.5" />
+            </button>
+            {nodes.length > 0 ? (
+              <button
+                type="button"
+                className="cc-icon-btn"
+                onClick={() => {
+                  commitHistory();
+                  setNodes([]);
+                  setEdges([]);
+                  setSelectedIds([]);
+                  showToast(zh ? "画布已清空（可 ⌘Z 撤销）" : "Canvas cleared (⌘Z to undo)");
+                }}
+                title={zh ? "清空画布" : "Clear canvas"}
+                aria-label={zh ? "清空画布" : "Clear canvas"}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+
           {/* Floating Bottom Multi-Modal Generation Dock */}
           <div className="cc-bottom-dock">
             <div className="cc-composer">
@@ -3295,16 +3532,27 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                   </button>
                 </div>
 
-                {selectedImages.length > 0 && composerKind !== "audio" ? (
-                  <div className="cc-ref-strip">
-                    {selectedImages.slice(0, 4).map((img) => (
-                      <span key={img.id} className="cc-ref-pill">
-                        <img src={img.url} alt="" className="cc-ref-thumb" />
-                        @{img.label}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
+                <div className="cc-ref-strip">
+                  {composerKind !== "audio" ? (
+                    <button
+                      type="button"
+                      className="cc-chip-btn"
+                      onClick={() => setElementPickerOpen(true)}
+                      title={zh ? "从元素库 / 品牌工具箱 / 我的作品导入参考" : "Pick from Elements / Brand Kit / Works"}
+                    >
+                      <AtSign className="h-3 w-3" />
+                      {zh ? "元素" : "Element"}
+                    </button>
+                  ) : null}
+                  {selectedImages.length > 0 && composerKind !== "audio"
+                    ? selectedImages.slice(0, 4).map((img) => (
+                        <span key={img.id} className="cc-ref-pill">
+                          <img src={img.url} alt="" className="cc-ref-thumb" />
+                          @{img.label}
+                        </span>
+                      ))
+                    : null}
+                </div>
               </div>
 
               <div className="cc-composer-input-row">
@@ -3638,6 +3886,68 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
           </aside>
         ) : null}
       </div>
+
+      {/* Krea / Magnific-style Before/After Comparison Slider Modal */}
+      {comparePair ? (
+        <dialog
+          open
+          className="cc-cmd-backdrop"
+          aria-label={zh ? "前后对比滑块" : "Before and after comparison"}
+          onClick={() => setComparePair(null)}
+        >
+          <div className="cc-cmd-modal cc-compare-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cc-cmd-head">
+              <SplitSquareHorizontal className="h-4 w-4 text-[var(--du-accent-text)]" />
+              <span className="flex-1 text-sm font-semibold">
+                {zh ? "高清前后对比 · 左右拖动分界线" : "Before / After Compare · Drag Divider"}
+              </span>
+              <span className="cc-zoom-val">{compareSplit}%</span>
+              <button type="button" className="cc-icon-btn" onClick={() => setComparePair(null)} aria-label={zh ? "关闭" : "Close"}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="cc-tpl-body">
+              <div className="cc-compare-stage">
+                <img src={comparePair.afterUrl} alt={comparePair.afterLabel} className="cc-compare-img" />
+                <img
+                  src={comparePair.beforeUrl}
+                  alt={comparePair.beforeLabel}
+                  className="cc-compare-img"
+                  style={{ clipPath: `inset(0 ${100 - compareSplit}% 0 0)` }}
+                />
+                <span className="cc-compare-badge cc-compare-badge-left">{comparePair.beforeLabel}</span>
+                <span className="cc-compare-badge cc-compare-badge-right">{comparePair.afterLabel}</span>
+                <div className="cc-compare-divider" style={{ left: `${compareSplit}%` }} aria-hidden="true">
+                  <span className="cc-compare-handle">
+                    <SplitSquareHorizontal className="h-4 w-4" />
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={compareSplit}
+                  onChange={(e) => setCompareSplit(Number(e.target.value))}
+                  aria-label={zh ? "拖动调整对比分界线" : "Drag before/after split"}
+                  className="cc-compare-range"
+                />
+              </div>
+            </div>
+          </div>
+        </dialog>
+      ) : null}
+
+      {/* Shared @Element / Brand Kit / Works Picker (reusing teammate's HomeMediaPicker) */}
+      <HomeMediaPicker
+        lang={locale}
+        open={elementPickerOpen}
+        onClose={() => setElementPickerOpen(false)}
+        onSelect={handlePickedElements}
+        maxSelected={4}
+        selectedIds={[]}
+        userId={session?.user?.id}
+        acceptedTypes={["image", "video"]}
+      />
 
       {/* Contextual Post-Edit Modal (Inpaint / Erase / Outpaint / Cutout / Upscale / Text Edit / Animate) */}
       {editModal && activeEditNode ? (

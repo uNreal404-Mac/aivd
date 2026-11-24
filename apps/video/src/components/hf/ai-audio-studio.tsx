@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Music, Paintbrush, Play, RotateCcw, Sparkles } from "lucide-react";
+import { AudioLines, BookOpen, ChevronRight, Clock, Music, Paintbrush, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { localizedHref } from "@/lib/locale-path";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
@@ -11,7 +11,6 @@ import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
-import { StateBlock } from "@/components/states/state-block";
 import "./ai-video-studio.css";
 
 // Only expose live, connected audio modes (no dead "coming soon" tabs).
@@ -71,6 +70,83 @@ const SFX_QUICK_IDEAS = [
   { zh: "清晨森林鸟鸣溪流", en: "Morning forest stream", promptZh: "清晨阳光森林里的清脆鸟鸣，伴随着潺潺溪水流动声", promptEn: "Peaceful morning forest birds chirping softly beside a gentle babbling brook" },
 ];
 
+interface AudioShowcaseItem {
+  id: string;
+  mode: Mode;
+  modelId: string;
+  voice?: string;
+  instrumental?: boolean;
+  detail?: string;
+  cover: string;
+  synthKind: "speech" | "ambient" | "sfx";
+  titleZh: string;
+  titleEn: string;
+  tagZh: string;
+  tagEn: string;
+  scriptZh: string;
+  scriptEn: string;
+}
+
+const AUDIO_SHOWCASE: AudioShowcaseItem[] = [
+  {
+    id: "brand-narrator",
+    mode: "tts",
+    modelId: "elevenlabs-v3",
+    voice: "James",
+    cover: "/home/samples/red-carpet.webp",
+    synthKind: "speech",
+    titleZh: "品牌大片磁性旁白",
+    titleEn: "Cinema Brand Narrator",
+    tagZh: "ElevenLabs v3 · James",
+    tagEn: "ElevenLabs v3 · James",
+    scriptZh: "每一帧光影，都在讲述尚未被定义的故事。现在，用 AI 把脑海中的电影变成现实。",
+    scriptEn: "Every frame of light tells a story waiting to be seen. Turn the cinema in your mind into reality.",
+  },
+  {
+    id: "warm-podcast",
+    mode: "tts",
+    modelId: "gemini-3-8-flash-tts",
+    voice: "Bella",
+    detail: "温暖从容，带一点微笑，像深夜电台主播",
+    cover: "/home/samples/studio-room.webp",
+    synthKind: "speech",
+    titleZh: "温暖治愈播客女声",
+    titleEn: "Warm Storyteller Host",
+    tagZh: "Gemini TTS · Bella",
+    tagEn: "Gemini TTS · Bella",
+    scriptZh: "晚上好，欢迎回到创作电台。今天我们一起聊聊，如何用三分钟把一段灵感剪成有情绪的短片。",
+    scriptEn: "Good evening and welcome back. Tonight we explore how to turn a rough spark into an emotional short film.",
+  },
+  {
+    id: "neon-bgm",
+    mode: "music",
+    modelId: "suno-music",
+    instrumental: true,
+    detail: "cinematic synthwave, slow emotional strings, rainy city night, 92 bpm",
+    cover: "/home/samples/rain-couple.webp",
+    synthKind: "ambient",
+    titleZh: "霓虹雨夜电影配乐",
+    titleEn: "Neon Rain Cinema BGM",
+    tagZh: "Suno Music · 纯音乐",
+    tagEn: "Suno Music · Instrumental",
+    scriptZh: "雨夜东京街头的电影级氛围配乐，温暖模拟合成器与弦乐缓缓推进，适合短片开场情绪铺垫。",
+    scriptEn: "Atmospheric cinema score for a rainy neon street, warm analog synth pads and lush strings building softly.",
+  },
+  {
+    id: "scifi-sfx",
+    mode: "music",
+    modelId: "suno-sounds",
+    cover: "/home/samples/cosmic-bloom.webp",
+    synthKind: "sfx",
+    titleZh: "科幻片头重低音转场",
+    titleEn: "Sci-Fi Trailer Hit SFX",
+    tagZh: "Suno Sounds · 电影音效",
+    tagEn: "Suno Sounds · Trailer SFX",
+    scriptZh: "科幻预告片高速穿梭风声接厚重亚低音冲击，金属余韵缓缓消散，立体声场宽广。",
+    scriptEn: "High-speed sci-fi trailer whoosh slamming into a deep sub-bass impact with shimmering metallic tail.",
+  },
+];
+
 export function AiAudioStudio({
   locale,
   initialVoiceMode = "",
@@ -98,6 +174,9 @@ export function AiAudioStudio({
   const [instrumental, setInstrumental] = useState(false);
   const [customMode, setCustomMode] = useState(false);
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+  const [playingDemoId, setPlayingDemoId] = useState<string | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const demoTimerRef = useRef<number | null>(null);
   const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
@@ -114,7 +193,7 @@ export function AiAudioStudio({
     setNotice(null);
     scriptRef.current?.focus();
   };
-  const [tab, setTab] = useState<"history" | "how">("how");
+  const [tab, setTab] = useState<"history" | "how">("history");
   useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
     if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
@@ -127,14 +206,114 @@ export function AiAudioStudio({
     if (saved.tab === "history" || saved.tab === "how") setTab(saved.tab);
   });
 
-  // Cancel any Web Speech audition on unmount.
+  const stopDemoPlayback = () => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    if (demoTimerRef.current !== null) {
+      window.clearTimeout(demoTimerRef.current);
+      demoTimerRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      void audioCtxRef.current.close().catch(() => undefined);
+      audioCtxRef.current = null;
+    }
+    setPlayingDemoId(null);
+  };
+
+  // Cancel any Web Speech or Web Audio audition on unmount.
   useEffect(() => {
     return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopDemoPlayback();
     };
   }, []);
+
+  const previewShowcaseItem = (item: AudioShowcaseItem) => {
+    if (playingDemoId === item.id) {
+      stopDemoPlayback();
+      return;
+    }
+    stopDemoPlayback();
+    setPreviewingVoice(null);
+
+    if (item.synthKind === "speech") {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+      const meta = (item.voice ? VOICE_META[item.voice] : undefined) ?? { pitch: 1, rate: 1 };
+      const utter = new SpeechSynthesisUtterance(zh ? item.scriptZh : item.scriptEn);
+      utter.lang = zh ? "zh-CN" : "en-US";
+      utter.pitch = meta.pitch;
+      utter.rate = meta.rate;
+      utter.onend = () => setPlayingDemoId(null);
+      utter.onerror = () => setPlayingDemoId(null);
+      setPlayingDemoId(item.id);
+      window.speechSynthesis.speak(utter);
+      return;
+    }
+
+    // Real synthesized Web Audio preview for BGM / SFX cards (zero external broken audio files)
+    if (typeof window === "undefined") return;
+    const AudioCtor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) return;
+    const ctx = new AudioCtor();
+    audioCtxRef.current = ctx;
+    const now = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.001, now);
+    master.gain.exponentialRampToValueAtTime(0.18, now + 0.12);
+    master.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+    master.connect(ctx.destination);
+
+    if (item.synthKind === "ambient") {
+      // Warm cinematic cyan-night minor-9th chord arpeggio
+      const freqs = [220, 261.63, 329.63, 392.0, 493.88];
+      freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = i % 2 === 0 ? "sine" : "triangle";
+        osc.frequency.setValueAtTime(f, now + i * 0.14);
+        g.gain.setValueAtTime(0.001, now + i * 0.14);
+        g.gain.exponentialRampToValueAtTime(0.22 / freqs.length, now + i * 0.14 + 0.18);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 2.75);
+        osc.connect(g);
+        g.connect(master);
+        osc.start(now + i * 0.14);
+        osc.stop(now + 2.8);
+      });
+    } else {
+      // Sci-fi whoosh into sub-bass trailer hit
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(64, now);
+      osc.frequency.exponentialRampToValueAtTime(280, now + 0.85);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 1.05);
+      osc.frequency.exponentialRampToValueAtTime(34, now + 2.6);
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(220, now);
+      filter.frequency.exponentialRampToValueAtTime(1600, now + 0.85);
+      filter.frequency.exponentialRampToValueAtTime(180, now + 2.4);
+      osc.connect(filter);
+      filter.connect(master);
+      osc.start(now);
+      osc.stop(now + 2.8);
+    }
+
+    setPlayingDemoId(item.id);
+    demoTimerRef.current = window.setTimeout(() => {
+      stopDemoPlayback();
+    }, 2850);
+  };
+
+  const applyShowcasePreset = (item: AudioShowcaseItem) => {
+    setMode(item.mode);
+    setModelId(item.modelId);
+    if (item.voice) setVoice(item.voice);
+    setInstrumental(Boolean(item.instrumental));
+    setDetail(item.detail ?? "");
+    setScript(zh ? item.scriptZh : item.scriptEn);
+    setNotice(null);
+    scriptRef.current?.focus();
+  };
 
   const auditionVoice = (voiceName: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -420,7 +599,7 @@ export function AiAudioStudio({
                       type="button"
                       aria-pressed={voice === item.id}
                       onClick={() => setVoice(item.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
                     >
                       <span className="as-voice-avatar shrink-0" aria-hidden="true">
                         {item.name.slice(0, 1)}
@@ -449,7 +628,7 @@ export function AiAudioStudio({
                         e.stopPropagation();
                         auditionVoice(item.name);
                       }}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center opacity-80 transition hover:opacity-100"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center opacity-80 transition hover:opacity-100"
                     >
                       {isPlaying ? (
                         <span className="as-wave-bars" aria-hidden="true">
@@ -585,31 +764,82 @@ export function AiAudioStudio({
 
         {tab === "history" ? (
           jobs.length === 0 ? (
-            <StateBlock
-              icon={AudioLines}
-              title={signedOut ? (zh ? "登录后查看你的音频" : "Sign in to see your audio") : zh ? "还没有生成过音频" : "No audio yet"}
-              body={
-                signedOut
-                  ? zh
-                    ? "生成过的配音和音乐都保存在账户里，换设备也能听到。也可以先点一句示例试试："
-                    : "Your voiceovers and music are kept in your account, on any device. Or click an example:"
-                  : zh
-                    ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以点一句示例快速填入："
-                    : "Write your text on the left and generate; voiceovers and music land here. Or click an example:"
-              }
-              actions={signedOut ? [{ label: zh ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
-            >
-              <div className="st-ideas">
-                {(zh
-                  ? ["欢迎收看本期节目，今天我们聊聊 AI 视频。", "清晨的海边，轻柔的钢琴与海浪声。", "一段热血的游戏预告片旁白。"]
-                  : ["Welcome back to the show. Today we talk about AI video.", "A calm morning by the sea, soft piano and waves.", "An epic voiceover for a game trailer."]
-                ).map((line) => (
-                  <button key={line} type="button" className="st-idea" onClick={() => reuse(line)}>
-                    <Sparkles aria-hidden="true" />
-                    {line}
+            <div className="vs-empty-stage">
+              <div className="vs-empty-strip">
+                <div className="vs-empty-strip-copy">
+                  <span className="vs-empty-strip-icon" aria-hidden="true">
+                    <AudioLines className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="vs-stage-title">
+                      {signedOut
+                        ? zh ? "配音、写歌、音效一站试听，一键做同款" : "Audition voiceovers, music & SFX — recreate in 1 click"
+                        : zh ? "还没有生成过音频 · 点下方样音卡片立刻开录" : "No audio yet · Try a showcase card below"}
+                    </h2>
+                    <p className="vs-empty-strip-sub">
+                      {signedOut
+                        ? zh
+                          ? "支持 ElevenLabs v3、Gemini Flash TTS 与 Suno Music / Sounds，登录后云端同步。"
+                          : "ElevenLabs v3, Gemini Flash TTS & Suno Music/Sounds in one studio. Sign in to sync."
+                        : zh
+                          ? "点击封面即可试听效果，点「做同款」自动切换对应模型、音色与曲风脚本。"
+                          : "Hit play on any cover to audition, or click Recreate to load its model, voice & script."}
+                    </p>
+                  </div>
+                </div>
+                {signedOut ? (
+                  <button type="button" className="vs-empty-signin" onClick={() => signIn.onOpen()}>
+                    {zh ? "登录同步作品" : "Sign in"}
                   </button>
-                ))}
+                ) : null}
               </div>
+
+              <div className="as-showcase-grid" aria-label={zh ? "可试听音频样板墙" : "Playable audio showcase"}>
+                {AUDIO_SHOWCASE.map((item) => {
+                  const playing = playingDemoId === item.id;
+                  return (
+                    <article key={item.id} className={playing ? "as-showcase-card as-showcase-card-on" : "as-showcase-card"}>
+                      <button
+                        type="button"
+                        className="as-showcase-cover"
+                        aria-label={playing ? (zh ? `停止试听 ${item.titleZh}` : `Stop ${item.titleEn}`) : zh ? `试听 ${item.titleZh}` : `Play ${item.titleEn}`}
+                        onClick={() => previewShowcaseItem(item)}
+                      >
+                        <img src={item.cover} alt="" />
+                        <span className="as-showcase-play">
+                          {playing ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                        </span>
+                      </button>
+                      <div className="as-showcase-body">
+                        <div className="as-showcase-head">
+                          <span className="as-showcase-tag vs-meta-mono">{zh ? item.tagZh : item.tagEn}</span>
+                          {playing ? (
+                            <span className="as-wave-bars" aria-hidden="true">
+                              <span />
+                              <span />
+                              <span />
+                              <span />
+                            </span>
+                          ) : null}
+                        </div>
+                        <h3 className="as-showcase-title">{zh ? item.titleZh : item.titleEn}</h3>
+                        <p className="as-showcase-script">{zh ? item.scriptZh : item.scriptEn}</p>
+                        <div className="as-showcase-foot">
+                          <button type="button" className="as-showcase-btn" onClick={() => previewShowcaseItem(item)}>
+                            {playing ? <Square className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                            {playing ? (zh ? "停止" : "Stop") : zh ? "试听" : "Preview"}
+                          </button>
+                          <button type="button" className="as-showcase-recreate" onClick={() => applyShowcasePreset(item)}>
+                            <Sparkles className="h-3 w-3" />
+                            {zh ? "做同款" : "Recreate"}
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
               <a href={localizedHref(locale, "/creative-space/canvas")} className="as-canvas-banner">
                 <span className="flex flex-col gap-0.5">
                   <strong className="text-sm font-semibold text-[var(--ds-text-1)]">
@@ -621,7 +851,7 @@ export function AiAudioStudio({
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-[var(--du-accent-text)]" aria-hidden="true" />
               </a>
-            </StateBlock>
+            </div>
           ) : (
             <div className="as-list">
               {jobs.map((job) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Paintbrush, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
+import { AtSign, ChevronRight, Clapperboard, Clock, Gem, Minus, Paintbrush, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
@@ -419,7 +419,7 @@ export function AiImageStudio({
             ) : (
               <PendingCard
                 key={job.uuid}
-                className="is-result is-result-wait"
+                className="is-result is-result-wait ds-shimmer"
                 status={job.status === "completed" ? "failed" : job.status}
                 since={job.createdAt}
                 prompt={job.prompt}
@@ -511,13 +511,14 @@ export function AiImageStudio({
             <span className="is-chip-group">
               <button
                 type="button"
-                className="is-chip is-chip-icon"
+                className="is-chip"
                 disabled={maxImages === 0 || uploading}
-                title={maxImages === 0 ? (zh ? "该模型不支持参考图" : "This model takes no reference image") : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}
-                aria-label={zh ? "添加参考图" : "Add reference image"}
+                title={maxImages === 0 ? (zh ? "该模型不支持参考图" : "This model takes no reference image") : zh ? `添加参考图 / @元素 / 品牌素材（最多 ${maxImages} 张）` : `Add references / @Elements (up to ${maxImages})`}
+                aria-label={zh ? "添加参考图或 @元素" : "Add reference image or @Element"}
                 onClick={() => setMediaPickerOpen(true)}
               >
-                {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}
+                {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <AtSign className="h-3.5 w-3.5 text-[var(--du-accent-text)]" aria-hidden="true" />}
+                <span>{zh ? "元素 / 参考图" : "Elements"}</span>
               </button>
             </span>
             <div className="is-model">

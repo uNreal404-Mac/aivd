@@ -272,7 +272,7 @@ button.is-chip:active:not(:disabled) {
   justify-content: center;
   gap: 4px;
   border-radius: var(--ds-r-xl);
-  background: radial-gradient(115% 145% at 50% 0%, var(--du-accent-hover) 0%, var(--du-accent) 62%);
+  background: var(--du-gradient);
   box-shadow: var(--du-glow);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-md);
@@ -542,19 +542,27 @@ button.is-chip:active:not(:disabled) {
   border-style: dashed;
 }
 
-/* Visual Style Swatch Strip (Higgsfield × Pollo aesthetic) */
+/* Visual Style Swatch Strip — single sleek scrollable line (Higgsfield × Pollo aesthetic) */
 .is-style-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.is-style-strip::-webkit-scrollbar {
+  display: none;
 }
 
 .is-style-pill {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 7px;
-  height: 32px;
+  height: 30px;
   padding: 3px 10px 3px 4px;
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-full);
@@ -577,9 +585,10 @@ button.is-chip:active:not(:disabled) {
 }
 
 .is-style-pill-on {
-  border-color: color-mix(in srgb, var(--du-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--du-accent) 14%, transparent);
-  color: var(--du-accent-text);
+  border-color: var(--ds-line-3);
+  background: var(--ds-fill-3);
+  box-shadow: var(--ds-specular);
+  color: var(--ds-text-1);
   font-weight: 600;
 }
 

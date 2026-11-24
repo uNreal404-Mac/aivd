@@ -57,9 +57,7 @@ import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
-import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
-import { StateBlock } from "@/components/states/state-block";
 import { InViewVideo } from "@/components/hf/in-view-video";
 import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import {
@@ -92,6 +90,76 @@ const MODEL_COVERS: Record<string, string> = {
   "kling/v4-flash-reference-to-video": "/home/samples/studio-room.webp",
   "wan/3-0-video": "/home/samples/storm-sea.webp",
 };
+
+// Living hover-play cinema showcase loops (real local MP4s + WebP posters)
+const LIVING_SHOWCASE = [
+  {
+    id: "japan-rain",
+    video: "/home/example-japan-6s.mp4",
+    poster: "/home/example-japan-6s-poster.webp",
+    aspect: "16:9",
+    duration: "6s",
+    titleZh: "霓虹雨夜东京",
+    titleEn: "Neon Tokyo Rain",
+    promptZh: "电影级广角慢推镜头，雨夜东京街头湿润柏油路倒映青蓝与洋红霓虹，行人与光斑交错，35mm 胶片质感",
+    promptEn: "Cinematic slow push-in down a rain-slicked Tokyo neon street at night, wet reflections glowing in cyan and magenta, 35mm film grain",
+  },
+  {
+    id: "sky-dragon",
+    video: "/home/example-dragon-full.mp4",
+    poster: "/home/example-dragon-full-poster.webp",
+    aspect: "16:9",
+    duration: "8s",
+    titleZh: "苍穹巨龙穿云",
+    titleEn: "Sky Dragon Aerial",
+    promptZh: "史诗级航拍环绕镜头，东方巨龙破开金色云海翱翔，鳞片在逆光中折射金属光泽，气势磅礴",
+    promptEn: "Epic aerial orbiting shot of a majestic dragon soaring through golden storm clouds, sunlight catching iridescent scales, cinema scale",
+  },
+  {
+    id: "samurai-cat",
+    video: "/home/example-samurai-cat-7s.mp4",
+    poster: "/home/example-samurai-cat-7s-poster.webp",
+    aspect: "9:16",
+    duration: "7s",
+    titleZh: "武士猫电影特写",
+    titleEn: "Samurai Cat Cinema",
+    promptZh: "浅景深近景特写，身穿精致甲胄的武士猫站在飘落的樱花雨中缓缓拔刀，微风吹动披风，电影级布光",
+    promptEn: "Shallow depth-of-field close-up of an armored samurai cat standing in drifting cherry blossoms, slowly drawing its katana, dramatic rim light",
+  },
+  {
+    id: "origami-whale",
+    video: "/home/example-whale-origami-7s.mp4",
+    poster: "/home/example-whale-origami-7s-poster.webp",
+    aspect: "16:9",
+    duration: "7s",
+    titleZh: "折纸鲸鱼奇境",
+    titleEn: "Origami Whale Dream",
+    promptZh: "梦幻微距跟拍，一只由发光折纸折成的巨鲸在深蓝云海中优雅游动，纸张纹理清晰，柔和体积光",
+    promptEn: "Dreamlike tracking shot of a luminous origami whale gliding gracefully through a deep cobalt cloud sea, crisp paper folds, volumetric rays",
+  },
+  {
+    id: "couture-silk",
+    video: "/home/example-dress-10-20.mp4",
+    poster: "/home/example-dress-10-20-poster.webp",
+    aspect: "9:16",
+    duration: "5s",
+    titleZh: "高定丝绸时尚大片",
+    titleEn: "Couture Silk Editorial",
+    promptZh: "高级时装棚拍慢动作，流光丝绸礼服随风舒展飘动，暗调极简背景，轮廓光勾勒织物质感",
+    promptEn: "High-fashion slow-motion editorial of flowing iridescent silk couture billowing in soft studio rim light against an obsidian backdrop",
+  },
+  {
+    id: "macro-food",
+    video: "/home/example-fried-chicken-22-29.mp4",
+    poster: "/home/example-fried-chicken-22-29-poster.webp",
+    aspect: "16:9",
+    duration: "5s",
+    titleZh: "电影级美食微距广告",
+    titleEn: "Macro Food Commercial",
+    promptZh: "高速升格微距商业广告镜头，金黄酥脆炸鸡热气升腾，辣椒粉与香料颗粒在慢动作中凌空洒落，诱人高光",
+    promptEn: "High-speed macro commercial shot of crispy golden fried chicken with rising steam and spice dust falling in dramatic slow motion",
+  },
+] as const;
 
 
 /** A settings card: small label, current value and a chevron. A native select
@@ -1061,60 +1129,87 @@ export function AiVideoStudio({
           </div>
         ) : activeTab === "History" ? (
           results.length === 0 ? (
-            <StateBlock
-              icon={Clapperboard}
-              title={
-                signedOut
-                  ? isChinese
-                    ? "登录后查看你的视频"
-                    : "Sign in to see your clips"
-                  : isChinese
-                    ? "还没有生成过视频"
-                    : "No clips yet"
-              }
-              body={
-                signedOut
-                  ? isChinese
-                    ? "生成过的视频都保存在账户里，换设备也能看到。也可以先挑个点子写好提示词："
-                    : "Your clips are kept in your account, on any device. Or pick an idea and write your prompt first:"
-                  : isChinese
-                    ? "在左边写一句提示词再点生成，视频会出现在这里。没有头绪？试试下面的点子："
-                    : "Write a prompt on the left and generate; your clips land here. Need an idea? Try one:"
-              }
-              actions={signedOut ? [{ label: isChinese ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
-            >
-              <div className="vs-recreate-grid" aria-label={isChinese ? "一键做同款灵感模板" : "One-click recreate templates"}>
-                {HOME_TEMPLATES.slice(0, 4).map((template, idx) => (
+            <div className="vs-empty-stage">
+              <div className="vs-empty-strip">
+                <div className="vs-empty-strip-copy">
+                  <span className="vs-empty-strip-icon" aria-hidden="true">
+                    <Clapperboard className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="vs-stage-title">
+                      {signedOut
+                        ? isChinese ? "悬停预览灵感样片，一键做同款" : "Hover to preview, click to recreate"
+                        : isChinese ? "还没有生成过视频 · 选一条样片立刻开拍" : "No clips yet · Pick a reel to start"}
+                    </h2>
+                    <p className="vs-empty-strip-sub">
+                      {signedOut
+                        ? isChinese
+                          ? "登录后同步所有云端作品；未登录也可先点样片自动填充提示词与运镜。"
+                          : "Sign in to sync clips across devices, or click any reel below to auto-fill its prompt & camera."
+                        : isChinese
+                          ? "在左侧写提示词或拖入素材（支持 @图片1），也可以直接点下方动态样片一键做同款。"
+                          : "Write a prompt or upload media on the left (supports @Image1), or recreate any living reel below."}
+                    </p>
+                  </div>
+                </div>
+                {signedOut ? (
+                  <button type="button" className="vs-empty-signin" onClick={() => signIn.onOpen()}>
+                    {isChinese ? "登录同步作品" : "Sign in"}
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="vs-living-grid" aria-label={isChinese ? "动态悬停样片墙" : "Living video showcase reel"}>
+                {LIVING_SHOWCASE.map((item, idx) => (
                   <button
-                    key={template.id}
+                    key={item.id}
                     type="button"
-                    className="vs-recreate-card"
-                    title={isChinese ? template.prompt.zh : template.prompt.en}
+                    className="vs-living-card"
+                    title={isChinese ? item.promptZh : item.promptEn}
+                    onMouseEnter={(event) => {
+                      const vid = event.currentTarget.querySelector("video");
+                      if (vid) void vid.play().catch(() => undefined);
+                    }}
+                    onMouseLeave={(event) => {
+                      const vid = event.currentTarget.querySelector("video");
+                      if (vid) {
+                        vid.pause();
+                        vid.currentTime = 0;
+                      }
+                    }}
                     onClick={() => {
                       const presetId = VIDEO_PRESETS[idx % VIDEO_PRESETS.length]?.id;
                       setSettings((previous) => ({
                         ...previous,
-                        prompt: isChinese ? template.prompt.zh : template.prompt.en,
-                        aspect: model.aspects.includes(template.aspect) ? template.aspect : previous.aspect,
+                        prompt: isChinese ? item.promptZh : item.promptEn,
+                        aspect: model.aspects.includes(item.aspect) ? item.aspect : previous.aspect,
                         preset: presetId ?? previous.preset,
                       }));
                       promptRef.current?.focus();
                     }}
                   >
-                    <img src={template.image} alt={isChinese ? template.title.zh : template.title.en} loading="eager" />
+                    <video
+                      src={item.video}
+                      poster={item.poster}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      className="vs-living-video"
+                    />
                     <span className="vs-recreate-shade" aria-hidden="true" />
+                    <span className="vs-living-badge vs-meta-mono">{item.duration} · {item.aspect}</span>
                     <span className="vs-recreate-pill">
-                      <Sparkles className="h-3 w-3" aria-hidden="true" />
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                       {isChinese ? "做同款" : "Recreate"}
                     </span>
                     <span className="vs-recreate-meta">
-                      <strong>{isChinese ? template.title.zh : template.title.en}</strong>
-                      <span>{template.aspect}</span>
+                      <strong>{isChinese ? item.titleZh : item.titleEn}</strong>
                     </span>
                   </button>
                 ))}
               </div>
-            </StateBlock>
+            </div>
           ) : (
             <div className="vs-results">
               {results.map((result) => {
@@ -1171,7 +1266,7 @@ export function AiVideoStudio({
                 return (
                   <PendingCard
                     key={result.id}
-                    className="vs-result"
+                    className="vs-result ds-shimmer"
                     status={result.status === "completed" ? "failed" : result.status}
                     since={result.createdAt}
                     prompt={result.prompt}
