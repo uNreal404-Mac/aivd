@@ -599,23 +599,16 @@ export function AiAudioStudio({
                       type="button"
                       aria-pressed={voice === item.id}
                       onClick={() => setVoice(item.id)}
-                      className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pl-1.5 pr-0.5 text-left"
                     >
                       <span className="as-voice-avatar shrink-0" aria-hidden="true">
                         {item.name.slice(0, 1)}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1">
-                          <span className="truncate text-xs font-semibold">{item.name}</span>
-                          {meta ? (
-                            <span className="shrink-0 rounded bg-[var(--ds-fill-2)] px-1 text-[9px] text-[var(--ds-text-3)]">
-                              {zh ? (meta.gender === "M" ? "男" : "女") : meta.gender}
-                            </span>
-                          ) : null}
-                        </span>
+                        <span className="block truncate text-xs font-semibold">{item.name}</span>
                         {meta ? (
                           <span className="block truncate text-[10px] opacity-75">
-                            {zh ? meta.tagZh.replace(/^[男女]声\s*·\s*/, "") : meta.tagEn.replace(/^(Male|Female)\s*·\s*/, "")}
+                            {zh ? meta.tagZh.replace(/^([男女])声\s*·\s*/, "$1·") : meta.tagEn.replace(/^(Male|Female)\s*·\s*/, (_, g: string) => `${g[0]}·`)}
                           </span>
                         ) : null}
                       </span>
@@ -628,7 +621,7 @@ export function AiAudioStudio({
                         e.stopPropagation();
                         auditionVoice(item.name);
                       }}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center opacity-80 transition hover:opacity-100"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center opacity-80 transition hover:opacity-100"
                     >
                       {isPlaying ? (
                         <span className="as-wave-bars" aria-hidden="true">

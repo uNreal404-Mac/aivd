@@ -99,10 +99,10 @@ const LIVING_SHOWCASE = [
     poster: "/home/example-japan-6s-poster.webp",
     aspect: "16:9",
     duration: "6s",
-    titleZh: "霓虹雨夜东京",
-    titleEn: "Neon Tokyo Rain",
-    promptZh: "电影级广角慢推镜头，雨夜东京街头湿润柏油路倒映青蓝与洋红霓虹，行人与光斑交错，35mm 胶片质感",
-    promptEn: "Cinematic slow push-in down a rain-slicked Tokyo neon street at night, wet reflections glowing in cyan and magenta, 35mm film grain",
+    titleZh: "东京深夜街头食光",
+    titleEn: "Tokyo Late-Night Konbini",
+    promptZh: "电影级手持慢推镜头，东京深夜便利店暖光与街头霓虹交织，近景呈现日系美食与温馨都市氛围，35mm 胶片质感",
+    promptEn: "Cinematic handheld slow push-in through a warm late-night Tokyo convenience store glowing against neon city streets, 35mm film grain",
   },
   {
     id: "sky-dragon",
@@ -282,7 +282,7 @@ export function AiVideoStudio({
         top: "热门",
         new: "新品",
         change: "更换",
-        startFrame: "添加起始帧（可选）",
+        startFrame: "上传参考素材（可选）",
         fileTypes: "PNG、JPG 或 WebP",
         prompt: "提示词",
         promptPlaceholder: "描述镜头：主体、动作、镜头运动、光线……",
@@ -311,7 +311,7 @@ export function AiVideoStudio({
         heroBody: "选择模型、描述镜头，并调整时长、比例与声音。生成结果会显示在这里。",
         steps: [
           { title: "选择模型", body: "每个模型在速度、细节和声音上各有特点，请选择适合镜头的模型。" },
-          { title: "描述镜头", body: "写清主体、动作、镜头运动和光线，也可以添加起始帧。" },
+          { title: "描述镜头", body: "写清主体、动作、镜头运动和光线，并可用 @图片1 引用上传素材。" },
           { title: "调整并生成", body: "设置时长、比例、分辨率和声音，然后生成。视频会集中显示在此页面。" },
         ],
         empty: "还没有视频，你生成的内容会显示在这里。",
@@ -423,7 +423,7 @@ export function AiVideoStudio({
   }, [session, fetchBalance]);
   const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("How it works");
+  const [activeTab, setActiveTab] = useState<string>("History");
   const [mode, setMode] = useState<(typeof MODES)[number]>("Create");
   const [editTool, setEditTool] = useState(0);
 
@@ -712,12 +712,12 @@ export function AiVideoStudio({
     submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage;
   const stepCopy = isChinese
     ? [
-        { title: "添加图片", body: "上传一张起始帧，或者只写提示词，从零开始生成。" },
+        { title: "上传参考素材", body: "上传或拖入参考图片（支持 @图片1 引用），或者只写提示词从零生成。" },
         { title: "选择预设", body: "挑一个镜头预设，控制画面的运动方式。" },
         { title: "获取视频", body: "点击生成，完成后在历史记录里播放和下载。" },
       ]
     : [
-        { title: "Add an image", body: "Upload a start frame, or just write a prompt and start from scratch." },
+        { title: "Upload media", body: "Upload or drop reference assets (supports @Image1), or start from text alone." },
         { title: "Pick a preset", body: "Choose a camera preset to control how the shot moves." },
         { title: "Get the video", body: "Hit generate, then play and download it from history." },
       ];

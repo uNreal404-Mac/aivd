@@ -2216,7 +2216,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: Cr
         x: 72,
         y: 52,
         width: 1090,
-        height: 410,
+        height: 560,
         zIndex: 0,
         status: "ready",
         createdAt: now,
@@ -2286,8 +2286,8 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: Cr
           : "1. Select any image card for Inpaint, Outpaint, Cutout, or Multi-Angle Shots.\n2. Select @B and click Compare to drag the Before/After divider.\n3. Mention @A @B in the right Agent to draft full commercial storyboards.",
         tone: "storyboard",
         x: 102,
-        y: 326,
-        width: 590,
+        y: 446,
+        width: 610,
         zIndex: 5,
         status: "ready",
         createdAt: now,
@@ -2302,7 +2302,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: Cr
     setNodes(demoNodes);
     setEdges(demoEdges);
     setSelectedIds([imgBId]);
-    setViewport({ x: 36, y: 24, scale: 0.86 });
+    setViewport({ x: 30, y: 18, scale: 0.78 });
     showToast(zh ? "已载入电影样板画布，选中 @B 可直接体验前后对比与后编辑" : "Loaded cinematic sample board — select @B to try Compare & edits");
   };
 
@@ -3909,12 +3909,12 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "", modeSlot }: Cr
             <div className="cc-tpl-body">
               <div className="cc-compare-stage">
                 <img src={comparePair.afterUrl} alt={comparePair.afterLabel} className="cc-compare-img" />
-                <img
-                  src={comparePair.beforeUrl}
-                  alt={comparePair.beforeLabel}
-                  className="cc-compare-img"
+                <div
+                  className="cc-compare-before-layer"
                   style={{ clipPath: `inset(0 ${100 - compareSplit}% 0 0)` }}
-                />
+                >
+                  <img src={comparePair.beforeUrl} alt={comparePair.beforeLabel} className="cc-compare-img" />
+                </div>
                 <span className="cc-compare-badge cc-compare-badge-left">{comparePair.beforeLabel}</span>
                 <span className="cc-compare-badge cc-compare-badge-right">{comparePair.afterLabel}</span>
                 <div className="cc-compare-divider" style={{ left: `${compareSplit}%` }} aria-hidden="true">

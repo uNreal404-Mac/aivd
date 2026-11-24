@@ -1690,6 +1690,14 @@
   pointer-events: none;
 }
 
+.cc-compare-before-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--du-bg);
+  pointer-events: none;
+}
+
 .cc-compare-divider {
   position: absolute;
   top: 0;
