@@ -81,7 +81,7 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
 
 ## 飞书群通知（自定义机器人）
 
-向飞书群推送两类**出站**消息：（1）`main` 合入并部署到生产站；（2）只读验收 / 回归结果。这与 [`workers/feishu-bot/`](workers/feishu-bot/) 的入站 @ 回复机器人无关，也不调用生成、上传或任何付费 Cloudflare / AI 能力。生产站为 https://dreamutopia-clone.pages.dev 。
+群机器人播报仓库变更。验收同学也可以用下方命令另行发送回归结果。
 
 ### 在群里添加自定义机器人
 
@@ -90,7 +90,7 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
    `https://open.feishu.cn/open-apis/bot/v2/hook/<token>`
    **不要**把完整地址写入仓库、Issue、PR 或日志。
 3. 安全设置建议启用 **签名校验**（不要用 IP 白名单：GitHub Actions 出口 IP 会变）。保存签名密钥。
-4. 若改用 **自定义关键词**，请包含消息里会出现的词，例如「生产」或「验收」。
+4. 若改用 **自定义关键词**，请包含消息里会出现的词，例如仓库播报里的仓库名，或验收卡片里的「验收」。
 
 ### 把密钥放到 GitHub Actions
 
@@ -101,9 +101,11 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
 | `FEISHU_WEBHOOK_URL` | 要真正发消息时必须 | 自定义机器人 webhook |
 | `FEISHU_WEBHOOK_SECRET` | 可选 | 签名校验密钥；未设置则不带 `timestamp` / `sign` |
 
-工作流 [`.github/workflows/feishu-notify.yml`](.github/workflows/feishu-notify.yml) 在 **push 到 `main`**（含 PR 合并进 main、Pages 生产部署）时运行 `node scripts/feishu-notify.mjs deploy`。卡片标题为「网站进度」，用规则（改动文件路径 / 标题 / 标签，不用模型）写成用户能在站点上看到的中文变化，并带「还没做」待办；正文不含 PR 号、提交 SHA 或分支名，最多一个「详情」指向生产站。页脚署名为 `Grok Bot · AI视频项目专属机器人 三儿`。
+工作流 [Feishu notify](.github/workflows/feishu-notify.yml) 监听分支和标签推送、PR 状态变化及 Release 发布。在 Actions 中手动运行可以测试群消息。一次推送合并成一条消息。同一次操作如果更新了分支和 PR，群里会分别显示代码改动与 PR 进展。
 
-**未配置 `FEISHU_WEBHOOK_URL` 时步骤会跳过并以成功结束，不会让 CI 失败。** 本地或 CI 都不会打印 webhook 或签名密钥。
+消息带上仓库、分支或标签、操作人、任务状态及 GitHub 链接。PR 播报使用 GitHub 分配的承接人。普通提交只说明代码已推送，上线和验收仍以相应流程的结果为准。
+
+GitHub 按推送的版本读取工作流。在长期开发分支合入此配置后，该分支的推送也会播报。远端仓库收到推送后才会触发。缺少 webhook 或飞书未确认投递时，仓库播报步骤报错，具体运行记录见 Actions。
 
 ### 发送验收（回归）结果
 
@@ -125,7 +127,7 @@ node scripts/feishu-notify.mjs acceptance \
   --link "https://dreamutopia-clone.pages.dev/api/health"
 ```
 
-未设置 `FEISHU_WEBHOOK_URL` 时同样跳过并返回成功。单元测试不访问网络、不需要真实密钥：
+手动验收命令在未设置 `FEISHU_WEBHOOK_URL` 时跳过并返回成功。单元测试不访问网络、不需要真实密钥：
 
 ```bash
 node scripts/test-feishu-notify.mjs
