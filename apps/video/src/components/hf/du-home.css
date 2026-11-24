@@ -10,15 +10,14 @@
 /* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
 .du-hero-glow {
   position: absolute;
-  inset: -40px 0 auto 0;
-  height: 460px;
-  background: radial-gradient(
-    540px 210px at 50% 48%,
-    color-mix(in srgb, var(--du-accent) 18%, transparent) 0%,
-    color-mix(in srgb, var(--du-accent-2) 9%, transparent) 44%,
-    transparent 76%
-  );
-  filter: blur(28px);
+  inset: -64px 0 auto;
+  height: 900px;
+  /* A wide soft light behind the title and composer, and a faint 11px dot
+     grid over it, fading out towards the gallery (Pollo's backdrop). */
+  background:
+    radial-gradient(585px 585px at 50% 18%, color-mix(in srgb, var(--du-accent) 20%, transparent) 0%, color-mix(in srgb, var(--du-accent) 9%, transparent) 47%, transparent 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='1' height='1' fill='white' fill-opacity='.22'/%3E%3C/svg%3E");
+  mask-image: linear-gradient(to bottom, black 35%, transparent 92%);
   pointer-events: none;
 }
 
@@ -36,7 +35,6 @@
   max-width: 100%;
   margin-bottom: 24px;
   color: white;
-  /* Pollo's opening line: one light, quiet sentence, not a shout. */
   font-size: var(--ds-fs-xl);
   font-weight: 300;
   line-height: 1.5;
@@ -44,43 +42,61 @@
   text-wrap: balance;
 }
 
-/* Generator on the homepage: Pollo's composer, laid out at the proportions of
-   ByteDance's Jimeng box (1010 × 158 at a 1440 window, about 6.4 : 1). */
+/* Composer at Jimeng's proportions (1010 x 158 at a 1440 window, about
+   6.4 : 1); everything inside it is measured from Pollo's. */
 .du-hero #home-generator {
   max-width: 1010px;
 }
 
-/* Tabs: a 40px pill holding 64 × 32 tabs; the chosen one sits on a faint
-   fill with a soft inner tint (hooks/use-segment-indicator). */
+/* Tabs: a 40px pill with a gradient hairline that brightens into the accent
+   along its bottom, 56 x 32 tabs of light 12px text, and the chosen one on a
+   faint fill with an inner light (hooks/use-segment-indicator). */
 .du-hero .du-composer-tabs {
   --seg-bg: color-mix(in srgb, white 7%, transparent);
-  --seg-shadow: inset 4px 4px 5px color-mix(in srgb, black 8%, transparent), inset 0 -3px 8px color-mix(in srgb, var(--du-accent) 18%, transparent);
+  --seg-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
+    inset 4px 4px 5px color-mix(in srgb, black 8%, transparent),
+    inset 0 -3px 8px color-mix(in srgb, var(--du-accent) 22%, transparent);
+  position: relative;
   height: 40px;
   padding: 3px;
-  border: 1px solid var(--ds-line-1);
-  background: color-mix(in srgb, black 40%, transparent);
+  border: 0;
+  background: transparent;
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--du-accent) 70%, transparent);
   backdrop-filter: none;
+}
+
+.du-hero .du-composer-tabs::after {
+  position: absolute;
+  inset: 0;
+  padding: 0.8px;
+  border-radius: inherit;
+  background: linear-gradient(177deg, color-mix(in srgb, white 30%, transparent) 0%, color-mix(in srgb, var(--du-accent) 20%, transparent) 36%, color-mix(in srgb, var(--du-accent) 12%, transparent) 45%, color-mix(in srgb, var(--du-accent) 20%, transparent) 48%, var(--du-accent) 91%, var(--du-accent-2) 100%);
+  content: "";
+  mask: linear-gradient(black 0 0) content-box exclude, linear-gradient(black 0 0);
+  pointer-events: none;
 }
 
 .du-hero .du-composer-tab {
   display: inline-flex;
-  min-width: 64px;
+  min-width: 56px;
   height: 32px;
   align-items: center;
   justify-content: center;
   padding: 0 16px;
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
-  font-weight: 400;
+  font-weight: 300;
 }
 
 .du-hero .du-composer-tab-active,
 .du-hero .du-composer-tab-active:hover {
   color: white;
-  font-weight: 500;
+  font-weight: 300;
 }
 
 .du-hero .du-composer {
+  position: relative;
   display: flex;
   min-height: 158px;
   flex-direction: column;
@@ -88,51 +104,80 @@
   gap: 8px;
   margin-top: 24px;
   padding: 12px;
-  border: 1px solid var(--ds-line-1);
+  border: 1px solid color-mix(in srgb, white 4%, transparent);
   border-radius: var(--ds-r-3xl);
   background: color-mix(in srgb, black 66%, transparent);
-  box-shadow: 0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent);
+  box-shadow:
+    0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent),
+    0 -12px 42px color-mix(in srgb, var(--du-accent) 20%, transparent);
   backdrop-filter: blur(17px);
   -webkit-backdrop-filter: blur(17px);
 }
 
+/* The light caught along the top edge: a bright hairline in the middle and a
+   soft glow falling a little way into the box. */
+.du-hero .du-composer::before,
+.du-hero .du-composer::after {
+  position: absolute;
+  left: 50%;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.du-hero .du-composer::before {
+  top: -1px;
+  width: 94%;
+  height: 40px;
+  background: radial-gradient(50% 100% at 50% 0%, color-mix(in srgb, var(--du-accent) 30%, transparent) 0%, transparent 75%);
+}
+
+.du-hero .du-composer::after {
+  top: -1px;
+  width: 84%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--du-accent) 65%, white) 50%, transparent);
+}
+
 .du-hero .du-composer:focus-within {
-  border-color: var(--ds-line-2);
-  box-shadow: 0 -4px 10px color-mix(in srgb, var(--du-accent) 12%, transparent);
+  border-color: color-mix(in srgb, white 7%, transparent);
 }
 
 .du-hero .du-composer-prompt-row {
   min-height: 84px;
-  gap: 15px;
+  gap: 16px;
 }
 
 .du-hero #home-generator-prompt {
-  min-height: 72px;
+  min-height: 84px;
   padding: 0;
   font-size: var(--ds-fs-ui);
-  font-weight: 400;
+  font-weight: 300;
   line-height: 20px;
 }
 
-.du-hero #home-generator-prompt::placeholder {
-  color: var(--ds-text-4);
+.du-hero .du-composer-placeholder {
+  top: 0;
+  color: color-mix(in srgb, white 25%, transparent);
+  font-size: var(--ds-fs-ui);
+  font-weight: 300;
+  line-height: 20px;
 }
 
-/* The reference slot: a small upright card with a plus (Pollo), the count
-   shows once images are attached. */
+/* Reference slot: a 39 x 52 dashed card with a plus. */
 .du-hero .du-composer-ref-slot {
   width: 39px;
   height: 52px;
   margin-top: 0;
-  border: 1px solid color-mix(in srgb, white 16%, transparent);
+  border: 1px dashed color-mix(in srgb, white 16%, transparent);
   border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-3);
+  background: color-mix(in srgb, white 5%, transparent);
+  color: color-mix(in srgb, white 40%, transparent);
   transform: none;
 }
 
 .du-hero .du-composer-ref-slot:hover {
-  border-color: color-mix(in srgb, white 28%, transparent);
+  border-color: color-mix(in srgb, white 30%, transparent);
   background: var(--ds-fill-2);
   color: white;
   transform: none;
@@ -142,45 +187,70 @@
   font-size: var(--ds-fs-2xs);
 }
 
-
-/* Bottom row: quiet 28px pills, no dividers; the model pill is the one with
-   a fill, the rest read as text until hovered. */
-.du-hero .du-composer-divider {
-  display: none;
-}
-
-.du-hero .du-composer > div:has(> .ml-auto) {
-  gap: 4px;
+/* Bottom row: the mode pill on a fill, then quiet 28px controls split by
+   10px hairlines; credits and the send circle on the right. */
+.du-hero .du-composer-bar {
   margin-top: 0;
 }
 
-.du-hero .du-composer [data-model-trigger],
-.du-hero .du-composer > div:has(> .ml-auto) button:not(.du-composer-send) {
+.du-hero .du-composer-mode,
+.du-hero .du-composer-bar [data-model-trigger],
+.du-hero .du-composer-bar button:not(.du-composer-send, .du-composer-mode, .du-mode-menu button) {
   height: 28px;
   min-height: 28px;
-  padding: 0 10px;
+  gap: 4px;
+  padding: 0 12px;
   border-radius: var(--ds-r-full);
-  color: var(--ds-text-2);
+  background: transparent;
+  color: color-mix(in srgb, white 65%, transparent);
   font-size: var(--ds-fs-ui);
-  font-weight: 400;
+  font-weight: 300;
 }
 
-.du-hero .du-composer [data-model-trigger] {
-  gap: 6px;
-  background: var(--ds-fill-1);
+.du-hero .du-composer-mode {
+  display: inline-flex;
+  align-items: center;
+  background: color-mix(in srgb, white 5%, transparent);
+  white-space: nowrap;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-hero .du-composer-mode:hover,
+.du-hero .du-composer-mode[aria-expanded="true"] {
+  background: var(--ds-fill-2);
   color: white;
 }
 
-.du-hero .du-composer [data-model-trigger]:hover {
-  background: var(--ds-fill-2);
+.du-hero .du-composer-bar [data-model-trigger] span {
+  color: inherit;
+}
+
+.du-hero .du-composer-bar [data-model-trigger]:hover,
+.du-hero .du-composer-bar button:not(.du-composer-send, .du-composer-mode, .du-mode-menu button):hover {
+  background: color-mix(in srgb, white 5%, transparent);
+  color: white;
+}
+
+.du-hero .du-composer-divider {
+  display: block;
+  width: 1px;
+  height: 10px;
+  flex-shrink: 0;
+  margin: 0 2px;
+  background: color-mix(in srgb, white 16%, transparent);
+}
+
+.du-hero .du-composer-settings .du-composer-divider {
+  margin: 0 8px;
 }
 
 .du-hero .du-composer-cost {
   height: 28px;
-  padding: 0 8px;
-  border-radius: var(--ds-r-full);
-  color: var(--ds-text-2);
+  gap: 4px;
+  padding: 0 6px;
+  color: color-mix(in srgb, white 40%, transparent);
   font-size: var(--ds-fs-xs);
+  font-weight: 500;
 }
 
 /* Send: a quiet 32px circle until there is something to send. */
@@ -189,17 +259,15 @@
   height: 32px;
   background: color-mix(in srgb, white 4%, transparent);
   box-shadow: none;
-  color: var(--ds-text-4);
+  color: color-mix(in srgb, white 25%, transparent);
 }
 
 .du-hero .du-composer-send[data-ready],
 .du-hero .du-composer-send.du-composer-send-busy {
   background: var(--du-accent);
-  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
 }
 
-/* One calm, single horizontal row of Jimeng-style slash-skill pills right below the composer. */
 .du-hero-skills {
   display: flex;
   flex-wrap: nowrap;
@@ -217,7 +285,6 @@
   display: none;
 }
 
-/* Quick actions: 32px pills on a faint fill, icon then label (Pollo). */
 .du-hero-skill-pill {
   display: inline-flex;
   flex-shrink: 0;
@@ -225,11 +292,12 @@
   gap: 6px;
   height: 32px;
   padding: 0 12px;
+  border: 1px solid color-mix(in srgb, white 7%, transparent);
   border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-2);
+  background: color-mix(in srgb, white 5%, transparent);
+  color: color-mix(in srgb, white 65%, transparent);
   font-size: var(--ds-fs-xs);
-  font-weight: 400;
+  font-weight: 300;
   white-space: nowrap;
   transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
@@ -240,14 +308,14 @@
 }
 
 .du-hero-skill-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-  color: var(--ds-text-3);
+  color: color-mix(in srgb, white 65%, transparent);
 }
 
 .du-hero-skill-more {
-  color: var(--ds-text-3);
+  color: color-mix(in srgb, white 50%, transparent);
 }
 
 @media (max-width: 900px) {
@@ -270,5 +338,16 @@
     margin-top: 16px;
     min-height: 152px;
     border-radius: var(--ds-r-2xl);
+  }
+
+  .du-hero #home-generator-prompt,
+  .du-hero .du-composer-placeholder {
+    /* 16px stops iOS zooming into the field. */
+    font-size: var(--ds-fs-md);
+    line-height: 24px;
+  }
+
+  .du-hero .du-composer-bar > .du-composer-divider {
+    display: none;
   }
 }

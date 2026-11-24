@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUp, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
+import { ArrowUp, AtSign, Check, ChevronDown, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { listGuestAssets, type PickerAsset } from "@/lib/home-media-library";
@@ -25,7 +25,7 @@ import "./home-generator.css";
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 export type HomeGeneratorPreset = { prompt: string; aspect?: string; nonce: number };
 type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean; draftStorageKey?: string; showSuggestions?: boolean };
-type Panel = "settings" | null;
+type Panel = "settings" | "mode" | null;
 
 // Every ratio a saved draft may hold; the panel shows only the model's own.
 const VIDEO_ASPECTS = ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "3:2", "2:3"];
@@ -77,7 +77,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (defaultVideoModel?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
   const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === defaultVideoModel?.id)?.resolutions[0] ?? "720p"));
-  const [sound, setSound] = useState(false);
+  // Sound starts as the studio starts it: on for models that make sound.
+  const [sound, setSound] = useState(() => Boolean(STUDIO_MODELS.find((item) => item.id === (defaultVideoModel?.id ?? DEFAULT_VIDEO_MODEL_ID))?.audio));
   const soundChoice = useRef<boolean | null>(null);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -98,6 +99,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const imageAspects = (imageModel?.options.aspects ?? IMAGE_ASPECTS).filter((item) => IMAGE_ASPECTS.includes(item));
   const imageResolutions = imageModel?.options.resolutions ?? [];
   const settingsPanel = usePresence(panel === "settings");
+  const modePanel = usePresence(panel === "mode");
   const kindTabsRef = useSegmentIndicator<HTMLDivElement>(kind);
   // A prompt replaced by an idea or template can be brought back.
   // Undo keeps what the visitor wrote (and the ratio) even after several
@@ -111,6 +113,11 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [trimmed, setTrimmed] = useState<{ modelId: string; references: PickerAsset[]; prompt: string } | null>(null);
   // Escape closes the settings and puts focus back on the button that opened them.
   const settingsTriggerRef = useRef<HTMLButtonElement>(null);
+  const modeTriggerRef = useRef<HTMLButtonElement>(null);
+  // "Text only" hides the reference slot (Pollo's mode switch). Choosing it
+  // with images attached takes them off, and that can be undone.
+  const [textOnly, setTextOnly] = useState(false);
+  const [clearedRefs, setClearedRefs] = useState<{ kind: "video" | "image"; references: PickerAsset[]; prompt: string } | null>(null);
 
   useEffect(() => {
     if (!panel) return;
@@ -123,6 +130,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       setPanel(null);
       requestAnimationFrame(() => {
         if (activePanel === "settings") settingsTriggerRef.current?.focus();
+        else if (activePanel === "mode") modeTriggerRef.current?.focus();
       });
     };
     document.addEventListener("pointerdown", closeOnOutsideClick);
@@ -391,9 +399,41 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </> : items.length === 1 ? <p className="mt-4 flex justify-between text-xs text-[var(--du-text-muted)]"><span>{title}</span><span className="text-[var(--du-text)]">{format(items[0])}</span></p> : null;
 
   const imageRefLimit = imageModel?.options.maxImages ?? 10;
+  const references = kind === "video" ? videoReferences : referenceImages;
+  const referenceLimit = kind === "video" ? videoReferenceLimit : imageRefLimit;
+  const canReference = kind === "video" ? maxVideoReferences(modelId) > 0 : imageRefLimit > 0;
+  const showRefSlot = canReference && !textOnly;
+  const modeLabel = (text: boolean) => kind === "video"
+    ? (text ? (zh ? "文生视频" : "Text to video") : (zh ? "参考生视频" : "Reference to video"))
+    : (text ? (zh ? "文生图" : "Text to image") : (zh ? "参考生图" : "Reference to image"));
+  const modeHint = (text: boolean) => text
+    ? (zh ? "只用文字描述，不加参考图" : "Words only, no reference images")
+    : kind === "video" ? (zh ? "加参考图，用 @ 指定人物或场景" : "Add images and @ them for people, objects or places") : (zh ? "加参考图，在提示词里 @ 引用" : "Add images and @ them in the prompt");
+  const chooseMode = (text: boolean) => {
+    setPanel(null);
+    if (text === !showRefSlot) return;
+    if (text && references.length) {
+      setClearedRefs({ kind: kind === "video" ? "video" : "image", references, prompt });
+      if (kind === "video") { setVideoReferences([]); setPrompt((previous) => previous.replace(/@(?:图片|image)\d+\s?/gi, "")); }
+      else { setReferenceImages([]); setPrompt((previous) => previous.replace(/@\d+\s?/g, "")); }
+      setTrimmed(null);
+    }
+    setTextOnly(text);
+  };
+  // The @ in the empty prompt hint mentions the first attached image, or
+  // opens the library when there is none yet.
+  const mentionFirst = () => {
+    if (!references.length) { setPickerOpen(true); return; }
+    if (kind === "video") insertVideoReference(0);
+    else setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@1 `);
+    promptRef.current?.focus({ preventScroll: true });
+  };
+  const hint: [string, string?] = kind === "video"
+    ? (showRefSlot ? [zh ? "上传参考图，并" : "Add reference images and", zh ? "它们作为参考，描述你想生成的视频。" : "them to guide the video."] : [zh ? "描述你想生成的画面和动作，例如：雨夜霓虹街头，镜头缓缓推近。" : "Describe the shot and the motion, e.g. a neon street on a rainy night, slow push-in."])
+    : (showRefSlot ? [zh ? "描述你想生成的画面，可以" : "Describe the picture; you can", zh ? "已添加的参考图。" : "a reference image you added."] : [zh ? "描述你想生成的画面，比如主体、场景和风格。" : "Describe the picture: the subject, the setting, the style."]);
 
   return <div id="home-generator" className="relative z-20 w-full max-w-[1060px] scroll-mt-24">
-    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") { setVideoReferences(items); setTrimmed(null); } else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferencesRef.current.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? videoReferenceLimit : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
+    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") { setVideoReferences(items); setTrimmed(null); } else setReferenceImages(items); if (items.length) { setTextOnly(false); setClearedRefs(null); } setNotice(""); }} onDelete={(id) => { const index = videoReferencesRef.current.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? videoReferenceLimit : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
     {hideKindTabs ? null : <div ref={kindTabsRef} className="du-composer-tabs du-seg" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution(imageModel?.options.resolutions?.[0] ?? "1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
@@ -415,29 +455,22 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     {kind !== "canvas" ?
     <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
-    {kind === "image" ? <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-2">
-      <button type="button" onClick={() => setPickerOpen(true)} className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/20 text-xs text-white/70 transition-colors hover:border-[var(--du-accent)] hover:text-white" aria-label={zh ? "选择参考图片" : "Choose reference images"}><Plus className="h-4 w-4" /></button>
-      {referenceImages.map((item, index) => <div key={item.id} className="relative h-12 w-12 shrink-0" title={item.name}>
-        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/15" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[11px] text-white">@{index + 1}</span></button>
-        <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="absolute -right-1 -top-1 rounded-full bg-black p-0.5 text-white"><X className="h-3 w-3" /></button>
-      </div>)}
-      <span className="text-xs text-white/45">{zh ? `最多 ${imageRefLimit} 张参考图 · 点击插入 @编号` : `Up to ${imageRefLimit} refs · click to insert @number`}</span>
-    </div> : null}
     <div className="du-composer-prompt-row flex min-h-[84px] items-start gap-3.5">
-      {kind === "video" ? (
+      {showRefSlot ? (
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          title={zh ? `添加参考图（这个模型最多 ${videoReferenceLimit} 张）` : `Add reference images (up to ${videoReferenceLimit} for this model)`}
+          title={zh ? `添加参考图（这个模型最多 ${referenceLimit} 张）` : `Add reference images (up to ${referenceLimit} for this model)`}
           className="du-composer-ref-slot"
         >
-          <Plus className="h-4 w-4 opacity-75" aria-hidden="true" />
-          {videoReferences.length ? <span className="du-composer-ref-label du-num">{`${videoReferences.length}/${videoReferenceLimit}`}</span> : <span className="sr-only">{zh ? "参考图" : "Reference images"}</span>}
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {references.length ? <span className="du-composer-ref-label du-num">{`${references.length}/${referenceLimit}`}</span> : <span className="sr-only">{zh ? "添加参考图" : "Add reference images"}</span>}
         </button>
       ) : null}
       <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
       <div className="relative min-w-[160px] flex-1">
-        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); if (replaced !== null) setReplaced(null); if (trimmed !== null) setTrimmed(null); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={3} maxLength={2000} placeholder={kind === "video" ? (zh ? "描述你想生成的画面和动作；添加参考图后，可以用 @图片1 指代它……" : "Describe the shot and the motion. After adding reference images, refer to them as @Image1…") : (zh ? "描述你想生成的画面，比如主体、场景和风格……" : "Describe the picture: the subject, the setting, the style…")} className="min-h-[80px] w-full resize-none bg-transparent py-1 text-[14px] font-normal leading-relaxed text-[var(--du-text)] outline-none placeholder:text-white/38" />
+        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); if (replaced !== null) setReplaced(null); if (trimmed !== null) setTrimmed(null); if (clearedRefs !== null) setClearedRefs(null); setMentionOpen(kind === "video" && videoReferences.length > 0 && /@(?:图片|image)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={3} maxLength={2000} placeholder={hint.length > 1 ? `${hint[0]} @ ${hint[1]}` : hint[0]} className="du-composer-input min-h-[80px] w-full resize-none bg-transparent py-1 text-[14px] font-normal leading-relaxed text-[var(--du-text)] outline-none" />
+        {!prompt ? <div className="du-composer-placeholder" aria-hidden="true">{hint[0]}{hint.length > 1 ? <><button type="button" tabIndex={-1} className="du-composer-at" onMouseDown={(event) => event.preventDefault()} onClick={mentionFirst}><AtSign aria-hidden="true" /></button>{hint[1]}</> : null}</div> : null}
         {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
           {videoReferences.map((item, index) => <button key={item.id} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>)}
         </div> : null}
@@ -450,24 +483,38 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       </div>)}</div>
       <p>{zh ? `已添加 ${videoReferences.length}/${videoReferenceLimit} 张` : `${videoReferences.length}/${videoReferenceLimit} added`}</p>
     </div> : null}
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
-      <div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" glass showConnectionStatus={false} catalogSet="current" compact /></div>
-      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChoice.current = !sound; setSound(!sound); }} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
-      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolutionLabel(resolution)}` : imageResolutions.length ? `${aspect} / ${resolutionLabel(resolution)}` : aspect}</button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
+    {kind === "image" && referenceImages.length ? <div className="du-composer-references">
+      <div className="du-composer-reference-list">{referenceImages.map((item, index) => <div key={item.id} className="du-composer-reference" title={item.name}>
+        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" /><span>@{index + 1}</span></button>
+        <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="du-composer-reference-remove"><X className="h-3 w-3" /></button>
+      </div>)}</div>
+      <p>{zh ? `已添加 ${referenceImages.length}/${imageRefLimit} 张` : `${referenceImages.length}/${imageRefLimit} added`}</p>
+    </div> : null}
+    <div className="du-composer-bar mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+      {canReference ? <div data-home-popover className="relative">
+        <button ref={modeTriggerRef} type="button" className="du-composer-mode" aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}>{modeLabel(!showRefSlot)}<ChevronDown className="h-3 w-3" aria-hidden="true" /></button>
+        {modePanel.mounted ? <div data-presence="pop" data-state={modePanel.state} className="du-home-popover du-mode-menu">
+          {[false, true].map((text) => <button key={String(text)} type="button" aria-pressed={!showRefSlot === text} onClick={() => chooseMode(text)}><span><strong>{modeLabel(text)}</strong><small>{modeHint(text)}</small></span>{!showRefSlot === text ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}</button>)}
+        </div> : null}
+      </div> : null}
+      <div className="du-composer-model relative min-w-0"><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" showConnectionStatus={false} catalogSet="current" compact /></div>
+      {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChoice.current = !sound; setSound(!sound); }} aria-pressed={sound} aria-label={zh ? (sound ? "声音：开启" : "声音：关闭") : (sound ? "Sound: on" : "Sound: off")}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "开启" : "On") : (zh ? "关闭" : "Off")}</button></> : null}
+      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={`${plainControl} du-composer-settings`} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"} aria-label={zh ? "生成设置" : "Generation settings"}><span className="du-num">{(kind === "video" ? [aspect, `${duration}s`, resolutionLabel(resolution)] : imageResolutions.length ? [aspect, resolutionLabel(resolution)] : [aspect]).join(" / ")}</span><span aria-hidden="true" className="du-composer-divider" /><Settings2 className="h-4 w-4 shrink-0" aria-hidden="true" /></button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
         {settingRow(zh ? "画面比例" : "Aspect ratio", kind === "video" ? videoAspects : imageAspects, aspect, setAspect)}
         {kind === "video" ? (videoDurations.length > 6
           ? <><p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "视频时长" : "Video length"} · <span className="du-num">{duration}s</span></p><input type="range" min={videoDurations[0]} max={videoDurations.at(-1)} value={duration} onChange={(event) => { const raw = Number(event.target.value); setDuration(videoDurations.reduce((nearest, next) => (Math.abs(next - raw) < Math.abs(nearest - raw) ? next : nearest), videoDurations[0])); }} className="mt-2 w-full accent-[var(--du-accent)]" aria-label={zh ? "视频时长" : "Video length"} /></>
           : settingRow(zh ? "视频时长" : "Video length", videoDurations.map(String), String(duration), (value) => setDuration(Number(value)), (value) => `${value}s`)) : null}
         {settingRow(zh ? "分辨率" : "Resolution", kind === "video" ? videoResolutions : imageResolutions, resolution, setResolution, resolutionLabel)}
       </div> : null}</div>
-      <div className="ml-auto flex items-center gap-3">
-        {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3.5 w-3.5" aria-hidden="true" /><span className="du-num">{estimatedCredits}</span>{zh ? " 积分" : " credits"}</span> : null}
-        {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3.5 w-3.5" aria-hidden="true" /><span className="du-num">{imageCredits}</span>{zh ? " 积分" : " credits"}</span> : null}
+      <div className="ml-auto flex items-center gap-2">
+        {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{estimatedCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
+        {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{imageCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
         <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} data-ready={hasInput || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <Loader2 key="busy" data-swap className="du-composer-spinner" aria-hidden="true" /> : <ArrowUp key="go" data-swap className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </div>
     {notice ? <output key={notice} data-presence="fade" aria-live="polite" className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
     {replaced !== null && !notice ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? "已换成这条灵感" : "Replaced with this idea"}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { setPrompt(replaced.prompt); setAspect(replaced.aspect); setReplaced(null); promptRef.current?.focus({ preventScroll: true }); }}>{zh ? "恢复原内容" : "Undo"}</button></output> : null}
+    {clearedRefs !== null && clearedRefs.kind === kind ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? `已移除 ${clearedRefs.references.length} 张参考图` : `Removed ${clearedRefs.references.length} reference image${clearedRefs.references.length > 1 ? "s" : ""}`}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { const back = clearedRefs; setClearedRefs(null); setTextOnly(false); if (back.kind === "video") setVideoReferences(back.references); else setReferenceImages(back.references); setPrompt(back.prompt); }}>{zh ? "撤销" : "Undo"}</button></output> : null}
     {trimmed !== null ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? `这个模型最多支持 ${videoReferenceLimit} 张参考图，已自动保留前 ${videoReferenceLimit} 张` : `This model supports up to ${videoReferenceLimit} reference image${videoReferenceLimit > 1 ? "s" : ""}. Kept the first ${videoReferenceLimit}.`}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { const back = trimmed; setTrimmed(null); setVideoReferences(back.references); setPrompt(back.prompt); selectModel(back.modelId); }}>{zh ? "换回原模型" : "Switch back"}</button></output> : null}
     {kind === "video" && showSuggestions && !suggestionsHidden ? <div className="du-composer-suggestions">
       <span className="du-composer-suggestions-label mr-1">{zh ? "快捷灵感" : "Quick ideas"}</span>
