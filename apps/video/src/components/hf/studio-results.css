@@ -279,13 +279,6 @@
   z-index: 200;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  animation: sr-fade var(--du-dur, 400ms) var(--du-ease, ease) both;
-}
-
-@keyframes sr-fade {
-  from {
-    opacity: 0;
-  }
 }
 
 .sr-viewer-scrim {

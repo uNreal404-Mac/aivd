@@ -1,156 +1,339 @@
-/* Site-wide motion, after the reference sites: one easing and duration,
-   popovers that settle in, dropdown rows that stagger, cards that lift (and
-   tilt toward the pointer where marked with data-tilt), buttons that press,
-   and sections that rise in once as they scroll into view. Everything stops
-   for people who ask for reduced motion. */
+/* ============================================================================
+   Aivd.ai Unified Apple HIG Motion Language
+   Designed strictly by STATE TRANSITIONS (appear, disappear, switch, press,
+   expand, validate, load, drag) — NOT decorative gimmickry.
+
+   Rules enforced globally:
+   1. One curve family: Apple spring-damped ease-out (0.32, 0.72, 0, 1).
+   2. Fast & restrained: 120ms micro / 180ms popover / 260ms modal / 360ms reveal.
+   3. GPU-only composited properties (transform, opacity) — zero layout thrash.
+   4. Direct manipulation (drag/scrub) stays 1:1 zero-lag.
+   5. Strict prefers-reduced-motion: reduce compliance everywhere.
+   ============================================================================ */
 
 :root {
-  --du-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --du-dur: 400ms;
+  --du-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --du-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --du-ease-micro: cubic-bezier(0.2, 0, 0, 1);
+  --du-dur-micro: 120ms;
   --du-dur-fast: 180ms;
+  --du-dur: 260ms;
+  --du-dur-slow: 360ms;
 }
+
+/* ---------- Core State-Transition Keyframes (GPU-composited only) ---------- */
 
 @keyframes du-pop {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.985);
+    transform: translateY(-4px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes du-pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes du-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.968);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes du-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes du-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
 @keyframes du-row-in {
   from {
     opacity: 0;
-    transform: translateX(8px);
+    transform: translateY(-3px);
   }
 }
 
+@keyframes du-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes du-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes du-check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Subtle damped horizontal validation nudge (macOS-style) */
+@keyframes du-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  45% {
+    transform: translateX(4px);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+  88% {
+    transform: translateX(1.5px);
+  }
+}
+
+/* Gentle scroll arrival: short distance, crisp Apple ease */
 @keyframes du-rise {
   from {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Popovers: nav dropdowns, account menu, model picker, toggles. */
+/* ---------- 1. Appear / Disappear: Popovers, Menus, Modals, Notices ---------- */
+
 .hf-dd,
-.hf-acct {
-  animation: du-pop var(--du-dur) var(--du-ease) both;
+.hf-acct,
+.du-home-popover,
+.du-composer-mentions,
+.du-model-picker-panel {
+  animation: du-pop var(--du-dur-fast) var(--du-ease) both;
   transform-origin: top left;
 }
 
-.hf-acct {
+.vs-duration-panel {
+  animation: du-pop-up var(--du-dur-fast) var(--du-ease) both;
+  transform-origin: bottom left;
+}
+
+.hf-acct,
+.du-home-settings {
   transform-origin: top right;
 }
 
-/* Dropdown rows arrive one after another (--i is set per row). */
 .hf-dd-row {
-  animation: du-row-in var(--du-dur) var(--du-ease) both;
-  animation-delay: calc(var(--i, 0) * 30ms + 30ms);
+  animation: du-row-in var(--du-dur-fast) var(--du-ease) backwards;
+  animation-delay: calc(min(var(--i, 0), 6) * 16ms);
 }
 
-/* Cards lift on hover; data-tilt cards also lean toward the pointer. */
-:root .hs-tile,
-:root .hs-usecase,
-:root .hs-tall,
-:root .hs-wall-item,
-:root .hs-slide-media,
-:root .hp-plan-top,
-:root .hp-pack,
-:root .vs-banner,
-:root .vs-step .vs-howto-media,
-:root .as-card {
-  transition:
-    transform var(--du-dur) var(--du-ease),
-    box-shadow var(--du-dur) var(--du-ease),
-    background-color var(--du-dur) var(--du-ease);
+.hmp-backdrop,
+.vs-presets-backdrop,
+.sr-viewer {
+  animation: du-backdrop-in var(--du-dur-fast) var(--du-ease-out) both;
 }
 
-:root .hs-tile:hover,
-:root .hs-usecase:hover,
-:root .hs-tall:hover,
-:root .hs-wall-item:hover,
-:root .hs-slide:hover .hs-slide-media,
-:root .hp-pack:hover,
-:root .as-card:hover {
-  transform: translateY(-2px) scale(1.015);
+.hmp-dialog,
+.vs-presets-modal,
+.cc-cmd-modal {
+  animation: du-modal-in var(--du-dur) var(--du-ease) both;
+  transform-origin: center;
 }
 
-:root [data-tilt] {
-  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg));
-  transition: transform var(--du-dur) var(--du-ease);
-  will-change: transform;
+@media (max-width: 640px) {
+  .hmp-dialog {
+    animation: du-sheet-in var(--du-dur) var(--du-ease) both;
+    transform-origin: bottom center;
+  }
 }
 
-:root [data-tilt]:hover {
-  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg))
-    translateY(-2px) scale(1.02);
+/* Inline feedback notices & errors enter gently so they never jump abruptly */
+.du-composer output,
+.draft-note,
+.si-error,
+.vs-duration-warning,
+.du-notice-enter {
+  animation: du-notice-in var(--du-dur-fast) var(--du-ease) both;
 }
 
-/* Buttons press in. */
-:root .hs-btn,
-:root .hp-cta,
-:root .hp-more,
-:root .vs-generate,
-:root .is-generate,
-:root .hf-act,
-:root .hf-auth,
-:root .hf-avatar,
-:root .hs-offer-cta,
-:root .du-composer-send,
-:root .cs-send,
-:root .hs-mini button,
-:root .vs-chip,
-:root .is-chip,
-:root .hs-chip {
-  transition:
-    transform var(--du-dur-fast) var(--du-ease),
-    filter var(--du-dur-fast) ease,
-    background-color var(--du-dur-fast) ease,
-    color var(--du-dur-fast) ease;
+.du-composer-nudge {
+  animation: du-nudge 320ms var(--du-ease-out);
 }
 
-:root .hs-btn:active,
-:root .hp-cta:active,
-:root .hp-more:active,
-:root .vs-generate:active:not(:disabled),
-:root .is-generate:active:not(:disabled),
-:root .hf-act:active,
-:root .hf-auth:active,
-:root .hs-offer-cta:active,
-:root .du-composer-send:active:not(:disabled),
-:root .cs-send:active:not(:disabled),
-:root .hs-mini button:active:not(:disabled),
-:root .vs-chip:active,
-:root .is-chip:active {
-  transform: scale(0.97);
+/* Tab/filter content crossfade */
+.du-fade-swap {
+  animation: du-fade-in 220ms var(--du-ease) both;
 }
 
-/* Sections rise in once as they scroll into view. components/scroll-reveal
-   marks the ones still below the screen as waiting and switches each to "in"
-   when it arrives; a section that is already on screen is never hidden, and
-   none is left half faded at the foot of the screen. (An animation tied to
-   the scroll position did both, and the reduced-motion rule below cannot
-   stop one.) Only opacity while waiting: the keyframe supplies the offset, so
-   a section keeps a transform of its own. */
+/* Selection checkmark & copy confirmation spring pop */
+.hmp-check,
+.du-check-pop {
+  animation: du-check-pop var(--du-dur-fast) var(--du-ease) both;
+}
+
+/* ---------- 2. Icon & State Micro-Transitions ---------- */
+
+.du-caret,
+.hf-item-caret,
+.vs-duration-trigger > svg {
+  transition: transform var(--du-dur-fast) var(--du-ease);
+}
+
+[aria-expanded="true"] > .du-caret,
+[aria-expanded="true"] .du-caret,
+.hf-item[aria-expanded="true"] .hf-item-caret {
+  transform: rotate(180deg);
+}
+
+.vs-duration-trigger[aria-expanded="true"] > svg {
+  transform: rotate(-90deg);
+}
+
+/* Tabular numerals prevent horizontal jitter when credits, prices or timers tick */
+.du-composer-cost,
+.vs-generate-cost,
+.vs-count,
+.sr-elapsed,
+.hmp-count,
+.hp-price-val,
+.hp-price-num,
+.du-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 3. Tactile Apple Press Physics (GPU transform/opacity only, RM-safe) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  :root .hs-btn,
+  :root .hs-tab,
+  :root .hs-cloud-pill,
+  :root .du-composer-tab,
+  :root .du-hero-skill-pill,
+  :root .hp-cta,
+  :root .hp-more,
+  :root .vs-generate,
+  :root .is-generate,
+  :root .hf-act,
+  :root .hf-auth,
+  :root .hf-avatar,
+  :root .hs-welcome-cta,
+  :root .du-composer-send,
+  :root .cs-send,
+  :root .hs-mini button,
+  :root .vs-chip,
+  :root .is-chip,
+  :root .hmp-footer button,
+  :root .hmp-card,
+  :root .cr-button {
+    transition:
+      transform var(--du-dur-micro) var(--du-ease-micro),
+      opacity var(--du-dur-fast) ease;
+  }
+
+  :root .hs-btn:active:not(:disabled),
+  :root .hs-tab:active:not(:disabled),
+  :root .hs-cloud-pill:active:not(:disabled),
+  :root .du-composer-tab:active:not(:disabled),
+  :root .du-hero-skill-pill:active:not(:disabled),
+  :root .hp-cta:active:not(:disabled),
+  :root .hp-more:active:not(:disabled),
+  :root .vs-generate:active:not(:disabled),
+  :root .is-generate:active:not(:disabled),
+  :root .hf-act:active:not(:disabled),
+  :root .hf-auth:active:not(:disabled),
+  :root .hs-welcome-cta:active:not(:disabled),
+  :root .du-composer-send:active:not(:disabled),
+  :root .cs-send:active:not(:disabled),
+  :root .hs-mini button:active:not(:disabled),
+  :root .vs-chip:active:not(:disabled),
+  :root .is-chip:active:not(:disabled),
+  :root .hmp-footer button:active:not(:disabled),
+  :root .cr-button:active:not(:disabled) {
+    transform: scale(0.972);
+  }
+
+  /* Subtle GPU-only transitions — NO outer bounce on gallery media frames */
+  :root .hs-tile,
+  :root .hp-pack,
+  :root .as-card {
+    transition:
+      transform var(--du-dur-fast) var(--du-ease),
+      opacity var(--du-dur-fast) ease;
+  }
+}
+
+/* Direct manipulation: active drag / before-after scrub stays 1:1 instant */
+.cc-compare-before-layer,
+.cc-compare-divider,
+[data-dragging="true"] {
+  transition: none !important;
+}
+
+/* ---------- 4. Scroll Reveal (Gentle, One-Shot, Print & RM Safe) ---------- */
+
 [data-reveal="wait"] {
   opacity: 0;
 }
 
 [data-reveal="in"] {
-  animation: du-rise 600ms var(--du-ease);
+  animation: du-rise var(--du-dur-slow) var(--du-ease) both;
 }
 
-/* On paper, and for reduced motion, a waiting section just shows. */
 @media print, (prefers-reduced-motion: reduce) {
   [data-reveal="wait"] {
     opacity: 1;
   }
 }
 
-/* Reduced motion: nothing on the site moves by itself. What a visitor asks
-   for still plays: a showcase clip on hover, keyboard focus or its play
-   button (lib/hover-play.ts, components/hf/video-play-toggle), and an effect
-   card's move on hover (components/effects/effects.css). */
+/* ---------- 5. Strict Reduced Motion Compliance ---------- */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -167,7 +350,8 @@
   }
 }
 
-/* Page-load bar (components/route-progress.tsx). */
+/* ---------- 6. Top Route Progress Bar ---------- */
+
 .route-progress {
   position: fixed;
   top: 0;
@@ -189,15 +373,14 @@
   transform: scaleX(1);
   opacity: 0;
   transition:
-    transform 200ms ease,
-    opacity 300ms ease 150ms;
+    transform 180ms var(--du-ease),
+    opacity 260ms var(--du-ease-out) 120ms;
 }
 
 @keyframes route-progress-grow {
   from {
     transform: scaleX(0.05);
   }
-
   to {
     transform: scaleX(0.9);
   }

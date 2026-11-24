@@ -23,7 +23,6 @@ import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PlausibleAnalytics } from "@/components/plausible-provider";
 import { AttributionCapture } from "@/components/attribution-capture";
-import { TiltEffect } from "@/components/tilt-effect";
 import { RouteProgress } from "@/components/route-progress";
 import { i18n } from "@/config/i18n-config";
 import { getSiteTitle, siteConfig } from "@/config/site";
@@ -169,7 +168,6 @@ export default async function RootLayout({
             <QueryProvider>
               <PlausibleAnalytics />
               <AttributionCapture />
-              <TiltEffect />
               <RouteProgress />
               <ModalProvider>{children}</ModalProvider>
               <Toaster richColors position="top-right" offset={{ top: 64, right: 16 }} />

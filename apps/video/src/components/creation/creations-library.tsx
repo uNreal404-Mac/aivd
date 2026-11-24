@@ -211,15 +211,35 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setConfirmDeleteId(null);
+  }, [kind, tab, viewMode]);
+
+  useEffect(() => {
+    if (!confirmDeleteId) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setConfirmDeleteId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDeleteId]);
+
   const handleDelete = useCallback(
     async (uuid: string) => {
+      if (confirmDeleteId !== uuid) {
+        setConfirmDeleteId(uuid);
+        return;
+      }
+      setConfirmDeleteId(null);
       try {
         await deleteVideo(uuid);
       } catch {
         // Failures are already surfaced with a toast by the hook.
       }
     },
-    [deleteVideo],
+    [confirmDeleteId, deleteVideo],
   );
 
   return (
@@ -374,11 +394,13 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                   {tag === "done" || tag === "failed" ? (
                     <button
                       type="button"
-                      className="cr-button cr-button--ghost"
+                      className={confirmDeleteId === video.uuid ? "cr-button cr-button--danger" : "cr-button cr-button--ghost"}
                       disabled={isDeleting}
+                      onBlur={() => { if (confirmDeleteId === video.uuid) setConfirmDeleteId(null); }}
+                      onKeyDown={(event) => { if (event.repeat && (event.key === "Enter" || event.key === " ")) event.preventDefault(); }}
                       onClick={() => void handleDelete(video.uuid)}
                     >
-                      {t("actions.delete")}
+                      {confirmDeleteId === video.uuid ? (zh ? "确认删除？" : "Confirm delete?") : t("actions.delete")}
                     </button>
                   ) : null}
                 </div>

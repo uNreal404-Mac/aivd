@@ -116,7 +116,7 @@ export function CopyPromptButton({
         }
       }}
     >
-      {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+      {copied ? <Check className="du-check-pop h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
       {className.includes("sr-pill") ? (copied ? (zh ? "已复制" : "Copied") : zh ? "复制提示词" : "Copy prompt") : null}
     </button>
   );

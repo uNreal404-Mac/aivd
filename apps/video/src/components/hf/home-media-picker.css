@@ -31,8 +31,10 @@
 .hmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
 .hmp-card-wrap { position: relative; min-width: 0; }
 .hmp-card-wrap .hmp-card { display: block; width: 100%; }
-.hmp-delete { position: absolute; top: 7px; left: 7px; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--du-border-strong); border-radius: 50%; background: var(--du-bg-elev); color: var(--du-text); }
-.hmp-delete:hover { border-color: var(--du-accent); color: var(--du-accent-text); }
+.hmp-delete { position: absolute; top: 7px; left: 7px; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 0; border: 1px solid var(--du-border-strong); border-radius: var(--ds-r-full); background: color-mix(in srgb, var(--du-bg-elev) 88%, transparent); color: var(--du-text); font-size: var(--ds-fs-2xs); font-weight: 700; backdrop-filter: blur(8px); transition: transform var(--du-dur-micro, 120ms) var(--du-ease-micro, ease), opacity var(--du-dur-fast, 180ms) ease; }
+.hmp-delete:hover { border-color: var(--du-danger); color: var(--du-danger); }
+.hmp-delete-confirm { padding: 0 10px; border-color: var(--du-danger); background: var(--du-danger); color: var(--du-on-accent); }
+.hmp-delete-confirm:hover { color: var(--du-on-accent); filter: brightness(1.06); }
 .hmp-card, .hmp-add { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--du-border); border-radius: .8rem; background: var(--du-surface-2); color: var(--du-text); text-align: left; }
 .hmp-card.selected { border-color: var(--du-accent); box-shadow: 0 0 0 1px var(--du-accent); }
 .hmp-card:hover, .hmp-add:hover { border-color: var(--du-accent-hover); }
