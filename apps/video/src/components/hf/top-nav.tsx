@@ -498,12 +498,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <Folder aria-hidden="true" />
             </Link>
           ) : null}
-          <Link href={href("/pricing")} title={t.offerTitle} className="hf-act hf-act-accent">
-            <Tag aria-hidden="true" />
-            {t.offer}
-            <span className="hf-act-dot" aria-hidden="true" />
-          </Link>
-          <Link href={href("/pricing")} className="hf-act hf-act-pricing">
+          <Link href={href("/pricing")} title={t.offerTitle} className="hf-act hf-act-pricing">
             <Crown aria-hidden="true" />
             {t.pricing}
             <span className="hf-act-discount">{t.offerTag}</span>

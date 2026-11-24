@@ -71,12 +71,12 @@
   height: 100%;
   object-fit: cover;
   object-position: center 22%;
-  transition: transform 400ms ease;
+  transition: transform 500ms var(--ds-ease-spring);
 }
 
 .hs-slide:hover .hs-slide-media img,
 .hs-slide:hover .hs-slide-media video {
-  transform: scale(1.03);
+  transform: scale(1.08);
 }
 
 .hs-slide-title {
@@ -209,28 +209,54 @@
   justify-content: space-between;
   gap: 6px;
   padding: 18px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 5%, transparent);
-  transition: background-color 150ms ease;
+  background: var(--ds-surface-1);
+  box-shadow: var(--ds-specular);
+  transition: background-color 180ms ease, border-color 180ms ease, transform 200ms var(--ds-ease-spring);
 }
 
 .hs-tile:hover {
-  background: var(--hs-card-hover);
+  border-color: var(--ds-line-3);
+  background: var(--ds-surface-2);
+  transform: translateY(-2px);
+}
+
+/* Krea-style 3D glossy obsidian squircle app icon */
+.hs-tile-squircle {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: linear-gradient(155deg, var(--ds-surface-3) 0%, var(--du-bg-elev) 100%);
+  box-shadow: var(--ds-specular), var(--ds-shadow-1);
+  transition: border-color 200ms ease, transform 220ms var(--ds-ease-spring);
+}
+
+.hs-tile:hover .hs-tile-squircle {
+  border-color: color-mix(in srgb, var(--du-accent) 45%, var(--ds-line-2));
+  transform: scale(1.06);
 }
 
 .hs-tile-icon {
-  width: 22px;
-  height: 22px;
-  margin-bottom: auto;
-  color: white;
+  width: 20px;
+  height: 20px;
+  color: var(--ds-text-1);
+  transition: color 180ms ease;
+}
+
+.hs-tile:hover .hs-tile-icon {
+  color: var(--du-accent-text);
 }
 
 .hs-tile-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 28px;
+  margin-top: 22px;
   color: white;
   font-size: var(--ds-fs-md);
   font-weight: 600;
@@ -241,19 +267,22 @@
   font-size: var(--ds-fs-sm);
 }
 
+/* 94-4-2 Quiet Restraint: neutral frosted obsidian pills instead of loud neon badges */
 .hs-badge {
-  padding: 1px 7px;
-  border-radius: var(--ds-r-xs);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-style: italic;
-  font-weight: 800;
-  transform: skewX(-10deg);
+  padding: 2px 7px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .hs-badge-tag {
-  background: linear-gradient(90deg, var(--du-accent-hover), var(--du-accent));
+  border-color: color-mix(in srgb, var(--du-accent) 32%, var(--ds-line-2));
+  background: color-mix(in srgb, var(--du-accent) 10%, transparent);
+  color: var(--du-accent-text);
 }
 
 /* 3. Chrome banner and use cases */
@@ -357,8 +386,8 @@
 }
 
 .hs-btn-accent {
-  background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
 }
 
@@ -516,7 +545,7 @@
 }
 
 .hs-step-num {
-  color: color-mix(in srgb, var(--du-accent) 60%, transparent);
+  color: var(--ds-fill-4);
   font-size: var(--ds-fs-4xl);
   font-style: italic;
   font-weight: 900;
@@ -947,14 +976,16 @@
   height: 44px;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: var(--du-gradient);
-  color: var(--du-on-accent);
-  box-shadow: var(--du-glow);
+  background: color-mix(in srgb, var(--du-surface) 90%, transparent);
+  color: var(--ds-text-1);
+  box-shadow: var(--ds-specular), var(--ds-shadow-float);
+  backdrop-filter: blur(18px);
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity 200ms ease, transform 200ms ease, filter 160ms ease;
+  transition: opacity 200ms ease, transform 200ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .hs-back-to-create-on {
@@ -964,7 +995,8 @@
 }
 
 .hs-back-to-create:hover {
-  background: var(--du-accent-hover);
+  border-color: color-mix(in srgb, var(--du-accent) 50%, var(--ds-line-2));
+  color: var(--du-accent-text);
 }
 
 .hs-back-to-create:focus-visible {
@@ -1152,12 +1184,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 7px 13px;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-xs);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1171,26 +1204,42 @@
   }
 }
 
-/* Carousel covers: big lettering on the picture, after the reference. */
-/* Bottom fade behind the cover lettering, so white words stay readable on
-   bright pictures such as the Veo sky or the Seedance park. */
+/* Krea-style refined carousel cover: frosted top-left badge + crisp upright editorial title */
 .hs-slide-shade {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--du-bg) 90%, transparent),
-    color-mix(in srgb, var(--du-bg) 60%, transparent) 32%,
-    transparent 68%
+    color-mix(in srgb, var(--du-bg) 88%, transparent) 0%,
+    color-mix(in srgb, var(--du-bg) 36%, transparent) 38%,
+    transparent 70%
   );
+  pointer-events: none;
+}
+
+.hs-slide-pill {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  padding: 3px 10px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 68%, transparent);
+  color: var(--ds-text-1);
+  font-family: var(--du-font-mono);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(12px);
   pointer-events: none;
 }
 
 .hs-slide-cover {
   position: absolute;
-  right: 18px;
-  bottom: 16px;
-  left: 18px;
+  right: 16px;
+  bottom: 14px;
+  left: 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1201,27 +1250,11 @@
   overflow: hidden;
   color: white;
   font-family: var(--du-font-display, inherit);
-  font-size: clamp(28px, 2.6vw, 40px);
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
-  text-overflow: ellipsis;
-  text-shadow: 0 4px 24px color-mix(in srgb, var(--du-bg) 70%, transparent);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.hs-slide-cover-sub {
-  color: var(--du-accent-text);
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-sm);
+  font-size: clamp(var(--ds-fs-lg), 1.8vw, var(--ds-fs-2xl));
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hs-slide-cover-cjk .hs-slide-cover-main {
-  font-style: normal;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-shadow: 0 4px 20px color-mix(in srgb, var(--du-bg) 80%, transparent);
+  white-space: nowrap;
 }

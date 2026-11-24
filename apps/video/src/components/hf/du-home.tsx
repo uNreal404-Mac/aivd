@@ -46,6 +46,11 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
               : "Write down your idea, add video, images, and other references, then choose a model to generate in one click."}
           </p>
           <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} />
+          <div className="du-hero-trust" aria-label={isChinese ? "平台透明保障" : "Platform highlights"}>
+            <span><span className="du-hero-trust-dot" />Seedance 2.5 · Veo 3.1 · Kling 4.0 · Nano Banana Pro</span>
+            <span>{isChinese ? "透明按次计费 · 0 隐藏加价" : "Transparent per-run pricing · 0 hidden markup"}</span>
+            <span>{isChinese ? "生成失败自动退还积分" : "Auto-refund on failed runs"}</span>
+          </div>
         </div>
       </section>
 

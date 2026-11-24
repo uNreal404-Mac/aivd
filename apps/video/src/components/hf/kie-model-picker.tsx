@@ -194,6 +194,7 @@ export function KieModelPicker({
   const setOpen = onOpenChange ?? setInternalOpen;
   const [query, setQuery] = useState("");
   const [family, setFamily] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"default" | "fast" | "value" | "quality">("default");
   const pickerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -236,6 +237,23 @@ export function KieModelPicker({
     return connectedFirst(inDisplayOrder(displayCatalog.filter(matches), featuredIds), isConnected);
   }, [kind, query, catalogSet, connectedIds]);
   const readyCatalog = displayCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
+  const sortedByMode = useMemo(() => {
+    if (sortBy === "default") return [];
+    const costOf = (id: string) =>
+      (kind === "video" ? startingCredits(id) : startingImageCredits(id)) ?? 999999;
+    const isFast = (item: CatalogModel) =>
+      MODEL_BADGES[item.id]?.tone === "fast" || /flash|fast|turbo|mini|draft|schnell/i.test(item.id + item.name);
+    const isQuality = (item: CatalogModel) =>
+      MODEL_BADGES[item.id]?.tone === "top" || /pro|prime|max|4k|veo|seedance-2-5|kling\/v4|nano-banana-pro/i.test(item.id);
+    const list = [...readyCatalog];
+    if (sortBy === "value") {
+      return list.sort((a, b) => costOf(a.id) - costOf(b.id));
+    }
+    if (sortBy === "fast") {
+      return list.sort((a, b) => Number(isFast(b)) - Number(isFast(a)) || costOf(a.id) - costOf(b.id));
+    }
+    return list.sort((a, b) => Number(isQuality(b)) - Number(isQuality(a)) || costOf(b.id) - costOf(a.id));
+  }, [sortBy, readyCatalog, kind]);
   const comingSoon = allowUnconnectedSelection ? [] : inDisplayOrder(displayCatalog.filter((item) => !isConnected(item.id)), featuredIds);
 
   const current = fullCatalog.find((item) => item.id === value);
@@ -453,10 +471,40 @@ export function KieModelPicker({
             </button>
           </div>
 
+          {/* Krea-style Sort Tabs (Default / Fast / Value / Quality) */}
+          <div className="flex items-center gap-1 border-b border-[var(--du-border)] px-2.5 py-1.5" role="tablist" aria-label={zh ? "模型排序方式" : "Sort models"}>
+            {([
+              ["default", zh ? "推荐" : "Default"],
+              ["fast", zh ? "极速" : "Speed"],
+              ["value", zh ? "性价比" : "Value"],
+              ["quality", zh ? "高画质" : "Quality"],
+            ] as const).map(([mode, modeLabel]) => (
+              <button
+                key={mode}
+                type="button"
+                role="tab"
+                aria-selected={sortBy === mode}
+                onClick={() => {
+                  setSortBy(mode);
+                  setFamily(null);
+                }}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                  sortBy === mode
+                    ? "bg-[var(--ds-fill-3)] text-[var(--ds-text-1)]"
+                    : "text-[var(--du-text-muted)] hover:bg-[var(--ds-fill-1)] hover:text-[var(--ds-text-1)]"
+                }`}
+              >
+                {modeLabel}
+              </button>
+            ))}
+          </div>
+
           {/* The panel is the only scrolling container, including on Windows. */}
           <div ref={listRef} className="p-2">
             {query.trim() ? (
               matches.length ? matches.map(availableRow) : <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">{copy.none}</p>
+            ) : sortBy !== "default" ? (
+              sortedByMode.map(availableRow)
             ) : family ? (
               <>
                 <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>

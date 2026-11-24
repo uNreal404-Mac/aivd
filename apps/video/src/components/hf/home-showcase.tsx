@@ -128,7 +128,9 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             const Icon = TILE_ICONS[tile.icon];
             return (
               <Link key={tile.href} href={href(tile.href)} className="hs-tile" data-tilt>
-                <Icon className="hs-tile-icon" aria-hidden="true" />
+                <span className="hs-tile-squircle" aria-hidden="true">
+                  <Icon className="hs-tile-icon" />
+                </span>
                 <span className="hs-tile-title">
                   {typeof tile.title === "string" ? tile.title : t(tile.title)}
                   {tile.badge ? <span className="hs-badge">{t(tile.badge)}</span> : null}
