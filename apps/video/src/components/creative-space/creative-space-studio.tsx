@@ -770,6 +770,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     commitHistory();
     const pos = worldCenter();
     setNodes((prev) => {
+      const slot = prev.filter((n) => n.kind !== "group").length;
       const node: CanvasTextNode = {
         id: `txt-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         kind: "text",
@@ -778,8 +779,8 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
         title: title || (zh ? "镜头 / 提示词笔记" : "Shot / Prompt Note"),
         content: content || "",
         tone,
-        x: pos.x + (prev.length % 4) * 32,
-        y: pos.y + (prev.length % 4) * 28,
+        x: pos.x + (slot % 3) * 304,
+        y: pos.y + Math.floor(slot / 3) * 224,
         width: 260,
         zIndex: maxZIndex(prev) + 1,
         status: "ready",
