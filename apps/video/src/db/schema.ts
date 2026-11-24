@@ -321,6 +321,16 @@ export const mediaAssets = sqliteTable("media_assets", {
   createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
 }, (table) => [index("media_assets_user_created_idx").on(table.userId, table.createdAt)]);
 
+/** User-owned node canvases. Media stays in R2; this stores only graph metadata. */
+export const creativeWorkflows = sqliteTable("creative_workflows", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  graph: text("graph", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at").default(sql`(unixepoch())`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`(unixepoch())`).notNull(),
+}, (table) => [index("creative_workflows_user_updated_idx").on(table.userId, table.updatedAt)]);
+
 /** One score per account and published video; never exposed in public API rows. */
 export const videoRatings = sqliteTable(
   "video_ratings",

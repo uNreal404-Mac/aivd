@@ -108,6 +108,7 @@
     "react-server-dom-webpack": "^19.2.3",
     "react-tweet": "^3.3.0",
     "react-wrap-balancer": "1.1.0",
+    "reactflow": "11.11.4",
     "recharts": "3.6.0",
     "resend": "2.1.0",
     "s3mini": "^0.2.0",
