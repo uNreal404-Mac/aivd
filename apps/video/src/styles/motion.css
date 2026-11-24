@@ -34,6 +34,10 @@
   --du-ease: var(--m-ease-out);
   --du-dur: var(--m-base);
   --du-dur-fast: var(--m-instant);
+  --du-dur-micro: var(--m-instant);
+  --du-dur-slow: var(--m-slow);
+  --du-ease-out: var(--m-ease-out);
+  --du-ease-micro: var(--m-ease-out);
 }
 
 @keyframes du-pop {
@@ -299,7 +303,14 @@
 :root .hs-mini button,
 :root .vs-chip,
 :root .is-chip,
-:root .hs-chip {
+:root .hs-chip,
+:root .hs-tab,
+:root .hs-cloud-pill,
+:root .du-composer-tab,
+:root .du-hero-skill-pill,
+:root .hs-welcome-cta,
+:root .hmp-footer button,
+:root .cr-button {
   transition:
     transform var(--m-instant) var(--m-ease-out),
     filter var(--m-instant) var(--m-ease-out),
@@ -322,7 +333,14 @@
 :root .cs-send:active:not(:disabled),
 :root .hs-mini button:active:not(:disabled),
 :root .vs-chip:active,
-:root .is-chip:active {
+:root .is-chip:active,
+:root .hs-tab:active:not(:disabled),
+:root .hs-cloud-pill:active:not(:disabled),
+:root .du-composer-tab:active:not(:disabled),
+:root .du-hero-skill-pill:active:not(:disabled),
+:root .hs-welcome-cta:active:not(:disabled),
+:root .hmp-footer button:active:not(:disabled),
+:root .cr-button:active:not(:disabled) {
   transform: scale(0.97);
 }
 
@@ -405,4 +423,105 @@
     animation: none;
     transform: scaleX(0.6);
   }
+}
+
+/* ---------- Brought in from main (995fef4), on the same timings ---------- */
+
+/* Popovers that mount on open and have no exit of their own yet arrive the
+   same way as the rest. */
+.du-composer-mentions {
+  animation: du-pop var(--m-fast) var(--m-ease-out) both;
+  transform-origin: top left;
+}
+
+.vs-presets-backdrop {
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+.vs-presets-modal,
+.cc-cmd-modal {
+  animation: du-dialog-in var(--m-base) var(--m-ease-out) both;
+}
+
+/* Inline notices and errors appear instead of blinking in. */
+.draft-note,
+.si-error,
+.vs-duration-warning,
+.du-notice-enter {
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
+}
+
+/* Selection checkmarks and "copied" ticks settle in. */
+.hmp-check,
+.du-check-pop {
+  animation: du-icon-in var(--m-instant) var(--m-ease-out) both;
+}
+
+/* Carets turn with what they open. */
+.du-caret,
+.hf-item-caret,
+.vs-duration-trigger > svg {
+  transition: transform var(--m-fast) var(--m-ease-in-out);
+}
+
+[aria-expanded="true"] > .du-caret,
+[aria-expanded="true"] .du-caret,
+.hf-item[aria-expanded="true"] .hf-item-caret {
+  transform: rotate(180deg);
+}
+
+.vs-duration-trigger[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+
+/* Numbers that change in place keep their width. */
+.du-composer-cost,
+.vs-generate-cost,
+.vs-count,
+.sr-elapsed,
+.hmp-count,
+.hp-price-val,
+.hp-price-num,
+.du-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Direct manipulation stays 1:1 with the hand: no easing while dragging. */
+.cc-compare-before-layer,
+.cc-compare-divider,
+[data-dragging="true"] {
+  transition: none !important;
+}
+
+/* An empty submit shakes the composer a little (a "no", not an error). */
+@keyframes du-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-4px);
+  }
+
+  45% {
+    transform: translateX(4px);
+  }
+
+  70% {
+    transform: translateX(-2px);
+  }
+
+  88% {
+    transform: translateX(1.5px);
+  }
+}
+
+.du-composer-nudge {
+  animation: du-nudge var(--m-slow) var(--m-ease-out);
+}
+
+/* Content swapped under a tab or filter cross-fades in (keyed). */
+.du-fade-swap {
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
 }

@@ -808,6 +808,27 @@ export function AiVideoStudio({
   const effectTemplate = settings.preset ? EFFECT_TEMPLATES.find((item) => item.id === settings.preset) : undefined;
   const effectName = effectTemplate ? labelFor(effectTemplate.name, locale) : null;
 
+  const presetsTriggerRef = useRef<HTMLButtonElement>(null);
+  const durationTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!presetsOpen && !durationOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (presetsOpen) {
+        setPresetsOpen(false);
+        requestAnimationFrame(() => presetsTriggerRef.current?.focus());
+        return;
+      }
+      if (durationOpen) {
+        setDurationOpen(false);
+        requestAnimationFrame(() => durationTriggerRef.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [presetsOpen, durationOpen]);
+
   return (
     <div className="vs-root" {...(mode === "Create" ? { onPaste: drop.bind.onPaste } : {})}>
       <HomeMediaPicker
@@ -955,6 +976,7 @@ export function AiVideoStudio({
               ) : null}
               <div className="vs-prompt-foot">
                 <button
+                  ref={presetsTriggerRef}
                   type="button"
                   className={activePreset ? "vs-chip vs-chip-on" : "vs-chip"}
                   aria-expanded={presetsOpen}
@@ -1032,7 +1054,7 @@ export function AiVideoStudio({
                 format={(value) => `${value}s`}
                 onChange={() => undefined}
               /> : <div ref={durationRef} className="vs-duration-wrap">
-                <button type="button" className="vs-card vs-duration-trigger" aria-expanded={durationOpen} aria-controls="studio-duration-panel" onClick={() => setDurationOpen((value) => !value)}>
+                <button ref={durationTriggerRef} type="button" className="vs-card vs-duration-trigger" aria-expanded={durationOpen} aria-controls="studio-duration-panel" onClick={() => setDurationOpen((value) => !value)}>
                   <span className="min-w-0 flex-1"><span className="vs-card-label">{copy.duration}</span><span className="vs-card-value">{durationText}</span></span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
                 </button>
@@ -1071,6 +1093,14 @@ export function AiVideoStudio({
               /> : null}
             </div>
             {!durationSupported && durationOptions.length ? <output className="vs-duration-warning">{isChinese ? `${model.name} 当前支持 ${durationLabel(durationOptions)} 秒，请调整时长后再生成。` : `${model.name} currently supports ${durationLabel(durationOptions, ", ")} seconds. Adjust the length before generating.`}</output> : null}
+            {needsStartImage ? (
+              <output className="vs-duration-warning">
+                {isChinese ? `${bannerName} 需要至少 1 张参考素材才能生成，` : `${bannerName} needs at least 1 reference image to generate — `}
+                <button type="button" disabled={uploading} className="underline underline-offset-2 disabled:opacity-50" onClick={() => setMediaPickerOpen(true)}>
+                  {uploading ? (isChinese ? "素材上传中…" : "uploading…") : (isChinese ? "立即上传素材" : "upload one now")}
+                </button>
+              </output>
+            ) : null}
 
             <button
               type="button"
@@ -1094,11 +1124,6 @@ export function AiVideoStudio({
                 {isChinese ? `余额 ${num(available)} 积分` : `Balance: ${num(available)} credits`}
                 {shortBy ? (isChinese ? `，还差 ${num(shortBy)} 积分` : ` (${num(shortBy)} more needed)`) : null}
               </p>
-            ) : null}
-            {needsStartImage ? (
-              <output className="vs-notice">
-                {isChinese ? `${bannerName} 需要先上传素材。` : `${bannerName} needs reference media. Upload above.`}
-              </output>
             ) : null}
             {selectedModelConnected ? null : (
               <output className="vs-notice">

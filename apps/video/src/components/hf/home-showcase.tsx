@@ -91,6 +91,23 @@ function buildDiscoverItems(): DiscoverItem[] {
 
 const DISCOVER_ITEMS = buildDiscoverItems();
 
+/** Distribute items into N columns by inverse aspect-ratio height so columns finish flush. */
+function distributeBalancedColumns(items: DiscoverItem[], columnCount: number): DiscoverItem[][] {
+  const columns: DiscoverItem[][] = Array.from({ length: columnCount }, () => []);
+  const heights = Array.from({ length: columnCount }, () => 0);
+  for (const item of items) {
+    const [w, h] = item.ratio.split("/").map((part) => Number(part.trim()));
+    const weight = w > 0 && h > 0 ? h / w : 1;
+    let shortest = 0;
+    for (let i = 1; i < columnCount; i++) {
+      if (heights[i] < heights[shortest]) shortest = i;
+    }
+    columns[shortest].push(item);
+    heights[shortest] += weight + 0.08;
+  }
+  return columns;
+}
+
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
     <InViewVideo className={className} src={media.src} poster={media.poster} />
@@ -121,6 +138,15 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
   const trackRef = useRef<HTMLDivElement>(null);
   const carousel = useCarousel(trackRef);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("all");
+  const [masonryCols, setMasonryCols] = useState(4);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1199px)");
+    const sync = () => setMasonryCols(mq.matches ? 2 : 4);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const visibleDiscover =
     discoverTab === "all"
@@ -189,26 +215,30 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             </div>
           </div>
 
-          <div className="hs-discover-masonry">
-            {visibleDiscover.map((item, position) => {
-              const promptText = item.prompt ? t(item.prompt) : undefined;
-              const targetHref = item.promptId
-                ? localizedHref(lang, withExamplePrompt(item.href, item.promptId))
-                : localizedHref(lang, withPrompt(item.href, promptText));
+          <div key={discoverTab} className="hs-discover-masonry du-fade-swap">
+            {distributeBalancedColumns(visibleDiscover, masonryCols).map((col, colIndex) => (
+              <div key={`col-${colIndex}`} className="hs-discover-col">
+                {col.map((item, rowIndex) => {
+                  const promptText = item.prompt ? t(item.prompt) : undefined;
+                  const targetHref = item.promptId
+                    ? localizedHref(lang, withExamplePrompt(item.href, item.promptId))
+                    : localizedHref(lang, withPrompt(item.href, promptText));
 
-              return (
-                <WallCard
-                  key={item.id}
-                  media={item.media}
-                  href={targetHref}
-                  prompt={promptText}
-                  cta={zh ? "做同款" : "Recreate"}
-                  ratio={item.ratio}
-                  position={position}
-                  zh={zh}
-                />
-              );
-            })}
+                  return (
+                    <WallCard
+                      key={item.id}
+                      media={item.media}
+                      href={targetHref}
+                      prompt={promptText}
+                      cta={zh ? "做同款" : "Recreate"}
+                      ratio={item.ratio}
+                      position={colIndex * 4 + rowIndex}
+                      zh={zh}
+                    />
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           <div className="hs-more-row">

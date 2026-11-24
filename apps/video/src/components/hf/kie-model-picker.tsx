@@ -445,7 +445,7 @@ export function KieModelPicker({
               <ImageIcon className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
             )}
             <span className="truncate text-[var(--du-text)]">{triggerLabel}</span>
-            <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+            <ChevronDown className="du-caret ml-auto h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
           </>
         )}
       </button>

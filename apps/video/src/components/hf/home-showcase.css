@@ -235,21 +235,34 @@
 }
 
 /* ============================================================================
-   3. Frameless Edge-to-Edge Discovery Masonry (Pure Moving Cinema & 4K Art)
+   3. Frameless Edge-to-Edge Balanced Discovery Masonry (Pure Moving Cinema & 4K Art)
    ============================================================================ */
 .hs-discover-masonry {
-  columns: 4;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.hs-discover-col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .hs-wall-item {
   position: relative;
   display: block;
   overflow: hidden;
-  margin-bottom: 12px;
-  break-inside: avoid;
   border-radius: var(--ds-r-lg);
   background: var(--du-bg-elev);
+}
+
+/* Preserve vertical spacing & break-inside for sub-page CSS-column walls (.hs-wall) */
+.hs-wall > .hs-wall-item {
+  margin-bottom: 12px;
+  break-inside: avoid;
 }
 
 .hs-wall-item img,
@@ -1000,7 +1013,7 @@
   }
 
   .hs-discover-masonry {
-    columns: 3;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hs-suite-grid {
@@ -1035,11 +1048,15 @@
   }
 
   .hs-discover-masonry {
-    columns: 2;
-    column-gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
-  .hs-wall-item {
+  .hs-discover-col {
+    gap: 8px;
+  }
+
+  .hs-wall > .hs-wall-item {
     margin-bottom: 8px;
   }
 

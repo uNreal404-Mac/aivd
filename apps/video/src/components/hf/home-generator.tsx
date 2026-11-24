@@ -103,14 +103,28 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   };
   // References trimmed by a model change can be brought back with the model.
   const [trimmed, setTrimmed] = useState<{ modelId: string; references: PickerAsset[]; prompt: string } | null>(null);
+  // Escape closes the settings and puts focus back on the button that opened them.
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!panel) return;
+    const activePanel = panel;
     const closeOnOutsideClick = (event: PointerEvent) => {
       if (!(event.target as Element).closest("[data-home-popover]")) setPanel(null);
     };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setPanel(null);
+      requestAnimationFrame(() => {
+        if (activePanel === "settings") settingsTriggerRef.current?.focus();
+      });
+    };
     document.addEventListener("pointerdown", closeOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, [panel]);
 
   // Local storage survives email sign-in opening a new tab; IndexedDB keeps guest file bytes.
@@ -408,7 +422,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
       <div className={`relative min-w-0 ${kind === "image" ? "rounded-xl bg-[var(--du-surface-2)] px-2" : ""}`}><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" glass showConnectionStatus={false} catalogSet="current" compact /></div>
       {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => setSound(!sound)} aria-pressed={sound}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "声音：开" : "Sound: on") : (zh ? "声音：关" : "Sound: off")}</button></> : null}
-      {divider}<div data-home-popover className="relative"><button type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolutionLabel(resolution)}` : imageResolutions.length ? `${aspect} / ${resolutionLabel(resolution)}` : aspect}</button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
+      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={plainControl} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"}><Settings2 className="h-4 w-4 shrink-0" />{kind === "video" ? `${aspect} / ${duration}s / ${resolutionLabel(resolution)}` : imageResolutions.length ? `${aspect} / ${resolutionLabel(resolution)}` : aspect}</button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
         {settingRow(zh ? "画面比例" : "Aspect ratio", kind === "video" ? videoAspects : imageAspects, aspect, setAspect)}
         {kind === "video" ? (videoDurations.length > 6
           ? <><p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "视频时长" : "Video length"} · <span className="du-num">{duration}s</span></p><input type="range" min={videoDurations[0]} max={videoDurations.at(-1)} value={duration} onChange={(event) => { const raw = Number(event.target.value); setDuration(videoDurations.reduce((nearest, next) => (Math.abs(next - raw) < Math.abs(nearest - raw) ? next : nearest), videoDurations[0])); }} className="mt-2 w-full accent-[var(--du-accent)]" aria-label={zh ? "视频时长" : "Video length"} /></>
@@ -421,7 +435,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
         <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <Loader2 key="busy" data-swap className="du-composer-spinner" aria-hidden="true" /> : <ArrowUp key="go" data-swap className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </div>
-    {notice ? <output key={notice} data-presence="fade" className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
+    {notice ? <output key={notice} data-presence="fade" aria-live="polite" className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}
     {replaced !== null && !notice ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? "已换成这条灵感" : "Replaced with this idea"}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { setPrompt(replaced.prompt); setAspect(replaced.aspect); setReplaced(null); promptRef.current?.focus({ preventScroll: true }); }}>{zh ? "恢复原内容" : "Undo"}</button></output> : null}
     {trimmed !== null ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? `这个模型最多支持 ${videoReferenceLimit} 张参考图，已自动保留前 ${videoReferenceLimit} 张` : `This model supports up to ${videoReferenceLimit} reference image${videoReferenceLimit > 1 ? "s" : ""}. Kept the first ${videoReferenceLimit}.`}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { const back = trimmed; setTrimmed(null); setVideoReferences(back.references); setPrompt(back.prompt); selectModel(back.modelId); }}>{zh ? "换回原模型" : "Switch back"}</button></output> : null}
     {kind === "video" && showSuggestions && !suggestionsHidden ? <div className="du-composer-suggestions">

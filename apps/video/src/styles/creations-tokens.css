@@ -394,6 +394,13 @@
   color: var(--cr-text);
 }
 
+.cr-button--danger {
+  background: var(--du-danger);
+  border-color: var(--du-danger);
+  color: var(--du-on-accent);
+  font-weight: 700;
+}
+
 .cr-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
