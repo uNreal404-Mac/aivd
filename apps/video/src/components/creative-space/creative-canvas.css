@@ -210,6 +210,7 @@
 .cc-edges-svg {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 1px;
   height: 1px;
   overflow: visible;
@@ -401,6 +402,8 @@
   border-radius: var(--ds-r-2xl);
   background: color-mix(in srgb, var(--du-accent) 5%, transparent);
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .cc-group-head {

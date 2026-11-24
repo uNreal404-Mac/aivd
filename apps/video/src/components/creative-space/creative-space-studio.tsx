@@ -1505,8 +1505,9 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
     const ts = Date.now();
     const groupId = `tpl-grp-${tpl.id}-${ts}`;
     const existing = nodesRef.current;
-    let z = maxZIndex(existing);
+    let z = Math.max(2, maxZIndex(existing));
     const all = [...existing];
+    const stepStride = 336;
     const newCards: CanvasTextNode[] = tpl.steps.map((step, idx) => {
       const card: CanvasTextNode = {
         id: `tpl-step-${tpl.id}-${ts}-${idx}`,
@@ -1516,7 +1517,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
         title: zh ? step.titleZh : step.titleEn,
         content: zh ? step.contentZh : step.contentEn,
         tone: "storyboard",
-        x: origin.x + idx * 284,
+        x: origin.x + idx * stepStride,
         y: origin.y + 48,
         width: 256,
         zIndex: ++z,
@@ -1534,8 +1535,8 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
       title: zh ? tpl.groupZh : tpl.groupEn,
       x: origin.x - 24,
       y: origin.y - 8,
-      width: tpl.steps.length * 284 + 20,
-      height: 280,
+      width: tpl.steps.length * stepStride - 32,
+      height: 284,
       zIndex: 0,
       status: "ready",
       createdAt: ts,
@@ -2858,7 +2859,7 @@ export function CreativeSpaceStudio({ locale, initialPrompt = "" }: CreativeSpac
                 <div
                   key={node.id}
                   className={`cc-node${isSelected ? " cc-node-selected" : ""}${isConnectSource ? " cc-node-connect-src" : ""}`}
-                  style={{ left: node.x, top: node.y, width: node.width, zIndex: node.zIndex }}
+                  style={{ left: node.x, top: node.y, width: node.width, zIndex: Math.max(2, node.zIndex) }}
                   onPointerDown={(e) => handleNodePointerDown(e, node)}
                 >
                   <div className="cc-node-head">
