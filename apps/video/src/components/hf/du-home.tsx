@@ -39,7 +39,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   ];
 
   // A template card or skill pill loads its prompt into the generator and scrolls smoothly up.
-  const useTemplate = (template: HomeTemplate) => {
+  const applyTemplate = (template: HomeTemplate) => {
     setPreset((previous) => ({
       prompt: isChinese ? template.prompt.zh : template.prompt.en,
       aspect: template.aspect,
@@ -70,7 +70,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
                   className="du-hero-skill-pill"
                   onClick={() => {
                     const tpl = HOME_TEMPLATES[skill.templateIndex ?? 0];
-                    if (tpl) useTemplate(tpl);
+                    if (tpl) applyTemplate(tpl);
                   }}
                 >
                   <span className="du-hero-skill-slash" aria-hidden="true">/</span>
@@ -87,7 +87,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
       </section>
 
       {/* 2. Frameless, Unified Gallery-First Showcase */}
-      <HomeShowcase lang={lang} onUseTemplate={useTemplate} />
+      <HomeShowcase lang={lang} onUseTemplate={applyTemplate} />
       {/* 3. Pricing */}
       <HomePricing lang={lang} />
       <BackToCreate lang={lang} anchorId="home-generator" />

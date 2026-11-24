@@ -13,7 +13,7 @@ import { modelIcon } from "@/components/hf/nav-menus";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
-import { EFFECT_TEMPLATES, labelFor, useHref as effectHref } from "@/lib/effects-data";
+import { EFFECT_TEMPLATES, labelFor, presetHref as effectHref } from "@/lib/effects-data";
 import {
   HOME_TEMPLATE_CATEGORIES,
   HOME_TEMPLATES,
@@ -151,7 +151,7 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
 
 function useComposerPreset(lang: string) {
   const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
-  const useTemplate = (template: HomeTemplate) => {
+  const applyTemplate = (template: HomeTemplate) => {
     setPreset((previous) => ({
       prompt: isZh(lang) ? template.prompt.zh : template.prompt.en,
       aspect: template.aspect,
@@ -159,12 +159,12 @@ function useComposerPreset(lang: string) {
     }));
     document.getElementById("home-generator")?.scrollIntoView({ behavior: scrollMotion(), block: "center" });
   };
-  return { preset, useTemplate };
+  return { preset, applyTemplate };
 }
 
 export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string; models: ComposerModel[]; initialPrompt: string }) {
   const zh = isZh(lang);
-  const { preset, useTemplate } = useComposerPreset(lang);
+  const { preset, applyTemplate } = useComposerPreset(lang);
   const showcases = [
     { title: "VEO 3.1", body: zh ? "8 秒短片，带同步声音与空间层次。" : "8-second clips with synchronized sound and depth.", href: "/models/veo-3-1", images: ["mountain-valley", "storm-sea", "planet-impact"] },
     { title: "WAN 2.6", body: zh ? "5 到 15 秒，720p 与 1080p，成本更低。" : "5 to 15 seconds in 720p and 1080p at a lower cost.", href: "/models/wan-2-6", images: ["autumn-walk", "rain-couple", "mountain-wind"] },
@@ -176,7 +176,7 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
         <h1 className="sp-title">{zh ? "用 AI 将任何视频创意变为现实" : "Turn any video idea into reality with AI"}</h1>
         <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} initialKind="video" initialPrompt={initialPrompt} hideKindTabs />
       </section>
-      <TemplateRow lang={lang} onUse={useTemplate} />
+      <TemplateRow lang={lang} onUse={applyTemplate} />
       {showcases.map((item) => (
         <section key={item.title} className="sp-showcase">
           <div className="sp-showcase-head">
@@ -262,11 +262,11 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
       [item.name.zh, item.name.en, item.description.zh, item.description.en].some((text) => text.toLowerCase().includes(needle)),
     );
   }, [query]);
-  const useHref = (item: HomeTemplate) =>
+  const templateHref = (item: HomeTemplate) =>
     `${localizedHref(lang, "/video")}?prompt=${encodeURIComponent(zh ? item.prompt.zh : item.prompt.en)}`;
   // Tall photo card from the homepage; hover shows "use template".
   const card = (item: HomeTemplate) => (
-    <Link key={item.id} href={useHref(item)} className="hs-tall" title={zh ? item.prompt.zh : item.prompt.en}>
+    <Link key={item.id} href={templateHref(item)} className="hs-tall" title={zh ? item.prompt.zh : item.prompt.en}>
       <img src={item.image} alt="" loading="lazy" />
       <span className="hs-usecase-shade" aria-hidden="true" />
       <span className="hs-tall-title">{zh ? item.title.zh : item.title.en}</span>

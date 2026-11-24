@@ -274,7 +274,7 @@ export function filterEffects(
   return items.filter((item) => item.category === category);
 }
 
-export function useHref(lang: string, template: EffectTemplate): string {
+export function presetHref(lang: string, template: EffectTemplate): string {
   const prompt = lang.toLowerCase().startsWith("zh") && template.promptZh ? template.promptZh : template.prompt;
   return localizedHref(lang, `/ai/video?preset=${encodeURIComponent(template.id)}&prompt=${encodeURIComponent(prompt)}`);
 }

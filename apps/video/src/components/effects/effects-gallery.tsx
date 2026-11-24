@@ -11,7 +11,7 @@ import {
   copyFor,
   filterEffects,
   labelFor,
-  useHref,
+  presetHref,
   type EffectsCategory,
 } from "@/lib/effects-data";
 import "./effects.css";
@@ -79,7 +79,7 @@ export function EffectsGallery({ lang }: { lang: string }) {
             return (
               <li key={template.id} className="fx-item">
                 <Link
-                  href={useHref(lang, template)}
+                  href={presetHref(lang, template)}
                   className={`fx-card ${look.move ? `fx-move-${look.move}` : ""}`}
                   style={{ aspectRatio: SHAPES[index % SHAPES.length] }}
                 >
