@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 
+import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import "./kie-model-picker.css";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
@@ -51,23 +52,32 @@ type Props = {
   catalogSet?: "backup" | "current";
   glass?: boolean;
   allowUnconnectedSelection?: boolean;
+  hideTrigger?: boolean;
 };
 
-function ModelIcon({ family }: { family: string }) {
+function ModelIcon({ family, kind }: { family: string; kind: "video" | "image" }) {
   const Icon =
-    family === "Seedance"
-      ? Clapperboard
-      : family === "Kling" || family === "Grok Imagine"
-        ? Orbit
-        : family === "MiniMax Hailuo"
-          ? AudioLines
-          : family === "Google Veo" || family === "Gemini Omni Flash" || family === "Google Imagen"
-            ? Sparkles
-            : family === "Wan" || family === "FLUX"
-              ? Aperture
-              : family === "Seedream" || family === "Ideogram" || family === "Qwen" || family === "Z-Image"
-                ? ImageIcon
-                : Film;
+    kind === "image"
+      ? family === "FLUX" || family === "Wan"
+        ? Aperture
+        : family === "Google Imagen" || family === "Nano Banana" || family === "GPT Image"
+          ? Sparkles
+          : family === "Kling" || family === "Grok Imagine"
+            ? Orbit
+            : ImageIcon
+      : family === "Seedance"
+        ? Clapperboard
+        : family === "Kling" || family === "Grok Imagine"
+          ? Orbit
+          : family === "MiniMax Hailuo"
+            ? AudioLines
+            : family === "Google Veo" || family === "Gemini Omni Flash" || family === "Google Imagen"
+              ? Sparkles
+              : family === "Wan" || family === "FLUX"
+                ? Aperture
+                : family === "Seedream" || family === "Ideogram" || family === "Qwen" || family === "Z-Image"
+                  ? ImageIcon
+                  : Film;
   return <Icon aria-hidden="true" className="h-5 w-5" />;
 }
 
@@ -111,6 +121,19 @@ function startingCredits(modelId: string): number | null {
   return lowest;
 }
 
+/** Cheapest credit price an image model can be run at, from live KIE market pricing. */
+function startingImageCredits(modelId: string): number | null {
+  const model = getMarketModel(modelId);
+  if (!model || model.kind !== "image") return null;
+  const resolutions = model.options.resolutions?.length ? model.options.resolutions : [undefined];
+  let lowest: number | null = null;
+  for (const resolution of resolutions) {
+    const credits = marketCredits(model, { prompt: "", resolution, count: 1 });
+    if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+  }
+  return lowest;
+}
+
 /** Models that can generate first, then the rest; order is otherwise kept. */
 function connectedFirst(models: CatalogModel[], isConnected: (id: string) => boolean): CatalogModel[] {
   return [...models.filter((item) => isConnected(item.id)), ...models.filter((item) => !isConnected(item.id))];
@@ -140,6 +163,7 @@ export function KieModelPicker({
   valueLabel,
   glass = false,
   allowUnconnectedSelection = false,
+  hideTrigger = false,
 }: Props) {
   const zh = locale.toLowerCase().startsWith("zh");
   const t = useTranslations("ModelPicker");
@@ -292,7 +316,7 @@ export function KieModelPicker({
     const selected = item.id === value;
     const ready = isConnected(item.id);
     const selectable = ready || allowUnconnectedSelection;
-    const credits = !ready ? null : kind === "video" ? (startingCredits(item.id) ?? 70) : 20;
+    const credits = !ready ? null : kind === "video" ? startingCredits(item.id) : startingImageCredits(item.id);
     const specs = kind === "video" ? VIDEO_MODEL_SPECS[item.id] : undefined;
     return (
       <button
@@ -313,7 +337,7 @@ export function KieModelPicker({
           aria-hidden="true"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"
         >
-          <ModelIcon family={item.family} />
+          <ModelIcon family={item.family} kind={kind} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
@@ -345,6 +369,9 @@ export function KieModelPicker({
 
   return (
     <div ref={pickerRef} className={`relative ${placement === "inline" || placement === "card" ? "w-full" : ""}`}>
+      {hideTrigger ? (
+        <button ref={triggerRef} type="button" tabIndex={-1} aria-hidden="true" className="pointer-events-none block h-0 w-full overflow-hidden p-0 opacity-0" />
+      ) : (
       <button
         ref={triggerRef}
         type="button"
@@ -373,6 +400,7 @@ export function KieModelPicker({
           </>
         )}
       </button>
+      )}
 
       {open ? (
         <div
@@ -415,7 +443,7 @@ export function KieModelPicker({
                 <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{copy.all}</p>
                 {Array.from(new Set(readyCatalog.map((item) => item.family))).map((name) => (
                   <button key={name} type="button" onClick={() => setFamily(name)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[var(--du-surface-2)]">
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={name} /></span>
+                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={name} kind={kind} /></span>
                     <span className="min-w-0 flex-1 text-sm text-[var(--du-text)]">{name}<span className="block text-xs text-[var(--du-text-muted)]">{readyCatalog.filter((item) => item.family === name).length} {copy.models}</span></span>
                     <ChevronRight className="h-4 w-4 text-[var(--du-text-muted)]" />
                   </button>

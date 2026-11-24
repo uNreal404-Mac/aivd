@@ -85,6 +85,11 @@ const STAGE_TABS = RIGHT_TABS.filter((tab) => tab !== "Library");
 const MODEL_COVERS: Record<string, string> = {
   "veo-3.1": "/home/samples/mountain-valley.webp",
   "wan2.6": "/home/samples/storm-sea.webp",
+  "bytedance/seedance-2-5": "/home/samples/red-carpet.webp",
+  "seedance-2-5-flash": "/home/samples/rain-couple.webp",
+  "kling/v4-reference-to-video": "/home/samples/autumn-walk.webp",
+  "kling/v4-flash-reference-to-video": "/home/samples/studio-room.webp",
+  "wan/3-0-video": "/home/samples/storm-sea.webp",
 };
 
 
@@ -446,8 +451,9 @@ export function AiVideoStudio({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pickerOpen]);
 
-  // Show earlier generations so a reload does not lose clips in progress.
+  // Show earlier generations only when signed in (avoids 401 noise for guests).
   useEffect(() => {
+    if (!session) return;
     let cancelled = false;
     fetchRecentResults().then((history) => {
       if (cancelled || history.length === 0) return;
@@ -458,7 +464,7 @@ export function AiVideoStudio({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [session]);
 
   // Poll unfinished clips until they complete or fail. The timer is keyed on
   // the set of pending ids, so it stops by itself once nothing is pending.
@@ -718,66 +724,73 @@ export function AiVideoStudio({
         userId={session?.user?.id}
       />
       <aside aria-label={copy.settings} className="vs-panel">
-        <div className="vs-modes" role="tablist">
-          {MODES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={option === mode}
-              onClick={() => setMode(option)}
-              className={option === mode ? "vs-mode vs-mode-on" : "vs-mode"}
-            >
-              {copy.modes[option] ?? option}
-            </button>
-          ))}
+        <button type="button" className="vs-banner" onClick={() => setPickerOpen(true)} aria-label={`${copy.chooseModel}：${bannerName}`}>
+          <img src={cover} alt="" className="vs-banner-img" />
+          <span className="vs-banner-shade" aria-hidden="true" />
+          <span className="vs-banner-change">
+            <Pencil className="h-3 w-3" aria-hidden="true" />
+            {copy.change}
+          </span>
+          <span className="vs-banner-text">
+            <span className="vs-banner-title">{bannerName}</span>
+            <span className="vs-banner-sub">{bannerSub}</span>
+          </span>
+        </button>
+        <div className="h-0 overflow-visible">
+          <KieModelPicker
+            kind="video"
+            locale={locale}
+            value={catalogModelId}
+            connectedIds={availableModelIds}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            placement="card"
+            catalogSet="backup"
+            allowUnconnectedSelection
+            glass
+            label={copy.model}
+            valueLabel={upcoming?.name}
+            hideTrigger
+            onChange={switchModel}
+          />
         </div>
 
-        {mode === "Create" ? (
-          <>
-            <button type="button" className="vs-banner" onClick={() => setPickerOpen(true)} aria-label={`${copy.chooseModel}：${bannerName}`}>
-              <img src={cover} alt="" className="vs-banner-img" />
-              <span className="vs-banner-shade" aria-hidden="true" />
-              <span className="vs-banner-change">
-                <Pencil className="h-3 w-3" aria-hidden="true" />
-                {copy.change}
-              </span>
-              <span className="vs-banner-text">
-                <span className="vs-banner-title">{bannerName}</span>
-                <span className="vs-banner-sub">{bannerSub}</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className={`vs-upload sr-drop w-full ${drop.over ? "sr-drop-on" : ""} ${preview ? "vs-upload-has" : ""}`}
-              onClick={() => setMediaPickerOpen(true)}
-              onDragEnter={drop.bind.onDragEnter}
-              onDragOver={drop.bind.onDragOver}
-              onDragLeave={drop.bind.onDragLeave}
-              onDrop={drop.bind.onDrop}
-              data-drop-label={isChinese ? "松开即可添加素材" : "Drop to add media"}
-              disabled={uploading || maxVideoReferences(catalogModelId) === 0}
-              aria-label={isChinese ? "上传素材" : "Upload media"}
-            >
-              {preview ? (
-                <img src={preview} alt="" className="vs-upload-preview" />
-              ) : (
-                <span className="vs-upload-icons" aria-hidden="true">
-                  <span><ImagePlus className="h-4 w-4" /></span>
-                  <span><Film className="h-4 w-4" /></span>
-                  <span><Sparkles className="h-4 w-4" /></span>
-                </span>
-              )}
-              <span className="vs-upload-title">{homeReferences.length > 1 ? (isChinese ? `已添加 ${homeReferences.length} 张参考图` : `${homeReferences.length} reference images added`) : fileName ?? (isChinese ? "上传素材" : "Upload media")}</span>
-              <span className="vs-upload-sub">
-                {uploading
-                  ? isChinese ? "上传中…" : "Uploading…"
-                  : preview
-                    ? isChinese ? "点击查看素材库或更换图片" : "Open your library to change the image"
-                    : isChinese ? `点击打开素材库，可在弹窗拖拽上传 · ${copy.fileTypes}` : `Open your library to click or drop an image · ${copy.fileTypes}`}
-              </span>
-            </button>
+        <button
+          type="button"
+          className={`vs-upload sr-drop w-full ${drop.over ? "sr-drop-on" : ""} ${preview ? "vs-upload-has" : ""}`}
+          onClick={() => setMediaPickerOpen(true)}
+          onDragEnter={drop.bind.onDragEnter}
+          onDragOver={drop.bind.onDragOver}
+          onDragLeave={drop.bind.onDragLeave}
+          onDrop={drop.bind.onDrop}
+          data-drop-label={isChinese ? "松开即可添加素材" : "Drop to add media"}
+          disabled={uploading || maxVideoReferences(catalogModelId) === 0}
+          aria-label={isChinese ? "上传素材" : "Upload media"}
+        >
+          {preview ? (
+            <img src={preview} alt="" className="vs-upload-preview" />
+          ) : (
+            <span className="vs-upload-icons" aria-hidden="true">
+              <span><ImagePlus className="h-4 w-4" /></span>
+              <span><Film className="h-4 w-4" /></span>
+              <span><Sparkles className="h-4 w-4" /></span>
+            </span>
+          )}
+          <span className="vs-upload-title">
+            {homeReferences.length > 1
+              ? (isChinese ? `已添加 ${homeReferences.length}/${maxVideoReferences(catalogModelId)} 张参考图` : `${homeReferences.length}/${maxVideoReferences(catalogModelId)} reference images`)
+              : fileName ?? (maxVideoReferences(catalogModelId) > 1
+                  ? (isChinese ? `添加参考图（最多 ${maxVideoReferences(catalogModelId)} 张）` : `Add references (up to ${maxVideoReferences(catalogModelId)})`)
+                  : copy.startFrame)}
+          </span>
+          <span className="vs-upload-sub">
+            {uploading
+              ? isChinese ? "上传中…" : "Uploading…"
+              : preview
+                ? isChinese ? "点击查看素材库或更换图片" : "Open your library to change the image"
+                : isChinese ? `点击打开素材库或拖拽上传 · ${copy.fileTypes}` : `Click or drop an image · ${copy.fileTypes}`}
+          </span>
+        </button>
             {homeReferences.length > 1 ? <div className="vs-home-references" aria-label={isChinese ? "已选择的参考图片" : "Selected reference images"}>
               {homeReferences.map((item, index) => <div key={item.key} className="vs-home-reference" title={item.name}>
                 <img src={item.url} alt={isChinese ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
@@ -836,10 +849,6 @@ export function AiVideoStudio({
                   <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
                   {activePreset ? (isChinese ? activePreset.zh : activePreset.en) : copy.preset}
                 </button>
-                <span className="vs-chip vs-chip-static" title={copy.soon}>
-                  <AtSign className="h-3.5 w-3.5" aria-hidden="true" />
-                  {isChinese ? "元素" : "Elements"}
-                </span>
                 <button
                   type="button"
                   className="vs-chip"
@@ -866,56 +875,47 @@ export function AiVideoStudio({
             ) : null}
 
             {presetsOpen ? (
-              <section id="studio-presets" className="vs-presets" aria-label={isChinese ? "镜头预设" : "Camera presets"}>
-                <div className="vs-presets-head">
-                  <span>{isChinese ? "镜头预设" : "Camera presets"}</span>
-                  {activePreset ? (
-                    <button type="button" className="vs-link" onClick={() => setSettings((previous) => ({ ...previous, preset: undefined }))}>
-                      {copy.clearPreset}
-                    </button>
-                  ) : null}
-                </div>
-                <div className="vs-presets-grid">
-                  {VIDEO_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      aria-pressed={settings.preset === preset.id}
-                      className={settings.preset === preset.id ? "vs-preset vs-preset-on" : "vs-preset"}
-                      title={preset.prompt}
-                      onClick={() => {
-                        setSettings((previous) => ({ ...previous, preset: previous.preset === preset.id ? undefined : preset.id }));
-                        setPresetsOpen(false);
-                      }}
-                    >
-                      <span className={`vs-preset-media vs-move-${preset.motion}`}>
-                        <img src={preset.image} alt="" loading="lazy" />
-                      </span>
-                      <span className="vs-preset-name">{isChinese ? preset.zh : preset.en}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="vs-presets-note">
-                  {isChinese ? "选中的运镜会自动加到提示词后面，所有模型都能用。" : "The camera move is added to your prompt, so it works with every model."}
-                </p>
-              </section>
+              <dialog open className="vs-presets-backdrop m-0 max-h-none max-w-none border-0" aria-label={isChinese ? "选择镜头预设" : "Choose camera preset"} onClick={() => setPresetsOpen(false)}>
+                <section id="studio-presets" className="vs-presets vs-presets-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="vs-presets-head">
+                    <span>{isChinese ? "镜头运镜预设" : "Camera presets"}</span>
+                    <div className="flex items-center gap-3">
+                      {activePreset ? (
+                        <button type="button" className="vs-link" onClick={() => setSettings((previous) => ({ ...previous, preset: undefined }))}>
+                          {copy.clearPreset}
+                        </button>
+                      ) : null}
+                      <button type="button" className="vs-link" onClick={() => setPresetsOpen(false)} aria-label={isChinese ? "关闭" : "Close"}>
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="vs-presets-grid">
+                    {VIDEO_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        aria-pressed={settings.preset === preset.id}
+                        className={settings.preset === preset.id ? "vs-preset vs-preset-on" : "vs-preset"}
+                        title={preset.prompt}
+                        onClick={() => {
+                          setSettings((previous) => ({ ...previous, preset: previous.preset === preset.id ? undefined : preset.id }));
+                          setPresetsOpen(false);
+                        }}
+                      >
+                        <span className={`vs-preset-media vs-move-${preset.motion}`}>
+                          <img src={preset.image} alt="" loading="lazy" />
+                        </span>
+                        <span className="vs-preset-name">{isChinese ? preset.zh : preset.en}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="vs-presets-note">
+                    {isChinese ? "选中的运镜会自动加到提示词后面，所有模型都能用。" : "The camera move is added to your prompt, so it works with every model."}
+                  </p>
+                </section>
+              </dialog>
             ) : null}
-
-            <KieModelPicker
-              kind="video"
-              locale={locale}
-              value={catalogModelId}
-              connectedIds={availableModelIds}
-              open={pickerOpen}
-              onOpenChange={setPickerOpen}
-              placement="card"
-              catalogSet="backup"
-              allowUnconnectedSelection
-              glass
-              label={copy.model}
-              valueLabel={upcoming?.name}
-              onChange={switchModel}
-            />
 
             <div className="vs-grid">
               <div ref={durationRef} className="vs-duration-wrap">
@@ -1007,29 +1007,6 @@ export function AiVideoStudio({
                 ) : null}
               </output>
             ) : null}
-          </>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className="vs-hint">
-              {isChinese ? "这些编辑工具即将上线，先看看每个能做什么。" : "These editing tools are coming soon. Pick one to see what it will do."}
-            </p>
-            {EDIT_TOOLS.map((tool, index) => (
-              <button
-                key={tool.en}
-                type="button"
-                aria-pressed={editTool === index}
-                onClick={() => setEditTool(index)}
-                className={editTool === index ? "vs-card vs-tool vs-tool-on" : "vs-card vs-tool"}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="vs-card-value">{isChinese ? tool.zh : tool.en}</span>
-                  <span className="vs-card-label">{isChinese ? tool.descZh : tool.descEn}</span>
-                </span>
-                <span className="vs-soon">{copy.soon}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </aside>
 
       <section aria-label={copy.results} className="vs-stage">

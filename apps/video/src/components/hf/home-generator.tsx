@@ -108,13 +108,24 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
             return guest ? [guest] : item.key && item.url ? [item as PickerAsset] : [];
           }) : [];
           if (!live) return;
+          const restoredKind = !hideKindTabs && (saved.kind === "video" || saved.kind === "image") ? saved.kind : initialKind;
           if (!hideKindTabs && (saved.kind === "video" || saved.kind === "image")) setKind(saved.kind);
           if (typeof saved.prompt === "string" && !initialPrompt) setPrompt(saved.prompt);
           if (typeof saved.mode === "string") setMode(saved.mode === "reference" ? "reference" : "text");
+          const restoredVideoModelId = typeof saved.modelId === "string" ? saved.modelId : (defaultVideoModel?.id ?? DEFAULT_VIDEO_MODEL_ID);
+          const restoredImageModelId = typeof saved.imageModelId === "string" ? saved.imageModelId : (IMAGE_MODEL_IDS[0] ?? "");
           if (typeof saved.modelId === "string") setModelId(saved.modelId);
           if (typeof saved.imageModelId === "string") setImageModelId(saved.imageModelId);
-          if (typeof saved.aspect === "string") setAspect(saved.aspect);
-          if (typeof saved.resolution === "string") setResolution(saved.resolution);
+          const validAspects = restoredKind === "image" ? IMAGE_ASPECTS : VIDEO_ASPECTS;
+          const validVideoResolutions = STUDIO_MODELS.find((item) => item.id === restoredVideoModelId)?.resolutions ?? ["480p", "720p", "1080p"];
+          const validImageResolutions = getMarketModel(restoredImageModelId)?.options.resolutions ?? ["1K", "2K", "4K"];
+          const validResolutions = restoredKind === "image" ? validImageResolutions : validVideoResolutions;
+          if (typeof saved.aspect === "string" && validAspects.includes(saved.aspect)) setAspect(saved.aspect);
+          if (typeof saved.resolution === "string" && validResolutions.includes(saved.resolution)) {
+            setResolution(saved.resolution);
+          } else {
+            setResolution(validResolutions[0] ?? (restoredKind === "image" ? "1K" : "720p"));
+          }
           if (typeof saved.duration === "number") setDuration(saved.duration);
           setSound(Boolean(saved.sound));
           setVideoReferences(restore(saved.videoReferences));
@@ -281,11 +292,13 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const divider = <span aria-hidden="true" className="hidden h-5 w-px shrink-0 bg-[var(--du-border-strong)] sm:block" />;
   const segment = (value: string, selected: boolean, onClick: () => void, disabled = false) => <button key={value} type="button" disabled={disabled} onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{value}</button>;
 
+  const imageRefLimit = imageModel?.options.maxImages ?? 10;
+
   return <div id="home-generator" className="relative z-20 w-full max-w-[720px] scroll-mt-24">
-    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") setVideoReferences(items); else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferences.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? MAX_HOME_VIDEO_REFERENCES : 5} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
+    <HomeMediaPicker lang={lang} open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(items) => { if (kind === "video") setVideoReferences(items); else setReferenceImages(items); setNotice(""); }} onDelete={(id) => { const index = videoReferences.findIndex((item) => item.id === id); if (index >= 0) removeVideoReference(index); setReferenceImages((items) => items.filter((item) => item.id !== id)); }} maxSelected={kind === "video" ? MAX_HOME_VIDEO_REFERENCES : imageRefLimit} selectedIds={(kind === "video" ? videoReferences : referenceImages).map((item) => item.id)} userId={session?.user?.id} />
     {hideKindTabs ? null : <div className="du-composer-tabs" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
-      <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution("1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
+      <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution(imageModel?.options.resolutions?.[0] ?? "1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
       <button type="button" role="tab" aria-selected={kind === "canvas"} onClick={() => switchKind("canvas")} className={`du-composer-tab ${kind === "canvas" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "无限画布" : "Infinite Canvas"}</button>
     </div>}
     {kind === "canvas" ? <div className="du-canvas-entry" role="tabpanel" aria-label={zh ? "无限画布" : "Infinite Canvas"}>
@@ -293,11 +306,11 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
         <span className="du-canvas-entry-plus"><Plus aria-hidden="true" /></span>
         <span>{zh ? "新建画布" : "New canvas"}</span>
       </a>
-      <a className="du-canvas-entry-card du-canvas-entry-video" href={localizedHref(lang, "/creative-space")}>
+      <a className="du-canvas-entry-card du-canvas-entry-video" href={localizedHref(lang, "/creative-space/canvas")}>
         <span className="du-canvas-entry-visual"><Film aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
         <span>{zh ? "视频创作" : "Video creation"}</span>
       </a>
-      <a className="du-canvas-entry-card du-canvas-entry-image" href={localizedHref(lang, "/creative-space")}>
+      <a className="du-canvas-entry-card du-canvas-entry-image" href={localizedHref(lang, "/creative-space/canvas")}>
         <span className="du-canvas-entry-visual"><ImageIcon aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
         <span>{zh ? "图像创作" : "Image creation"}</span>
       </a>
@@ -310,7 +323,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
         <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} className="h-full w-full overflow-hidden rounded-lg border border-white/20" aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" className="h-full w-full object-cover" /><span className="absolute bottom-0 left-0 rounded-tr bg-black/75 px-1 text-[10px] text-white">@{index + 1}</span></button>
         <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="absolute -right-1 -top-1 rounded-full bg-black p-0.5 text-white"><X className="h-3 w-3" /></button>
       </div>)}
-      <span className="text-xs text-white/55">{zh ? "最多 5 张 · 点击缩略图可插入 @编号" : "Up to 5 · click an image to insert its @number"}</span>
+      <span className="text-xs text-white/55">{zh ? `最多 ${imageRefLimit} 张 · 点击缩略图可插入 @编号` : `Up to ${imageRefLimit} · click an image to insert its @number`}</span>
     </div> : null}
     <div className="du-composer-prompt-row flex min-h-[72px] gap-3">
       <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
@@ -341,7 +354,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       <div className="ml-auto flex items-center gap-3">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{estimatedCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
         {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3.5 w-3.5" aria-hidden="true" />{imageCredits}<span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
-        <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在进入创作台..." : "Opening studio...") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "继续创建图片" : "Continue to image")} title={submitting ? (zh ? "正在进入创作台..." : "Opening studio...") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "继续创建图片（Enter）" : "Continue to image (Enter)")} aria-busy={submitting || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <><Loader2 className="du-composer-spinner" aria-hidden="true" /><span>{zh ? "正在进入创作台..." : "Opening studio..."}</span></> : <ArrowUp className="h-4 w-4" aria-hidden="true" />}</button>
+        <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在进入创作台..." : "Opening studio...") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在进入创作台..." : "Opening studio...") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <><Loader2 className="du-composer-spinner" aria-hidden="true" /><span>{zh ? "正在进入创作台..." : "Opening studio..."}</span></> : <ArrowUp className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </div>
     {notice ? <output className="mt-2 block text-xs text-[var(--du-accent-text)]">{notice}</output> : null}

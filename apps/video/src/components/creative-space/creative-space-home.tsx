@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { AtSign, Bot, Film, Image as ImageIcon, ImagePlus, ListChecks, MessageSquareText, Sparkles, Wand2, type LucideIcon } from "lucide-react";
 
 import { estimateCredits } from "@/lib/ai-video-studio";
-import { MiniComposer } from "@/components/hf/home-showcase";
+import { CarouselArrows, MiniComposer } from "@/components/hf/home-showcase";
+import { useCarousel } from "@/components/hf/use-carousel";
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
 import { CreativeAgentComposer } from "./creative-agent-composer";
 import { CREATIVE_SKILL_CATEGORIES, skillsFor, type CreativeSkillCategory } from "@/lib/creative-skills";
@@ -27,6 +28,8 @@ type CreativeMode = "video" | "image" | "agent";
 export function CreativeSpaceHome({ lang, models }: { lang: string; models: Model[] }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const categoryTrackRef = useRef<HTMLDivElement>(null);
+  const categoryCarousel = useCarousel(categoryTrackRef);
   const [brief, setBrief] = useState("");
   const [mode, setMode] = useState<CreativeMode>("video");
   const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
@@ -70,9 +73,15 @@ export function CreativeSpaceHome({ lang, models }: { lang: string; models: Mode
         <h1 className="cs-title">{zh ? "一个创作空间，生成视频、图片和创意计划" : "One creative space for video, images, and ideas"}</h1>
         <p className="cs-sub">
           {zh
-            ? "选择视频、图片或 Agent，写下想法并从素材库添加参考图，开始创作。"
-            : "Choose Video, Image, or Agent. Describe your idea and add references from your media library."}
+            ? "选择视频、图片或 Agent，或直接进入无限画布进行局部重绘、扩图、消除、抠图、超清与多模态连线创作。"
+            : "Choose Video, Image, or Agent — or open the Infinite Canvas for Inpaint, Outpaint, Cutout, Upscale, and multimodal workflows."}
         </p>
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
+          <Link href={canvasHref()} className="hs-btn hs-btn-light">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            {zh ? "打开无限画布（生图 · 编辑 · 生视频 · Agent）" : "Open Infinite Canvas (Image · Edit · Video · Agent)"}
+          </Link>
+        </div>
 
         <div id="cs-composer-anchor" className="cs-generator-shell">
           <nav className="cs-mode-rail" aria-label={zh ? "创作类型" : "Creation type"}>
@@ -113,7 +122,7 @@ export function CreativeSpaceHome({ lang, models }: { lang: string; models: Mode
         <ScrollReveal />
         {/* 1. Category carousel */}
         <section className="hs-carousel" aria-label={zh ? "技能分类" : "Skill categories"}>
-          <div className="hs-carousel-track">
+          <div ref={categoryTrackRef} className="hs-carousel-track">
             {CREATIVE_SKILL_CATEGORIES.map((item) => {
               const first = skillsFor(item.id)[0];
               return (
@@ -134,6 +143,7 @@ export function CreativeSpaceHome({ lang, models }: { lang: string; models: Mode
               );
             })}
           </div>
+          <CarouselArrows zh={zh} {...categoryCarousel} />
         </section>
 
         {/* 2. How the agent works: offer card and feature tiles */}

@@ -56,6 +56,9 @@ export interface GenerateMediaParams {
   audio?: boolean;
   voice?: string;
   style?: string;
+  instrumental?: boolean;
+  customMode?: boolean;
+  speed?: number;
   idempotencyKey?: string;
 }
 
@@ -593,6 +596,9 @@ export class VideoService {
       audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
       voice: params.voice,
       style: params.style?.slice(0, 1000),
+      instrumental: params.instrumental,
+      customMode: params.customMode,
+      speed: params.speed,
     };
 
     const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });

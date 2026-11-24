@@ -28,6 +28,9 @@ export type SubmitBody = {
   imageUrls?: string[];
   voice?: string;
   style?: string;
+  instrumental?: boolean;
+  customMode?: boolean;
+  speed?: number;
 };
 
 const POLL_MS = 3000;
@@ -151,12 +154,13 @@ async function fetchHistory(kind: MediaKind, limit = 24): Promise<MediaJob[]> {
 }
 
 /** Jobs for one studio: history on load, new submissions, and polling. */
-export function useMediaJobs(kind: MediaKind) {
+export function useMediaJobs(kind: MediaKind, enabled = true) {
   const [jobs, setJobs] = useState<MediaJob[]>([]);
   const jobsRef = useRef(jobs);
   jobsRef.current = jobs;
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     fetchHistory(kind).then((history) => {
       if (!cancelled && history.length > 0) {
@@ -166,7 +170,7 @@ export function useMediaJobs(kind: MediaKind) {
     return () => {
       cancelled = true;
     };
-  }, [kind]);
+  }, [kind, enabled]);
 
   const pendingKey = jobs
     .filter((job) => job.status === "queued" || job.status === "generating")

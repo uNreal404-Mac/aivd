@@ -50,13 +50,13 @@ export const VIDEO_FEATURED_IDS = [
 /** Public KIE model capabilities for the video picker. These describe the model,
  * not necessarily every setting currently exposed by this site's generator. */
 export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: string }> = {
-  "bytedance/seedance-2-5": { resolution: "4K", duration: "4–30s" },
+  "bytedance/seedance-2-5": { resolution: "1080p", duration: "4–30s" },
   "seedance-2-5-flash": { resolution: "720p", duration: "4–30s" },
   "bytedance/seedance-2-5-draft": { resolution: "1080p", duration: "source" },
   "bytedance/seedance-2": { resolution: "720p", duration: "4–15s" },
   "bytedance/seedance-2-fast": { resolution: "720p", duration: "4–15s" },
   "bytedance/seedance-2-mini": { resolution: "720p", duration: "4–15s" },
-  "kling/v4-reference-to-video": { resolution: "4K", duration: "3–30s" },
+  "kling/v4-reference-to-video": { resolution: "1080p", duration: "3–30s" },
   "kling/v4-flash-reference-to-video": { resolution: "720p", duration: "3–20s" },
   "minimax-h3/text-to-video": { resolution: "2K", duration: "4–15s" },
   "minimax-h3-max/text-to-video": { resolution: "768p", duration: "5–15s" },

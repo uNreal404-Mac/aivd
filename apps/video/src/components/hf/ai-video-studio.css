@@ -73,7 +73,7 @@
 .vs-banner {
   position: relative;
   display: block;
-  height: 150px;
+  height: 104px;
   overflow: hidden;
   border-radius: var(--ds-r-lg);
   text-align: left;
@@ -145,12 +145,12 @@
 
 .vs-upload {
   display: flex;
-  min-height: 170px;
+  min-height: 108px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 16px;
+  padding: 12px 14px;
   border: 1px dashed var(--ds-line-2);
   border-radius: var(--ds-r-lg);
   background: var(--vs-card);
@@ -351,13 +351,13 @@ label.vs-select:hover {
 }
 
 .vs-prompt textarea {
-  min-height: 110px;
+  min-height: 84px;
   resize: none;
   border: 0;
   background: transparent;
   color: white;
   font-size: var(--ds-fs-sm);
-  line-height: 1.6;
+  line-height: 1.55;
   outline: none;
 }
 
@@ -437,7 +437,7 @@ button.vs-chip:disabled {
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-lg);
   background: var(--du-surface);
-  box-shadow: 0 16px 36px rgb(0 0 0 / 0.38);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .vs-duration-heading,
@@ -506,6 +506,29 @@ button.vs-chip:disabled {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   line-height: 1.6;
+}
+
+.vs-presets-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-4);
+  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.vs-presets-modal {
+  width: min(560px, 100%);
+  max-height: 82svh;
+  overflow-y: auto;
+  padding: var(--ds-space-4);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .vs-tool {

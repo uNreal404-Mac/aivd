@@ -27,6 +27,12 @@ export interface MarketRequest {
   voice?: string;
   /** Free-form style / voice description (audio models). */
   style?: string;
+  /** Instrumental-only toggle for music models (Suno V6). */
+  instrumental?: boolean;
+  /** Custom lyrics mode toggle for music models (Suno V6). */
+  customMode?: boolean;
+  /** Speaking speed multiplier for TTS models that support it (0.7–1.2). */
+  speed?: number;
 }
 
 export interface MarketOptions {
@@ -499,7 +505,13 @@ const AUDIO_MODELS: MarketModel[] = [
     costUsd: perThousandChars(0.06),
     buildTask: (req) => ({
       model: "elevenlabs/text-to-speech-multilingual-v2",
-      input: { text: req.prompt, voice: voiceOr(req, ELEVENLABS_VOICES), stability: 0.5, similarity_boost: 0.75, speed: 1 },
+      input: {
+        text: req.prompt,
+        voice: voiceOr(req, ELEVENLABS_VOICES),
+        stability: 0.5,
+        similarity_boost: 0.75,
+        speed: Math.min(1.2, Math.max(0.7, req.speed ?? 1)),
+      },
     }),
   },
   {
@@ -510,7 +522,13 @@ const AUDIO_MODELS: MarketModel[] = [
     costUsd: perThousandChars(0.03),
     buildTask: (req) => ({
       model: "elevenlabs/text-to-speech-turbo-2-5",
-      input: { text: req.prompt, voice: voiceOr(req, ELEVENLABS_VOICES), stability: 0.5, similarity_boost: 0.75, speed: 1 },
+      input: {
+        text: req.prompt,
+        voice: voiceOr(req, ELEVENLABS_VOICES),
+        stability: 0.5,
+        similarity_boost: 0.75,
+        speed: Math.min(1.2, Math.max(0.7, req.speed ?? 1)),
+      },
     }),
   },
   {
@@ -538,8 +556,8 @@ const AUDIO_MODELS: MarketModel[] = [
     buildTask: (req) => ({
       model: "ai-music-api/generate",
       input: {
-        custom_mode: false,
-        instrumental: false,
+        custom_mode: Boolean(req.customMode),
+        instrumental: Boolean(req.instrumental),
         model: "V6",
         prompt: req.prompt.slice(0, 3000),
         // Non-custom mode needs a style (or another attachment) besides the idea.

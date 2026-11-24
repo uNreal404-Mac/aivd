@@ -69,6 +69,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState({ start: false, end: false });
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedAtRef = useRef<number>(0);
   const balance = useCreditsStore((state) => state.balance);
   const fetchBalance = useCreditsStore((state) => state.fetchBalance);
 
@@ -251,7 +252,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       setPanelLeft(trigger.getBoundingClientRect().left - 4);
       triggerRef.current = trigger;
     }
-    setOpen(id);
+    setOpen((current) => {
+      if (current !== id) openedAtRef.current = Date.now();
+      return id;
+    });
   };
   // Only close the menu that was left; moving straight onto another menu
   // must not be undone by the previous menu's timer.
@@ -459,7 +463,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               data-open={open === "more" || undefined}
               onFocus={(event) => openNow("more", event.currentTarget)}
               {...triggerKeys("more")}
-              onClick={(event) => (open === "more" ? setOpen(null) : openNow("more", event.currentTarget))}
+              onClick={(event) => {
+                if (open === "more" && Date.now() - openedAtRef.current > 260) {
+                  setOpen(null);
+                } else {
+                  openNow("more", event.currentTarget);
+                }
+              }}
               {...hover("more")}
             >
               {moreMenu.label}

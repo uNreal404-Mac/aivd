@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
+import { ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Paintbrush, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
@@ -38,6 +38,15 @@ const COLLAGE = [
 
 const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
+
+const IMAGE_STYLE_PRESETS = [
+  { id: "cinematic", zh: "电影质感", en: "Cinematic", suffixZh: "，电影级光影，35mm 胶片颗粒，景深细腻", suffixEn: ", cinematic lighting, 35mm film grain, shallow depth of field" },
+  { id: "commercial", zh: "商业棚拍", en: "Studio Product", suffixZh: "，高端商业摄影棚布光，极简干净背景，8K 细节", suffixEn: ", luxury studio product photography, softbox rim light, crisp 8K detail" },
+  { id: "cyber", zh: "赛博霓虹", en: "Cyber Neon", suffixZh: "，雨夜霓虹反射，青紫电影色调，高对比氛围", suffixEn: ", neon rain reflections, cyan and magenta cinema grade, atmospheric" },
+  { id: "toy", zh: "3D 潮玩", en: "3D Designer Toy", suffixZh: "，盲盒潮玩 3D 渲染，磨砂 PVC 材质，柔和棚拍光", suffixEn: ", 3D designer vinyl toy render, matte PVC texture, soft studio glow" },
+  { id: "anime", zh: "动画电影", en: "Anime Film", suffixZh: "，高水准剧场版动画风格，通透光影，细腻背景", suffixEn: ", theatrical anime film key visual, luminous lighting, painterly background" },
+  { id: "editorial", zh: "时尚杂志", en: "Editorial", suffixZh: "，Vogue 时尚大片构图，自然肤质纹理，高定美学", suffixEn: ", high-fashion editorial portrait, natural skin texture, clean composition" },
+];
 
 /**
  * Toolbar chip that opens a small menu of its options above the composer.
@@ -174,8 +183,14 @@ export function AiImageStudio({
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
   const promptRef = useRef<HTMLTextAreaElement>(null);
-  const { jobs, add } = useMediaJobs("image");
+  const { jobs, add } = useMediaJobs("image", Boolean(session));
   const [viewing, setViewing] = useState<number | null>(null);
+  const openInCanvas = (url: string, text: string, modelName?: string) => {
+    try {
+      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image" }));
+    } catch { /* ignore */ }
+    window.location.href = localizedHref(locale, "/creative-space/canvas");
+  };
   useCreditReturnDraft("image", () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
     if (getMarketModel(saved.modelId)?.kind === "image") setModelId(saved.modelId);
     setPrompt(saved.prompt ?? "");
@@ -302,7 +317,7 @@ export function AiImageStudio({
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 
   return (
-    <main className="is-root">
+    <div className="is-root">
       <HomeMediaPicker
         lang={locale}
         open={mediaPickerOpen}
@@ -349,6 +364,9 @@ export function AiImageStudio({
                       <span className="sr-card-prompt">{job.prompt}</span>
                       <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => reuse(job.prompt)}>
                         <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button type="button" className="sr-icon" title={zh ? "在无限画布中局部重绘 / 扩图" : "Edit in Infinite Canvas"} aria-label={zh ? "在无限画布中编辑" : "Edit in Infinite Canvas"} onClick={() => openInCanvas(url, job.prompt, getMarketModel(job.model)?.name ?? job.model)}>
+                        <Paintbrush className="h-4 w-4" aria-hidden="true" />
                       </button>
                       <button type="button" className="sr-icon" title={zh ? "用这张图生成视频" : "Make a video from this"} aria-label={zh ? "用这张图生成视频" : "Make a video from this"} onClick={() => toVideo(url)}>
                         <Clapperboard className="h-4 w-4" aria-hidden="true" />
@@ -421,6 +439,22 @@ export function AiImageStudio({
                   </button>
                 </p>
               ) : null}
+          <div className="mb-2 flex flex-wrap items-center gap-1.5" aria-label={zh ? "风格预设" : "Style presets"}>
+            {IMAGE_STYLE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className="is-chip"
+                onClick={() => {
+                  const suffix = zh ? preset.suffixZh : preset.suffixEn;
+                  setPrompt((cur) => (cur.includes(suffix) ? cur : `${cur.trim()}${cur.trim() ? suffix : suffix.replace(/^[，,\s]+/, "")}`));
+                  promptRef.current?.focus();
+                }}
+              >
+                + {zh ? preset.zh : preset.en}
+              </button>
+            ))}
+          </div>
           <div className="is-toolbar">
             <span className="is-chip-group">
               <button
@@ -432,10 +466,6 @@ export function AiImageStudio({
                 onClick={() => setMediaPickerOpen(true)}
               >
                 {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}
-              </button>
-              <span className="is-chip-sep" aria-hidden="true" />
-              <button type="button" className="is-chip is-chip-icon" disabled title={zh ? "引用元素即将上线" : "Elements coming soon"} aria-label={zh ? "引用元素（即将上线）" : "Mention an element (coming soon)"}>
-                <AtSign className="h-4 w-4" aria-hidden="true" />
               </button>
             </span>
             <div className="is-model">
@@ -512,6 +542,6 @@ export function AiImageStudio({
       <div className="is-below">
         <ImageShowcase lang={locale} />
       </div>
-    </main>
+    </div>
   );
 }

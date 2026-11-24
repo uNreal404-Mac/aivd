@@ -23,6 +23,9 @@ const schema = z.object({
   imageUrls: z.array(imageRefSchema).max(16).optional(),
   voice: z.string().max(64).optional(),
   style: z.string().max(1000).optional(),
+  instrumental: z.boolean().optional(),
+  customMode: z.boolean().optional(),
+  speed: z.number().min(0.7).max(1.2).optional(),
   idempotencyKey: z.string().max(200).optional(),
 });
 
@@ -73,6 +76,9 @@ export async function POST(request: NextRequest) {
       imageUrls,
       voice: data.voice,
       style: data.style,
+      instrumental: data.instrumental,
+      customMode: data.customMode,
+      speed: data.speed,
       idempotencyKey: headerKey ? headerKey.slice(0, 200) : data.idempotencyKey,
     });
     return apiSuccess(result);

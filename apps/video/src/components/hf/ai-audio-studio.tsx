@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, RotateCcw, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AudioLines, BookOpen, ChevronRight, Clock, Music, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
@@ -13,22 +13,63 @@ import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/c
 import { StateBlock } from "@/components/states/state-block";
 import "./ai-video-studio.css";
 
-const MODES = ["tts", "music", "voice", "translate"] as const;
+// Only expose live, connected audio modes (no dead "coming soon" tabs).
+const MODES = ["tts", "music"] as const;
 type Mode = (typeof MODES)[number];
-// URL values used by the reference site's audio page, plus our music tab.
-const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", music: "music", "change-voice": "voice", translate: "translate" };
-// Which models each tab offers. Voice changing and translation need an audio
-// upload that no connected model accepts yet.
+const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", music: "music" };
 const MODE_MODELS: Record<Mode, string[]> = {
   tts: ["elevenlabs-v3", "elevenlabs-multilingual-v2", "elevenlabs-turbo-2-5", "gemini-3-8-flash-tts", "suno-speech"],
   music: ["suno-music", "suno-sounds"],
-  voice: [],
-  translate: [],
 };
 const DETAIL_MAX = 500;
 const AUDIO_MODELS = marketModelsOf("audio");
 
-/** Audio studio, laid out after the reference site's audio page. */
+type VoiceMeta = {
+  gender: "M" | "F";
+  tagZh: string;
+  tagEn: string;
+  pitch: number;
+  rate: number;
+};
+
+const VOICE_META: Record<string, VoiceMeta> = {
+  James: { gender: "M", tagZh: "男声 · 磁性旁白", tagEn: "Male · Deep narrator", pitch: 0.85, rate: 0.96 },
+  Brian: { gender: "M", tagZh: "男声 · 沉稳纪实", tagEn: "Male · Calm documentary", pitch: 0.82, rate: 0.94 },
+  Bella: { gender: "F", tagZh: "女声 · 温暖自然", tagEn: "Female · Warm & soft", pitch: 1.15, rate: 1.0 },
+  Laura: { gender: "F", tagZh: "女声 · 活力口播", tagEn: "Female · Bright host", pitch: 1.2, rate: 1.05 },
+  Liam: { gender: "M", tagZh: "男声 · 青年解说", tagEn: "Male · Young explainer", pitch: 0.96, rate: 1.04 },
+  Callum: { gender: "M", tagZh: "男声 · 戏剧张力", tagEn: "Male · Dramatic", pitch: 0.8, rate: 0.92 },
+  Eve: { gender: "F", tagZh: "女声 · 知性播客", tagEn: "Female · Podcast", pitch: 1.12, rate: 0.98 },
+  Lucy: { gender: "F", tagZh: "女声 · 清新甜美", tagEn: "Female · Clear & sweet", pitch: 1.24, rate: 1.03 },
+  Rachel: { gender: "F", tagZh: "女声 · 叙事故事", tagEn: "Female · Storytelling", pitch: 1.08, rate: 0.97 },
+  Benjamin: { gender: "M", tagZh: "男声 · 电影预告", tagEn: "Male · Trailer", pitch: 0.78, rate: 0.9 },
+  Fola: { gender: "F", tagZh: "女声 · 亲切自然", tagEn: "Female · Friendly", pitch: 1.14, rate: 1.0 },
+  Kore: { gender: "F", tagZh: "女声 · 清澈叙事", tagEn: "Female · Crisp narrator", pitch: 1.18, rate: 1.0 },
+  Puck: { gender: "M", tagZh: "男声 · 轻快灵动", tagEn: "Male · Upbeat", pitch: 1.02, rate: 1.08 },
+  Charon: { gender: "M", tagZh: "男声 · 低沉厚重", tagEn: "Male · Low & rich", pitch: 0.78, rate: 0.92 },
+  Zephyr: { gender: "F", tagZh: "女声 · 明亮轻盈", tagEn: "Female · Bright airy", pitch: 1.22, rate: 1.04 },
+  Aoede: { gender: "F", tagZh: "女声 · 抒情柔和", tagEn: "Female · Lyrical soft", pitch: 1.12, rate: 0.96 },
+  Enceladus: { gender: "M", tagZh: "男声 · 气声温柔", tagEn: "Male · Breathy warm", pitch: 0.88, rate: 0.94 },
+  Leda: { gender: "F", tagZh: "女声 · 青春清脆", tagEn: "Female · Youthful", pitch: 1.25, rate: 1.04 },
+  Orus: { gender: "M", tagZh: "男声 · 坚定播报", tagEn: "Male · Firm anchor", pitch: 0.86, rate: 0.98 },
+  Achird: { gender: "M", tagZh: "男声 · 对话松弛", tagEn: "Male · Conversational", pitch: 0.94, rate: 1.02 },
+};
+
+const MUSIC_STYLE_CHIPS = [
+  { zh: "电影管弦配乐", en: "Cinematic orchestral", value: "cinematic orchestral, emotional strings, epic build" },
+  { zh: "雨夜慢爵士", en: "Rainy night jazz", value: "slow jazz, warm piano, soft brushed drums, rainy city night" },
+  { zh: "治愈 Lo-Fi", en: "Chill Lo-Fi", value: "chill lo-fi hip hop, warm vinyl crackle, electric piano, 82 bpm" },
+  { zh: "国风竹笛", en: "Chinese flute", value: "traditional Chinese gufeng, bamboo flute, guzheng, serene" },
+  { zh: "赛博电子", en: "Cyber synthwave", value: "synthwave, driving retro bass, neon arpeggios, 118 bpm" },
+];
+
+const SFX_QUICK_IDEAS = [
+  { zh: "雨夜远雷与雨滴", en: "Rain & distant thunder", promptZh: "深夜倾盆大雨敲打玻璃窗，远处传来低沉滚雷声，环境沉浸感强", promptEn: "Heavy rain hitting glass window at night with deep rolling distant thunder, immersive stereo ambience" },
+  { zh: "电影转场重低音", en: "Cinematic whoosh hit", promptZh: "电影预告片高速镜头切换音效，空气呼啸接厚重低音冲击", promptEn: "Cinematic trailer transition whoosh into deep sub-bass impact hit, crisp tail" },
+  { zh: "科幻飞船引擎启动", en: "Sci-fi engine power up", promptZh: "科幻宇宙飞船引擎充能启动，金属嗡鸣逐渐攀升至低频轰鸣", promptEn: "Sci-fi starship engine charging up, harmonic turbine hum rising into deep propulsion roar" },
+  { zh: "清晨森林鸟鸣溪流", en: "Morning forest stream", promptZh: "清晨阳光森林里的清脆鸟鸣，伴随着潺潺溪水流动声", promptEn: "Peaceful morning forest birds chirping softly beside a gentle babbling brook" },
+];
+
 export function AiAudioStudio({
   locale,
   initialVoiceMode = "",
@@ -41,7 +82,6 @@ export function AiAudioStudio({
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
   const initialModel = getMarketModel(initialModelId);
-  // A model link opens the tab that offers that model.
   const startMode: Mode =
     initialModel?.kind === "audio"
       ? ((Object.keys(MODE_MODELS) as Mode[]).find((key) => MODE_MODELS[key].includes(initialModel.id)) ?? "tts")
@@ -53,6 +93,10 @@ export function AiAudioStudio({
   const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
   const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
   const [script, setScript] = useState("");
+  const [speed, setSpeed] = useState(1);
+  const [instrumental, setInstrumental] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
@@ -62,7 +106,7 @@ export function AiAudioStudio({
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
-  const { jobs, add } = useMediaJobs("audio");
+  const { jobs, add } = useMediaJobs("audio", Boolean(session));
   const scriptRef = useRef<HTMLTextAreaElement>(null);
   const reuse = (text: string) => {
     setScript(text);
@@ -70,21 +114,66 @@ export function AiAudioStudio({
     scriptRef.current?.focus();
   };
   const [tab, setTab] = useState<"history" | "how">("how");
-  useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab }), (saved) => {
-    if (MODES.includes(saved.mode)) setMode(saved.mode);
+  useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
+    if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
     setVoice(saved.voice ?? "");
     setScript(saved.script ?? "");
     setDetail(saved.detail ?? "");
+    if (typeof saved.speed === "number") setSpeed(saved.speed);
+    if (typeof saved.instrumental === "boolean") setInstrumental(saved.instrumental);
+    if (typeof saved.customMode === "boolean") setCustomMode(saved.customMode);
     if (saved.tab === "history" || saved.tab === "how") setTab(saved.tab);
   });
-  const shownTab = tab;
+
+  // Cancel any Web Speech audition on unmount.
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const auditionVoice = (voiceName: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setNotice(zh ? "当前浏览器不支持本地试听，请直接选择音色生成。" : "Browser speech preview is unavailable here.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (previewingVoice === voiceName) {
+      setPreviewingVoice(null);
+      return;
+    }
+    const meta = VOICE_META[voiceName] ?? { gender: "F", tagZh: "", tagEn: "", pitch: 1, rate: 1 };
+    const sample = zh
+      ? `你好，我是 ${voiceName}，适合${meta.tagZh || "自然语音配音"}。`
+      : `Hi, I am ${voiceName}. This is a quick character preview of my speaking pace and tone.`;
+    const utter = new SpeechSynthesisUtterance(sample);
+    utter.lang = zh ? "zh-CN" : "en-US";
+    utter.pitch = meta.pitch;
+    utter.rate = meta.rate;
+    const availableVoices = window.speechSynthesis.getVoices();
+    const langVoices = availableVoices.filter((v) => v.lang.toLowerCase().startsWith(zh ? "zh" : "en"));
+    if (langVoices.length > 0) {
+      const idx = Math.abs(voiceName.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)) % langVoices.length;
+      utter.voice = langVoices[idx];
+    }
+    utter.onend = () => setPreviewingVoice(null);
+    utter.onerror = () => setPreviewingVoice(null);
+    setPreviewingVoice(voiceName);
+    window.speechSynthesis.speak(utter);
+  };
 
   const modeModels = MODE_MODELS[mode]
     .map((id) => getMarketModel(id))
     .filter((item): item is NonNullable<typeof item> => item !== undefined);
-  const available = modeModels.length > 0;
   const maxScript = model.options.maxPromptLength ?? 5000;
+  const supportsSpeed = model.id === "elevenlabs-multilingual-v2" || model.id === "elevenlabs-turbo-2-5";
+  const supportsStyle = model.id === "gemini-3-8-flash-tts" || model.id === "suno-music";
+  const isSunoMusic = model.id === "suno-music";
+  const isSunoSounds = model.id === "suno-sounds";
+
   const credits = useMemo(() => marketCredits(model, { prompt: script, voice, style: detail }), [model, script, voice, detail]);
 
   const chooseModel = (id: string) => {
@@ -103,133 +192,132 @@ export function AiAudioStudio({
 
   const t = zh
     ? {
-        modes: { tts: "文本转语音", music: "音乐与音效", voice: "变声", translate: "翻译" } as Record<Mode, string>,
-        upload: "上传媒体",
-        uploadSub: "变声和翻译需要上传音频，即将上线",
+        modes: { tts: "文本转语音", music: "音乐与音效" } as Record<Mode, string>,
         optional: "可选",
-        script: mode === "music" ? "描述" : "脚本",
-        scriptHint: mode === "music" ? "描述想要的歌曲或音效，例如：雨夜城市的慢节奏爵士。" : "逐字写下要朗读的内容。",
+        script: isSunoMusic ? (customMode ? "歌词内容" : "歌曲创意描述") : isSunoSounds ? "音效描述" : "配音脚本",
+        scriptHint: isSunoMusic
+          ? customMode
+            ? "写下完整歌词（可用 [Verse] / [Chorus] 标记段落）"
+            : "描述想要的歌曲情绪、主题与乐器，例如：雨夜城市的慢节奏爵士。"
+          : isSunoSounds
+            ? "描述想要的音效场景，例如：雨夜远雷与敲窗雨声，环境沉浸感强。"
+            : "逐字写下要朗读的内容。",
         model: "模型",
-        voice: "音色",
-        detail: mode === "music" ? "曲风" : "声音详情",
-        detailHint: mode === "music" ? "例如：爵士、钢琴、慢节奏、温暖" : "例如：语速放慢，带一点笑意（Gemini 支持）",
+        voice: "选择音色（支持点击试听）",
+        detail: isSunoMusic ? "曲风与乐器标签" : "语气与表演指导（Gemini 专属）",
+        detailHint: isSunoMusic ? "例如：爵士、钢琴、慢节奏、温暖" : "例如：语速放慢，带一点笑意，像深夜电台主播",
         generate: "生成",
         submitting: "提交中…",
-        soon: "即将上线",
-        soonNote: "变声和翻译需要上传音频，目前接入的模型还不支持，即将上线。",
         history: "历史记录",
         how: "工作原理",
-        empty: "还没有音频，生成的内容会显示在这里。",
-        generating: "生成中…",
-        failed: "生成失败，积分已退回",
-        heroTitle: "将文字变成语音",
-        heroSub: "任意脚本都能生成逼真语音，也能一句话生成歌曲和音效",
-        card1: "挑选声音",
-        card1Sub: "选择 ElevenLabs 或 Gemini 的预设音色",
-        card2: "撰写、描述并生成",
-        card2Sub: "输入脚本，描述想要的声音，开始创作",
+        heroTitle: "将文字变成自然语音",
+        heroSub: "支持 ElevenLabs、Gemini 与 Suno，一站搞定配音、歌曲与场景音效",
+        card1: "挑选声线与风格",
+        card1Sub: "每款音色均标注性别与定位，点播放图标可快速试听",
+        card2: model.id === "gemini-3-8-flash-tts" ? "输入台词与语气指导" : "输入脚本并一键生成",
+        card2Sub:
+          model.id === "gemini-3-8-flash-tts"
+            ? "写下台词，再补充一句语气描述即可控制情绪与节奏"
+            : supportsSpeed
+              ? "输入要朗读的文字，微调语速后点击生成即可下载"
+              : "输入要朗读的文字，点击生成后可在历史记录试听下载",
         demoVoices: [
-          { name: "James", tag: "ElevenLabs" },
-          { name: "Bella", tag: "ElevenLabs" },
-          { name: "Kore", tag: "Gemini" },
+          { name: "James", tag: "男声 · 磁性旁白" },
+          { name: "Bella", tag: "女声 · 温暖自然" },
+          { name: "Kore", tag: "女声 · 清澈叙事" },
         ],
-        demoPrompt: "温暖、沉稳的男声，语速从容，略带沙哑，像深夜的自然纪录片旁白。",
+        demoPrompt: "欢迎收看本期节目。今天我们一起用 AI 为短片配上电影级旁白与背景音乐。",
       }
     : {
-        modes: { tts: "Text to speech", music: "Music & sound", voice: "Voice changer", translate: "Translate" } as Record<Mode, string>,
-        upload: "Upload media",
-        uploadSub: "Voice changing and translation need an audio upload; coming soon",
+        modes: { tts: "Text to speech", music: "Music & SFX" } as Record<Mode, string>,
         optional: "Optional",
-        script: mode === "music" ? "Description" : "Script",
-        scriptHint: mode === "music" ? "Describe the song or sound, e.g. slow jazz for a rainy city night." : "Write exactly what the voice should read.",
+        script: isSunoMusic ? (customMode ? "Lyrics" : "Song description") : isSunoSounds ? "Sound effect description" : "Script",
+        scriptHint: isSunoMusic
+          ? customMode
+            ? "Write your lyrics (use [Verse] / [Chorus] tags)"
+            : "Describe the song mood, theme & instruments, e.g. slow jazz for a rainy city night."
+          : isSunoSounds
+            ? "Describe the sound effect, e.g. cinematic whoosh hit or heavy rain on window."
+            : "Write exactly what the voice should read.",
         model: "Model",
-        voice: "Voice",
-        detail: mode === "music" ? "Style" : "Voice details",
-        detailHint: mode === "music" ? "e.g. jazz, piano, slow, warm" : "e.g. slower, with a smile (Gemini)",
+        voice: "Voice (click play to preview)",
+        detail: isSunoMusic ? "Genre & instrument style" : "Voice direction (Gemini)",
+        detailHint: isSunoMusic ? "e.g. jazz, piano, slow, warm" : "e.g. slower, warm smile, late-night podcast host",
         generate: "Generate",
         submitting: "Submitting…",
-        soon: "Coming soon",
-        soonNote: "Voice changing and translation need an audio upload that the connected models do not take yet.",
         history: "History",
         how: "How it works",
-        empty: "No audio yet. Your generations will show up here.",
-        generating: "Generating…",
-        failed: "Failed, credits returned",
-        heroTitle: "Turn text into speech",
-        heroSub: "Lifelike voices for any script, plus songs and sound effects from one line",
-        card1: "Pick a voice",
-        card1Sub: "Choose a preset voice from ElevenLabs or Gemini",
-        card2: "Write, describe and generate",
-        card2Sub: "Enter a script, describe the voice and create",
+        heroTitle: "Turn text into lifelike speech",
+        heroSub: "ElevenLabs, Gemini, and Suno in one studio for voiceovers, songs, and sound effects",
+        card1: "Pick a voice with clarity",
+        card1Sub: "Every voice shows gender & style tags with quick preview",
+        card2: model.id === "gemini-3-8-flash-tts" ? "Write script & tone" : "Write & generate",
+        card2Sub:
+          model.id === "gemini-3-8-flash-tts"
+            ? "Enter your script plus a short tone cue to direct delivery"
+            : supportsSpeed
+              ? "Enter your script, adjust speaking speed, and generate"
+              : "Enter your script, generate, and download from History",
         demoVoices: [
-          { name: "James", tag: "ElevenLabs" },
-          { name: "Bella", tag: "ElevenLabs" },
-          { name: "Kore", tag: "Gemini" },
+          { name: "James", tag: "Male · Deep narrator" },
+          { name: "Bella", tag: "Female · Warm & soft" },
+          { name: "Kore", tag: "Female · Crisp narrator" },
         ],
-        demoPrompt: "Warm, calm male voice, unhurried pace, a little gravel, like a late-night nature documentary narrator.",
+        demoPrompt: "Welcome back to the show. Today we pair AI visuals with cinema-grade voiceovers and custom soundtracks.",
       };
 
-  // The "how it works" panel follows the mode picked on the left.
   const how =
     mode === "music"
       ? {
-          title: zh ? "一句话写歌和做音效" : "Songs and sound from one line",
-          sub: zh ? "描述风格、情绪和乐器，生成完整的歌曲或音效" : "Describe the style, mood and instruments; get a full song or a sound effect",
-          card1: zh ? "描述风格" : "Describe the style",
-          card1Sub: zh ? "曲风、乐器、节奏和情绪，越具体越接近你想要的" : "Genre, instruments, tempo and mood; the more specific the closer",
+          title: zh ? "一句话写歌与做音效" : "Songs and sound effects from one line",
+          sub: zh ? "支持纯音乐模式、自定义歌词与高频场景音效生成" : "Instrumental toggle, custom lyrics mode, and crisp SFX generation",
+          card1: zh ? "选择曲风与模式" : "Pick style & mode",
+          card1Sub: zh ? "可切换纯音乐 BGM 或自定义歌词，曲风越具体效果越稳" : "Toggle Instrumental BGM or Custom Lyrics and pick genre tags",
           chips: zh
             ? [
                 { name: "爵士 · 钢琴", tag: "慢节奏" },
-                { name: "电子 · 合成器", tag: "律动" },
-                { name: "古风 · 笛子", tag: "空灵" },
+                { name: "电影 · 管弦", tag: "纯音乐" },
+                { name: "场景 · 音效", tag: "Suno Sounds" },
               ]
             : [
                 { name: "Jazz · piano", tag: "slow" },
-                { name: "Electronic · synth", tag: "groove" },
-                { name: "Folk · flute", tag: "airy" },
+                { name: "Cinematic · strings", tag: "instrumental" },
+                { name: "Scene · SFX", tag: "Suno Sounds" },
               ],
-          card2: zh ? "生成并下载" : "Generate and download",
-          card2Sub: zh ? "完成后在历史记录里播放和下载" : "Play and download it from History when it is done",
+          card2: zh ? "生成并试听下载" : "Generate & download",
+          card2Sub: zh ? "点击下方示例可直接填入左侧输入框" : "Click the sample below to load it into the composer",
           demo: zh ? "清晨的海边，轻柔的钢琴和海浪声，安静治愈。" : "A calm morning by the sea, soft piano and waves, quiet and soothing.",
-          soon: false,
         }
-      : mode === "voice" || mode === "translate"
-        ? {
-            title: mode === "voice" ? (zh ? "变声 · 即将上线" : "Voice changer · coming soon") : zh ? "翻译 · 即将上线" : "Translate · coming soon",
-            sub:
-              mode === "voice"
-                ? zh
-                  ? "上传一段音频，换成另一种声音。功能接入后会在这里说明用法。"
-                  : "Upload audio and hear it in another voice. How to use it will be here once it is live."
-                : zh
-                  ? "上传一段音频，翻译成其他语言。功能接入后会在这里说明用法。"
-                  : "Upload audio and get it in another language. How to use it will be here once it is live.",
-            soon: true,
-          }
-        : {
-            title: t.heroTitle,
-            sub: t.heroSub,
-            card1: t.card1,
-            card1Sub: t.card1Sub,
-            chips: t.demoVoices,
-            card2: t.card2,
-            card2Sub: t.card2Sub,
-            demo: t.demoPrompt,
-            soon: false,
-          };
+      : {
+          title: t.heroTitle,
+          sub: t.heroSub,
+          card1: t.card1,
+          card1Sub: t.card1Sub,
+          chips: t.demoVoices,
+          card2: t.card2,
+          card2Sub: t.card2Sub,
+          demo: t.demoPrompt,
+        };
 
   const generate = async () => {
-    if (!available || submitting) return;
-    // An empty script gets a hint and the cursor, not a dead button.
+    if (submitting) return;
     if (!script.trim()) {
-      setNotice(zh ? "先写下要朗读的内容。" : "Write what should be read out first.");
+      setNotice(zh ? "请先填写脚本或描述内容。" : "Write your script or description first.");
       scriptRef.current?.focus();
       return;
     }
     setSubmitting(true);
     setNotice(null);
     const result = await submitMedia(
-      { model: model.id, prompt: script.trim(), voice: voice || undefined, style: detail.trim() || undefined },
+      {
+        model: model.id,
+        prompt: script.trim(),
+        voice: voice || undefined,
+        style: supportsStyle && detail.trim() ? detail.trim() : undefined,
+        instrumental: isSunoMusic ? instrumental : undefined,
+        customMode: isSunoMusic ? customMode : undefined,
+        speed: supportsSpeed ? speed : undefined,
+      },
       zh,
     );
     setSubmitting(false);
@@ -261,134 +349,224 @@ export function AiAudioStudio({
           ))}
         </div>
 
-        {!available ? (
-          <>
-            <div className="vs-upload vs-upload-off" aria-disabled="true">
-              <span className="vs-upload-tag">{t.soon}</span>
-              <span className="vs-upload-icons" aria-hidden="true">
-                <span><AudioLines className="h-4 w-4" /></span>
-                <span><Music className="h-4 w-4" /></span>
-                <span><ImageIcon className="h-4 w-4" /></span>
-              </span>
-              <span className="vs-upload-title">{t.upload}</span>
-              <span className="vs-upload-sub">{t.uploadSub}</span>
-            </div>
-            <p className="vs-hint">{t.soonNote}</p>
-          </>
-        ) : (
-          <>
-            <div className="vs-card vs-prompt">
-              <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
-              <textarea
-                id="audio-script"
-                ref={scriptRef}
-                value={script}
-                maxLength={maxScript}
-                placeholder={t.scriptHint}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && script.trim() && !submitting) {
-                    event.preventDefault();
-                    void generate();
-                  }
-                }}
-                onChange={(event) => {
-                  setScript(event.target.value);
-                  setNotice(null);
-                }}
-              />
-              {draft.restored ? (
-                <p className="draft-note">
-                  {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
-                  <button type="button" onClick={draft.discard}>
-                    {zh ? "清空" : "Clear"}
-                  </button>
-                </p>
-              ) : null}
-              <span className="vs-count">
-                {script.length}/{maxScript}
-              </span>
-            </div>
+        <div className="vs-card vs-prompt">
+          <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
+          <textarea
+            id="audio-script"
+            ref={scriptRef}
+            value={script}
+            maxLength={maxScript}
+            placeholder={t.scriptHint}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && script.trim() && !submitting) {
+                event.preventDefault();
+                void generate();
+              }
+            }}
+            onChange={(event) => {
+              setScript(event.target.value);
+              setNotice(null);
+            }}
+          />
+          {draft.restored ? (
+            <p className="draft-note">
+              {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
+              <button type="button" onClick={draft.discard}>
+                {zh ? "清空" : "Clear"}
+              </button>
+            </p>
+          ) : null}
+          <span className="vs-count">
+            {script.length}/{maxScript}
+          </span>
+        </div>
 
-            <label htmlFor="audio-model" className="vs-card vs-select">
-              <span className="min-w-0 flex-1">
-                <span className="vs-card-label">{t.model}</span>
-                <span className="vs-card-value">{model.name}</span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-              <select id="audio-model" value={modelId} onChange={(event) => chooseModel(event.target.value)}>
-                {modeModels.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <label htmlFor="audio-model" className="vs-card vs-select">
+          <span className="min-w-0 flex-1">
+            <span className="vs-card-label">{t.model}</span>
+            <span className="vs-card-value">{model.name}</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
+          <select id="audio-model" value={modelId} onChange={(event) => chooseModel(event.target.value)}>
+            {modeModels.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-            {model.options.voices?.length ? (
-              <fieldset className="as-voice-pick">
-                <legend className="vs-card-label">{t.voice}</legend>
-                <div className="as-voice-grid">
-                  {model.options.voices.map((item) => (
+        {model.id === "suno-speech" ? (
+          <p className="vs-hint">
+            {zh ? "Suno Speech 会根据语义自动匹配表现力播音音色，无需手动挑选声线。" : "Suno Speech automatically selects an expressive narrator voice based on your script."}
+          </p>
+        ) : null}
+
+        {model.options.voices?.length ? (
+          <fieldset className="as-voice-pick">
+            <legend className="vs-card-label">{t.voice}</legend>
+            <div className="as-voice-grid">
+              {model.options.voices.map((item) => {
+                const meta = VOICE_META[item.name];
+                const isPlaying = previewingVoice === item.name;
+                return (
+                  <div
+                    key={item.id}
+                    className={voice === item.id ? "as-voice-opt as-voice-opt-on" : "as-voice-opt"}
+                    style={{ padding: 0, overflow: "hidden" }}
+                  >
                     <button
-                      key={item.id}
                       type="button"
                       aria-pressed={voice === item.id}
-                      className={voice === item.id ? "as-voice-opt as-voice-opt-on" : "as-voice-opt"}
                       onClick={() => setVoice(item.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left"
                     >
-                      <span className="as-voice-avatar" aria-hidden="true">
+                      <span className="as-voice-avatar shrink-0" aria-hidden="true">
                         {item.name.slice(0, 1)}
                       </span>
-                      {item.name}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold">{item.name}</span>
+                        {meta ? (
+                          <span className="block truncate text-[10px] opacity-70">
+                            {zh ? meta.tagZh : meta.tagEn}
+                          </span>
+                        ) : null}
+                      </span>
                     </button>
-                  ))}
-                </div>
-              </fieldset>
-            ) : null}
+                    <button
+                      type="button"
+                      aria-label={isPlaying ? (zh ? `停止试听 ${item.name}` : `Stop preview ${item.name}`) : zh ? `试听 ${item.name}` : `Preview ${item.name}`}
+                      title={zh ? "快速试听声线特点" : "Quick voice preview"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        auditionVoice(item.name);
+                      }}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center opacity-75 transition hover:opacity-100"
+                    >
+                      {isPlaying ? <Square className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
 
-            {model.id === "gemini-3-8-flash-tts" || model.id === "suno-music" ? (
-              <div className="vs-card vs-prompt">
-                <span className="flex items-center justify-between">
-                  <label htmlFor="audio-detail" className="vs-prompt-label vs-prompt-label-muted">{t.detail}</label>
-                  <span className="vs-soon">{t.optional}</span>
-                </span>
-                <textarea
-                  id="audio-detail"
-                  className="vs-textarea-short"
-                  value={detail}
-                  maxLength={DETAIL_MAX}
-                  placeholder={t.detailHint}
-                  onChange={(event) => setDetail(event.target.value)}
-                />
-              </div>
-            ) : null}
+        {supportsSpeed ? (
+          <div className="vs-card flex-col items-stretch gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <label htmlFor="audio-speed" className="vs-card-label">{zh ? "朗读语速" : "Speaking speed"}</label>
+              <strong className="text-[var(--du-accent-text)]">{speed.toFixed(2)}×</strong>
+            </div>
+            <input
+              id="audio-speed"
+              type="range"
+              min={0.7}
+              max={1.2}
+              step={0.05}
+              value={speed}
+              onChange={(event) => setSpeed(Number(event.target.value))}
+              className="w-full accent-[var(--du-accent)]"
+            />
+          </div>
+        ) : null}
 
-            <button type="button" className="vs-generate as-generate" disabled={submitting} onClick={() => void generate()}>
-              {submitting ? t.submitting : t.generate}
-              <span className="vs-generate-cost">
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {internalFree ? 0 : credits}
-              </span>
-            </button>
-          </>
-        )}
+        {isSunoMusic ? (
+          <div className="vs-card flex-col items-stretch gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                aria-pressed={instrumental}
+                onClick={() => setInstrumental((v) => !v)}
+                className={instrumental ? "vs-chip vs-chip-on" : "vs-chip"}
+              >
+                <Music className="h-3.5 w-3.5" aria-hidden="true" />
+                {zh ? (instrumental ? "纯音乐：开启" : "纯音乐 BGM") : instrumental ? "Instrumental: ON" : "Instrumental"}
+              </button>
+              <button
+                type="button"
+                aria-pressed={customMode}
+                onClick={() => setCustomMode((v) => !v)}
+                className={customMode ? "vs-chip vs-chip-on" : "vs-chip"}
+              >
+                {zh ? (customMode ? "自定义歌词：开启" : "自定义歌词") : customMode ? "Custom lyrics: ON" : "Custom lyrics"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {MUSIC_STYLE_CHIPS.map((chip) => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  className="vs-chip"
+                  onClick={() => setDetail(chip.value)}
+                >
+                  + {zh ? chip.zh : chip.en}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {isSunoSounds ? (
+          <div className="vs-card flex-col items-stretch gap-2">
+            <span className="vs-card-label">{zh ? "高频音效预设（一键填入）" : "Quick SFX presets"}</span>
+            <div className="flex flex-wrap gap-1.5">
+              {SFX_QUICK_IDEAS.map((item) => (
+                <button
+                  key={item.en}
+                  type="button"
+                  className="vs-chip"
+                  onClick={() => reuse(zh ? item.promptZh : item.promptEn)}
+                >
+                  {zh ? item.zh : item.en}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {supportsStyle ? (
+          <div className="vs-card vs-prompt">
+            <span className="flex items-center justify-between">
+              <label htmlFor="audio-detail" className="vs-prompt-label vs-prompt-label-muted">{t.detail}</label>
+              <span className="vs-soon">{t.optional}</span>
+            </span>
+            <textarea
+              id="audio-detail"
+              className="vs-textarea-short"
+              value={detail}
+              maxLength={DETAIL_MAX}
+              placeholder={t.detailHint}
+              onChange={(event) => setDetail(event.target.value)}
+            />
+          </div>
+        ) : null}
+
+        <button type="button" className="vs-generate as-generate" disabled={submitting} onClick={() => void generate()}>
+          {submitting ? t.submitting : t.generate}
+          <span className="vs-generate-cost">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            {internalFree ? 0 : credits}
+          </span>
+        </button>
+
         {notice ? <output aria-live="polite" className="vs-notice">{notice}{creditsShortfall.action(notice)}</output> : null}
       </aside>
 
       <section aria-label={t.heroTitle} className="vs-stage">
         <div className="vs-stage-tabs">
-          <button type="button" aria-pressed={shownTab === "history"} onClick={() => setTab("history")} className={shownTab === "history" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
+          <button type="button" aria-pressed={tab === "history"} onClick={() => setTab("history")} className={tab === "history" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {t.history}
             {jobs.length > 0 ? <span className="vs-stage-count">{jobs.length}</span> : null}
           </button>
-          <button type="button" aria-pressed={shownTab === "how"} onClick={() => setTab("how")} className={shownTab === "how" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
+          <button type="button" aria-pressed={tab === "how"} onClick={() => setTab("how")} className={tab === "how" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             {t.how}
           </button>
         </div>
 
-        {shownTab === "history" ? (
+        {tab === "history" ? (
           jobs.length === 0 ? (
             <StateBlock
               icon={AudioLines}
@@ -396,11 +574,11 @@ export function AiAudioStudio({
               body={
                 signedOut
                   ? zh
-                    ? "生成过的配音和音乐都保存在账户里，换设备也能听到。也可以先从一句示例开始："
-                    : "Your voiceovers and music are kept in your account, on any device. Or start from an example:"
+                    ? "生成过的配音和音乐都保存在账户里，换设备也能听到。也可以先点一句示例试试："
+                    : "Your voiceovers and music are kept in your account, on any device. Or click an example:"
                   : zh
-                    ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以从一句示例开始："
-                    : "Write your text on the left and generate; voiceovers and music land here. Or start from an example:"
+                    ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以点一句示例快速填入："
+                    : "Write your text on the left and generate; voiceovers and music land here. Or click an example:"
               }
               actions={signedOut ? [{ label: zh ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
             >
@@ -460,7 +638,6 @@ export function AiAudioStudio({
           <div className="vs-howto vs-howto-center">
             <h2 className="vs-howto-title">{how.title}</h2>
             <p className="vs-howto-sub">{how.sub}</p>
-            {how.soon ? null : (
             <div className="as-cards">
               <div className="as-card">
                 <h3 className="vs-step-title">{how.card1}</h3>
@@ -483,14 +660,13 @@ export function AiAudioStudio({
                 <h3 className="vs-step-title">{how.card2}</h3>
                 <p className="vs-step-body">{how.card2Sub}</p>
                 <div className="as-mock">
-                  <div className="as-mock-box">
-                    <span className="vs-card-label">{zh ? "提示词" : "Prompt"}</span>
+                  <button type="button" className="as-mock-box w-full text-left transition hover:opacity-90" onClick={() => reuse(how.demo)}>
+                    <span className="vs-card-label">{zh ? "点击填入示例" : "Click to try sample"}</span>
                     <p className="as-mock-text">{how.demo}</p>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
-            )}
           </div>
         )}
       </section>
