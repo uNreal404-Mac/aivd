@@ -1,13 +1,21 @@
 .du-home-agent .cs-agent-form {
   position: relative;
   width: 100%;
-  min-height: 164px;
+  min-height: 158px;
   margin: 0;
   padding: 12px;
+  border: 1px solid color-mix(in srgb, white 4%, transparent);
+  border-radius: var(--ds-r-3xl);
+  background: color-mix(in srgb, black 66%, transparent);
+  box-shadow:
+    0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent),
+    0 -12px 42px color-mix(in srgb, var(--du-accent) 20%, transparent);
+  backdrop-filter: blur(17px);
+  -webkit-backdrop-filter: blur(17px);
 }
 @media (min-width: 768px) {
   .du-home-agent .cs-agent-form {
-    min-height: var(--du-editor-height, 164px);
+    min-height: var(--du-editor-height, 158px);
   }
 }
 .du-home-agent .cs-agent-form:is(:hover, :focus-within) .du-composer-resize {
@@ -26,8 +34,8 @@
 .du-home-agent .cs-send {
   width: 32px;
   height: 32px;
-  background: var(--du-text);
-  color: var(--du-bg);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
 }
 .du-home-agent .cs-send:disabled {
   background: var(--ds-fill-2);

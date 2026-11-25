@@ -88,7 +88,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
 
   const models = useMemo(() => withStudioModels(serverModels), [serverModels]);
   const defaultVideoModel = models.find((item) => item.id === DEFAULT_VIDEO_MODEL_ID) ?? models[0];
-  const [editorSize, setEditorSize] = useState({ width: 700, height: 164 });
+  const [editorSize, setEditorSize] = useState({ width: 1010, height: 158 });
   const [speechMode, setSpeechMode] = useState(false);
   useEffect(() => {
     if (!homepage || !owner) return;

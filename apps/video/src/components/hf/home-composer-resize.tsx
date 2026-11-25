@@ -11,7 +11,7 @@ export function HomeComposerResize({ zh, onResize }: { zh: boolean; onResize: (s
   const label = zh ? "调整输入框大小" : "Resize prompt";
   const resize = (width: number, height: number) => onResize({
     width: clamp(width, 600, Math.min(1200, document.documentElement.clientWidth - 32)),
-    height: clamp(height, 164, 420),
+    height: clamp(height, 158, 420),
   });
   const release = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerId !== drag.current?.id) return;
