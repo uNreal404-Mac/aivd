@@ -37,7 +37,6 @@ import {
 } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
 import { InViewVideo } from "@/components/hf/in-view-video";
-import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
@@ -102,7 +101,7 @@ function mediaColumns<T extends { media: ShowMedia }>(items: readonly T[], count
 
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
-    <InViewVideo className={className} src={media.src} poster={media.poster} hoverPlay={false} documentGallery />
+    <InViewVideo className={className} src={media.src} poster={media.poster} documentGallery />
   ) : (
     <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
   );
@@ -163,7 +162,6 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
                     <Link href={href(slide.href)} className="hs-slide-link">
                       <SlideContent slide={slide} eager={columnIndex === 0 && index === 0} t={t} />
                     </Link>
-                    <VideoPlayToggle zh={zh} className="hs-slide-play" />
                   </div>
                 ) : (
                   <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
@@ -227,7 +225,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
                       ratio={String(item.media.aspectRatio ?? 1)}
                       position={index}
                       zh={zh}
-                      viewportPlayback
+                      showPlayToggle={false}
                     />
                   );
                 })}

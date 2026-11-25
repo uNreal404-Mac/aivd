@@ -70,7 +70,7 @@ export const FEATURE_SLIDES: {
     href: withPrompt(navModelHref("video", "bytedance/seedance-2-5"), featurePrompts.whale),
   },
   {
-    media: MEDIA.dragon,
+    media: MEDIA.friedChicken,
     cover: { main: "VEO 3.1", sub: { zh: "画面 + 声音", en: "WITH SOUND" } },
     title: { zh: "VEO 3.1 有声短片", en: "VEO 3.1 WITH SOUND" },
     body: { zh: "电影级动态画面与原生音效同步生成", en: "Cinema picture and native sound in one pass" },

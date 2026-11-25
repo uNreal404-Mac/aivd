@@ -15,9 +15,7 @@ import { prefersReducedMotion } from "@/lib/reduced-motion";
  * For visitors who asked for reduced motion nothing starts by itself: the
  * clip shows a still and plays when they ask for it. Resting the pointer on
  * its card (the nearest `[data-video-scope]`, else its parent) or moving
- * keyboard focus there plays it, and a `VideoPlayToggle` in the same card
- * plays it by click or tap. The homepage passes `hoverPlay={false}` so
- * reduced-motion previews play only after an explicit click or tap.
+ * keyboard focus there plays it. A card may also offer `VideoPlayToggle`.
  */
 export function InViewVideo({
   src,

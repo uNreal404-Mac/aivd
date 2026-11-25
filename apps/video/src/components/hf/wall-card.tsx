@@ -10,10 +10,8 @@ import type { ShowMedia } from "@/lib/home-showcase";
 // Slow camera moves played on a still while it is hovered, cycled by position.
 const MOVES = ["wc-move-push", "wc-move-left", "wc-move-right", "wc-move-rise"] as const;
 
-/**
- * The homepage previews visible clips. Model walls preview on hover or focus.
- * The media link opens its studio and the separate button controls playback.
- */
+/** The media link opens its studio. Clips preview on hover or keyboard focus;
+ * callers can omit the separate play button for hands-free galleries. */
 export function WallCard({
   media,
   href,
@@ -22,7 +20,7 @@ export function WallCard({
   ratio,
   position,
   zh,
-  viewportPlayback = false,
+  showPlayToggle = true,
 }: {
   media: ShowMedia;
   href: string;
@@ -31,7 +29,7 @@ export function WallCard({
   ratio: string;
   position: number;
   zh: boolean;
-  viewportPlayback?: boolean;
+  showPlayToggle?: boolean;
 }) {
   return (
     <div
@@ -51,9 +49,7 @@ export function WallCard({
           <InViewVideo
             src={media.src}
             poster={media.poster}
-            playback={viewportPlayback ? "viewport" : "hover"}
-            hoverPlay={!viewportPlayback}
-            documentGallery={viewportPlayback}
+            playback="hover"
           />
         ) : (
           <img src={media.src} alt="" loading="lazy" />
@@ -73,7 +69,7 @@ export function WallCard({
           </span>
         </span>
       </Link>
-      {media.video ? <VideoPlayToggle zh={zh} className="wc-play" /> : null}
+      {media.video && showPlayToggle ? <VideoPlayToggle zh={zh} className="wc-play" /> : null}
     </div>
   );
 }

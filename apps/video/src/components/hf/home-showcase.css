@@ -30,9 +30,16 @@
 .hs-release-grid {
   display: flex;
   gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
 }
+.hs-release-grid::-webkit-scrollbar { display: none; }
 .hs-release-column { display: contents; }
 .hs-release-grid .hs-slide { flex: var(--hs-media-ratio, 1) 1 0%; }
+@media (min-width: 900px) {
+  .hs-release-grid .hs-slide { min-width: max(120px, calc(var(--hs-media-ratio, 1) * 120px)); }
+}
 .hs-release-grid .hs-slide-media { aspect-ratio: var(--hs-media-ratio, 1); }
 .hs-release-grid .hs-slide-media :is(img, video) { object-fit: contain; object-position: center; }
 .hs-release-grid .hs-slide:hover .hs-slide-media :is(img, video),
