@@ -14,6 +14,45 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
   const [playingDemoId, setPlayingDemoId] = useState<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const demoTimerRef = useRef<number | null>(null);
+  const progressFrameRef = useRef<number | null>(null);
+  // Bumped per voice preview, so a cancelled one finishing late leaves the
+  // newer preview's progress alone.
+  const voiceRunRef = useRef(0);
+
+  /*
+   * How far a voice preview has got, drawn on every waveform marked
+   * data-au-voice="<name>" as --au-progress (0–1). Set on the elements
+   * directly, so the studio does not re-render on every frame. Speech
+   * engines that report word boundaries move it exactly; others move it by
+   * the sample's expected length.
+   */
+  const stopProgress = () => {
+    if (progressFrameRef.current !== null) cancelAnimationFrame(progressFrameRef.current);
+    progressFrameRef.current = null;
+    for (const el of document.querySelectorAll<HTMLElement>("[data-au-voice]")) el.style.removeProperty("--au-progress");
+  };
+  const paintProgress = (voiceName: string, value: number) => {
+    const selector = `[data-au-voice="${CSS.escape(voiceName)}"]`;
+    for (const el of document.querySelectorAll<HTMLElement>(selector)) el.style.setProperty("--au-progress", value.toFixed(3));
+  };
+  const startProgress = (voiceName: string, utter: SpeechSynthesisUtterance, text: string) => {
+    stopProgress();
+    const expectedMs = (text.length / ((zh ? 4.5 : 14) * utter.rate)) * 1000;
+    let started = 0;
+    let spoken: number | null = null;
+    utter.onstart = () => {
+      started = performance.now();
+    };
+    utter.onboundary = (event) => {
+      spoken = Math.min(1, (event.charIndex + (event.charLength || 1)) / text.length);
+    };
+    const tick = () => {
+      const timed = started ? Math.min(0.97, (performance.now() - started) / expectedMs) : 0;
+      paintProgress(voiceName, spoken ?? timed);
+      progressFrameRef.current = requestAnimationFrame(tick);
+    };
+    progressFrameRef.current = requestAnimationFrame(tick);
+  };
 
   const stopDemo = () => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -32,6 +71,7 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
 
   const stopAll = () => {
     stopDemo();
+    stopProgress();
     setPreviewingVoice(null);
   };
 
@@ -46,6 +86,8 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
       return;
     }
     stopDemo();
+    stopProgress();
+    voiceRunRef.current += 1;
     window.speechSynthesis.cancel();
     if (previewingVoice === voiceName) {
       setPreviewingVoice(null);
@@ -64,9 +106,16 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
       const idx = Math.abs(voiceName.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)) % langVoices.length;
       utter.voice = langVoices[idx];
     }
-    utter.onend = () => setPreviewingVoice((current) => (current === voiceName ? null : current));
-    utter.onerror = () => setPreviewingVoice((current) => (current === voiceName ? null : current));
+    const run = ++voiceRunRef.current;
+    const finish = () => {
+      if (voiceRunRef.current !== run) return;
+      stopProgress();
+      setPreviewingVoice((current) => (current === voiceName ? null : current));
+    };
+    utter.onend = finish;
+    utter.onerror = finish;
     setPreviewingVoice(voiceName);
+    startProgress(voiceName, utter, sample);
     window.speechSynthesis.speak(utter);
   };
 
@@ -76,6 +125,7 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
       return;
     }
     stopDemo();
+    stopProgress();
     setPreviewingVoice(null);
 
     if (item.synthKind === "speech") {

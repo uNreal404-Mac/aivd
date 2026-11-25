@@ -6,9 +6,11 @@ import { usePresence } from "@/hooks/use-presence";
 /** Where a popover sits next to the control that opened it:
  * - "right-end": beside the control, bottom edges aligned (the settings
  *   column's cards open their menus over the stage, as on the reference);
- * - "top-start": above the control, left edges aligned.
- * Either falls back to above, then below, when the window is too narrow. */
-export type PopoverPlacement = "right-end" | "top-start";
+ * - "top-start": above the control, left edges aligned;
+ * - "bottom-end": under the control, right edges aligned (the stage's
+ *   Filter and View menus).
+ * Each falls back to above, then below, when the window is too narrow. */
+export type PopoverPlacement = "right-end" | "top-start" | "bottom-end";
 
 const GAP = 8;
 const EDGE = 8;
@@ -48,6 +50,10 @@ export function useAnchoredPopover<A extends HTMLElement = HTMLButtonElement>(
       if (placement === "right-end" && anchor.right + GAP + width <= viewWidth - EDGE) {
         left = anchor.right + GAP;
         top = anchor.bottom - height;
+      } else if (placement === "bottom-end") {
+        left = anchor.right - width;
+        top = anchor.bottom + GAP;
+        if (top + height > viewHeight - EDGE) top = anchor.top - GAP - height;
       } else {
         left = anchor.left;
         top = anchor.top - GAP - height;

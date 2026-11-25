@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { AudioLines, BookOpen, Check, ChevronRight, Folder, LayoutGrid, ListFilter, Music, Paintbrush, Play, RotateCcw, Sparkles, Square } from "lucide-react";
+import { type CSSProperties, type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { AudioLines, BookOpen, CalendarDays, Check, ChevronRight, Folder, LayoutGrid, ListFilter, Music, Paintbrush, Pause, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { getMarketModel } from "@/ai/kie-market";
 import type { MediaJob } from "@/lib/media-studio";
 import { localizedHref } from "@/lib/locale-path";
 import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
-import { AUDIO_SHOWCASE, type AudioKind, type AudioShowcaseItem, audioKindOf, type Mode } from "./audio-data";
+import { AUDIO_SHOWCASE, type AudioShowcaseItem, filterAudioJobs, HISTORY_RANGES, type HistoryRange, type HistoryType, type Mode, voiceHue } from "./audio-data";
 import { AudioPopover } from "./audio-popover";
 
 export type StageTab = "history" | "how";
-type Filter = "all" | AudioKind;
 
 /** A row in the first how-it-works card: a voice to hear and pick, or a style to apply. */
 export type HowPick = { key: string; title: string; sub: string; voiceName?: string; on: boolean; onPick: () => void };
@@ -32,6 +31,7 @@ export function AudioStage({
   how,
   previewingVoice,
   onPreviewVoice,
+  sectionRef,
 }: {
   zh: boolean;
   locale: string;
@@ -57,87 +57,163 @@ export function AudioStage({
   };
   previewingVoice: string | null;
   onPreviewVoice: (name: string) => void;
+  /** The stage itself (the voice picker opens over its top-left corner). */
+  sectionRef?: RefObject<HTMLElement | null>;
 }) {
   const tabsRef = useSegmentIndicator<HTMLDivElement>(tab);
-  const [filter, setFilter] = useState<Filter>("all");
+  // The filter, measured from the reference: a date range (its own list,
+  // opened to the side) and the kind of audio. Choices apply at once and the
+  // menu stays open; "Clear all" appears once anything is narrowed.
+  const [type, setType] = useState<HistoryType>("all");
+  const [range, setRange] = useState<HistoryRange>("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [rangeOpen, setRangeOpen] = useState(false);
   const filterRef = useRef<HTMLButtonElement>(null);
-  const shown = useMemo(() => (filter === "all" ? jobs : jobs.filter((job) => audioKindOf(job.model) === filter)), [jobs, filter]);
-  const filters: { id: Filter; label: string; icon: typeof AudioLines }[] = [
+  const rangeRowRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!filterOpen) setRangeOpen(false);
+  }, [filterOpen]);
+  const filtered = type !== "all" || range !== "all";
+  const shown = useMemo(() => filterAudioJobs(jobs, { type, range }, Date.now()), [jobs, type, range]);
+  const types: { id: HistoryType; label: string; icon: typeof AudioLines }[] = [
     { id: "all", label: zh ? "全部" : "All", icon: LayoutGrid },
     { id: "speech", label: zh ? "语音" : "Speech", icon: AudioLines },
     { id: "music", label: zh ? "音乐" : "Music", icon: Music },
     { id: "sfx", label: zh ? "音效" : "Sound effects", icon: Sparkles },
   ];
-  const showFilter = tab === "history" && jobs.length > 0;
+  const rangeLabels: Record<HistoryRange, string> = zh
+    ? { all: "全部时间", today: "今天", "7d": "最近 7 天", "30d": "最近 30 天" }
+    : { all: "All time", today: "Today", "7d": "Last 7 days", "30d": "Last 30 days" };
+  // A filter only narrows History, so choosing one shows it.
+  const applyType = (next: HistoryType) => {
+    setType(next);
+    if (tab !== "history") onTab("history");
+  };
+  const applyRange = (next: HistoryRange) => {
+    setRange(next);
+    if (tab !== "history") onTab("history");
+  };
+  const clearFilters = () => {
+    setType("all");
+    setRange("all");
+  };
 
   return (
-    <section aria-label={zh ? "历史记录与工作原理" : "History and how it works"} className="au-stage">
+    <section ref={sectionRef} aria-label={zh ? "历史记录与工作原理" : "History and how it works"} className="au-stage">
       <div className="au-stage-bar">
         <div ref={tabsRef} role="tablist" aria-label={zh ? "视图" : "View"} className="au-stage-tabs du-seg">
           <button type="button" role="tab" aria-selected={tab === "history"} className="au-stage-tab" onClick={() => onTab("history")}>
-            <Folder className="h-3.5 w-3.5" aria-hidden="true" />
+            <Folder className="h-4 w-4" aria-hidden="true" />
             {zh ? "历史记录" : "History"}
-            {jobs.length > 0 ? (
-              <span className="au-stage-count" data-num="">
-                {jobs.length}
-              </span>
-            ) : null}
           </button>
           <button type="button" role="tab" aria-selected={tab === "how"} className="au-stage-tab" onClick={() => onTab("how")}>
-            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
             {zh ? "工作原理" : "How it works"}
           </button>
         </div>
-        {showFilter ? (
-          <>
+        <button
+          ref={filterRef}
+          type="button"
+          className={filtered ? "au-filter au-filter-on" : "au-filter"}
+          aria-haspopup="dialog"
+          aria-expanded={filterOpen}
+          onClick={() => setFilterOpen((open) => !open)}
+        >
+          <ListFilter className="h-4 w-4" aria-hidden="true" />
+          {zh ? "筛选" : "Filter"}
+          {filtered ? (
+            <>
+              <span className="au-filter-dot" aria-hidden="true" />
+              <span className="sr-only">{zh ? "（已筛选）" : "(filtered)"}</span>
+            </>
+          ) : null}
+        </button>
+        <AudioPopover
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          anchorRef={filterRef}
+          label={zh ? "筛选历史记录" : "Filter history"}
+          placement="below-end"
+          width={250}
+          className="au-pop-menu"
+        >
+          <p className="au-pop-head">{zh ? "日期" : "Date"}</p>
+          <div className="au-pop-list">
             <button
-              ref={filterRef}
+              ref={rangeRowRef}
               type="button"
-              className={filter === "all" ? "au-filter" : "au-filter au-filter-on"}
+              className="au-menu-row"
               aria-haspopup="dialog"
-              aria-expanded={filterOpen}
-              onClick={() => setFilterOpen((open) => !open)}
+              aria-expanded={rangeOpen}
+              onClick={() => setRangeOpen((open) => !open)}
             >
-              <ListFilter className="h-3.5 w-3.5" aria-hidden="true" />
-              {filter === "all" ? (zh ? "筛选" : "Filter") : filters.find((item) => item.id === filter)?.label}
+              <CalendarDays className="h-4 w-4 text-[var(--ds-text-3)]" aria-hidden="true" />
+              <span className="flex-1 text-left">{zh ? "日期范围" : "Date range"}</span>
+              {range === "all" ? null : <span className="au-menu-value">{rangeLabels[range]}</span>}
+              <ChevronRight className="h-4 w-4 text-[var(--ds-text-3)]" aria-hidden="true" />
             </button>
-            <AudioPopover
-              open={filterOpen}
-              onClose={() => setFilterOpen(false)}
-              anchorRef={filterRef}
-              label={zh ? "筛选历史记录" : "Filter history"}
-              placement="below-end"
-              width={250}
-              className="au-pop-menu"
-            >
-              <p className="au-pop-head">{zh ? "类型" : "Type"}</p>
-              <div className="au-pop-list">
-                {filters.map((item) => {
-                  const Icon = item.icon;
-                  const on = filter === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-pressed={on}
-                      className="au-menu-row"
-                      onClick={() => {
-                        setFilter(item.id);
-                        setFilterOpen(false);
-                        filterRef.current?.focus();
-                      }}
-                    >
-                      <Icon className="h-4 w-4 text-[var(--ds-text-3)]" aria-hidden="true" />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {on ? <Check className="h-4 w-4 du-check-pop" aria-hidden="true" /> : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </AudioPopover>
-          </>
-        ) : null}
+          </div>
+          <p className="au-pop-head">{zh ? "类型" : "Type"}</p>
+          <div className="au-pop-list">
+            {types.map((item) => {
+              const Icon = item.icon;
+              const on = type === item.id;
+              return (
+                <button key={item.id} type="button" aria-pressed={on} className="au-menu-row" onClick={() => applyType(item.id)}>
+                  <Icon className="h-4 w-4 text-[var(--ds-text-3)]" aria-hidden="true" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {on ? <Check className="h-4 w-4 du-check-pop" aria-hidden="true" /> : null}
+                </button>
+              );
+            })}
+          </div>
+          {filtered ? (
+            <div className="au-pop-foot">
+              <button
+                type="button"
+                className="au-menu-clear"
+                onClick={() => {
+                  clearFilters();
+                  filterRef.current?.focus();
+                }}
+              >
+                {zh ? "全部清除" : "Clear all"}
+              </button>
+            </div>
+          ) : null}
+        </AudioPopover>
+        <AudioPopover
+          open={rangeOpen}
+          onClose={() => setRangeOpen(false)}
+          anchorRef={rangeRowRef}
+          label={zh ? "日期范围" : "Date range"}
+          placement="submenu"
+          width={248}
+          className="au-pop-menu"
+        >
+          <p className="au-pop-head">{zh ? "日期" : "Date"}</p>
+          <div className="au-pop-list">
+            {HISTORY_RANGES.map((item) => {
+              const on = range === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  aria-pressed={on}
+                  className="au-menu-row"
+                  onClick={() => {
+                    applyRange(item);
+                    setRangeOpen(false);
+                    rangeRowRef.current?.focus();
+                  }}
+                >
+                  <span className="flex-1 text-left">{rangeLabels[item]}</span>
+                  {on ? <Check className="h-4 w-4 du-check-pop" aria-hidden="true" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </AudioPopover>
       </div>
 
       <div className="au-stage-body">
@@ -214,9 +290,13 @@ export function AudioStage({
           </div>
         ) : shown.length === 0 ? (
           <div className="au-none">
-            <p>{zh ? "这一类还没有作品" : "Nothing of this kind yet"}</p>
-            <button type="button" className="au-pill" onClick={() => setFilter("all")}>
-              {zh ? "显示全部" : "Show all"}
+            <span className="au-none-icon" aria-hidden="true">
+              <ListFilter className="h-4 w-4" />
+            </span>
+            <p className="au-none-title">{zh ? "没有符合筛选条件的作品" : "Nothing matches these filters"}</p>
+            <p className="au-none-sub">{zh ? "换个日期范围或类型，或者清除筛选，看看全部记录。" : "Try another date range or type, or clear the filters to see everything."}</p>
+            <button type="button" className="au-pill" onClick={clearFilters}>
+              {zh ? "清除筛选" : "Clear filters"}
             </button>
           </div>
         ) : (
@@ -314,9 +394,13 @@ function HowItWorks({
                 return (
                   <div key={pick.key} className="au-opt-wrap">
                     <button type="button" aria-pressed={pick.on} className="au-opt au-opt-voice" onClick={pick.onPick}>
-                      <span className="au-opt-tile au-opt-avatar" aria-hidden="true">
-                        {pick.voiceName ? pick.voiceName.slice(0, 1) : <Music className="h-4 w-4" />}
-                      </span>
+                      {pick.voiceName ? (
+                        <span className="au-orb au-opt-orb" style={{ "--au-hue": voiceHue(pick.voiceName) } as CSSProperties} aria-hidden="true" />
+                      ) : (
+                        <span className="au-opt-tile au-opt-avatar" aria-hidden="true">
+                          <Music className="h-4 w-4" />
+                        </span>
+                      )}
                       <span className="au-opt-text">
                         <span className="au-opt-name">{pick.title}</span>
                         <span className="au-opt-sub">{pick.sub}</span>
@@ -330,7 +414,7 @@ function HowItWorks({
                         aria-label={playing ? (zh ? `停止试听 ${pick.voiceName}` : `Stop ${pick.voiceName}`) : zh ? `试听 ${pick.voiceName}` : `Preview ${pick.voiceName}`}
                         onClick={() => onPreviewVoice(pick.voiceName as string)}
                       >
-                        {playing ? <Square key="stop" data-swap="" className="h-3 w-3" aria-hidden="true" /> : <Play key="play" data-swap="" className="h-3 w-3" aria-hidden="true" />}
+                        {playing ? <Pause key="stop" data-swap="" className="h-3 w-3" fill="currentColor" aria-hidden="true" /> : <Play key="play" data-swap="" className="h-3 w-3" fill="currentColor" aria-hidden="true" />}
                       </button>
                     ) : null}
                   </div>

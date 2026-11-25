@@ -42,6 +42,61 @@ export function audioKindOf(modelId: string | undefined): AudioKind {
   return "speech";
 }
 
+/** History filter: what kind of audio, and how recent. */
+export type HistoryType = "all" | AudioKind;
+export type HistoryRange = "all" | "today" | "7d" | "30d";
+export const HISTORY_RANGES: HistoryRange[] = ["all", "today", "7d", "30d"];
+
+/** Start of the window a range keeps (local midnight for "today"), or null for all time. */
+export function historyRangeStart(range: HistoryRange, now: number): number | null {
+  if (range === "all") return null;
+  if (range === "today") {
+    const day = new Date(now);
+    day.setHours(0, 0, 0, 0);
+    return day.getTime();
+  }
+  return now - (range === "7d" ? 7 : 30) * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * The history entries a filter keeps, in their original order. An entry with
+ * no date only shows under "All time".
+ */
+export function filterAudioJobs<T extends { model?: string; createdAt?: number }>(
+  jobs: T[],
+  filter: { type: HistoryType; range: HistoryRange },
+  now: number,
+): T[] {
+  const start = historyRangeStart(filter.range, now);
+  return jobs.filter(
+    (job) =>
+      (filter.type === "all" || audioKindOf(job.model) === filter.type) &&
+      (start === null || (typeof job.createdAt === "number" && job.createdAt >= start)),
+  );
+}
+
+/** A stable number from a name (for a voice's colour and its drawn waveform). */
+function nameSeed(name: string): number {
+  let seed = 7;
+  for (const char of name) seed = (seed * 31 + char.charCodeAt(0)) % 100_003;
+  return seed;
+}
+
+/** Hue offset (degrees from the brand accent) that gives each voice its own colour. */
+export function voiceHue(name: string): number {
+  return (nameSeed(name) * 47) % 360;
+}
+
+/** Bar heights (percent) for a voice's drawn waveform; the same every time. */
+export function voiceWave(name: string, bars = 36): number[] {
+  let seed = nameSeed(name);
+  return Array.from({ length: bars }, (_, index) => {
+    seed = (seed * 9301 + 49297) % 233_280;
+    const swell = Math.sin((index / bars) * Math.PI) * 30;
+    return Math.round(22 + swell + (seed / 233_280) * 48);
+  });
+}
+
 export type VoiceMeta = {
   gender: "M" | "F";
   tagZh: string;
@@ -77,6 +132,11 @@ export function voiceTag(name: string, zh: boolean): string {
   const meta = VOICE_META[name];
   if (!meta) return "";
   return zh ? meta.tagZh : meta.tagEn;
+}
+
+/** The voice's gender, when we know it (for the voice filter). */
+export function voiceGender(name: string): "M" | "F" | null {
+  return VOICE_META[name]?.gender ?? null;
 }
 
 export const MUSIC_STYLE_CHIPS = [

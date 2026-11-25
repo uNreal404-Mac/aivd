@@ -26,6 +26,7 @@
 /* First screen: the hero (or the results) and the bar, one screen tall. The
    bar sticks to the bottom of it while results scroll underneath. */
 .is-first {
+  position: relative;
   display: flex;
   width: 100%;
   min-height: calc(100svh - var(--hf-header-h, 52px));
@@ -47,27 +48,36 @@
   text-align: center;
 }
 
+/* Four pictures, each tucked under the one on its left (as on the reference:
+   the first lies on top), sized and overlapped with the screen exactly like
+   the reference: 144px on a 1440 x 900 screen, 64px on a phone. The stack
+   stays still under the pointer; it is a picture, not a control. */
 .is-stack {
+  --is-card: clamp(64px, min(12vw, 16vh), 172px);
   display: flex;
-  height: 168px;
+  height: calc(var(--is-card) + 24px);
   align-items: center;
   justify-content: center;
 }
 
 .is-card {
   position: relative;
-  z-index: 2;
   display: block;
-  width: 146px;
-  height: 146px;
+  width: var(--is-card);
+  height: var(--is-card);
   flex-shrink: 0;
   overflow: hidden;
-  border: 4px solid color-mix(in srgb, white 30%, transparent);
+  border: 3px solid color-mix(in srgb, white 30%, transparent);
   border-radius: var(--ds-r-lg);
-  margin-left: -20px;
+  margin-right: calc(-1 * clamp(16px, min(1.5vw, 2vh), 36px));
   background: var(--ds-surface-2);
   box-shadow: var(--ds-shadow-1);
-  transition: transform var(--m-slow) var(--m-ease-out);
+}
+
+@media (min-width: 1280px) {
+  .is-card {
+    border-width: 4px;
+  }
 }
 
 .is-card img {
@@ -78,40 +88,26 @@
 }
 
 .is-card-1 {
-  margin-left: 0;
-  transform: rotate(-9deg);
+  z-index: 4;
+  transform: rotate(-10deg);
 }
 
-/* The second picture sits behind its neighbours, without a frame. */
+/* The second picture has no frame. */
 .is-card-2 {
-  z-index: 1;
+  z-index: 3;
   border-width: 0;
-  transform: rotate(3deg);
+  transform: rotate(4deg);
 }
 
 .is-card-3 {
-  z-index: 3;
-  width: 144px;
-  height: 144px;
+  z-index: 2;
   border-radius: var(--ds-r-full);
 }
 
 .is-card-4 {
-  transform: rotate(-3.5deg);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .is-stack:hover .is-card-1 {
-    transform: rotate(-12deg) translateX(-8px);
-  }
-
-  .is-stack:hover .is-card-2 {
-    transform: rotate(5deg) translateX(-3px);
-  }
-
-  .is-stack:hover .is-card-4 {
-    transform: rotate(-1deg) translateX(8px);
-  }
+  z-index: 1;
+  margin-right: 0;
+  transform: rotate(-4deg);
 }
 
 .is-title {
@@ -143,10 +139,19 @@
   align-items: stretch;
 }
 
+/* "View": 8px under the header, at the right edge of the page. */
 .is-topbar {
+  z-index: 30;
   display: flex;
   justify-content: flex-end;
-  padding: var(--ds-space-1) 0 var(--ds-space-3);
+  padding: var(--ds-space-2) 0 var(--ds-space-3);
+}
+
+/* Before any results it floats in the corner, so the hero keeps its place. */
+.is-first:not(.is-first-results) > .is-topbar {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .is-view {
@@ -158,7 +163,7 @@
   height: 32px;
   align-items: center;
   gap: 6px;
-  padding: 0 10px 0 9px;
+  padding: 0 12px 0 8px;
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-sm);
   color: var(--ds-text-1);
@@ -169,19 +174,24 @@
 
 .is-view-btn:hover,
 .is-view-btn[aria-expanded="true"] {
-  background: var(--ds-fill-3);
+  background: var(--ds-fill-4);
 }
 
 .is-view-btn:active {
   transform: scale(0.97);
 }
 
-/* Card sizes 1-4: the narrowest a column may get. */
+/* Card sizes 0-4 (five stops on the size slider): the narrowest a column may
+   get. */
 .is-results {
   --card-min: 280px;
   width: 100%;
   flex: 1;
   padding-bottom: var(--ds-space-5);
+}
+
+.is-results[data-size="0"] {
+  --card-min: 140px;
 }
 
 .is-results[data-size="1"] {
@@ -260,10 +270,16 @@
   pointer-events: auto;
 }
 
+/* Messages float 8px above the bar (the reference's slot over its composer),
+   so showing one never moves the hero or the results. */
 .is-notice {
+  position: absolute;
+  bottom: calc(100% + var(--ds-space-2));
+  left: 50%;
+  width: max-content;
   max-width: min(880px, 100%);
-  margin-bottom: var(--ds-space-2);
   padding: 8px 14px;
+  transform: translateX(-50%);
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-lg);
   background: color-mix(in srgb, var(--du-surface-2) 92%, transparent);
@@ -391,7 +407,7 @@ button.is-chip[aria-expanded="true"] {
 
 .is-icon-btn:hover:not(:disabled),
 .is-icon-btn[aria-expanded="true"] {
-  background: var(--ds-fill-2);
+  background: var(--ds-fill-3);
 }
 
 .is-icon-btn:active:not(:disabled) {
@@ -439,44 +455,61 @@ button.is-chip[aria-expanded="true"] {
   height: 18px;
 }
 
+/* The chevron takes the accent while the model list is open, as the
+   reference's turns its lime. */
 .is-model-chevron {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
   color: var(--ds-text-3);
   pointer-events: none;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
+.is-model:has([aria-expanded="true"]) .is-model-chevron {
+  color: var(--du-accent-text);
+}
+
+/* Batch stepper, as on the reference: 16px glyphs either side of "1/4", the
+   whole pill lightens on hover, a glyph at its limit fades to 40%. */
 .is-stepper {
-  gap: 8px;
+  gap: 4px;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 0;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.is-stepper:hover {
+  background: var(--ds-fill-2);
 }
 
 .is-stepper button {
   display: inline-flex;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ds-r-xs);
-  color: var(--ds-text-2);
-  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+  color: var(--ds-text-3);
+  transition: color var(--m-instant) var(--m-ease-out), opacity var(--m-instant) var(--m-ease-out);
+}
+
+.is-stepper button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .is-stepper button:hover:not(:disabled) {
-  background: var(--ds-fill-2);
   color: var(--ds-text-1);
 }
 
 .is-stepper button:disabled {
   cursor: not-allowed;
-  color: var(--ds-text-4);
+  opacity: 0.4;
 }
 
 .is-stepper-value {
-  min-width: 30px;
+  width: 32px;
   color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
   font-variant-numeric: tabular-nums;
@@ -486,6 +519,54 @@ button.is-chip[aria-expanded="true"] {
 
 .is-stepper-value span {
   color: var(--ds-text-3);
+}
+
+/* ---------- Hover labels (+, @, batch, fixed values) ---------- */
+.is-tipped {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.is-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 45;
+  padding: 4px 8px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-sm);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 2px);
+  transition: opacity var(--m-instant) var(--m-ease-exit), transform var(--m-instant) var(--m-ease-exit);
+}
+
+/* Hover: after a short pause, like a system tooltip. Keyboard focus: at once. */
+@media (hover: hover) and (pointer: fine) {
+  .is-tipped:hover > .is-tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition: opacity var(--m-fast) var(--m-ease-out) var(--m-base), transform var(--m-fast) var(--m-ease-out) var(--m-base);
+  }
+}
+
+.is-tipped:has(:focus-visible) > .is-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Never over the control's own menu. */
+.is-tipped:has([aria-expanded="true"]) > .is-tip {
+  opacity: 0;
+  transition: none;
 }
 
 /* Generate: 120 x 80 inside the bar, on the right, with the cost under it. */
@@ -501,8 +582,9 @@ button.is-chip[aria-expanded="true"] {
   border-radius: var(--ds-r-lg);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  font-size: var(--ds-fs-sm);
+  font-size: var(--ds-fs-ui);
   font-weight: 600;
+  transition: background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .is-generate:hover:not(:disabled) {
@@ -511,11 +593,12 @@ button.is-chip[aria-expanded="true"] {
 
 .is-generate-cost {
   display: inline-flex;
+  height: 16px;
   align-items: center;
   gap: 3px;
   font-size: var(--ds-fs-xs);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
   opacity: 0.78;
 }
 
@@ -602,15 +685,22 @@ button.is-chip[aria-expanded="true"] {
   overflow-y: auto;
   padding: var(--ds-space-2);
   border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, var(--du-surface-2) 84%, transparent);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  /* The reference's frosted 75% panel, a shade lighter than the bar. */
+  background: color-mix(in srgb, color-mix(in srgb, white 5%, var(--du-surface-2)) 75%, transparent);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   box-shadow: 0 0 0 1px var(--ds-line-1), var(--ds-shadow-float);
   transform-origin: bottom left;
 }
 
 .is-pop-wide {
   width: 300px;
+}
+
+/* Beside the chip, bottom edges level (the reference's resolution menu). */
+.is-pop-right {
+  bottom: 0;
+  left: calc(100% + 4px);
 }
 
 .is-mention-pop {
@@ -641,14 +731,17 @@ button.is-chip[aria-expanded="true"] {
   transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
+/* Hover, keyboard focus and the chosen row share one light fill, as on the
+   reference. */
 .is-pop-item:hover,
 .is-pop-item:focus-visible,
 .is-pop-item[aria-checked="true"] {
   background: var(--ds-fill-1);
 }
 
-.is-pop-item:hover {
-  background: var(--ds-fill-2);
+.is-pop-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--ds-line-3);
 }
 
 .is-pop-item-two {
@@ -743,6 +836,8 @@ button.is-chip[aria-expanded="true"] {
 }
 
 /* ---------- View menu (above the results, top right) ---------- */
+/* A solid panel (the reference's view menu is not frosted). Here the chosen
+   layout shows only its check; rows light up under the pointer. */
 .is-view-pop {
   top: calc(100% + 8px);
   right: 0;
@@ -750,9 +845,25 @@ button.is-chip[aria-expanded="true"] {
   left: auto;
   width: 188px;
   background: color-mix(in srgb, white 2%, var(--du-surface));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   transform-origin: top right;
 }
 
+.is-view-pop .is-pop-item[aria-checked="true"]:not(:hover, :focus-visible) {
+  background: transparent;
+}
+
+.is-view-pop .is-pop-check {
+  width: 20px;
+  height: 20px;
+}
+
+.is-view-pop .is-pop-sep {
+  margin: 2px 0;
+}
+
+/* The system's green for "on", like the reference's and Apple's switches. */
 .is-switch {
   position: relative;
   width: 28px;
@@ -776,14 +887,15 @@ button.is-chip[aria-expanded="true"] {
 }
 
 .is-switch-on {
-  background: var(--du-accent);
+  background: var(--du-success);
 }
 
 .is-switch-on::after {
-  background: var(--du-on-accent);
   transform: translateX(12px);
 }
 
+/* Card size: a 32px track filled up to the chosen stop, a hairline thumb
+   there and faint 6px ticks at the stops in between. */
 .is-size {
   position: relative;
   display: block;
@@ -804,23 +916,40 @@ button.is-chip[aria-expanded="true"] {
   top: 0;
   bottom: 0;
   left: 0;
+  width: 100%;
   background: var(--ds-fill-2);
-  transition: width var(--m-fast) var(--m-ease-out);
+  transform: scaleX(var(--size-at));
+  transform-origin: left;
+  transition: transform var(--m-fast) var(--m-ease-out);
 }
 
-.is-size-ticks {
+.is-size-track > i {
+  position: absolute;
+  top: 13px;
+  width: 1px;
+  height: 6px;
+  background: var(--ds-text-4);
+  opacity: 0.4;
+}
+
+/* A track-wide layer slid along by the chosen share of its own width; the
+   hairline is its left edge. */
+.is-size-thumb {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  padding: 0 12.5%;
+  transform: translateX(calc(var(--size-at) * 100% - 1px));
+  transition: transform var(--m-fast) var(--m-ease-out);
 }
 
-.is-size-ticks i {
+.is-size-thumb::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: 1px;
-  height: 8px;
-  background: var(--ds-fill-4);
+  background: var(--ds-text-4);
+  content: "";
+  opacity: 0.6;
 }
 
 .is-size input {
@@ -853,28 +982,7 @@ button.is-chip[aria-expanded="true"] {
   }
 
   .is-stack {
-    height: 76px;
-  }
-
-  .is-card {
-    width: 66px;
-    height: 66px;
-    border-width: 3px;
-    margin-left: -18px;
-  }
-
-  .is-card-2 {
-    border-width: 0;
-  }
-
-  .is-card-3 {
-    width: 64px;
-    height: 64px;
-    border-radius: var(--ds-r-full);
-  }
-
-  .is-card-1 {
-    margin-left: 0;
+    height: calc(var(--is-card) + 12px);
   }
 
   .is-title {
@@ -965,9 +1073,16 @@ button.is-chip[aria-expanded="true"] {
   }
 
   /* Menus open as a full-width card above the bar instead of beside a chip
-     that may sit near the screen edge. */
-  .is-pop-wrap {
+     that may sit near the screen edge: nothing between a menu and the bar
+     may be its anchor. Hover labels are a pointer thing; phones skip them. */
+  .is-pop-wrap,
+  .is-tipped,
+  .is-icon-group {
     position: static;
+  }
+
+  .is-tip {
+    display: none;
   }
 
   .is-pop-item {
@@ -983,14 +1098,22 @@ button.is-chip[aria-expanded="true"] {
     transform-origin: bottom center;
   }
 
+  .is-pop-right {
+    bottom: calc(100% + 4px);
+  }
+
   .is-view-pop {
     right: 0;
     left: auto;
-    width: 220px;
+    width: 188px;
   }
 
   .is-results {
     --card-min: 160px;
+  }
+
+  .is-results[data-size="0"] {
+    --card-min: 76px;
   }
 
   .is-results[data-size="1"] {

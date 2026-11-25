@@ -40,9 +40,10 @@ export function StageTabs({
 /**
  * How it works: a large title, a line under it and three illustrated steps
  * drawn from the studio's own parts, then a way into the templates at the
- * foot of the stage.
+ * foot of the stage. History shows the same introduction while it is empty,
+ * without the templates strip, as the reference does.
  */
-export function HowItWorks({ zh, templatesHref }: { zh: boolean; templatesHref: string }) {
+export function HowItWorks({ zh, templatesHref, tip = true }: { zh: boolean; templatesHref: string; tip?: boolean }) {
   const steps = zh
     ? [
         { title: "添加参考图", body: "上传、拖入或粘贴一张图片，也可以只写文字" },
@@ -99,6 +100,7 @@ export function HowItWorks({ zh, templatesHref }: { zh: boolean; templatesHref: 
           ))}
         </ol>
       </div>
+      {tip ? (
       <a className="vst-tip" href={templatesHref}>
         <span className="vst-tip-art" aria-hidden="true">
           <img src="/home/samples/autumn-walk.webp" alt="" />
@@ -111,6 +113,7 @@ export function HowItWorks({ zh, templatesHref }: { zh: boolean; templatesHref: 
         </span>
         <ChevronRight className="vst-tip-arrow" aria-hidden="true" />
       </a>
+      ) : null}
     </div>
   );
 }

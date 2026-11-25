@@ -47,7 +47,9 @@ export function PromptCard({
   onSubmit: () => void;
   references: ReferenceThumb[];
   canReference: boolean;
-  onOpenMedia: () => void;
+  /** Opens the media library: on its Elements tab from the "@ Elements"
+   * chip (as the reference does), on Upload from "Add or change images". */
+  onOpenMedia: (tab: "upload" | "elements") => void;
   /** Present only for models that generate sound. */
   audio?: { on: boolean; onToggle: () => void };
   draftRestored: boolean;
@@ -161,10 +163,15 @@ export function PromptCard({
           disabled={!canReference}
           onClick={() => {
             if (!references.length) {
-              onOpenMedia();
+              onOpenMedia("elements");
               return;
             }
-            setMenu((current) => (current ? null : {}));
+            // Opening moves focus to the first image; closing leaves it on the chip.
+            if (open) {
+              setMenu(null);
+              return;
+            }
+            setMenu({});
             requestAnimationFrame(() => popover.popoverRef.current?.querySelector<HTMLButtonElement>("button")?.focus());
           }}
         >
@@ -213,7 +220,7 @@ export function PromptCard({
               className="vst-menu-item vst-mention"
               onClick={() => {
                 setMenu(null);
-                onOpenMedia();
+                onOpenMedia("upload");
               }}
             >
               <span className="vst-mention-add" aria-hidden="true">

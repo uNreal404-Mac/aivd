@@ -10,10 +10,11 @@ import { moveFocus, useDismiss } from "./bar-menu";
 export type ImageView = {
   layout: "grid" | "masonry";
   byDate: boolean;
-  /** Card size, 1 (smallest) to 4 (largest). */
-  size: 1 | 2 | 3 | 4;
+  /** Card size, 0 (smallest) to 4 (largest): five stops, as on the reference. */
+  size: 0 | 1 | 2 | 3 | 4;
 };
 
+const SIZES = [0, 1, 2, 3, 4] as const;
 const DEFAULT_VIEW: ImageView = { layout: "masonry", byDate: false, size: 3 };
 const STORAGE_KEY = "aivd:image-view";
 
@@ -27,7 +28,7 @@ export function useImageView(): [ImageView, (patch: Partial<ImageView>) => void]
       setView({
         layout: row.layout === "grid" ? "grid" : "masonry",
         byDate: row.byDate === true,
-        size: row.size === 1 || row.size === 2 || row.size === 4 ? row.size : 3,
+        size: SIZES.find((size) => size === row.size) ?? DEFAULT_VIEW.size,
       });
     } catch {
       // Storage can be blocked; the default view still works.
@@ -128,22 +129,23 @@ export function ViewMenu({ zh, view, onChange }: { zh: boolean; view: ImageView;
           <p className="is-pop-title">{sizeLabel}</p>
           <label className="is-size">
             <span className="sr-only">{sizeLabel}</span>
-            <span className="is-size-track" aria-hidden="true">
-              <span className="is-size-fill" style={{ width: `${(view.size / 4) * 100}%` }} />
-              <span className="is-size-ticks">
-                <i />
-                <i />
-                <i />
-              </span>
+            {/* A filled track with a hairline at the chosen stop and faint
+                ticks at the three stops in between. */}
+            <span className="is-size-track" aria-hidden="true" style={{ "--size-at": view.size / 4 } as React.CSSProperties}>
+              <span className="is-size-fill" />
+              <i style={{ left: "25%" }} />
+              <i style={{ left: "50%" }} />
+              <i style={{ left: "75%" }} />
+              <span className="is-size-thumb" />
             </span>
             <input
               type="range"
-              min={1}
+              min={0}
               max={4}
               step={1}
               value={view.size}
               data-menu-item
-              aria-valuetext={zh ? `第 ${view.size} 档，共 4 档` : `Step ${view.size} of 4`}
+              aria-valuetext={zh ? `第 ${view.size + 1} 档，共 5 档` : `Step ${view.size + 1} of 5`}
               onKeyDown={(event) => {
                 // ↑/↓ move between menu rows; ←/→ change the size.
                 if (event.key === "ArrowUp" || event.key === "ArrowDown") event.preventDefault();

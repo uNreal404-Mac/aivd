@@ -17,18 +17,38 @@ export function CardFace({ label, value, chevron }: { label: string; value: Reac
   );
 }
 
+/** Aspect ratios from the widest frame to the tallest, the order the
+ * reference lists them in (21:9, 16:9, 4:3, 1:1, 3:4, 9:16). */
+export function widestFirst(ratios: readonly string[]): string[] {
+  const value = (ratio: string) => {
+    const [width, height] = ratio.split(":").map(Number);
+    return width && height ? width / height : 0;
+  };
+  return [...ratios].sort((a, b) => value(b) - value(a));
+}
+
 /** Focus the chosen option when a menu opens, so arrows start from it. */
 function useFocusChosen(open: boolean, popover: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     if (!open) return;
     const frame = requestAnimationFrame(() => {
       const target =
-        popover.current?.querySelector<HTMLElement>('[aria-pressed="true"]') ??
+        popover.current?.querySelector<HTMLElement>('[aria-checked="true"]') ??
         popover.current?.querySelector<HTMLElement>("button, input");
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
   }, [open, popover]);
+}
+
+/** One row of a settings menu: the value, and a check on the chosen one. */
+function MenuOption({ label, chosen, onChoose }: { label: string; chosen: boolean; onChoose: () => void }) {
+  return (
+    <button type="button" role="menuitemradio" aria-checked={chosen} className="vst-menu-item" onClick={onChoose}>
+      <span className="du-num">{label}</span>
+      {chosen ? <Check className="vst-menu-check" aria-hidden="true" /> : null}
+    </button>
+  );
 }
 
 /**
@@ -67,7 +87,7 @@ export function ChoiceCard<T extends string | number>({
         type="button"
         className={`vst-card vst-card-button ${fixed ? "vst-card-fixed" : ""} ${className}`}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="menu"
         onClick={() => setOpen((current) => !current)}
       >
         <CardFace label={label} value={show(value)} chevron={!fixed} />
@@ -76,6 +96,7 @@ export function ChoiceCard<T extends string | number>({
         <div
           ref={popover.popoverRef}
           style={popover.style}
+          role="menu"
           data-presence="pop"
           data-state={popover.state}
           className="vst-menu"
@@ -86,25 +107,18 @@ export function ChoiceCard<T extends string | number>({
           {fixed ? (
             <p className="vst-menu-note">{fixedNote}</p>
           ) : (
-            options.map((option) => {
-              const chosen = option === value;
-              return (
-                <button
-                  key={String(option)}
-                  type="button"
-                  aria-pressed={chosen}
-                  className="vst-menu-item"
-                  onClick={() => {
-                    onChange(option);
-                    setOpen(false);
-                    popover.anchorRef.current?.focus();
-                  }}
-                >
-                  <span className="du-num">{show(option)}</span>
-                  {chosen ? <Check className="vst-menu-check" aria-hidden="true" /> : null}
-                </button>
-              );
-            })
+            options.map((option) => (
+              <MenuOption
+                key={String(option)}
+                label={show(option)}
+                chosen={option === value}
+                onChoose={() => {
+                  onChange(option);
+                  setOpen(false);
+                  popover.anchorRef.current?.focus();
+                }}
+              />
+            ))
           )}
         </div>
       ) : null}
@@ -112,7 +126,7 @@ export function ChoiceCard<T extends string | number>({
   );
 }
 
-/** Tick labels under the length slider: both ends and the round fives between. */
+/** Tick labels under the length bar: both ends and the round fives between. */
 function durationTicks(min: number, max: number): number[] {
   const ticks = [min];
   for (let value = Math.ceil((min + 1) / 5) * 5; value < max; value += 5) {
@@ -122,10 +136,15 @@ function durationTicks(min: number, max: number): number[] {
   return ticks;
 }
 
+/** Width of the bar's handle (px): the filled part never gets narrower. */
+const HANDLE = 18;
+
 /**
  * The length card. A model with a continuous range (say 4 to 30 seconds)
- * gets a slider in its popover, as on the reference; one with a handful of
- * fixed lengths gets the same short list as the other cards.
+ * gets the reference's length bar in its popover: a wide track that fills up
+ * to a slim handle, dots at the round values and their numbers underneath.
+ * One with a handful of fixed lengths gets the same short list as the other
+ * cards.
  */
 export function DurationCard({
   label,
@@ -158,7 +177,9 @@ export function DurationCard({
   const max = options.at(-1) ?? value;
   const continuous = options.length > 6 && max - min === options.length - 1;
   const fixed = options.length <= 1;
-  const progress = max === min ? 0 : ((value - min) / (max - min)) * 100;
+  const share = (seconds: number) => (max === min ? 0 : Math.min(1, Math.max(0, (seconds - min) / (max - min))));
+  // Where a value sits along the bar: the centre of the handle at that value.
+  const at = (seconds: number) => `calc(${HANDLE / 2}px + (100% - ${HANDLE}px) * ${share(seconds)})`;
 
   return (
     <>
@@ -167,7 +188,7 @@ export function DurationCard({
         type="button"
         className={`vst-card vst-card-button ${fixed ? "vst-card-fixed" : ""} ${className}`}
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup={continuous ? "dialog" : "menu"}
         onClick={() => onOpenChange(!open)}
       >
         <CardFace label={label} value={options.length ? <span className="du-num">{value}s</span> : emptyValue} chevron={!fixed} />
@@ -176,6 +197,7 @@ export function DurationCard({
         <div
           ref={popover.popoverRef}
           style={popover.style}
+          role={continuous ? "dialog" : "menu"}
           data-presence="pop"
           data-state={popover.state}
           className={continuous ? "vst-menu vst-menu-slider" : "vst-menu"}
@@ -186,21 +208,35 @@ export function DurationCard({
             <>
               <p className="vst-menu-title">{label}</p>
               <p className="vst-slider-value du-num">{value}s</p>
-              <input
-                type="range"
-                className="vst-slider"
-                min={min}
-                max={max}
-                step={1}
-                value={value}
-                aria-label={label}
-                aria-valuetext={`${value}s`}
-                onChange={(event) => onChange(Number(event.target.value))}
-                style={{ "--vst-progress": `${progress}%` } as CSSProperties}
-              />
+              <div className="vst-range" style={{ "--vst-fill": `calc(${HANDLE}px + (100% - ${HANDLE}px) * ${share(value)})` } as CSSProperties}>
+                <span className="vst-range-track" aria-hidden="true">
+                  {durationTicks(min, max).map((tick) =>
+                    tick > value ? <i key={tick} className="vst-range-dot" style={{ left: at(tick) }} /> : null,
+                  )}
+                  <span className="vst-range-fill">
+                    <span className="vst-range-handle" />
+                  </span>
+                </span>
+                <input
+                  type="range"
+                  className="vst-range-input"
+                  min={min}
+                  max={max}
+                  step={1}
+                  value={value}
+                  aria-label={label}
+                  aria-valuetext={`${value}s`}
+                  onChange={(event) => onChange(Number(event.target.value))}
+                />
+              </div>
               <span className="vst-slider-ticks" aria-hidden="true">
-                {durationTicks(min, max).map((tick) => (
-                  <span key={tick} className="du-num" style={{ left: `${((tick - min) / (max - min)) * 100}%` }}>
+                {durationTicks(min, max).map((tick, index, all) => (
+                  <span
+                    key={tick}
+                    className="du-num"
+                    data-edge={index === 0 ? "start" : index === all.length - 1 ? "end" : undefined}
+                    style={{ left: at(tick) }}
+                  >
                     {tick}
                   </span>
                 ))}
@@ -212,25 +248,18 @@ export function DurationCard({
               {fixed ? (
                 <p className="vst-menu-note">{fixedNote}</p>
               ) : (
-                options.map((option) => {
-                  const chosen = option === value;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-pressed={chosen}
-                      className="vst-menu-item"
-                      onClick={() => {
-                        onChange(option);
-                        onOpenChange(false);
-                        popover.anchorRef.current?.focus();
-                      }}
-                    >
-                      <span className="du-num">{option}s</span>
-                      {chosen ? <Check className="vst-menu-check" aria-hidden="true" /> : null}
-                    </button>
-                  );
-                })
+                options.map((option) => (
+                  <MenuOption
+                    key={option}
+                    label={`${option}s`}
+                    chosen={option === value}
+                    onChoose={() => {
+                      onChange(option);
+                      onOpenChange(false);
+                      popover.anchorRef.current?.focus();
+                    }}
+                  />
+                ))
               )}
             </>
           )}

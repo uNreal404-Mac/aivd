@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Check, Pencil, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Pencil, Search, X } from "lucide-react";
 import { usePresence } from "@/hooks/use-presence";
 import { VIDEO_PRESETS } from "@/lib/video-presets";
 
@@ -55,11 +55,14 @@ export function PresetCard({
   );
 }
 
-type LibraryItem = { id: string | undefined; name: string; image: string; motion?: string };
+type LibraryItem = { id: string | undefined; name: string; alt: string; image: string; motion?: string };
 
 /**
- * Camera presets, opened from the preset card. On wide screens it drops over
- * the top of the stage, as the reference's preset library does; on phones it
+ * Camera presets, opened from the preset card. On wide screens it takes the
+ * stage's place, as the reference's preset library does: a panel at the top
+ * of the stage with a search field and a close button, the stage itself
+ * hidden behind it. It stays open while the settings column is used, and
+ * closes from the card, the close button, Escape or a pick. On phones it
  * fills the screen. "General" (no camera move) comes first; an effect that
  * arrived from the effects page is listed after it while it is in use.
  */
@@ -87,9 +90,11 @@ export function PresetLibrary({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!open) return;
+    setQuery("");
     const frame = requestAnimationFrame(() => {
       panelRef.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.focus({ preventScroll: true });
     });
@@ -99,83 +104,90 @@ export function PresetLibrary({
       closeRef.current();
       triggerRef.current?.focus();
     };
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
-      closeRef.current();
-    };
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [open, triggerRef]);
 
   if (!presence.mounted) return null;
 
   const items: LibraryItem[] = [
-    { id: undefined, name: zh ? "通用" : "General", image: generalCover },
-    ...(effect ? [{ id: effect.id, name: effect.name, image: effect.image }] : []),
-    ...VIDEO_PRESETS.map((preset) => ({ id: preset.id, name: zh ? preset.zh : preset.en, image: preset.image, motion: preset.motion })),
+    { id: undefined, name: zh ? "通用" : "General", alt: zh ? "General" : "通用", image: generalCover },
+    ...(effect ? [{ id: effect.id, name: effect.name, alt: effect.id, image: effect.image }] : []),
+    ...VIDEO_PRESETS.map((preset) => ({ id: preset.id, name: zh ? preset.zh : preset.en, alt: zh ? preset.en : preset.zh, image: preset.image, motion: preset.motion })),
   ];
+  const needle = query.trim().toLowerCase();
+  const shown = needle ? items.filter((item) => `${item.name} ${item.alt}`.toLowerCase().includes(needle)) : items;
+  const close = () => {
+    onClose();
+    triggerRef.current?.focus();
+  };
 
   return (
-    <div
-      ref={panelRef}
+    <section
       id="vst-preset-library"
       className="vst-library"
-      data-presence="pop"
+      data-presence="fade"
       data-state={presence.state}
       aria-label={zh ? "镜头预设" : "Camera presets"}
     >
-      <div className="vst-library-head">
-        <span className="vst-library-title">{zh ? "镜头预设" : "Camera presets"}</span>
-        <span className="vst-library-note">
-          {zh ? "选中的运镜会加到提示词后面，所有模型都能用" : "The camera move is added to your prompt, so it works with every model"}
-        </span>
-        <button
-          type="button"
-          className="vst-icon-button"
-          aria-label={zh ? "关闭" : "Close"}
-          onClick={() => {
-            onClose();
-            triggerRef.current?.focus();
-          }}
-        >
-          <X aria-hidden="true" />
-        </button>
+      <div ref={panelRef} className="vst-library-panel">
+        <div className="vst-library-head">
+          <span className="vst-library-title">{zh ? "镜头预设" : "Camera presets"}</span>
+          <span className="vst-library-note">
+            {zh ? "选中的运镜会加到提示词后面，所有模型都能用" : "The camera move is added to your prompt, so it works with every model"}
+          </span>
+          <label className="vst-library-search">
+            <Search aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              placeholder={zh ? "搜索" : "Search"}
+              aria-label={zh ? "搜索镜头预设" : "Search camera presets"}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <button type="button" className="vst-icon-button" aria-label={zh ? "关闭" : "Close"} onClick={close}>
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        {shown.length ? (
+          <div className="vst-library-grid">
+            {shown.map((item) => {
+              const chosen = item.id === selected;
+              return (
+                <button
+                  key={item.id ?? "general"}
+                  type="button"
+                  aria-pressed={chosen}
+                  className="vst-library-item"
+                  onClick={() => {
+                    onSelect(item.id);
+                    close();
+                  }}
+                >
+                  <span className={item.motion ? `vst-library-media vst-move-${item.motion}` : "vst-library-media"}>
+                    <img src={item.image} alt="" loading="lazy" decoding="async" />
+                  </span>
+                  <span className="vst-library-shade" aria-hidden="true" />
+                  <span className="vst-library-name">{item.name}</span>
+                  {chosen ? (
+                    <span className="vst-library-check" aria-hidden="true">
+                      <Check />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <output className="vst-library-empty">
+            {zh ? `没有和“${query.trim()}”匹配的预设` : `No preset matches "${query.trim()}"`}
+          </output>
+        )}
       </div>
-      <div className="vst-library-grid">
-        {items.map((item) => {
-          const chosen = item.id === selected;
-          return (
-            <button
-              key={item.id ?? "general"}
-              type="button"
-              aria-pressed={chosen}
-              className="vst-library-item"
-              onClick={() => {
-                onSelect(item.id);
-                onClose();
-                triggerRef.current?.focus();
-              }}
-            >
-              <span className={item.motion ? `vst-library-media vst-move-${item.motion}` : "vst-library-media"}>
-                <img src={item.image} alt="" loading="lazy" decoding="async" />
-              </span>
-              <span className="vst-library-shade" aria-hidden="true" />
-              <span className="vst-library-name">{item.name}</span>
-              {chosen ? (
-                <span className="vst-library-check" aria-hidden="true">
-                  <Check />
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    </section>
   );
 }
