@@ -200,7 +200,13 @@ export function AiImageStudio({
     const from = typed ? start - typed[0].length : start;
     const head = prompt.slice(0, from);
     const insertion = `${head && !/\s$/.test(head) ? " " : ""}${mentionToken(index, zh)} `;
-    setPrompt(`${head}${insertion}${prompt.slice(end)}`.slice(0, 5000));
+    const next = `${head}${insertion}${prompt.slice(end)}`;
+    // Never cut the visitor's text to make room for a mention.
+    if (next.length > 5000) {
+      setNotice(zh ? "提示词已到 5000 字上限，先删掉一些再引用图片。" : "The prompt is at its 5,000-character limit. Shorten it before adding a reference.");
+      return;
+    }
+    setPrompt(next);
     setMentionOpen(false);
     setNotice(null);
     requestAnimationFrame(() => {

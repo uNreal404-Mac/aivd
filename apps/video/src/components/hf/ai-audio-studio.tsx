@@ -57,7 +57,7 @@ export function AiAudioStudio({
   const startMode: Mode =
     initialModel?.kind === "audio"
       ? ((Object.keys(MODE_MODELS) as Mode[]).find((key) => MODE_MODELS[key].includes(initialModel.id)) ?? "tts")
-      : (MODE_PARAMS[initialVoiceMode] ?? "tts");
+      : (Object.hasOwn(MODE_PARAMS, initialVoiceMode) ? MODE_PARAMS[initialVoiceMode] : "tts");
   const [mode, setMode] = useState<Mode>(startMode);
   const [modelId, setModelId] = useState(
     initialModel?.kind === "audio" ? initialModel.id : (MODE_MODELS[startMode][0] ?? AUDIO_MODELS[0].id),
@@ -69,17 +69,29 @@ export function AiAudioStudio({
   // kept here and offered back.
   const [earlierDraft, setEarlierDraft] = useState<string | null>(null);
   useEffect(() => {
-    if (!initialPrompt) return;
     try {
       // Kept under its own key: the draft key soon holds the new script, and
       // a reload must still offer the earlier one back.
       const saved = localStorage.getItem("aivd:draft:audio");
       let earlier = localStorage.getItem(EARLIER_AUDIO_DRAFT_KEY);
-      if (saved?.trim() && saved.trim() !== initialPrompt.trim()) {
+      // Only the first draft set aside is kept: a later edit of the opened
+      // script must not take its place.
+      if (initialPrompt && !earlier?.trim() && saved?.trim() && saved.trim() !== initialPrompt.trim()) {
         earlier = saved;
         localStorage.setItem(EARLIER_AUDIO_DRAFT_KEY, saved);
       }
-      if (earlier?.trim() && earlier.trim() !== initialPrompt.trim()) setEarlierDraft(earlier);
+      // The script came from the address once; a reload restores the draft
+      // (with the visitor's edits) instead of the original script again.
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("prompt")) {
+        url.searchParams.delete("prompt");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+      }
+      // Offered until used or dismissed, also after a reload (when the page
+      // restores the edited script from its own draft).
+      const shown = (initialPrompt || saved || "").trim();
+      if (earlier?.trim() && earlier.trim() !== shown) setEarlierDraft(earlier);
+      else if (earlier?.trim()) localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
     } catch {
       // Storage can be blocked; nothing to offer back then.
     }
@@ -117,7 +129,9 @@ export function AiAudioStudio({
   useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
     if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
-    setVoice(saved.voice ?? "");
+    const savedModel = getMarketModel(saved.modelId);
+    const savedVoices = savedModel?.options.voices ?? [];
+    setVoice(savedVoices.find((item) => item.id === saved.voice)?.id ?? savedVoices.find((item) => item.name === saved.voice)?.id ?? saved.voice ?? "");
     setScript(saved.script ?? "");
     setDetail(saved.detail ?? "");
     if (typeof saved.speed === "number") setSpeed(saved.speed);
@@ -150,7 +164,11 @@ export function AiAudioStudio({
   const hasAdvanced = supportsSpeed || isSunoMusic;
   const advancedChanged = (supportsSpeed && speed !== 1) || (isSunoMusic && (instrumental || customMode));
 
-  const credits = useMemo(() => marketCredits(model, { prompt: script, voice, style: detail }), [model, script, voice, detail]);
+  // Priced from exactly what is sent (trimmed script and details).
+  const credits = useMemo(
+    () => marketCredits(model, { prompt: script.trim(), voice: voice || undefined, style: supportsStyle && detail.trim() ? detail.trim() : undefined, instrumental: isSunoMusic ? instrumental : undefined, customMode: isSunoMusic ? customMode : undefined, speed: supportsSpeed ? speed : undefined }),
+    [model, script, voice, detail, supportsStyle, isSunoMusic, instrumental, customMode, supportsSpeed, speed],
+  );
 
   const chooseModel = (id: string) => {
     const next = getMarketModel(id);
@@ -393,7 +411,7 @@ export function AiAudioStudio({
               />
               {earlierDraft !== null ? (
                 <p className="draft-note">
-                  {zh ? "已填入作品里的文案" : "Filled in from your creation"}
+                  {initialPrompt ? (zh ? "已填入作品里的文案" : "Filled in from your creation") : (zh ? "还有一份上次没生成的草稿" : "You have another unsent draft")}
                   <button
                     type="button"
                     onClick={() => {
@@ -407,6 +425,19 @@ export function AiAudioStudio({
                     }}
                   >
                     {zh ? "换回上次没生成的草稿" : "Use your unsent draft instead"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEarlierDraft(null);
+                      try {
+                        localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
+                      } catch {
+                        // Nothing kept to clear.
+                      }
+                    }}
+                  >
+                    {zh ? "不用了" : "Dismiss"}
                   </button>
                 </p>
               ) : null}

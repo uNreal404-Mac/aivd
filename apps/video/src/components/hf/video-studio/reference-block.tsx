@@ -9,6 +9,8 @@ type DropBind = {
   onDragOver: (event: React.DragEvent) => void;
   onDragLeave: () => void;
   onDrop: (event: React.DragEvent) => void;
+  /** Taken off here: the studio root handles paste once for the whole page. */
+  onPaste?: (event: React.ClipboardEvent) => void;
 };
 
 /** The @ token a reference image is mentioned by in the prompt. */
@@ -28,7 +30,7 @@ export function ReferenceBlock({
   max,
   uploading,
   dropOver,
-  dropBind,
+  dropBind: { onPaste: _paste, ...dropBind },
   onOpen,
   onMention,
   onRemove,

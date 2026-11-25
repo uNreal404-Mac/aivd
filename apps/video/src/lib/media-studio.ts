@@ -70,19 +70,30 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
   }
 }
 
+// When a request's answer is lost (network error), the same request sent again
+// keeps its idempotency key, so the server returns the job it may already have
+// created and frozen credits for, instead of creating and charging a second.
+let lostAnswer: { signature: string; key: string } | null = null;
+
 export async function submitMedia(
   body: SubmitBody,
   zh: boolean,
 ): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number }> {
+  const signature = JSON.stringify(body);
+  const key =
+    lostAnswer?.signature === signature
+      ? lostAnswer.key
+      : typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
   try {
     const response = await fetch("/api/v1/media/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Idempotency-Key": typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        "Idempotency-Key": key,
       },
-      body: JSON.stringify(body),
+      body: signature,
     });
+    lostAnswer = null;
     const payload = await response.json().catch(() => null);
     if (response.status === 401) return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
@@ -100,6 +111,7 @@ export async function submitMedia(
       requiredCredits: typeof requiredCredits === "number" ? requiredCredits : undefined,
     };
   } catch {
+    lostAnswer = { signature, key };
     return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
   }
 }

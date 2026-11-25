@@ -63,7 +63,6 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [imageModelId, setImageModelId] = useState(IMAGE_MODEL_IDS[0] ?? "");
   const imageModel = getMarketModel(imageModelId);
   const imageAvailable = IMAGE_MODEL_IDS.includes(imageModelId);
-  const imageCredits = imageModel ? marketCredits(imageModel, { prompt: "", resolution: imageModel.options.resolutions?.[0] }) : null;
   const [prompt, setPrompt] = useState(initialPrompt.slice(0, 2000));
   const [videoReferences, setVideoReferences] = useState<PickerAsset[]>([]);
   const [referenceImages, setReferenceImages] = useState<PickerAsset[]>([]);
@@ -77,6 +76,9 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (defaultVideoModel?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
   const [resolution, setResolution] = useState(() => initialKind === "image" ? "1K" : (STUDIO_MODELS.find((item) => item.id === defaultVideoModel?.id)?.resolutions[0] ?? "720p"));
+  // What one image will freeze: the chosen resolution and the attached
+  // reference images, priced as the image studio and the server price it.
+  const imageCredits = imageModel ? marketCredits(imageModel, { prompt: "", aspectRatio: aspect, resolution: imageModel.options.resolutions?.includes(resolution) ? resolution : imageModel.options.resolutions?.[0], imageUrls: referenceImages.map((item) => item.url ?? item.id) }) : null;
   // Sound starts as the studio starts it: on for models that make sound.
   const [sound, setSound] = useState(() => Boolean(STUDIO_MODELS.find((item) => item.id === (defaultVideoModel?.id ?? DEFAULT_VIDEO_MODEL_ID))?.audio));
   const soundChoice = useRef<boolean | null>(null);
@@ -116,7 +118,10 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const modeTriggerRef = useRef<HTMLButtonElement>(null);
   // "Text only" hides the reference slot (Pollo's mode switch). Choosing it
   // with images attached takes them off, and that can be undone.
-  const [textOnly, setTextOnly] = useState(false);
+  // Per tab: the video and image tabs keep their own references and mode.
+  const [textOnlyByKind, setTextOnlyByKind] = useState({ video: false, image: false });
+  const textOnly = kind === "image" ? textOnlyByKind.image : kind === "video" ? textOnlyByKind.video : false;
+  const setTextOnly = (value: boolean) => setTextOnlyByKind((previous) => (kind === "image" ? { ...previous, image: value } : kind === "video" ? { ...previous, video: value } : previous));
   const [clearedRefs, setClearedRefs] = useState<{ kind: "video" | "image"; references: PickerAsset[]; prompt: string } | null>(null);
 
   useEffect(() => {
@@ -402,7 +407,9 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const references = kind === "video" ? videoReferences : referenceImages;
   const referenceLimit = kind === "video" ? videoReferenceLimit : imageRefLimit;
   const canReference = kind === "video" ? maxVideoReferences(modelId) > 0 : imageRefLimit > 0;
-  const showRefSlot = canReference && !textOnly;
+  // Some video models only work from an image: no text-only choice for them.
+  const needsImage = kind === "video" && Boolean(getMarketModel(modelId)?.options.requiresImage);
+  const showRefSlot = canReference && (!textOnly || needsImage);
   const modeLabel = (text: boolean) => kind === "video"
     ? (text ? (zh ? "文生视频" : "Text to video") : (zh ? "参考生视频" : "Reference to video"))
     : (text ? (zh ? "文生图" : "Text to image") : (zh ? "参考生图" : "Reference to image"));
@@ -415,7 +422,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     if (text && references.length) {
       setClearedRefs({ kind: kind === "video" ? "video" : "image", references, prompt });
       if (kind === "video") { setVideoReferences([]); setPrompt((previous) => previous.replace(/@(?:图片|image)\d+\s?/gi, "")); }
-      else { setReferenceImages([]); setPrompt((previous) => previous.replace(/@\d+\s?/g, "")); }
+      else { setReferenceImages([]); setPrompt((previous) => previous.replace(/@(?:图片|image)?\d+\s?/gi, "")); }
       setTrimmed(null);
     }
     setTextOnly(text);
@@ -425,7 +432,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const mentionFirst = () => {
     if (!references.length) { setPickerOpen(true); return; }
     if (kind === "video") insertVideoReference(0);
-    else setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@1 `);
+    else setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${zh ? "图片" : "Image"}1 `);
     promptRef.current?.focus({ preventScroll: true });
   };
   const hint: [string, string?] = kind === "video"
@@ -485,7 +492,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     {kind === "image" && referenceImages.length ? <div className="du-composer-references">
       <div className="du-composer-reference-list">{referenceImages.map((item, index) => <div key={item.id} className="du-composer-reference" title={item.name}>
-        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${index + 1} `)} aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" /><span>@{index + 1}</span></button>
+        <button type="button" onClick={() => setPrompt((previous) => `${previous}${previous && !/\s$/.test(previous) ? " " : ""}@${zh ? "图片" : "Image"}${index + 1} `)} aria-label={zh ? `在提示词中引用第 ${index + 1} 张图片` : `Reference image ${index + 1} in prompt`}><img src={item.url} alt="" /><span>@{zh ? "图片" : "Image"}{index + 1}</span></button>
         <button type="button" onClick={() => removeReference(index)} aria-label={zh ? `移除第 ${index + 1} 张图片` : `Remove image ${index + 1}`} className="du-composer-reference-remove"><X className="h-3 w-3" /></button>
       </div>)}</div>
       <p>{zh ? `已添加 ${referenceImages.length}/${imageRefLimit} 张` : `${referenceImages.length}/${imageRefLimit} added`}</p>
@@ -494,7 +501,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       {canReference ? <div data-home-popover className="relative">
         <button ref={modeTriggerRef} type="button" className="du-composer-mode" aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}>{modeLabel(!showRefSlot)}<ChevronDown className="h-3 w-3" aria-hidden="true" /></button>
         {modePanel.mounted ? <div data-presence="pop" data-state={modePanel.state} className="du-home-popover du-mode-menu">
-          {[false, true].map((text) => <button key={String(text)} type="button" aria-pressed={!showRefSlot === text} onClick={() => chooseMode(text)}><span><strong>{modeLabel(text)}</strong><small>{modeHint(text)}</small></span>{!showRefSlot === text ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}</button>)}
+          {(needsImage ? [false] : [false, true]).map((text) => <button key={String(text)} type="button" aria-pressed={!showRefSlot === text} onClick={() => chooseMode(text)}><span><strong>{modeLabel(text)}</strong><small>{modeHint(text)}</small></span>{!showRefSlot === text ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}</button>)}
         </div> : null}
       </div> : null}
       <div className="du-composer-model relative min-w-0"><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" showConnectionStatus={false} catalogSet="current" compact /></div>
@@ -508,7 +515,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       </div> : null}</div>
       <div className="ml-auto flex items-center gap-2">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{estimatedCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
-        {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分起` : `From ${imageCredits} credits per image`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{imageCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
+        {kind === "image" && imageCredits ? <span className="du-composer-cost" title={zh ? `每张 ${imageCredits} 积分` : `${imageCredits} credits per image`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{imageCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
         <button type="submit" disabled={submitting || (kind === "video" && !available) || (kind === "image" && !imageAvailable)} aria-label={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频" : "Generate video") : (zh ? "生成图片" : "Generate image")} title={submitting ? (zh ? "正在提交…" : "Starting…") : kind === "video" ? (zh ? "生成视频（Enter）" : "Generate video (Enter)") : (zh ? "生成图片（Enter）" : "Generate image (Enter)")} aria-busy={submitting || undefined} data-ready={hasInput || undefined} className={`du-composer-send${submitting ? " du-composer-send-busy" : ""}`}>{submitting ? <Loader2 key="busy" data-swap className="du-composer-spinner" aria-hidden="true" /> : <ArrowUp key="go" data-swap className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </div>
