@@ -16,7 +16,7 @@
   border-radius: var(--ds-r-2xl);
   background: var(--du-bg);
   color: var(--ds-text-1);
-  color-scheme: inherit;
+  color-scheme: dark;
   box-shadow: var(--ds-shadow-float);
 }
 .ncr-panel .du-dialog-dismiss { top: var(--ds-space-3); right: var(--ds-space-3); }

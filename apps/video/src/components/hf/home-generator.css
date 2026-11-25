@@ -23,17 +23,17 @@
 }
 
 .du-composer-tab:hover {
-  color: var(--du-text);
+  color: white;
 }
 
 .du-composer-tabs {
   --seg-bg: color-mix(in srgb, var(--du-accent) 16%, var(--ds-surface-3));
-  --seg-shadow: inset 0 1px 0 color-mix(in srgb, var(--du-text) 12%, transparent);
+  --seg-shadow: inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
 }
 
 .du-composer-tab-active,
 .du-composer-tab-active:hover {
-  color: var(--du-text);
+  color: white;
   font-weight: 600;
 }
 
@@ -65,7 +65,7 @@
 .du-composer-ref-slot:hover {
   border-color: color-mix(in srgb, var(--du-accent) 55%, var(--ds-line-3));
   background: color-mix(in srgb, var(--du-accent) 7%, transparent);
-  color: var(--du-text);
+  color: white;
   transform: rotate(0deg) translateY(-1px);
 }
 
@@ -374,7 +374,7 @@
 }
 
 .du-composer-suggestions-label:hover {
-  color: var(--du-text);
+  color: white;
 }
 
 .du-composer-suggestion {
@@ -398,7 +398,7 @@
 .du-composer-suggestion:hover {
   border-color: var(--ds-line-3);
   background: var(--ds-fill-2);
-  color: var(--du-text);
+  color: white;
   transform: translateY(-1px);
 }
 
@@ -452,7 +452,7 @@
   top: 4px;
   right: 0;
   left: 0;
-  color: var(--ds-text-4);
+  color: color-mix(in srgb, white 38%, transparent);
   font-size: var(--ds-fs-sm);
   line-height: 1.625;
   pointer-events: none;
@@ -497,7 +497,7 @@
   align-items: center;
   padding: 0 8px;
   border-radius: var(--ds-r-sm);
-  color: var(--ds-text-2);
+  color: color-mix(in srgb, white 85%, transparent);
   font-size: var(--ds-fs-sm);
   font-weight: 300;
   white-space: nowrap;
@@ -508,7 +508,7 @@
 .du-mode-menu button:hover,
 .du-mode-menu button[aria-pressed="true"] {
   background: color-mix(in srgb, white 7%, transparent);
-  color: var(--du-text);
+  color: white;
 }
 
 /* Settings: Pollo's grouped panel. Small grey labels, each group on a darker
@@ -543,7 +543,7 @@
 
 .du-set-label {
   padding: 4px 4px 8px;
-  color: var(--ds-text-4);
+  color: color-mix(in srgb, white 40%, transparent);
   font-size: var(--ds-fs-xs);
   font-weight: 300;
 }
@@ -563,19 +563,19 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--ds-r-sm);
-  color: var(--ds-text-3);
+  color: color-mix(in srgb, white 65%, transparent);
   font-size: var(--ds-fs-sm);
   font-weight: 300;
   transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .du-set-track button:hover {
-  color: var(--du-text);
+  color: white;
 }
 
 .du-set-track button[aria-pressed="true"] {
   background: color-mix(in srgb, white 10%, transparent);
-  color: var(--du-text);
+  color: white;
 }
 
 .du-set-aspects button {
@@ -606,7 +606,7 @@
   flex: 1;
   appearance: none;
   border-radius: var(--ds-r-full);
-  background: linear-gradient(to right, color-mix(in srgb, var(--du-text) 75%, transparent) var(--fill, 0%), color-mix(in srgb, var(--du-text) 12%, transparent) var(--fill, 0%));
+  background: linear-gradient(to right, color-mix(in srgb, white 75%, transparent) var(--fill, 0%), color-mix(in srgb, white 12%, transparent) var(--fill, 0%));
   cursor: pointer;
 }
 
@@ -615,7 +615,7 @@
   height: 14px;
   appearance: none;
   border-radius: 50%;
-  background: var(--du-text);
+  background: white;
   box-shadow: 0 1px 3px color-mix(in srgb, black 45%, transparent);
 }
 
@@ -624,13 +624,13 @@
   height: 14px;
   border: 0;
   border-radius: 50%;
-  background: var(--du-text);
+  background: white;
 }
 
 .du-set-slider > span,
 .du-set-fixed {
   min-width: 32px;
-  color: var(--du-text);
+  color: white;
   font-size: var(--ds-fs-sm);
   font-weight: 300;
   text-align: right;

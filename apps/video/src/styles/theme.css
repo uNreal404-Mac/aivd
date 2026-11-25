@@ -53,50 +53,6 @@
   --du-badge-hot: #f43f5e;
 }
 
-/* The operating-system preference is applied by next-themes before paint.
-   Keep bright cyan on filled controls; use a deeper cyan for text on paper. */
-:root.light {
-  color-scheme: light;
-  --du-bg: #f7f8fa;
-  --du-bg-elev: #ffffff;
-  --du-surface: #f1f3f5;
-  --du-surface-2: #e8ecef;
-  --du-border: rgb(20 30 38 / .11);
-  --du-border-strong: rgb(20 30 38 / .24);
-  --du-text: #182027;
-  --du-text-muted: #475560;
-  --du-text-dim: #596671;
-  --du-accent-text: #006875;
-  --du-accent-soft: rgb(0 114 131 / .1);
-  --du-accent-2: #006875;
-  --du-success: #177246;
-  --du-warning: #865900;
-  --du-danger: #ac263d;
-  --du-save-text: var(--du-success);
-  --du-glass-bg: rgb(249 251 252 / .92);
-  --du-glass-bg-hover: rgb(237 241 244 / .96);
-  --du-glass-bg-strong: rgb(255 255 255 / .97);
-  --du-glass-border: var(--du-border);
-  --du-glass-border-hover: var(--du-border-strong);
-  --du-glass-fallback-bg: var(--du-bg-elev);
-  --du-glass-text: var(--du-text);
-  --du-glass-shadow: 0 10px 30px rgb(20 30 38 / .13);
-  --du-glass-overlay-scrim: rgb(11 19 26 / .46);
-  --ds-fill-1: rgb(17 28 37 / .045);
-  --ds-fill-2: rgb(17 28 37 / .08);
-  --ds-fill-3: rgb(17 28 37 / .13);
-  --ds-fill-4: rgb(17 28 37 / .19);
-  --ds-line-1: rgb(17 28 37 / .12);
-  --ds-line-2: rgb(17 28 37 / .17);
-  --ds-line-3: rgb(17 28 37 / .27);
-  --ds-text-2: #35424e;
-  --ds-text-3: var(--du-text-muted);
-  --ds-text-4: var(--du-text-dim);
-  --ds-shadow-1: 0 2px 10px rgb(15 28 40 / .08);
-  --ds-shadow-2: 0 12px 32px -8px rgb(15 28 40 / .2);
-  --ds-shadow-float: 0 16px 40px -8px rgb(15 28 40 / .22);
-}
-
 .du-glass {
   background: var(--du-glass-bg);
   backdrop-filter: blur(var(--du-glass-blur)) saturate(var(--du-glass-saturate));

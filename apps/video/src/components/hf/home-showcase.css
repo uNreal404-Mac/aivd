@@ -5,12 +5,12 @@
 
 .hs {
   --hs-card: var(--ds-surface-1);
-  --hs-muted: var(--ds-text-3);
+  --hs-muted: color-mix(in srgb, white 52%, transparent);
   display: flex;
   flex-direction: column;
   gap: 72px;
   padding: 8px 0 84px;
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-shell {
@@ -127,7 +127,7 @@
 }
 
 .hs-slide-title {
-  color: var(--du-text);
+  color: white;
   font-family: var(--du-font-display, inherit);
   font-size: var(--ds-fs-sm);
   font-weight: 600;
@@ -158,7 +158,7 @@
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
   background: color-mix(in srgb, var(--du-bg) 78%, transparent);
-  color: var(--du-text);
+  color: white;
   backdrop-filter: blur(12px);
   transition: opacity var(--m-fast) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
@@ -196,7 +196,7 @@
 }
 
 .hs-title {
-  color: var(--du-text);
+  color: white;
   font-family: var(--du-font-display, inherit);
   font-size: clamp(1.375rem, 1.9vw, 1.75rem);
   font-weight: 600;
@@ -231,12 +231,12 @@
 }
 
 .hs-tab:hover {
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-tab-active {
   background: var(--ds-fill-2);
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-quiet-link {
@@ -250,7 +250,7 @@
 }
 
 .hs-quiet-link:hover {
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-more-row {
@@ -339,7 +339,7 @@
 
 .hs-welcome-num {
   margin-top: 8px;
-  color: var(--du-text);
+  color: white;
   font-family: var(--du-font-display, inherit);
   font-size: clamp(2.4rem, 3.2vw, 3.25rem);
   font-weight: 700;
@@ -440,7 +440,7 @@
 }
 
 .hs-tile:hover .hs-tile-arrow {
-  color: var(--du-text);
+  color: white;
   transform: translate(2px, -2px);
 }
 
@@ -454,7 +454,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--du-text);
+  color: white;
   font-size: var(--ds-fs-sm);
   font-weight: 600;
 }
@@ -511,7 +511,7 @@
 }
 
 .hs-spot-title {
-  color: var(--du-text);
+  color: white;
   font-family: var(--du-font-display, inherit);
   font-size: clamp(1.6rem, 2.4vw, 2.25rem);
   font-weight: 600;
@@ -548,7 +548,7 @@
 }
 
 .hs-btn-light {
-  background: var(--du-text);
+  background: white;
   color: var(--du-bg);
 }
 
@@ -573,7 +573,7 @@
 
 .hs-btn-ghost:hover {
   border-color: var(--ds-line-3);
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-spot-canvas-visual {
@@ -685,7 +685,7 @@
 }
 
 .hs-step-title {
-  color: var(--du-text);
+  color: white;
   font-size: var(--ds-fs-md);
   font-weight: 600;
 }
@@ -737,7 +737,7 @@
 .hs-cloud-pill:hover {
   border-color: var(--ds-line-2);
   background: var(--ds-fill-1);
-  color: var(--du-text);
+  color: white;
 }
 
 /* ============================================================================
@@ -767,7 +767,7 @@
   gap: 16px;
   padding: 18px 0;
   cursor: pointer;
-  color: var(--du-text);
+  color: white;
   font-size: var(--ds-fs-md);
   font-weight: 600;
   list-style: none;
@@ -790,7 +790,7 @@
 }
 
 .hs-faq-list summary:hover svg {
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-faq-list p {
@@ -834,7 +834,7 @@
   flex: 1;
   border: 0;
   background: transparent;
-  color: var(--du-text);
+  color: white;
   font-size: var(--ds-fs-md);
   outline: none;
 }
@@ -890,7 +890,7 @@
 
 .hs-back-to-create:hover {
   border-color: var(--ds-line-3);
-  color: var(--du-text);
+  color: white;
 }
 
 .hs-back-to-create:focus-visible {
@@ -983,7 +983,7 @@
   gap: 5px;
   padding: 6px 13px;
   border-radius: var(--ds-r-full);
-  background: var(--du-text);
+  background: white;
   color: var(--du-bg);
   font-size: var(--ds-fs-xs);
   font-weight: 600;

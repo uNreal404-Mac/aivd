@@ -36,7 +36,6 @@ import { NEW_USER_GIFT } from "@/config/pricing-user";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useLocalePathname } from "@/i18n/navigation";
 import { PreviewBadge } from "@/components/layout/preview-badge";
-import { ModeToggle } from "@/components/mode-toggle";
 import { LocaleChange } from "@/components/locale-change";
 import { authClient } from "@/lib/auth/client";
 import { buildDropdowns, type DropItem } from "@/components/hf/nav-menus";
@@ -756,7 +755,6 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 })}
 
                 <div className="hf-mm-foot">
-                  <ModeToggle />
                   <Link href={href("/pricing")} className="hf-mm-offer">
                     <Tag aria-hidden="true" />
                     <span>
