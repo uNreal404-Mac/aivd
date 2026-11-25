@@ -39,7 +39,7 @@ export function ResultsGrid({
   /** Opens the viewer at this image ("uuid-index"). */
   onOpen: (key: string) => void;
   onReuse: (prompt: string) => void;
-  onCanvas: (url: string, prompt: string, model: string) => void;
+  onCanvas: (url: string, prompt: string, model: string, uuid?: string, index?: number) => void;
   onVideo: (url: string) => void;
 }) {
   const groups: { label: string; jobs: MediaJob[] }[] = [];
@@ -74,7 +74,7 @@ export function ResultsGrid({
                 <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => onReuse(job.prompt)}>
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </button>
-                <button type="button" className="sr-icon" title={zh ? "在无限画布中局部重绘 / 扩图" : "Edit in Infinite Canvas"} aria-label={zh ? "在无限画布中编辑" : "Edit in Infinite Canvas"} onClick={() => onCanvas(url, job.prompt, model)}>
+                <button type="button" className="sr-icon" title={zh ? "在无限画布中局部重绘 / 扩图" : "Edit in Infinite Canvas"} aria-label={zh ? "在无限画布中编辑" : "Edit in Infinite Canvas"} onClick={() => onCanvas(url, job.prompt, model, job.uuid, index)}>
                   <Paintbrush className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <button type="button" className="sr-icon" title={zh ? "用这张图生成视频" : "Make a video from this"} aria-label={zh ? "用这张图生成视频" : "Make a video from this"} onClick={() => onVideo(url)}>

@@ -865,7 +865,7 @@ export function AiVideoStudio({
                 try {
                   sessionStorage.setItem(
                     "aivd:canvas-handoff",
-                    JSON.stringify({ kind: "video", url: result.videoUrl, prompt: result.prompt, model: model.name }),
+                    JSON.stringify({ kind: "video", url: result.videoUrl, prompt: result.prompt, model: model.name, uuid: result.videoUuid ?? undefined, index: 0 }),
                   );
                 } catch {
                   // Ignore storage errors.

@@ -244,7 +244,7 @@ export function AudioStage({
                           aria-label={zh ? "发送到无限画布" : "Send to Infinite Canvas"}
                           onClick={() => {
                             try {
-                              sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ kind: "audio", url: job.urls[0], prompt: job.prompt, model: modelLabel }));
+                              sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ kind: "audio", url: job.urls[0], prompt: job.prompt, model: modelLabel, uuid: job.uuid, index: 0 }));
                             } catch {
                               // Ignore storage errors.
                             }

@@ -19,7 +19,16 @@ import {
 
 import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { estimateCredits } from "@/lib/ai-video-studio";
-import type { CanvasEditAction, CanvasImageNode } from "./canvas-types";
+import "./canvas-inpaint-modal.css";
+export type CanvasEditAction = "inpaint" | "erase" | "outpaint" | "cutout" | "upscale" | "text-edit" | "animate";
+
+/** The image being edited: what the modal shows and prices. */
+export interface EditableImage {
+  label: string;
+  name: string;
+  url: string;
+  aspectRatio?: string;
+}
 
 export type CanvasEditSubmit =
   | {
@@ -42,7 +51,7 @@ export type CanvasEditSubmit =
 
 interface CanvasEditModalProps {
   locale: string;
-  node: CanvasImageNode;
+  node: EditableImage;
   action: CanvasEditAction;
   submitting: boolean;
   onClose: () => void;

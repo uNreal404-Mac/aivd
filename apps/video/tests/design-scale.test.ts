@@ -7,6 +7,7 @@ const DIRS = [
   "src/components/hf",
   "src/components/section",
   "src/components/creative-space",
+  "src/components/creative-space/canvas",
   "src/components/landing",
   "src/components/model-landing",
   "src/components/effects",

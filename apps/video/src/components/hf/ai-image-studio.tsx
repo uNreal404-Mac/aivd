@@ -80,9 +80,9 @@ export function AiImageStudio({
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image", Boolean(session));
   const [viewing, setViewing] = useState<number | null>(null);
-  const openInCanvas = (url: string, text: string, modelName?: string) => {
+  const openInCanvas = (url: string, text: string, modelName?: string, uuid?: string, index?: number) => {
     try {
-      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image" }));
+      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image", uuid, index }));
     } catch { /* ignore */ }
     window.location.href = localizedHref(locale, "/creative-space/canvas");
   };
