@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Clapperboard,
+  AudioLines,
+  Workflow,
   Clock,
   CreditCard,
   Crown,
@@ -120,6 +122,8 @@ function buildIndex(zh: boolean): Entry[] {
 
   // Pages people look for by name.
   const pages: { title: [string, string]; desc: [string, string]; href: string; icon: LucideIcon; keywords: string[] }[] = [
+    { title: ["无限画布", "Infinite Canvas"], desc: ["连接分镜、素材和生成节点", "Connect shots, media and generation nodes"], href: "/creative-space/canvas", icon: Workflow, keywords: ["画布", "canvas", "workflow", "节点"] },
+    { title: ["音频工作室", "Audio studio"], desc: ["选择音色，输入脚本合成语音", "Choose a voice and turn a script into speech"], href: "/audio", icon: AudioLines, keywords: ["语音", "配音", "语音合成", "audio", "voice", "TTS"] },
     { title: ["定价", "Pricing"], desc: ["套餐、积分包和新用户福利", "Plans, credit packs and the new-account offer"], href: "/pricing", icon: Crown, keywords: ["价格", "会员", "套餐", "订阅", "price", "plan", "subscription", "premium"] },
     { title: ["积分与账单", "Credits & billing"], desc: ["积分余额、明细和积分包到期时间", "Balance, history and when credits expire"], href: "/credits", icon: CreditCard, keywords: ["积分", "余额", "充值", "账单", "credits", "balance", "billing"] },
     { title: ["我的作品", "My creations"], desc: ["生成过的视频、图片和音频", "Everything you have generated"], href: "/my-creations", icon: Folder, keywords: ["历史", "作品", "下载", "history", "downloads"] },
@@ -220,6 +224,8 @@ export function NavSearch({
   const fallbackLinks = [
     { label: zh ? `用「${query.trim()}」生成视频` : `Make a video of “${query.trim()}”`, href: `/ai/video?prompt=${encodeURIComponent(query.trim())}`, icon: Clapperboard },
     { label: zh ? `用「${query.trim()}」生成图片` : `Make an image of “${query.trim()}”`, href: `/ai/image?prompt=${encodeURIComponent(query.trim())}`, icon: ImageIcon },
+    { label: zh ? "用这段文字生成语音" : "Use this text as a speech script", href: `/audio?prompt=${encodeURIComponent(query.trim())}`, icon: AudioLines },
+    { label: zh ? "用这段文字打开画布" : "Start a canvas with this idea", href: `/creative-space/canvas?prompt=${encodeURIComponent(query.trim())}`, icon: Workflow },
   ];
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -320,7 +326,7 @@ export function NavSearch({
       </div>
 
       <div className="ns-panel">
-        <div className="ns-tabs" role="group" aria-label={zh ? "搜索分类" : "Search categories"}>
+        <fieldset className="ns-tabs" aria-label={zh ? "搜索分类" : "Search categories"}>
           {tabs.map((item) => (
             <button
               key={item.id}
@@ -334,7 +340,7 @@ export function NavSearch({
               {item.label}
             </button>
           ))}
-        </div>
+        </fieldset>
 
         <div ref={listRef} id="ns-results" className="ns-body" aria-label={zh ? "搜索结果" : "Results"}>
           {!typed && tab === "all" ? (

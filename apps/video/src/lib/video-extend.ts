@@ -18,7 +18,8 @@ export const EXTEND_MAX_PROMPT = model.options.maxPromptLength ?? 5000;
 
 /** The quality to start from: the source's own when extend offers it. */
 export function defaultExtendResolution(sourceResolution: string | null | undefined): string {
-  const value = (sourceResolution ?? "").toLowerCase();
+  const value = (sourceResolution ?? "").trim().toLowerCase();
+  if (value === "high") return "1080p";
   return EXTEND_RESOLUTIONS.includes(value) ? value : "720p";
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { localizedHref } from "@/lib/locale-path";
+import { languageSwitchSuffix, localizedHref } from "@/lib/locale-path";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ export function LocaleChange() {
   const rawPathname = usePathname();
   const pathname = rawPathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
 
+  const [suffix, setSuffix] = React.useState("");
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={open => { if (open) setSuffix(languageSwitchSuffix(window.location.search, window.location.hash)); }}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 w-8 px-0" aria-label="语言 / Language">
           <Icons.Languages />
@@ -30,10 +31,9 @@ export function LocaleChange() {
         <div>
           {i18n.locales.map((locale) => {
             return (
-              // <Link href={redirectedPathName(locale)}>{locale}</Link>
               <DropdownMenuItem key={locale} asChild>
                 <a
-                  href={localizedHref(locale, pathname)}
+                  href={localizedHref(locale, pathname + suffix)}
                   hrefLang={locale}
                   className="w-full"
                 >

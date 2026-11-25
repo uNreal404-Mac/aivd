@@ -32,6 +32,10 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    const expectedAccount = request.headers.get("X-Media-Account");
+    if (expectedAccount !== null && expectedAccount !== user.id) {
+      return apiError("Your account changed. Please try again.", 409, { code: "ACCOUNT_CHANGED" });
+    }
     if (!canGenerateInPreview(user)) {
       return apiError("Generation is coming soon on this preview. No credits were used.", 503, {
         code: "GENERATION_DISABLED",

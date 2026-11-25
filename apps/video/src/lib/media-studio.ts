@@ -88,20 +88,31 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
 const MEDIA_ENDPOINT = "/api/v1/media/generate";
 const UUID_KEY = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
-// Older image/audio clients indexed lost responses by an unscoped body hash.
-function legacyMediaKey(text: string): string | null {
-  const stored = sessionStorage.getItem("aivd:media-lost-answers");
-  if (!stored) return null;
+function legacyRequestHash(text: string): string {
   let hash = 0x811c9dc5;
   for (let index = 0; index < text.length; index += 1) {
     hash ^= text.charCodeAt(index);
     hash = Math.imul(hash, 0x01000193);
   }
-  const record = JSON.parse(stored)[`${(hash >>> 0).toString(36)}:${text.length}`];
-  if (record === undefined) return null;
-  if (typeof record.key !== "string" || !(UUID_KEY.test(record.key) || /^\d{1,16}$/.test(record.key))) {
-    throw new Error("Invalid legacy retry key");
+  return `${(hash >>> 0).toString(36)}:${text.length}`;
+}
+
+// Older clients indexed by the JSON body in the studio's field order.
+function legacyMediaKey(signature: string): string | null {
+  const stored = sessionStorage.getItem("aivd:media-lost-answers");
+  if (!stored) return null;
+  const records = JSON.parse(stored);
+  let record = records[legacyRequestHash(signature)];
+  if (record === undefined) {
+    const body = JSON.parse(signature);
+    const oldSignature = JSON.stringify(body, [
+      "model", "prompt", "aspectRatio", "resolution", "count", "imageUrls",
+      "voice", "style", "instrumental", "customMode", "speed", ...Object.keys(body),
+    ]);
+    record = records[legacyRequestHash(oldSignature)];
   }
+  if (record === undefined) return null;
+  if (typeof record?.key !== "string") throw new Error("Invalid legacy retry key");
   return record.key;
 }
 
@@ -128,29 +139,27 @@ function saveRetryKey(slot: string, key: string): void {
 }
 
 async function reserveRetryKey(
-  accountId: string, endpoint: string, body: SubmitBody | ExtendSubmitBody, signature: string,
+  accountId: string,
+  endpoint: string,
+  parameters: string,
+  legacyMediaSignature: string | null,
 ): Promise<RetryReservation> {
-  const isExtend = "sourceVideoUuid" in body;
-  // Keep existing extend slots addressable. Media options are flat fields or
-  // arrays of strings, so sorting the field names preserves reference order.
-  const parameters = isExtend ? signature : JSON.stringify(body, Object.keys(body).sort());
   const identity = new TextEncoder().encode(JSON.stringify([accountId, endpoint, parameters]));
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", identity));
+  const isExtend = legacyMediaSignature === null;
   const prefix = isExtend ? "aivd:extend:" : "aivd:media:";
   const slot = prefix + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  const legacy = !isExtend && endpoint === MEDIA_ENDPOINT ? legacyMediaKey(signature) : null;
+  const legacy = !isExtend && endpoint === MEDIA_ENDPOINT ? legacyMediaKey(legacyMediaSignature) : null;
   // The server scopes keys by user. Each account may need the old key once,
   // even if another account already recovered its own job in this tab.
   const migratedSlot = slot + ":legacy";
   const unmigrated = legacy && sessionStorage.getItem(migratedSlot) !== legacy ? legacy : null;
-  let key = sessionStorage.getItem(slot);
-  if (key === null) {
-    key = unmigrated ?? crypto.randomUUID();
-    saveRetryKey(slot, key);
-  }
+  const stored = sessionStorage.getItem(slot);
+  const key = stored ?? unmigrated ?? crypto.randomUUID();
   if (!UUID_KEY.test(key) && (isExtend || !/^\d{1,16}$/.test(key))) {
     throw new Error("Invalid retry key");
   }
+  if (stored === null) saveRetryKey(slot, key);
   if (key === unmigrated) saveRetryKey(migratedSlot, key);
   return {
     key,
@@ -170,7 +179,11 @@ export async function submitMedia(
   zh: boolean,
   endpoint = MEDIA_ENDPOINT,
 ): Promise<SubmitResult> {
-  const signature = JSON.stringify(body);
+  const isExtend = "sourceVideoUuid" in body;
+  const original = JSON.stringify(body);
+  // Preserve the existing extend slot format. Media options are flat fields
+  // or arrays of strings, so sorting field names preserves reference order.
+  const signature = isExtend ? original : JSON.stringify(body, Object.keys(body).sort());
   let retry: RetryReservation;
   const networkError = zh ? "网络错误，请稍后重试。" : "Network error. Please try again.";
   let accountId: string | undefined;
@@ -184,7 +197,7 @@ export async function submitMedia(
   }
   if (!accountId) return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
   try {
-    retry = await reserveRetryKey(accountId, endpoint, body, signature);
+    retry = await reserveRetryKey(accountId, endpoint, signature, isExtend ? null : original);
   } catch {
     return { ok: false, code: "RETRY_KEY_UNAVAILABLE", message: zh ? "无法在当前标签页保存重试信息，本次未提交。" : "This tab could not save the retry key. No request was sent." };
   }
@@ -194,7 +207,7 @@ export async function submitMedia(
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": retry.key,
-        ["sourceVideoUuid" in body ? "X-Extend-Account" : "X-Media-Account"]: accountId,
+        [isExtend ? "X-Extend-Account" : "X-Media-Account"]: accountId,
       },
       body: signature,
     });

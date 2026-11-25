@@ -92,6 +92,7 @@ describe("extend: price and request (PixVerse V6 extend, KIE 2026-11-25)", () =>
   });
 
   it("starts from the source's quality when extend offers it", () => {
+    expect(defaultExtendResolution("high")).toBe("1080p");
     expect(defaultExtendResolution("1080p")).toBe("1080p");
     expect(defaultExtendResolution("480p")).toBe("720p");
     expect(defaultExtendResolution(null)).toBe("720p");
@@ -296,6 +297,17 @@ describe("submitExtend retry reservations", () => {
     getSession.mockResolvedValue({ data: { user: { id: "user_a" } } });
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("replays a reservation already stored by the previous extend client", async () => {
+    const oldSlot = "aivd:extend:8d9f1e80feeccfc16bafb57fe8b0a9223bc525eb0b187b7de500357381e687e0";
+    const oldKey = "67080b85-fe67-4070-83c5-79547f72b260";
+    tab.set(oldSlot, oldKey);
+    const post = vi.fn().mockResolvedValueOnce(accepted());
+    vi.stubGlobal("fetch", post);
+    expect((await submit()).ok).toBe(true);
+    expect(new Headers(post.mock.calls[0][1].headers).get("Idempotency-Key")).toBe(oldKey);
+    expect(tab.has(oldSlot)).toBe(false);
+  });
 
   it("persists before POST, survives reload while in flight, and isolates late responses", async () => {
     let finish!: (response: Response) => void;

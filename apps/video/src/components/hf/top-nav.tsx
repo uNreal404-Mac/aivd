@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { usePresence } from "@/hooks/use-presence";
-import { localizedHref } from "@/lib/locale-path";
+import { languageSwitchSuffix, localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -115,7 +115,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (event.defaultPrevented || event.isComposing || (target?.closest('[role="dialog"], dialog[open]') && !target.closest(".hf-nav-layer"))) return;
-      const typing = target?.closest("input, textarea, select, [contenteditable='true']");
+      const typing = (target instanceof HTMLElement && target.isContentEditable) || target?.closest("input, textarea, select");
       if ((event.key === "k" || event.key === "K") && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen(null);
@@ -421,6 +421,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   }, [menuOpen]);
 
   const otherLang = zh ? "en" : "zh";
+  const [languageSuffix, setLanguageSuffix] = useState("");
+  useEffect(() => {
+    if (menuOpen || open === "account") setLanguageSuffix(languageSwitchSuffix(window.location.search, window.location.hash));
+  }, [menuOpen, open, pathname]);
   const accountLinks: { label: string; href: string; icon: LucideIcon }[] = [
     { label: t.creations, href: "/my-creations", icon: Folder },
     { label: t.billing, href: "/credits", icon: CreditCard },
@@ -591,7 +595,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                         </Link>
                       );
                     })}
-                    <Link href={localizedHref(otherLang, pathname)} className="hf-acct-row hf-acct-row-split">
+                    <Link href={localizedHref(otherLang, pathname + languageSuffix)} className="hf-acct-row hf-acct-row-split">
                       <span className="flex items-center gap-1.5">
                         <span className="hf-acct-ico">
                           <Languages aria-hidden="true" />
@@ -757,7 +761,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                     </span>
                     <ChevronRight aria-hidden="true" />
                   </Link>
-                  <Link href={localizedHref(otherLang, pathname)} className="hf-mm-lang">
+                  <Link href={localizedHref(otherLang, pathname + languageSuffix)} className="hf-mm-lang">
                     <Languages aria-hidden="true" />
                     {zh ? "English" : "简体中文"}
                   </Link>
