@@ -1012,7 +1012,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         // The key is saved to the account before sending, so a reload or a
         // lost answer retries under it instead of starting a second job.
         if (!(await persistNow())) {
-          fail(L("画布还没能保存，为免重复扣积分这次没有提交，请稍后再点生成", "The canvas could not be saved, so nothing was sent; try again shortly"));
+          // Never sent: forget this key (keep any older unanswered one).
+          fail(L("画布还没能保存，为免重复扣积分这次没有提交，请稍后再点生成", "The canvas could not be saved, so nothing was sent; try again shortly"), { pending: current?.pending });
           return;
         }
         const answer = await postGeneration(request.endpoint, request.body, key);
