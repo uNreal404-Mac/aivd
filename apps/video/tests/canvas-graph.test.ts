@@ -69,6 +69,20 @@ describe("idempotency key for a node's request", () => {
 });
 
 describe("stored upload keys", () => {
+  it("never writes a URL as an asset key, and skips media with nothing to point at", () => {
+    const graph = toStoredGraph(
+      [
+        at("bad", { kind: "media", media: "image", title: "", mime: "image/png", assetKey: "https://signed/x", resultUuid: "img_1" }),
+        at("empty", { kind: "media", media: "image", title: "", mime: "image/png", url: "blob:x", busy: true }),
+        text("t"),
+      ],
+      [{ id: "e", source: "empty", target: "t" }],
+    );
+    expect(graph.nodes.map((node) => node.id)).toEqual(["bad", "t"]);
+    expect(graph.nodes[0].data).not.toHaveProperty("assetKey");
+    expect(graph.edges).toEqual([]);
+  });
+
   it("keeps only upload keys, never URLs", () => {
     expect(isUploadKey("uploads/u1/abc.png")).toBe(true);
     expect(isUploadKey("https://bucket.example/uploads/u1/abc.png?X-Amz-Signature=1")).toBe(false);

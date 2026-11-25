@@ -94,7 +94,7 @@ import {
 } from "@/lib/creative-space/canvas-graph";
 import { jobStatus, postGeneration, resolveMedia } from "@/lib/creative-space/canvas-submit";
 import { previewFrame, uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
-import { listGuestAssets, type PickerAsset, readyPickerImage, saveGuestAsset } from "@/lib/home-media-library";
+import { listGuestAssets, type PickerAsset, readyPickerImage, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
 import { UploadError, uploadErrorText } from "@/lib/image-to-video";
 import { localizedHref } from "@/lib/locale-path";
 import { errorMessage } from "@/lib/media-studio";
@@ -282,6 +282,11 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const conflict = useRef(false);
   const canvasGeneration = useRef(0);
   const editLock = useRef(false);
+  const editSession = useRef(0);
+  const savedKeys = useRef(new Set<string>());
+  // Latest content of every node seen, so undoing a delete brings it back as it
+  // was when deleted (with its prompt and result), not as at the older snapshot.
+  const lastData = useRef(new Map<string, CanvasData>());
   const unknownRequest = L(
     "页面关闭时请求还没有回音，不确定是否已提交。再点生成会沿用同一个请求，不会重复扣积分。",
     "The page closed before the request was answered. Generating again reuses the same request and cannot charge twice.",
@@ -307,11 +312,14 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
 
   const patch = useCallback(
     (id: string, partial: Partial<CanvasData>) => {
-      setNodes((list) => {
-        const next = list.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...partial } as CanvasData } : node));
-        nodesRef.current = next;
-        return next;
-      });
+      const apply = (list: FlowNode[]) => list.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...partial } as CanvasData } : node));
+      // The ref changes now, not at the next render: a save started right
+      // after this call must already see it (e.g. a request's key).
+      nodesRef.current = apply(nodesRef.current);
+      // A node deleted meanwhile still gets the update, so undo brings it back current.
+      const remembered = lastData.current.get(id);
+      if (remembered && !nodesRef.current.some((node) => node.id === id)) lastData.current.set(id, { ...remembered, ...partial } as CanvasData);
+      setNodes((list) => apply(list));
     },
     [setNodes],
   );
@@ -348,7 +356,6 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   }, [commit]);
   // Latest content of every node seen, so undoing a delete brings it back as it
   // was when deleted (with its prompt and result), not as at the older snapshot.
-  const lastData = useRef(new Map<string, CanvasData>());
   useEffect(() => {
     for (const node of nodes) lastData.current.set(node.id, node.data);
   }, [nodes]);
@@ -364,14 +371,16 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       replaceGraph(
         target.nodes.map((node) => {
           const current = live.get(node.id);
-          const data = current?.data ?? lastData.current.get(node.id) ?? node.data;
+          let data = current?.data ?? lastData.current.get(node.id) ?? node.data;
+          // Brought back while its request was still unanswered: retryable, same key.
+          if (!current && isGen(data) && data.status === "submitting") data = { ...data, status: "failed", error: unknownRequest };
           return { ...node, data, selected: false };
         }),
         target.edges,
       );
       setHistoryTick((tick) => tick + 1);
     },
-    [replaceGraph],
+    [replaceGraph, unknownRequest],
   );
   const canUndo = history.current.index > 0;
   const canRedo = history.current.index < history.current.stack.length - 1;
@@ -479,6 +488,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           ? await uploadWorkflowVideo(asset.file)
           : await readyPickerImage({ id: asset.id, name: asset.name, mimeType: asset.mimeType, url: asset.url, file: asset.file });
         patch(node.id, { assetKey: result.key, url: result.url, localId: undefined } as Partial<MediaData>);
+        void removeGuestAsset(asset.id).catch(() => {});
       } catch (error) {
         say(error instanceof UploadError ? uploadErrorText(error, zh) : error instanceof Error ? error.message : L("素材上传失败", "Upload failed"), true);
       }
@@ -524,6 +534,10 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         revision.current = id ? body.data.workflow.revision : body.data.revision;
         lastSaved.current = contentKey(graph, name);
         savedSeq.current = Math.max(savedSeq.current, seq);
+        savedKeys.current = new Set(graph.nodes.flatMap((node) => {
+          const pending = (node.data as { pending?: { key?: string } }).pending;
+          return pending?.key ? [`${node.id}:${pending.key}`] : [];
+        }));
         if (!id) {
           canvasIdRef.current = savedId;
           setCanvasId(savedId);
@@ -645,21 +659,33 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       say(L("有生成请求正在提交，等它提交完再切换画布", "A generation is being submitted; switch once it is sent"), true);
       return false;
     }
-    if (canvasIdRef.current && !conflict.current && contentKey(storedNow(), titleRef.current) !== lastSaved.current && !(await persistNow())) {
+    if (conflict.current) {
+      say(L("这个画布和另一个窗口有冲突，请先刷新页面，免得丢掉改动", "This canvas conflicts with another window; reload first so nothing is lost"), true);
+      return false;
+    }
+    const dirty = contentKey(storedNow(), titleRef.current) !== lastSaved.current && (Boolean(canvasIdRef.current) || nodesRef.current.length > 0);
+    if (userId && dirty && !(await persistNow())) {
       say(L("当前画布还没保存成功，先不切换", "This canvas has not saved yet; staying here"), true);
       return false;
     }
     return true;
-  }, [L, persistNow, say, storedNow]);
+  }, [L, persistNow, say, storedNow, userId]);
 
   const openCanvas = useCallback(
     async (id: string) => {
       setListOpen(false);
       try {
         if (!(await readyToLeave())) return;
+        const before = contentKey(storedNow(), titleRef.current);
+        const generation = canvasGeneration.current;
         const response = await fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
         const body = await response.json().catch(() => null);
         if (!response.ok || !body?.success) throw new Error(body?.error?.message ?? L("打不开这个画布", "Could not open this canvas"));
+        // Edited or generating while it loaded: stay, nothing is dropped.
+        if (generation !== canvasGeneration.current || runLocks.current.size || contentKey(storedNow(), titleRef.current) !== before) {
+          say(L("加载期间当前画布有改动，已留在当前画布，请再点一次", "This canvas changed while the other loaded; staying here"), true);
+          return;
+        }
         loadGraph(body.data.workflow.graph, body.data.workflow.name, id);
         window.history.replaceState(null, "", `${currentPath}?id=${encodeURIComponent(id)}`);
         setSaveState("saved");
@@ -668,7 +694,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         say(error instanceof Error ? error.message : L("打不开这个画布", "Could not open this canvas"), true);
       }
     },
-    [L, currentPath, loadGraph, readyToLeave, resolveAll, say],
+    [L, currentPath, loadGraph, readyToLeave, resolveAll, say, storedNow],
   );
 
   const newCanvas = useCallback(async (force = false) => {
@@ -819,14 +845,19 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       if (body.length > 60_000) return;
       void fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "PUT", keepalive: true, headers: { "content-type": "application/json" }, body });
     };
-    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    // Hidden but still open: a normal save, whose answer updates the revision.
+    const onHide = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (!userId) saveLocalDraft();
+      else if (canvasIdRef.current && contentKey(storedNow(), titleRef.current) !== lastSaved.current) void saveRemote();
+    };
     window.addEventListener("pagehide", flush);
     document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [saveLocalDraft, storedNow, userId]);
+  }, [saveLocalDraft, saveRemote, storedNow, userId]);
 
   // After signing in, pick up the URLs of assets in a draft made while signed out.
   useEffect(() => {
@@ -1011,7 +1042,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         patch(id, { pending: { key, signature, at: current?.pending?.at ?? Date.now() } } as Partial<GenerateData>);
         // The key is saved to the account before sending, so a reload or a
         // lost answer retries under it instead of starting a second job.
-        if (!(await persistNow())) {
+        if (!(await persistNow()) || !savedKeys.current.has(`${id}:${key}`)) {
           // Never sent: forget this key (keep any older unanswered one).
           fail(L("画布还没能保存，为免重复扣积分这次没有提交，请稍后再点生成", "The canvas could not be saved, so nothing was sent; try again shortly"), { pending: current?.pending });
           return;
@@ -1024,7 +1055,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           return;
         }
         if (answer.kind === "unauthorized") {
-          patch(id, { ...(previous ?? { status: "idle" as const }), pending: undefined } as Partial<GenerateData>);
+          patch(id, { ...(previous ?? { status: "idle" as const }), pending: reused ? current?.pending : undefined } as Partial<GenerateData>);
           requireLogin();
           return;
         }
@@ -1033,7 +1064,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           return;
         }
         const message = errorMessage(answer.code, answer.message, zh);
-        fail(message, { pending: undefined });
+        // A refused retry says nothing about the first, unanswered attempt: keep its key.
+        fail(message, { pending: reused ? current?.pending : undefined });
         if (answer.code === "INSUFFICIENT_CREDITS") shortfall.report(message, answer.requiredCredits);
         say(message, true);
       } catch (error) {
@@ -1138,17 +1170,25 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         return { file, node: makeNode({ kind: "media", media, title: file.name.slice(0, 60), mime: file.type, url: URL.createObjectURL(file), busy: true }, { x: origin.x + index * 32, y: origin.y + index * 32 }) };
       });
       addNodes(created.map((item) => item.node));
-      for (const { file, node } of created) {
+      // Every file is kept in this browser before any upload starts, so a
+      // reload mid-upload keeps them all (saving uploads what is still local).
+      const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file).catch(() => null)));
+      created.forEach(({ node }, index) => {
+        const asset = kept[index];
+        if (asset) patch(node.id, { localId: asset.id, url: asset.url } as Partial<MediaData>);
+      });
+      for (const [index, { file, node }] of created.entries()) {
+        const asset = kept[index];
         try {
-          // Kept in this browser first, so a reload during the upload does not
-          // lose it; saving uploads anything still local.
-          const asset = await saveGuestAsset(file);
-          patch(node.id, { localId: asset.id, url: asset.url } as Partial<MediaData>);
+          if (!asset) throw new Error(L("素材读取失败", "Could not read this file"));
           if (userId) {
             const result = file.type.startsWith("video/")
               ? await uploadWorkflowVideo(file)
               : await readyPickerImage({ id: asset.id, name: file.name, mimeType: file.type, url: asset.url, file });
             patch(node.id, { assetKey: result.key, url: result.url, localId: undefined, busy: false } as Partial<MediaData>);
+            // The browser store is shared by everyone using this browser: a
+            // signed-in upload does not stay there once it is in the account.
+            void removeGuestAsset(asset.id).catch(() => {});
           } else {
             patch(node.id, { busy: false } as Partial<MediaData>);
           }
@@ -1162,8 +1202,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   );
 
   const addPicked = useCallback(
-    (assets: PickerAsset[]) => {
+    (picked: PickerAsset[]) => {
       const origin = viewCenter();
+      // Elements and brand items made from a local upload carry a picker alias,
+      // not the stored file's id: add their file like a fresh upload instead.
+      const aliased = picked.filter((asset) => !asset.key && !/^work:/.test(asset.id) && asset.file && !/^[0-9a-f-]{36}$/i.test(asset.id));
+      if (aliased.length) void addFiles(aliased.map((asset) => asset.file as File), origin);
+      const assets = picked.filter((asset) => !aliased.includes(asset) && (asset.key || /^work:/.test(asset.id) || asset.file));
       const added = assets.map((asset, index) => {
         const media = asset.mimeType.startsWith("video/") ? "video" : "image";
         const work = /^work:([^:]+):(\d+)$/.exec(asset.id);
@@ -1177,10 +1222,10 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         };
         return makeNode(data, { x: origin.x + index * 36, y: origin.y + index * 36 });
       });
-      addNodes(added);
+      if (added.length) addNodes(added);
       setPickerOpen(false);
     },
-    [addNodes, makeNode, viewCenter],
+    [addFiles, addNodes, makeNode, viewCenter],
   );
 
   /* ------------------------------------------------------ edit and shots */
@@ -1212,6 +1257,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       if (!source) return;
       // One confirm, one job: locked before anything is awaited.
       editLock.current = true;
+      const session = editSession.current;
       setEditSubmitting(true);
       try {
         let maskKey: string | undefined;
@@ -1219,6 +1265,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           const uploaded = await readyPickerImage({ id: newId(), name: "mask.png", mimeType: payload.compositeFile.type, url: "", file: payload.compositeFile });
           maskKey = uploaded.key;
         }
+        // Closed while the mask uploaded: cancelled, nothing is generated.
+        if (session !== editSession.current) return;
         const names: Record<CanvasEditAction, string> = {
           inpaint: L("局部重绘", "Inpaint"),
           erase: L("消除", "Erase"),
@@ -2114,7 +2162,10 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
             node={editImage}
             action={editing.action}
             submitting={editSubmitting}
-            onClose={() => setEditing(null)}
+            onClose={() => {
+              editSession.current += 1;
+              setEditing(null);
+            }}
             onSubmit={(payload) => void submitEdit(payload)}
             onLocalCutout={localCutout}
           />

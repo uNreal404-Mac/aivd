@@ -248,8 +248,8 @@ export function isUploadKey(value: unknown): value is string {
 
 function storedData(data: CanvasData): CanvasData {
   if (data.kind === "media") {
-    const { url: _url, busy: _busy, ...rest } = data;
-    return rest;
+    const { url: _url, busy: _busy, assetKey, ...rest } = data;
+    return isUploadKey(assetKey) ? { ...rest, assetKey } : rest;
   }
   if (data.kind === "image" || data.kind === "video" || data.kind === "audio") {
     const { urls: _urls, ...rest } = data;
@@ -259,10 +259,18 @@ function storedData(data: CanvasData): CanvasData {
 }
 
 /** What is saved: structure and stable references only, never URLs or files. */
+/** A media node with nothing to point at (an upload not even kept locally yet) is not saved. */
+function storable(node: GraphNode): boolean {
+  const data = node.data;
+  return data.kind !== "media" || isUploadKey(data.assetKey) || Boolean(data.resultUuid || data.localId);
+}
+
 export function toStoredGraph(nodes: readonly GraphNode[], edges: readonly GraphEdge[], viewport?: Viewport): StoredGraph {
+  const kept = nodes.filter(storable);
+  const ids = new Set(kept.map((node) => node.id));
   return {
     version: 2,
-    nodes: nodes.map((node) => {
+    nodes: kept.map((node) => {
       const width = node.style?.width ?? node.width ?? undefined;
       const height = node.style?.height ?? node.height ?? undefined;
       const sized = node.data.kind === "group" || node.data.kind === "text";
@@ -276,7 +284,7 @@ export function toStoredGraph(nodes: readonly GraphNode[], edges: readonly Graph
         ...(node.data.kind === "group" ? { zIndex: -1 } : {}),
       };
     }),
-    edges: edges.map(({ id, source, target }) => ({ id, source, target })),
+    edges: edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)).map(({ id, source, target }) => ({ id, source, target })),
     ...(viewport ? { viewport: { x: Math.round(viewport.x), y: Math.round(viewport.y), zoom: Number(viewport.zoom.toFixed(3)) } } : {}),
   };
 }

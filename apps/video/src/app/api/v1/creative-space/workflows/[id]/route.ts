@@ -35,7 +35,8 @@ export async function PUT(request: Request, { params }: Context) {
     const revision = (base ?? 0) + 1;
     const [workflow] = await db.update(creativeWorkflows)
       .set({ name: payload.name, graph: { ...payload.graph, revision }, updatedAt: new Date() })
-      .where(base === undefined ? owned : and(owned, eq(stored, base)))
+      // No base (an editor from before revisions): only for a canvas never saved with one.
+      .where(and(owned, eq(stored, base ?? 0)))
       .returning({ id: creativeWorkflows.id, updatedAt: creativeWorkflows.updatedAt });
     if (!workflow) {
       const [exists] = await db.select({ id: creativeWorkflows.id }).from(creativeWorkflows).where(owned).limit(1);
