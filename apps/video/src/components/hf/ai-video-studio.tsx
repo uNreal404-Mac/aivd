@@ -48,7 +48,7 @@ import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { findVideoPreset } from "@/lib/video-presets";
-import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
+import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
 import { MediaViewer, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
 import { PresetCard, PresetLibrary } from "@/components/hf/video-studio/presets";
 import { ReferenceBlock, referenceToken, type ReferenceThumb } from "@/components/hf/video-studio/reference-block";
@@ -405,10 +405,14 @@ function AiVideoStudioForm({
   }, [extendSource, sourceRestored, sourceSlot, session?.user?.id]);
 
   const [results, setResults] = useState<StudioResult[]>([]);
+  const [pendingSubmission, setPendingSubmission] = useState<StudioResult | null>(() => homeHandoffToken ? {
+    id: `submitting:${homeHandoffToken}`, status: "submitting", prompt: initialSettings?.prompt ?? "",
+    model: initialCatalogModelId ?? initialSettings?.modelId, createdAt: Date.now(),
+  } : null);
   const [submitting, setSubmitting] = useState(false);
   // First visit opens on how it works, as the reference does; returning users
   // land on their history once it loads.
-  const [activeTab, setActiveTab] = useState<StageTab>("How it works");
+  const [activeTab, setActiveTab] = useState<StageTab>(homeHandoffToken ? "History" : "How it works");
   // History's Filter and View menus (stage bar, History tab only).
   const [historyFilter, setHistoryFilter] = useState(INITIAL_FILTER);
   const [historyView, setHistoryView] = useHistoryView();
@@ -455,6 +459,7 @@ function AiVideoStudioForm({
       sessionStorage.removeItem("aivd:home-video-references");
       sessionStorage.removeItem("aivd:home-video-reference-owner");
       autostartDone.current = true;
+      setPendingSubmission(null);
       const url = new URL(window.location.href);
       const token = url.searchParams.get("autostart");
       if (token) {
@@ -633,6 +638,7 @@ function AiVideoStudioForm({
     try {
       await generateOnce(presetKey);
     } finally {
+      setPendingSubmission(null);
       inFlight.current = false;
     }
   }
@@ -704,6 +710,11 @@ function AiVideoStudioForm({
       return;
     }
 
+    setPendingSubmission((current) => current ?? {
+      id: `submitting:${crypto.randomUUID()}`, status: "submitting", prompt: settings.prompt.trim(),
+      model: catalogModelId, createdAt: Date.now(),
+    });
+    setActiveTab("History");
     setSubmitting(true);
     setNotice(null);
 
@@ -891,6 +902,7 @@ function AiVideoStudioForm({
     const token = url.searchParams.get("autostart");
     if (!token) {
       autostartDone.current = true;
+      setPendingSubmission(null);
       return;
     }
     // Right after a client-side navigation the session can read "not signed
@@ -903,6 +915,7 @@ function AiVideoStudioForm({
     url.searchParams.delete("autostart");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
     if (session && claimAutostart(token, sessionStorage)) void handleGenerate(`autostart:${token}`);
+    else setPendingSubmission(null);
   }, [sessionLoading, session, balance, homeReferences, keyframeMode, framesReady, autostartWaited, sessionWaited]);
 
   const coverModelId = selectedModelConnected ? catalogModelId : "";
@@ -918,7 +931,7 @@ function AiVideoStudioForm({
   const modelCover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
   const generateDisabled =
     submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage || (keyframeMode && !validFrameCount(frames, settings.duration));
-  const maxReferences = videoInput ? WAN_REFERENCE_MAX_FILES : maxVideoReferences(catalogModelId);
+  const maxReferences = videoInput ? WAN_REFERENCE_MAX_FILES : MAX_HOME_REFERENCES;
 
   async function selectMedia(items: PickerAsset[]) {
     if (videoInput && !session?.user?.id) { signIn.onOpen(); return; }
@@ -1022,7 +1035,7 @@ function AiVideoStudioForm({
         })),
     [results],
   );
-  const shownResults = matchingVideos(results, historyFilter, Date.now());
+  const shownResults = matchingVideos(pendingSubmission ? [pendingSubmission, ...results] : results, historyFilter, Date.now());
   const filterModels = [...new Set([...availableModelIds, ...results.flatMap(item => item.model ? [item.model] : [])])]
     .map(id => ({ id, name: VIDEO_CATALOG.find(item => item.id === id)?.name ?? getMarketModel(id)?.name ?? id }));
   const clearFilters = () => setHistoryFilter(INITIAL_FILTER);
@@ -1032,7 +1045,7 @@ function AiVideoStudioForm({
     ...(historyFilter.hideFailed ? [{ key: "hide", name: isChinese ? "隐藏失败项" : "Hide failed", clear: () => setHistoryFilter(current => ({ ...current, hideFailed: false })) }] : []),
   ];
   const noMatch = activeFilters.length > 0 && shownResults.length === 0;
-  const historyKey = activeTab === "How it works" ? "how" : noMatch ? "none" : results.length ? "results" : "intro";
+  const historyKey = activeTab === "How it works" ? "how" : noMatch ? "none" : shownResults.length ? "results" : "intro";
   const activePreset = findVideoPreset(settings.preset);
   // Effects from the effects page arrive as a preset id; show their name.
   const effectTemplate = settings.preset && !activePreset ? EFFECT_TEMPLATES.find((item) => item.id === settings.preset) : undefined;
@@ -1366,7 +1379,7 @@ function AiVideoStudioForm({
 
       <section aria-label={copy.results} className="vst-stage" data-library={presetsOpen || undefined}>
         <div className="vst-stage-bar">
-          <StageTabs zh={isChinese} active={activeTab} count={results.length} onChange={setActiveTab} />
+          <StageTabs zh={isChinese} active={activeTab} count={results.length + (pendingSubmission ? 1 : 0)} onChange={setActiveTab} />
           {activeTab === "History" ? (
             <div className="vst-stage-tools">
               <FilterMenu zh={isChinese} filter={historyFilter} models={filterModels} onChange={setHistoryFilter} />
@@ -1380,7 +1393,7 @@ function AiVideoStudioForm({
             tool !== "create" || extendMode ? <ToolGuide kind={tool==="create" ? "extend" : tool} zh={isChinese}/> : <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} />
           ) : noMatch ? (
             <NoMatches zh={isChinese} onClear={clearFilters} />
-          ) : results.length === 0 ? (
+          ) : shownResults.length === 0 ? (
             // Nothing made yet: the introduction, as on the reference.
             tool !== "create" || extendMode ? <ToolGuide kind={tool==="create" ? "extend" : tool} zh={isChinese}/> : <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} tip={false} />
           ) : (

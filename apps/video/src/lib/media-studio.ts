@@ -8,7 +8,7 @@ import { toMillis } from "@/lib/ai-video-studio";
 import type { GenerationParameters } from "@/lib/generation-details";
 
 export type MediaKind = "image" | "audio";
-export type MediaJobStatus = "queued" | "generating" | "completed" | "failed";
+export type MediaJobStatus = "submitting" | "queued" | "generating" | "completed" | "failed";
 
 export type MediaJob = {
   uuid: string;

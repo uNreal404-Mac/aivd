@@ -8,6 +8,7 @@ import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { imageOutputCount } from "@/lib/image-output-count";
 import { currentUploadUrls } from "@/lib/home-media-library";
 import { clearSubmittedHomePrompt } from "@/lib/home-draft";
+import { AUTOSTART_STORAGE_KEY, claimAutostart } from "@/lib/autostart";
 import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
@@ -100,28 +101,42 @@ function AiImageStudioForm({
     setMediaPickerOpen(true);
   };
   const [mentionOpen, setMentionOpen] = useState(false);
+  const [sessionWaited, setSessionWaited] = useState(false);
   useEffect(() => {
-    if (sessionLoading) return;
+    const timer = setTimeout(() => setSessionWaited(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+  const [handoffRefsStatus, setHandoffRefsStatus] = useState<"loading" | "ready" | "invalid">(homeHandoffToken ? "loading" : "ready");
+  useEffect(() => {
+    if (sessionLoading || (homeHandoffToken && !session && !sessionWaited)) return;
     const handoff = sessionStorage.getItem("aivd:home-image-references");
     const owner = sessionStorage.getItem("aivd:home-image-reference-owner");
     sessionStorage.removeItem("aivd:home-image-reference-owner");
-    if (!handoff) return;
+    if (!handoff) { setHandoffRefsStatus(owner ? "invalid" : "ready"); return; }
     sessionStorage.removeItem("aivd:home-image-references");
-    if (owner && owner !== session?.user?.id) return;
+    if (owner && owner !== session?.user?.id) { setHandoffRefsStatus("invalid"); return; }
     try {
       const rows: unknown = JSON.parse(handoff);
-      if (Array.isArray(rows)) setRefs(rows.filter((row): row is { key: string; name: string; url: string } =>
+      if (!Array.isArray(rows) || rows.length > maxImages || !rows.every((row): row is { key: string; name: string; url: string } =>
         typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string" &&
         (!row.key.startsWith("uploads/") || row.key.startsWith(`uploads/${session?.user?.id}/`))
-      ).map((row) => ({ key: row.key, name: row.name, preview: row.url })).slice(0, maxImages));
-    } catch { /* Ignore a stale handoff. */ }
-  }, [sessionLoading, session?.user?.id]);
+      )) { setHandoffRefsStatus("invalid"); return; }
+      setRefs(rows.map((row) => ({ key: row.key, name: row.name, preview: row.url })));
+      setHandoffRefsStatus("ready");
+    } catch { setHandoffRefsStatus("invalid"); }
+  }, [sessionLoading, session?.user?.id, sessionWaited, homeHandoffToken]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image", Boolean(session));
+  const [pendingSubmission, setPendingSubmission] = useState<import("@/lib/media-studio").MediaJob | null>(() => homeHandoffToken ? {
+    uuid: `submitting:${homeHandoffToken}`, status: "submitting", urls: [], prompt: initialPrompt,
+    model: initialModel, createdAt: Date.now(),
+  } : null);
+  const inFlight = useRef(false);
+  const autostartDone = useRef(false);
   const [viewing, setViewing] = useState<number | null>(null);
   // The card that opened the viewer gets focus back when it closes.
   const viewerOpener = useRef<HTMLElement | null>(null);
@@ -154,7 +169,7 @@ function AiImageStudioForm({
     setRefs(Array.isArray(saved.refs) ? saved.refs.slice(0, restored.options.maxImages ?? 0) : []);
     void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
   }, () => {
-    if (sessionLoading || !homeHandoffToken || sessionStorage.getItem("aivd:home-image-handoff") !== homeHandoffToken) return false;
+    if (sessionLoading || !session || !homeHandoffToken || sessionStorage.getItem("aivd:home-image-handoff") !== homeHandoffToken) return false;
     sessionStorage.removeItem("aivd:home-image-handoff");
     return true;
   });
@@ -275,52 +290,89 @@ function AiImageStudioForm({
   };
   const closeMention = useCallback((open: boolean) => setMentionOpen(open), []);
 
-  const generate = async () => {
-    if (submitting || uploading) return;
-    // An empty prompt gets a hint and the cursor, not a dead button.
-    if (!prompt.trim()) {
-      setNotice(zh ? "先写一句提示词，描述你想要的画面。" : "Write a prompt describing the image you want.");
-      promptRef.current?.focus();
+  const generate = async (autostart = false) => {
+    if (inFlight.current || submitting || uploading) return;
+    if (homeHandoffToken && handoffRefsStatus === "loading") {
+      setNotice(zh ? "正在准备参考素材，请稍候。" : "Preparing your reference images. Please wait.");
       return;
     }
-    // "@图片2" with only one picture attached would send the model a reference
-    // that is not there.
-    const prepared = prepareVideoReferencePrompt(prompt.trim(), refs.length);
-    if (!prepared.ok) {
-      setNotice(zh ? `找不到 @图片${prepared.index} 对应的参考图，请添加图片或删掉这个引用。` : `No reference image for @Image${prepared.index}. Add one or remove it from the prompt.`);
-      promptRef.current?.focus();
-      return;
+    inFlight.current = true;
+    try {
+      if (!autostart && !autostartDone.current) {
+        autostartDone.current = true;
+        if (homeHandoffToken) {
+          claimAutostart(homeHandoffToken, sessionStorage);
+          const url = new URL(window.location.href);
+          url.searchParams.delete("handoff");
+          window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+        }
+      }
+      // An empty prompt gets a hint and the cursor, not a dead button.
+      if (!prompt.trim()) {
+        setNotice(zh ? "先写一句提示词，描述你想要的画面。" : "Write a prompt describing the image you want.");
+        promptRef.current?.focus();
+        return;
+      }
+      // "@图片2" with only one picture attached would send the model a reference
+      // that is not there.
+      const prepared = prepareVideoReferencePrompt(prompt.trim(), refs.length);
+      if (!prepared.ok) {
+        setNotice(zh ? `找不到 @图片${prepared.index} 对应的参考图，请添加图片或删掉这个引用。` : `No reference image for @Image${prepared.index}. Add one or remove it from the prompt.`);
+        promptRef.current?.focus();
+        return;
+      }
+      setPendingSubmission((current) => current ?? {
+        uuid: `submitting:${crypto.randomUUID()}`, status: "submitting", urls: [], prompt: prompt.trim(),
+        model: model.id, createdAt: Date.now(),
+      });
+      setSubmitting(true);
+      setNotice(null);
+      const result = await submitMedia(
+        { ...request, prompt: prepared.prompt },
+        zh,
+        undefined,
+        session?.user?.id,
+      );
+      if (!result.ok) {
+        setNotice(result.message);
+        if (result.needsLogin) signIn.onOpen();
+        if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
+        return;
+      }
+      add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, parameters: { ...request, prompt: undefined }, createdAt: Date.now() });
+      if (homeHandoffToken && session?.user?.id) {
+        try {
+          clearSubmittedHomePrompt(sessionStorage, [localStorage, sessionStorage], {
+            token: homeHandoffToken, kind: "image", owner: session.user.id, prompt: prompt.trim(),
+          });
+        } catch { /* Draft storage is optional. */ }
+      }
+      // Keep any new text the user typed while the request was in flight.
+      if (promptRef.current?.value === prompt) draft.discard();
+    } finally {
+      setPendingSubmission(null);
+      setSubmitting(false);
+      inFlight.current = false;
     }
-    setSubmitting(true);
-    setNotice(null);
-    const result = await submitMedia(
-      { ...request, prompt: prepared.prompt },
-      zh,
-      undefined,
-      session?.user?.id,
-    );
-    setSubmitting(false);
-    if (!result.ok) {
-      setNotice(result.message);
-      if (result.needsLogin) signIn.onOpen();
-      if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
-      return;
-    }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, parameters: { ...request, prompt: undefined }, createdAt: Date.now() });
-    if (homeHandoffToken && session?.user?.id) {
-      try {
-        clearSubmittedHomePrompt(sessionStorage, [localStorage, sessionStorage], {
-          token: homeHandoffToken, kind: "image", owner: session.user.id, prompt: prompt.trim(),
-        });
-      } catch { /* Draft storage is optional. */ }
-    }
-    // Keep any new text the user typed while the request was in flight.
-    if (promptRef.current?.value === prompt) draft.discard();
   };
+  useEffect(() => {
+    if (autostartDone.current || !homeHandoffToken || sessionLoading || handoffRefsStatus === "loading") return;
+    autostartDone.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("handoff");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    const claimed = claimAutostart(homeHandoffToken, sessionStorage);
+    if (session && claimed && handoffRefsStatus === "ready") void generate(true);
+    else {
+      setPendingSubmission(null);
+      if (handoffRefsStatus === "invalid") setNotice(zh ? "参考素材未能完整恢复，请重新选择后再生成。" : "The reference images could not be restored. Select them again before generating.");
+    }
+  }, [homeHandoffToken, sessionLoading, session, handoffRefsStatus]);
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 
-  const hasResults = jobs.length > 0;
-  const shownJobs = matchingHistory(jobs, historyFilter, Date.now(), job => Boolean(job.urls.length));
+  const visibleJobs = pendingSubmission ? [pendingSubmission, ...jobs] : jobs;
+  const hasResults = visibleJobs.length > 0;
+  const shownJobs = matchingHistory(visibleJobs, historyFilter, Date.now(), job => Boolean(job.urls.length));
   const filtered = Boolean(historyFilter.model || historyFilter.range !== "all" || historyFilter.hideFailed);
   const noRefsNote = zh ? "该模型不支持参考图" : "This model takes no reference image";
 

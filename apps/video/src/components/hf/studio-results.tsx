@@ -53,7 +53,7 @@ export function PendingCard({
   className = "",
   onReuse,
 }: {
-  status: "queued" | "generating" | "failed" | "completed";
+  status: "submitting" | "queued" | "generating" | "failed" | "completed";
   since?: number;
   prompt?: string | null;
   message?: string | null;
@@ -67,6 +67,10 @@ export function PendingCard({
     ? zh
       ? "生成失败，积分已退回"
       : "Failed, credits returned"
+    : status === "submitting"
+      ? zh
+        ? "正在提交…"
+        : "Submitting…"
     : status === "generating"
       ? zh
         ? "生成中"

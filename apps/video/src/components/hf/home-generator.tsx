@@ -475,6 +475,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         }
         const handoff = crypto.randomUUID();
         sessionStorage.setItem("aivd:home-image-handoff", handoff);
+        sessionStorage.setItem(AUTOSTART_STORAGE_KEY, JSON.stringify({ token: handoff, at: Date.now() }));
         params.set("handoff", handoff);
         rememberHomeGenerationDraft(sessionStorage, { token: handoff, kind: "image", owner: session.user.id, base: draftStorageKey, draftKey: scopedDraftKey, prompt: prompt.trim() }, [localStorage, sessionStorage]);
         router.push(`${localizedHref(lang, "/ai/image")}?${params}`);

@@ -461,6 +461,7 @@ export async function submitGeneration(
 /* -------------------------------------------------------------------------- */
 
 export type StudioResultStatus =
+  | "submitting"
   | "queued"
   | "generating"
   | "completed"
