@@ -30,7 +30,6 @@ import {
   IMAGE_CATALOG,
   IMAGE_FEATURED_IDS,
   VIDEO_CATALOG,
-  VIDEO_FEATURED_IDS,
   VIDEO_MODEL_SPECS,
   type CatalogModel,
 } from "@/lib/kie-model-catalog";
@@ -111,18 +110,7 @@ const BACKUP_IMAGE_FEATURED = [
   "qwen3/text-to-image",
 ];
 
-// Match final-003's menu contents and search order exactly.
-const FINAL003_VIDEO_ORDER = [
-  "veo-3.1", "wan2.6", "bytedance/seedance-2-5", "seedance-2-5-flash",
-  "kling/v4-reference-to-video", "kling/v4-flash-reference-to-video", "gemini-omni-flash-1-2",
-  "minimax-h3/text-to-video", "wan/3-0-video", "grok-imagine/text-to-video",
-  "grok-imagine-1-5", "happyhorse-1-1", "bytedance/seedance-2-5-draft",
-  "bytedance/seedance-2", "bytedance/seedance-2-fast", "bytedance/seedance-2-mini",
-  "seedance-1.5-pro", "kling/kling-3-0", "wan/3-0-video-prime",
-  "google/gemini-omni-flash-1-1", "minimax-h3-max/text-to-video",
-  "hailuo/02-text-to-video-pro", "hailuo/02-text-to-video-standard",
-  "happyhorse/text-to-video", "sora-2",
-];
+// Keep the image model order from final-003; video follows the older Seedance-first menu.
 const FINAL003_IMAGE_ORDER = [
   "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2-1",
   "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
@@ -171,21 +159,7 @@ function startingImageCredits(modelId: string): number | null {
   return lowest;
 }
 
-/** Models that can generate first, then the rest; order is otherwise kept. */
-function connectedFirst(models: CatalogModel[], isConnected: (id: string) => boolean): CatalogModel[] {
-  return [...models.filter((item) => isConnected(item.id)), ...models.filter((item) => !isConnected(item.id))];
-}
-
-/** Featured models first, then the rest in catalogue order. */
-function inDisplayOrder(models: CatalogModel[], featuredIds: string[]): CatalogModel[] {
-  const rank = (id: string) => {
-    const index = featuredIds.indexOf(id);
-    return index === -1 ? featuredIds.length : index;
-  };
-  return [...models].sort((a, b) => rank(a.id) - rank(b.id));
-}
-
-function inFinal003Order(models: CatalogModel[], ids: string[]): CatalogModel[] {
+function inCatalogOrder(models: CatalogModel[], ids: string[]): CatalogModel[] {
   const rank = new Map(ids.map((id, index) => [id, index]));
   return [...models].sort((a, b) => (rank.get(a.id) ?? ids.length) - (rank.get(b.id) ?? ids.length));
 }
@@ -212,16 +186,13 @@ export function KieModelPicker({
   const backupIds = kind === "video" ? BACKUP_VIDEO_IDS : BACKUP_IMAGE_IDS;
   const fullCatalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const catalog = catalogSet === "backup" ? fullCatalog.filter((item) => backupIds.includes(item.id)) : fullCatalog;
-  const final003Ids = kind === "video" ? FINAL003_VIDEO_ORDER : FINAL003_IMAGE_ORDER;
-  const displayCatalog = catalogSet === "backup"
-    ? catalog
-    : catalog.filter((item) => final003Ids.includes(item.id) && connectedIds.includes(item.id));
+  // The catalogue is a discovery list. Keep every model visible even when its
+  // generation endpoint is not connected yet.
+  const displayCatalog = catalog;
   const featuredIds = catalogSet === "backup"
     ? kind === "video" ? BACKUP_VIDEO_FEATURED : BACKUP_IMAGE_FEATURED
-    : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
-  const orderedCatalog = catalogSet === "current"
-    ? inFinal003Order(displayCatalog, final003Ids)
-    : inDisplayOrder(displayCatalog, featuredIds);
+    : kind === "video" ? BACKUP_VIDEO_FEATURED : IMAGE_FEATURED_IDS;
+  const orderedCatalog = inCatalogOrder(displayCatalog, kind === "video" ? BACKUP_VIDEO_IDS : FINAL003_IMAGE_ORDER);
   // Without a connected list every entry counts as ready (older callers).
   const isConnected = (id: string) => connectedIds.length === 0 || connectedIds.includes(id);
   const detailOf = useCatalogDetail();
@@ -272,10 +243,8 @@ export function KieModelPicker({
       needle === "" ||
       item.name.toLowerCase().includes(needle) ||
       item.family.toLowerCase().includes(needle);
-    return connectedFirst(orderedCatalog.filter(matches), isConnected);
+    return orderedCatalog.filter(matches);
   }, [kind, query, catalogSet, connectedIds]);
-  // The full catalogue keeps final-003's family order; featured rows use their own explicit order.
-  const readyCatalog = displayCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
   const sortedByMode = useMemo(() => {
     if (sortBy === "default") return [];
     const costOf = (id: string) =>
@@ -284,7 +253,7 @@ export function KieModelPicker({
       MODEL_BADGES[item.id]?.tone === "fast" || /flash|fast|turbo|mini|draft|schnell/i.test(item.id + item.name);
     const isQuality = (item: CatalogModel) =>
       MODEL_BADGES[item.id]?.tone === "top" || /pro|prime|max|4k|veo|seedance-2-5|kling\/v4|nano-banana-pro/i.test(item.id);
-    const list = [...readyCatalog];
+    const list = [...orderedCatalog];
     if (sortBy === "value") {
       return list.sort((a, b) => costOf(a.id) - costOf(b.id));
     }
@@ -292,8 +261,7 @@ export function KieModelPicker({
       return list.sort((a, b) => Number(isFast(b)) - Number(isFast(a)) || costOf(a.id) - costOf(b.id));
     }
     return list.sort((a, b) => Number(isQuality(b)) - Number(isQuality(a)) || costOf(b.id) - costOf(a.id));
-  }, [sortBy, readyCatalog, kind]);
-  const comingSoon = allowUnconnectedSelection ? [] : orderedCatalog.filter((item) => !isConnected(item.id));
+  }, [sortBy, orderedCatalog, kind]);
 
   const current = fullCatalog.find((item) => item.id === value);
   const triggerLabel = valueLabel ?? current?.name ?? (compact ? copy.noneAvailable : copy.choose);
@@ -512,29 +480,23 @@ export function KieModelPicker({
               <>
                 <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>
                 <p className="px-3 pb-1 text-xs font-semibold text-[var(--du-text-muted)]">{family}</p>
-                {connectedFirst(readyCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
+                {orderedCatalog.filter((item) => item.family === family).map(availableRow)}
               </>
             ) : (
               <>
                 <p className="du-model-section"><Sparkles aria-hidden="true" />{copy.featured}</p>
-                {featuredIds.map((id) => readyCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
+                {featuredIds.map((id) => orderedCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
                 <p className="du-model-section">{copy.all}</p>
-                {Array.from(new Set(readyCatalog.map((item) => item.family))).map((name) => (
+                {Array.from(new Set(orderedCatalog.map((item) => item.family))).map((name) => (
                   <button key={name} type="button" className="du-model-row" onClick={() => setFamily(name)}>
                     <span aria-hidden="true" className="du-model-tile"><ModelIcon family={name} kind={kind} /></span>
                     <span className="min-w-0 flex-1">
                       <span className="du-model-name">{name}</span>
-                      <span className="du-model-meta">{readyCatalog.filter((item) => item.family === name).length} {copy.models}</span>
+                      <span className="du-model-meta">{orderedCatalog.filter((item) => item.family === name).length} {copy.models}</span>
                     </span>
                     <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
                   </button>
                 ))}
-                {comingSoon.length ? (
-                  <>
-                    <p className="du-model-section">{t("comingSoonSection")}</p>
-                    {comingSoon.map(availableRow)}
-                  </>
-                ) : null}
               </>
             )}
           </div>
