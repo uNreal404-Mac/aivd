@@ -951,35 +951,52 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     return () => clearTimeout(timer);
   }, [edges, flow.viewportInitialized, hydrated, nodes, restoredView, saveLocalDraft, saveRemote, storedNow, title, userId, viewportRevision]);
 
-  // Leaving with unsaved changes: send them along with the page unload.
+  // Leaving with unsaved changes: send them along with page unload or in-app navigation.
+  const flushStateRef = useRef({ hydrated, restoredView, userId, saveLocalDraft, saveRemote, storedNow, canvasFetch });
+  flushStateRef.current = { hydrated, restoredView, userId, saveLocalDraft, saveRemote, storedNow, canvasFetch };
+  const flushUnsaved = useCallback((forUnload: boolean) => {
+    const state = flushStateRef.current;
+    if (!state.hydrated || !graphReady.current || state.restoredView) return;
+    if (!state.userId) {
+      state.saveLocalDraft();
+      return;
+    }
+    const id = canvasIdRef.current;
+    const graph = state.storedNow();
+    const name = titleRef.current.trim() || "Untitled";
+    if (!id) {
+      if (!forUnload && graph.nodes.length > 0) void state.saveRemote();
+      return;
+    }
+    if (conflict.current) return;
+    if (contentKey(graph, name) === lastSaved.current) return;
+    const body = JSON.stringify({ name, graph, baseRevision: revision.current });
+    if (forUnload && body.length > 60_000) return;
+    void state.canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      keepalive: body.length <= 60_000,
+      headers: { "content-type": "application/json" },
+      body,
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
-    const flush = () => {
-      if (!userId) {
-        saveLocalDraft();
-        return;
-      }
-      const id = canvasIdRef.current;
-      if (!id || conflict.current) return;
-      const graph = storedNow();
-      const name = titleRef.current.trim() || "Untitled";
-      if (contentKey(graph, name) === lastSaved.current) return;
-      const body = JSON.stringify({ name, graph, baseRevision: revision.current });
-      if (body.length > 60_000) return;
-      void canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "PUT", keepalive: true, headers: { "content-type": "application/json" }, body }).catch(() => {});
-    };
+    const onPageHide = () => flushUnsaved(true);
     // Hidden but still open: a normal save, whose answer updates the revision.
     const onHide = () => {
       if (document.visibilityState !== "hidden") return;
       if (!userId) saveLocalDraft();
       else if (canvasIdRef.current && contentKey(storedNow(), titleRef.current) !== lastSaved.current) void saveRemote();
     };
-    window.addEventListener("pagehide", flush);
+    window.addEventListener("pagehide", onPageHide);
     document.addEventListener("visibilitychange", onHide);
     return () => {
-      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [canvasFetch, saveLocalDraft, saveRemote, storedNow, userId]);
+  }, [flushUnsaved, saveLocalDraft, saveRemote, storedNow, userId]);
+
+  useEffect(() => () => flushUnsaved(false), [flushUnsaved]);
 
   // After signing in, pick up the URLs of assets in a draft made while signed out.
   useEffect(() => {
@@ -2334,6 +2351,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
               onNodeContextMenu={(event, node) => openContext(event, node.id)}
               onSelectionContextMenu={(event, picked) => openContext(event, picked[0]?.id)}
               onPaneContextMenu={(event) => openContext(event)}
+              nodeDragThreshold={3}
               onNodeDragStart={onNodeDragStart}
               onNodeDrag={showAlignment}
               selectNodesOnDrag={viewOptions.dragSelect}

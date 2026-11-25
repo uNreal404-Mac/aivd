@@ -316,4 +316,10 @@ describe("regenerateHref", () => {
   it("returns null without a prompt", () => {
     expect(regenerateHref({ ...base, prompt: "  " }, "video", "en")).toBeNull();
   });
+
+  it("returns null for video tool models so creations never fall back to create mode", () => {
+    expect(regenerateHref({ ...base, model: "kling-3.0-omni/transformation" }, "video", "zh")).toBeNull();
+    expect(regenerateHref({ ...base, model: "kling-3.0/motion-control" }, "video", "en")).toBeNull();
+    expect(regenerateHref({ ...base, model: "pixverse-v6/extend" }, "video", "en")).toBeNull();
+  });
 });

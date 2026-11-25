@@ -1,7 +1,8 @@
-import { MARKET_MODELS } from "@/ai/kie-market";
+import { EXTEND_MODEL_ID, MARKET_MODELS } from "@/ai/kie-market";
 import { IMAGE_CATALOG, VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import { localizedHref } from "@/lib/locale-path";
 import type { CreationMediaType, Video, VideoStatus } from "@/lib/types/dashboard";
+import { isMeasuredVideoTool } from "@/lib/video-tool";
 
 // ============================================
 // Types
@@ -171,6 +172,9 @@ export function regenerateHref(
   kind: CreationMediaType,
   locale: string,
 ): string | null {
+  if (video.model === EXTEND_MODEL_ID || (video.model && isMeasuredVideoTool(video.model))) {
+    return null;
+  }
   const prompt = video.prompt?.trim();
   if (!prompt) return null;
   const params = new URLSearchParams();

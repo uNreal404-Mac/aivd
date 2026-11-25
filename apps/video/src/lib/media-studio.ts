@@ -2,6 +2,7 @@
 
 // Client helpers shared by the image and audio studios: submit a market
 // generation, poll it to completion and load the user's recent results.
+import type { VoiceSettings } from "@/lib/audio-voice-settings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toMillis } from "@/lib/ai-video-studio";
 
@@ -31,7 +32,7 @@ export type SubmitBody = {
   instrumental?: boolean;
   customMode?: boolean;
   speed?: number;
-  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
+  voiceSettings?: VoiceSettings;
 };
 
 const POLL_MS = 3000;
@@ -232,6 +233,26 @@ export async function submitMedia(
     }
     const payload = await response.json().catch(() => null);
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
+    if (response.ok && payload?.success && payload?.data?.status === "FAILED") {
+      retry.forget();
+      const rawError = typeof payload?.data?.errorMessage === "string" ? payload.data.errorMessage : "";
+      const creditMatch = /\bInsufficient credits\.\s*Required:\s*(\d+)/i.exec(rawError);
+      if (creditMatch || /insufficient credits/i.test(rawError)) {
+        return {
+          ok: false,
+          code: "INSUFFICIENT_CREDITS",
+          message: errorMessage("INSUFFICIENT_CREDITS", rawError, zh),
+          requiredCredits: creditMatch ? Number(creditMatch[1]) : undefined,
+        };
+      }
+      return {
+        ok: false,
+        code: "GENERATION_FAILED",
+        message: zh
+          ? "上次提交未能完成，未扣除积分。参数已为你保留，可以直接重试。"
+          : "The previous submission did not complete and no credits were kept. Your inputs are still here so you can try again.",
+      };
+    }
     if (response.ok && typeof uuid === "string" && uuid && (payload?.success || response.status === 202)) {
       retry.forget();
       return { ok: true, uuid, credits: payload?.data?.creditsUsed ?? 0 };

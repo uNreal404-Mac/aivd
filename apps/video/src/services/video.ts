@@ -1,3 +1,4 @@
+import type { VoiceSettings } from "@/lib/audio-voice-settings";
 import { VideoStatus, db, mediaAssets, videos, type Video } from "@/db";
 import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -81,7 +82,7 @@ export interface GenerateMediaParams {
   instrumental?: boolean;
   customMode?: boolean;
   speed?: number;
-  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
+  voiceSettings?: VoiceSettings;
   idempotencyKey?: string;
   /** For tools that work on a video (extend): one of the user's own videos. */
   sourceVideoUuid?: string;
@@ -943,9 +944,10 @@ export class VideoService {
 
   private async resolveExtendSource(userId: string, sourceVideoUuid?: string, sourceVideoKey?:string) {
     if (sourceVideoKey) {
-      if (sourceVideoUuid) throw new ApiError("Choose one video to extend.",400,{code:"SOURCE_VIDEO_UNAVAILABLE"});
-      const {signedUrl}=await ownedExtendUpload(userId,sourceVideoKey);
-      return {uuid:undefined,signedUrl};
+      if (sourceVideoUuid)
+        throw new ApiError("Choose one video to extend.", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+      const { signedUrl } = await ownedExtendUpload(userId, sourceVideoKey);
+      return { uuid: undefined, signedUrl };
     }
     if (!sourceVideoUuid) {
       throw new ApiError("Choose a video to work on", 400, { code: "MISSING_SOURCE_VIDEO" });
@@ -1440,16 +1442,23 @@ export class VideoService {
   /**
    * Delete video (soft delete)
    */
-  async deleteVideo(uuid: string, userId: string): Promise<void> {
-    await db
-      .update(videos)
-      .set({ isDeleted: true, updatedAt: new Date() })
-      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)));
+  async deleteVideo(uuid: string, userId: string): Promise<string | null> {
+    const [row] = await db.update(videos)
+      .set({
+        isDeleted: true,
+        // A lost DELETE response can be retried without invalidating its undo.
+        deletionToken: sql`CASE WHEN ${videos.isDeleted} THEN ${videos.deletionToken} ELSE ${crypto.randomUUID()} END`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)))
+      .returning({ token: videos.deletionToken });
+    return row?.token ?? null;
   }
-  async restoreVideo(uuid: string, userId: string): Promise<boolean> {
+
+  async restoreVideo(uuid: string, userId: string, undoToken: string): Promise<boolean> {
     const [restored] = await db.update(videos)
       .set({ isDeleted: false })
-      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)))
+      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId), eq(videos.deletionToken, undoToken)))
       .returning({ uuid: videos.uuid });
     return Boolean(restored);
   }

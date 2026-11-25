@@ -72,7 +72,8 @@ export interface VideoResponse {
 }
 
 export interface DeleteVideoResponse {
-  success: boolean;
+  deleted: true;
+  undoToken: string;
 }
 
 export interface RetryVideoResponse {

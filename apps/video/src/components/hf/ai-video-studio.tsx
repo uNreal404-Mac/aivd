@@ -206,7 +206,8 @@ function AiVideoStudioForm({
       if (
         typeof saved.model !== "string" ||
         !availableModelIds.includes(saved.model) ||
-        !VIDEO_CATALOG.some((item) => item.id === saved.model)
+        !VIDEO_CATALOG.some((item) => item.id === saved.model) ||
+        (explicit.has("model") && saved.model !== initialCatalogModelId)
       )
         return;
       const restored = settingsFromSearchParams(saved);
@@ -321,8 +322,14 @@ function AiVideoStudioForm({
   const [extendSource, setExtendSource] = useState<ExtendSource | null>(null);
   const sourceSlot = `aivd:extend-source:${session?.user?.id ?? "guest"}`;
   const [sourceRestored, setSourceRestored] = useState(false);
+  const sourceDirty = useRef(false);
+  const changeExtendSource = (next: ExtendSource | null) => {
+    sourceDirty.current = true;
+    setExtendSource(next);
+  };
   useEffect(() => {
     let live = true;
+    sourceDirty.current = false;
     if (!session?.user?.id) return;
     const restore = async () => {
       try {
@@ -330,20 +337,46 @@ function AiVideoStudioForm({
         if (!raw) return;
         const saved = JSON.parse(raw);
         let url: string | null = null;
+        let definitivelyGone = false;
         if (typeof saved.sourceVideoKey === "string") {
-          const response=await fetch("/api/v1/video/tool-source",{
-            method:"POST",headers:{"Content-Type":"application/json","X-Media-Account":session.user.id},
-            body:JSON.stringify({model:"pixverse-v6/extend",sourceVideoKey:saved.sourceVideoKey}),
+          const response = await fetch("/api/v1/video/tool-source", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Media-Account": session.user.id },
+            body: JSON.stringify({ model: "pixverse-v6/extend", sourceVideoKey: saved.sourceVideoKey }),
           });
-          const payload=await response.json();
-          url=payload?.data?.preview;
+          if (response.status === 400 || response.status === 404) {
+            definitivelyGone = true;
+          } else if (response.ok) {
+            const payload = await response.json().catch(() => null);
+            url = typeof payload?.data?.preview === "string" ? payload.data.preview : null;
+          }
         } else if (typeof saved.videoUuid === "string" && /^[\w-]+$/.test(saved.videoUuid)) {
           const status = await fetchResultStatus(saved.videoUuid);
           if (status.ok && status.status === "completed") url = status.videoUrl ?? null;
+          else if (status.ok && status.status === "failed") definitivelyGone = true;
+        } else {
+          definitivelyGone = true;
         }
-        if (live && url) setExtendSource((current) => current ?? { ...saved, videoUrl: url });
+        if (!live) return;
+        if (definitivelyGone) {
+          sessionStorage.removeItem(sourceSlot);
+        } else if (url) {
+          setExtendSource((current) => current ?? { ...saved, videoUrl: url });
+        } else {
+          // Transient preview error: keep the exact source pointer so retry reuses the same key.
+          setExtendSource((current) => current ?? { ...saved, videoUrl: "" });
+        }
       } catch {
-        /* The original source can be chosen again. */
+        // Transient network/storage error: leave sessionStorage intact and preserve the saved pointer if parseable.
+        try {
+          const raw = sessionStorage.getItem(sourceSlot);
+          const saved = raw ? JSON.parse(raw) : null;
+          if (live && saved && (typeof saved.sourceVideoKey === "string" || typeof saved.videoUuid === "string")) {
+            setExtendSource((current) => current ?? { ...saved, videoUrl: "" });
+          }
+        } catch {
+          /* Keep stored source untouched. */
+        }
       } finally {
         if (live) setSourceRestored(true);
       }
@@ -356,8 +389,9 @@ function AiVideoStudioForm({
   useEffect(() => {
     if (!sourceRestored || !session?.user?.id) return;
     try {
-      if (!extendSource) sessionStorage.removeItem(sourceSlot);
-      else {
+      if (!extendSource) {
+        if (sourceDirty.current) sessionStorage.removeItem(sourceSlot);
+      } else {
         const { videoUrl: _preview, ...stable } = extendSource;
         sessionStorage.setItem(sourceSlot, JSON.stringify(stable));
       }
@@ -407,8 +441,10 @@ function AiVideoStudioForm({
   const check = canGenerate(settings, canUseGeneration);
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
+  const handoffChecked = useRef(false);
   useEffect(() => {
-    if (sessionLoading) return;
+    if (sessionLoading || !optionsReady || handoffChecked.current) return;
+    handoffChecked.current = true;
     const owner = sessionStorage.getItem("aivd:home-video-reference-owner");
     const references = sessionStorage.getItem("aivd:home-video-references");
     const rejectHandoff = () => {
@@ -477,7 +513,7 @@ function AiVideoStudioForm({
     sessionStorage.removeItem("aivd:home-start-image");
     sessionStorage.removeItem("aivd:home-start-image-name");
     sessionStorage.removeItem("aivd:home-start-image-preview");
-  }, [sessionLoading, session?.user?.id, initialKeyframes]);
+  }, [sessionLoading, session?.user?.id, initialKeyframes, optionsReady, catalogModelId]);
 
   useCreditReturnDraft(draftScope, () => ({ settings, catalogModelId, imageKey, fileName, preview, homeReferences, videoInput, keyframeMode, frames }), (saved) => {
     if (initialKeyframes && !saved.keyframeMode) return;
@@ -1017,22 +1053,36 @@ function AiVideoStudioForm({
       />
       <aside aria-label={copy.settings} className="vst-panel">
         <div className="vst-panel-head">
-          <div className="vtool-tabs" aria-label={isChinese ? "视频工作流" : "Video workflow"}>
-            {(["create","edit","motion"] as const).map(item=><button type="button" key={item} aria-pressed={tool===item} onClick={()=>chooseMode(item)}>
-              {item==="create" ? (isChinese ? "创建视频" : "Create video") : item==="edit" ? (isChinese ? "编辑视频" : "Edit video") : "Motion Control"}
-            </button>)}
+          <div className="vtool-tabs" role="group" aria-label={isChinese ? "视频工作流" : "Video workflow"}>
+            {([
+              ["create", isChinese ? "创建视频" : "Create video"],
+              ["edit", isChinese ? "编辑视频" : "Edit video"],
+              ["motion", "Motion Control"],
+            ] as const).map(([mode, label]) => (
+              <button type="button" key={mode} aria-pressed={tool === mode} onClick={() => chooseMode(mode)}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="vst-panel-scroll">
-          {(["edit","motion"] as const).filter(item=>visitedTools.includes(item)).map(item=>(
-            <div key={item} className="vtool-mode-pane" hidden={tool!==item}>
-              <VideoToolPanel kind={item} active={tool===item} locale={locale} owner={session?.user?.id} enabled={canUseGeneration} free={internalFree}
-                onExtend={()=>chooseMode("create",true)}
-                onStarted={(uuid,prompt)=>{
-                  if(!mounted.current)return;
-                  setResults(prev=>[{id:uuid,videoUuid:uuid,prompt,status:"queued",createdAt:Date.now()},...prev]);
-                  setActiveTab("History");clearFilters();
-                }}/>
+          {(["edit", "motion"] as const).filter((item) => visitedTools.includes(item)).map((item) => (
+            <div key={item} className="vtool-mode-pane" hidden={tool !== item}>
+              <VideoToolPanel
+                kind={item}
+                active={tool === item}
+                locale={locale}
+                owner={session?.user?.id}
+                enabled={canUseGeneration}
+                free={internalFree}
+                onExtend={() => chooseMode("create", true)}
+                onStarted={(uuid, prompt) => {
+                  if (!mounted.current) return;
+                  setResults((prev) => [{ id: uuid, videoUuid: uuid, prompt, status: "queued", createdAt: Date.now() }, ...prev]);
+                  setActiveTab("History");
+                  clearFilters();
+                }}
+              />
             </div>
           ))}
           <div className="vtool-create-body" hidden={tool !== "create"}>
@@ -1063,7 +1113,7 @@ function AiVideoStudioForm({
         </fieldset>
         <div className="vtool-extend-body" hidden={!extendMode}><ExtendPanel
           key={session?.user?.id ?? "guest"}
-          locale={locale} source={extendSource} onSource={setExtendSource} generationEnabled={canUseGeneration} freeGeneration={internalFree}
+          locale={locale} source={extendSource} onSource={changeExtendSource} generationEnabled={canUseGeneration} freeGeneration={internalFree}
           onStarted={job => {
             setResults(previous => [{ id: job.uuid, videoUuid: job.uuid, status: "queued", prompt: job.prompt, createdAt: Date.now() }, ...previous]);
             setActiveTab("History");
@@ -1315,7 +1365,7 @@ function AiVideoStudioForm({
                 const source = asExtendSource(result);
                 if (!source) return;
                 setPresetsOpen(false);
-                setExtendSource(source);
+                changeExtendSource(source);
                 chooseMode("create",true);
                 requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>(".xd-inline textarea")?.focus());
               }}

@@ -14,6 +14,7 @@ export async function readGenerationReplay(userId: string, key?: string) {
     provider: videos.provider,
     status: videos.status,
     creditsUsed: videos.creditsUsed,
+    errorMessage: videos.errorMessage,
   }).from(videos).where(and(eq(videos.userId, userId), eq(videos.idempotencyKey, key), eq(videos.isDeleted, false))).limit(1);
   return job ? { ...job, taskId: job.taskId ?? "" } : null;
 }

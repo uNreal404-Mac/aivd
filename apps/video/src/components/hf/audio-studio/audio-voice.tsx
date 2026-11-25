@@ -219,7 +219,7 @@ export function AudioVoicePicker({
           {zh ? "挑选音色" : "Choose a voice"}
         </h2>
         <p className="au-vpicker-sub">
-          {zh ? "点 ▶ 先听一听，再点卡片选用。生成时用这个声音朗读你的脚本。" : "Press ▶ to hear a voice, then press its card to use it for your script."}
+          {zh ? "点 ▶ 试听，点卡片选择。生成配音时会朗读你填写的台词。" : "Press ▶ to preview a voice, then select its card for your voiceover."}
         </p>
         <button type="button" className="au-vpicker-close" aria-label={zh ? "关闭" : "Close"} onClick={close}>
           <X className="h-4 w-4" aria-hidden="true" />

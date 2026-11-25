@@ -1,4 +1,4 @@
-import { elevenDialogueInput, elevenSpeechInput } from "@/lib/audio-voice-settings";
+import { elevenDialogueInput, elevenSpeechInput, type VoiceSettings } from "@/lib/audio-voice-settings";
 // KIE "market" models: one registry entry per model we sell beyond the two
 // legacy video models (Veo 3.1 and Wan 2.6, which keep their own mapping in
 // model-mapping.ts). Each entry says which KIE model to call, how to build its
@@ -38,7 +38,7 @@ export interface MarketRequest {
   customMode?: boolean;
   /** Speaking speed multiplier for TTS models that support it (0.7–1.2). */
   speed?: number;
-  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
+  voiceSettings?: VoiceSettings;
   /** Signed URL of a video to work on (video tools such as extend). */
   videoUrl?: string;
   orientation?: VideoToolOrientation;
@@ -659,11 +659,10 @@ export const EXTEND_MODEL_ID = "pixverse-v6/extend";
 // KIE public model-pricing/page (2026-11-25), transformation and motion control.
 const klingToolPrice = (req: MarketRequest) =>
   (req.resolution === "1080p" ? 0.151 : 0.1135) * (req.duration ?? 0);
-
 const TOOL_MODELS: MarketModel[] = [
   {
     id: VIDEO_EDIT_MODEL, name: "Kling 3.0 Omni Edit", kind: "video", tool: "edit",
-    options: { requiresVideo: true, resolutions: ["720p", "1080p"], minPromptLength: 1, maxPromptLength: 3072 },
+    options: { requiresVideo: true, resolutions: ["720p", "1080p"], durations: secondsBetween(3, 16), minPromptLength: 1, maxPromptLength: 3072 },
     costUsd: klingToolPrice,
     buildTask: req => ({ model: VIDEO_EDIT_MODEL, input: {
       prompt: req.prompt, video_urls: [req.videoUrl], resolution: req.resolution, aspect_ratio: "auto", audio: false,
@@ -671,7 +670,7 @@ const TOOL_MODELS: MarketModel[] = [
   },
   {
     id: VIDEO_MOTION_MODEL, name: "Kling 3.0 Motion Control", kind: "video", tool: "motion",
-    options: { requiresVideo: true, requiresImage: true, maxImages: 1, resolutions: ["720p", "1080p"], maxPromptLength: 2500 },
+    options: { requiresVideo: true, requiresImage: true, maxImages: 1, resolutions: ["720p", "1080p"], durations: secondsBetween(3, 30), maxPromptLength: 2500 },
     costUsd: klingToolPrice,
     buildTask: req => ({ model: VIDEO_MOTION_MODEL, input: {
       ...(req.prompt ? { prompt: req.prompt } : {}), video_urls: [req.videoUrl], input_urls: req.imageUrls,

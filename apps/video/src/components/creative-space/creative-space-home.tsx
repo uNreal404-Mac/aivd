@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AtSign, Bot, Film, Image as ImageIcon, ImagePlus, ListChecks, MessageSquareText, Sparkles, Wand2, type LucideIcon } from "lucide-react";
 
 import { estimateCredits } from "@/lib/ai-video-studio";
+import { useSession } from "@/lib/auth/client";
 import { CarouselArrows, MiniComposer } from "@/components/hf/home-showcase";
 import { useCarousel } from "@/components/hf/use-carousel";
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
@@ -27,30 +28,43 @@ type CreativeMode = "video" | "image" | "agent";
 
 export function CreativeSpaceHome({ lang, models }: { lang: string; models: Model[] }) {
   const zh = lang.toLowerCase().startsWith("zh");
+  const { data: session, isPending: sessionLoading } = useSession();
+  const accountScope = session?.user?.id ?? "guest";
+  const modeStorageKey = `aivd:creative-mode:${accountScope}`;
+  const briefStorageKey = `aivd:creative-agent-brief:${accountScope}`;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const categoryTrackRef = useRef<HTMLDivElement>(null);
   const categoryCarousel = useCarousel(categoryTrackRef);
   const [brief, setBrief] = useState("");
   const [mode, setMode] = useState<CreativeMode>("video");
   const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
-  const [draftReady, setDraftReady] = useState(false);
+  const [readyScope, setReadyScope] = useState<string | null>(null);
 
   useEffect(() => {
+    if (sessionLoading) return;
+    let nextMode: CreativeMode = "video";
+    let nextBrief = "";
     try {
-      const savedMode = localStorage.getItem("aivd:creative-mode");
-      if (savedMode === "video" || savedMode === "image" || savedMode === "agent") setMode(savedMode);
-      setBrief((localStorage.getItem("aivd:creative-agent-brief") ?? "").slice(0, 2000));
+      const savedMode = localStorage.getItem(modeStorageKey);
+      if (savedMode === "video" || savedMode === "image" || savedMode === "agent") nextMode = savedMode;
+      nextBrief = (localStorage.getItem(briefStorageKey) ?? "").slice(0, 2000);
+      // Drop unscoped legacy keys so one account's brief can never leak into another.
+      localStorage.removeItem("aivd:creative-agent-brief");
+      localStorage.removeItem("aivd:creative-mode");
     } catch { /* Storage can be unavailable in private browsing. */ }
-    setDraftReady(true);
-  }, []);
+    setMode(nextMode);
+    setBrief(nextBrief);
+    setReadyScope(accountScope);
+  }, [accountScope, briefStorageKey, modeStorageKey, sessionLoading]);
 
   useEffect(() => {
-    if (!draftReady) return;
+    if (sessionLoading || readyScope !== accountScope) return;
     try {
-      localStorage.setItem("aivd:creative-mode", mode);
-      localStorage.setItem("aivd:creative-agent-brief", brief);
+      localStorage.setItem(modeStorageKey, mode);
+      if (brief) localStorage.setItem(briefStorageKey, brief);
+      else localStorage.removeItem(briefStorageKey);
     } catch { /* The composer still works without local storage. */ }
-  }, [brief, draftReady, mode]);
+  }, [accountScope, brief, briefStorageKey, mode, modeStorageKey, readyScope, sessionLoading]);
 
   const canvasHref = (text?: string) =>
     localizedHref(lang, text ? `${CANVAS_PATH}?prompt=${encodeURIComponent(text)}` : CANVAS_PATH);

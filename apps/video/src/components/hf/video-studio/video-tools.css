@@ -6,6 +6,11 @@
 .vtool-extend-body[hidden] {
   display: none;
 }
+.vtool-mode-pane:not([hidden]),
+.vtool-create-body:not([hidden]),
+.vtool-extend-body:not([hidden]) {
+  animation: du-fade-in var(--m-instant) var(--m-ease-out);
+}
 .vtool-tabs {
   display: flex;
   width: 100%;
@@ -19,6 +24,7 @@
   min-height: 38px;
   color: var(--ds-text-3);
   border-bottom: 2px solid transparent;
+  transition: border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
   font-size: var(--ds-fs-sm);
 }
 .vtool-tabs button[aria-pressed="true"] {

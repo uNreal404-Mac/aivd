@@ -340,6 +340,23 @@ describe("video edit and motion end-to-end request contract", () => {
     ).toBe(200);
     expect((await getBalance(owner)).availableCredits).toBe(870);
   });
+  it("reports a replayed insufficient-credits failure as FAILED with its error message instead of starting a task", async () => {
+    const broke = uniqueUserId();
+    await giveCredits(broke, 10);
+    const clip = await upload(broke, mp4(5), "video/mp4");
+    auth.mockResolvedValue({ id: broke });
+    const body = { ...inputBody(), sourceVideoKey: clip };
+    const key = crypto.randomUUID();
+    const first = await submit(req(body, broke, key));
+    expect(first.status).toBe(402);
+    const replay = await submit(req(body, broke, key));
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({
+      success: true,
+      data: { status: "FAILED", errorMessage: expect.stringContaining("Insufficient credits. Required: 130") },
+    });
+    expect(kie).not.toHaveBeenCalled();
+  });
   it("finds a tail movie atom without downloading megabytes of media samples", async () => {
     const movie = mp4();
     const media = box("mdat", Buffer.alloc(2 * 1024 * 1024));

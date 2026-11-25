@@ -287,6 +287,7 @@ export const videos = sqliteTable(
     completedAt: timestamp("completed_at"),
     generationTime: integer("generation_time"),
     isDeleted: boolean("is_deleted").default(false).notNull(),
+    deletionToken: text("deletion_token"),
     visibility: text("visibility").default("private").notNull(),
     publishedAt: timestamp("published_at"),
     galleryTitle: text("gallery_title"),

@@ -12,7 +12,7 @@ export type GenerationAnswer =
 
 type Payload = {
   success?: boolean;
-  data?: { videoUuid?: string | null } | null;
+  data?: { videoUuid?: string | null; status?: string | null; errorMessage?: string | null } | null;
   error?: { message?: unknown; details?: { code?: unknown; requiredCredits?: unknown; videoUuid?: unknown } | null } | null;
 };
 
@@ -40,6 +40,19 @@ export async function postGeneration(
     return { kind: "lost" };
   }
   const uuid = payload?.data?.videoUuid ?? (typeof payload?.error?.details?.videoUuid === "string" ? payload.error.details.videoUuid : null);
+  if (payload?.success && payload?.data?.status === "FAILED") {
+    const rawError = typeof payload.data.errorMessage === "string" ? payload.data.errorMessage : "";
+    const creditMatch = /\bInsufficient credits\.\s*Required:\s*(\d+)/i.exec(rawError);
+    if (creditMatch || /insufficient credits/i.test(rawError)) {
+      return {
+        kind: "rejected",
+        code: "INSUFFICIENT_CREDITS",
+        message: rawError || "Insufficient credits",
+        ...(creditMatch ? { requiredCredits: Number(creditMatch[1]) } : {}),
+      };
+    }
+    return { kind: "rejected", code: "GENERATION_FAILED", message: rawError || "Generation failed" };
+  }
   if (payload?.success && uuid) return { kind: "ok", uuid };
   if (response.status === 202 && uuid) return { kind: "ok", uuid };
   const code = typeof payload?.error?.details?.code === "string" ? payload.error.details.code : undefined;

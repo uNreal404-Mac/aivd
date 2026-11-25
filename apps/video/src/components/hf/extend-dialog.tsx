@@ -20,7 +20,7 @@ import {
   extendPrice,
   submitExtend,
 } from "@/lib/video-extend";
-import { useCredits } from "@/stores/credits-store";
+import { useCreditsStore } from "@/stores/credits-store";
 import "./extend-dialog.css";
 
 /** A finished video of the visitor's that can be extended. */
@@ -69,8 +69,12 @@ export function ExtendDialog({
   const { data: session } = useSession();
   const signIn = useSigninModal();
   const shortfall = useCreditsShortfall(zh);
-  const { balance, invalidate, refetch } = useCredits();
-
+  const balance = useCreditsStore((state) => state.balance);
+  const invalidate = useCreditsStore((state) => state.invalidate);
+  const refetch = useCreditsStore((state) => state.fetchBalance);
+  useEffect(() => {
+    if (session?.user?.id) void refetch();
+  }, [session?.user?.id, refetch]);
   const slot = inline
     ? `aivd:extend-draft:${session?.user?.id ?? "guest"}:${source?.sourceVideoKey || source?.videoUuid || "pending"}`
     : "";
@@ -112,6 +116,8 @@ export function ExtendDialog({
   }, [slot, readySlot, prompt, duration, resolution, audio]);
 
   const choice = { prompt, duration, resolution, audio };
+  const latestPrompt = useRef(prompt);
+  latestPrompt.current = prompt;
   const free = freeGeneration ?? (process.env.NEXT_PUBLIC_IS_PREVIEW === "true" && session?.user?.isAdmin === true && session.user.isSuperAccount === true);
   const credits = free ? 0 : extendPrice({ duration, resolution, audio });
   const available = session && balance ? balance.availableCredits : null;
@@ -134,6 +140,8 @@ export function ExtendDialog({
       signIn.onOpen();
       return;
     }
+    const submittedPrompt = prompt;
+    const submittedDuration = duration;
     inFlight.current = true;
     setSubmitting(true);
     setNotice(null);
@@ -147,8 +155,9 @@ export function ExtendDialog({
       }
       invalidate();
       void refetch();
-      onStarted({ uuid: result.uuid, prompt: prompt.trim(), duration, credits });
-      if (slot) {
+      onStarted({ uuid: result.uuid, prompt: submittedPrompt.trim(), duration: submittedDuration, credits });
+      const promptUnchanged = latestPrompt.current === submittedPrompt;
+      if (slot && promptUnchanged) {
         try {
           sessionStorage.removeItem(slot);
           sessionStorage.removeItem(`aivd:extend-draft:${session.user.id}:pending`);
@@ -159,8 +168,7 @@ export function ExtendDialog({
         setDuration(5);
         setReadySlot(null);
       }
-
-      onClose();
+      if (!inline || promptUnchanged) onClose();
     } finally {
       inFlight.current = false;
       setSubmitting(false);
@@ -171,17 +179,24 @@ export function ExtendDialog({
     <>
         {source ? (
           <div className="xd-source">
-            <video
-              src={source.videoUrl}
-              muted
-              playsInline
-              preload="metadata"
-              // Show where it will continue from: the last frame.
-              onLoadedMetadata={(event) => {
-                const video = event.currentTarget;
-                if (Number.isFinite(video.duration) && video.duration > 0.2) video.currentTime = video.duration - 0.05;
-              }}
-            />
+            {source.videoUrl ? (
+              <video
+                src={source.videoUrl}
+                muted
+                playsInline
+                preload="metadata"
+                // Show where it will continue from: the last frame.
+                onLoadedMetadata={(event) => {
+                  const video = event.currentTarget;
+                  if (Number.isFinite(video.duration) && video.duration > 0.2) video.currentTime = video.duration - 0.05;
+                }}
+              />
+            ) : (
+              <div className="xd-source-fallback">
+                <Film aria-hidden="true" />
+                <span>{source.prompt || (zh ? "原视频已保留，预览暂时不可用" : "Original clip attached (preview temporarily unavailable)")}</span>
+              </div>
+            )}
             <span className="xd-source-tag">
               <FastForward aria-hidden="true" />
               {zh ? "从这里接着往下" : "Continues from here"}
@@ -201,6 +216,7 @@ export function ExtendDialog({
           <textarea
             ref={promptRef}
             value={prompt}
+            disabled={submitting}
             maxLength={EXTEND_MAX_PROMPT}
             rows={3}
             placeholder={zh ? "例如：镜头慢慢拉远，她转身走进雨里" : "e.g. The camera pulls back as she turns and walks into the rain"}
@@ -228,6 +244,7 @@ export function ExtendDialog({
               min={EXTEND_MIN_SECONDS}
               max={EXTEND_MAX_SECONDS}
               step={1}
+              disabled={submitting}
               value={duration}
               onChange={(event) => setDuration(Number(event.target.value))}
               aria-label={zh ? "续写时长（秒）" : "Seconds to add"}
@@ -236,6 +253,7 @@ export function ExtendDialog({
           <button
             type="button"
             className="xd-sound"
+            disabled={submitting}
             aria-pressed={audio}
             onClick={() => setAudio((value) => !value)}
           >
@@ -246,7 +264,7 @@ export function ExtendDialog({
 
         <div className="xd-field">
           <span className="xd-label">{zh ? "画质" : "Quality"}</span>
-          <QualityPicker zh={zh} value={resolution} onChange={setResolution} />
+          <QualityPicker zh={zh} value={resolution} disabled={submitting} onChange={setResolution} />
         </div>
 
         {notice ? (
@@ -301,7 +319,7 @@ export function ExtendDialog({
 
 /** Mounted with the dialog's content, so the sliding highlight measures the
  * buttons once they exist (the dialog renders its content only when open). */
-function QualityPicker({ zh, value, onChange }: { zh: boolean; value: string; onChange: (next: string) => void }) {
+function QualityPicker({ zh, value, disabled, onChange }: { zh: boolean; value: string; disabled?: boolean; onChange: (next: string) => void }) {
   const ref = useSegmentIndicator<HTMLDivElement>(value);
   return (
     <div ref={ref} className="xd-seg du-seg" aria-label={zh ? "画质" : "Quality"}>
@@ -309,6 +327,7 @@ function QualityPicker({ zh, value, onChange }: { zh: boolean; value: string; on
         <button
           key={item}
           type="button"
+          disabled={disabled}
           aria-pressed={value === item}
           className={value === item ? "xd-seg-on" : undefined}
           onClick={() => onChange(item)}

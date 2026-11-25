@@ -538,6 +538,9 @@
         "undoDelete": "Undo",
         "restored": "Restored to your creations",
         "restoreError": "Couldn’t restore this creation. Try again.",
+        "restoring": "Restoring creation…",
+        "deleting": "Deleting creation…",
+        "undoExpired": "This undo is no longer available.",
         "deleteSuccess": "Deleted",
         "deleteError": "Couldn't delete. Try again.",
         "retrySuccess": "Retry initiated",
@@ -589,7 +592,7 @@
       },
       "deleteConfirm": {
         "title": "Delete this creation?",
-        "message": "This can't be undone.",
+        "message": "Press again to confirm. Use Undo in the notification to restore it.",
         "confirm": "Delete",
         "cancel": "Cancel"
       },

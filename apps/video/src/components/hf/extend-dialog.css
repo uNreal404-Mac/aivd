@@ -37,6 +37,20 @@
   object-fit: contain;
 }
 
+.xd-source-fallback {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  text-align: center;
+}
+
 .xd-source-tag {
   position: absolute;
   right: 10px;

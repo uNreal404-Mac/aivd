@@ -2353,3 +2353,6 @@ button.au-row:active {
 .au-note { color: var(--ds-text-2); font-size: var(--ds-fs-xs); line-height: 1.5; }
 .au-manual-script { justify-self: start; color: var(--du-accent-text); font-size: var(--ds-fs-xs); }
 .au-note a { text-decoration: underline; }
+.au-clip-voice { display: flex; gap: 8px; align-items: center; padding-right: 12px; }
+.au-clip-voice label { flex: 1; min-width: 0; }
+.au-clip-preview { color: var(--du-accent-text); font-size: var(--ds-fs-xs); white-space: nowrap; }

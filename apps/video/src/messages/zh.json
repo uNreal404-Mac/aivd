@@ -538,6 +538,9 @@
         "undoDelete": "撤销",
         "restored": "作品已恢复",
         "restoreError": "恢复失败，请重试",
+        "restoring": "正在恢复作品…",
+        "deleting": "正在删除作品…",
+        "undoExpired": "这次撤销已失效",
         "deleteSuccess": "已删除",
         "deleteError": "删除失败，请重试",
         "retrySuccess": "已开始重试",
@@ -589,7 +592,7 @@
       },
       "deleteConfirm": {
         "title": "删除这个作品？",
-        "message": "删除后无法恢复。",
+        "message": "再次点击确认。删除后可在提示中撤销。",
         "confirm": "删除",
         "cancel": "取消"
       },

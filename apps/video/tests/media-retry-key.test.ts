@@ -164,6 +164,19 @@ describe("submitMedia idempotency key", () => {
     },
   );
 
+  it("treats a replayed FAILED job as an error and forgets the stale retry key", async () => {
+    const failedReplay = () =>
+      new Response(JSON.stringify({ success: true, data: { videoUuid: "u-failed", status: "FAILED", creditsUsed: 0, errorMessage: "Error: Insufficient credits. Required: 130, Available: 10" } }), { status: 200 });
+    const post = vi.fn().mockRejectedValueOnce(new TypeError("network")).mockResolvedValueOnce(failedReplay()).mockResolvedValueOnce(ok());
+    vi.stubGlobal("fetch", post);
+    expect((await submitMedia(body, true)).ok).toBe(false);
+    expect(await submitMedia(body, true)).toMatchObject({ ok: false, code: "INSUFFICIENT_CREDITS", requiredCredits: 130 });
+    expect(await submitMedia(body, true)).toMatchObject({ ok: true, uuid: "u1" });
+    const [first, second, third] = keysOf(post);
+    expect(second).toBe(first);
+    expect(third).not.toBe(first);
+  });
+
   it("does not POST without a confirmed account and a durably saved key", async () => {
     const post = vi.fn();
     vi.stubGlobal("fetch", post);

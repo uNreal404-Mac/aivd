@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ELEVENLABS_VOICES } from "@/ai/kie-market";
 import { type AudioShowcaseItem, VOICE_META } from "./audio-data";
 
-/**
- * Local auditions in the audio studio: a voice's character (browser speech)
- * and the showcase samples (browser speech for voices, a short synthesised
- * cue for music and sound effects). Nothing here calls the paid models.
- * Only one thing plays at a time; everything stops on unmount.
- */
+/** Public ElevenLabs samples and local system demonstrations are played only on request. */
 export function useAudioPreview(zh: boolean, onUnavailable: (message: string) => void) {
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const [playingDemoId, setPlayingDemoId] = useState<string | null>(null);
@@ -18,6 +14,7 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
   // Bumped per voice preview, so a cancelled one finishing late leaves the
   // newer preview's progress alone.
   const voiceRunRef = useRef(0);
+  const samplePlayer = useRef<HTMLAudioElement | null>(null);
 
   /*
    * How far a voice preview has got, drawn on every waveform marked
@@ -55,6 +52,15 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
   };
 
   const stopDemo = () => {
+    voiceRunRef.current++;
+    if (samplePlayer.current) {
+      const player = samplePlayer.current;
+      samplePlayer.current = null;
+      player.ontimeupdate = player.onended = player.onerror = null;
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
@@ -81,18 +87,32 @@ export function useAudioPreview(zh: boolean, onUnavailable: (message: string) =>
   useEffect(() => () => stopRef.current(), []);
 
   const auditionVoice = (voiceName: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      onUnavailable(zh ? "当前浏览器不支持本地试听，请直接选择音色生成。" : "Browser speech preview is unavailable here.");
+    if (typeof window === "undefined") return;
+    stopAll();
+    if (previewingVoice === voiceName) return;
+    const preset = ELEVENLABS_VOICES.find(voice => voice.name === voiceName);
+    if (preset) {
+      const player = new Audio(`https://static.aiquickdraw.com/elevenlabs/voice/${preset.id}.mp3`);
+      samplePlayer.current = player;
+      const failed = () => {
+        if (samplePlayer.current !== player) return;
+        stopAll();
+        onUnavailable(zh ? "音色样本暂时无法播放，请稍后重试。" : "The voice sample could not play. Try again in a moment.");
+      };
+      player.onended = () => { if (samplePlayer.current === player) stopAll(); };
+      player.onerror = failed;
+      player.ontimeupdate = () => {
+        if (player.duration > 0) paintProgress(voiceName, Math.min(1, player.currentTime / player.duration));
+      };
+      setPreviewingVoice(voiceName);
+      void player.play().catch(failed);
       return;
     }
-    stopDemo();
-    stopProgress();
-    voiceRunRef.current += 1;
-    window.speechSynthesis.cancel();
-    if (previewingVoice === voiceName) {
-      setPreviewingVoice(null);
+    if (!("speechSynthesis" in window)) {
+      onUnavailable(zh ? "此浏览器没有可试听的系统朗读音色。" : "A system voice preview is unavailable in this browser.");
       return;
     }
+    onUnavailable(zh ? "正在播放设备自带的朗读示范。生成配音时使用所选模型音色。" : "Playing a system voice demo. Generation uses the selected model voice.");
     const meta = VOICE_META[voiceName] ?? { gender: "F", tagZh: "", tagEn: "", pitch: 1, rate: 1 };
     const sample = zh
       ? `你好，我是 ${voiceName}，适合${meta.tagZh || "自然语音配音"}。`

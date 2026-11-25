@@ -5,11 +5,30 @@
 // ============================================
 
 import { useCallback, useEffect } from "react";
-import { useInfiniteQuery, useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type InfiniteData, useInfiniteQuery, useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { apiClient } from "@/lib/api/dashboard-client";
-import type { VideoFilterOptions } from "@/lib/types/dashboard";
+import { apiClient, DashboardRequestError } from "@/lib/api/dashboard-client";
+import type { ListVideosResponse, VideoFilterOptions } from "@/lib/types/dashboard";
+
+type DeleteTarget = { uuid: string; description: string; filter?: VideoFilterOptions };
+type RestoreTarget = DeleteTarget & { undoToken: string };
+type VideoPages = InfiniteData<ListVideosResponse>;
+
+// Sonner dismisses a toast after its action unless the event was prevented.
+// The request owns its next state, including an immediate failure or a retry.
+function creationAction(label: string, run: () => void) {
+  let started = false;
+  return {
+    label,
+    onClick(event: { preventDefault(): void }) {
+      event.preventDefault();
+      if (started) return;
+      started = true;
+      run();
+    },
+  };
+}
 
 const DELETE_MUTATION_KEY = ["videos", "delete"] as const;
 
@@ -48,82 +67,108 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
   const videos = data?.pages.flatMap((page) => page.videos) || [];
   const hasMore = hasNextPage || false;
 
+  function progress(target: DeleteTarget, message: string) {
+    toast.loading(message, {
+      id: `delete:${target.uuid}`,
+      description: target.description,
+      action: undefined,
+    });
+  }
   const restoreMutation = useMutation({
-    mutationFn: (uuid: string) => apiClient.restoreVideo(uuid),
-    onSuccess: (_result, uuid) => {
-      toast.success(t("actions.restored"), { id: `delete:${uuid}` });
+    mutationFn: (target: RestoreTarget) => apiClient.restoreVideo(target.uuid, target.undoToken),
+    onMutate: (target) => progress(target, t("actions.restoring")),
+    onSuccess: (_result, target) => {
+      toast.success(t("actions.restored"), {
+        id: `delete:${target.uuid}`,
+        description: target.description,
+        action: undefined,
+        duration: 4000,
+      });
       void queryClient.invalidateQueries({ queryKey: ["videos"] });
     },
-    onError: (_error, uuid) => {
-      toast.error(t("actions.restoreError"), {
-        id: `delete:${uuid}`,
-        action: { label: t("actions.retry"), onClick: () => restoreMutation.mutate(uuid) },
+    onError: (error, target) => {
+      const expired = error instanceof DashboardRequestError && error.status === 404;
+      toast.error(t(expired ? "actions.undoExpired" : "actions.restoreError"), {
+        id: `delete:${target.uuid}`,
+        description: target.description,
+        duration: expired ? 5000 : 10000,
+        action: expired
+          ? undefined
+          : creationAction(t("actions.retry"), () => restoreMutation.mutate(target)),
       });
+      if (expired) void queryClient.invalidateQueries({ queryKey: ["videos"] });
     },
   });
 
-  // 删除视频
   const deleteMutation = useMutation({
     mutationKey: DELETE_MUTATION_KEY,
-    mutationFn: async (uuid: string) => {
-      return apiClient.deleteVideo(uuid);
-    },
-    onMutate: async (uuid) => {
-      // A refresh already on its way (processing items poll every few
-      // seconds) would put the deleted item back, so it is called off first.
-      await queryClient.cancelQueries({ queryKey: ["videos", filter] });
-      // 乐观删除. Remember only this item and where it was: if the delete
-      // fails, it alone comes back (a whole-list snapshot would also bring back
-      // anything deleted successfully in the meantime).
-      const previous: any = queryClient.getQueryData(["videos", filter]);
-      let removed: { item: any; page: number; index: number } | null = null;
-      previous?.pages?.forEach((page: any, pageIndex: number) => {
-        const index = page.videos?.findIndex((v: any) => v.uuid === uuid) ?? -1;
-        if (index >= 0 && !removed) removed = { item: page.videos[index], page: pageIndex, index };
-      });
-      queryClient.setQueryData(
-        ["videos", filter],
-        (old: any) => {
-          if (!old) return old;
-          return {
+    mutationFn: (target: DeleteTarget) => apiClient.deleteVideo(target.uuid),
+    onMutate: async (target) => {
+      const key = ["videos", target.filter] as const;
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<VideoPages>(key);
+      const page =
+        previous?.pages.findIndex((p) => p.videos.some((v) => v.uuid === target.uuid)) ?? -1;
+      const index = previous?.pages[page]?.videos.findIndex((v) => v.uuid === target.uuid) ?? -1;
+      const item = previous?.pages[page]?.videos[index];
+      queryClient.setQueryData<VideoPages>(
+        key,
+        (old) =>
+          old && {
             ...old,
-            pages: old.pages.map((page: any) => ({
-              ...page,
-              videos: page.videos.filter((v: any) => v.uuid !== uuid),
+            pages: old.pages.map((p) => ({
+              ...p,
+              videos: p.videos.filter((v) => v.uuid !== target.uuid),
             })),
-          };
-        }
+          },
       );
-
-      return { removed };
+      return { key, item, page, index };
     },
-    onSuccess: (_data, uuid) => {
+    onSuccess: (receipt, target) => {
+      const undo =
+        receipt?.deleted === true && typeof receipt.undoToken === "string" && receipt.undoToken
+          ? creationAction(t("actions.undoDelete"), () =>
+              restoreMutation.mutate({ ...target, undoToken: receipt.undoToken }),
+            )
+          : undefined;
       toast.success(t("actions.deleteSuccess"), {
-        id: `delete:${uuid}`,
+        id: `delete:${target.uuid}`,
+        description: target.description,
         duration: 10000,
-        action: { label: t("actions.undoDelete"), onClick: () => restoreMutation.mutate(uuid) },
+        action: undo,
       });
+      void queryClient.invalidateQueries({ queryKey: ["videos"], refetchType: "none" });
     },
-    onError: (_error, uuid, context) => {
-      // 回滚: put back just this item, where it was.
-      const removed = context?.removed as { item: any; page: number; index: number } | null | undefined;
-      if (removed) {
-        queryClient.setQueryData(["videos", filter], (old: any) => {
-          if (!old?.pages?.[removed.page] || old.pages.some((page: any) => page.videos?.some((v: any) => v.uuid === uuid))) return old;
+    onError: (_error, target, context) => {
+      // Restore only this row, in the query that originally contained it.
+      // Switching media tabs during the request must not move it to another list.
+      if (context?.item) {
+        const { key, item, page, index } = context;
+        queryClient.setQueryData<VideoPages>(key, (old) => {
+          if (
+            !old?.pages[page] ||
+            old.pages.some((p) => p.videos.some((v) => v.uuid === target.uuid))
+          )
+            return old;
           return {
             ...old,
-            pages: old.pages.map((page: any, pageIndex: number) => {
-              if (pageIndex !== removed.page) return page;
-              const videos = [...page.videos];
-              videos.splice(Math.min(removed.index, videos.length), 0, removed.item);
-              return { ...page, videos };
+            pages: old.pages.map((p, i) => {
+              if (i !== page) return p;
+              const videos = [...p.videos];
+              videos.splice(Math.min(index, videos.length), 0, item);
+              return { ...p, videos };
             }),
           };
         });
       }
       toast.error(t("actions.deleteError"), {
-        id: `delete:${uuid}`,
-        action: { label: t("actions.retry"), onClick: () => deleteMutation.mutate(uuid) },
+        id: `delete:${target.uuid}`,
+        description: target.description,
+        duration: 10000,
+        action: creationAction(t("actions.retry"), () => {
+          progress(target, t("actions.deleting"));
+          deleteMutation.mutate(target);
+        }),
       });
     },
   });
@@ -131,7 +176,7 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
   // Only the items being deleted, so one deletion never dims the others.
   const deletingIds = useMutationState({
     filters: { mutationKey: DELETE_MUTATION_KEY, status: "pending" },
-    select: (mutation) => mutation.state.variables as string,
+    select: (mutation) => (mutation.state.variables as DeleteTarget).uuid,
   });
 
   // 重试失败视频
@@ -151,9 +196,13 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
   // 删除单个视频
   const deleteVideo = useCallback(
     async (uuid: string) => {
-      await deleteMutation.mutateAsync(uuid);
+      const item=videos.find(video=>video.uuid===uuid);
+      const name=item?.prompt?.trim() || item?.model || uuid;
+      const characters=Array.from(name);
+      const description=characters.length>72 ? characters.slice(0,71).join("")+"…" : name;
+      await deleteMutation.mutateAsync({uuid,description,filter});
     },
-    [deleteMutation]
+    [deleteMutation,videos,filter]
   );
 
   // 重试单个视频

@@ -23,6 +23,8 @@ import {
 import { CopyPromptButton } from "@/components/hf/studio-results";
 import { defaultExtendResolution, EXTEND_MAX_SECONDS, EXTEND_MIN_SECONDS } from "@/lib/video-extend";
 import { EXTEND_MODEL_ID } from "@/ai/kie-market";
+import { useSession } from "@/lib/auth/client";
+import { isMeasuredVideoTool, VIDEO_MOTION_MODEL, type VideoTool } from "@/lib/video-tool";
 import { ExtendDialog, type ExtendSource } from "@/components/hf/extend-dialog";
 import { toast } from "sonner";
 import { failureReason } from "@/lib/failure-reason";
@@ -392,12 +394,47 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   const closeDetail = useCallback(() => setActiveId(null), []);
   // 续写 opens over the page, so the detail (a modal <dialog>) closes first.
   const [extending, setExtending] = useState<ExtendSource | null>(null);
+  const { data: session } = useSession();
   const [loadingOriginal, setLoadingOriginal] = useState(false);
   const repeatRequest = useRef<AbortController | null>(null);
   useEffect(() => {
     setLoadingOriginal(false);
     return () => repeatRequest.current?.abort();
   }, [activeId]);
+  function repeatMeasuredTool(video: Video) {
+    const tool: VideoTool = video.model === VIDEO_MOTION_MODEL ? "motion" : "edit";
+    const owner = session?.user?.id;
+    const params = video.parameters ?? {};
+    const sourceVideoKey = typeof params.sourceVideoKey === "string" ? params.sourceVideoKey : undefined;
+    const sourceVideoUuid = typeof params.sourceVideoUuid === "string" ? params.sourceVideoUuid : undefined;
+    const characterKey = typeof params.characterKey === "string" ? params.characterKey : undefined;
+    const resolution = params.resolution ?? params.quality ?? video.resolution;
+    const source = sourceVideoKey
+      ? { sourceVideoKey, name: sourceVideoKey.split("/").pop() || (zh ? "原视频" : "Source video"), id: `upload:${sourceVideoKey}` }
+      : sourceVideoUuid
+        ? { sourceVideoUuid, name: zh ? "原视频" : "Source video", id: `work:${sourceVideoUuid}:0` }
+        : null;
+    const character = tool === "motion" && characterKey
+      ? { key: characterKey, name: characterKey.split("/").pop() || (zh ? "角色图" : "Character image"), id: characterKey }
+      : null;
+    if (owner) {
+      try {
+        sessionStorage.setItem(
+          `aivd:video-tool:${owner}:${tool}`,
+          JSON.stringify({
+            prompt: video.prompt ?? "",
+            quality: resolution === "1080p" ? "1080p" : "720p",
+            orientation: params.orientation === "image" ? "image" : "video",
+            source,
+            character,
+          }),
+        );
+      } catch {
+        /* Still open the requested video tool directly. */
+      }
+    }
+    window.location.assign(localizedHref(locale, `/ai/video?tool=${tool}`));
+  }
   async function repeatExtension(video: Video) {
     const original = video.parameters?.sourceVideoUuid;
     const upload = video.parameters?.sourceVideoKey;
@@ -416,27 +453,37 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
         });
         const payload = response.ok ? await response.json() : null;
         if (typeof payload?.data?.preview !== "string") throw new Error("Source unavailable");
-        selected = {videoUuid:"", sourceVideoKey:upload, videoUrl:payload.data.preview};
+        selected = { videoUuid: "", sourceVideoKey: upload, videoUrl: payload.data.preview };
       } else {
-        const response = await fetch(`/api/v1/video/${encodeURIComponent(String(original))}`, {cache:"no-store",signal:controller.signal});
-        const payload=response.ok ? await response.json() : null;
-        const source=payload?.success ? payload.data as Video : null;
-        const url=source && mediaUrl(source);
-        if(!source || !url || videoTag(source)!=="done")throw new Error("Source unavailable");
-        selected={videoUuid:source.uuid,videoUrl:url};
+        const response = await fetch(`/api/v1/video/${encodeURIComponent(String(original))}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = response.ok ? await response.json() : null;
+        const source = payload?.success ? (payload.data as Video) : null;
+        const url = source && mediaUrl(source);
+        if (!source || !url || videoTag(source) !== "done") throw new Error("Source unavailable");
+        selected = { videoUuid: source.uuid, videoUrl: url };
       }
-      const resolution = video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution;
+      const resolution =
+        video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution;
       setExtending({
         ...selected,
         repeat: {
-          prompt: video.prompt ?? "", duration: Math.min(EXTEND_MAX_SECONDS, Math.max(EXTEND_MIN_SECONDS, video.duration || 5)),
+          prompt: video.prompt ?? "",
+          duration: Math.min(EXTEND_MAX_SECONDS, Math.max(EXTEND_MIN_SECONDS, video.duration || 5)),
           resolution: defaultExtendResolution(typeof resolution === "string" ? resolution : null),
           audio: Boolean(video.parameters?.audio ?? video.parameters?.generateAudio),
         },
       });
       closeDetail();
     } catch {
-      if (!controller.signal.aborted) toast.error(zh ? "无法载入原视频，请确认它仍在我的作品中。" : "Could not load the original video. Check that it is still in your creations.");
+      if (!controller.signal.aborted)
+        toast.error(
+          zh
+            ? "无法载入原视频，请确认它仍在我的作品中。"
+            : "Could not load the original video. Check that it is still in your creations.",
+        );
     } finally {
       if (!controller.signal.aborted) setLoadingOriginal(false);
     }
@@ -827,6 +874,12 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 {shownVideo.model === EXTEND_MODEL_ID && !isPending(shownTag) && (typeof shownVideo.parameters?.sourceVideoUuid === "string" || typeof shownVideo.parameters?.sourceVideoKey === "string") ? (
                   <button type="button" className="cr-button cr-button--ghost" disabled={loadingOriginal} onClick={() => void repeatExtension(shownVideo)}>
                     <Sparkles aria-hidden="true" />{zh ? "重新续写" : "Repeat extension"}
+                  </button>
+                ) : null}
+                {shownVideo.model && isMeasuredVideoTool(shownVideo.model) && !isPending(shownTag) ? (
+                  <button type="button" className="cr-button cr-button--ghost" onClick={() => repeatMeasuredTool(shownVideo)}>
+                    <Sparkles aria-hidden="true" />
+                    {t("actions.regenerate")}
                   </button>
                 ) : null}
                 {againHref ? (

@@ -8,12 +8,14 @@ import { renderVoiceEffect, type VoiceEffect } from "@/lib/audio-effects";
 import { browserTranslator, decodeClip, MAX_CLIP_BYTES, runLanguageWorker } from "@/lib/audio-language";
 import { translationModel, WHISPER, modelWeightsCached } from "@/lib/audio-models";
 import {
+  cleanVoiceSettings,
   LANGUAGE_NAMES,
   submittedVoiceSettings,
   VOICE_LANGUAGES,
   type VoiceLanguage,
   type VoiceSettings,
 } from "@/lib/audio-voice-settings";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import type { SubmitBody } from "@/lib/media-studio";
 import { ElevenControls } from "./eleven-controls";
 import { AudioFillSlider } from "./audio-controls";
@@ -32,12 +34,26 @@ type Props = {
   active: boolean;
   zh: boolean;
   foot: HTMLDivElement | null;
+  draftScope: string;
   internalFree: boolean;
   submitting: boolean;
   onGenerate: (body: SubmitBody) => Promise<boolean>;
+  onAudition: (name: string) => void;
+  auditioning: string | null;
 };
 
-export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting, onGenerate }: Props) {
+export function AudioClipForm({
+  tool,
+  active,
+  zh,
+  foot,
+  draftScope,
+  internalFree,
+  submitting,
+  onGenerate,
+  onAudition,
+  auditioning,
+}: Props) {
   const translating = tool === "translate";
   const label = (cn: string, en: string) => (zh ? cn : en);
   const [file, setFile] = useState<File | null>(null);
@@ -62,6 +78,25 @@ export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting
   const form = useRef<HTMLFormElement>(null);
   const pending = useRef<AbortController | null>(null);
   const [clipUrl, setClipUrl] = useState("");
+
+  useCreditReturnDraft(
+    `${draftScope}:${tool}`,
+    () => ({ inputType, source, target, script, prepared, ready, effect, amount, voice, localEffect, advanced, voiceSettings }),
+    (saved) => {
+      if (saved.inputType === "clip" || saved.inputType === "script") setInputType(saved.inputType);
+      if (VOICE_LANGUAGES.includes(saved.source as VoiceLanguage)) setSource(saved.source as VoiceLanguage);
+      if (VOICE_LANGUAGES.includes(saved.target as VoiceLanguage)) setTarget(saved.target as VoiceLanguage);
+      if (typeof saved.script === "string") setScript(saved.script);
+      if (typeof saved.prepared === "string") setPrepared(saved.prepared);
+      if (typeof saved.ready === "boolean") setReady(saved.ready);
+      if (saved.effect === "broadcast" || saved.effect === "telephone" || saved.effect === "robot") setEffect(saved.effect);
+      if (typeof saved.amount === "number" && Number.isFinite(saved.amount)) setAmount(Math.max(0, Math.min(1, saved.amount)));
+      if (typeof saved.voice === "string" && ELEVENLABS_VOICES.some((item) => item.id === saved.voice)) setVoice(saved.voice);
+      if (typeof saved.localEffect === "boolean") setLocalEffect(saved.localEffect);
+      if (typeof saved.advanced === "boolean") setAdvanced(saved.advanced);
+      setVoiceSettings(cleanVoiceSettings(saved.voiceSettings));
+    },
+  );
 
   useEffect(() => {
     if (!active) {
@@ -125,6 +160,8 @@ export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting
     setFile(next);
   };
   const model = translating ? translateModel : voiceModel;
+  const voiceName =
+    ELEVENLABS_VOICES.find((preset) => preset.id === voice)?.name ?? ELEVENLABS_VOICES[0].name;
   const request: SubmitBody = {
     model: model.id,
     prompt: prepared.trim(),
@@ -286,7 +323,7 @@ export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting
     cta =
       inputType === "clip"
         ? label("识别并翻译", "Transcribe and translate")
-        : label("翻译脚本", "Translate script");
+        : label("翻译原文", "Translate text");
   }
   const id = `audio-form-${tool}`;
   const button = (
@@ -350,16 +387,28 @@ export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting
           </label>
         )}
         {!changeOnly ? (
-          <label className="au-card au-effect-choice">
-            {label("配音音色", "Voice")}
-            <select value={voice} onChange={(e) => setVoice(e.target.value)}>
-              {ELEVENLABS_VOICES.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="au-card au-clip-voice">
+            <label className="au-effect-choice">
+              {label("配音音色", "Voice")}
+              <select value={voice} onChange={(e) => setVoice(e.target.value)}>
+                {ELEVENLABS_VOICES.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="au-clip-preview"
+              aria-pressed={auditioning === voiceName}
+              onClick={() => onAudition(voiceName)}
+            >
+              {auditioning === voiceName
+                ? label("停止试听", "Stop preview")
+                : label("试听音色", "Preview voice")}
+            </button>
+          </div>
         ) : (
           <label className="au-card au-effect-choice">
             {label("本机变声效果", "On-device effect")}
@@ -425,7 +474,7 @@ export function AudioClipForm({ tool, active, zh, foot, internalFree, submitting
           </div>
         ) : (
           <label className="au-card au-script">
-            {label("原文脚本", "Source script")}
+            {label("原文", "Source text")}
             <textarea
               value={script}
               maxLength={5000}

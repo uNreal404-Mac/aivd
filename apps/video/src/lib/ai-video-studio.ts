@@ -349,6 +349,8 @@ type GenerateResponsePayload = {
   data?: {
     videoUuid?: string | null;
     taskId?: string | null;
+    status?: string | null;
+    errorMessage?: string | null;
   } | null;
   error?: {
     message?: string;
@@ -417,6 +419,23 @@ export async function submitGeneration(
     return { ok: false, message: "No response yet. Retry the same request.", code: "NETWORK" };
   }
   if (payload?.success) {
+    if (payload.data?.status === "FAILED") {
+      const rawError = typeof payload.data.errorMessage === "string" ? payload.data.errorMessage : "";
+      const creditMatch = /\bInsufficient credits\.\s*Required:\s*(\d+)/i.exec(rawError);
+      if (creditMatch || /insufficient credits/i.test(rawError)) {
+        return {
+          ok: false,
+          message: rawError || "Insufficient credits.",
+          code: "INSUFFICIENT_CREDITS",
+          requiredCredits: creditMatch ? Number(creditMatch[1]) : undefined,
+        };
+      }
+      return {
+        ok: false,
+        message: "The previous submission failed and no credits were kept. Try again.",
+        code: "GENERATION_FAILED",
+      };
+    }
     return {
       ok: true,
       videoUuid: payload.data?.videoUuid ?? null,

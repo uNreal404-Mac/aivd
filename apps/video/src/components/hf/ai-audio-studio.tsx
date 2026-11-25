@@ -210,8 +210,10 @@ function AiAudioStudioForm({
   useEffect(() => {
     if (jobs.length > 0 && !tabChosen.current) setTabState("history");
   }, [jobs.length]);
-  useCreditReturnDraft(draftScope, () => ({ mode, modelId, voice, script, detail, tab, speed, voiceSettings, instrumental, customMode }), (saved) => {
+  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change" || initialVoiceMode === "change-voice" ? "change-voice" : initialVoiceMode === "translate" ? "translate" : null);
+  useCreditReturnDraft(draftScope, () => ({ mode, localTool, modelId, voice, script, detail, tab, speed, voiceSettings, instrumental, customMode }), (saved) => {
     if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
+    if (saved.localTool === "change-voice" || saved.localTool === "translate" || saved.localTool === null) setLocalTool(saved.localTool);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
     const savedModel = getMarketModel(saved.modelId);
     const savedVoices = savedModel?.options.voices ?? [];
@@ -238,7 +240,6 @@ function AiAudioStudioForm({
   useEffect(() => {
     if (advancedOpen) advancedRef.current?.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [advancedOpen]);
-  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change" || initialVoiceMode === "change-voice" ? "change-voice" : initialVoiceMode === "translate" ? "translate" : null);
   const modesRef = useSegmentIndicator<HTMLDivElement>(localTool ?? mode);
 
   const modeModels = MODE_MODELS[mode]
@@ -276,6 +277,7 @@ function AiAudioStudioForm({
   };
 
   const chooseMode = (next: Mode) => {
+    preview.stopAll();
     setLocalTool(null);
     setMode(next);
     setNotice(null);
@@ -317,7 +319,7 @@ function AiAudioStudioForm({
     ? {
         modes: { tts: "文本转语音", music: "音乐与音效" } as Record<Mode, string>,
         optional: "可选",
-        script: isSunoMusic ? (customMode ? "歌词" : "歌曲描述") : isSunoSounds ? "音效描述" : "脚本",
+        script: isSunoMusic ? (customMode ? "歌词" : "歌曲描述") : isSunoSounds ? "音效描述" : "配音台词",
         scriptInfo: isSunoMusic
           ? customMode
             ? "这里的文字会按歌词来唱，可用 [Verse] / [Chorus] 标出段落。"
@@ -349,7 +351,7 @@ function AiAudioStudioForm({
         instrumentalHint: "只要伴奏，不唱歌词",
         customMode: "自定义歌词",
         customModeHint: "脚本框里的文字按歌词来唱",
-        generate: "生成",
+        generate: isSunoMusic ? "生成音乐" : isSunoSounds ? "生成音效" : "生成配音",
         submitting: "提交中…",
         models: mode === "music" ? "音乐与音效模型" : "语音模型",
         voices: "音色",
@@ -357,7 +359,7 @@ function AiAudioStudioForm({
     : {
         modes: { tts: "Text to speech", music: "Music & SFX" } as Record<Mode, string>,
         optional: "Optional",
-        script: isSunoMusic ? (customMode ? "Lyrics" : "Song description") : isSunoSounds ? "Sound description" : "Script",
+        script: isSunoMusic ? (customMode ? "Lyrics" : "Song description") : isSunoSounds ? "Sound description" : "Voiceover text",
         scriptInfo: isSunoMusic
           ? customMode
             ? "This text is sung as lyrics; mark parts with [Verse] / [Chorus]."
@@ -389,7 +391,7 @@ function AiAudioStudioForm({
         instrumentalHint: "Backing track only, no vocals",
         customMode: "Custom lyrics",
         customModeHint: "The script box is sung as lyrics",
-        generate: "Generate",
+        generate: isSunoMusic ? "Generate music" : isSunoSounds ? "Generate sound effect" : "Generate voiceover",
         submitting: "Submitting…",
         models: mode === "music" ? "Music & SFX models" : "Speech models",
         voices: "Voices",
@@ -522,7 +524,11 @@ function AiAudioStudioForm({
           </div>
 
           {(["change-voice", "translate"] as const).map(tool => <div key={tool} hidden={localTool !== tool}>
-            <AudioClipForm tool={tool} active={localTool === tool} zh={zh} foot={foot} internalFree={internalFree} submitting={submitting} onGenerate={submitTrack} />
+            <AudioClipForm
+              tool={tool} active={localTool === tool} zh={zh} foot={foot} draftScope={draftScope}
+              internalFree={internalFree} submitting={submitting} onGenerate={submitTrack}
+              onAudition={preview.auditionVoice} auditioning={preview.previewingVoice}
+            />
           </div>)}
           {!localTool ? <div className="au-fields">
             {voices.length > 0 && currentVoice ? (

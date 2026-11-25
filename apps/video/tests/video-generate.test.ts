@@ -443,11 +443,17 @@ describe("videoService.generate / creditService integration", () => {
     expect(stillThere).not.toBeNull();
     expect(stillThere?.uuid).toBe(uuidA);
 
-    await videoService.deleteVideo(uuidA, userA);
-    expect(await videoService.restoreVideo(uuidA, userB)).toBe(false);
+    const undo = (await videoService.deleteVideo(uuidA, userA))!;
+    expect(await videoService.deleteVideo(uuidA, userA)).toBe(undo);
+    expect(await videoService.restoreVideo(uuidA, userB, undo)).toBe(false);
     expect(await videoService.getVideo(uuidA, userA)).toBeNull();
-    expect(await videoService.restoreVideo(uuidA, userA)).toBe(true);
-    expect(await videoService.restoreVideo(uuidA, userA)).toBe(true);
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(true);
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(true);
+    const nextUndo = (await videoService.deleteVideo(uuidA, userA))!;
+    expect(nextUndo).not.toBe(undo);
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(false);
+    expect(await videoService.getVideo(uuidA, userA)).toBeNull();
+    expect(await videoService.restoreVideo(uuidA, userA, nextUndo)).toBe(true);
     expect((await videoService.listVideos(userA)).videos.some((item) => item.uuid === uuidA)).toBe(true);
   });
 

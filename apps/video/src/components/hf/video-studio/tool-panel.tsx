@@ -15,7 +15,7 @@ import {
   type VideoToolOrientation,
   type VideoToolSource,
 } from "@/lib/video-tool";
-import { useCredits } from "@/stores/credits-store";
+import { useCreditsStore } from "@/stores/credits-store";
 
 type Source = VideoToolSource & { name: string; id: string };
 type Character = { key: string; name: string; id: string };
@@ -97,7 +97,8 @@ export function VideoToolPanel({
     model = videoToolModel(kind);
   const label = (cn: string, en: string) => (zh ? cn : en);
   const login = useSigninModal();
-  const { invalidate, refetch } = useCredits();
+  const invalidate = useCreditsStore((state) => state.invalidate);
+  const refetch = useCreditsStore((state) => state.fetchBalance);
   const slot = `aivd:video-tool:${owner ?? "guest"}:${kind}`;
   const [draft, setDraft] = useState<Draft>(blank);
   const [loaded, setLoaded] = useState(false);
