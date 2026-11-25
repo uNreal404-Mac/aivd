@@ -1,5 +1,58 @@
 import { isOwnUploadKey } from "@/lib/image-url-allowlist";
 
+const SUBMITTED_DRAFT_KEY = "aivd:home-submitted-draft";
+
+type HomeGenerationHandoff = {
+  token: string;
+  kind: "video" | "image";
+  owner: string;
+  base: string;
+  draftKey: string;
+  prompt: string;
+  draftSnapshots?: string[];
+};
+
+/** Remember which homepage draft was sent to a studio without clearing it yet. */
+export function rememberHomeGenerationDraft(
+  storage: Pick<Storage, "setItem">,
+  handoff: Omit<HomeGenerationHandoff, "draftSnapshots">,
+  draftStores: Pick<Storage, "getItem">[],
+) {
+  const draftSnapshots = draftStores.flatMap((store) => {
+    try { return store.getItem(handoff.draftKey) ?? []; }
+    catch { return []; }
+  });
+  storage.setItem(SUBMITTED_DRAFT_KEY, JSON.stringify({ ...handoff, draftSnapshots }));
+}
+
+/** Clear only the submitted text after the studio has accepted the generation. */
+export function clearSubmittedHomePrompt(
+  handoffStorage: Pick<Storage, "getItem" | "removeItem">,
+  draftStores: Pick<Storage, "getItem" | "setItem">[],
+  submitted: Pick<HomeGenerationHandoff, "token" | "kind" | "owner" | "prompt">,
+) {
+  let handoff: HomeGenerationHandoff;
+  try { handoff = JSON.parse(handoffStorage.getItem(SUBMITTED_DRAFT_KEY) || "null"); }
+  catch { return false; }
+  if (!handoff || handoff.token !== submitted.token || handoff.kind !== submitted.kind ||
+      handoff.owner !== submitted.owner || handoff.prompt.trim() !== submitted.prompt.trim() ||
+      handoff.draftKey !== homeDraftKey(handoff.base, handoff.owner)) return false;
+  try { handoffStorage.removeItem(SUBMITTED_DRAFT_KEY); } catch { /* Optional draft storage. */ }
+  let cleared = false;
+  for (const storage of draftStores) {
+    try {
+      const raw = storage.getItem(handoff.draftKey);
+      if (!raw) continue;
+      const saved = JSON.parse(raw);
+      if (!saved || saved.owner !== handoff.owner ||
+          (saved.prompt?.trim() !== handoff.prompt.trim() && !handoff.draftSnapshots?.includes(raw))) continue;
+      storage.setItem(handoff.draftKey, JSON.stringify({ ...saved, prompt: "", replaced: null }));
+      cleared = true;
+    } catch { /* A blocked or malformed draft should not affect generation. */ }
+  }
+  return cleared;
+}
+
 /** Guest work can be resumed after sign-in. Each account keeps its own private draft. */
 export function homeDraftKey(base: string, owner?: string) {
   return owner ? `${base}:account:${owner}` : `${base}:guest`;

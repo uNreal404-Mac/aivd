@@ -7,6 +7,7 @@ import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { imageOutputCount } from "@/lib/image-output-count";
 import { currentUploadUrls } from "@/lib/home-media-library";
+import { clearSubmittedHomePrompt } from "@/lib/home-draft";
 import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
@@ -306,6 +307,15 @@ function AiImageStudioForm({
       return;
     }
     add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, parameters: { ...request, prompt: undefined }, createdAt: Date.now() });
+    if (homeHandoffToken && session?.user?.id) {
+      try {
+        clearSubmittedHomePrompt(sessionStorage, [localStorage, sessionStorage], {
+          token: homeHandoffToken, kind: "image", owner: session.user.id, prompt: prompt.trim(),
+        });
+      } catch { /* Draft storage is optional. */ }
+    }
+    // Keep any new text the user typed while the request was in flight.
+    if (promptRef.current?.value === prompt) draft.discard();
   };
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 

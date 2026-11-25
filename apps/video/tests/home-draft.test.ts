@@ -1,12 +1,53 @@
 import { describe, expect, it } from "vitest";
-import { findHomeDraft, homeDraftKey } from "@/lib/home-draft";
+import { clearSubmittedHomePrompt, findHomeDraft, homeDraftKey, rememberHomeGenerationDraft } from "@/lib/home-draft";
 
 const base = "aivd:home-draft";
 const store = (entries: Record<string, unknown>) => ({
   getItem(key: string) { return Object.hasOwn(entries, key) ? JSON.stringify(entries[key]) : null; },
 });
+const mutableStore = () => {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+    removeItem: (key: string) => { values.delete(key); },
+  };
+};
 
 describe("homepage draft ownership", () => {
+  it("clears only the submitted homepage prompt after a matching generation succeeds", () => {
+    const local = mutableStore();
+    const tab = mutableStore();
+    const draftKey = homeDraftKey(base, "mary");
+    local.setItem(draftKey, JSON.stringify({ owner: "mary", prompt: "A dragon", replaced: { prompt: "Old idea" }, imageModelId: "model", referenceImages: [{ id: "ref" }] }));
+    rememberHomeGenerationDraft(tab, { token: "job-1", kind: "image", owner: "mary", base, draftKey, prompt: "A dragon" }, [local, tab]);
+
+    expect(clearSubmittedHomePrompt(tab, [local, tab], { token: "job-1", kind: "image", owner: "luis", prompt: "A dragon" })).toBe(false);
+    expect(JSON.parse(local.getItem(draftKey)!).prompt).toBe("A dragon");
+    expect(clearSubmittedHomePrompt(tab, [local, tab], { token: "job-1", kind: "image", owner: "mary", prompt: "A dragon" })).toBe(true);
+    expect(JSON.parse(local.getItem(draftKey)!)).toMatchObject({ prompt: "", replaced: null, imageModelId: "model", referenceImages: [{ id: "ref" }] });
+  });
+
+  it("preserves a homepage draft that changed after the handoff", () => {
+    const local = mutableStore();
+    const tab = mutableStore();
+    const draftKey = homeDraftKey(base, "mary");
+    local.setItem(draftKey, JSON.stringify({ owner: "mary", prompt: "A dragon" }));
+    rememberHomeGenerationDraft(tab, { token: "job-2", kind: "video", owner: "mary", base, draftKey, prompt: "A dragon" }, [local, tab]);
+    local.setItem(draftKey, JSON.stringify({ owner: "mary", prompt: "A new idea" }));
+    expect(clearSubmittedHomePrompt(tab, [local, tab], { token: "job-2", kind: "video", owner: "mary", prompt: "A dragon" })).toBe(false);
+    expect(JSON.parse(local.getItem(draftKey)!).prompt).toBe("A new idea");
+  });
+
+  it("also clears a stale draft snapshot when the last keystroke was not saved before navigation", () => {
+    const local = mutableStore();
+    const tab = mutableStore();
+    const draftKey = homeDraftKey(base, "mary");
+    local.setItem(draftKey, JSON.stringify({ owner: "mary", prompt: "Almost a dragon" }));
+    rememberHomeGenerationDraft(tab, { token: "job-3", kind: "video", owner: "mary", base, draftKey, prompt: "A dragon" }, [local, tab]);
+    expect(clearSubmittedHomePrompt(tab, [local, tab], { token: "job-3", kind: "video", owner: "mary", prompt: "A dragon" })).toBe(true);
+    expect(JSON.parse(local.getItem(draftKey)!).prompt).toBe("");
+  });
   it("restores signed results only from the same account's own draft", () => {
     const result = { key: "https://assets.test/signed/result", url: "https://assets.test/signed/result" };
     const data = store({ [homeDraftKey(base, "mary")]: { owner: "mary", referenceImages: [result] }, [base]: { referenceImages: [result] } });

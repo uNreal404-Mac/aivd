@@ -6,6 +6,7 @@ import { localizedHref } from "@/lib/locale-path";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
+import { clearSubmittedHomePrompt } from "@/lib/home-draft";
 import { uploadErrorText } from "@/lib/image-to-video";
 import { AUTOSTART_STORAGE_KEY, claimAutostart } from "@/lib/autostart";
 import { KLING_KEYFRAME_MODEL, maxKlingFrames } from "@/lib/kling-keyframes";
@@ -798,7 +799,17 @@ function AiVideoStudioForm({
         ...previous,
       ]);
       setNotice(null);
+      if (homeHandoffToken && session?.user?.id) {
+        try {
+          clearSubmittedHomePrompt(sessionStorage, [localStorage, sessionStorage], {
+            token: homeHandoffToken, kind: "video", owner: session.user.id, prompt: settings.prompt.trim(),
+          });
+        } catch { /* Draft storage is optional. */ }
+      }
       const live = currentDraft.current;
+      // Other settings may have changed while the request was running; clear
+      // the submitted prompt unless the user has already started a new one.
+      if (live.settings.prompt === settings.prompt) draft.discard();
       if (
         live.settings === settings &&
         live.frames === frames &&
@@ -806,7 +817,6 @@ function AiVideoStudioForm({
         live.imageKey === imageKey &&
         live.catalogModelId === catalogModelId
       ) {
-        draft.discard();
         clearSelectedMedia();
         if (keyframeMode) {
           setFrames({});

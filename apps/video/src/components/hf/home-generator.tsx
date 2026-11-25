@@ -9,7 +9,7 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { WAN_REFERENCE_MAX_FILES } from "@/lib/wan-video-references";
 import { listGuestAssets, readyPickerVideo, type PickerAsset } from "@/lib/home-media-library";
-import { findHomeDraft, homeDraftKey, homeDraftReferences } from "@/lib/home-draft";
+import { findHomeDraft, homeDraftKey, homeDraftReferences, rememberHomeGenerationDraft } from "@/lib/home-draft";
 import { HomeKeyframes } from "./home-keyframes";
 import { prepareHomeKeyframes, remapHomeKeyframeMentions } from "@/lib/home-keyframes";
 import { KLING_KEYFRAME_MODEL, KLING_MAX_MIDDLE_FRAMES, mapKlingFrames, orderedKlingFrames, maxKlingFrames, type KlingKeyframes } from "@/lib/kling-keyframes";
@@ -472,6 +472,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         const handoff = crypto.randomUUID();
         sessionStorage.setItem("aivd:home-image-handoff", handoff);
         params.set("handoff", handoff);
+        rememberHomeGenerationDraft(sessionStorage, { token: handoff, kind: "image", owner: session.user.id, base: draftStorageKey, draftKey: scopedDraftKey, prompt: prompt.trim() }, [localStorage, sessionStorage]);
         router.push(`${localizedHref(lang, "/ai/image")}?${params}`);
       } catch { setNotice(zh ? "准备参考图片失败，请重试。" : "Could not prepare the reference images."); setSubmitting(false); }
       return;
@@ -563,6 +564,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       const token = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       sessionStorage.setItem(AUTOSTART_STORAGE_KEY, JSON.stringify({ token, at: Date.now() }));
       params.set("autostart", token);
+      rememberHomeGenerationDraft(sessionStorage, { token, kind: "video", owner: session.user.id, base: draftStorageKey, draftKey: scopedDraftKey, prompt: prompt.trim() }, [localStorage, sessionStorage]);
       // Leave the button in its loading state; the studio page replaces this one.
       router.push(`${localizedHref(lang, "/ai/video")}?${params}`);
     } catch {
