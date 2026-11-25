@@ -1,5 +1,5 @@
 import { VideoStatus, db, mediaAssets, videos } from "@/db";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   getStorage,
@@ -43,7 +43,12 @@ export interface GenerateVideoParams {
   outputNumber?: number;
   generateAudio?: boolean;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
 }
+
+/** KIE takes at most 50 MB of video for PixVerse extend (kie.ai/pixverse-v6). */
+export const MAX_SOURCE_VIDEO_BYTES = 50 * 1024 * 1024;
 
 export interface GenerateMediaParams {
   userId: string;
@@ -62,6 +67,8 @@ export interface GenerateMediaParams {
   customMode?: boolean;
   speed?: number;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
 }
 
 export interface VideoGenerationResult {
@@ -71,6 +78,13 @@ export interface VideoGenerationResult {
   status: string;
   estimatedTime?: number;
   creditsUsed: number;
+}
+
+/** A seed in KIE's range (0 to 2^31 - 1). */
+function randomSeed(): number {
+  const value = new Uint32Array(1);
+  crypto.getRandomValues(value);
+  return value[0] % 2147483648;
 }
 
 /** File extension from a provider URL, falling back when it has none. */
@@ -159,10 +173,22 @@ export class VideoService {
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
     const videoKeys = params.videoKeys ?? [];
-    if (videoKeys.length && (params.model !== "wan2.6" || params.mode !== "reference-to-video" ||
-        params.imageUrl || params.imageUrls?.length || videoKeys.length > WAN_REFERENCE_MAX_FILES ||
-        videoKeys.some((key) => !key.startsWith(`uploads/${params.userId}/`)) || new Set(videoKeys).size !== videoKeys.length)) {
-      throw new ApiError("Use up to three of your uploaded videos with Wan 2.6.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+    if (videoKeys.length) {
+      const invalidSelection =
+        params.model !== "wan2.6" ||
+        params.mode !== "reference-to-video" ||
+        params.imageUrl || params.imageUrls?.length ||
+        videoKeys.length > WAN_REFERENCE_MAX_FILES ||
+        new Set(videoKeys).size !== videoKeys.length ||
+        videoKeys.some((key) => !key.startsWith(`uploads/${params.userId}/`));
+      if (invalidSelection) {
+        throw new ApiError("Use up to three of your uploaded videos with Wan 2.6.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+      }
+      if ((params.duration !== undefined && ![5, 10, 15].includes(params.duration)) ||
+          (params.quality !== undefined && !["standard", "high", "720p", "1080p"].includes(params.quality)) ||
+          (params.outputNumber ?? 1) !== 1) {
+        throw new ApiError("Choose one Wan clip at 5, 10 or 15 seconds in 720p or 1080p.", 400, { code: "INVALID_VIDEO_OPTIONS" });
+      }
     }
     // Market models (everything beyond the two legacy KIE video models) share
     // one generic path with image and audio generation.
@@ -177,6 +203,7 @@ export class VideoService {
         imageUrls: [...(params.imageUrl ? [params.imageUrl] : []), ...(params.imageUrls ?? [])],
         audio: params.generateAudio,
         idempotencyKey: params.idempotencyKey,
+        sourceVideoUuid: params.sourceVideoUuid,
       });
     }
 
@@ -327,16 +354,18 @@ export class VideoService {
     const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
 
+    const aspectRatio = videoKeys.length ? undefined : params.aspectRatio;
+    const generateAudio = videoKeys.length ? true : params.generateAudio;
     const parameters: Record<string, unknown> = {
       duration: params.duration,
-      aspectRatio: params.aspectRatio,
+      aspectRatio,
       quality: params.quality,
       outputNumber,
       mode: resolvedMode,
       imageUrl: params.imageUrl,
       imageUrls: params.imageUrls,
       ...(videoKeys.length ? { videoKeys } : {}),
-      generateAudio: params.generateAudio,
+      generateAudio,
     };
     if (idempotencyKey) {
       parameters.idempotencyKey = idempotencyKey;
@@ -355,7 +384,7 @@ export class VideoService {
       startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
       creditsUsed: billedCredits,
       duration: effectiveDuration,
-      aspectRatio: params.aspectRatio || null,
+      aspectRatio: aspectRatio || null,
       provider: actualProvider,
       updatedAt: new Date(),
     });
@@ -469,14 +498,14 @@ export class VideoService {
         model: params.model,
         prompt: params.prompt,
         duration: effectiveDuration,  // ✅ 使用计算后的时长
-        aspectRatio: params.aspectRatio,
+        aspectRatio,
         quality: params.quality,
         imageUrl: signedImageUrl,
         imageUrls: signedImageUrls,
         ...(videoKeys.length ? { videoUrls: videoKeys.map((key) => getStorage().getSignedUrl(key, 3600)) } : {}),
         mode: resolvedMode,
         outputNumber,
-        generateAudio: params.generateAudio,
+        generateAudio,
         callbackUrl,
       });
     } catch (error) {
@@ -600,6 +629,10 @@ export class VideoService {
     if (model.options.requiresImage && imageInputs.length === 0) {
       throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });
     }
+    const minPrompt = model.options.minPromptLength;
+    if (minPrompt && params.prompt.trim().length < minPrompt) {
+      throw new ApiError(`Prompt is shorter than ${minPrompt} characters`, 400, { code: "PROMPT_TOO_SHORT", min: minPrompt });
+    }
     const maxPrompt = model.options.maxPromptLength;
     if (maxPrompt && params.prompt.length > maxPrompt) {
       throw new ApiError(`Prompt is longer than ${maxPrompt} characters`, 400, { code: "PROMPT_TOO_LONG", max: maxPrompt });
@@ -623,6 +656,8 @@ export class VideoService {
       instrumental: params.instrumental,
       customMode: params.customMode,
       speed: params.speed,
+      // Models that require a seed get a random one.
+      ...(model.options.requiresVideo ? { seed: randomSeed() } : {}),
     };
 
     const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
@@ -646,6 +681,10 @@ export class VideoService {
       }
     }
 
+    const sourceVideo = model.options.requiresVideo
+      ? await this.resolveExtendSource(params.userId, params.sourceVideoUuid)
+      : null;
+
     // Only videos count against the plan's concurrency; images and audio are quick.
     if (model.kind === "video") {
       if (!freeInternal) await assertWithinConcurrencyLimit(params.userId);
@@ -662,6 +701,8 @@ export class VideoService {
       parameters: {
         ...request,
         imageUrls: imageInputs,
+        // The source is kept by its id; a signed URL would expire.
+        ...(sourceVideo ? { sourceVideoUuid: sourceVideo.uuid } : {}),
         ...(idempotencyKey ? { idempotencyKey } : {}),
       },
       idempotencyKey: idempotencyKey ?? null,
@@ -713,7 +754,11 @@ export class VideoService {
     try {
       taskId = await createMarketTask(
         model,
-        { ...request, imageUrls: imageInputs.map((value) => this.signImageInput(value)) },
+        {
+          ...request,
+          imageUrls: imageInputs.map((value) => this.signImageInput(value)),
+          ...(sourceVideo ? { videoUrl: sourceVideo.signedUrl } : {}),
+        },
         callbackUrl,
         apiKey,
       );
@@ -721,6 +766,9 @@ export class VideoService {
       if (error instanceof ProviderRejectedError) {
         if (!freeInternal) await creditService.release(uuid);
         await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        if (model.tool === "extend") {
+          throw new ApiError("The provider rejected the source or options", 422, { code: "EXTEND_REJECTED" });
+        }
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
@@ -753,6 +801,46 @@ export class VideoService {
     }
 
     return { videoUuid: uuid, taskId, provider: "kie", status: "GENERATING", creditsUsed: billedCredits };
+  }
+
+  private async resolveExtendSource(userId: string, sourceVideoUuid?: string) {
+    if (!sourceVideoUuid) {
+      throw new ApiError("Choose a video to work on", 400, { code: "MISSING_SOURCE_VIDEO" });
+    }
+    const [source] = await db
+      .select({ uuid: videos.uuid, key: videos.videoUrl, size: videos.fileSize })
+      .from(videos)
+      .where(and(
+        eq(videos.userId, userId),
+        eq(videos.uuid, sourceVideoUuid),
+        eq(videos.isDeleted, false),
+        eq(videos.status, VideoStatus.COMPLETED),
+        or(eq(videos.mediaType, "video"), isNull(videos.mediaType)),
+      ))
+      .limit(1);
+    // Only sign an output in this creation's own directory. Legacy external
+    // URLs, upload keys and arbitrary paths cannot be verified as our output.
+    if (!source?.key || !source.key.startsWith(`videos/${source.uuid}/`) ||
+        !/^videos\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(mp4|mov|mkv|avi|webm)$/i.test(source.key)) {
+      throw new ApiError("This video cannot be used", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+    }
+
+    // New completions record the uploaded byte count. Older rows need an
+    // authenticated HEAD on the same immutable key we will sign for KIE.
+    try {
+      const storage = getStorage();
+      const size = source.size ?? await storage.getObjectSize(source.key);
+      if (!Number.isSafeInteger(size) || size <= 0) {
+        throw new Error("Invalid source object size");
+      }
+      if (size > MAX_SOURCE_VIDEO_BYTES) {
+        throw new ApiError("The video is larger than 50 MB", 400, { code: "SOURCE_VIDEO_TOO_LARGE" });
+      }
+      return { uuid: source.uuid, signedUrl: storage.getSignedUrl(source.key, 3600) };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError("Unable to verify the source video", 503, { code: "SOURCE_VIDEO_UNVERIFIED" });
+    }
   }
 
   /**
@@ -959,6 +1047,7 @@ export class VideoService {
     const stamp = Date.now();
     const sources = result.resultUrls?.length ? result.resultUrls : [result.videoUrl!];
     let uploaded: { key: string };
+    let videoFileSize: number | undefined;
     let extraKeys: string[] = [];
     if (claimed.mediaType === "image") {
       // Image sets: keep every output. The first is the cover; the rest are
@@ -978,11 +1067,13 @@ export class VideoService {
         key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
       });
     } else {
-      uploaded = await storage.downloadAndUpload({
+      const storedVideo = await storage.downloadAndUpload({
         sourceUrl: sources[0],
         key: `videos/${videoUuid}/${stamp}.mp4`,
         contentType: "video/mp4",
       });
+      uploaded = storedVideo;
+      videoFileSize = storedVideo.fileSize;
     }
 
     if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);
@@ -992,6 +1083,7 @@ export class VideoService {
       .set({
         status: VideoStatus.COMPLETED,
         videoUrl: uploaded.key,
+        fileSize: videoFileSize,
         ...(extraKeys.length > 0
           ? { parameters: { ...(claimed.parameters ?? {}), extraKeys } }
           : {}),

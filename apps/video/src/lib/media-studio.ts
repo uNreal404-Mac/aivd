@@ -47,6 +47,8 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
   switch (code) {
     case "UNAUTHORIZED":
       return zh ? "请先登录再生成。" : "Sign in to generate.";
+    case "INVALID_VIDEO_REFERENCE":
+      return zh ? "请选择自己上传的 MP4 或 MOV，每个不超过 10 MB，最多 3 个。" : "Choose up to three of your own MP4 or MOV uploads, 10 MB each.";
     case "INSUFFICIENT_CREDITS":
       return zh ? "积分不够，可以换个省积分的模型，或购买积分" : "Not enough credits. Switch to a lower-cost model or buy credits.";
     case "GENERATION_DISABLED":
@@ -65,6 +67,17 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
     }
     case "PROMPT_TOO_LONG":
       return zh ? "提示词太长了，最多 5000 字。" : "The prompt is too long: 5,000 characters at most.";
+    case "SOURCE_VIDEO_UNAVAILABLE":
+    case "MISSING_SOURCE_VIDEO":
+      return zh ? "这段视频现在不能续写：它可能已删除，或还没生成完。" : "This video can't be extended: it may have been deleted or isn't finished yet.";
+    case "SOURCE_VIDEO_UNVERIFIED":
+      return zh ? "暂时无法确认源视频大小，请稍后重试。" : "Could not verify the source video size. Please try again.";
+    case "EXTEND_REJECTED":
+      return zh ? "服务商拒绝了这段视频或续写参数，积分已退回。" : "The provider rejected the video or extend options. Your credits were released.";
+    case "SOURCE_VIDEO_TOO_LARGE":
+      return zh ? "这段视频超过 50 MB，暂时不能续写。" : "This video is larger than 50 MB and can't be extended yet.";
+    case "PROMPT_TOO_SHORT":
+      return zh ? "再多写几个字，说说接下来发生什么。" : "Write a few more words about what happens next.";
     case "CONTENT_BLOCKED":
       return fallback;
     default:
@@ -72,91 +85,134 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
   }
 }
 
-// When a request's answer is lost (network error, or the response body broke
-// off), the same request sent again keeps its idempotency key, so the server
-// returns the job it may already have created and frozen credits for instead
-// of creating and charging a second one. Kept per tab in sessionStorage, by a
-// hash of the request, so a reload or another job in between does not lose it.
-const LOST_ANSWERS_KEY = "aivd:media-lost-answers";
-const LOST_ANSWER_TTL_MS = 30 * 60 * 1000;
+const MEDIA_ENDPOINT = "/api/v1/media/generate";
+const UUID_KEY = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
-function requestHash(text: string): string {
+// Older image/audio clients indexed lost responses by an unscoped body hash.
+function legacyMediaKey(text: string): string | null {
+  const stored = sessionStorage.getItem("aivd:media-lost-answers");
+  if (!stored) return null;
   let hash = 0x811c9dc5;
   for (let index = 0; index < text.length; index += 1) {
     hash ^= text.charCodeAt(index);
     hash = Math.imul(hash, 0x01000193);
   }
-  return `${(hash >>> 0).toString(36)}:${text.length}`;
+  const record = JSON.parse(stored)[`${(hash >>> 0).toString(36)}:${text.length}`];
+  if (record === undefined) return null;
+  if (typeof record.key !== "string" || !(UUID_KEY.test(record.key) || /^\d{1,16}$/.test(record.key))) {
+    throw new Error("Invalid legacy retry key");
+  }
+  return record.key;
 }
 
-type LostAnswers = Record<string, { key: string; at: number }>;
-const memoryLostAnswers: LostAnswers = {};
+/** Body for the video route's extend tool (see lib/video-extend.ts). */
+export type ExtendSubmitBody = {
+  model: string;
+  prompt: string;
+  sourceVideoUuid: string;
+  duration: number;
+  quality: string;
+  generateAudio: boolean;
+};
 
-function readLostAnswers(): LostAnswers {
-  try {
-    const stored = JSON.parse(sessionStorage.getItem(LOST_ANSWERS_KEY) || "{}") as LostAnswers;
-    return stored && typeof stored === "object" ? stored : {};
-  } catch {
-    return memoryLostAnswers;
-  }
+type SubmitResult = { ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number };
+
+type RetryReservation = {
+  key: string;
+  forget: () => void;
+};
+
+function saveRetryKey(slot: string, key: string): void {
+  sessionStorage.setItem(slot, key);
+  if (sessionStorage.getItem(slot) !== key) throw new Error("Retry key was not saved");
 }
 
-function writeLostAnswers(answers: LostAnswers): void {
-  const now = Date.now();
-  const fresh = Object.fromEntries(Object.entries(answers).filter(([, item]) => now - item.at < LOST_ANSWER_TTL_MS));
-  try {
-    sessionStorage.setItem(LOST_ANSWERS_KEY, JSON.stringify(fresh));
-  } catch {
-    for (const key of Object.keys(memoryLostAnswers)) delete memoryLostAnswers[key];
-    Object.assign(memoryLostAnswers, fresh);
+async function reserveRetryKey(
+  accountId: string, endpoint: string, body: SubmitBody | ExtendSubmitBody, signature: string,
+): Promise<RetryReservation> {
+  const isExtend = "sourceVideoUuid" in body;
+  // Keep existing extend slots addressable. Media options are flat fields or
+  // arrays of strings, so sorting the field names preserves reference order.
+  const parameters = isExtend ? signature : JSON.stringify(body, Object.keys(body).sort());
+  const identity = new TextEncoder().encode(JSON.stringify([accountId, endpoint, parameters]));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", identity));
+  const prefix = isExtend ? "aivd:extend:" : "aivd:media:";
+  const slot = prefix + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const legacy = !isExtend && endpoint === MEDIA_ENDPOINT ? legacyMediaKey(signature) : null;
+  // The server scopes keys by user. Each account may need the old key once,
+  // even if another account already recovered its own job in this tab.
+  const migratedSlot = slot + ":legacy";
+  const unmigrated = legacy && sessionStorage.getItem(migratedSlot) !== legacy ? legacy : null;
+  let key = sessionStorage.getItem(slot);
+  if (key === null) {
+    key = unmigrated ?? crypto.randomUUID();
+    saveRetryKey(slot, key);
   }
+  if (!UUID_KEY.test(key) && (isExtend || !/^\d{1,16}$/.test(key))) {
+    throw new Error("Invalid retry key");
+  }
+  if (key === unmigrated) saveRetryKey(migratedSlot, key);
+  return {
+    key,
+    forget: () => {
+      // A late response must not clear a newer reservation.
+      try {
+        if (sessionStorage.getItem(slot) === key) sessionStorage.removeItem(slot);
+      } catch {
+        // The outcome is still known. Leaving the key behind only replays it.
+      }
+    },
+  };
 }
 
 export async function submitMedia(
-  body: SubmitBody,
+  body: SubmitBody | ExtendSubmitBody,
   zh: boolean,
-): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number }> {
+  endpoint = MEDIA_ENDPOINT,
+): Promise<SubmitResult> {
   const signature = JSON.stringify(body);
-  const hash = requestHash(signature);
-  const pending = readLostAnswers()[hash];
-  const key =
-    pending && Date.now() - pending.at < LOST_ANSWER_TTL_MS
-      ? pending.key
-      : typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-  const rememberLost = () => writeLostAnswers({ ...readLostAnswers(), [hash]: { key, at: Date.now() } });
-  const forget = () => {
-    const answers = readLostAnswers();
-    delete answers[hash];
-    writeLostAnswers(answers);
-  };
+  let retry: RetryReservation;
+  const networkError = zh ? "网络错误，请稍后重试。" : "Network error. Please try again.";
+  let accountId: string | undefined;
   try {
-    const response = await fetch("/api/v1/media/generate", {
+    const { getSession } = await import("@/lib/auth/client");
+    const session = await getSession();
+    if (session.error) return { ok: false, message: networkError };
+    accountId = session.data?.user.id;
+  } catch {
+    return { ok: false, message: networkError };
+  }
+  if (!accountId) return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
+  try {
+    retry = await reserveRetryKey(accountId, endpoint, body, signature);
+  } catch {
+    return { ok: false, code: "RETRY_KEY_UNAVAILABLE", message: zh ? "无法在当前标签页保存重试信息，本次未提交。" : "This tab could not save the retry key. No request was sent." };
+  }
+  try {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Idempotency-Key": key,
+        "Idempotency-Key": retry.key,
+        ["sourceVideoUuid" in body ? "X-Extend-Account" : "X-Media-Account"]: accountId,
       },
       body: signature,
     });
-    // Not signed in: nothing was created, whatever the body says.
     if (response.status === 401) {
-      forget();
+      // The cookie may have expired during a retry of an accepted job.
       return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
     }
-    let payload: any = null;
-    try {
-      payload = await response.json();
-    } catch {
-      // No readable answer (the body broke off, or an error page): the job
-      // may exist, so a retry must reuse this key.
-      rememberLost();
-      return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
-    }
-    forget();
+    const payload = await response.json().catch(() => null);
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
-    if (payload?.success && uuid) return { ok: true, uuid, credits: payload.data.creditsUsed ?? 0 };
-    // 202: submitted, outcome unknown; it still shows up and resolves later.
-    if (response.status === 202 && uuid) return { ok: true, uuid, credits: 0 };
+    if (response.ok && typeof uuid === "string" && uuid && (payload?.success || response.status === 202)) {
+      retry.forget();
+      return { ok: true, uuid, credits: payload?.data?.creditsUsed ?? 0 };
+    }
+    const accountChanged = payload?.error?.details?.code === "ACCOUNT_CHANGED";
+    if (payload?.success === false && response.status >= 400 && response.status < 500 && response.status !== 408 && !accountChanged) {
+      retry.forget();
+    }
+    if (!payload) return { ok: false, message: networkError };
     // Errors look like { success: false, error: { message, details: { code } } }.
     const code = payload?.error?.details?.code;
     const message = payload?.error?.message ?? "";
@@ -168,8 +224,7 @@ export async function submitMedia(
       requiredCredits: typeof requiredCredits === "number" ? requiredCredits : undefined,
     };
   } catch {
-    rememberLost();
-    return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
+    return { ok: false, message: networkError };
   }
 }
 

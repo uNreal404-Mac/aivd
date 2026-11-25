@@ -186,7 +186,7 @@ describe("videoService.generate / creditService integration", () => {
       prompt: request.prompt, duration: "5", resolution: "720p", multi_shots: false,
       video_urls: keys.map((key) => `https://signed.test/${key}`),
     });
-    expect((await getVideoRow(first.videoUuid))?.parameters?.videoKeys).toEqual(keys);
+    expect(await getVideoRow(first.videoUuid)).toMatchObject({ aspectRatio: null, parameters: { videoKeys: keys, generateAudio: true } });
     await db.delete(mediaAssets).where(eq(mediaAssets.userId, userId));
     expect((await videoService.generate(request)).videoUuid).toBe(first.videoUuid);
     expect(fakeProvider.createTask).toHaveBeenCalledTimes(1);
@@ -206,6 +206,7 @@ describe("videoService.generate / creditService integration", () => {
       { videoKeys: [key("large")] }, { videoKeys: [key("image")] }, { videoKeys: [key("missing")] },
       { videoKeys: ["uploads/someone-else/a.mp4"] }, { videoKeys: ["https://remote.test/a.mp4"] },
       { videoKeys: [key("a.mp4")], imageUrl: key("image") }, { model: "veo-3.1", videoKeys: [key("a.mp4")] },
+      { duration: 6, videoKeys: [key("a.mp4")] }, { outputNumber: 2, videoKeys: [key("a.mp4")] },
     ]) {
       await expect(videoService.generate({ ...base, ...invalid })).rejects.toMatchObject({ status: 400 });
     }

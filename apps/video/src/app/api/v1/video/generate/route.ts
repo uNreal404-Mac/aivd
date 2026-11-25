@@ -29,6 +29,8 @@ const generateSchema = z.object({
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
   idempotencyKey: z.string().max(200).optional(),
+  /** Extend a video: one of the caller's own finished videos. */
+  sourceVideoUuid: z.string().max(64).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -44,6 +46,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const data = generateSchema.parse(body);
+    // The session cookie can change between reserving a retry key and POST.
+    const retryAccount = request.headers.get("X-Extend-Account");
+    if (retryAccount !== null && retryAccount !== user.id) {
+      return apiError("Your account changed. Please try again.", 409, { code: "ACCOUNT_CHANGED" });
+    }
 
     const imageUrls = [
       ...(data.imageUrl ? [data.imageUrl] : []),
@@ -98,6 +105,7 @@ export async function POST(request: NextRequest) {
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
       idempotencyKey,
+      sourceVideoUuid: data.sourceVideoUuid,
     });
 
     return apiSuccess(result);

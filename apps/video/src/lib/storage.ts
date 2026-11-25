@@ -210,7 +210,7 @@ export class Storage {
     sourceUrl: string;
     key: string;
     contentType?: string;
-  }): Promise<{ key: string }> {
+  }): Promise<{ key: string; fileSize: number }> {
     const response = await fetch(params.sourceUrl);
     if (!response.ok) {
       throw new Error(`Failed to download: ${response.statusText}`);
@@ -222,11 +222,12 @@ export class Storage {
       response.headers.get("content-type") ||
       "video/mp4";
 
-    return this.uploadFile({
+    const uploaded = await this.uploadFile({
       key: params.key,
       body: buffer,
       contentType,
     });
+    return { ...uploaded, fileSize: buffer.byteLength };
   }
 
   /**
@@ -238,6 +239,26 @@ export class Storage {
     ttlSeconds: number = SIGNED_URL_DEFAULT_TTL,
     now: Date = new Date()
   ): string {
+    return this.presign("GET", key, ttlSeconds, now);
+  }
+
+  /** Inspect the stored object without downloading it or following redirects. */
+  async getObjectSize(key: string): Promise<number> {
+    const url = this.presign("HEAD", key, SIGNED_URL_DEFAULT_TTL, new Date());
+    const response = await fetch(url, {
+      method: "HEAD",
+      redirect: "error",
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    const length = response.headers.get("content-length");
+    if (response.status !== 200 || !length || !/^\d+$/.test(length) || !Number.isSafeInteger(Number(length))) {
+      throw new Error("Storage did not return a valid object size");
+    }
+    return Number(length);
+  }
+
+  private presign(method: "GET" | "HEAD", key: string, ttlSeconds: number, now: Date): string {
     if (ttlSeconds < SIGNED_URL_MIN_TTL || ttlSeconds > SIGNED_URL_MAX_TTL) {
       throw new RangeError(
         `Signed URL TTL must be between ${SIGNED_URL_MIN_TTL} and ${SIGNED_URL_MAX_TTL} seconds`
@@ -258,7 +279,7 @@ export class Storage {
     });
 
     const canonicalRequest = [
-      "GET",
+      method,
       canonicalUri,
       canonicalQuery,
       `host:${this.host}`,
