@@ -51,6 +51,9 @@
 .hmp-toolbar button:hover { background: var(--ds-fill-2); color: var(--ds-text-1); }
 .hmp-toolbar button.active { background: var(--ds-fill-3); color: var(--ds-text-1); }
 .hmp-toolbar .hmp-toolbar-create { position: sticky; right: 0; color: var(--du-accent-text); }
+.hmp-manage-actions { display: flex; align-items: center; gap: 6px; margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--ds-line-2); }
+.hmp-toolbar .hmp-manage-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.hmp-toolbar .hmp-manage-actions .hmp-clear-all { color: var(--du-danger); }
 .hmp-body { flex: 1; min-height: 0; padding: 8px 4px 8px 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 
 /* Square tiles, four to a row. */
@@ -79,6 +82,7 @@
 }
 .hmp-add:hover { background: var(--ds-fill-2); }
 .hmp-add:active { transform: scale(.98); }
+.hmp-add:disabled { opacity: .5; cursor: not-allowed; }
 .hmp-add-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--ds-line-3); border-radius: var(--ds-r-full); background: var(--ds-fill-1); }
 
 /* Delete is a bin that shows on hover or focus (always on touch screens).
@@ -137,6 +141,14 @@
 .hmp-create-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .hmp-create-actions button:first-child { border: 0; background: transparent; color: var(--ds-text-3); }
 .hmp-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--du-accent-text); outline-offset: 2px; }
+.hmp-confirm-backdrop { position: absolute; z-index: 5; inset: 0; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--du-bg) 70%, transparent); }
+.hmp-confirm { width: min(420px, 100%); padding: 24px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-xl); background: var(--du-surface-2); box-shadow: var(--ds-shadow-2); }
+.hmp-confirm h2 { margin: 0 0 10px; color: var(--du-text); font-size: var(--ds-fs-lg); }
+.hmp-confirm p { margin: 0; color: var(--ds-text-2); font-size: var(--ds-fs-sm); line-height: 1.6; }
+.hmp-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.hmp-confirm-actions button { min-height: 36px; padding: 0 16px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-full); background: var(--ds-fill-2); color: var(--du-text); }
+.hmp-confirm-actions button.danger { border-color: var(--du-danger); background: var(--du-danger); color: var(--du-on-accent); }
+.hmp-confirm-actions button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 640px) {
   .hmp-backdrop { align-items: flex-end; padding: 0; }
   /* On phones the picker is a bottom sheet, so it slides up and back down. */

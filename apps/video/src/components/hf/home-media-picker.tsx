@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Expand, Image as ImageIcon, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
+import { Check, Expand, Image as ImageIcon, Loader2, Music2, Plus, Trash2, UploadCloud, X } from "lucide-react";
 import { isWanVideoMime, WAN_REFERENCE_MAX_BYTES } from "@/lib/wan-video-references";
 import { canUseHomeKeyframe } from "@/lib/home-keyframes";
 import { MAX_BYTES, uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
@@ -13,7 +13,7 @@ import { prefersReducedMotion } from "@/lib/reduced-motion";
 import "./home-media-picker.css";
 
 type Tab = "upload" | "elements" | "brand" | "works";
-type MediaType = "image" | "video";
+type MediaType = "image" | "video" | "audio";
 type Filter = "all" | MediaType;
 type Element = { id: string; name: string; category: string; assetId: string };
 /** Kits saved before colours, fonts and guidelines were dropped still carry
@@ -28,6 +28,7 @@ const ELEMENT_CATEGORIES = [
   { id: "prop", zh: "道具", en: "Prop" },
 ] as const;
 const VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+const AUDIO_TYPES = new Set(["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/webm"]);
 /** Same limit as lib/creative-space/upload-video and the video-assets route. */
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 /** How long a pressed delete waits for its second press. */
@@ -84,6 +85,11 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [category, setCategory] = useState("all");
   const [sourceId, setSourceId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
+  const [manageMode, setManageMode] = useState(false);
+  const [managed, setManaged] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<"selected" | "all" | null>(null);
+  const [deletingMany, setDeletingMany] = useState(false);
   const uploadRevision = useRef(0);
   useEffect(() => {
     setUploading(false);
@@ -112,6 +118,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     let live = true;
     selectedRef.current = selectedIds;
     setSelected(selectedIds); setInitial(selectedIds); setLimitNote(false); setFilter("all");
+    setManageMode(false); setManaged([]); setConfirmDelete(null);
     const oldElements = userId ? saved<Element>("aivd:elements:guest") : [];
     const oldBrands = userId ? saved<Brand>("aivd:brands:guest") : [];
     const nextElements = [...saved<Element>(elementKey), ...oldElements];
@@ -157,13 +164,14 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     // Escape first takes back a pending delete, then closes.
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (confirmDelete) { setConfirmDelete(null); return; }
       if (preview) { closePreview(); return; }
       if (armed) { if (armTimer.current) clearTimeout(armTimer.current); armTimer.current = null; setArmed(null); return; }
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, armed, preview]);
+  }, [open, onClose, armed, preview, confirmDelete]);
 
   useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
 
@@ -224,6 +232,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     armTimer.current = null;
     setArmed(null);
     setPreview(null);
+    setConfirmDelete(null);
+    setManageMode(false);
+    setManaged([]);
   }, [open, tab]);
 
   if (!mounted) return null;
@@ -246,8 +257,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const choices = [...assets, ...works, ...elementAssets, ...brandAssets];
   // Items this caller cannot take are not listed, and a type filter only
   // appears when there is more than one type to choose between.
-  const filters: Filter[] = acceptedTypes.length > 1 ? ["all", ...(["video", "image"] as const).filter((type) => acceptedTypes.includes(type))] : [];
-  const shown = source.filter((item) => acceptable(item) && (tab === "elements" ? category === "all" || categoryId(elements.find((element) => `element:${element.id}` === item.id)?.category ?? "") === category : (filter === "all" || item.mimeType.startsWith(`${filter}/`))));
+  const filters: Filter[] = tab === "upload" && homepage ? ["all", "image", "video", "audio"] : acceptedTypes.length > 1 ? ["all", ...(["video", "image", "audio"] as const).filter((type) => acceptedTypes.includes(type))] : [];
+  const shown = source.filter((item) => (tab === "upload" && homepage || acceptable(item)) && (tab === "elements" ? category === "all" || categoryId(elements.find((element) => `element:${element.id}` === item.id)?.category ?? "") === category : (filter === "all" || item.mimeType.startsWith(`${filter}/`))));
   const changed = selected.join("|") !== initial.join("|");
   const resolved = selected.every((id) => choices.some((item) => item.id === id && item.url));
   const canConfirm = !uploading && !loadingAssets && resolved && (selected.length > 0 || changed);
@@ -276,53 +287,71 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     toggle(item.id);
   };
   const fileProblem = (file: File): string => {
-    if (videoToolAsset === "video" && !isWanVideoMime(file.type)) return zh ? "请选择 MP4 或 MOV 视频" : "Choose an MP4 or MOV.";
-    if (videoToolAsset === "image" && !["image/jpeg","image/png"].includes(file.type)) return zh ? "请选择 PNG 或 JPEG 图片" : "Choose a PNG or JPEG.";
-    if (wanVideoOnly) {
+    if (!homepage && videoToolAsset === "video" && !isWanVideoMime(file.type)) return zh ? "请选择 MP4 或 MOV 视频" : "Choose an MP4 or MOV.";
+    if (!homepage && videoToolAsset === "image" && !["image/jpeg","image/png"].includes(file.type)) return zh ? "请选择 PNG 或 JPEG 图片" : "Choose a PNG or JPEG.";
+    if (wanVideoOnly && !homepage) {
       if (!isWanVideoMime(file.type)) return zh ? "请选择 MP4 或 MOV 视频" : "Choose an MP4 or MOV video.";
       if (!file.size || file.size > WAN_REFERENCE_MAX_BYTES) return zh ? "视频不能为空或超过 10 MB" : "Choose a non-empty video up to 10 MB.";
       return "";
     }
-    if (allowVideo && file.type.startsWith("video/")) {
+    if (homepage && file.type.startsWith("audio/")) {
+      if (!AUDIO_TYPES.has(file.type)) return zh ? "音频请使用 MP3、WAV、M4A 或 WebM" : "Use MP3, WAV, M4A, or WebM audio.";
+      if (!file.size || file.size > MAX_VIDEO_BYTES) return zh ? "音频不能超过 25 MB" : "Audio must be under 25 MB.";
+      return "";
+    }
+    if ((allowVideo || homepage) && file.type.startsWith("video/")) {
       if (!VIDEO_TYPES.has(file.type)) return zh ? "不支持这个视频格式，请用 MP4、WebM 或 MOV" : "That video format isn't supported. Use an MP4, WebM or MOV.";
       if (file.size > MAX_VIDEO_BYTES) return zh ? `视频超过 ${mb(MAX_VIDEO_BYTES)} MB，请换一个小一点的` : `That video is over ${mb(MAX_VIDEO_BYTES)} MB. Choose a smaller one.`;
       return "";
     }
-    if (allowVideo && !file.type.startsWith("image/")) return zh ? "请选择图片或视频文件" : "Choose an image or video file.";
+    if ((allowVideo || homepage) && !file.type.startsWith("image/")) return zh ? "请选择图片、视频或音频文件" : "Choose an image, video, or audio file.";
     return validateImageFile(file, zh) ?? "";
   };
   const addFiles = async (files: FileList | File[]) => {
     if (!files.length || uploading) return;
+    const batch = Array.from(files);
     const revision = uploadRevision.current;
-    setUploading(true); setError("");
-    for (const original of Array.from(files)) {
+    setUploading(true); setError(""); setUploadProgress({ done: 0, total: batch.length });
+    let failures = 0;
+    for (const [index, original] of batch.entries()) {
       if (revision !== uploadRevision.current) return;
       // Some macOS file pickers omit the MIME type for MOV. The upload
       // service still decodes a preview frame and validates the stored asset.
-      const file = (wanVideoOnly || videoToolAsset === "video") && !original.type && /\.(mov|mp4)$/i.test(original.name)
-        ? new File([original], original.name, { type: /\.mov$/i.test(original.name) ? "video/quicktime" : "video/mp4", lastModified: original.lastModified })
+      const inferredType = !original.type ? (/\.mov$/i.test(original.name) ? "video/quicktime" : /\.mp4$/i.test(original.name) ? "video/mp4" : homepage && /\.mp3$/i.test(original.name) ? "audio/mpeg" : homepage && /\.m4a$/i.test(original.name) ? "audio/mp4" : "") : "";
+      const file = inferredType
+        ? new File([original], original.name, { type: inferredType, lastModified: original.lastModified })
         : original;
       const invalid = fileProblem(file);
-      if (invalid) { setError(invalid); continue; }
+      if (invalid) { setError(`${original.name}: ${invalid}`); failures++; setUploadProgress({ done: index + 1, total: batch.length }); continue; }
       try {
         if (userId) {
           const isVideo = file.type.startsWith("video/");
-          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId).then((result) => ({ ok: true as const, key: result.key, url: result.url })) : await uploadImage(file, fetch, userId);
+          const isAudio = file.type.startsWith("audio/");
+          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId).then((result) => ({ ok: true as const, key: result.key, url: result.url }))
+            : isAudio ? await fetch("/api/v1/creative-space/audio-assets", { method: "POST", headers: { "X-Media-Account": userId }, body: (() => { const form = new FormData(); form.set("file", file); return form; })() }).then(async (response) => {
+              const body = await response.json();
+              if (!response.ok || !body?.data?.key || !body?.data?.signedUrl) throw new Error("audio upload failed");
+              return { ok: true as const, key: body.data.key as string, url: body.data.signedUrl as string };
+            }) : await uploadImage(file, fetch, userId);
           if (revision !== uploadRevision.current) return;
           if (uploaded.ok) {
             const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, size: file.size, key: uploaded.key, url: uploaded.url };
             setAssets((current) => [remote, ...current]);
-            toggle(remote.id, true);
-          } else { setError(uploadErrorText(uploaded, zh)); }
+            if (batch.length === 1 && acceptable(remote)) toggle(remote.id, true);
+          } else { setError(`${file.name}: ${uploadErrorText(uploaded, zh)}`); failures++; }
         } else {
           const local = await saveGuestAsset(file);
           if (revision !== uploadRevision.current) return;
           setAssets((current) => [local, ...current]);
-          toggle(local.id, true);
+          if (batch.length === 1 && acceptable(local)) toggle(local.id, true);
         }
-      } catch { if (revision === uploadRevision.current) setError(uploadErrorText("upload_failed", zh)); }
+      } catch { if (revision === uploadRevision.current) { setError(`${file.name}: ${uploadErrorText("upload_failed", zh)}`); failures++; } }
+      setUploadProgress({ done: index + 1, total: batch.length });
     }
-    if (revision === uploadRevision.current) setUploading(false);
+    if (revision === uploadRevision.current) {
+      setUploading(false);
+      if (!failures && batch.length > 1) setError(zh ? `已上传 ${batch.length} 个文件` : `${batch.length} files uploaded`);
+    }
   };
   /** Elements and brand kits built on an upload go with it. */
   const usageNote = (id: string): string => {
@@ -358,6 +387,47 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       }, prefersReducedMotion() ? 0 : PRESENCE_EXIT_MS);
     } catch { setError(zh ? "删除失败，请重试。" : "Could not delete this upload. Try again."); }
     finally { setDeleting(null); }
+  };
+  const deleteManaged = async () => {
+    if (!confirmDelete || deletingMany) return;
+    const targets = confirmDelete === "all" ? assets : assets.filter((asset) => managed.includes(asset.id));
+    setDeletingMany(true); setError("");
+    const deleted = new Set<string>();
+    let failed = 0;
+    try {
+      const remote = targets.filter((asset) => asset.id.startsWith("upload:") && asset.key && userId);
+      if (userId && (confirmDelete === "all" || remote.length)) {
+        const response = await fetch("/api/v1/library", {
+          method: "DELETE", headers: { "content-type": "application/json" },
+          body: JSON.stringify(confirmDelete === "all" ? { all: true } : { keys: remote.map((asset) => asset.key) }),
+        });
+        if (!response.ok) throw new Error("delete failed");
+        const body = await response.json();
+        if (!body?.success || !Array.isArray(body?.data?.deletedKeys) || !Array.isArray(body?.data?.failedKeys)) throw new Error("invalid delete response");
+        const deletedKeys = new Set<string>(body?.data?.deletedKeys ?? []);
+        for (const asset of remote) if (asset.key && deletedKeys.has(asset.key)) deleted.add(asset.id);
+        failed += (body?.data?.failedKeys ?? []).length;
+      }
+      for (const asset of targets.filter((item) => !item.id.startsWith("upload:"))) {
+        try { await removeGuestAsset(asset.id); deleted.add(asset.id); }
+        catch { failed++; }
+      }
+      if (deleted.size) {
+        commitSelected(selectedRef.current.filter((id) => !deleted.has(id)));
+        setInitial((current) => current.filter((id) => !deleted.has(id)));
+        setManaged((current) => current.filter((id) => !deleted.has(id)));
+        setAssets((current) => current.filter((asset) => !deleted.has(asset.id)));
+        const nextElements = elements.filter((element) => !deleted.has(element.assetId));
+        const nextBrands = brands.filter((brand) => !deleted.has(brand.logoId));
+        setElements(nextElements); setBrands(nextBrands);
+        localStorage.setItem(elementKey, JSON.stringify(nextElements));
+        localStorage.setItem(brandKey, JSON.stringify(nextBrands));
+        for (const id of deleted) onDelete?.(id);
+      }
+      if (failed) setError(zh ? `${failed} 个文件删除失败，请重试。` : `${failed} files could not be deleted. Try again.`);
+      else setManageMode(false);
+    } catch { setError(zh ? "删除失败，请重试。" : "Could not delete uploads. Try again."); }
+    finally { setConfirmDelete(null); setDeletingMany(false); }
   };
   /** Delete takes two presses: the first turns the bin into a red
    * "Delete?" for a few seconds, the second deletes. */
@@ -399,14 +469,16 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     setCreate(null); setName(""); setSourceId(""); setError("");
   };
-  const limits = videoToolAsset ? (videoToolAsset === "video" ? "MP4 / MOV · 25 MB" : "PNG / JPEG · 10 MB") : wanVideoOnly ? (zh ? "MP4 / MOV · 每段最多 10 MB" : "MP4 / MOV · up to 10 MB each") : allowVideo
+  const limits = homepage ? (zh ? "图片 10 MB 内 · 视频/音频 25 MB 内" : "Images up to 10 MB · video/audio up to 25 MB") : videoToolAsset ? (videoToolAsset === "video" ? "MP4 / MOV · 25 MB" : "PNG / JPEG · 10 MB") : wanVideoOnly ? (zh ? "MP4 / MOV · 每段最多 10 MB" : "MP4 / MOV · up to 10 MB each") : allowVideo
     ? (zh ? `图片 ${mb(MAX_BYTES)} MB 内 · 视频 ${mb(MAX_VIDEO_BYTES)} MB 内（MP4/WebM/MOV）` : `Images up to ${mb(MAX_BYTES)} MB · videos up to ${mb(MAX_VIDEO_BYTES)} MB`)
     : (zh ? `图片 ${mb(MAX_BYTES)} MB 内` : `Images up to ${mb(MAX_BYTES)} MB`);
   const status = uploading ? "" : error || (limitNote ? limitText : "");
   const tabNames: Record<Tab, string> = { upload: zh ? "上传" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" };
   // The upload tile opens the file chooser; it leads the uploads grid, even
   // when there is nothing uploaded yet.
-  const addTile = <button type="button" className="hmp-add" title={limits} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{zh ? "上传文件" : "Upload file"}</button>;
+  const addTile = <button type="button" className="hmp-add" title={limits} disabled={uploading || deletingMany} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{homepage ? (zh ? "批量上传文件" : "Upload files") : (zh ? "上传文件" : "Upload file")}</button>;
+  const deleteTargets = confirmDelete === "all" ? assets : assets.filter((asset) => managed.includes(asset.id));
+  const linkedCount = elements.filter((element) => deleteTargets.some((asset) => asset.id === element.assetId)).length + brands.filter((brand) => deleteTargets.some((asset) => asset.id === brand.logoId)).length;
 
   // Laid out like the reference's library: a frosted panel, a row of pill
   // tabs with a round close button, then one inset shelf whose header names
@@ -415,7 +487,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   return createPortal(<div className="hmp-backdrop" inert={state === "closed"} data-home-library={homepage || undefined} data-mention={Boolean(mentionAnchor) || undefined} data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <dialog ref={dialogRef} open aria-modal="true" onKeyDown={(event) => {
       if (event.key !== "Tab") return;
-      const focusRoot = preview ? event.currentTarget.querySelector(".hmp-preview") ?? event.currentTarget : event.currentTarget;
+      const focusRoot = confirmDelete ? event.currentTarget.querySelector(".hmp-confirm") ?? event.currentTarget : preview ? event.currentTarget.querySelector(".hmp-preview") ?? event.currentTarget : event.currentTarget;
       const targets = Array.from(focusRoot.querySelectorAll<HTMLElement>("button:not(:disabled), input:not([hidden]), select, a[href], video[controls]")).filter((el) => el.getClientRects().length);
       const first = targets[0];
       const last = targets.at(-1);
@@ -426,25 +498,25 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         {((videoToolAsset || uploadsAndWorksOnly ? ["upload","works"] : wanVideoOnly ? ["upload"] : keyframeOnly ? ["upload", "elements", "works"] : ["upload", "elements", "brand", "works"]) as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
       </nav><button type="button" className="hmp-close" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={16} /></button></header>
       <section className="hmp-shelf" aria-label={tabNames[tab]}>
-      <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : tabNames[tab]}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
+      <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : tabNames[tab]}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image", audio: zh ? "音频" : "Audio" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{tab === "upload" && homepage ? <div className="hmp-manage-actions"><button type="button" className={manageMode ? "active" : ""} disabled={uploading || deletingMany || !assets.length} onClick={() => { setManageMode((current) => !current); setManaged([]); }}>{manageMode ? (zh ? "取消管理" : "Done") : (zh ? "批量删除" : "Select to delete")}</button>{manageMode ? <button type="button" disabled={!managed.length || deletingMany} onClick={() => setConfirmDelete("selected")}><Trash2 size={14} />{zh ? `删除所选 (${managed.length})` : `Delete selected (${managed.length})`}</button> : null}<button type="button" className="hmp-clear-all" disabled={!assets.length || uploading || deletingMany} onClick={() => setConfirmDelete("all")}><Trash2 size={14} />{zh ? "一键清空" : "Clear all"}</button></div> : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
       <main className="hmp-body">
         {create ? <div className="hmp-create">
           <label>{zh ? "名称" : "Name"}<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></label>
           {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "all" ? "character" : category} onChange={(e) => setCategory(e.target.value)}>{ELEMENT_CATEGORIES.filter((item) => item.id !== "all").map((item) => <option key={item.id} value={item.id}>{zh ? item.zh : item.en}</option>)}</select></label> : null}
           <label>{create === "element" ? (zh ? "元素图片" : "Element image") : "Logo"}<select value={sourceId} onChange={(e) => setSourceId(e.target.value)}><option value="">{zh ? "选择已上传图片" : "Choose an uploaded image"}</option>{assets.filter((a) => a.mimeType.startsWith("image/")).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
           <div className="hmp-create-actions"><button type="button" onClick={() => setCreate(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" onClick={saveCreation}>{zh ? "保存" : "Save"}</button></div></div>
-        : tab === "upload" && !shown.length ? <><div className="hmp-grid">{addTile}</div><div className="hmp-empty hmp-empty-uploads"><strong>{loadingAssets ? (zh ? "正在读取上传内容…" : "Loading your uploads…") : (zh ? "还没有上传内容" : "Nothing uploaded yet")}</strong><p>{allowVideo ? (zh ? "点上传文件，或把图片、视频拖进来" : "Choose Upload file, or drop images or videos here") : (zh ? "点上传文件，或把图片拖进来" : "Choose Upload file, or drop images here")} · {limits}</p></div></>
+        : tab === "upload" && !shown.length ? <><div className="hmp-grid">{addTile}</div><div className="hmp-empty hmp-empty-uploads"><strong>{loadingAssets ? (zh ? "正在读取上传内容…" : "Loading your uploads…") : (zh ? "还没有上传内容" : "Nothing uploaded yet")}</strong><p>{homepage ? (zh ? "可一次选择多张图片、多段视频或音频，也可以拖入文件" : "Choose multiple images, videos, or audio files at once, or drop them here") : allowVideo ? (zh ? "点上传文件，或把图片、视频拖进来" : "Choose Upload file, or drop images or videos here") : (zh ? "点上传文件，或把图片拖进来" : "Choose Upload file, or drop images here")} · {limits}</p></div></>
         : shown.length ? <div className="hmp-grid" data-named={tab === "elements" || tab === "brand" || undefined}>{tab === "upload" ? addTile : null}{shown.map((item) => {
-          const isSelected = selected.includes(item.id);
+          const isSelected = manageMode && tab === "upload" ? managed.includes(item.id) : selected.includes(item.id);
           const isArmed = armed === item.id;
           const note = isArmed ? usageNote(item.id) : "";
           return <div key={item.id} className="hmp-card-wrap" data-leaving={leaving.includes(item.id) || undefined}>
-            <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <video src={item.url} muted playsInline preload="metadata" />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
+            <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} aria-label={manageMode && tab === "upload" ? (zh ? `选择删除 ${item.name}` : `Select ${item.name} for deletion`) : item.name} onClick={() => { if (manageMode && tab === "upload") setManaged((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id]); else if (acceptable(item)) selectAsset(item); else setError(zh ? "此素材已保存在库中，但当前生成器不能使用" : "Saved to your library, but unavailable in this generator."); }}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : item.mimeType.startsWith("video/") ? <video src={item.url} muted playsInline preload="metadata" /> : <Music2 size={32} aria-hidden="true" />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
             {homepage && !onMention ? <button type="button" className="hmp-preview-button" aria-label={zh ? `预览 ${item.name}` : `Preview ${item.name}`} onClick={(event) => {
               previewOpener.current = event.currentTarget; setPreview(item);
               requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLButtonElement>(".hmp-preview-close")?.focus());
             }}><Expand size={14} /></button> : null}
-            {tab === "upload" ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting)} onClick={() => pressDelete(item)}
+            {tab === "upload" && !manageMode ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting || deletingMany)} onClick={() => pressDelete(item)}
               aria-label={isArmed ? (zh ? `再按一次删除 ${item.name}${note ? `，${note}` : ""}` : `Press again to delete ${item.name}${note ? `. ${note}` : ""}`) : (zh ? `删除 ${item.name}` : `Delete ${item.name}`)}
               title={isArmed ? undefined : (zh ? "删除这个素材" : "Delete this file")}>
               {deleting === item.id ? <Loader2 className="hmp-spin" size={14} aria-hidden="true" /> : isArmed ? <span key="confirm" data-swap className="hmp-delete-confirm"><strong>{zh ? "确认删除" : "Confirm delete"}</strong>{note ? <small>{note}</small> : null}</span> : <Trash2 key="bin" size={14} aria-hidden="true" />}
@@ -454,13 +526,14 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         : <div className="hmp-empty"><span className="hmp-empty-icon"><ImageIcon size={20} aria-hidden="true" /></span><strong>{tab === "elements" ? (zh ? "还没有元素" : "No elements yet") : tab === "brand" ? (zh ? "还没有品牌工具箱" : "No brand kits yet") : (zh ? "还没有作品" : "No creations yet")}</strong><p>{tab === "works" ? (allowVideo ? (zh ? "生成的图片和视频会出现在这里" : "Everything you generate will appear here.") : (zh ? "生成的图片会出现在这里" : "Your generated images will appear here.")) : (zh ? "把常用素材存起来，下次生成可以直接选用" : "Save the ones you use often and pick them straight away next time.")}</p>{tab !== "works" ? <button type="button" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={18} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>}
       </main>
       </section>
-      <footer className="hmp-footer"><span aria-live="polite">{uploading ? <><Loader2 className="hmp-spin" size={16} />{zh ? "上传中…" : "Uploading…"}</> : status ? <span key={status} className="hmp-status">{status}</span> : <span className="hmp-count" data-num>{zh ? `已选 ${selected.length}/${maxSelected} ${unit}` : `${selected.length}/${maxSelected} selected`}</span>}</span><button type="button" disabled={!canConfirm} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{selected.length === 0 && changed ? (zh ? "清空已选" : "Clear selection") : (zh ? "选择" : "Select")}</button></footer>
+      <footer className="hmp-footer"><span aria-live="polite">{deletingMany ? <><Loader2 className="hmp-spin" size={16} />{zh ? "删除中…" : "Deleting…"}</> : uploading ? <><Loader2 className="hmp-spin" size={16} />{zh ? `上传中 ${uploadProgress.done}/${uploadProgress.total}…` : `Uploading ${uploadProgress.done}/${uploadProgress.total}…`}</> : status ? <span key={status} className="hmp-status">{status}</span> : <span className="hmp-count" data-num>{manageMode && tab === "upload" ? (zh ? `已勾选 ${managed.length} 个素材` : `${managed.length} files marked`) : zh ? `已选 ${selected.length}/${maxSelected} ${unit}` : `${selected.length}/${maxSelected} selected`}</span>}</span><button type="button" disabled={manageMode || deletingMany || !canConfirm} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{selected.length === 0 && changed ? (zh ? "清空已选" : "Clear selection") : (zh ? "选择" : "Select")}</button></footer>
       {preview ? <dialog open className="hmp-preview" aria-modal="true" aria-label={preview.name}>
         <button className="hmp-preview-close" type="button" aria-label={zh ? "关闭预览" : "Close preview"} onClick={closePreview}><X size={18} /></button>
-        {preview.mimeType.startsWith("video/") ? <video src={preview.url} controls playsInline preload="metadata" /> : <img src={preview.url} alt={preview.name} />}
+        {preview.mimeType.startsWith("video/") ? <video src={preview.url} controls playsInline preload="metadata" /> : preview.mimeType.startsWith("audio/") ? <audio src={preview.url} controls /> : <img src={preview.url} alt={preview.name} />}
         <p>{preview.name}</p>
       </dialog> : null}
-      <input ref={fileInput} type="file" accept={videoToolAsset === "image" ? "image/jpeg,image/png" : (wanVideoOnly || videoToolAsset === "video") ? "video/mp4,video/quicktime" : allowVideo ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif"} multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
+      {confirmDelete ? <div className="hmp-confirm-backdrop"><div className="hmp-confirm" role="alertdialog" aria-modal="true" aria-labelledby="hmp-confirm-title" aria-describedby="hmp-confirm-detail"><h2 id="hmp-confirm-title">{confirmDelete === "all" ? (zh ? "清空上传素材库？" : "Clear all uploads?") : (zh ? `删除选中的 ${deleteTargets.length} 个素材？` : `Delete ${deleteTargets.length} selected files?`)}</h2><p id="hmp-confirm-detail">{confirmDelete === "all" ? (zh ? "这会永久删除你上传的所有图片、视频和音频，无法撤销。" : "This permanently deletes every uploaded image, video, and audio file. It cannot be undone.") : (zh ? "所选素材将永久删除，无法撤销。" : "Selected files will be permanently deleted. This cannot be undone.")}{linkedCount ? (zh ? ` 同时会删除使用这些素材的 ${linkedCount} 个元素或品牌工具箱。` : ` ${linkedCount} linked elements or brand kits will also be removed.`) : ""}</p><div className="hmp-confirm-actions"><button type="button" autoFocus disabled={deletingMany} onClick={() => setConfirmDelete(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" className="danger" disabled={deletingMany} onClick={() => void deleteManaged()}>{deletingMany ? (zh ? "删除中…" : "Deleting…") : (zh ? "确认删除" : "Delete permanently")}</button></div></div></div> : null}
+      <input ref={fileInput} type="file" accept={homepage ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/webm" : videoToolAsset === "image" ? "image/jpeg,image/png" : (wanVideoOnly || videoToolAsset === "video") ? "video/mp4,video/quicktime" : allowVideo ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif"} multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
     </dialog>
   </div>, document.body);
 }
