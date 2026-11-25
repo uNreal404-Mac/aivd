@@ -379,6 +379,11 @@
   display: none;
 }
 
+/* Give open generator menus the whole area below the composer. */
+.du-hero:has(#home-generator[data-function-menu-open]) .du-hero-skills {
+  display: none;
+}
+
 .du-image-ideas {
   width: calc(100% - 48px);
   margin: -1px auto 0;

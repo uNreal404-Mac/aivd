@@ -103,6 +103,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const chosenTab = useRef<typeof kind | null>(null);
   const resumedGuestRequest = useRef(false);
   const [panel, setPanel] = useState<Panel>(null);
+  const [modelOpen, setModelOpen] = useState(false);
   const [modelId, setModelId] = useState(defaultVideoModel?.id ?? DEFAULT_VIDEO_MODEL_ID);
   const [keyframeMode, setKeyframeMode] = useState(false);
   const [keyframes, setKeyframes] = useState<KlingKeyframes<PickerAsset>>({});
@@ -156,6 +157,8 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const imageResolutions = imageModel?.options.resolutions ?? [];
   const settingsPanel = usePresence(panel === "settings");
   const modePanel = usePresence(panel === "mode");
+  const modelPanel = usePresence(modelOpen);
+  const functionMenuOpen = modePanel.mounted || settingsPanel.mounted || modelPanel.mounted;
   const kindTabsRef = useSegmentIndicator<HTMLDivElement>(kind);
   // A prompt replaced by an idea or template can be brought back.
   // Undo keeps what the visitor wrote (and the ratio) even after several
@@ -406,6 +409,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     setKind(next);
     setMobileExpanded(false);
     setPanel(null);
+    setModelOpen(false);
     setMentionOpen(false);
     setNotice("");
     setNudge(0);
@@ -658,7 +662,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
 
   const speechLabel = zh ? "文字转语音" : "Text to speech";
   const modeControl = canReference || offerClip || offerKeyframes || speechMode ? <div data-home-popover className="relative">
-        <button ref={modeTriggerRef} type="button" className="du-composer-mode" aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}>{speechMode ? speechLabel : useKeys ? keysLabel : clipMode ? clipLabel : modeLabel(!showRefSlot)}<ChevronDown className="h-3 w-3" aria-hidden="true" /></button>
+        <button ref={modeTriggerRef} type="button" className="du-composer-mode" aria-expanded={panel === "mode"} onClick={() => { setModelOpen(false); setPanel(panel === "mode" ? null : "mode"); }}>{speechMode ? speechLabel : useKeys ? keysLabel : clipMode ? clipLabel : modeLabel(!showRefSlot)}<ChevronDown className="h-3 w-3" aria-hidden="true" /></button>
         {modePanel.mounted ? <div data-presence="pop" data-state={modePanel.state} className="du-home-popover du-mode-menu">
           {(canReference ? (needsImage ? [false] : [false, true]) : [true]).map((text) => <button key={String(text)} type="button" aria-pressed={!speechMode && !useKeys && !clipMode && !showRefSlot === text} title={modeHint(text)} onClick={() => { setSpeechMode(false); chooseMode(text); }}>{modeLabel(text)}{!speechMode && !useKeys && !clipMode && !showRefSlot === text && <Check size={14} aria-hidden="true" />}</button>)}
           {offerKeyframes ? <button type="button" aria-pressed={!speechMode && useKeys} onClick={() => { setSpeechMode(false); chooseKeyframes(); }}>{keysLabel}{!speechMode && useKeys && <Check size={14}/>}</button> : null}
@@ -667,7 +671,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         </div> : null}
       </div> : null;
 
-  return <div id="home-generator" className="relative z-20 w-full max-w-[1060px] scroll-mt-24" style={homepage ? { "--du-editor-width": editorSize.width + "px", "--du-editor-height": editorSize.height + "px" } as React.CSSProperties : undefined}>
+  return <div id="home-generator" data-function-menu-open={functionMenuOpen || undefined} className="relative z-20 w-full max-w-[1060px] scroll-mt-24" style={homepage ? { "--du-editor-width": editorSize.width + "px", "--du-editor-height": editorSize.height + "px" } as React.CSSProperties : undefined}>
     <HomeMediaPicker lang={lang} homepage={homepage} wanVideoOnly={clipMode} acceptedTypes={clipMode ? ["video"] : ["image"]} mentionAnchor={mentionAnchor} initialTab={mentionAnchor ? "elements" : undefined} open={pickerOpen} onClose={() => { setPickerOpen(false); setMentionAnchor(null); }} onMention={mentionAnchor ? (item) => {
       const index = references.findIndex((asset) => asset.id === item.id);
       if (index < 0 && references.length >= referenceLimit) return;
@@ -742,11 +746,11 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     </div> : null}
     <div data-expanded={mobileExpanded || undefined} className="du-composer-bar mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
       {modeControl}
-      <div className="du-composer-model relative min-w-0"><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : selectImageModel} connectedIds={useKeys ? [KLING_KEYFRAME_MODEL] : kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" showConnectionStatus={false} catalogSet="current" compact /></div>
+      <div className="du-composer-model relative min-w-0"><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : selectImageModel} connectedIds={useKeys ? [KLING_KEYFRAME_MODEL] : kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" open={modelOpen} onOpenChange={(open) => { setModelOpen(open); if (open) { setPanel(null); setMentionOpen(false); } }} showConnectionStatus={false} catalogSet="current" compact /></div>
       {clipMode ? <>{divider}<span className="du-wan-sound"><Music2 size={16} aria-hidden="true" />{zh ? "有声" : "With sound"}</span></> : null}
       {kind === "video" && !clipMode && !useKeys && studioModel && !studioModel.audio ? <>{divider}<button type="button" className={plainControl} disabled title={zh ? "这个模型生成的视频没有声音，换成支持声音的模型（如 Seedance 2.5）即可开启" : "This model makes silent videos; pick one with sound (e.g. Seedance 2.5) to turn it on"} aria-label={zh ? "声音：这个模型不支持" : "Sound: not available for this model"}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" /><svg className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg></span>{zh ? "无声" : "Silent"}</button></> : null}
       {kind === "video" && !useKeys && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChoice.current = !sound; setSound(!sound); }} aria-pressed={sound} aria-label={zh ? (sound ? "声音：开启" : "声音：关闭") : (sound ? "Sound: on" : "Sound: off")}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "开启" : "On") : (zh ? "关闭" : "Off")}</button></> : null}
-      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={`${plainControl} du-composer-settings`} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"} aria-label={zh ? "生成设置" : "Generation settings"}>{homepage && <span className="du-composer-mobile-aspect du-num">{clipMode || useKeys ? duration + "s" : aspect}</span>}<span className="du-num du-composer-settings-summary">{(kind === "video" ? (clipMode || useKeys ? [`${duration}s`, resolutionLabel(resolution)] : [aspect, `${duration}s`, resolutionLabel(resolution)]) : [aspect, ...(imageResolutions.length ? [resolutionLabel(resolution)] : []), ...(maxImageCount > 1 ? [String(imageCount)] : [])]).join(" / ")}</span><span aria-hidden="true" className="du-composer-divider" /><Settings2 className="h-4 w-4 shrink-0" aria-hidden="true" /></button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings">
+      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={`${plainControl} du-composer-settings`} onClick={() => { setModelOpen(false); setPanel(panel === "settings" ? null : "settings"); }} aria-expanded={panel === "settings"} aria-label={zh ? "生成设置" : "Generation settings"}>{homepage && <span className="du-composer-mobile-aspect du-num">{clipMode || useKeys ? duration + "s" : aspect}</span>}<span className="du-num du-composer-settings-summary">{(kind === "video" ? (clipMode || useKeys ? [`${duration}s`, resolutionLabel(resolution)] : [aspect, `${duration}s`, resolutionLabel(resolution)]) : [aspect, ...(imageResolutions.length ? [resolutionLabel(resolution)] : []), ...(maxImageCount > 1 ? [String(imageCount)] : [])]).join(" / ")}</span><span aria-hidden="true" className="du-composer-divider" /><Settings2 className="h-4 w-4 shrink-0" aria-hidden="true" /></button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings">
         {useKeys ? <p className="du-set-label">{zh ? "画幅跟随第一张关键帧" : "Aspect ratio follows the first keyframe"}</p> : null}
         {!useKeys && !clipMode && (kind === "video" ? videoAspects : imageAspects).length ? <section>
           <p className="du-set-label">{zh ? "画面比例" : "Aspect ratio"}</p>
@@ -783,7 +787,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     {replaced !== null && !notice ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? "已换成这条灵感" : "Replaced with this idea"}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { setPrompt(replaced.prompt); setAspect(replaced.aspect); setReplaced(null); promptRef.current?.focus({ preventScroll: true }); }}>{zh ? "恢复原内容" : "Undo"}</button></output> : null}
     {clearedRefs !== null && clearedRefs.kind === kind ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? `已移除 ${clearedRefs.references.length} 张参考图` : `Removed ${clearedRefs.references.length} reference image${clearedRefs.references.length > 1 ? "s" : ""}`}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { const back = clearedRefs; setClearedRefs(null); setTextOnly(false); if (back.kind === "video") setVideoReferences(back.references); else setReferenceImages(back.references); setPrompt(back.prompt); }}>{zh ? "撤销" : "Undo"}</button></output> : null}
     {trimmed !== null ? <output data-presence="fade" className="mt-2 flex items-center gap-2 text-xs text-[var(--du-text-muted)]">{zh ? `这个模型最多支持 ${videoReferenceLimit} 张参考图，已自动保留前 ${videoReferenceLimit} 张` : `This model supports up to ${videoReferenceLimit} reference image${videoReferenceLimit > 1 ? "s" : ""}. Kept the first ${videoReferenceLimit}.`}<button type="button" className="text-[var(--du-accent-text)] hover:underline" onClick={() => { const back = trimmed; setTrimmed(null); setVideoReferences(back.references); setPrompt(back.prompt); selectModel(back.modelId); }}>{zh ? "换回原模型" : "Switch back"}</button></output> : null}
-    {kind === "video" && showSuggestions && !suggestionsHidden ? <div className="du-composer-suggestions">
+    {kind === "video" && showSuggestions && !suggestionsHidden && !functionMenuOpen ? <div className="du-composer-suggestions">
       <span className="du-composer-suggestions-label mr-1">{zh ? "快捷灵感" : "Quick ideas"}</span>
       {suggestions.map((item) => (
         <button
@@ -813,9 +817,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       <button type="button" onClick={() => setSuggestionOffset((value) => (value + 3) % HOME_TEMPLATES.length)} className="du-composer-suggestions-label ml-auto" title={zh ? "换一批灵感" : "Refresh"} aria-label={zh ? "换一批灵感" : "Refresh"}><RefreshCw className="h-3 w-3" aria-hidden="true" /></button>
       <button type="button" onClick={() => setSuggestionsHidden(true)} className="du-composer-suggestions-label">{zh ? "收起" : "Hide"}</button>
     </div> : null}
-    {kind === "video" && showSuggestions && suggestionsHidden ? <div className="du-composer-suggestions"><button type="button" onClick={() => setSuggestionsHidden(false)} className="du-composer-suggestions-label">{zh ? "快捷灵感" : "Quick ideas"}</button></div> : null}
+    {kind === "video" && showSuggestions && suggestionsHidden && !functionMenuOpen ? <div className="du-composer-suggestions"><button type="button" onClick={() => setSuggestionsHidden(false)} className="du-composer-suggestions-label">{zh ? "快捷灵感" : "Quick ideas"}</button></div> : null}
     </form> : null}
-    {kind === "image" && showImageIdeas && !imageIdeasHidden ? <div className="du-image-ideas" data-presence="fade">
+    {kind === "image" && showImageIdeas && !imageIdeasHidden && !functionMenuOpen ? <div className="du-image-ideas" data-presence="fade">
       <div className="du-image-ideas-head">
         <span>{zh ? "试试这些提示" : "Try these prompts"}</span>
         <button type="button" onClick={() => setImageIdeaOffset((value) => (value + 3) % HOME_IMAGE_IDEAS.length)} aria-label={zh ? "换一批" : "Show others"} title={zh ? "换一批" : "Show others"}><RefreshCw aria-hidden="true" /></button>
