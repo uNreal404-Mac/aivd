@@ -5,13 +5,13 @@ import { navModelHref } from "@/lib/nav-models";
 import featurePrompts from "@/lib/home-feature-prompts.json";
 
 export type Bi = { zh: string; en: string };
-export type ShowMedia = { src: string; video?: boolean; poster?: string; promptId?: string };
+export type ShowMedia = { src: string; video?: boolean; poster?: string; promptId?: string; aspectRatio?: number };
 
-const S = (name: string): ShowMedia => ({ src: `/home/samples/${name}.webp` });
-const V = (name: string, poster?: string, promptId?: string): ShowMedia => ({ src: `/home/${name}.mp4`, video: true, poster, promptId });
+const S = (name: string, aspectRatio = 3 / 4): ShowMedia => ({ src: `/home/samples/${name}.webp`, aspectRatio });
+const V = (name: string, poster?: string, promptId?: string, aspectRatio = 16 / 9): ShowMedia => ({ src: `/home/${name}.mp4`, video: true, poster, promptId, aspectRatio });
 
 export const MEDIA = {
-  marina: V("hero-marina-loop", "/home/hero-marina-poster.webp"),
+  marina: V("hero-marina-loop", "/home/hero-marina-poster.webp", undefined, 2),
   // Silent first six seconds of example_videos/日本.mp4 for the homepage card.
   japan: V("example-japan-6s", "/home/example-japan-6s-poster.webp", "japan"),
   showcase2: V("hero-showcase-02"),
@@ -21,24 +21,24 @@ export const MEDIA = {
   friedChicken: V("example-fried-chicken-22-29", "/home/example-fried-chicken-22-29-poster.webp", "friedChicken"),
   // Silent 21–24s cut of example_videos/僵尸小猫.mp4 for the carousel.
   zombieKitten: V("example-zombie-kitten-21-24", "/home/example-zombie-kitten-21-24-poster.webp"),
-  dragon: V("example-dragon-full", "/home/example-dragon-full-poster.webp", "dragon"),
-  dress: V("example-dress-10-20", "/home/example-dress-10-20-poster.webp", "dress"),
+  dragon: V("example-dragon-full", "/home/example-dragon-full-poster.webp", "dragon", 9 / 16),
+  dress: V("example-dress-10-20", "/home/example-dress-10-20-poster.webp", "dress", 9 / 16),
   samuraiCat: V("example-samurai-cat-7s", "/home/example-samurai-cat-7s-poster.webp", "samuraiCat"),
   showcase3: V("hero-showcase-03"),
   boyDog: S("boy-and-dog"),
   autumn: S("autumn-walk"),
   rain: S("rain-couple"),
   wind: S("mountain-wind"),
-  bloom: S("cosmic-bloom"),
-  valley: S("mountain-valley"),
-  sea: S("storm-sea"),
+  bloom: S("cosmic-bloom", 16 / 9),
+  valley: S("mountain-valley", 16 / 9),
+  sea: S("storm-sea", 16 / 9),
   dancer: S("dancer"),
   planet: S("planet-impact"),
   tomb: S("tomb-light"),
   mech: S("mech-warrior"),
   dreaming: S("dreaming"),
   carpet: S("red-carpet"),
-  studio: S("studio-room"),
+  studio: S("studio-room", 16 / 9),
 } as const;
 
 /** 1. Large feature cards in the top carousel. */

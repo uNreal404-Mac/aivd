@@ -12,7 +12,7 @@ import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
-import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { getMarketModel, imageResolution, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
@@ -84,7 +84,7 @@ function AiImageStudioForm({
   const [prompt, setPrompt] = useState(initialPrompt);
   const draft = usePromptDraft(draftScope, prompt, setPrompt, Boolean(initialPrompt));
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (model.id === DEFAULT_IMAGE_MODEL.id && options.aspects?.includes("3:4") ? "3:4" : options.aspects?.[0] ?? "1:1"));
-  const [resolution, setResolution] = useState(options.resolutions?.includes(initialResolution) ? initialResolution : (options.resolutions?.[0] ?? ""));
+  const [resolution, setResolution] = useState(imageResolution(model, initialResolution) ?? "");
   const [count, setCount] = useState(() => imageOutputCount(initialCount, options.maxCount));
   const [view, setView] = useImageView();
   const [historyFilter, setHistoryFilter] = useState(INITIAL_FILTER);
@@ -141,12 +141,14 @@ function AiImageStudioForm({
     window.location.href = localizedHref(locale, "/creative-space/canvas");
   };
   useCreditReturnDraft(draftScope, () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
-    if (getMarketModel(saved.modelId)?.kind === "image") setModelId(saved.modelId);
+    const savedModel = getMarketModel(saved.modelId);
+    const restored = savedModel?.kind === "image" ? savedModel : model;
+    setModelId(restored.id);
     setPrompt(saved.prompt ?? "");
     setAspect(saved.aspect ?? "1:1");
-    setResolution(saved.resolution ?? "");
-    setCount(imageOutputCount(saved.count ?? 1, getMarketModel(saved.modelId)?.options.maxCount));
-    setRefs(Array.isArray(saved.refs) ? saved.refs : []);
+    setResolution(imageResolution(restored, saved.resolution) ?? "");
+    setCount(imageOutputCount(saved.count, restored.options.maxCount));
+    setRefs(Array.isArray(saved.refs) ? saved.refs.slice(0, restored.options.maxImages ?? 0) : []);
     void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
   });
 
@@ -179,25 +181,16 @@ function AiImageStudioForm({
 
   const maxCount = options.maxCount ?? 1;
   const maxImages = options.maxImages ?? 0;
-  const creditsFor = (overrides: { resolution?: string }) =>
-    marketCredits(model, {
-      prompt,
-      aspectRatio: aspect,
-      resolution: (overrides.resolution ?? resolution) || undefined,
-      count,
-      imageUrls: refs.map((item) => item.key),
-    });
-  const credits = useMemo(
-    () =>
-      marketCredits(model, {
-        prompt,
-        aspectRatio: aspect,
-        resolution: resolution || undefined,
-        count,
-        imageUrls: refs.map((item) => item.key),
-      }),
-    [model, prompt, aspect, resolution, count, refs],
-  );
+  const request = {
+    model: model.id,
+    prompt,
+    aspectRatio: aspect,
+    resolution: resolution || undefined,
+    count,
+    imageUrls: refs.map((item) => item.key),
+  };
+  const creditsFor = (size: string) => internalFree ? 0 : marketCredits(model, { ...request, resolution: size });
+  const credits = internalFree ? 0 : marketCredits(model, request);
 
   // Switching models keeps choices that the new model accepts.
   const chooseModel = (id: string) => {
@@ -205,7 +198,7 @@ function AiImageStudioForm({
     if (!next) return;
     setModelId(id);
     setAspect((current) => (next.options.aspects?.includes(current) ? current : (next.options.aspects?.[0] ?? "1:1")));
-    setResolution((current) => (next.options.resolutions?.includes(current) ? current : (next.options.resolutions?.[0] ?? "")));
+    setResolution((current) => imageResolution(next, current) ?? "");
     setCount((current) => Math.min(current, next.options.maxCount ?? 1));
     setRefs((current) => current.slice(0, next.options.maxImages ?? 0));
   };
@@ -293,14 +286,7 @@ function AiImageStudioForm({
     setSubmitting(true);
     setNotice(null);
     const result = await submitMedia(
-      {
-        model: model.id,
-        prompt: prepared.prompt,
-        aspectRatio: aspect,
-        resolution: resolution || undefined,
-        count,
-        imageUrls: refs.map((item) => item.key),
-      },
+      { ...request, prompt: prepared.prompt },
       zh,
       undefined,
       session?.user?.id,
@@ -500,7 +486,7 @@ function AiImageStudioForm({
                       options={options.resolutions.map((option) => ({
                         value: option,
                         label: option,
-                        sub: zh ? `${internalFree ? 0 : creditsFor({ resolution: option })} 积分` : `${internalFree ? 0 : creditsFor({ resolution: option })} credits`,
+                        sub: `${creditsFor(option)} ${zh ? "积分" : "credits"}`,
                       }))}
                       onChange={setResolution}
                       fixedNote={zh ? "这个模型只有这一档分辨率" : "This model has one resolution"}
@@ -527,7 +513,7 @@ function AiImageStudioForm({
                 <span>{submitting ? (zh ? "提交中…" : "Submitting…") : zh ? "生成" : "Generate"}</span>
                 <span className="is-generate-cost">
                   <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span className="du-num">{internalFree ? 0 : credits}</span>
+                  <span className="du-num">{credits}</span>
                   <span className="sr-only">{zh ? "积分" : "credits"}</span>
                 </span>
               </button>

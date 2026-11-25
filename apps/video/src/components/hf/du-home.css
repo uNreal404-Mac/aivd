@@ -4,7 +4,7 @@
   position: relative;
   overflow-x: clip;
   padding: 47px 24px 44px;
-  background: var(--du-editor-bg);
+  background: var(--du-bg);
 }
 
 /* The diffused light is confined to the creation area. */
@@ -12,11 +12,7 @@
   position: absolute;
   inset: -64px 0 auto;
   height: 900px;
-  /* A wide soft light behind the title and composer, and a faint 11px dot
-     grid over it, fading out towards the gallery (Pollo's backdrop). */
-  background:
-    radial-gradient(585px 585px at 50% 18%, color-mix(in srgb, var(--du-accent) 20%, transparent) 0%, color-mix(in srgb, var(--du-accent) 9%, transparent) 47%, transparent 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='1' height='1' fill='white' fill-opacity='.075'/%3E%3C/svg%3E");
+  background: radial-gradient(ellipse 460px 240px at 50% 26%, color-mix(in srgb, var(--du-accent) 6%, transparent), transparent);
   mask-image: linear-gradient(to bottom, black 35%, transparent 92%);
   pointer-events: none;
 }
@@ -35,9 +31,9 @@
 .du-hero-title {
   max-width: 100%;
   margin-bottom: 24px;
-  color: var(--du-editor-text);
+  color: var(--du-text);
   font-size: var(--ds-fs-xl);
-  font-weight: 300;
+  font-weight: 500;
   line-height: 1.5;
   letter-spacing: 0;
   text-wrap: balance;
@@ -63,7 +59,7 @@
   padding: 3px;
   border: 0;
   background: transparent;
-  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--du-accent) 70%, transparent);
+  box-shadow: var(--ds-shadow-1);
   backdrop-filter: none;
 }
 
@@ -105,12 +101,10 @@
   gap: 8px;
   margin-top: 24px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, white 4%, transparent);
+  border: 1px solid var(--du-border-strong);
   border-radius: var(--ds-r-3xl);
-  background: color-mix(in srgb, black 66%, transparent);
-  box-shadow:
-    0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent),
-    0 -12px 42px color-mix(in srgb, var(--du-accent) 20%, transparent);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-1);
   backdrop-filter: blur(17px);
   -webkit-backdrop-filter: blur(17px);
 }
@@ -130,18 +124,22 @@
   top: -1px;
   width: 94%;
   height: 40px;
-  background: radial-gradient(50% 100% at 50% 0%, color-mix(in srgb, var(--du-accent) 30%, transparent) 0%, transparent 75%);
+  background: radial-gradient(50% 100% at 50% 0%, var(--du-accent-soft), transparent 75%);
 }
 
 .du-hero .du-composer::after {
   top: -1px;
   width: 84%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--du-accent) 65%, white) 50%, transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--du-accent) 32%, transparent) 50%, transparent);
 }
 
 .du-hero .du-composer:focus-within {
   border-color: color-mix(in srgb, white 7%, transparent);
+}
+
+.du-hero .du-composer:has(textarea:focus-visible) {
+  border-color: var(--du-accent-text);
 }
 
 .du-hero .du-composer-prompt-row {
@@ -159,7 +157,7 @@
 
 .du-hero .du-composer-placeholder {
   top: 0;
-  color: var(--du-editor-placeholder);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-ui);
   font-weight: 300;
   line-height: 20px;
@@ -178,7 +176,7 @@
 }
 
 .du-hero .du-composer-ref-slot:hover {
-  border-color: color-mix(in srgb, white 30%, transparent);
+  border-color: var(--du-accent-text);
   background: var(--ds-fill-2);
   color: white;
   transform: none;
@@ -215,7 +213,7 @@
   display: inline-flex;
   align-items: center;
   background: color-mix(in srgb, white 5%, transparent);
-  color: var(--du-editor-text);
+  color: var(--du-text);
   white-space: nowrap;
   transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
@@ -254,7 +252,7 @@
   height: 28px;
   gap: 4px;
   padding: 0 6px;
-  color: color-mix(in srgb, white 40%, transparent);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   font-weight: 500;
 }
@@ -272,6 +270,10 @@
 .du-hero .du-composer-send.du-composer-send-busy {
   background: var(--du-accent);
   color: var(--du-on-accent);
+}
+
+.du-hero .du-composer-send[data-ready]:hover:not(:disabled) {
+  background: var(--du-accent-hover);
 }
 
 .du-hero-skills {
@@ -483,6 +485,7 @@
   text-decoration: none;
 }
 .du-hero .du-mode-menu a:hover { background: var(--ds-fill-2); }
+.du-hero .du-mode-menu button[aria-pressed="true"] svg { color: var(--du-accent-text); }
 .du-home-agent { width: 100%; margin-top: 24px; text-align: left; }
 .du-home-agent .cs-agent-form { min-height: 164px; display: flex; flex-direction: column; justify-content: space-between; }
 .du-home-agent .cs-input { min-height: 84px; }

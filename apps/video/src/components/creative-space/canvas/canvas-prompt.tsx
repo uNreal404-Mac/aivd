@@ -7,6 +7,8 @@ export interface CanvasReference {
   name: string;
   token: string;
   connected: boolean;
+  url?: string;
+  media?: "image" | "video";
 }
 
 export function CanvasPrompt({ value, label, placeholder, zh, list, attach, change }: {

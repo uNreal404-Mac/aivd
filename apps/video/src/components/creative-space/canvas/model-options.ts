@@ -52,13 +52,21 @@ export function choicesFor(kind: GenKind, modelId: string): ModelChoices {
     aspects: options.aspects ?? [],
     resolutions: options.resolutions ?? [],
     durations: [],
-    maxCount: Math.max(1, Math.min(4, options.maxCount ?? 1)),
+    maxCount: Math.max(1, Math.min(9, options.maxCount ?? 1)),
     maxImages: options.maxImages ?? 0,
     audio: false,
     voices: options.voices ?? [],
     requiresImage: Boolean(options.requiresImage),
     style: kind === "audio",
   };
+}
+
+/** The provider mappings for image-conditioned videos specify when the source fixes the aspect. */
+export function followsReferenceAspect(modelId: string): boolean {
+  const model = getMarketModel(modelId);
+  if (model?.kind !== "video" || !model.options.maxImages) return false;
+  const probe = model.buildTask({ prompt: "preview", aspectRatio: "9:16", imageUrls: ["reference"] });
+  return probe.input.aspect_ratio !== "9:16";
 }
 
 /** Settings for a new node of this kind (first model, its first options). */
@@ -72,8 +80,8 @@ export function defaultsFor(kind: GenKind, title: string, prompt = ""): Generate
       prompt,
       modelId: model?.id ?? "",
       aspect: choices.aspects.includes("16:9") ? "16:9" : choices.aspects[0],
-      resolution: choices.resolutions.includes("720p") ? "720p" : choices.resolutions[0],
-      duration: choices.durations.includes(5) ? 5 : choices.durations[0],
+      resolution: choices.resolutions.includes("480p") ? "480p" : choices.resolutions[0],
+      duration: choices.durations.includes(4) ? 4 : choices.durations[0],
       audio: choices.audio,
       status: "idle",
     };
@@ -85,8 +93,8 @@ export function defaultsFor(kind: GenKind, title: string, prompt = ""): Generate
     title,
     prompt,
     modelId: model?.id ?? "",
-    ...(choices.aspects.length ? { aspect: choices.aspects.includes("1:1") ? "1:1" : choices.aspects[0] } : {}),
-    ...(choices.resolutions.length ? { resolution: choices.resolutions[0] } : {}),
+    ...(choices.aspects.length ? { aspect: choices.aspects.includes("16:9") ? "16:9" : choices.aspects[0] } : {}),
+    ...(choices.resolutions.length ? { resolution: model?.options.defaultResolution ?? choices.resolutions[0] } : {}),
     ...(kind === "image" ? { count: 1 } : {}),
     ...(choices.voices.length ? { voice: choices.voices[0].id } : {}),
     status: "idle",

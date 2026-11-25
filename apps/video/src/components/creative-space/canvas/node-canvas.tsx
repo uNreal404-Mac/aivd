@@ -7,13 +7,11 @@
 import {
   AlignHorizontalJustifyStart,
   AlignVerticalJustifyStart,
-  ArrowLeft,
   Bookmark,
-  Bot,
-  Coins,
-  Copy,
+  ChevronDown,
+  Play,
+  Download,
   Film,
-  FolderOpen,
   Grid3x3,
   Hand,
   Image as ImageIcon,
@@ -21,21 +19,13 @@ import {
   Layers,
   LayoutGrid,
   Link2,
-  Loader2,
-  Map as MapIcon,
   MousePointer2,
-  Music,
   Plus,
-  Redo2,
-  Search,
   Trash2,
-  Type,
-  Undo2,
   Unlink,
   Upload,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import {
   type ChangeEvent,
   type CSSProperties,
@@ -57,6 +47,8 @@ import ReactFlow, {
   type Node,
   type NodeChange,
   type OnConnectStartParams,
+  NodeToolbar,
+  Position,
   ReactFlowProvider,
   SelectionMode,
   useEdgesState,
@@ -71,10 +63,12 @@ import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
 import {
   type AgentData,
+  acceptGeneration,
   arrangeBoxes,
   type CanvasData,
   type CanvasKind,
   checkConnection,
+  copyGenerationSettings,
   directInputs,
   fromLegacyLocalCanvas,
   fromStoredGraph,
@@ -82,6 +76,7 @@ import {
   type GraphEdge,
   type GraphNode,
   hasOutput,
+  isGenerationUuid,
   isUploadKey,
   kindsAccepting,
   LEGACY_CANVAS_KEY,
@@ -91,11 +86,15 @@ import {
   type PortType,
   structureKey,
   submitKey,
-  textOf,
+  inputText,
+  inputTypes,
+  selectionWithChildren,
+  worldPosition,
   toStoredGraph,
 } from "@/lib/creative-space/canvas-graph";
 import { jobStatus, postGeneration, resolveMedia } from "@/lib/creative-space/canvas-submit";
-import { previewFrame, uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
+import { buildCanvasAgentForm } from "@/lib/creative-space/agent-form";
+import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
 import { listGuestAssets, type PickerAsset, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
 import { UploadError, uploadErrorText, uploadImage } from "@/lib/image-to-video";
 import { localizedHref } from "@/lib/locale-path";
@@ -109,12 +108,22 @@ import { submissionDelay } from "@/lib/creative-space/submission-delay";
 import { appearanceStyle, useCanvasBackground } from "./canvas-appearance";
 import { PinRail } from "./canvas-pins";
 import { buildRequest, choicesFor, defaultsFor, IMAGE_MODELS, quote, withModel } from "./model-options";
+import { CanvasDock, type CanvasPanel } from "./canvas-dock";
+import { CanvasHeader } from "./canvas-header";
+import { CanvasResources } from "./canvas-resources";
+import { getCanvasSound } from "@/lib/creative-space/canvas-sounds";
 import "./node-canvas.css";
+import "./canvas-chrome.css";
+import "./node-interactions.css";
+import { canvasGroupPlan, runCanvasGroup } from "@/lib/creative-space/canvas-group-run";
+import { CANVAS_EDGE_TYPES } from "./canvas-wire";
+import { GraphContextMenu } from "./graph-context-menu";
 
 type FlowNode = Node<CanvasData>;
 type CanvasSummary = { id: string; name: string; updatedAt: string | number };
 type SaveState = "idle" | "local" | "dirty" | "saving" | "saved" | "error";
-type Menu = { x: number; y: number; flow: { x: number; y: number }; from?: { id: string; type: PortType } };
+type LinkOrigin = { id: string; side: "source" | "target"; type?: PortType };
+type Menu = { x: number; y: number; flow: { x: number; y: number }; from?: LinkOrigin; panel?: "pane" | "node"; palette?: boolean; id?: string };
 type Toast = { text: string; error?: boolean };
 
 const DRAFT_KEY = "aivd:node-canvas:draft";
@@ -133,7 +142,7 @@ const isGen = (data: CanvasData): data is GenerateData => GEN_KINDS.has(data.kin
 const newId = () => crypto.randomUUID();
 
 function nodeSize(kind: CanvasKind): { width: number; height: number } | undefined {
-  if (kind === "text") return { width: 260, height: 180 };
+  if (kind === "text") return { width: 280, height: 280 };
   if (kind === "group") return { width: 640, height: 420 };
   return undefined;
 }
@@ -164,19 +173,6 @@ function sameOriginUrl(data: CanvasData): string | null {
   return null;
 }
 
-/** JPEG sample ≤1024px for the Agent's visual input. */
-async function visualSample(blob: Blob, label: string): Promise<File> {
-  const bitmap = await createImageBitmap(blob);
-  const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height, 1));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const out = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-  if (!out) throw new Error("sample");
-  return new File([out], `${label}__sample.jpg`, { type: "image/jpeg" });
-}
-
 const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
   const t = (title: string, text: string) => ({ kind: "text" as const, title, text });
   return [
@@ -186,7 +182,7 @@ const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
       description: zh ? "卖点文案 → 棚拍主图 → 15 秒宣传视频 + 配音" : "Copy → hero shot → 15s clip + voiceover",
       build: () => ({
         nodes: [
-          { key: "brief", data: t(zh ? "卖点" : "Selling points", zh ? "高端蓝牙耳机，哑光黑，白色无缝背景，柔光棚拍" : "Premium earbuds, matte black, seamless white studio, soft light"), x: 0, y: 0 },
+          { key: "brief", data: t(zh ? "卖点" : "Selling points", zh ? "哑黑头戴式耳机，石墨色展台，青色轮廓光" : "Matte black headphones on a graphite plinth with a cyan rim light"), x: 0, y: 0 },
           { key: "hero", data: defaultsFor("image", zh ? "主图" : "Hero shot"), x: 340, y: 0 },
           { key: "clip", data: defaultsFor("video", zh ? "宣传视频" : "Ad clip", zh ? "镜头缓慢环绕产品，光线扫过表面" : "Slow orbit around the product, light sweeping across"), x: 700, y: 0 },
           { key: "vo", data: defaultsFor("audio", zh ? "旁白" : "Voiceover", zh ? "听见每一个细节。" : "Hear every detail."), x: 700, y: 360 },
@@ -216,7 +212,7 @@ const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
       description: zh ? "先定角色形象，再用它生成三个场景" : "Lock a character, then reuse it in three scenes",
       build: () => ({
         nodes: [
-          { key: "who", data: t(zh ? "角色设定" : "Character", zh ? "短发女孩，黄色雨衣，正面全身，干净背景" : "Short-haired girl, yellow raincoat, full body, plain background"), x: 0, y: 0 },
+          { key: "who", data: t(zh ? "角色设定" : "Character", zh ? "短发黑人女性，黑色上衣，银色耳饰，深色摄影棚侧面肖像" : "A Black woman with short natural hair, black clothing and a silver earring, in profile in a dark studio"), x: 0, y: 0 },
           { key: "sheet", data: defaultsFor("image", zh ? "角色定妆" : "Character sheet"), x: 340, y: 0 },
           ...[0, 1, 2].map((index) => ({
             key: `s${index}`,
@@ -262,17 +258,19 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [canvasId, setCanvasId] = useState<string | null>(null);
   const canvasIdRef = useRef<string | null>(null);
   const [canvases, setCanvases] = useState<CanvasSummary[]>([]);
-  const [listOpen, setListOpen] = useState(false);
+  const [panel, setPanel] = useState<CanvasPanel | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [balance, setBalance] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const graphReady = useRef(false);
   const booted = useRef(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const groupRunRef = useRef<{ id: string; controller: AbortController; pending?: string } | null>(null);
+  const [groupProgress, setGroupProgress] = useState<{ index: number; total: number } | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [userTemplates, setUserTemplates] = useState<{ id: string; name: string; graph: ReturnType<typeof toStoredGraph> }[]>([]);
@@ -282,7 +280,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [comparing, setComparing] = useState<{ before: string; after: string } | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [showEdges, setShowEdges] = useState(true);
-  const [showMinimap, setShowMinimap] = useState(true);
+  const [showMinimap, setShowMinimap] = useState(false);
   const [viewOptions, setViewOptions] = useCanvasViewOptions();
   const [background, saveBackground] = useCanvasBackground();
   const appearance = useMemo(() => appearanceStyle(viewOptions.miniColors, background), [viewOptions.miniColors, background]);
@@ -293,7 +291,9 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [legacyCount, setLegacyCount] = useState(0);
   const [waitingMedia, setWaitingMedia] = useState<Set<string>>(() => new Set());
   const fileInput = useRef<HTMLInputElement>(null);
-  const connectFrom = useRef<{ id: string; type: PortType } | null>(null);
+  const connectFrom = useRef<LinkOrigin | null>(null);
+  const cursor = useRef<{ x: number; y: number } | null>(null);
+  const [editingField, editField] = useState<CanvasActions["editingField"]>(null);
   const menuOpenedAt = useRef(0);
   const flowBox = useRef<HTMLDivElement>(null);
   const runLocks = useRef(new Set<string>());
@@ -427,7 +427,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
           let data = current?.data ?? lastData.current.get(node.id) ?? node.data;
           // Brought back while its request was still unanswered: retryable, same key.
           if (!current && isGen(data) && data.status === "submitting") data = { ...data, status: "failed", error: unknownRequest };
-          return { ...node, data, selected: false };
+          return { ...node, data: { ...data, title: node.data.title, annotation: node.data.annotation }, selected: false };
         }),
         target.edges,
       );
@@ -475,7 +475,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const wire = (source: string, target: string): Edge => ({ id: newId(), source, target, sourceHandle: "out", targetHandle: "in" });
 
   const createKind = useCallback(
-    (kind: CanvasKind, position: { x: number; y: number }, from?: { id: string; type: PortType }, prompt = "") => {
+    (kind: CanvasKind, position: { x: number; y: number }, from?: LinkOrigin, prompt = "") => {
       const label = KIND_LABEL[kind][zh ? "zh" : "en"];
       const data: CanvasData =
         kind === "text"
@@ -488,7 +488,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
                 ? { kind, title: label, media: "image", mime: "image/*" }
                 : defaultsFor(kind, label, prompt);
       const node = makeNode(data, position);
-      const wires = from && checkConnection(from.id, node.id, [...nodesRef.current, node] as GraphNode[], edgesRef.current).ok ? [wire(from.id, node.id)] : [];
+      const [source, target] = from?.side === "target" ? [node.id, from.id] : [from?.id, node.id];
+      const wires = source && checkConnection(source, target, [...nodesRef.current, node] as GraphNode[], edgesRef.current).ok ? [wire(source, target)] : [];
       addNodes([node], wires);
       return node.id;
     },
@@ -720,6 +721,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   /** Before leaving this canvas: nothing in flight, and its latest changes saved. */
   const readyToLeave = useCallback(async () => {
     if (lifetime.current.signal.aborted) return false;
+    groupRunRef.current?.controller.abort();
     cancelAllPending();
     const busy = runLocks.current.size > 0 || nodesRef.current.some((node) => (node.data as { status?: string }).status === "submitting");
     if (busy) {
@@ -740,7 +742,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const openCanvas = useCallback(
     async (id: string) => {
-      setListOpen(false);
+      setPanel(null);
       try {
         if (!(await readyToLeave())) return;
         const before = contentKey(storedNow(), titleRef.current);
@@ -765,7 +767,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   );
 
   const newCanvas = useCallback(async (force = false) => {
-    setListOpen(false);
+    setPanel(null);
     if (!force && !(await readyToLeave())) return;
     if (lifetime.current.signal.aborted) return;
     loadGraph({ version: 2, nodes: [], edges: [] }, L("未命名画布", "Untitled canvas"), null);
@@ -1026,7 +1028,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   }, []);
 
   const mergedPrompt = useCallback((id: string, own: string) => {
-    const texts = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current).map((node) => textOf(node.data)).filter(Boolean);
+    const texts = inputText(id, nodesRef.current as GraphNode[], edgesRef.current);
     return [...texts, own.trim()].filter(Boolean).join("\n");
   }, []);
 
@@ -1135,8 +1137,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         if (lifetime.current.signal.aborted) return;
         const answer = await postGeneration(request.endpoint, request.body, key, canvasFetch);
         if (lifetime.current.signal.aborted) return;
-        if (answer.kind === "ok") {
-          patch(id, { status: "running", resultUuid: answer.uuid, resultIndex: 0, urls: undefined, pending: undefined, error: null } as Partial<GenerateData>);
+        if (answer.kind === "ok" && isGenerationUuid(answer.uuid)) {
+          patch(id, acceptGeneration(data, answer.uuid, Date.now()));
           void saveRemote();
           void refreshBalance();
           return;
@@ -1146,7 +1148,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
           requireLogin();
           return;
         }
-        if (answer.kind === "lost") {
+        if (answer.kind === "lost" || answer.kind === "ok") {
           fail(L("网络中断，不确定是否已提交。再点一次生成会沿用同一个请求，不会重复扣积分。", "The connection dropped. Generating again reuses this request and cannot charge twice."));
           return;
         }
@@ -1166,6 +1168,11 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     [L, canvasFetch, inputsOf, lifetime, mergedPrompt, patch, persistNow, prepareImages, refreshBalance, requireLogin, saveRemote, say, shortfall, zh],
   );
 
+  const agentForm = useCallback((id: string, instruction: string) => buildCanvasAgentForm({
+    instruction, locale, userId, inputs: directInputs(id, nodesRef.current as GraphNode[], edgesRef.current),
+    sourceFor: sameOriginUrl, fetchAsset: canvasFetch,
+  }), [locale, userId, canvasFetch]);
+
   const runAgent = useCallback(
     async (id: string) => {
       const node = nodesRef.current.find((item) => item.id === id);
@@ -1177,34 +1184,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       }
       patch(id, { status: "running", error: null } as Partial<AgentData>);
       try {
-        const assets = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current)
-          .filter((item) => (outputType(item.data) === "image" || outputType(item.data) === "video") && hasOutput(item.data))
-          .slice(0, 8);
-        const form = new FormData();
-        form.set("action", "plan");
-        form.set("instruction", instruction);
-        form.set("locale", locale);
-        const guests = assets.some((item) => item.data.kind === "media" && item.data.localId) ? await listGuestAssets(userId).catch(() => [] as PickerAsset[]) : [];
-        const described: { id: string; label: string; name: string; type: "image" | "video" }[] = [];
-        for (const [index, item] of assets.entries()) {
-          const label = String.fromCharCode(65 + index);
-          const type = outputType(item.data) === "video" ? "video" : "image";
-          let blob: Blob | null = null;
-          const local = item.data.kind === "media" && item.data.localId ? guests.find((asset) => asset.id === (item.data as MediaData).localId)?.file : undefined;
-          if (local) blob = local;
-          else {
-            const source = sameOriginUrl(item.data);
-            if (source) {
-              const response = await fetch(source);
-              if (response.ok) blob = await response.blob();
-            }
-          }
-          if (!blob) continue;
-          const still = type === "video" ? await previewFrame(new File([blob], `${label}.mp4`, { type: blob.type || "video/mp4" })) : blob;
-          form.append("visual", await visualSample(still, label));
-          described.push({ id: item.id, label, name: (item.data.title || label).slice(0, 300), type });
-        }
-        form.set("assets", JSON.stringify(described));
+        const form = await agentForm(id, instruction);
         const response = await canvasFetch("/api/v1/creative-space/agent", { method: "POST", body: form });
         if (response.status === 401) {
           patch(id, { status: "idle" } as Partial<AgentData>);
@@ -1224,7 +1204,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         patch(id, { status: "failed", error: error instanceof Error ? error.message : L("策划失败", "Planning failed") } as Partial<AgentData>);
       }
     },
-    [L, canvasFetch, locale, mergedPrompt, patch, requireLogin, userId],
+    [L, agentForm, canvasFetch, mergedPrompt, patch, requireLogin],
   );
 
   const dispatchRun = useCallback(
@@ -1248,7 +1228,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     if (!target || !isGen(target.data)) return null;
     const inputs = directInputs(id, all, edgesRef.current);
     const snapshot = toStoredGraph([target, ...inputs], []).nodes.map((node) => [node.id, node.data]);
-    return JSON.stringify([canvasGeneration.current, userId, snapshot]);
+    return JSON.stringify([canvasGeneration.current, userId, snapshot, inputText(id, all, edgesRef.current)]);
   }, [userId]);
 
   const run = useCallback((id: string) => {
@@ -1277,10 +1257,59 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     }
   }, [nodes, edges, cancelPending, submissionSignature]);
 
+  const stopGroup = useCallback(() => {
+    const task = groupRunRef.current;
+    if (!task) return;
+    task.controller.abort();
+    if (task.pending && pendingRuns.current.has(task.pending)) cancelPending(task.pending);
+  }, [cancelPending]);
+
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden) stopGroup(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { document.removeEventListener("visibilitychange", onVisibility); stopGroup(); };
+  }, [stopGroup]);
+
+  const startGroup = useCallback(async (groupId: string) => {
+    if (groupRunRef.current || !requireLogin()) return;
+    const plan = canvasGroupPlan(groupId, nodesRef.current as GraphNode[], edgesRef.current);
+    if (!plan.length) return;
+    const task = { id: groupId, controller: new AbortController(), pending: undefined as string | undefined };
+    const generation = canvasGeneration.current;
+    groupRunRef.current = task;
+    const active = () => !task.controller.signal.aborted && !lifetime.current.signal.aborted && generation === canvasGeneration.current && !document.hidden && nodesRef.current.some((node) => node.id === groupId);
+    try {
+      const complete = await runCanvasGroup(plan.map((node) => node.id), active, async (id, index) => {
+        const find = () => nodesRef.current.find((node) => node.id === id);
+        const current = find();
+        if (!current || !(isGen(current.data) || current.data.kind === "agent")) return false;
+        if (current.data.status === "done") return true;
+        // Re-evaluate group membership and dependencies in case the graph changed between steps.
+        if (!canvasGroupPlan(groupId, nodesRef.current as GraphNode[], edgesRef.current).some((node) => node.id === id)) return false;
+        const waiting = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current).some(({ data }) => (isGen(data) || data.kind === "agent") && data.status !== "done");
+        if (waiting) return false;
+        setGroupProgress({ index: index + 1, total: plan.length });
+        const busy = () => {
+          const data = find()?.data;
+          return pendingRuns.current.has(id) || runLocks.current.has(id) || Boolean(data && (isGen(data) || data.kind === "agent") && (data.status === "submitting" || data.status === "running"));
+        };
+        if (!busy()) { task.pending = id; run(id); }
+        while (active() && busy()) await new Promise((resolve) => setTimeout(resolve, 200));
+        if (!active() && task.pending && pendingRuns.current.has(task.pending)) cancelPending(task.pending);
+        task.pending = undefined;
+        const result = find()?.data;
+        return Boolean(active() && result && (isGen(result) || result.kind === "agent") && result.status === "done" && !result.error);
+      });
+      if (active()) say(complete ? L("组内节点已执行完成", "Group finished") : L("执行已停止，请检查未完成的节点和上游输入", "Group stopped; check unfinished nodes and their inputs"), !complete);
+    } finally {
+      if (groupRunRef.current === task) { groupRunRef.current = null; if (!lifetime.current.signal.aborted) setGroupProgress(null); }
+    }
+  }, [L, cancelPending, lifetime, requireLogin, run, say]);
+
   /* ------------------------------------------------------------- assets */
 
   const addFiles = useCallback(
-    async (files: File[], at?: { x: number; y: number }) => {
+    async (files: File[], at?: { x: number; y: number }, referenceTarget?: string) => {
       const accepted = files.filter((file) =>
         file.type.startsWith("image/") ? file.size <= MAX_IMAGE_BYTES : file.type.startsWith("video/") ? file.size <= MAX_VIDEO_BYTES : false,
       );
@@ -1291,7 +1320,9 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         const media = file.type.startsWith("video/") ? "video" : "image";
         return { file, node: makeNode({ kind: "media", media, title: file.name.slice(0, 60), mime: file.type, url: URL.createObjectURL(file), busy: true }, { x: origin.x + index * 32, y: origin.y + index * 32 }) };
       });
-      addNodes(created.map((item) => item.node));
+      const sources = created.map((item) => item.node);
+      const wires = referenceTarget ? sources.filter((node) => checkConnection(node.id, referenceTarget, [...nodesRef.current, ...sources] as GraphNode[], edgesRef.current).ok).map((node) => wire(node.id, referenceTarget)) : [];
+      addNodes(sources, wires, !referenceTarget);
       // Every file is kept in this browser before any upload starts, so a
       // reload mid-upload keeps them all (saving uploads what is still local).
       const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file, userId).catch(() => null)));
@@ -1555,7 +1586,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const selected = nodes.filter((node) => node.selected);
 
-  const absolute = (node: FlowNode) => node.positionAbsolute ?? node.position;
+  const absolute = (node: FlowNode) => worldPosition(node, nodesRef.current);
 
   const focusNode = (node: FlowNode) => {
     setNodes((list) => list.map((item) => ({ ...item, selected: item.id === node.id })));
@@ -1568,10 +1599,10 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     const members = nodesRef.current.filter((node) => node.selected && node.data.kind !== "group");
     if (members.length < 1) return;
     const boxes = members.map((node) => ({ ...absolute(node), w: node.width ?? 280, h: node.height ?? 200 }));
-    const minX = Math.min(...boxes.map((box) => box.x)) - 28;
-    const minY = Math.min(...boxes.map((box) => box.y)) - 60;
-    const maxX = Math.max(...boxes.map((box) => box.x + box.w)) + 28;
-    const maxY = Math.max(...boxes.map((box) => box.y + box.h)) + 28;
+    const minX = Math.min(...boxes.map((box) => box.x)) - 80;
+    const minY = Math.min(...boxes.map((box) => box.y)) - 80;
+    const maxX = Math.max(...boxes.map((box) => box.x + box.w)) + 80;
+    const maxY = Math.max(...boxes.map((box) => box.y + box.h)) + 80;
     const group = makeNode({ kind: "group", title: L("分组", "Group") }, { x: minX, y: minY });
     group.style = { width: maxX - minX, height: maxY - minY };
     const ids = new Set(members.map((node) => node.id));
@@ -1594,56 +1625,110 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   );
 
   const duplicateSelected = useCallback(
-    (source?: { nodes: FlowNode[]; edges: Edge[] }, offset = 48) => {
-      const picked = source?.nodes ?? nodesRef.current.filter((node) => node.selected);
+    (source?: { nodes: FlowNode[]; edges: Edge[] }, offset: number | { x: number; y: number } = 48) => {
+      const picked = source?.nodes ?? selectionWithChildren(nodesRef.current);
       if (!picked.length) return;
       const ids = new Map(picked.map((node) => [node.id, newId()]));
+      const roots = picked.filter((node) => !node.parentNode || !ids.has(node.parentNode));
+      const dx = typeof offset === "number" ? offset : offset.x - Math.min(...roots.map((node) => absolute(node).x));
+      const dy = typeof offset === "number" ? offset : offset.y - Math.min(...roots.map((node) => absolute(node).y));
       const copies = picked.map((node) => {
         const parent = node.parentNode && ids.has(node.parentNode) ? ids.get(node.parentNode) : undefined;
         let data = { ...node.data } as CanvasData;
-        if (isGen(data)) {
-          const { pending: _pending, ...rest } = data;
-          data = rest.status === "done" ? rest : { ...rest, status: "idle", resultUuid: undefined, urls: undefined, error: null };
-        }
+        if (isGen(data)) data = copyGenerationSettings(data, "duplicate");
         if (data.kind === "agent" && data.status !== "done") data = { ...data, status: "idle" };
         return {
           ...node,
           id: ids.get(node.id)!,
           data,
           parentNode: parent,
-          position: parent ? node.position : { x: absolute(node).x + offset, y: absolute(node).y + offset },
+          position: parent ? node.position : { x: absolute(node).x + dx, y: absolute(node).y + dy },
           positionAbsolute: undefined,
           selected: true,
         } as FlowNode;
       });
       const pool = source?.edges ?? edgesRef.current;
       const wires = pool.filter((edge) => ids.has(edge.source) && ids.has(edge.target)).map((edge) => wire(ids.get(edge.source)!, ids.get(edge.target)!));
-      addNodes(copies, wires);
+      const next = [...nodesRef.current.map((node) => ({ ...node, selected: false })), ...copies.map((node) => ({ ...node, selected: !node.parentNode }))];
+      replaceGraph(next, [...edgesRef.current, ...wires]);
+      commit();
     },
-    [addNodes],
+    [commit, replaceGraph],
   );
+
+  const copySelection = useCallback(() => {
+    const picked = selectionWithChildren(nodesRef.current);
+    if (picked.length) clipboard.current = { nodes: picked, edges: edgesRef.current };
+  }, []);
+
+  const pasteSelection = useCallback((at?: { x: number; y: number }) => {
+    if (clipboard.current) duplicateSelected(clipboard.current, at ?? (cursor.current ? flow.screenToFlowPosition(cursor.current) : viewCenter()));
+  }, [duplicateSelected, flow, viewCenter]);
+
+  const [downloading, setDownloading] = useState(false);
+  const downloadSelection = useCallback(async () => {
+    if (downloading) return;
+    const generation = canvasGeneration.current;
+    const current = () => !lifetime.current.signal.aborted && generation === canvasGeneration.current;
+    setDownloading(true);
+    try {
+      const files: { title: string; blob: Blob }[] = [];
+      for (const { data } of selectionWithChildren(nodesRef.current)) {
+        if (!current()) return;
+        if (data.kind === "text" && data.text) { files.push({ title: data.title, blob: new Blob([data.text], { type: "text/plain" }) }); continue; }
+        let url = sameOriginUrl(data);
+        if (!url && data.kind === "media") url = getCanvasSound(data.soundId)?.url ?? (data.url?.startsWith("blob:") ? data.url : null);
+        if (!url) continue;
+        const response = await (url.startsWith("blob:") ? fetch(url, { signal: lifetime.current.signal }) : canvasFetch(url));
+        if (!response.ok) throw new Error();
+        files.push({ title: data.title, blob: await response.blob() });
+      }
+      if (!current()) return;
+      if (!files.length) { say(L("所选节点还没有可下载的内容", "Selected nodes have no content to download")); return; }
+      const { canvasZip } = await import("@/lib/creative-space/canvas-export");
+      const archive = await canvasZip(files);
+      if (!current()) return;
+      const url = URL.createObjectURL(archive);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${titleRef.current || "canvas"}.zip`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { if (current()) say(L("素材下载失败，请稍后重试", "Could not download the selected assets"), true); }
+    finally { if (current()) setDownloading(false); }
+  }, [L, canvasFetch, downloading, lifetime, say]);
 
   const align = useCallback(
     (mode: "row" | "column" | "grid") => {
-      const picked = nodesRef.current.filter((node) => node.selected && !node.parentNode);
+      const group = nodesRef.current.find((node) => node.selected && node.data.kind === "group");
+      const picked = nodesRef.current.filter((node) => group ? node.parentNode === group.id : node.selected && !node.parentNode);
       if (picked.length < 2) return;
       const sorted = [...picked].sort((a, b) => (mode === "column" ? a.position.y - b.position.y : a.position.x - b.position.x || a.position.y - b.position.y));
-      const start = { x: Math.min(...picked.map((node) => node.position.x)), y: Math.min(...picked.map((node) => node.position.y)) };
+      const start = group ? { x: 80, y: 80 } : { x: Math.min(...picked.map((node) => node.position.x)), y: Math.min(...picked.map((node) => node.position.y)) };
       const positions = new Map<string, { x: number; y: number }>();
       let x = start.x;
       let y = start.y;
+      const cellWidth = Math.max(...picked.map((node) => node.width ?? 280)) + 40;
+      const cellHeight = Math.max(...picked.map((node) => node.height ?? 280)) + 60;
       sorted.forEach((node, index) => {
         if (mode === "grid") {
           const col = index % 3;
           const row = Math.floor(index / 3);
-          positions.set(node.id, { x: start.x + col * 360, y: start.y + row * 400 });
+          positions.set(node.id, { x: start.x + col * cellWidth, y: start.y + row * cellHeight });
         } else {
           positions.set(node.id, { x, y });
           if (mode === "row") x += (node.width ?? 280) + 40;
           else y += (node.height ?? 200) + 40;
         }
       });
-      replaceGraph(nodesRef.current.map((node) => (positions.has(node.id) ? { ...node, position: positions.get(node.id)! } : node)), edgesRef.current);
+      const frame = group ? {
+        width: Math.max(...picked.map((node) => positions.get(node.id)!.x + (node.width ?? 280))) + 80,
+        height: Math.max(...picked.map((node) => positions.get(node.id)!.y + (node.height ?? 280))) + 80,
+      } : null;
+      replaceGraph(nodesRef.current.map((node) => {
+        if (frame && node.id === group?.id) return { ...node, style: { ...node.style, ...frame } };
+        return positions.has(node.id) ? { ...node, position: positions.get(node.id)! } : node;
+      }), edgesRef.current);
       commit();
     },
     [commit, replaceGraph],
@@ -1709,7 +1794,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const saveTemplate = useCallback(
     (name: string) => {
-      const chosen = nodesRef.current.filter((node) => node.selected);
+      const chosen = selectionWithChildren(nodesRef.current);
       const pool = chosen.length ? chosen : nodesRef.current;
       if (!pool.length) return;
       const ids = new Set(pool.map((node) => node.id));
@@ -1717,7 +1802,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         pool.map((node) => {
           const data = node.data;
           // A template keeps settings and prompts, not results.
-          if (isGen(data)) return { ...node, data: { ...data, status: "idle", resultUuid: undefined, urls: undefined, pending: undefined, error: null } } as GraphNode;
+          if (isGen(data)) return { ...node, data: copyGenerationSettings(data, "template") } as GraphNode;
           if (data.kind === "agent") return { ...node, data: { ...data, status: "idle", reply: undefined, steps: undefined, error: null } } as GraphNode;
           return node as GraphNode;
         }),
@@ -1820,8 +1905,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const referencesFor = useCallback((targetId: string): CanvasReference[] => {
     const target = nodesRef.current.find((node) => node.id === targetId)?.data;
-    if (!target || !(target.kind === "agent" || target.kind === "image" || target.kind === "video")) return [];
-    const agent = target.kind === "agent";
+    if (!target || !(target.kind === "text" || target.kind === "agent" || target.kind === "image" || target.kind === "video")) return [];
+    const agent = target.kind === "agent" || target.kind === "text";
     const limit = agent ? 8 : choicesFor(target.kind, target.modelId).maxImages;
     if (!limit) return [];
     const allowed = (data: CanvasData) => hasOutput(data) && (outputType(data) === "image" || (agent && outputType(data) === "video"));
@@ -1831,7 +1916,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       const index = wired.findIndex((input) => input.id === node.id);
       if (index >= limit || (index < 0 && (wired.length >= limit || !checkConnection(node.id, targetId, nodesRef.current as GraphNode[], edgesRef.current).ok))) return [];
       const name = node.data.title || KIND_LABEL[node.data.kind][zh ? "zh" : "en"];
-      return [{ id: node.id, name, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : name, connected: index >= 0 }];
+      return [{ id: node.id, name, url: outputUrl(node.data), media: outputType(node.data) === "video" ? "video" as const : "image" as const, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : name, connected: index >= 0 }];
     });
   }, [zh]);
 
@@ -1842,10 +1927,28 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     return true;
   }, [onConnect, referencesFor]);
 
+  const detachImageReferences = useCallback((id: string) => {
+    const imageIds = new Set(nodesRef.current.filter((node) => outputType(node.data) === "image").map((node) => node.id));
+    replaceGraph(nodesRef.current, edgesRef.current.filter((edge) => edge.target !== id || !imageIds.has(edge.source)));
+    commit();
+  }, [commit, replaceGraph]);
+
+  const uploadImageReference = useCallback(async (id: string, file: File) => {
+    const node = nodesRef.current.find((item) => item.id === id);
+    if (!node || !(node.data.kind === "text" || node.data.kind === "image" || node.data.kind === "video")) return;
+    const forText = node.data.kind === "text";
+    const cap = node.data.kind === "text" ? 8 : choicesFor(node.data.kind, node.data.modelId).maxImages;
+    const linked = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current).filter((source) => outputType(source.data) === "image" || (forText && outputType(source.data) === "video")).length;
+    if (!cap || linked >= cap) { say(L(`当前模型最多可用 ${cap} 张参考图`, `This model accepts up to ${cap} reference images`), true); return; }
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { say(L("请选择 PNG、JPEG 或 WebP 图片", "Choose a PNG, JPEG or WebP image"), true); return; }
+    const point = absolute(node);
+    await addFiles([file], { x: point.x - 400, y: point.y + linked * 320 }, id);
+  }, [L, addFiles, say]);
+
   const onConnectStart = useCallback((_: unknown, params: OnConnectStartParams) => {
     const node = params.nodeId ? nodesRef.current.find((item) => item.id === params.nodeId) : undefined;
-    const type = node && params.handleType === "source" ? outputType(node.data) : null;
-    connectFrom.current = node && type ? { id: node.id, type } : null;
+    const type = node && outputType(node.data);
+    connectFrom.current = node && params.handleType ? { id: node.id, side: params.handleType, type: type || undefined } : null;
   }, []);
 
   const onConnectEnd = useCallback(
@@ -1938,7 +2041,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       const mod = event.metaKey || event.ctrlKey;
       if (mod && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setSearchOpen(true);
+        setPanel("locate");
         return;
       }
       if (typing(event.target) || document.querySelector("[aria-modal=true], dialog[open]")) return;
@@ -1952,15 +2055,20 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         else flow.setViewport({ ...viewport, x: viewport.x + (key === "a" ? step : key === "d" ? -step : 0), y: viewport.y + (key === "w" ? step : key === "s" ? -step : 0) });
         return;
       }
-      if (mod && key === "z") {
+      if (key === "f2") {
+        const picked = nodesRef.current.filter((node) => node.selected);
+        if (picked.length === 1) { event.preventDefault(); editField({ id: picked[0].id, field: "title" }); setMenu(null); }
+      } else if (key === "tab" && !event.shiftKey && !mod && cursor.current && flowBox.current?.contains(document.activeElement) && (document.activeElement === flowBox.current || document.activeElement?.closest(".react-flow__node,.react-flow__pane"))) {
+        event.preventDefault();
+        setMenu({ ...cursor.current, flow: flow.screenToFlowPosition(cursor.current) });
+      } else if (mod && key === "z") {
         event.preventDefault();
         restore(event.shiftKey ? 1 : -1);
       } else if (mod && key === "y") {
         event.preventDefault();
         restore(1);
       } else if (mod && key === "c") {
-        const picked = nodesRef.current.filter((node) => node.selected);
-        if (picked.length) clipboard.current = { nodes: picked, edges: edgesRef.current };
+        copySelection();
       } else if (mod && key === "d") {
         event.preventDefault();
         duplicateSelected();
@@ -1990,7 +2098,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         void addFiles(files);
       } else if (clipboard.current) {
         event.preventDefault();
-        duplicateSelected(clipboard.current);
+        pasteSelection();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1999,7 +2107,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("paste", onPaste);
     };
-  }, [addFiles, duplicateSelected, flow, groupSelected, restore, setNodes, ungroup, viewOptions.speed, viewOptions.boost]);
+  }, [addFiles, copySelection, duplicateSelected, flow, groupSelected, pasteSelection, restore, setNodes, ungroup, viewOptions.speed, viewOptions.boost]);
 
   // A selected node's prompt panel opens below it; keep that panel on screen.
   const singleId = selected.length === 1 ? selected[0].id : null;
@@ -2033,6 +2141,11 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       commit,
       run,
       pendingSeconds,
+      editingField,
+      editField,
+      detachImageReferences,
+      agentForm,
+      uploadImageReference,
       inputsOf,
       quoteOf,
       edit: (id, action) => {
@@ -2056,16 +2169,35 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       agentToVideo,
       singleSelection: selected.length === 1,
     }),
-    [agentToVideo, attachReference, referencesFor, captureFrame, commit, compareSource, inputsOf, patch, pendingSeconds, quoteOf, replaceMedia, requireLogin, run, selected.length, spreadSteps, zh],
+    [agentForm, agentToVideo, attachReference, referencesFor, captureFrame, commit, compareSource, detachImageReferences, editingField, uploadImageReference, inputsOf, patch, pendingSeconds, quoteOf, replaceMedia, requireLogin, run, selected.length, spreadSteps, zh],
   );
 
   /** Screen point → position inside the canvas area (menus are placed there, clamped to stay visible). */
   const toLocal = (point: { x: number; y: number }, width = 220, height = 320) => {
     const box = flowBox.current?.getBoundingClientRect();
     if (!box) return { left: point.x, top: point.y };
-    return { left: Math.min(Math.max(point.x - box.left, 8), box.width - width), top: Math.min(Math.max(point.y - box.top, 8), box.height - height) };
+    return { left: Math.max(4, Math.min(Math.max(point.x - box.left, 8), box.width - width - 4)), top: Math.max(4, Math.min(Math.max(point.y - box.top, 8), box.height - height - 4)) };
   };
-  const menuKinds: CanvasKind[] = menu?.from ? kindsAccepting(menu.from.type) : ["text", "image", "video", "audio", "agent", "group"];
+  const palettePosition = (point: Menu) => {
+    const parent = toLocal(point, 210, 240);
+    if (!point.panel) return toLocal(point);
+    const width = flowBox.current?.clientWidth ?? window.innerWidth;
+    const left = parent.left + 216;
+    return { left: left + 210 <= width ? left : Math.max(4, parent.left - 216), top: toLocal(point, 210, 325).top };
+  };
+  const creatableKinds: CanvasKind[] = ["text", "image", "video", "audio", "agent", "group"];
+  const link = menu?.from;
+  const targetKind = link?.side === "target" ? nodeById(link.id)?.data.kind : undefined;
+  const menuKinds = targetKind ? creatableKinds.filter((kind) => kind !== "group" && inputTypes(targetKind).includes(kind === "agent" ? "text" : kind as PortType)) : link?.type ? kindsAccepting(link.type) : creatableKinds;
+  const openContext = (event: ReactMouseEvent, id?: string) => {
+    event.preventDefault();
+    const point = { x: event.clientX, y: event.clientY };
+    if (id && !nodesRef.current.find((node) => node.id === id)?.selected) {
+      replaceGraph(nodesRef.current.map((node) => ({ ...node, selected: node.id === id })), edgesRef.current);
+    }
+    setEdgeMenu(null);
+    setMenu({ ...point, flow: flow.screenToFlowPosition(point), panel: id ? "node" : "pane", id });
+  };
   const selectedIds = new Set(selected.map((node) => node.id));
   const kindById = new Map(nodes.map((node) => [node.id, outputType(node.data)]));
   const visibleEdges = edges.map((edge) => {
@@ -2074,6 +2206,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     return edge;
   });
   const onlyGroup = selected.length === 1 && selected[0].data.kind === "group" ? selected[0] : null;
+  const groupPlan = onlyGroup ? canvasGroupPlan(onlyGroup.id, nodes as GraphNode[], edges) : [];
+  const groupCost = groupPlan.reduce((sum, node) => sum + (isGen(node.data) && !["running", "submitting"].includes(node.data.status) ? quoteOf(node.id) ?? 0 : 0), 0);
   const selectedImages = selected.filter((node) => outputType(node.data) === "image" && hasOutput(node.data)).length;
   const saveLabel: Record<SaveState, string> = {
     idle: userId ? L("加入节点后自动保存", "Saves automatically") : "",
@@ -2089,77 +2223,12 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   return (
     <CanvasActionsContext.Provider value={actions}>
       <div className="nc-shell">
-        <header className="nc-top">
-          <Link href={localizedHref(locale, "/creative-space")} className="nc-icon-btn" aria-label={L("返回创作空间", "Back to Creative Space")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="nc-title-wrap">
-            <input
-              value={title}
-              maxLength={100}
-              onChange={(event) => setTitle(event.target.value)}
-              aria-label={L("画布名称", "Canvas name")}
-            />
-            <span className={`nc-save nc-save-${saveState}`} aria-live="polite">{saveLabel[saveState]}</span>
-          </div>
-          <div className="nc-top-actions">
-            {userId ? (
-              <div className="nc-list-wrap">
-                <button type="button" className="nc-btn" onClick={() => setListOpen((value) => !value)} aria-expanded={listOpen}>
-                  <FolderOpen className="h-4 w-4" /> {L("我的画布", "My canvases")}
-                </button>
-                {listOpen ? (
-                  <div className="nc-list" role="menu">
-                    <button type="button" role="menuitem" onClick={() => void newCanvas()}><Plus className="h-4 w-4" />{L("新建画布", "New canvas")}</button>
-                    {canvases.map((item) => (
-                      <button type="button" role="menuitem" key={item.id} className={item.id === canvasId ? "is-active" : ""} onClick={() => void openCanvas(item.id)}>
-                        {item.name}
-                      </button>
-                    ))}
-                    {canvasId ? (
-                      <button type="button" role="menuitem" className="nc-danger" onClick={() => void deleteCanvas()}><Trash2 className="h-4 w-4" />{L("删除当前画布", "Delete this canvas")}</button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <button type="button" className="nc-btn" onClick={() => requireLogin()}>{L("登录后保存到账号", "Sign in to save")}</button>
-            )}
-            {balance !== null ? (
-              <span className="nc-balance" title={L("可用积分", "Available credits")}><Coins className="h-4 w-4" aria-hidden="true" />{balance}</span>
-            ) : null}
-            <button type="button" className="nc-icon-btn" onClick={() => restore(-1)} disabled={!canUndo} aria-label={L("撤销 (⌘Z)", "Undo (⌘Z)")} title={L("撤销 (⌘Z)", "Undo (⌘Z)")}><Undo2 className="h-4 w-4" /></button>
-            <button type="button" className="nc-icon-btn" onClick={() => restore(1)} disabled={!canRedo} aria-label={L("重做 (⇧⌘Z)", "Redo (⇧⌘Z)")} title={L("重做 (⇧⌘Z)", "Redo (⇧⌘Z)")}><Redo2 className="h-4 w-4" /></button>
-            <button type="button" className="nc-icon-btn" onClick={() => setSearchOpen(true)} aria-label={L("搜索节点 (⌘K)", "Search nodes (⌘K)")} title={L("搜索节点 (⌘K)", "Search nodes (⌘K)")}><Search className="h-4 w-4" /></button>
-            <button type="button" className="nc-icon-btn" onClick={() => setShortcutsOpen(true)} aria-label={L("快捷键 (?)", "Shortcuts (?)")} title={L("快捷键 (?)", "Shortcuts (?)")}><Keyboard className="h-4 w-4" /></button>
-          </div>
-        </header>
-
+        <CanvasHeader zh={zh} title={title} onTitle={setTitle} back={localizedHref(locale,"/creative-space")} creditsHref={localizedHref(locale,"/credits")} contactHref={localizedHref(locale,"/contact")}
+          save={saveLabel[saveState]} saveState={saveState} account={!!userId} balance={balance} signIn={requireLogin}
+          canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => void deleteCanvas()}
+          canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
+          edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
-          <nav className="nc-rail" aria-label={L("添加节点", "Add nodes")}>
-            {(["text", "image", "video", "audio", "agent"] as CanvasKind[]).map((kind) => {
-              const Icon = kindIcon(kind);
-              return (
-                <button key={kind} type="button" onClick={() => createKind(kind, viewCenter())} title={KIND_LABEL[kind][zh ? "zh" : "en"]}>
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  <span>{KIND_LABEL[kind][zh ? "zh" : "en"]}</span>
-                </button>
-              );
-            })}
-            <span className="nc-rail-sep" aria-hidden="true" />
-            <button type="button" onClick={() => fileInput.current?.click()} title={L("上传图片或视频", "Upload image or video")}>
-              <Upload className="h-4 w-4" aria-hidden="true" /><span>{L("上传", "Upload")}</span>
-            </button>
-            <button type="button" onClick={() => setPickerOpen(true)} title={L("素材库：我的作品、元素", "Library: my creations, elements")}>
-              <ImageIcon className="h-4 w-4" aria-hidden="true" /><span>{L("素材库", "Library")}</span>
-            </button>
-            <button type="button" onClick={() => setTemplatesOpen(true)} title={L("模板", "Templates")}>
-              <Bookmark className="h-4 w-4" aria-hidden="true" /><span>{L("模板", "Templates")}</span>
-            </button>
-            <span className="nc-rail-sep" aria-hidden="true" />
-            <button type="button" onClick={arrange} title={L("自动整理", "Auto-arrange")}>
-              <LayoutGrid className="h-4 w-4" aria-hidden="true" /><span>{L("整理", "Arrange")}</span>
-            </button>
             <input
               ref={fileInput}
               type="file"
@@ -2171,10 +2240,11 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
                 event.target.value = "";
               }}
             />
-          </nav>
 
           <div
             ref={flowBox}
+            tabIndex={-1}
+            onPointerMove={(event) => { cursor.current = { x: event.clientX, y: event.clientY }; }}
             data-backdrop={viewOptions.backdrop}
             style={{ ...appearance, "--du-canvas-toolbar-scale": viewOptions.toolbarScale } as CSSProperties}
             className={`nc-flow${showEdges ? "" : " edges-hidden"}${viewOptions.simple && farOut ? " is-far-out" : ""}`}
@@ -2192,22 +2262,27 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
               nodes={nodes}
               edges={visibleEdges}
               nodeTypes={NODE_TYPES}
+              edgeTypes={CANVAS_EDGE_TYPES}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onEdgesDelete={commit}
               onConnect={onConnect}
               onConnectStart={onConnectStart}
               onConnectEnd={onConnectEnd}
+              onNodeContextMenu={(event, node) => openContext(event, node.id)}
+              onSelectionContextMenu={(event, picked) => openContext(event, picked[0]?.id)}
+              onPaneContextMenu={(event) => openContext(event)}
               onNodeDrag={showAlignment}
               selectNodesOnDrag={viewOptions.dragSelect}
               onNodeDragStop={onNodeDragStop}
               onEdgeClick={(event, edge) => setEdgeMenu({ id: edge.id, x: event.clientX, y: event.clientY })}
               onPaneClick={() => {
+                flowBox.current?.focus({ preventScroll: true });
                 if (Date.now() - menuOpenedAt.current > 300) setMenu(null);
                 setEdgeMenu(null);
-                setListOpen(false);
+                setPanel(null);
               }}
-              onMoveStart={() => setEdgeMenu(null)}
+              onMoveStart={() => { setEdgeMenu(null); setMenu(null); }}
               onMove={(_, view) => setFarOut(view.zoom < 0.14)}
               isValidConnection={(connection) => checkConnection(connection.source, connection.target, nodesRef.current as GraphNode[], edgesRef.current).ok}
               deleteKeyCode={["Backspace", "Delete"]}
@@ -2219,23 +2294,27 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
               panOnScroll={viewOptions.wheelPan}
               zoomOnScroll={!viewOptions.wheelPan}
               snapToGrid={viewOptions.snap}
-              snapGrid={[16, 16]}
+              snapGrid={[viewOptions.gridSize, viewOptions.gridSize]}
               minZoom={0.1}
               maxZoom={3}
               proOptions={{ hideAttribution: true }}
-              defaultEdgeOptions={{ type: "default" }}
+              defaultEdgeOptions={{ type: "canvas" }}
             >
-              <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="nc-bg" />
+              {viewOptions.grid && <Background variant={BackgroundVariant.Dots} gap={viewOptions.gridSize} size={1} className="nc-bg" />}
               {showMinimap ? <MiniMap pannable zoomable position="bottom-right" className="nc-minimap" /> : null}
             </ReactFlow>
 
             {guides.x !== undefined && <span className="nc-guide-x" style={{ left: guides.x }} aria-hidden="true" />}
             {guides.y !== undefined && <span className="nc-guide-y" style={{ top: guides.y }} aria-hidden="true" />}
+            {groupProgress && <div className="nc-group-progress">
+              <output>{L(`正在执行第 ${groupProgress.index}/${groupProgress.total} 项`, `Running ${groupProgress.index}/${groupProgress.total}`)}</output>
+              <button type="button" onClick={stopGroup}>{L("停止后续执行", "Stop remaining steps")}</button>
+            </div>}
             {Object.keys(pendingSeconds).length > 0 && <div className="nc-grace-bar">
               <output>{L("即将提交", "Submitting")} · {Object.keys(pendingSeconds).length} {L("项", "queued")}</output>
               <button type="button" onClick={cancelAllPending}>{L("全部撤回", "Cancel queued")}</button>
             </div>}
-            <CanvasViewMenu background={background} saveBackground={saveBackground} zh={zh} options={viewOptions} change={(partial) => setViewOptions((current) => ({ ...current, ...partial }))} />
+            <CanvasViewMenu settingsOpen={panel === "settings"} closeSettings={() => setPanel(null)} background={background} saveBackground={saveBackground} zh={zh} options={viewOptions} change={(partial) => setViewOptions((current) => ({ ...current, ...partial }))} />
             <PinRail
               nodes={nodes}
               zh={zh}
@@ -2250,25 +2329,20 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
                 replaceGraph(next, edgesRef.current);
               }}
             />
-            <div className="nc-view-tools" role="toolbar" aria-label={L("画布视图", "View")}>
-              <button type="button" className={selectMode ? "" : "is-on"} onClick={() => setSelectMode(false)} title={L("拖动平移 (H)", "Pan (H)")} aria-pressed={!selectMode}><Hand className="h-4 w-4" /></button>
-              <button type="button" className={selectMode ? "is-on" : ""} onClick={() => setSelectMode(true)} title={L("框选 (V)", "Box select (V)")} aria-pressed={selectMode}><MousePointer2 className="h-4 w-4" /></button>
-              <button type="button" className={showEdges ? "is-on" : ""} onClick={() => setShowEdges((value) => !value)} title={L("显示连线 (L)", "Wires (L)")} aria-pressed={showEdges}><Link2 className="h-4 w-4" /></button>
-              <button type="button" className={showMinimap ? "is-on" : ""} onClick={() => setShowMinimap((value) => !value)} title={L("小地图 (M)", "Minimap (M)")} aria-pressed={showMinimap}><MapIcon className="h-4 w-4" /></button>
-              <button type="button" className={viewOptions.snap ? "is-on" : ""} onClick={() => setViewOptions((value) => ({ ...value, snap: !value.snap }))} title={L("网格吸附", "Snap to grid")} aria-pressed={viewOptions.snap}><Grid3x3 className="h-4 w-4" /></button>
+            <div className="nc-view-tools" role="toolbar" aria-label={L("画布视图","View")}>
+              <button type="button" aria-label={L("框选 (V)","Box select (V)")} title={L("框选 (V)","Box select (V)")} className={selectMode ? "is-on" : ""} onClick={() => setSelectMode(true)} aria-pressed={selectMode}><MousePointer2 size={16}/></button>
+              <button type="button" aria-label={L("平移 (H)","Pan (H)")} title={L("平移 (H)","Pan (H)")} className={selectMode ? "" : "is-on"} onClick={() => setSelectMode(false)} aria-pressed={!selectMode}><Hand size={16}/></button>
             </div>
-
-            {hydrated && !nodes.length ? (
-              <div className="nc-empty-state">
-                <strong>{L("从一个节点开始", "Start with a node")}</strong>
-                <span>{L("双击空白处添加节点，或从右侧端口拖出一根线到空白处", "Double-click empty space, or drag a wire out of a port into empty space")}</span>
-                <div className="nc-empty-actions">
-                  <button type="button" onClick={() => createKind("image", viewCenter())}><ImageIcon className="h-4 w-4" />{L("生成图片", "Generate image")}</button>
-                  <button type="button" onClick={() => createKind("video", viewCenter())}><Film className="h-4 w-4" />{L("生成视频", "Generate video")}</button>
-                  <button type="button" onClick={() => setTemplatesOpen(true)}><Bookmark className="h-4 w-4" />{L("用模板开始", "Use a template")}</button>
-                </div>
-              </div>
-            ) : null}
+            <button className="nc-help-button nc-round" type="button" aria-label={L("快捷键","Keyboard shortcuts")} title={L("快捷键","Keyboard shortcuts")} onClick={() => setShortcutsOpen(true)}><Keyboard size={16}/></button>
+            <CanvasDock zh={zh} open={panel} onPanel={setPanel} snap={viewOptions.snap} onSnap={() => setViewOptions(v => ({ ...v, snap: !v.snap }))}
+              onCreate={kind => createKind(kind, viewCenter())} onUpload={() => fileInput.current?.click()} onTemplates={() => setTemplatesOpen(true)} />
+            <button className="nc-graph-count" type="button" title={L("节点定位","Find a node")} aria-label={L(`定位节点，${nodes.length} 个节点，${edges.length} 条连线`,`Find nodes, ${nodes.length} nodes, ${edges.length} links`)}
+              onClick={() => setPanel(panel === "locate" ? null : "locate")}><LayoutGrid size={13}/>{nodes.length}<Link2 size={13}/>{edges.length}</button>
+            {hydrated && !nodes.length && <div className="nc-empty-state">
+              <button className="nc-empty-start" type="button" aria-label={L("添加第一个节点","Add first node")} onClick={() => setPanel("add")}><Plus size={30} strokeWidth={1.4}/></button>
+              <strong>{L("双击画布开始创作","Double-click to start creating")}</strong>
+              <span>{L("或从下方添加元素","Or add an element below")}</span>
+            </div>}
 
             {legacyCount ? (
               <div className="nc-banner" aria-live="polite">
@@ -2279,44 +2353,67 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
             ) : null}
 
             {selected.length > 1 || onlyGroup ? (
-              <div className="nc-selection" role="toolbar" aria-label={L("多选操作", "Selection")}>
-                {onlyGroup ? (
-                  <>
-                    <button type="button" onClick={() => ungroup(onlyGroup.id)}><Layers className="h-4 w-4" />{L("解组", "Ungroup")}</button>
-                    {(["neutral", "accent", "warm", "cool"] as const).map((tone) => (
-                      <button
-                        key={tone}
-                        type="button"
-                        className={`nc-swatch nc-group-${tone}`}
-                        aria-label={L("分组颜色", "Group colour")}
-                        onClick={() => { patch(onlyGroup.id, { tone }); commit(); }}
-                      />
+              <NodeToolbar nodeId={selected.map((node) => node.id)} isVisible position={Position.Top} offset={24} className="nc-selection nc-floating-selection" role="toolbar" aria-label={L("多选操作", "Selection")}>
+                {onlyGroup ? <details className="nc-selection-dropdown">
+                  <summary>{L("颜色", "Color")}<ChevronDown size={12} /></summary>
+                  <fieldset aria-label={L("分组颜色", "Group color")}>
+                    {(["neutral", "accent", "warm", "cool"] as const).map((tone, index) => (
+                      <button type="button" key={tone} className={`nc-swatch nc-group-${tone}`}
+                        aria-label={L(["灰色", "主题色", "暖色", "冷色"][index], tone)}
+                        onClick={() => { patch(onlyGroup.id, { tone }); commit(); }} />
                     ))}
-                  </>
-                ) : (
-                  <>
-                    <span className="nc-selection-count">{L(`已选 ${selected.length} 个`, `${selected.length} selected`)}</span>
-                    <button type="button" onClick={() => duplicateSelected()}><Copy className="h-4 w-4" />{L("创建副本", "Duplicate")}</button>
-                    <button type="button" onClick={groupSelected}><Layers className="h-4 w-4" />{L("打组", "Group")}</button>
-                    <button type="button" onClick={() => align("row")} title={L("横向排列", "Row")}><AlignHorizontalJustifyStart className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => align("column")} title={L("纵向排列", "Column")}><AlignVerticalJustifyStart className="h-4 w-4" /></button>
-                    <button type="button" onClick={() => align("grid")} title={L("宫格排列", "Grid")}><Grid3x3 className="h-4 w-4" /></button>
-                    {selectedImages ? (
-                      <>
-                        <button type="button" onClick={() => wireSelectedInto("video")}><Film className="h-4 w-4" />{L("用这些图生成视频", "Video from these")}</button>
-                        <button type="button" onClick={() => wireSelectedInto("image")}><ImageIcon className="h-4 w-4" />{L("融合成新图", "Blend into image")}</button>
-                      </>
-                    ) : null}
-                    <button type="button" onClick={() => { const name = window.prompt(L("模板名称", "Template name"), title); if (name) saveTemplate(name); }}><Bookmark className="h-4 w-4" />{L("存为模板", "Save template")}</button>
-                  </>
-                )}
-                <button type="button" className="nc-danger" onClick={deleteSelected}><Trash2 className="h-4 w-4" />{L("删除", "Delete")}</button>
-              </div>
+                  </fieldset>
+                </details> : <>
+                  <span className="nc-selection-count">{L(`${selected.length} 个节点`, `${selected.length} nodes`)}</span>
+                  <button type="button" onClick={groupSelected}><Layers size={15} />{L("打组", "Group")}</button>
+                </>}
+                <details className="nc-selection-dropdown">
+                  <summary><Grid3x3 size={14} />{L("整理布局", "Arrange")}<ChevronDown size={12} /></summary>
+                  <fieldset aria-label={L("整理布局", "Arrange")}>
+                    <button type="button" onClick={() => align("row")}><AlignHorizontalJustifyStart size={15} />{L("横向排列", "Row")}</button>
+                    <button type="button" onClick={() => align("column")}><AlignVerticalJustifyStart size={15} />{L("纵向排列", "Column")}</button>
+                    <button type="button" onClick={() => align("grid")}><Grid3x3 size={15} />{L("宫格排列", "Grid")}</button>
+                    {selectedImages > 0 && <>
+                      <button type="button" onClick={() => wireSelectedInto("video")}><Film size={15} />{L("用这些图生成视频", "Video from these")}</button>
+                      <button type="button" onClick={() => wireSelectedInto("image")}><ImageIcon size={15} />{L("融合成新图", "Blend into image")}</button>
+                    </>}
+                  </fieldset>
+                </details>
+                {onlyGroup && <button type="button" disabled={!groupPlan.length || Boolean(groupProgress)} onClick={() => void startGroup(onlyGroup.id)}
+                  title={L("按连线顺序执行未完成的生成和 Agent 节点。每项按提交时的提示词和参考素材计费。", "Run unfinished generators and agents in connection order. Each step is priced with its current prompt and references.")}>
+                  <Play size={14} />{L("整组执行", "Run group")} · {L(`约 ${groupCost} 积分`, `≈ ${groupCost} credits`)}
+                </button>}
+                {onlyGroup && <button type="button" onClick={() => ungroup(onlyGroup.id)}><Layers size={15} />{L("解组", "Ungroup")}</button>}
+                <button type="button" onClick={() => saveTemplate(onlyGroup?.data.title || title)} title={L("存为模板", "Save as template")} aria-label={L("存为模板", "Save as template")}><Bookmark size={15} /></button>
+                <button type="button" disabled={downloading} onClick={() => void downloadSelection()} title={L("打包下载素材", "Download assets as ZIP")} aria-label={L("打包下载素材", "Download assets as ZIP")}><Download className="h-4 w-4" /></button>
+                <button type="button" className="nc-danger" onClick={deleteSelected}><Trash2 className="h-4 w-4" /><span className="sr-only">{L("删除选中节点", "Delete selected nodes")}</span></button>
+              </NodeToolbar>
             ) : null}
 
-            {menu ? (
-              <div className="nc-menu" style={toLocal(menu)} role="menu">
-                <span className="nc-menu-title">{menu.from ? L("接一个能用它的节点", "Add a node that takes it") : L("添加节点", "Add node")}</span>
+            {menu?.panel ? <GraphContextMenu
+              style={toLocal(menu, 210, menu.panel === "node" ? 330 : 240)}
+              zh={zh} node={menu.id ? nodeById(menu.id)?.data : undefined} count={selected.length}
+              canUndo={canUndo} canRedo={canRedo} canPaste={Boolean(clipboard.current)}
+              onAction={(action) => {
+                if (action === "add") { setMenu({ ...menu, palette: !menu.palette }); return; }
+                setMenu(null);
+                if (action === "asset") setPickerOpen(true);
+                if (action === "paste") pasteSelection(menu.flow);
+                if (action === "undo") restore(-1);
+                if (action === "redo") restore(1);
+                if (action === "refresh") void resolveAll();
+                if (action === "copy") copySelection();
+                if (action === "duplicate") duplicateSelected();
+                if (action === "group") groupSelected();
+                if (action === "ungroup" && menu.id) ungroup(menu.id);
+                if (action === "delete") deleteSelected();
+                if (action === "save") saveTemplate((menu.id && nodeById(menu.id)?.data.title) || title);
+                if ((action === "title" || action === "annotation") && menu.id) editField({ id: menu.id, field: action });
+              }}
+            /> : null}
+            {menu && (!menu.panel || menu.palette) ? (
+              <div className="nc-menu nc-palette" style={palettePosition(menu)} role="menu">
+                <span className="nc-menu-title">{menu.from ? L("连接到新节点", "Connect to a new node") : L("添加节点", "Add node")}</span>
                 {menuKinds.map((kind) => {
                   const Icon = kindIcon(kind);
                   return (
@@ -2325,7 +2422,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        createKind(kind, menu.flow, menu.from);
+                        createKind(kind, { x: menu.flow.x - (menu.from?.side === "target" ? 280 : 0), y: menu.flow.y - 140 }, menu.from);
                         setMenu(null);
                       }}
                     >
@@ -2368,12 +2465,21 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
           userId={userId ?? undefined}
           acceptedTypes={["image", "video"]}
         />
-        {searchOpen ? (
+        {(panel === "history" || panel === "assets" || panel === "sounds") && <CanvasResources key={panel} section={panel} zh={zh} nodes={nodes} canvasFetch={canvasFetch}
+          onClose={() => setPanel(null)} onLibrary={() => { setPanel(null); setPickerOpen(true); }} onTemplates={() => { setPanel(null); setTemplatesOpen(true); }}
+          onFocus={node => { setPanel(null); focusNode(node); }}
+          onSound={id => {
+            const sound = getCanvasSound(id);
+            if (!sound) return;
+            addNodes([makeNode({ kind:"media", media:"audio", title:sound.name[zh ? "zh" : "en"], mime:"audio/wav", soundId:sound.id, url:sound.url }, viewCenter())]);
+            setPanel(null);
+          }} />}
+        {panel === "locate" ? (
           <NodeSearch
             zh={zh}
             nodes={nodes}
-            onClose={() => setSearchOpen(false)}
-            onPick={(node) => { setSearchOpen(false); focusNode(node); }}
+            onClose={() => setPanel(null)}
+            onPick={(node) => { setPanel(null); focusNode(node); }}
           />
         ) : null}
         {shortcutsOpen ? <ShortcutsDialog zh={zh} onClose={() => setShortcutsOpen(false)} /> : null}

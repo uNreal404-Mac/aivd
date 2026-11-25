@@ -1,0 +1,74 @@
+.nc-flow .nc-node:not(.nc-node-agent) {
+  position: relative;
+  width: max-content;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, var(--ds-surface-2) 80%, transparent);
+  box-shadow: none;
+}
+.nc-flow .nc-node.nc-fill { width: 100%; height: 100%; }
+.nc-flow .nc-node.is-selected {
+  border-color: color-mix(in srgb, var(--ds-text-1) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ds-text-1) 45%, transparent);
+}
+.nc-flow .nc-node:not(.nc-node-agent) .nc-node-head {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  min-height: 26px;
+  gap: 8px;
+  padding: 0 2px 3px;
+  border: none;
+  color: var(--ds-text-2);
+}
+.nc-flow .nc-node .nc-title { flex: 0 1 auto; font-weight: 500; color: var(--ds-text-2); }
+.nc-flow .nc-node-head .nc-dot-idle { display: none; }
+.nc-flow .nc-node .nc-preview { min-width: 180px; border-radius: var(--ds-r-xl); background: transparent; }
+.nc-flow .nc-node-media .nc-preview { width: 280px; min-height: 165px; }
+.nc-flow .nc-node-audio .nc-preview { width: 280px; height: 150px; }
+.nc-flow .nc-node .nc-empty { gap: 8px; font-size: var(--ds-fs-xs); color: var(--ds-text-3); }
+.nc-flow .nc-empty small { color: var(--ds-text-4); font-size: var(--ds-fs-2xs); }
+.nc-flow .nc-text-surface { display: grid; width: 100%; height: 100%; place-items: center; padding: 16px; overflow: hidden; border-radius: inherit; text-align: left; cursor: inherit; }
+.nc-flow .nc-text-value { align-self: start; justify-self: stretch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nc-flow .nc-annotation { position: absolute; z-index: 4; top: -9px; left: calc(100% + 8px); display: flex; align-items: flex-start; gap: 5px; width: max-content; max-width: 220px; padding: 4px 8px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-sm); background: var(--ds-surface-3); color: var(--ds-text-2); font-size: var(--ds-fs-xs); }
+.nc-flow .nc-annotation svg { flex: none; margin-top: 2px; }
+.nc-flow .nc-annotation button { white-space: pre-wrap; text-align: left; overflow-wrap: anywhere; }
+.nc-flow .nc-annotation textarea { min-width: 155px; resize: vertical; background: transparent; color: inherit; outline: 0; }
+.nc-flow .nc-node .nc-port { width: 30px; height: 30px; border: none; border-radius: 50%; background: transparent; opacity: 0; transform: translateY(-50%); transition: opacity 120ms; }
+.nc-flow .nc-node .nc-port-in { left: -36px; }
+.nc-flow .nc-node .nc-port-out { right: -36px; }
+.nc-flow .nc-node .nc-port::after { content: "+"; position: absolute; inset: 1px; display: grid; place-items: center; border: 1.5px solid var(--ds-text-3); border-radius: 50%; color: var(--ds-text-2); background: var(--ds-surface-1); font-size: var(--ds-fs-md); font-weight: 400; line-height: 1; pointer-events: none; }
+.nc-flow .react-flow__node:hover .nc-port, .nc-flow .react-flow__node:focus-within .nc-port, .nc-flow .nc-port.connectionindicator:hover, .nc-flow .nc-port.connecting, .nc-flow .nc-port.connectingto { opacity: 1; }
+.nc-flow .nc-port.valid::after { border-color: var(--du-success); }
+.nc-flow .react-flow__selection, .nc-flow .react-flow__nodesselection-rect { border: 1px solid var(--ds-line-3); border-radius: var(--ds-r-xl); background: color-mix(in srgb, var(--ds-text-1) 8%, transparent); }
+.nc-flow .nc-context-menu, .nc-flow .nc-palette { width: 210px; max-height: calc(100% - 12px); overflow: auto; padding: 5px; border-radius: var(--ds-r-lg); }
+.nc-flow .nc-context-menu button, .nc-flow .nc-palette button { min-height: 30px; font-size: var(--ds-fs-ui); gap: 9px; }
+.nc-flow .nc-context-menu kbd { margin-left: auto; font-family: inherit; font-size: 10px; color: var(--ds-text-4); }
+.nc-flow .nc-context-menu button:disabled { opacity: .4; cursor: default; }
+.nc-flow .nc-context-menu hr { border: 0; border-top: 1px solid var(--ds-line-1); margin: 3px; }
+.nc-flow .nc-selection { border-radius: var(--ds-r-3xl); flex-wrap: nowrap; }
+
+.nc-flow .nc-floating-selection { bottom: auto; left: auto; width: max-content; max-width: min(92vw, 760px); overflow-x: auto; }
+
+.nc-flow .react-flow__edge:not([class*="nc-wire-"]) .react-flow__edge-path { stroke: var(--ds-text-3); }
+.nc-flow .react-flow__edge:not([class*="nc-wire-"]):is(.selected, :hover) .react-flow__edge-path,
+.nc-flow .react-flow__connection-path { stroke: var(--ds-text-1); }
+
+.nc-flow .nc-floating-selection { overflow: visible; padding: 3px 7px; font-size: var(--ds-fs-xs); }
+.nc-flow .nc-floating-selection button, .nc-flow .nc-selection-dropdown summary { white-space: nowrap; }
+.nc-flow .nc-selection-dropdown { position: relative; }
+.nc-flow .nc-selection-dropdown summary { display: flex; min-height: 32px; cursor: pointer; list-style: none; align-items: center; gap: 5px; padding: 0 6px; color: var(--ds-text-2); }
+.nc-flow .nc-selection-dropdown summary::-webkit-details-marker { display: none; }
+.nc-flow .nc-selection-dropdown > fieldset { position: absolute; top: calc(100% + 4px); left: 0; z-index: 2; display: grid; min-width: 105px; gap: 3px; padding: 4px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-md); background: var(--ds-surface-3); box-shadow: var(--ds-shadow-float); }
+.nc-flow .nc-selection-dropdown > fieldset:has(.nc-swatch) { display: flex; }
+
+.nc-flow .nc-group.is-selected { border-color: var(--ds-line-3); }
+.nc-flow .nc-floating-selection > .nc-danger { font-size: 0; }
+
+.nc-flow .nc-group-progress { position: absolute; z-index: 10; top: 60px; right: 12px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-lg); background: var(--ds-surface-2); font-size: var(--ds-fs-xs); }
+.nc-flow .nc-group-progress button { color: var(--ds-text-1); font-weight: 600; }
+.nc-flow .nc-floating-selection button:disabled { opacity: .5; }
+.nc-flow .react-flow__node-text .nc-resize-line,
+.nc-flow .react-flow__node-text .nc-resize-handle:not(.bottom.right) { visibility: hidden; }
+.nc-flow .react-flow__node-text .nc-resize-handle.bottom.right { bottom: 4px; right: 4px; width: 12px; height: 12px; border: none; border-radius: 0; transform: none; background: repeating-linear-gradient(-45deg, transparent 0 3px, var(--ds-text-4) 3px 4px); clip-path: polygon(100% 0,100% 100%,0 100%); }

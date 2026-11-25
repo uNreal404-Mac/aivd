@@ -175,7 +175,7 @@
 }
 
 .au-card:focus-within {
-  border-color: var(--ds-line-3);
+  border-color: var(--du-accent-text);
 }
 
 .au-card-head {
@@ -796,11 +796,10 @@ button.au-row:active {
   transform: scale(0.98);
 }
 
-/* Waiting for a script: the accent, dimmed, as on the reference. */
 .au-generate:disabled {
   cursor: not-allowed;
-  background: color-mix(in srgb, var(--du-accent) 36%, var(--ds-surface-2));
-  color: color-mix(in srgb, var(--du-on-accent) 72%, transparent);
+  background: var(--ds-surface-3);
+  color: var(--ds-text-3);
 }
 
 .au-generate-cost {
@@ -2338,9 +2337,6 @@ button.au-row:active {
 
 .au-batch-row { display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 12px; border-radius:var(--ds-r-md); background:var(--ds-fill-1); font-size:var(--ds-fs-sm); }
 .au-batch-row output { color:var(--ds-text-2); font-variant-numeric:tabular-nums; }
-.au-vcard::before { background:linear-gradient(108deg,var(--du-bg-elev),var(--du-voice-cool) 40%,var(--du-voice-warm)); filter:none; }
-.au-generate, .au-generate:disabled { background:linear-gradient(to bottom,transparent,var(--du-studio-yellow)),var(--du-accent); color:var(--du-on-accent); }
-.au-generate:disabled { filter:brightness(.6); }
 @media (min-width:1024px) {
   .au-panel { align-self:flex-start; max-height:100%; }
   .au-fields > .au-script { min-height:160px; flex:0 0 160px; }

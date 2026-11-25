@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowRight,
   ArrowUp,
@@ -38,7 +38,6 @@ import {
 import { WallCard } from "@/components/hf/wall-card";
 import { InViewVideo } from "@/components/hf/in-view-video";
 import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
-import { useCarousel } from "@/components/hf/use-carousel";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
@@ -59,7 +58,6 @@ type DiscoverItem = {
   id: string;
   tab: Exclude<DiscoverTab, "all">;
   media: ShowMedia;
-  ratio: string;
   href: string;
   prompt?: Bi;
   promptId?: string;
@@ -70,53 +68,47 @@ function buildDiscoverItems(): DiscoverItem[] {
   const imageGallery = MODEL_GALLERIES[1];
 
   return [
-    { id: "d-dragon", tab: "video", media: MEDIA.dragon, ratio: "9 / 14", href: videoGallery.href, promptId: MEDIA.dragon.promptId },
-    { id: "d-japan", tab: "video", media: MEDIA.japan, ratio: "16 / 10", href: videoGallery.href, promptId: MEDIA.japan.promptId },
-    { id: "d-carpet", tab: "image", media: MEDIA.carpet, ratio: "4 / 5", href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.carpet.src] },
-    { id: "d-whale", tab: "video", media: MEDIA.whaleOrigami, ratio: "16 / 10", href: videoGallery.href, promptId: MEDIA.whaleOrigami.promptId },
-    { id: "d-rain", tab: "image", media: MEDIA.rain, ratio: "3 / 4", href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.rain.src] },
-    { id: "d-dress", tab: "video", media: MEDIA.dress, ratio: "9 / 14", href: videoGallery.href, promptId: MEDIA.dress.promptId },
-    { id: "d-bloom", tab: "effects", media: MEDIA.bloom, ratio: "1 / 1", href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.bloom.src] },
-    { id: "d-samurai", tab: "video", media: MEDIA.samuraiCat, ratio: "16 / 10", href: videoGallery.href, promptId: MEDIA.samuraiCat.promptId },
-    { id: "d-autumn", tab: "image", media: MEDIA.autumn, ratio: "3 / 4", href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.autumn.src] },
-    { id: "d-fried", tab: "video", media: MEDIA.friedChicken, ratio: "16 / 10", href: videoGallery.href, promptId: MEDIA.friedChicken.promptId },
-    { id: "d-mech", tab: "effects", media: MEDIA.mech, ratio: "4 / 5", href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.mech.src] },
-    { id: "d-marina", tab: "video", media: MEDIA.marina, ratio: "16 / 10", href: videoGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.marina.src] },
-    { id: "d-boy", tab: "image", media: MEDIA.boyDog, ratio: "4 / 5", href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.boyDog.src] },
-    { id: "d-wind", tab: "effects", media: MEDIA.wind, ratio: "3 / 4", href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.wind.src] },
-    { id: "d-tomb", tab: "effects", media: MEDIA.tomb, ratio: "4 / 5", href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.tomb.src] },
-    { id: "d-dancer", tab: "image", media: MEDIA.dancer, ratio: "3 / 4", href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.dancer.src] },
+    { id: "d-dragon", tab: "video", media: MEDIA.dragon, href: videoGallery.href, promptId: MEDIA.dragon.promptId },
+    { id: "d-japan", tab: "video", media: MEDIA.japan, href: videoGallery.href, promptId: MEDIA.japan.promptId },
+    { id: "d-carpet", tab: "image", media: MEDIA.carpet, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.carpet.src] },
+    { id: "d-whale", tab: "video", media: MEDIA.whaleOrigami, href: videoGallery.href, promptId: MEDIA.whaleOrigami.promptId },
+    { id: "d-rain", tab: "image", media: MEDIA.rain, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.rain.src] },
+    { id: "d-dress", tab: "video", media: MEDIA.dress, href: videoGallery.href, promptId: MEDIA.dress.promptId },
+    { id: "d-bloom", tab: "effects", media: MEDIA.bloom, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.bloom.src] },
+    { id: "d-samurai", tab: "video", media: MEDIA.samuraiCat, href: videoGallery.href, promptId: MEDIA.samuraiCat.promptId },
+    { id: "d-autumn", tab: "image", media: MEDIA.autumn, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.autumn.src] },
+    { id: "d-fried", tab: "video", media: MEDIA.friedChicken, href: videoGallery.href, promptId: MEDIA.friedChicken.promptId },
+    { id: "d-mech", tab: "effects", media: MEDIA.mech, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.mech.src] },
+    { id: "d-marina", tab: "video", media: MEDIA.marina, href: videoGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.marina.src] },
+    { id: "d-boy", tab: "image", media: MEDIA.boyDog, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.boyDog.src] },
+    { id: "d-wind", tab: "effects", media: MEDIA.wind, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.wind.src] },
+    { id: "d-tomb", tab: "effects", media: MEDIA.tomb, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.tomb.src] },
+    { id: "d-dancer", tab: "image", media: MEDIA.dancer, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.dancer.src] },
   ];
 }
 
 const DISCOVER_ITEMS = buildDiscoverItems();
 
-/** Distribute items into N columns by inverse aspect-ratio height so columns finish flush. */
-function distributeBalancedColumns(items: DiscoverItem[], columnCount: number): DiscoverItem[][] {
-  const columns: DiscoverItem[][] = Array.from({ length: columnCount }, () => []);
-  const heights = Array.from({ length: columnCount }, () => 0);
+function mediaColumns<T extends { media: ShowMedia }>(items: readonly T[], count: number) {
+  const columns: T[][] = Array.from({ length: count }, () => []);
+  const heights = Array<number>(count).fill(0);
   for (const item of items) {
-    const [w, h] = item.ratio.split("/").map((part) => Number(part.trim()));
-    const weight = w > 0 && h > 0 ? h / w : 1;
-    let shortest = 0;
-    for (let i = 1; i < columnCount; i++) {
-      if (heights[i] < heights[shortest]) shortest = i;
-    }
-    columns[shortest].push(item);
-    heights[shortest] += weight + 0.08;
+    const index = heights.indexOf(Math.min(...heights));
+    columns[index].push(item);
+    heights[index] += 1 / (item.media.aspectRatio ?? 1);
   }
   return columns;
 }
 
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
-    <InViewVideo className={className} src={media.src} poster={media.poster} />
+    <InViewVideo className={className} src={media.src} poster={media.poster} hoverPlay={false} documentGallery />
   ) : (
     <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} />
   );
 }
 
-/** Frameless cinema slide: pure 16:9 media with zero card borders + quiet caption below. */
+/** The release caption follows the frame so it never covers the subject. */
 function SlideContent({ slide, eager, t }: { slide: (typeof FEATURE_SLIDES)[number]; eager: boolean; t: (value: Bi) => string }) {
   return (
     <>
@@ -135,19 +127,21 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
   const zh = lang.toLowerCase().startsWith("zh");
   const t = (value: Bi) => (zh ? value.zh : value.en);
   const href = (path: string) => localizedHref(lang, path);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const carousel = useCarousel(trackRef);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("all");
-  const [masonryCols, setMasonryCols] = useState(4);
-
+  const [columns, setColumns] = useState({ releases: 1, discovery: 4 });
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1199px)");
-    const sync = () => setMasonryCols(mq.matches ? 2 : 4);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const narrow = window.matchMedia("(max-width: 899px)");
+    const tablet = window.matchMedia("(max-width: 1199px)");
+    const update = () => setColumns({
+      releases: mobile.matches ? 2 : narrow.matches ? 3 : 1,
+      discovery: mobile.matches ? 2 : tablet.matches ? 3 : 4,
+    });
+    update();
+    const queries = [mobile, narrow, tablet];
+    queries.forEach(query => query.addEventListener("change", update));
+    return () => queries.forEach(query => query.removeEventListener("change", update));
   }, []);
-
   const visibleDiscover =
     discoverTab === "all"
       ? DISCOVER_ITEMS
@@ -159,25 +153,27 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
     <div className="hs">
       <ScrollReveal />
 
-      {/* 1. Frameless 16:9 Cinema Rail — zero filmstrip bars, zero card borders */}
-      <section className="hs-shell hs-carousel" aria-label={zh ? "最新功能" : "Featured releases"}>
-        <div ref={trackRef} className="hs-carousel-track">
-          {FEATURE_SLIDES.map((slide, index) =>
-            slide.media.video ? (
-              <div key={slide.href} className="hs-slide" data-video-scope>
-                <Link href={href(slide.href)} className="hs-slide-link">
-                  <SlideContent slide={slide} eager={index < 3} t={t} />
-                </Link>
-                <VideoPlayToggle zh={zh} className="hs-slide-play" />
-              </div>
-            ) : (
-              <Link key={slide.href} href={href(slide.href)} className="hs-slide">
-                <SlideContent slide={slide} eager={index < 3} t={t} />
-              </Link>
-            ),
-          )}
+      <section className="hs-shell hs-releases" aria-label={zh ? "最新功能" : "Featured releases"}>
+        <div className="hs-release-grid">
+          {mediaColumns(FEATURE_SLIDES, columns.releases).map((column, columnIndex) => (
+            <div className="hs-release-column" key={columnIndex}>
+              {column.map((slide, index) =>
+                slide.media.video ? (
+                  <div key={slide.href} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties} data-video-scope>
+                    <Link href={href(slide.href)} className="hs-slide-link">
+                      <SlideContent slide={slide} eager={index < 3} t={t} />
+                    </Link>
+                    <VideoPlayToggle zh={zh} className="hs-slide-play" />
+                  </div>
+                ) : (
+                  <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
+                    <SlideContent slide={slide} eager={index < 3} t={t} />
+                  </Link>
+                ),
+              )}
+            </div>
+          ))}
         </div>
-        <CarouselArrows zh={zh} {...carousel} />
       </section>
 
       <div className="hs-shell hs-stack">
@@ -189,7 +185,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
                 {zh ? "精选灵感" : "Explore Creations"}
               </h2>
               <p className="hs-sub">
-                {zh ? "悬停预览动态成片，点击任意画面即可复刻同款提示词。" : "Hover to preview motion, click any piece to recreate its prompt."}
+                {zh ? "选择作品，可在生成器中打开同款提示词。" : "Choose a creation to open its prompt in the studio."}
               </p>
             </div>
             <div className="hs-tabs" role="tablist" aria-label={zh ? "作品分类" : "Category filter"}>
@@ -197,7 +193,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
                 [
                   ["all", zh ? "全部精选" : "All"],
                   ["video", zh ? "动态视频" : "Video"],
-                  ["image", zh ? "4K 图像" : "4K Image"],
+                  ["image", zh ? "图像" : "Image"],
                   ["effects", zh ? "视觉特效" : "VFX"],
                 ] as const
               ).map(([key, label]) => (
@@ -215,25 +211,23 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             </div>
           </div>
 
-          <div key={discoverTab} className="hs-discover-masonry du-fade-swap">
-            {distributeBalancedColumns(visibleDiscover, masonryCols).map((col, colIndex) => (
-              <div key={`col-${colIndex}`} className="hs-discover-col">
-                {col.map((item, rowIndex) => {
+          <div className="hs-discover-masonry">
+            {mediaColumns(visibleDiscover, columns.discovery).map((column, columnIndex) => (
+              <div className="hs-discover-column" key={columnIndex}>
+                {column.map((item, index) => {
                   const promptText = item.prompt ? t(item.prompt) : undefined;
-                  const targetHref = item.promptId
-                    ? localizedHref(lang, withExamplePrompt(item.href, item.promptId))
-                    : localizedHref(lang, withPrompt(item.href, promptText));
-
+                  const target = item.promptId ? withExamplePrompt(item.href, item.promptId) : withPrompt(item.href, promptText);
                   return (
                     <WallCard
                       key={item.id}
                       media={item.media}
-                      href={targetHref}
+                      href={localizedHref(lang, target)}
                       prompt={promptText}
                       cta={zh ? "做同款" : "Recreate"}
-                      ratio={item.ratio}
-                      position={colIndex * 4 + rowIndex}
+                      ratio={String(item.media.aspectRatio ?? 1)}
+                      position={index}
                       zh={zh}
+                      viewportPlayback
                     />
                   );
                 })}

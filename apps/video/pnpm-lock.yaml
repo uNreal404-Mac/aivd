@@ -179,6 +179,9 @@ importers:
       fetch-ponyfill:
         specifier: 7.1.0
         version: 7.1.0
+      fflate:
+        specifier: 0.8.2
+        version: 0.8.2
       framer-motion:
         specifier: 12.26.2
         version: 12.26.2(@emotion/is-prop-valid@0.8.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)

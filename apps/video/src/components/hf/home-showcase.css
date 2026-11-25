@@ -26,6 +26,31 @@
   gap: 84px;
 }
 
+/* A justified row keeps portrait and landscape frames at their source ratios. */
+.hs-release-grid {
+  display: flex;
+  gap: 14px;
+}
+.hs-release-column { display: contents; }
+.hs-release-grid .hs-slide { flex: var(--hs-media-ratio, 1) 1 0%; }
+.hs-release-grid .hs-slide-media { aspect-ratio: var(--hs-media-ratio, 1); }
+.hs-release-grid .hs-slide-media :is(img, video) { object-fit: contain; object-position: center; }
+.hs-release-grid .hs-slide:hover .hs-slide-media :is(img, video),
+.hs-discover-masonry .wc-video:hover video { transform: none; }
+.hs-release-grid .hs-slide,
+.hs-release-grid .hs-slide-link { gap: 8px; }
+.hs-release-grid .hs-slide-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+.hs-release-grid .vpt,
+.hs-discover-masonry .vpt {
+  display: inline-flex;
+  opacity: 1;
+}
+
 .hs-accent {
   color: var(--du-accent-text);
 }
@@ -244,10 +269,9 @@
   align-items: start;
 }
 
-.hs-discover-col {
-  display: flex;
+.hs-discover-column {
+  display: grid;
   min-width: 0;
-  flex-direction: column;
   gap: 12px;
 }
 
@@ -1012,9 +1036,7 @@
     grid-auto-columns: calc((100% - 20px) / 2);
   }
 
-  .hs-discover-masonry {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .hs-discover-masonry { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   .hs-suite-grid {
     grid-template-columns: 1fr;
@@ -1027,6 +1049,17 @@
 }
 
 @media (max-width: 899px) {
+  .hs-release-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+  .hs-release-column {
+    display: grid;
+    min-width: 0;
+    gap: 16px;
+  }
   .hs-steps {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
@@ -1052,9 +1085,8 @@
     gap: 8px;
   }
 
-  .hs-discover-col {
-    gap: 8px;
-  }
+  .hs-release-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .hs-discover-column { gap: 8px; }
 
   .hs-wall > .hs-wall-item {
     margin-bottom: 8px;

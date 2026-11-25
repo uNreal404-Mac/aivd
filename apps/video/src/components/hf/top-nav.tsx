@@ -147,7 +147,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const soonLabel = zh ? "即将上线" : "Soon";
   const t = zh
     ? {
-        explore: "探索",
+        home: "首页",
         community: "社区",
         pricing: "定价",
         offer: "特别优惠",
@@ -177,7 +177,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         plans: { free: "免费套餐", basic: "基础版", pro: "专业版", ultimate: "旗舰版" },
       }
     : {
-        explore: "Explore",
+        home: "Home",
         community: "Community",
         pricing: "Pricing",
         offer: "Special offer",
@@ -457,7 +457,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div ref={listRef} className="hf-nav-scroll" data-fade-start={fade.start || undefined} data-fade-end={fade.end || undefined}>
           <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
             <Link href={href("/")} className="hf-item" data-active={pathname === "/" || undefined}>
-              {t.explore}
+              {t.home}
             </Link>
             {dropdowns.map((menu) => (
               <Link
@@ -693,7 +693,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 <div className="hf-mm-quick">
                   <Link href={href("/")} className="hf-mm-quick-item" data-active={pathname === "/" || undefined}>
                     <Compass aria-hidden="true" />
-                    {t.explore}
+                    {t.home}
                   </Link>
                   <button
                     type="button"

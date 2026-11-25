@@ -1,5 +1,5 @@
 import { VideoStatus, db, mediaAssets, videos } from "@/db";
-import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   getStorage,
@@ -24,7 +24,8 @@ import { generateSignedCallbackUrl } from "@/ai/utils/callback-signature";
 import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
-import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { createMarketTask, getMarketModel, imageResolution, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { imageOutputCount } from "@/lib/image-output-count";
 import { WAN_REFERENCE_MAX_BYTES, WAN_REFERENCE_MAX_FILES, isWanVideoMime } from "@/lib/wan-video-references";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
 import { isFreeInternalAccount } from "@/lib/internal-test-account";
@@ -664,10 +665,11 @@ export class VideoService {
     const request: MarketRequest = {
       prompt: params.prompt,
       aspectRatio: params.keyframes ? undefined : pick(params.aspectRatio, model.options.aspects),
-      resolution: pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
+      resolution: model.kind === "image" ? imageResolution(model, params.resolution) :
+        pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
       duration: params.duration ?? (params.keyframes ? 10 : undefined),
       ...(params.keyframes ? { keyframes: params.keyframes } : {}),
-      count: Math.min(model.options.maxCount ?? 1, Math.max(1, params.count ?? 1)),
+      count: imageOutputCount(params.count, model.options.maxCount),
       audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
       voice: params.voice,
       style: params.style?.slice(0, 1000),
@@ -726,6 +728,15 @@ export class VideoService {
 
     const prefix = model.kind === "image" ? "img" : model.kind === "audio" ? "aud" : "vid";
     const uuid = `${prefix}_${nanoid(21)}`;
+    // Signing can fail locally before a task exists. Only reserve credits once
+    // the complete provider request is ready.
+    const callbackUrl = this.callbackBaseUrl ? generateSignedCallbackUrl(`${this.callbackBaseUrl}/kie`, uuid) : undefined;
+    const providerRequest = {
+      ...request,
+      imageUrls: imageInputs.map((value) => this.signImageInput(value)),
+      ...(providerFrames ? { keyframes: providerFrames } : {}),
+      ...(sourceVideo ? { videoUrl: sourceVideo.signedUrl } : {}),
+    };
     const insert = db.insert(videos).values({
       uuid,
       userId: params.userId,
@@ -766,41 +777,31 @@ export class VideoService {
       throw new Error("Failed to create generation record");
     }
 
+    const failedCharge = model.kind === "image" ? { creditsUsed: 0 } : {};
     let frozen: { success: boolean };
     try {
       frozen = freeInternal
         ? { success: true }
         : await creditService.freeze({ userId: params.userId, credits: creditsRequired, videoUuid: uuid });
     } catch (error) {
-      await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+      await db.update(videos).set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
       throw this.toInsufficientCreditsApiError(error, creditsRequired) ?? error;
     }
     if (!frozen.success) {
       await db
         .update(videos)
-        .set({ status: VideoStatus.FAILED, errorMessage: `Insufficient credits. Required: ${creditsRequired}`, updatedAt: new Date() })
+        .set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: `Insufficient credits. Required: ${creditsRequired}`, updatedAt: new Date() })
         .where(eq(videos.uuid, uuid));
       throw new ApiError("Insufficient credits", 402, { code: "INSUFFICIENT_CREDITS", requiredCredits: creditsRequired });
     }
 
-    const callbackUrl = this.callbackBaseUrl ? generateSignedCallbackUrl(`${this.callbackBaseUrl}/kie`, uuid) : undefined;
     let taskId: string;
     try {
-      taskId = await createMarketTask(
-        model,
-        {
-          ...request,
-          imageUrls: imageInputs.map((value) => this.signImageInput(value)),
-          ...(providerFrames ? { keyframes: providerFrames } : {}),
-          ...(sourceVideo ? { videoUrl: sourceVideo.signedUrl } : {}),
-        },
-        callbackUrl,
-        apiKey,
-      );
+      taskId = await createMarketTask(model, providerRequest, callbackUrl, apiKey);
     } catch (error) {
       if (error instanceof ProviderRejectedError) {
         if (!freeInternal) await creditService.release(uuid);
-        await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        await db.update(videos).set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
         if (model.tool === "extend") {
           throw new ApiError("The provider rejected the source or options", 422, { code: "EXTEND_REJECTED" });
         }
@@ -815,13 +816,21 @@ export class VideoService {
       throw new ApiError("Submission result unknown; it will be reconciled", 202, { code: "SUBMIT_RESULT_UNKNOWN", videoUuid: uuid });
     }
 
-    for (let attempt = 1; attempt <= SUBMIT_SAVE_MAX_ATTEMPTS; attempt++) {
+    for (let attempt = 1; ; attempt++) {
       try {
-        await db
+        const [saved] = await db
           .update(videos)
-          .set({ status: VideoStatus.GENERATING, externalTaskId: taskId, updatedAt: new Date() })
-          .where(eq(videos.uuid, uuid));
-        break;
+          .set({
+            // A fast image callback may have already delivered or released the hold.
+            status: model.kind === "image"
+              ? sql`case when ${videos.status} = 'PENDING' then 'GENERATING' else ${videos.status} end`
+              : VideoStatus.GENERATING,
+            externalTaskId: taskId, updatedAt: new Date(),
+          })
+          .where(eq(videos.uuid, uuid))
+          .returning({ status: videos.status, creditsUsed: videos.creditsUsed });
+        if (!saved) throw new Error("Generation record was not found");
+        return { videoUuid: uuid, taskId, provider: "kie", ...saved };
       } catch (error) {
         if (attempt === SUBMIT_SAVE_MAX_ATTEMPTS) {
           console.error(`Submitted but local save failed; needs reconciliation. uuid=${uuid} taskId=${taskId}`, error);
@@ -834,8 +843,6 @@ export class VideoService {
         await delay(SUBMIT_SAVE_RETRY_DELAY_MS * attempt);
       }
     }
-
-    return { videoUuid: uuid, taskId, provider: "kie", status: "GENERATING", creditsUsed: billedCredits };
   }
 
   private async resolveExtendSource(userId: string, sourceVideoUuid?: string) {
@@ -929,7 +936,7 @@ export class VideoService {
       return;
     }
 
-    if (result.status === "completed" && result.videoUrl) {
+    if (result.status === "completed" && (result.videoUrl || video.mediaType === "image")) {
       await this.tryCompleteGeneration(video.uuid, result);
     } else if (result.status === "failed") {
       await this.tryFailGeneration(video.uuid, result.error?.message);
@@ -975,7 +982,7 @@ export class VideoService {
         const provider = getProvider(video.provider as ProviderType);
         const result = await provider.getTaskStatus(video.externalTaskId);
 
-        if (result.status === "completed" && result.videoUrl) {
+        if (result.status === "completed" && (result.videoUrl || video.mediaType === "image")) {
           const updated = await this.tryCompleteGeneration(video.uuid, result);
           const [fresh] = await db.select().from(videos).where(eq(videos.uuid, video.uuid)).limit(1);
           return {
@@ -983,6 +990,7 @@ export class VideoService {
             videoUrl: updated.videoUrl || undefined,
             mediaUrls: fresh && fresh.status === VideoStatus.COMPLETED ? this.mediaUrlsOf(fresh) : undefined,
             mediaType: video.mediaType,
+            ...(fresh?.status === VideoStatus.FAILED ? { error: fresh.errorMessage ?? undefined } : {}),
           };
         }
 
@@ -1078,31 +1086,45 @@ export class VideoService {
       };
     }
 
-    const storage = getStorage();
     const stamp = Date.now();
-    const sources = result.resultUrls?.length ? result.resultUrls : [result.videoUrl!];
+    const sources = result.resultUrls?.length ? result.resultUrls : result.videoUrl ? [result.videoUrl] : [];
     let uploaded: { key: string };
     let videoFileSize: number | undefined;
     let extraKeys: string[] = [];
     if (claimed.mediaType === "image") {
       // Image sets: keep every output. The first is the cover; the rest are
       // stored in parameters.extraKeys. The source decides the content type.
-      const keys = await Promise.all(
-        sources.map((sourceUrl, index) =>
-          storage
-            .downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` })
-            .then((item) => item.key),
-        ),
-      );
-      uploaded = { key: keys[0] };
-      extraKeys = keys.slice(1);
+      const outputs = [...new Set(sources)];
+      const expected = claimed.parameters?.count;
+      if (outputs.length < (typeof expected === "number" ? expected : 1)) {
+        return this.tryFailGeneration(videoUuid, "The provider returned an incomplete image batch", true);
+      }
+      try {
+        const storage = getStorage();
+        const transfers = await Promise.allSettled(
+          outputs.map((sourceUrl, index) =>
+            storage.downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` }),
+          ),
+        );
+        const keys = transfers.flatMap(item => item.status === "fulfilled" ? [item.value.key] : []);
+        if (keys.length !== outputs.length) {
+          // These objects belong only to this failed attempt. A cleanup failure
+          // must not keep the user's credits frozen.
+          await Promise.allSettled(keys.map(key => storage.deleteFile(key)));
+          throw new Error("Incomplete image transfer");
+        }
+        uploaded = { key: keys[0] };
+        extraKeys = keys.slice(1);
+      } catch {
+        return this.tryFailGeneration(videoUuid, "Failed to store the generated images", true);
+      }
     } else if (claimed.mediaType === "audio") {
-      uploaded = await storage.downloadAndUpload({
+      uploaded = await getStorage().downloadAndUpload({
         sourceUrl: sources[0],
         key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
       });
     } else {
-      const storedVideo = await storage.downloadAndUpload({
+      const storedVideo = await getStorage().downloadAndUpload({
         sourceUrl: sources[0],
         key: `videos/${videoUuid}/${stamp}.mp4`,
         contentType: "video/mp4",
@@ -1164,7 +1186,8 @@ export class VideoService {
    */
   private async tryFailGeneration(
     videoUuid: string,
-    errorMessage?: string
+    errorMessage?: string,
+    imageDeliveryFailed = false,
   ): Promise<{ status: string; errorMessage?: string | null }> {
     const [video] = await db
       .select()
@@ -1175,7 +1198,8 @@ export class VideoService {
     if (!video) throw new Error("Video not found");
     if (
       video.status === VideoStatus.COMPLETED ||
-      video.status === VideoStatus.FAILED
+      video.status === VideoStatus.FAILED ||
+      (video.mediaType === "image" && video.status === VideoStatus.UPLOADING && !imageDeliveryFailed)
     ) {
       return { status: video.status, errorMessage: video.errorMessage };
     }
@@ -1187,6 +1211,7 @@ export class VideoService {
       .update(videos)
       .set({
         status: VideoStatus.FAILED,
+        ...(video.mediaType === "image" ? { creditsUsed: 0 } : {}),
         errorMessage: message,
         updatedAt: new Date(),
       })

@@ -8,9 +8,8 @@ import "./video-play-toggle.css";
 
 /**
  * Play / pause button for the showcase clip in the nearest
- * `[data-video-scope]` element. It is only shown to visitors who asked for
- * reduced motion (see the stylesheet): clips do not start by themselves for
- * them, and this is how to start one by click, tap or keyboard.
+ * `[data-video-scope]` element. Homepage previews always show this control.
+ * Other showcases show it when the visitor requests reduced motion.
  *
  * Place it next to the card's link, not inside it, so there is no button
  * within a link.

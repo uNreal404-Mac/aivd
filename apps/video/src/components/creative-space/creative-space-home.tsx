@@ -219,8 +219,8 @@ export function CreativeSpaceHome({ lang, models }: { lang: string; models: Mode
             </Link>
           </div>
           <div className="hs-banner-art" aria-hidden="true">
-            <img src="/home/samples/studio-room.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
-            <img src="/home/samples/red-carpet.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
+            <img src="/canvas/templates/ecom.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
+            <img src="/canvas/templates/character.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
             <span className="hs-banner-bubble">{zh ? "@产品图 做一条 8 秒发布短片" : "@product make an 8s launch clip"}</span>
           </div>
         </section>

@@ -8,6 +8,7 @@ import { ProviderRejectedError } from "./types";
 import { isDefiniteRejection } from "./providers/kie";
 import { audioCreditsFromCost, imageCreditsFromCost, videoCreditsFromCost } from "@/config/kie-pricing";
 import { secondsBetween } from "@/lib/video-durations";
+import { imageOutputCount } from "@/lib/image-output-count";
 import { KLING_KEYFRAME_MODEL, type KlingKeyframes } from "@/lib/kling-keyframes";
 
 export type MarketKind = "video" | "image" | "audio";
@@ -44,6 +45,8 @@ export interface MarketRequest {
 export interface MarketOptions {
   aspects?: string[];
   resolutions?: string[];
+  /** Image models whose default is not their first (smallest) size. */
+  defaultResolution?: string;
   durations?: number[];
   /** Highest `count` the model accepts. */
   maxCount?: number;
@@ -340,7 +343,7 @@ const VIDEO_MODELS: MarketModel[] = [
 // ---------------------------------------------------------------------------
 
 const refs = (req: MarketRequest, max: number) => (req.imageUrls ?? []).slice(0, max);
-const count = (req: MarketRequest, max: number) => Math.min(max, Math.max(1, Math.round(req.count ?? 1)));
+const count = (req: MarketRequest, max: number) => imageOutputCount(req.count, max);
 const IMAGE_ASPECTS = ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"];
 
 // GPT Image 2.6 is billed per token. KIE's own per-image estimator (medium
@@ -360,7 +363,7 @@ const IMAGE_MODELS: MarketModel[] = [
     id: "seedream-5-5",
     kind: "image",
     name: "Seedream 5.5",
-    options: { aspects: [...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K"], maxCount: 1, maxImages: 10 },
+    options: { aspects: [...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K"], defaultResolution: "2K", maxCount: 1, maxImages: 10 },
     costUsd: (req) => ((req.resolution ?? "2K") === "2K" ? 0.0315 : 0.018) + refs(req, 10).length * 0.0072,
     buildTask: (req) => ({
       model: refs(req, 10).length ? "seedream/5-5-image-to-image" : "seedream/5-5-text-to-image",
@@ -471,7 +474,7 @@ const IMAGE_MODELS: MarketModel[] = [
     id: "minimax-h3-image",
     kind: "image",
     name: "MiniMax H3 Image",
-    options: { aspects: ["auto", ...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K", "4K"], maxCount: 1, maxImages: 16 },
+    options: { aspects: ["auto", ...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K", "4K"], defaultResolution: "2K", maxCount: 1, maxImages: 16 },
     costUsd: (req) => ((req.resolution ?? "2K") === "4K" ? 0.0275 : 0.009) + refs(req, 16).length * 0.0025,
     buildTask: (req) => ({
       model: refs(req, 16).length ? "minimax-h3/image-edit" : "minimax-h3/text-to-image",
@@ -689,9 +692,15 @@ export function getMarketModel(id: string | undefined | null): MarketModel | und
   return MARKET_MODELS.find((item) => item.id === id);
 }
 
+/** Used by the studio, quote and service, including old drafts with a retired size. */
+export function imageResolution(model: MarketModel, selected?: string): string | undefined {
+  const { resolutions, defaultResolution } = model.options;
+  return selected && resolutions?.includes(selected) ? selected : defaultResolution ?? resolutions?.[0];
+}
+
 /** Credits charged for one request, from the model's KIE list cost. */
 export function marketCredits(model: MarketModel, req: MarketRequest): number {
-  const cost = model.costUsd(req);
+  const cost = model.costUsd(model.kind === "image" ? { ...req, resolution: imageResolution(model, req.resolution) } : req);
   if (!(cost > 0)) return 0;
   if (model.kind === "video") return videoCreditsFromCost(cost);
   if (model.kind === "image") return imageCreditsFromCost(cost);

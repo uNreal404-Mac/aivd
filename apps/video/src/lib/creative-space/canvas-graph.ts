@@ -1,3 +1,5 @@
+import { getCanvasSound } from "./canvas-sounds";
+
 // Node canvas model for /creative-space/canvas.
 //
 // The interaction design (typed ports, structure-only undo, drag-a-wire-to-
@@ -23,6 +25,7 @@ export const PIN_COLORS = ["red", "yellow", "green", "blue", "purple"] as const;
 export type PinColor = (typeof PIN_COLORS)[number];
 
 interface Pinnable {
+  annotation?: string;
   pins?: PinColor[];
 }
 
@@ -30,6 +33,7 @@ export interface TextData extends Pinnable {
   kind: "text";
   title: string;
   text: string;
+  instruction?: string;
 }
 
 export interface MediaData extends Pinnable {
@@ -39,6 +43,7 @@ export interface MediaData extends Pinnable {
   mime: string;
   /** Upload in media_assets (owned by the user). */
   assetKey?: string;
+  soundId?: string;
   /** Finished generation (videos.uuid) and which of its outputs. */
   resultUuid?: string;
   resultIndex?: number;
@@ -48,6 +53,14 @@ export interface MediaData extends Pinnable {
   url?: string;
   /** Upload in progress; never stored. */
   busy?: boolean;
+}
+
+export interface GenerationRecord {
+  uuid: string;
+  /** When this canvas first recorded the job, in epoch milliseconds. */
+  at: number;
+  modelId?: string;
+  resultCount?: number;
 }
 
 export interface GenerateData extends Pinnable {
@@ -64,6 +77,11 @@ export interface GenerateData extends Pinnable {
   style?: string;
   status: RunStatus;
   resultUuid?: string;
+  resultAt?: number;
+  resultModelId?: string;
+  /** A duplicate can display its source's output without claiming the source's job. */
+  inheritedResult?: true;
+  history?: GenerationRecord[];
   resultIndex?: number;
   error?: string | null;
   pending?: PendingSubmit;
@@ -156,7 +174,7 @@ export function outputType(data: CanvasData): PortType | null {
 }
 
 const INPUTS: Record<CanvasKind, PortType[]> = {
-  text: [],
+  text: ["text", "image", "video"],
   media: [],
   group: [],
   image: ["text", "image"],
@@ -213,6 +231,62 @@ export function directInputs(id: string, nodes: readonly GraphNode[], edges: rea
     .filter((node): node is GraphNode => Boolean(node));
 }
 
+/** All prompt text feeding this node, flattening text-to-text links in wire order. */
+export function inputText(id: string, nodes: readonly GraphNode[], edges: readonly GraphEdge[]): string[] {
+  const incoming = new Map<string, string[]>();
+  for (const edge of edges) {
+    const list = incoming.get(edge.target) ?? [];
+    list.push(edge.source);
+    incoming.set(edge.target, list);
+  }
+  const data = new Map(nodes.map((node) => [node.id, node.data]));
+  const seen = new Set([id]);
+  const prompts: string[] = [];
+  function visit(source: string) {
+    if (seen.has(source)) return;
+    seen.add(source);
+    const node = data.get(source);
+    if (!node) return;
+    if (node.kind === "text") for (const parent of incoming.get(source) ?? []) visit(parent);
+    const text = textOf(node);
+    if (text) prompts.push(text);
+  }
+  for (const source of incoming.get(id) ?? []) visit(source);
+  return prompts;
+}
+
+/** Child positions are relative to a parent, even before React Flow measures the frame. */
+export function worldPosition(node: Pick<GraphNode, "id" | "parentNode" | "position">, nodes: readonly Pick<GraphNode, "id" | "parentNode" | "position">[]) {
+  const result = { ...node.position };
+  if (!node.parentNode) return result;
+  const parents = new Map(nodes.map((item) => [item.id, item]));
+  const visited = new Set([node.id]);
+  let id: string | undefined = node.parentNode;
+  while (id && !visited.has(id)) {
+    visited.add(id);
+    const parent = parents.get(id);
+    if (!parent) break;
+    result.x += parent.position.x;
+    result.y += parent.position.y;
+    id = parent.parentNode;
+  }
+  return result;
+}
+
+/** Include descendants of selected groups, including groups restored from saved graphs. */
+export function selectionWithChildren<T extends { id: string; parentNode?: string; selected?: boolean }>(nodes: readonly T[]): T[] {
+  const ids = new Set(nodes.filter((node) => node.selected).map((node) => node.id));
+  const children = new Map<string, string[]>();
+  for (const node of nodes) {
+    if (!node.parentNode) continue;
+    const list = children.get(node.parentNode) ?? [];
+    list.push(node.id);
+    children.set(node.parentNode, list);
+  }
+  for (const id of ids) for (const child of children.get(id) ?? []) ids.add(child);
+  return nodes.filter((node) => ids.has(node.id));
+}
+
 /** Text a node contributes downstream (text cards, Agent generation prompts). */
 export function textOf(data: CanvasData): string {
   if (data.kind === "text") return data.text.trim();
@@ -253,14 +327,81 @@ export function isUploadKey(value: unknown): value is string {
 /* Storage                                                                    */
 /* -------------------------------------------------------------------------- */
 
+export const MAX_PAST_GENERATIONS = 12;
+
+export function isGenerationUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(value);
+}
+
+function validRunTime(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value <= 8.64e15;
+}
+
+function validModelId(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 128 && /^[\w.-]+(?:\/[\w.-]+)*$/.test(value);
+}
+
+function generationFields(uuid: unknown, at: unknown, modelId: unknown, rawHistory: unknown) {
+  const resultUuid = isGenerationUuid(uuid) ? uuid : undefined;
+  const history: GenerationRecord[] = [];
+  const seen = new Set([resultUuid]);
+  if (Array.isArray(rawHistory)) {
+    for (const item of rawHistory) {
+      if (!item || !isGenerationUuid(item.uuid) || !validRunTime(item.at) || seen.has(item.uuid)) continue;
+      seen.add(item.uuid);
+      history.push({
+        uuid: item.uuid, at: item.at,
+        ...(validModelId(item.modelId) ? { modelId: item.modelId } : {}),
+        ...(Number.isSafeInteger(item.resultCount) && item.resultCount > 0 && item.resultCount <= 9 ? { resultCount: item.resultCount } : {}),
+      });
+      if (history.length === MAX_PAST_GENERATIONS) break;
+    }
+  }
+  return {
+    ...(resultUuid ? { resultUuid } : {}),
+    ...(resultUuid && validRunTime(at) ? { resultAt: at } : {}),
+    ...(resultUuid && validModelId(modelId) ? { resultModelId: modelId } : {}),
+    ...(history.length ? { history } : {}),
+  };
+}
+
+/** Replace the current job only after its successor has been acknowledged. */
+export function acceptGeneration(data: GenerateData, uuid: string, at: number): Partial<GenerateData> {
+  const past = data.history ?? [];
+  const same = !data.inheritedResult && data.resultUuid === uuid;
+  const known = past.find((run) => run.uuid === uuid);
+  const previous = { uuid: data.resultUuid, at: data.resultAt ?? at, modelId: data.resultModelId, resultCount: data.urls?.length };
+  const fields = generationFields(
+    uuid, (same ? data.resultAt : known?.at) ?? at, (same ? data.resultModelId : known?.modelId) ?? data.modelId,
+    data.inheritedResult ? past : [previous, ...past],
+  );
+  const keepOutput = same && data.status === "done";
+  return {
+    status: keepOutput ? "done" : "running", resultIndex: keepOutput ? data.resultIndex : 0,
+    urls: keepOutput ? data.urls : undefined, pending: undefined, error: null,
+    inheritedResult: undefined, history: undefined, resultModelId: undefined, ...fields,
+  };
+}
+
+/** A copied generation node starts with its own empty job history. */
+export function copyGenerationSettings(data: GenerateData, target: "duplicate" | "template"): GenerateData {
+  const { resultUuid, resultIndex, resultAt, resultModelId, inheritedResult, history, urls, pending, error, ...settings } = data;
+  if (target === "duplicate" && data.status === "done" && isGenerationUuid(resultUuid)) {
+    return { ...settings, resultUuid, resultIndex, urls, inheritedResult: true };
+  }
+  return { ...settings, status: "idle" };
+}
+
 function storedData(data: CanvasData): CanvasData {
   if (data.kind === "media") {
-    const { url: _url, busy: _busy, assetKey, ...rest } = data;
+    const { url: _url, busy: _busy, assetKey, soundId, ...rest } = data;
+    if (data.media === "audio" && soundId && getCanvasSound(soundId)) return { ...rest, soundId };
     return isUploadKey(assetKey) ? { ...rest, assetKey } : rest;
   }
   if (data.kind === "image" || data.kind === "video" || data.kind === "audio") {
-    const { urls: _urls, ...rest } = data;
-    return rest;
+    const { urls: _urls, resultUuid, resultAt, resultModelId, history, inheritedResult, ...rest } = data;
+    const fields = generationFields(resultUuid, resultAt, resultModelId, history);
+    return { ...rest, ...fields, ...(fields.resultUuid && inheritedResult === true ? { inheritedResult } : {}) };
   }
   return data;
 }
@@ -269,7 +410,7 @@ function storedData(data: CanvasData): CanvasData {
 /** A media node with nothing to point at (an upload not even kept locally yet) is not saved. */
 function storable(node: GraphNode): boolean {
   const data = node.data;
-  return data.kind !== "media" || isUploadKey(data.assetKey) || Boolean(data.resultUuid || data.localId);
+  return data.kind !== "media" || isUploadKey(data.assetKey) || Boolean(data.resultUuid || data.localId || (data.media === "audio" && data.soundId && getCanvasSound(data.soundId)));
 }
 
 export function toStoredGraph(nodes: readonly GraphNode[], edges: readonly GraphEdge[], viewport?: Viewport): StoredGraph {
@@ -309,18 +450,21 @@ function num(value: unknown): number | undefined {
 export function normalizeData(raw: Record<string, unknown>, unknownRequest: string): CanvasData | null {
   const rawPins = raw.pins;
   const pins = Array.isArray(rawPins) ? PIN_COLORS.filter((color) => rawPins.includes(color)) : [];
-  const common = { title: str(raw.title), ...(pins.length ? { pins } : {}) };
+  const annotation = str(raw.annotation).trim().slice(0, 200);
+  const common = { title: str(raw.title), ...(annotation ? { annotation } : {}), ...(pins.length ? { pins } : {}) };
   const kind = raw.kind;
-  if (kind === "text") return { kind, ...common, text: str(raw.text) };
+  if (kind === "text") return { kind, ...common, text: str(raw.text), ...(typeof raw.instruction === "string" ? { instruction: raw.instruction.slice(0, 5000) } : {}) };
   if (kind === "group") {
     const tone = GROUP_TONES.includes(raw.tone as GroupTone) ? (raw.tone as GroupTone) : undefined;
     return { kind, ...common, ...(tone ? { tone } : {}) };
   }
   if (kind === "media") {
     const media = raw.media === "video" || raw.media === "audio" ? raw.media : "image";
+    const sound = media === "audio" && typeof raw.soundId === "string" ? getCanvasSound(raw.soundId) : undefined;
     return {
       kind,
       media,
+      ...(sound ? { soundId: raw.soundId as string, url: sound.url } : {}),
       ...common,
       mime: str(raw.mime, `${media}/*`),
       ...(isUploadKey(raw.assetKey) ? { assetKey: raw.assetKey } : {}),
@@ -348,7 +492,8 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
   }
   if (kind === "image" || kind === "video" || kind === "audio") {
     let status = RUN_STATES.includes(raw.status as RunStatus) ? (raw.status as RunStatus) : "idle";
-    const resultUuid = typeof raw.resultUuid === "string" ? raw.resultUuid : undefined;
+    const fields = generationFields(raw.resultUuid, raw.resultAt, raw.resultModelId, raw.history);
+    const { resultUuid } = fields;
     const pendingRaw = raw.pending as Record<string, unknown> | undefined;
     const pending =
       pendingRaw && typeof pendingRaw.key === "string" && typeof pendingRaw.signature === "string"
@@ -376,7 +521,9 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
       ...(typeof raw.voice === "string" ? { voice: raw.voice } : {}),
       ...(typeof raw.style === "string" ? { style: raw.style } : {}),
       status,
-      ...(resultUuid ? { resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),
+      ...fields,
+      ...(resultUuid && raw.inheritedResult === true ? { inheritedResult: true } : {}),
+      ...(resultUuid ? { resultIndex: num(raw.resultIndex) ?? 0 } : {}),
       ...(error ? { error } : {}),
       ...(pending ? { pending } : {}),
       ...(isUploadKey(raw.maskKey) ? { maskKey: raw.maskKey } : {}),
@@ -608,7 +755,7 @@ export function arrangeBoxes(boxes: readonly Box[], links: readonly { source: st
 /** Snapshot key for undo history: structure only (positions, sizes, wires, names). */
 export function structureKey(nodes: readonly GraphNode[], edges: readonly GraphEdge[]): string {
   return JSON.stringify({
-    n: nodes.map((node) => [node.id, node.data.kind, Math.round(node.position.x), Math.round(node.position.y), node.parentNode ?? "", node.style?.width ?? "", node.style?.height ?? "", node.data.title]),
+    n: nodes.map((node) => [node.id, node.data.kind, Math.round(node.position.x), Math.round(node.position.y), node.parentNode ?? "", node.style?.width ?? "", node.style?.height ?? "", node.data.title, node.data.annotation ?? ""]),
     e: edges.map((edge) => [edge.source, edge.target]),
   });
 }

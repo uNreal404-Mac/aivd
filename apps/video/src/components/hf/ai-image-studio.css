@@ -455,8 +455,7 @@ button.is-chip[aria-expanded="true"] {
   height: 18px;
 }
 
-/* The chevron takes the accent while the model list is open, as the
-   reference's turns its lime. */
+/* The open model picker marks its trigger with the brand accent. */
 .is-model-chevron {
   width: 16px;
   height: 16px;
@@ -741,7 +740,7 @@ button.is-chip[aria-expanded="true"] {
 
 .is-pop-item:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 1px var(--ds-line-3);
+  box-shadow: inset 0 0 0 2px var(--du-accent-text);
 }
 
 .is-pop-item-two {
@@ -787,7 +786,7 @@ button.is-chip[aria-expanded="true"] {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: var(--ds-text-1);
+  color: var(--du-accent-text);
 }
 
 .is-pop-empty {

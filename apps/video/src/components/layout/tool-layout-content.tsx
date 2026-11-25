@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { HfTopNav } from "@/components/hf/top-nav";
 
 interface ToolLayoutContentProps {
@@ -13,6 +14,8 @@ export function ToolLayoutContent({
   lang,
   user,
 }: ToolLayoutContentProps) {
+  const pathname = usePathname();
+  if (pathname?.replace(/\/$/, "").endsWith("/creative-space/canvas")) return <main className="w-full">{children}</main>;
   return (
     <div className="min-h-screen bg-background">
       <HfTopNav

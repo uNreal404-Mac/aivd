@@ -6,6 +6,8 @@ import {
   Camera,
   Clapperboard,
   Download,
+  FileText,
+  MessageSquare,
   Eraser,
   Expand,
   Film,
@@ -38,6 +40,8 @@ import type {
 import { inputTypes, outputType } from "@/lib/creative-space/canvas-graph";
 import type { CanvasEditAction } from "../canvas-inpaint-modal";
 import { CanvasPrompt, type CanvasReference } from "./canvas-prompt";
+import { CanvasGenerationInspector } from "./canvas-generation-inspector";
+import { CanvasTextEditor, CanvasTextInspector, CanvasTextPreview } from "./canvas-text-inspector";
 import { NodePins } from "./canvas-pins";
 import { choicesFor, modelsFor, withModel } from "./model-options";
 
@@ -65,6 +69,11 @@ export interface CanvasActions {
   replaceMedia: (id: string, file: File) => Promise<void>;
   spreadSteps: (id: string) => void;
   agentToVideo: (id: string) => void;
+  agentForm: (id: string, instruction: string) => Promise<FormData>;
+  detachImageReferences: (id: string) => void;
+  uploadImageReference: (id: string, file: File) => Promise<void>;
+  editingField: { id: string; field: "title" | "annotation" } | null;
+  editField: (value: { id: string; field: "title" | "annotation" } | null) => void;
   singleSelection: boolean;
 }
 
@@ -84,17 +93,17 @@ const PORT_LABEL: Record<PortType, { zh: string; en: string }> = {
 };
 
 export const KIND_LABEL: Record<CanvasData["kind"], { zh: string; en: string }> = {
-  text: { zh: "文字", en: "Text" },
+  text: { zh: "文本", en: "Text" },
   media: { zh: "素材", en: "Asset" },
-  image: { zh: "生成图片", en: "Generate image" },
-  video: { zh: "生成视频", en: "Generate video" },
-  audio: { zh: "生成音频", en: "Generate audio" },
+  image: { zh: "图片生成", en: "Generate image" },
+  video: { zh: "视频生成", en: "Generate video" },
+  audio: { zh: "音频生成", en: "Generate audio" },
   agent: { zh: "Agent 策划", en: "Agent" },
   group: { zh: "分组", en: "Group" },
 };
 
 export function kindIcon(kind: CanvasData["kind"], media?: MediaData["media"]) {
-  if (kind === "text") return Type;
+  if (kind === "text") return FileText;
   if (kind === "image") return ImageIcon;
   if (kind === "video") return Film;
   if (kind === "audio") return Music;
@@ -132,8 +141,8 @@ function Ports({ data }: { data: CanvasData }) {
 }
 
 function Title({ id, title, fallback }: { id: string; title: string; fallback: string }) {
-  const { patch, commit } = useActions();
-  const [editing, setEditing] = useState(false);
+  const { patch, commit, editingField, editField } = useActions();
+  const editing = editingField?.id === id && editingField.field === "title";
   if (editing) {
     return (
       <input
@@ -141,23 +150,50 @@ function Title({ id, title, fallback }: { id: string; title: string; fallback: s
         defaultValue={title || fallback}
         // biome-ignore lint/a11y/noAutofocus: rename starts on double-click
         autoFocus
+        onFocus={(event) => event.currentTarget.select()}
         maxLength={60}
         onBlur={(event) => {
-          setEditing(false);
+          editField(null);
           patch(id, { title: event.target.value.trim() });
           commit();
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === "Escape") (event.target as HTMLInputElement).blur();
+          event.stopPropagation();
+          if (event.key === "Escape") event.currentTarget.value = title;
+          if (event.key === "Enter" || event.key === "Escape") event.currentTarget.blur();
         }}
       />
     );
   }
   return (
-    <strong className="nc-title" onDoubleClick={() => setEditing(true)} title={title || fallback}>
+    <strong className="nc-title" onDoubleClick={() => editField({ id, field: "title" })} title={title || fallback}>
       {title || fallback}
     </strong>
   );
+}
+
+function Annotation({ id, data }: { id: string; data: CanvasData }) {
+  const { zh, patch, commit, editingField, editField } = useActions();
+  const editing = editingField?.id === id && editingField.field === "annotation";
+  if (!editing && !data.annotation) return null;
+  return <div className="nc-annotation nodrag nowheel">
+    <MessageSquare size={12} aria-hidden="true" />
+    {editing ? <textarea
+      ref={(input) => { if (input && document.activeElement !== input) input.focus(); }}
+      rows={1} maxLength={200}
+      defaultValue={data.annotation}
+      placeholder={zh ? "输入标注，回车保存" : "Add a note, Enter to save"}
+      onBlur={(event) => { patch(id, { annotation: event.currentTarget.value.trim() || undefined }); editField(null); commit(); }}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Escape") event.currentTarget.value = data.annotation ?? "";
+        if (event.key === "Escape" || (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing)) {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    /> : <button type="button" onDoubleClick={() => editField({ id, field: "annotation" })}>{data.annotation}</button>}
+  </div>;
 }
 
 function Shell({
@@ -188,6 +224,7 @@ function Shell({
         {status ? <span className={`nc-dot nc-dot-${status}`} aria-hidden="true" /> : null}
       </div>
       {children}
+      <Annotation id={id} data={data} />
     </div>
   );
 }
@@ -240,20 +277,26 @@ function OutputTools({ id, media, url, selected }: { id: string; media: "image" 
 }
 
 export const TextNode = memo(function TextNode({ id, data, selected }: NodeProps<TextData>) {
-  const { zh, patch } = useActions();
+  const actions = useActions();
+  const { zh, patch } = actions;
+  const [editorOpen, setEditorOpen] = useState(false);
   return (
     <>
-      <NodeResizer isVisible={selected} minWidth={200} minHeight={120} lineClassName="nc-resize-line" handleClassName="nc-resize-handle" />
+      <NodeResizer isVisible={selected} minWidth={200} minHeight={120} onResizeEnd={actions.commit} lineClassName="nc-resize-line" handleClassName="nc-resize-handle" />
       <Shell id={id} data={data} selected={selected} className="nc-fill">
-        <textarea
-          className="nc-text nodrag nowheel"
-          value={data.text}
-          placeholder={zh ? "写下提示词、分镜或台词，连到生成节点使用" : "Write a prompt, shot or line, then wire it to a generator"}
-          onChange={(event) => patch(id, { text: event.target.value })}
-          maxLength={5000}
-          aria-label={zh ? "文字内容" : "Text"}
-        />
+        <button type="button" className="nc-text-surface" aria-label={zh ? "双击编辑文本" : "Double-click to edit text"}
+          onDoubleClick={() => setEditorOpen(true)} onKeyDown={(event) => {
+            if (event.key === "Enter") { event.stopPropagation(); setEditorOpen(true); }
+          }}>
+          {data.text ? <CanvasTextPreview value={data.text} /> : <span className="nc-empty">
+            <FileText size={28} aria-hidden="true" />{zh ? "输入提示词生成文本" : "Enter a prompt to generate text"}<small>{zh ? "双击编辑文本" : "Double-click to edit text"}</small>
+          </span>}
+        </button>
       </Shell>
+      <NodeToolbar isVisible={selected && actions.singleSelection} position={Position.Bottom} className="nc-panel-toolbar">
+        <CanvasTextInspector id={id} data={data} actions={actions} />
+      </NodeToolbar>
+      <CanvasTextEditor open={editorOpen} onOpenChange={setEditorOpen} data={data} onText={(text) => patch(id, { text })} zh={zh} />
     </>
   );
 });
@@ -386,6 +429,13 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
   );
 }
 
+function frameRatio(aspect?: string) {
+  const [w, h] = (aspect ?? "").split(":").map(Number);
+  return w > 0 && h > 0 ? Math.min(3, Math.max(1 / 3, w / h)) : 1;
+}
+const frameWidth = (aspect?: string) => Math.round(280 * Math.max(1, frameRatio(aspect)));
+const frameHeight = (aspect?: string) => Math.round(280 / Math.min(1, frameRatio(aspect)));
+
 export const GenerateNode = memo(function GenerateNode({ id, data, selected }: NodeProps<GenerateData>) {
   const actions = useActions();
   const { zh, patch } = actions;
@@ -397,7 +447,7 @@ export const GenerateNode = memo(function GenerateNode({ id, data, selected }: N
     <>
       <OutputTools id={id} media={data.kind} url={url} selected={selected} />
       <Shell id={id} data={data} selected={selected} status={data.status}>
-        <div className={`nc-preview nc-preview-${data.kind}`}>
+        <div className={`nc-preview nc-preview-${data.kind}`} style={data.kind === "audio" ? undefined : { width: frameWidth(data.aspect), minHeight: frameHeight(data.aspect) }}>
           {url ? <MediaPreview media={data.kind} url={url} id={id} alt={data.prompt || data.title} /> : null}
           {!url ? (
             <span className={`nc-empty${data.status === "failed" ? " is-error" : ""}`} role={data.status === "failed" ? "alert" : undefined}>
@@ -413,7 +463,7 @@ export const GenerateNode = memo(function GenerateNode({ id, data, selected }: N
               ) : (
                 <>
                   <Icon className="h-6 w-6" aria-hidden="true" />
-                  {zh ? "选中节点，在下方写提示词并生成" : "Select, write a prompt below and generate"}
+                  {zh ? `输入提示词生成${data.kind === "image" ? "图片" : data.kind === "video" ? "视频" : "音频"}` : `Enter a prompt to generate ${data.kind}`}
                 </>
               )}
             </span>
@@ -437,7 +487,7 @@ export const GenerateNode = memo(function GenerateNode({ id, data, selected }: N
         ) : null}
       </Shell>
       <NodeToolbar isVisible={selected && actions.singleSelection} position={Position.Bottom} className="nc-panel-toolbar">
-        <GeneratePanel id={id} data={data} />
+        {data.kind === "audio" ? <GeneratePanel id={id} data={data} /> : <CanvasGenerationInspector id={id} data={data} actions={actions} />}
       </NodeToolbar>
     </>
   );

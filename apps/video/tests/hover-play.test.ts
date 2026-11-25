@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HOVER_INTENT_MS, bindHoverPlay, releasePlay, togglePinnedPlay, type HoverScope } from "@/lib/hover-play";
+import { HOVER_INTENT_MS, bindHoverPlay, releasePlay, syncViewportPlayback, togglePinnedPlay, watchPagePreviews, type HoverScope } from "@/lib/hover-play";
 
 /** A card: an event target with a dataset and one child it "contains". */
 function fakeScope() {
@@ -34,6 +34,69 @@ function fakeClip() {
     },
   };
 }
+
+describe("viewport playback", () => {
+  it("plays a visible clip and keeps a manual pause when it returns to the viewport", () => {
+    const scope = fakeScope();
+    const clip = fakeClip();
+    syncViewportPlayback(scope, clip, true, true);
+    expect(clip.paused).toBe(false);
+    syncViewportPlayback(scope, clip, true, true);
+    expect(clip.plays).toBe(1);
+    togglePinnedPlay(scope, clip);
+    syncViewportPlayback(scope, clip, false, true);
+    syncViewportPlayback(scope, clip, true, true);
+    expect(clip.paused).toBe(true);
+    togglePinnedPlay(scope, clip);
+    expect(clip.paused).toBe(false);
+    syncViewportPlayback(scope, clip, false, true);
+    expect(clip.paused).toBe(true);
+  });
+
+  it("leaves reduced-motion previews still until played manually, and stops them offscreen", () => {
+    const scope = fakeScope();
+    const clip = fakeClip();
+    syncViewportPlayback(scope, clip, true, false);
+    expect(clip.plays).toBe(0);
+    togglePinnedPlay(scope, clip);
+    expect(clip.paused).toBe(false);
+    syncViewportPlayback(scope, clip, false, false);
+    syncViewportPlayback(scope, clip, true, false);
+    expect(clip.paused).toBe(true);
+    expect(clip.plays).toBe(1);
+  });
+
+  it("rechecks every mounted document preview once per frame after fast scrolling", () => {
+    const win = new EventTarget();
+    let frame: FrameRequestCallback | undefined;
+    const request = vi.fn((callback: FrameRequestCallback) => { frame = callback; return 1; });
+    vi.stubGlobal("window", Object.assign(win, { requestAnimationFrame: request, cancelAnimationFrame: vi.fn() }));
+    const one = vi.fn();
+    const two = vi.fn();
+    const stopOne = watchPagePreviews(one);
+    const stopTwo = watchPagePreviews(two);
+    try {
+      win.dispatchEvent(new Event("scroll"));
+      win.dispatchEvent(new Event("resize"));
+      expect(request).toHaveBeenCalledTimes(1);
+      frame?.(0);
+      expect(one).toHaveBeenCalledTimes(1);
+      expect(two).toHaveBeenCalledTimes(1);
+      stopOne();
+      win.dispatchEvent(new Event("scroll"));
+      frame?.(16);
+      expect(one).toHaveBeenCalledTimes(1);
+      expect(two).toHaveBeenCalledTimes(2);
+      stopTwo();
+      win.dispatchEvent(new Event("scroll"));
+      expect(request).toHaveBeenCalledTimes(2);
+    } finally {
+      stopOne();
+      stopTwo();
+      vi.unstubAllGlobals();
+    }
+  });
+});
 
 describe("hover playback", () => {
   beforeEach(() => {

@@ -46,6 +46,50 @@ export function playQuietly(clip: Pick<HoverClip, "play">): void {
   }
 }
 
+/** Pause offscreen clips and respect a viewer's explicit pause on later visits. */
+export function syncViewportPlayback(
+  scope: Pick<HoverScope, "dataset">,
+  clip: Pick<HoverClip, "play" | "pause"> & { paused: boolean },
+  visible: boolean,
+  autoplay: boolean,
+): void {
+  if (!visible) {
+    delete scope.dataset.videoPinned;
+    if (!clip.paused) clip.pause();
+  } else if (autoplay && clip.paused && scope.dataset.videoHold !== "true") {
+    playQuietly(clip);
+  }
+}
+
+const pagePreviews = new Set<() => void>();
+let pendingFrame = 0;
+
+function schedulePagePreviews() {
+  if (pendingFrame) return;
+  pendingFrame = window.requestAnimationFrame(() => {
+    pendingFrame = 0;
+    for (const check of pagePreviews) check();
+  });
+}
+
+/** A document gallery can jump several screens between intersection notifications. */
+export function watchPagePreviews(check: () => void) {
+  if (!pagePreviews.size) {
+    window.addEventListener("scroll", schedulePagePreviews, { passive: true });
+    window.addEventListener("resize", schedulePagePreviews);
+  }
+  pagePreviews.add(check);
+  schedulePagePreviews();
+  return () => {
+    pagePreviews.delete(check);
+    if (pagePreviews.size) return;
+    window.removeEventListener("scroll", schedulePagePreviews);
+    window.removeEventListener("resize", schedulePagePreviews);
+    window.cancelAnimationFrame(pendingFrame);
+    pendingFrame = 0;
+  };
+}
+
 /**
  * Plays `clip` while `scope` is hovered or focused. Returns the function that
  * removes the listeners again.

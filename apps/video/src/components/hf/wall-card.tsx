@@ -1,26 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
 import { Play, Sparkles } from "lucide-react";
 
 import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { HOVER_INTENT_MS, bindHoverPlay } from "@/lib/hover-play";
-import { prefersReducedMotion } from "@/lib/reduced-motion";
+import { InViewVideo } from "@/components/hf/in-view-video";
 import type { ShowMedia } from "@/lib/home-showcase";
 
 // Slow camera moves played on a still while it is hovered, cycled by position.
 const MOVES = ["wc-move-push", "wc-move-left", "wc-move-right", "wc-move-rise"] as const;
 
 /**
- * One card in a model wall. Hovering plays a clip (or slowly moves the camera
- * over a still). The card opens the studio with its model and, where available,
- * the matching example prompt filled in.
- *
- * With reduced motion a clip still plays on hover or keyboard focus, after a
- * short pause so a passing cursor does not start it, and the card shows a
- * play button for click and tap. The button sits beside the link, not in it.
+ * The homepage previews visible clips. Model walls preview on hover or focus.
+ * The media link opens its studio and the separate button controls playback.
  */
 export function WallCard({
   media,
@@ -30,6 +22,7 @@ export function WallCard({
   ratio,
   position,
   zh,
+  viewportPlayback = false,
 }: {
   media: ShowMedia;
   href: string;
@@ -38,22 +31,10 @@ export function WallCard({
   ratio: string;
   position: number;
   zh: boolean;
+  viewportPlayback?: boolean;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  // Only here to re-bind when the visitor switches the system setting.
-  const reducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    const card = cardRef.current;
-    const video = videoRef.current;
-    if (!card || !video) return;
-    return bindHoverPlay(card, video, { delay: prefersReducedMotion() ? HOVER_INTENT_MS : 0 });
-  }, [reducedMotion]);
-
   return (
     <div
-      ref={cardRef}
       className={`hs-wall-item wc ${media.video ? "wc-video" : MOVES[position % MOVES.length]}`}
       style={{ aspectRatio: ratio }}
       data-video-scope={media.video ? true : undefined}
@@ -67,14 +48,12 @@ export function WallCard({
         aria-label={[media.video ? (zh ? "视频" : "Video") : null, prompt, cta].filter(Boolean).join(" ")}
       >
         {media.video ? (
-          <video
-            ref={videoRef}
+          <InViewVideo
             src={media.src}
             poster={media.poster}
-            muted
-            loop
-            playsInline
-            preload="none"
+            playback={viewportPlayback ? "viewport" : "hover"}
+            hoverPlay={!viewportPlayback}
+            documentGallery={viewportPlayback}
           />
         ) : (
           <img src={media.src} alt="" loading="lazy" />

@@ -8,6 +8,9 @@ import {
   fromStoredGraph,
   isUploadKey,
   kindsAccepting,
+  inputText,
+  selectionWithChildren,
+  worldPosition,
   submitKey,
   toStoredGraph,
   type CanvasData,
@@ -38,7 +41,8 @@ describe("typed connections", () => {
     expect(checkConnection("mv", "i", nodes, [])).toEqual({ ok: false, reason: "type" });
     expect(checkConnection("i", "a", nodes, [])).toEqual({ ok: false, reason: "type" });
     expect(checkConnection("i", "i", nodes, [])).toEqual({ ok: false, reason: "self" });
-    expect(checkConnection("v", "t", nodes, [])).toEqual({ ok: false, reason: "type" });
+    expect(checkConnection("v", "t", nodes, [])).toEqual({ ok: true });
+    expect(checkConnection("a", "t", nodes, [])).toEqual({ ok: false, reason: "type" });
     const edges: GraphEdge[] = [{ id: "e", source: "t", target: "i" }];
     expect(checkConnection("t", "i", nodes, edges)).toEqual({ ok: false, reason: "duplicate" });
     const loop = [image("i1"), image("i2"), image("i3")];
@@ -47,8 +51,8 @@ describe("typed connections", () => {
   });
 
   it("lists which nodes a dropped wire can create", () => {
-    expect(kindsAccepting("text").sort()).toEqual(["agent", "audio", "image", "video"]);
-    expect(kindsAccepting("video")).toEqual(["agent"]);
+    expect(kindsAccepting("text").sort()).toEqual(["agent", "audio", "image", "text", "video"]);
+    expect(kindsAccepting("video").sort()).toEqual(["agent", "text"]);
   });
 
   it("reads direct inputs in wire order", () => {
@@ -141,7 +145,7 @@ describe("saving and opening", () => {
     const graph = {
       version: 2,
       nodes: [text("t"), media("mv", "video"), { id: "x", position: { x: 0, y: 0 }, data: { kind: "evil" } }],
-      edges: [{ id: "1", source: "mv", target: "t" }, { id: "2", source: "t", target: "nope" }],
+      edges: [{ id: "1", source: "t", target: "mv" }, { id: "2", source: "t", target: "nope" }],
     };
     const result = fromStoredGraph(graph, "?");
     expect(result.nodes.map((node) => node.id)).toEqual(["t", "mv"]);
@@ -235,5 +239,68 @@ describe("posting a generation", () => {
     const off = json(503, { success: false, error: { message: "off", details: { code: "GENERATION_DISABLED" } } });
     expect((await postGeneration("/api/v1/video/generate", {}, "k", vi.fn().mockResolvedValue(off))).kind).toBe("rejected");
     expect((await postGeneration("/api/v1/video/generate", {}, "k", vi.fn().mockResolvedValue(new Response("", { status: 401 })))).kind).toBe("unauthorized");
+  });
+});
+
+describe("reference canvas graph interactions", () => {
+  it("combines chained text inputs in wire order and reads shared ancestors once", () => {
+    const inputs = [text("a", "first"), text("b", "second"), text("c", "third"), image("i")];
+    const wires = [["a", "b"], ["b", "i"], ["a", "c"], ["c", "i"]].map(([source, target], id) => ({ id: String(id), source, target }));
+    expect(inputText("i", inputs, wires)).toEqual(["first", "second", "third"]);
+    expect(checkConnection("a", "b", inputs, [])).toEqual({ ok: true });
+    expect(checkConnection("b", "a", inputs, wires)).toEqual({ ok: false, reason: "cycle" });
+  });
+  it("keeps selected groups with descendants and preserves world coordinates on ungroup", () => {
+    const group = { ...at("g", { kind: "group", title: "" }), selected: true, position: { x: 200, y: 120 } };
+    const child = { ...text("t"), parentNode: "g", position: { x: 80, y: 80 } };
+    const other = text("outside");
+    expect(selectionWithChildren([child, group, other]).map((n) => n.id)).toEqual(["t", "g"]);
+    expect(worldPosition(child, [group, child])).toEqual({ x: 280, y: 200 });
+  });
+  it("persists bounded notes, text instructions and trusted built-in sounds", () => {
+    const sound = at("s", { kind: "media", title: "Tap", media: "audio", mime: "audio/wav", soundId: "soft-click", url: "https://unused.invalid/audio" });
+    const invalid = { ...sound, id: "other", data: { ...sound.data, soundId: "not-in-catalog" } } as GraphNode;
+    const card = { ...text("t"), data: { ...text("t").data, annotation: "a".repeat(210), instruction: "x".repeat(5020) } } as GraphNode;
+    const stored = toStoredGraph([sound, invalid, card], []);
+    expect(stored.nodes.map((n) => n.id)).toEqual(["s", "t"]);
+    expect(stored.nodes[0].data).not.toHaveProperty("url");
+    const graph = fromStoredGraph(stored, "retry");
+    expect(graph.nodes[0].data).toMatchObject({ soundId: "soft-click", url: "/canvas/sounds/soft-click.wav" });
+    expect(graph.nodes[1].data).toMatchObject({ annotation: "a".repeat(200), instruction: "x".repeat(5000) });
+  });
+});
+
+it("exports distinct safe filenames with the original media and text bytes", async () => {
+  const { canvasZip } = await import("@/lib/creative-space/canvas-export");
+  const { unzipSync, strFromU8 } = await import("fflate");
+  const result = await canvasZip([
+    { title: "shot/a", blob: new Blob(["sample"], { type: "text/plain" }) },
+    { title: "shot/a", blob: new Blob([Uint8Array.from([1, 2, 3])], { type: "image/png" }) },
+  ]);
+  const contents = unzipSync(new Uint8Array(await result.arrayBuffer()));
+  expect(Object.keys(contents)).toEqual(["01-shot_a.txt", "02-shot_a.png"]);
+  expect(strFromU8(contents["01-shot_a.txt"])).toBe("sample");
+  expect(Array.from(contents["02-shot_a.png"])).toEqual([1, 2, 3]);
+});
+
+describe("group execution", () => {
+  it("sorts group dependencies through text relays, skips finished jobs and excludes other groups", async () => {
+    const { canvasGroupPlan } = await import("@/lib/creative-space/canvas-group-run");
+    const g = at("g", { kind: "group", title: "Group" });
+    const members = [video("downstream"), text("relay"), image("first"), image("finished", { status: "done" })].map((n) => ({ ...n, parentNode: "g" }));
+    const edges = [["first", "relay"], ["relay", "downstream"]].map(([source, target], index) => ({ id: String(index), source, target }));
+    expect(canvasGroupPlan("g", [g, ...members, image("outside")], edges).map((n) => n.id)).toEqual(["first", "downstream"]);
+    expect(canvasGroupPlan("g", [g, ...members], [...edges, { id: "cycle", source: "downstream", target: "first" }])).toEqual([]);
+  });
+  it("does not continue a group after failure or after its canvas disappears", async () => {
+    const { runCanvasGroup } = await import("@/lib/creative-space/canvas-group-run");
+    let active = true;
+    const ids = ["a", "b", "c"];
+    const failed = vi.fn(async (id: string) => id !== "b");
+    expect(await runCanvasGroup(ids, () => active, failed)).toBe(false);
+    expect(failed.mock.calls.map(([id]) => id)).toEqual(["a", "b"]);
+    const switched = vi.fn(async () => { active = false; return true; });
+    expect(await runCanvasGroup(ids, () => active, switched)).toBe(false);
+    expect(switched).toHaveBeenCalledTimes(1);
   });
 });

@@ -15,29 +15,39 @@ export interface CanvasTemplate {
   build: () => { nodes: { key: string; data: CanvasData; x: number; y: number }[]; edges: [string, string][] };
 }
 
-function Dialog({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+export function CanvasDialog({ title, onClose, children, wide = false, placement = "center" }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; placement?: "center"|"locator" }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    const element = ref.current;
+    const previous = document.activeElement;
+    element?.showModal();
+    return () => {
+      element?.close();
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll:true });
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
   return (
-    <div className="nc-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <dialog open className={`nc-dialog${wide ? " is-wide" : ""}`} aria-modal="true" aria-label={title}>
+    <dialog ref={ref} className={`nc-native nc-dialog${wide ? " is-wide" : ""}`} data-placement={placement} aria-label={title}
+      onCancel={e => { e.preventDefault(); closeRef.current(); }}
+      onClick={e => {
+        if (e.target !== e.currentTarget) return;
+        const b=e.currentTarget.getBoundingClientRect();
+        if(e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) onClose();
+      }}>
         <div className="nc-dialog-head">
           <strong>{title}</strong>
           <button type="button" className="nc-icon-btn" onClick={onClose} aria-label="Close"><X className="h-4 w-4" /></button>
         </div>
         {children}
-      </dialog>
-    </div>
+    </dialog>
   );
 }
 
 export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes: Node<CanvasData>[]; onClose: () => void; onPick: (node: Node<CanvasData>) => void }) {
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
@@ -45,14 +55,16 @@ export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes:
     const q = query.trim().toLowerCase();
     return nodes
       .filter((node) => {
+        const type = node.data.kind === "media" ? node.data.media : node.data.kind;
+        if (kind !== "all" && type !== kind) return false;
         if (!q) return true;
         const data = node.data as CanvasData & { prompt?: string; text?: string };
         return [data.title, data.prompt, data.text, KIND_LABEL[data.kind][zh ? "zh" : "en"]].some((value) => value?.toLowerCase().includes(q));
       })
       .slice(0, 30);
-  }, [nodes, query, zh]);
+  }, [nodes, query, zh, kind]);
   return (
-    <Dialog title={zh ? "搜索节点" : "Search nodes"} onClose={onClose}>
+    <CanvasDialog placement="locator" title={zh ? "节点定位" : "Find a node"} onClose={onClose}>
       <label className="nc-search">
         <Search className="h-4 w-4" aria-hidden="true" />
         <input
@@ -68,6 +80,7 @@ export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes:
           aria-label={zh ? "搜索" : "Search"}
         />
       </label>
+      <div className="nc-type-tabs">{(["all","image","video","audio","text","agent","group"] as const).map(k => <button type="button" key={k} aria-pressed={kind===k} onClick={() => {setKind(k);setActive(0);}}>{k === "all" ? (zh ? "全部" : "All") : KIND_LABEL[k][zh ? "zh" : "en"]}</button>)}</div>
       <div className="nc-search-list">
         {results.length ? results.map((node, index) => {
           const data = node.data as CanvasData & { prompt?: string; text?: string };
@@ -81,7 +94,7 @@ export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes:
           );
         }) : <p className="nc-muted">{zh ? "没有匹配的节点" : "No matching nodes"}</p>}
       </div>
-    </Dialog>
+    </CanvasDialog>
   );
 }
 
@@ -124,13 +137,13 @@ export function ShortcutsDialog({ zh, onClose }: { zh: boolean; onClose: () => v
         ["L / M", "Wires / minimap"],
       ];
   return (
-    <Dialog title={zh ? "快捷键" : "Shortcuts"} onClose={onClose}>
+    <CanvasDialog title={zh ? "快捷键" : "Shortcuts"} onClose={onClose}>
       <dl className="nc-keys">
         {rows.map(([key, value]) => (
           <div key={key}><dt>{key}</dt><dd>{value}</dd></div>
         ))}
       </dl>
-    </Dialog>
+    </CanvasDialog>
   );
 }
 
@@ -152,10 +165,11 @@ export function TemplatesDialog({
   onClose: () => void;
 }) {
   return (
-    <Dialog title={zh ? "模板" : "Templates"} onClose={onClose} wide>
+    <CanvasDialog title={zh ? "模板" : "Templates"} onClose={onClose} wide>
       <div className="nc-templates">
         {builtin.map((template) => (
           <button key={template.id} type="button" className="nc-template" onClick={() => onInsert(template)}>
+            <img src={`/canvas/templates/${template.id}.webp`} alt="" loading="lazy" />
             <strong>{template.name}</strong>
             <span>{template.description}</span>
           </button>
@@ -177,7 +191,7 @@ export function TemplatesDialog({
       ) : (
         <p className="nc-muted">{zh ? "选中几个节点，在多选工具栏里点「存为模板」。" : "Select nodes and choose Save template."}</p>
       )}
-    </Dialog>
+    </CanvasDialog>
   );
 }
 
@@ -211,7 +225,7 @@ export function ShotsDialog({
   const [busy, setBusy] = useState(false);
   const each = model ? marketCredits(model, { prompt: "shot", resolution: resolution || undefined, count: 1, imageUrls: ["reference"] }) : 0;
   return (
-    <Dialog title={zh ? "多机位分镜" : "Multi-angle shots"} onClose={onClose} wide>
+    <CanvasDialog title={zh ? "多机位分镜" : "Multi-angle shots"} onClose={onClose} wide>
       <div className="nc-shots">
         <img src={imageUrl} alt="" />
         <div className="nc-shots-side">
@@ -256,20 +270,20 @@ export function ShotsDialog({
           </button>
         </div>
       </div>
-    </Dialog>
+    </CanvasDialog>
   );
 }
 
 export function CompareOverlay({ zh, before, after, onClose }: { zh: boolean; before: string; after: string; onClose: () => void }) {
   const [split, setSplit] = useState(50);
   return (
-    <Dialog title={zh ? "前后对比" : "Before / after"} onClose={onClose} wide>
+    <CanvasDialog title={zh ? "前后对比" : "Before / after"} onClose={onClose} wide>
       <div className="nc-compare" style={{ ["--split" as string]: `${split}%` }}>
         <img src={after} alt={zh ? "之后" : "After"} />
         <img src={before} alt={zh ? "之前" : "Before"} className="nc-compare-before" />
         <span className="nc-compare-line" aria-hidden="true" />
       </div>
       <input type="range" min={0} max={100} value={split} onChange={(event) => setSplit(Number(event.target.value))} aria-label={zh ? "拖动对比分界线" : "Drag the divider"} className="nc-range" />
-    </Dialog>
+    </CanvasDialog>
   );
 }
