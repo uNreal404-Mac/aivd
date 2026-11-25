@@ -182,6 +182,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
           const restoredKind = !hideKindTabs && (saved.kind === "video" || saved.kind === "image") ? saved.kind : initialKind;
           if (!hideKindTabs && (saved.kind === "video" || saved.kind === "image")) setKind(saved.kind);
           if (typeof saved.prompt === "string" && !initialPrompt) setPrompt(saved.prompt);
+          // The visitor's own text replaced by an idea can still be brought back after a reload.
+          if (!initialPrompt && saved.replaced && typeof saved.replaced.prompt === "string" && typeof saved.replaced.aspect === "string") setReplaced({ prompt: saved.replaced.prompt, aspect: saved.replaced.aspect });
           const restoredVideoModelId = typeof saved.modelId === "string" ? saved.modelId : (defaultVideoModel?.id ?? DEFAULT_VIDEO_MODEL_ID);
           const restoredImageModelId = typeof saved.imageModelId === "string" ? saved.imageModelId : (IMAGE_MODEL_IDS[0] ?? "");
           if (typeof saved.modelId === "string") setModelId(saved.modelId);
@@ -210,8 +212,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   useEffect(() => {
     if (!draftReady) return;
     const compact = (items: PickerAsset[]) => items.map(({ id, name, mimeType, key, url }) => ({ id, name, mimeType, key, url: key ? url : "" }));
-    localStorage.setItem(draftStorageKey, JSON.stringify({ kind, prompt, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages) }));
-  }, [draftReady, kind, prompt, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences, referenceImages]);
+    localStorage.setItem(draftStorageKey, JSON.stringify({ kind, prompt, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages), replaced }));
+  }, [draftReady, kind, prompt, modelId, imageModelId, aspect, resolution, duration, sound, videoReferences, referenceImages, replaced]);
 
   // A "Generate" pressed while signed out continues after sign-in, if that
   // happens within a few minutes on the same page. Closing the sign-in dialog
@@ -315,6 +317,8 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   // Switching tabs starts clean: an error from the other tab (an unconnected
   // video model, say) must not follow the visitor to the image tab.
   const switchKind = (next: "video" | "image" | "canvas") => {
+    // An undo for a replaced prompt belongs to the tab it was made on.
+    if (next !== kind) setReplaced(null);
     setKind(next);
     setPanel(null);
     setMentionOpen(false);

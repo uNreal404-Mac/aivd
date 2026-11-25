@@ -454,6 +454,8 @@ export function AiVideoStudio({
             resolution: settings.resolution,
             audio: String(settings.audio),
           });
+          // The camera preset comes back too, or the prompt would lose it.
+          if (settings.preset) params.set("preset", settings.preset);
           signIn.onOpenWithRedirect(`${window.location.pathname}?${params}`);
         }
         return;
@@ -490,6 +492,7 @@ export function AiVideoStudio({
       resolution: settings.resolution,
       audio: String(settings.audio),
     });
+    if (settings.preset) params.set("preset", settings.preset);
     signIn.onOpenWithRedirect(`${window.location.pathname}?${params}`);
   }
   const startGenerate = () => {
