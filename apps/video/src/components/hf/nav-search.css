@@ -1,73 +1,25 @@
-/* Site search: the bar opens over the middle of the nav and a panel drops
-   below it, after the reference. Same surfaces as the nav dropdowns. */
-
-.ns {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 60;
-}
-
-.ns-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
-  backdrop-filter: blur(4px);
-  cursor: default;
-  animation: ns-fade var(--m-base) var(--m-ease-out) both;
-}
-
-.ns[data-state="closed"] {
-  pointer-events: none;
-}
-
-.ns[data-state="closed"] .ns-scrim {
-  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
-}
-
-.ns[data-state="closed"] .ns-bar,
-.ns[data-state="closed"] .ns-panel {
-  animation: ns-out var(--m-instant) var(--m-ease-exit) both;
-}
-
-@keyframes ns-out {
-  to {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-2px) scale(0.985);
-  }
-}
-
-@keyframes ns-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-.ns-bar {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  z-index: 1;
-  display: flex;
-  width: min(560px, calc(100vw - 32px));
-  height: 36px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 6px 0 12px;
+/* The field, category filters and results share one surface. The overlay
+   is portaled outside of the sticky site header by Radix Dialog. */
+.hf-search-layer {
+  inset-inline: 0;
+  top: max(var(--ds-space-5), env(safe-area-inset-top));
+  width: min(600px, calc(100% - 2 * var(--ds-space-4)));
+  max-height: calc(100dvh - 2 * var(--ds-space-5));
+  margin-inline: auto;
   border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-lg);
-  background: var(--ds-surface-3);
-  transform: translateX(-50%);
-  animation: ns-bar-in var(--m-fast) var(--m-ease-out) both;
+  border-radius: var(--ds-r-2xl);
+  animation: du-dialog-in var(--m-fast) var(--m-ease-out) both;
 }
-
-/* The bar grows out of the middle with a transform (animating its width
-   re-laid the page out every frame). */
-@keyframes ns-bar-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) scaleX(0.92);
-  }
+.hf-search-layer[data-state="closed"] { animation: du-dialog-out var(--m-instant) var(--m-ease-exit) both; }
+.ns { display: flex; flex-direction: column; min-height: 0; }
+.ns-bar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-2) var(--ds-space-3) var(--ds-space-2) var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-line-2);
+  background: var(--ds-surface-3);
 }
 
 .ns-bar:focus-within {
@@ -127,8 +79,8 @@
 
 .ns-close {
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
   place-items: center;
   border-radius: var(--ds-r-full);
   background: var(--ds-fill-2);
@@ -141,30 +93,10 @@
 }
 
 .ns-panel {
-  position: absolute;
-  top: 56px;
-  left: 50%;
-  z-index: 1;
   display: flex;
-  width: min(560px, calc(100vw - 32px));
-  max-height: min(620px, calc(100dvh - 80px));
+  min-height: 0;
+  max-height: min(620px, calc(100dvh - 110px));
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-2xl);
-  background: var(--ds-surface-2);
-  box-shadow:
-    0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent),
-    0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
-  transform: translateX(-50%);
-  animation: ns-panel-in var(--m-fast) var(--m-ease-out) both;
-}
-
-@keyframes ns-panel-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-4px) scale(0.985);
-  }
 }
 
 .ns-tabs {
@@ -487,10 +419,21 @@
   gap: 4px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ns-scrim,
-  .ns-bar,
-  .ns-panel {
-    animation: none;
+@media (max-width: 640px) {
+  .hf-search-layer {
+    top: env(safe-area-inset-top);
+    width: 100%;
+    max-height: calc(100dvh - env(safe-area-inset-top));
+    border: 0;
+    border-radius: 0 0 var(--ds-r-2xl) var(--ds-r-2xl);
   }
+  .ns-bar input { font-size: var(--ds-fs-md); }
+  .ns-close { width: 44px; height: 44px; }
+  .ns-tab { min-height: 44px; flex: 1; padding-inline: var(--ds-space-1); }
+  .ns-panel { max-height: calc(100dvh - 68px - env(safe-area-inset-top)); }
+  .ns-foot, .ns-kbd { display: none; }
+  .ns-body { padding-bottom: max(var(--ds-space-4), env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hf-search-layer, .hf-search-layer[data-state="closed"] { animation: none; }
 }

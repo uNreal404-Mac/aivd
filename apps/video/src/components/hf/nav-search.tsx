@@ -152,11 +152,8 @@ export function NavSearch({
   lang,
   localize,
   onClose,
-  state = "open",
 }: {
   lang: string;
-  /** "closed" while it plays its exit (hooks/use-presence in the nav). */
-  state?: "open" | "closed";
   /** Turns a site path into a localized link. */
   localize: (path: string) => string;
   onClose: () => void;
@@ -226,17 +223,10 @@ export function NavSearch({
   ];
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    // Leaving: the exit is still on screen, but it no longer takes keys.
-    if (state === "closed") {
-      event.preventDefault();
-      return;
-    }
+    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+    if (event.target !== inputRef.current) return;
     const count = fallbacks ? fallbackLinks.length : rows.length;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      if (query) setQuery("");
-      else onClose();
-    } else if (event.key === "ArrowDown" && count) {
+    if (event.key === "ArrowDown" && count) {
       event.preventDefault();
       setActive((value) => (value + 1) % count);
     } else if (event.key === "ArrowUp" && count) {
@@ -246,10 +236,6 @@ export function NavSearch({
       event.preventDefault();
       const target = fallbacks ? fallbackLinks[active]?.href : rows[active]?.href;
       if (target) go(target);
-    } else if (event.key === "Tab" && !event.shiftKey && document.activeElement === inputRef.current) {
-      // Tab cycles the category tabs while typing, like the reference.
-      event.preventDefault();
-      setTab((current) => tabs[(tabs.findIndex((item) => item.id === current) + 1) % tabs.length].id);
     }
   };
 
@@ -299,8 +285,7 @@ export function NavSearch({
   };
 
   return (
-    <div className="ns" data-state={state} onKeyDown={onKeyDown}>
-      <button type="button" className="ns-scrim" aria-label={zh ? "关闭搜索" : "Close search"} tabIndex={-1} onClick={onClose} />
+    <div className="ns" onKeyDown={onKeyDown}>
       <div className="ns-bar">
         <Search className="ns-bar-icon" aria-hidden="true" />
         <input
@@ -335,17 +320,15 @@ export function NavSearch({
       </div>
 
       <div className="ns-panel">
-        <div className="ns-tabs" role="tablist">
+        <div className="ns-tabs" role="group" aria-label={zh ? "搜索分类" : "Search categories"}>
           {tabs.map((item) => (
             <button
               key={item.id}
               type="button"
-              role="tab"
-              aria-selected={tab === item.id}
+              aria-pressed={tab === item.id}
               className={cn("ns-tab", tab === item.id && "ns-tab-on")}
               onClick={() => {
                 setTab(item.id);
-                inputRef.current?.focus();
               }}
             >
               {item.label}
@@ -488,7 +471,7 @@ export function NavSearch({
           </span>
           <span>
             <kbd>Tab</kbd>
-            {zh ? "切换分类" : "Category"}
+            {zh ? "下一项" : "Next control"}
           </span>
           <span>
             <kbd>Esc</kbd>

@@ -475,7 +475,7 @@ a.hf-item:hover,
 /* Dropdown panel: one shared panel under the bar, aligned to its trigger. */
 .hf-dd {
   position: absolute;
-  top: calc(56px + 8px);
+  top: calc(100% + var(--ds-space-1));
   left: 0;
   z-index: 50;
   /* Placed with a transform (--dd-x is the trigger's left edge), so moving
@@ -492,7 +492,7 @@ a.hf-item:hover,
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-3xl);
   background: var(--ds-surface-2);
-  box-shadow: 0 20px 25px -5px color-mix(in srgb, var(--du-bg) 60%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--du-bg) 60%, transparent);
+  box-shadow: var(--ds-shadow-float);
   scrollbar-width: none;
 }
 
@@ -825,48 +825,68 @@ a.hf-dd-row:active {
 /* Mobile list */
 /* Narrow-screen menu: a drawer from the right under the bar, with quick
    tiles, one expandable block per section and the offer and language last. */
-.hf-nav-mobile {
+/* Navigation overlays live in the document portal. A fixed element inside
+   the blurred header would be constrained to the height of the header. */
+.hf-layer-scrim {
   position: fixed;
-  inset: var(--hf-header-h, 52px) 0 0;
-  z-index: 45;
-}
-
-.hf-mm-backdrop {
-  position: absolute;
   inset: 0;
-  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
+  z-index: 90;
+  background: var(--du-glass-overlay-scrim);
   backdrop-filter: blur(4px);
-  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
 }
-
-.hf-nav-mobile[data-state="closed"] {
-  pointer-events: none;
+.hf-layer-scrim[data-state="closed"] {
+  animation: du-fade-out var(--m-instant) var(--m-ease-exit) both;
 }
-
-.hf-nav-mobile[data-state="closed"] .hf-mm-backdrop {
-  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
-}
-
-.hf-nav-mobile[data-state="closed"] .hf-mm {
-  animation: hf-mm-out var(--m-fast) var(--m-ease-exit) both;
-}
-
-.hf-mm {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
+.hf-nav-layer {
+  position: fixed;
+  z-index: 91;
   display: flex;
-  width: min(440px, 100%);
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ds-text-1);
+  background: var(--ds-surface-2);
+  box-shadow: var(--ds-shadow-float);
+}
+.hf-menu-layer {
+  inset: 0 0 0 auto;
+  width: min(400px, 100%);
+  padding-top: env(safe-area-inset-top);
+  border-left: 1px solid var(--ds-line-2);
+  animation: hf-mm-in var(--m-base) var(--m-ease-out) both;
+}
+.hf-menu-layer[data-state="closed"] {
+  animation: hf-mm-out var(--m-instant) var(--m-ease-exit) both;
+}
+.hf-mm-title {
+  margin: 0;
+  padding: var(--ds-space-4) var(--ds-space-5);
+  border-bottom: 1px solid var(--ds-line-1);
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+}
+.hf-mm-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + var(--ds-space-1));
+  right: var(--ds-space-3);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+}
+.hf-mm-close:hover { background: var(--ds-fill-2); }
+.hf-mm-close svg { width: 20px; height: 20px; }
+.hf-mm {
+  display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: var(--ds-space-1);
-  padding: var(--ds-space-3) var(--ds-space-3) var(--ds-space-5);
+  padding: var(--ds-space-3) var(--ds-space-3) max(var(--ds-space-5), env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-left: 1px solid var(--ds-line-1);
-  background: var(--du-bg-elev);
-  box-shadow: var(--ds-shadow-2);
-  animation: hf-mm-in var(--m-base) var(--m-ease-out) both;
 }
 
 .hf-mm-quick {
@@ -1108,23 +1128,12 @@ a.hf-dd-row:active {
   }
 }
 
-@keyframes hf-mm-fade {
-  from {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .hf-mm,
-  .hf-mm-backdrop {
-    animation: none;
-  }
+  .hf-nav-layer, .hf-layer-scrim, .hf-nav-layer[data-state="closed"], .hf-layer-scrim[data-state="closed"] { animation: none; }
 }
-
-@media (min-width: 1080px) {
-  .hf-nav-mobile {
-    display: none;
-  }
+@media (prefers-reduced-transparency: reduce) {
+  .hf-nav { background: var(--du-bg); backdrop-filter: none; }
+  .hf-layer-scrim { backdrop-filter: none; }
 }
 
 /* Phones: the header controls stay 32px to look at (44px boxes would push
