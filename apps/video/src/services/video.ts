@@ -50,6 +50,7 @@ export interface GenerateVideoParams {
   keyframes?: KlingKeyframes;
   locale?: string;
   mode?: string;
+  preset?: string;
   outputNumber?: number;
   generateAudio?: boolean;
   idempotencyKey?: string;
@@ -68,6 +69,8 @@ export interface GenerateMediaParams {
   userId: string;
   model: string;
   prompt: string;
+  preset?: string;
+  mode?: string;
   aspectRatio?: string;
   resolution?: string;
   duration?: number;
@@ -242,6 +245,8 @@ export class VideoService {
         userId: params.userId,
         model: params.model,
         prompt: params.prompt,
+        preset: params.preset,
+        mode: params.mode,
         aspectRatio: params.aspectRatio,
         resolution: params.quality,
         duration: params.duration,
@@ -413,6 +418,7 @@ export class VideoService {
       quality: params.quality,
       outputNumber,
       mode: resolvedMode,
+      ...(params.preset ? { preset: params.preset } : {}),
       imageUrl: params.imageUrl,
       imageUrls: params.imageUrls,
       ...(videoKeys.length ? { videoKeys } : {}),
@@ -828,6 +834,8 @@ export class VideoService {
       mediaType: model.kind,
       parameters: {
         ...request,
+        ...(params.preset ? { preset: params.preset } : {}),
+        ...(params.mode ? { mode: params.mode } : {}),
         imageUrls: imageInputs,
         // The source is kept by its id; a signed URL would expire.
         ...(sourceVideo?.uuid ? { sourceVideoUuid: sourceVideo.uuid } : {}),

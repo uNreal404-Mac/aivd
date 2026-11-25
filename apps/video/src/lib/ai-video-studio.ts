@@ -6,6 +6,7 @@ import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
 import examplePrompts from "@/lib/home-example-prompts.json";
 import { secondsBetween } from "@/lib/video-durations";
+import type { GenerationParameters } from "@/lib/generation-details";
 
 export type StudioModel = {
   id: string;
@@ -292,6 +293,7 @@ export type GenerateRequestBody = {
   videoKeys?: string[];
   keyframes?: KlingKeyframes;
   mode?: "text-to-video" | "image-to-video" | "reference-to-video";
+  preset?: string;
 };
 
 export type BuildGenerateRequestResult =
@@ -336,6 +338,7 @@ export function buildGenerateRequest(
       quality: settings.resolution,
       ...(!videoKeys.length && !keyframes ? { generateAudio: settings.audio } : {}),
       idempotencyKey,
+      ...(settings.preset ? { preset: settings.preset } : {}),
       ...(keyframes ? { keyframes, mode: "reference-to-video" as const } : {}),
       ...(videoKeys.length ? { videoKeys, mode: "reference-to-video" as const } : {}),
       ...(imageKeys.length === 1 ? { imageUrl: imageKeys[0], mode: "image-to-video" as const } : {}),
@@ -471,6 +474,7 @@ export type StudioResult = {
   prompt?: string | null;
   message?: string | null;
   model?: string;
+  parameters?: GenerationParameters | null;
   resolution?: string;
   audio?: boolean;
   /** When the clip was submitted (ms), for the elapsed timer. */
@@ -504,7 +508,7 @@ export function isResultPending(result: StudioResult): boolean {
 
 type StatusPayload = {
   success?: boolean;
-  data?: { status?: string; videoUrl?: string; error?: string } | null;
+  data?: { status?: string; videoUrl?: string; error?: string; model?: string; parameters?: GenerationParameters | null; duration?: number | null; aspectRatio?: string | null; resolution?: string | null } | null;
 };
 
 export type FetchResultStatus =
@@ -513,6 +517,8 @@ export type FetchResultStatus =
       status: StudioResultStatus;
       videoUrl: string | null;
       message: string | null;
+      model?: string;
+      parameters?: GenerationParameters | null;
     }
   | { ok: false };
 
@@ -538,11 +544,19 @@ export async function fetchResultStatus(
     if (!payload?.success || !payload.data) {
       return { ok: false };
     }
+    const parameters = {
+      ...(payload.data.parameters ?? {}),
+      ...(!payload.data.parameters?.duration && payload.data.duration ? { duration: payload.data.duration } : {}),
+      ...(!payload.data.parameters?.aspectRatio && payload.data.aspectRatio ? { aspectRatio: payload.data.aspectRatio } : {}),
+      ...(!payload.data.parameters?.resolution && !payload.data.parameters?.quality && payload.data.resolution ? { resolution: payload.data.resolution } : {}),
+    };
     return {
       ok: true,
       status: toStudioStatus(payload.data.status),
       videoUrl: payload.data.videoUrl ?? null,
       message: payload.data.error ?? null,
+      ...(payload.data.model ? { model: payload.data.model } : {}),
+      ...(Object.keys(parameters).length ? { parameters } : {}),
     };
   } catch {
     return { ok: false };
@@ -560,7 +574,9 @@ type ListPayload = {
       errorMessage?: string | null;
       model?: string;
       resolution?: string | null;
-      parameters?: { resolution?: string; quality?: string; audio?: boolean; generateAudio?: boolean };
+      parameters?: GenerationParameters | null;
+      duration?: number | null;
+      aspectRatio?: string | null;
       createdAt?: string | number | null;
     }>;
   } | null;
@@ -593,6 +609,12 @@ export async function fetchRecentResults(
     const results: StudioResult[] = [];
     for (const video of payload.data.videos) {
       if (!video?.uuid) continue;
+      const parameters = {
+        ...(video.parameters ?? {}),
+        ...(!video.parameters?.duration && video.duration ? { duration: video.duration } : {}),
+        ...(!video.parameters?.aspectRatio && video.aspectRatio ? { aspectRatio: video.aspectRatio } : {}),
+        ...(!video.parameters?.resolution && !video.parameters?.quality && video.resolution ? { resolution: video.resolution } : {}),
+      };
       results.push({
         id: video.uuid,
         videoUuid: video.uuid,
@@ -601,8 +623,9 @@ export async function fetchRecentResults(
         prompt: video.prompt ?? null,
         message: video.errorMessage ?? null,
         model: video.model,
-        resolution: video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution ?? undefined,
-        audio: video.parameters?.audio ?? video.parameters?.generateAudio,
+        resolution: (video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution ?? undefined) as string | undefined,
+        audio: (video.parameters?.audio ?? video.parameters?.generateAudio) as boolean | undefined,
+        ...(Object.keys(parameters).length ? { parameters } : {}),
         createdAt: toMillis(video.createdAt),
       });
     }
@@ -641,6 +664,8 @@ export function applyResultStatus(
           status: update.status,
           videoUrl: update.videoUrl ?? item.videoUrl ?? null,
           message: update.message ?? item.message ?? null,
+          model: update.model ?? item.model,
+          parameters: update.parameters ?? item.parameters,
         }
       : item,
   );

@@ -426,6 +426,23 @@
   word-break: break-word;
 }
 
+.sr-viewer-settings {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ds-line-1);
+}
+
+.sr-viewer-settings dl { display: grid; gap: 8px; margin: 0; }
+.sr-viewer-settings dl > div { display: flex; justify-content: space-between; gap: 16px; font-size: var(--ds-fs-sm); }
+.sr-viewer-settings dt { color: var(--du-text-muted); }
+.sr-viewer-settings dd { margin: 0; color: var(--du-text); text-align: right; word-break: break-word; }
+
+.sr-card-text { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.sr-card-text .sr-card-prompt { flex: none; }
+.sr-card-settings { overflow: hidden; color: var(--du-text-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
 .sr-viewer-actions {
   display: flex;
   flex-wrap: wrap;

@@ -4,6 +4,7 @@
 // tiles, optionally split by day, at one of four card sizes (view-menu).
 import { Clapperboard, Paintbrush, RotateCcw } from "lucide-react";
 import type { MediaJob } from "@/lib/media-studio";
+import { generationDetails } from "@/lib/generation-details";
 import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef } from "@/components/hf/studio-results";
 import type { ImageView } from "./view-menu";
 
@@ -60,6 +61,7 @@ export function ResultsGrid({
         job.urls.map((url, index) => {
           const key = `${job.uuid}-${index}`;
           const model = modelName(job.model);
+          const details = generationDetails("image", model, job.parameters, zh);
           return (
             <figure key={key} className="sr-card is-result">
               <img ref={readyRef} onLoad={markReady} onError={markReady} src={url} alt={job.prompt} loading="lazy" />
@@ -70,7 +72,12 @@ export function ResultsGrid({
                 <DownloadLink url={url} zh={zh} />
               </span>
               <span className="sr-card-bottom">
-                <span className="sr-card-prompt">{job.prompt}</span>
+                <span className="sr-card-text">
+                  <span className="sr-card-prompt">{job.prompt}</span>
+                  <span className="sr-card-settings" title={details.map(({ label, value }) => `${label}: ${value}`).join(" · ")}>
+                    {details.map(({ value }) => value).join(" · ")}
+                  </span>
+                </span>
                 <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => onReuse(job.prompt)}>
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </button>

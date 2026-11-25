@@ -28,6 +28,7 @@ import {
   bestAffordableModel,
   canGenerate,
   defaultSettings,
+  buildGenerateRequest,
   estimateCredits,
   fetchRecentResults,
   fetchResultStatus,
@@ -776,6 +777,14 @@ function AiVideoStudioForm({
         return;
       }
 
+      const submitted = buildGenerateRequest(
+        { ...settings, prompt: preparedPrompt.prompt }, idempotencyKey,
+        keyframeMode || videoInput ? null : keys.length ? keys : imageKey,
+        videoInput ? keys : [], keyframeKeys,
+      );
+      const submittedParameters = submitted.ok
+        ? Object.fromEntries(Object.entries(submitted.body).filter(([key]) => key !== "prompt" && key !== "idempotencyKey"))
+        : undefined;
       setResults((previous) => [
         {
           id: result.videoUuid ?? result.taskId ?? `clip-${previous.length + 1}`,
@@ -783,6 +792,7 @@ function AiVideoStudioForm({
           videoUuid: result.videoUuid,
           prompt: settings.prompt.trim(),
           model: catalogModelId,
+          parameters: submittedParameters,
           createdAt: Date.now(),
         },
         ...previous,
@@ -995,7 +1005,11 @@ function AiVideoStudioForm({
     () =>
       results
         .filter((item) => item.status === "completed" && item.videoUrl)
-        .map((item) => ({ key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "" })),
+        .map((item) => ({
+          key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "",
+          model: VIDEO_CATALOG.find(model => model.id === item.model)?.name ?? getMarketModel(item.model ?? "")?.name ?? item.model,
+          parameters: item.parameters,
+        })),
     [results],
   );
   const shownResults = matchingVideos(results, historyFilter, Date.now());

@@ -5,6 +5,7 @@
 import type { VoiceSettings } from "@/lib/audio-voice-settings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toMillis } from "@/lib/ai-video-studio";
+import type { GenerationParameters } from "@/lib/generation-details";
 
 export type MediaKind = "image" | "audio";
 export type MediaJobStatus = "queued" | "generating" | "completed" | "failed";
@@ -15,6 +16,7 @@ export type MediaJob = {
   urls: string[];
   prompt: string;
   model?: string;
+  parameters?: GenerationParameters | null;
   message?: string | null;
   /** When the job was submitted (ms), for the elapsed timer. */
   createdAt?: number;
@@ -290,6 +292,8 @@ async function fetchStatus(uuid: string): Promise<Partial<MediaJob> | null> {
       status: toStatus(data.status),
       urls: Array.isArray(data.mediaUrls) ? data.mediaUrls : data.videoUrl ? [data.videoUrl] : [],
       message: data.error ?? null,
+      ...(data.model ? { model: data.model } : {}),
+      ...(data.parameters ? { parameters: data.parameters } : {}),
     };
   } catch {
     return null;
@@ -310,6 +314,9 @@ async function fetchHistory(kind: MediaKind, limit = 24): Promise<MediaJob[]> {
         videoUrl?: string | null;
         prompt?: string;
         model?: string;
+        parameters?: GenerationParameters | null;
+        aspectRatio?: string | null;
+        resolution?: string | null;
         errorMessage?: string | null;
         createdAt?: string | number | null;
       };
@@ -319,6 +326,11 @@ async function fetchHistory(kind: MediaKind, limit = 24): Promise<MediaJob[]> {
         urls: item.mediaUrls ?? (item.videoUrl ? [item.videoUrl] : []),
         prompt: item.prompt ?? "",
         model: item.model,
+        parameters: {
+          ...(item.parameters ?? {}),
+          ...(!item.parameters?.aspectRatio && item.aspectRatio ? { aspectRatio: item.aspectRatio } : {}),
+          ...(!item.parameters?.resolution && item.resolution ? { resolution: item.resolution } : {}),
+        },
         message: item.errorMessage ?? null,
         createdAt: toMillis(item.createdAt),
       };

@@ -3,6 +3,7 @@
 import { FastForward, Paintbrush, RotateCcw } from "lucide-react";
 import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import type { StudioResult } from "@/lib/ai-video-studio";
+import { generationDetails } from "@/lib/generation-details";
 import type { HistoryView } from "./history-tools";
 import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef, type ViewerItem } from "@/components/hf/studio-results";
 
@@ -33,6 +34,8 @@ export function ResultsGrid({
       {results.map((result) => {
         if (result.status === "completed" && result.videoUrl) {
           const position = gallery.findIndex((item) => item.key === result.id);
+          const model = VIDEO_CATALOG.find(item => item.id === result.model)?.name ?? result.model;
+          const details = generationDetails("video", model, result.parameters, zh);
           return (
             <figure key={result.id} className="sr-card vst-result">
               <video
@@ -55,10 +58,11 @@ export function ResultsGrid({
               {view.layout === "list" ? (
                 <figcaption className="vst-list-description">
                   <span className="vst-list-meta">
-                    {VIDEO_CATALOG.find(model => model.id === result.model)?.name ?? result.model}
+                    {model}
                     {result.createdAt ? <time dateTime={new Date(result.createdAt).toISOString()}>{new Date(result.createdAt).toLocaleDateString(zh ? "zh-CN" : "en-US")}</time> : null}
                   </span>
                   <span>{result.prompt}</span>
+                  <span className="vst-list-settings">{details.map(({ label, value }) => `${label}: ${value}`).join(" · ")}</span>
                 </figcaption>
               ) : null}
               <span className="sr-card-top">
@@ -66,7 +70,12 @@ export function ResultsGrid({
                 <DownloadLink url={result.videoUrl} zh={zh} />
               </span>
               <span className="sr-card-bottom">
-                <span className="sr-card-prompt">{result.prompt}</span>
+                <span className="sr-card-text">
+                  <span className="sr-card-prompt">{result.prompt}</span>
+                  <span className="sr-card-settings" title={details.map(({ label, value }) => `${label}: ${value}`).join(" · ")}>
+                    {details.map(({ value }) => value).join(" · ")}
+                  </span>
+                </span>
                 <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => onReuse(result.prompt)}>
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </button>

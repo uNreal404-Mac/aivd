@@ -170,6 +170,7 @@ function AiImageStudioForm({
               kind: "image" as const,
               prompt: job.prompt,
               model: getMarketModel(job.model ?? "")?.name ?? job.model,
+              parameters: job.parameters,
             }))
           : [],
       ),
@@ -304,7 +305,7 @@ function AiImageStudioForm({
       if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
       return;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, createdAt: Date.now() });
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, parameters: { ...request, prompt: undefined }, createdAt: Date.now() });
   };
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 

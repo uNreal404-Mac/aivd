@@ -4,6 +4,7 @@
 // while a job runs, the full-screen viewer, the waveform player and the
 // drag-and-drop / paste hook for uploads.
 import { failureReason } from "@/lib/failure-reason";
+import { generationDetails } from "@/lib/generation-details";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, X } from "lucide-react";
@@ -164,6 +165,7 @@ export type ViewerItem = {
   kind: "image" | "video";
   prompt: string;
   model?: string;
+  parameters?: import("@/lib/generation-details").GenerationParameters | null;
 };
 
 export function MediaViewer({
@@ -237,9 +239,18 @@ export function MediaViewer({
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-        {item.model ? <span className="sr-viewer-model">{item.model}</span> : null}
         <span className="sr-viewer-label">{zh ? "提示词" : "Prompt"}</span>
         <p className="sr-viewer-prompt">{item.prompt || (zh ? "（无提示词）" : "(no prompt)")}</p>
+        {generationDetails(item.kind, item.model, item.parameters, zh).length ? (
+          <section className="sr-viewer-settings" aria-label={zh ? "生成参数" : "Generation settings"}>
+            <span className="sr-viewer-label">{zh ? "生成参数" : "Generation settings"}</span>
+            <dl>
+              {generationDetails(item.kind, item.model, item.parameters, zh).map(({ label, value }) => (
+                <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
         <div className="sr-viewer-actions">
           {onReuse ? (
             <button

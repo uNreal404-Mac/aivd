@@ -46,6 +46,17 @@
   cursor: pointer;
 }
 
+.cr-settings-summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--cr-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cr-card-open:focus-visible {
   outline: none;
 }

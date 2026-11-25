@@ -564,7 +564,7 @@ describe("settingsFromSearchParams", () => {
     expect(settingsFromSearchParams({})).toEqual(defaultSettings());
   });
 
-  it("never adds a preset key to the generate request body", () => {
+  it("passes the selected preset so history can display it", () => {
     const result = buildGenerateRequest(
       { ...defaultSettings(), prompt: "a cat", preset: "slow-zoom" },
       "key-1",
@@ -573,7 +573,7 @@ describe("settingsFromSearchParams", () => {
     expect(result.ok).toBe(true);
 
     if (result.ok) {
-      expect("preset" in result.body).toBe(false);
+      expect(result.body.preset).toBe("slow-zoom");
     }
   });
 });

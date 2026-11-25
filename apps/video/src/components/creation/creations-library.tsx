@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { CopyPromptButton } from "@/components/hf/studio-results";
+import { generationDetails } from "@/lib/generation-details";
 import { defaultExtendResolution, EXTEND_MAX_SECONDS, EXTEND_MIN_SECONDS } from "@/lib/video-extend";
 import { EXTEND_MODEL_ID } from "@/ai/kie-market";
 import { useSession } from "@/lib/auth/client";
@@ -121,6 +122,17 @@ const STUDIO_PATHS: Record<CreationMediaType, string> = { video: "/ai/video", im
 /** The first output file of a creation, whatever its type. */
 function mediaUrl(video: Video): string | null {
   return video.mediaUrls?.[0] ?? video.videoUrl ?? null;
+}
+
+function creationDetails(video: Video, kind: CreationMediaType, zh: boolean) {
+  if (kind === "audio") return [];
+  const parameters = video.parameters ?? {};
+  return generationDetails(kind, modelLabel(video.model), {
+    ...parameters,
+    ...(!parameters.duration && video.duration ? { duration: video.duration } : {}),
+    ...(!parameters.aspectRatio && video.aspectRatio ? { aspectRatio: video.aspectRatio } : {}),
+    ...(!parameters.resolution && !parameters.quality && video.resolution ? { resolution: video.resolution } : {}),
+  }, zh);
 }
 
 function downloadName(video: Video, kind: CreationMediaType): string {
@@ -666,6 +678,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
             const tag = videoTag(video);
             const url = mediaUrl(video);
             const canDelete = !isPending(tag);
+            const details = creationDetails(video, kind, zh);
             return (
               <div
                 key={video.uuid}
@@ -686,6 +699,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     {video.prompt?.trim() ? `${modelLabel(video.model)} · ` : ""}
                     {formatCreatedAt(video.createdAt, locale)}
                   </div>
+                  {details.length > 1 ? <div className="cr-settings-summary" title={details.map(({ label, value }) => `${label}: ${value}`).join(" · ")}>{details.slice(1).map(({ value }) => value).join(" · ")}</div> : null}
                 </button>
                 {url || canDelete ? (
                   <div className="cr-card-tools">
@@ -702,6 +716,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
           {visibleVideos.map((video) => {
             const tag = videoTag(video);
             const url = mediaUrl(video);
+            const details = creationDetails(video, kind, zh);
             return (
               <div
                 key={video.uuid}
@@ -719,6 +734,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     <span>{modelLabel(video.model)}</span>
                     <span>{formatCreatedAt(video.createdAt, locale)}</span>
                   </span>
+                  {details.length > 1 ? <span className="cr-settings-summary">{details.slice(1).map(({ label, value }) => `${label}: ${value}`).join(" · ")}</span> : null}
                 </button>
                 <div className="cr-row-actions">
                   <StatusPill tag={tag} label={t(TAG_KEYS[tag])} />
@@ -830,26 +846,12 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
               </div>
 
               <dl className="cr-detail-meta">
-                <div>
-                  <dt>{zh ? "模型" : "Model"}</dt>
-                  <dd>{modelLabel(shownVideo.model)}</dd>
-                </div>
+                {kind === "audio" ? <div><dt>{zh ? "模型" : "Model"}</dt><dd>{modelLabel(shownVideo.model)}</dd></div> :
+                  creationDetails(shownVideo, kind, zh).map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
                 <div>
                   <dt>{zh ? "时间" : "Created"}</dt>
                   <dd>{formatCreatedAt(shownVideo.createdAt, locale)}</dd>
                 </div>
-                {kind === "video" && shownVideo.duration ? (
-                  <div>
-                    <dt>{zh ? "时长" : "Length"}</dt>
-                    <dd>{shownVideo.model === EXTEND_MODEL_ID ? `+${shownVideo.duration}s ${zh ? "续写" : "added"}` : `${shownVideo.duration}s`}</dd>
-                  </div>
-                ) : null}
-                {kind !== "audio" && shownVideo.aspectRatio ? (
-                  <div>
-                    <dt>{zh ? "画面比例" : "Aspect ratio"}</dt>
-                    <dd>{shownVideo.aspectRatio}</dd>
-                  </div>
-                ) : null}
                 {shownVideo.creditsUsed && shownTag !== "failed" ? (
                   <div>
                     <dt>{t("detail.cost")}</dt>
