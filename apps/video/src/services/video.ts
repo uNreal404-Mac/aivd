@@ -33,6 +33,9 @@ import { KLING_KEYFRAME_MODEL, mapKlingFrames, orderedKlingFrames, type KlingKey
 import { invalidKeyframes, resolveKlingKeyframes, validateKlingKeyframes } from "./kling-keyframes";
 import { isSafetyApproved, moderateContent, safetyMessage } from "@/lib/content-safety";
 
+import { isMeasuredVideoTool, VIDEO_MOTION_MODEL, type VideoToolOrientation } from "@/lib/video-tool";
+import { measuredVideoSource, ownedExtendUpload, validateCharacterImage } from "./video-tool-source";
+
 export interface GenerateVideoParams {
   userId: string;
   prompt: string;
@@ -51,6 +54,10 @@ export interface GenerateVideoParams {
   idempotencyKey?: string;
   /** For tools that work on a video (extend): one of the user's own videos. */
   sourceVideoUuid?: string;
+  sourceVideoKey?: string;
+  orientation?: VideoToolOrientation;
+  expectedCredits?: number;
+  characterKey?: string;
 }
 
 /** KIE takes at most 50 MB of video for PixVerse extend (kie.ai/pixverse-v6). */
@@ -74,9 +81,14 @@ export interface GenerateMediaParams {
   instrumental?: boolean;
   customMode?: boolean;
   speed?: number;
+  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
   idempotencyKey?: string;
   /** For tools that work on a video (extend): one of the user's own videos. */
   sourceVideoUuid?: string;
+  sourceVideoKey?: string;
+  orientation?: VideoToolOrientation;
+  expectedCredits?: number;
+  characterKey?: string;
 }
 
 export interface VideoGenerationResult {
@@ -181,6 +193,28 @@ export class VideoService {
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
     const videoKeys = params.videoKeys ?? [];
+    if (
+      isMeasuredVideoTool(params.model) &&
+      ((params.outputNumber ?? 1) !== 1 ||
+        params.generateAudio ||
+        params.aspectRatio ||
+        params.mode ||
+        params.keyframes ||
+        videoKeys.length)
+    ) {
+      throw new ApiError("Invalid video tool options.", 400, { code: "INVALID_VIDEO_OPTIONS" });
+    }
+    if (
+      !isMeasuredVideoTool(params.model) &&
+      ((params.sourceVideoKey && getMarketModel(params.model)?.tool !== "extend") ||
+        params.orientation ||
+        params.characterKey)
+    ) {
+      throw new ApiError("This model does not support those inputs.", 400, {
+        code: "INVALID_VIDEO_OPTIONS",
+      });
+    }
+
     if (params.keyframes && (params.model !== KLING_KEYFRAME_MODEL || videoKeys.length || (params.outputNumber ?? 1) !== 1)) throw invalidKeyframes();
     if (params.mode === "keyframes" && !params.keyframes) throw invalidKeyframes();
     if (videoKeys.length) {
@@ -216,6 +250,10 @@ export class VideoService {
         audio: params.generateAudio,
         idempotencyKey: params.idempotencyKey,
         sourceVideoUuid: params.sourceVideoUuid,
+        sourceVideoKey: params.sourceVideoKey,
+        orientation: params.orientation,
+        expectedCredits: params.expectedCredits,
+        characterKey: params.characterKey,
       });
     }
 
@@ -631,6 +669,57 @@ export class VideoService {
       throw new ApiError("Generation is not configured", 503, { code: "PROVIDER_NOT_CONFIGURED" });
     }
 
+    const idempotencyKey = params.idempotencyKey;
+    if (idempotencyKey) {
+      const existing = await this.findByIdempotencyKey(params.userId, idempotencyKey);
+      if (existing) {
+        return {
+          videoUuid: existing.uuid,
+          taskId: existing.externalTaskId ?? "",
+          provider: existing.provider as ProviderType,
+          status: existing.status,
+          creditsUsed: existing.creditsUsed,
+        };
+      }
+    }
+
+    let measured: Awaited<ReturnType<typeof measuredVideoSource>> | null = null;
+    let character: Awaited<ReturnType<typeof validateCharacterImage>> | undefined;
+    if (isMeasuredVideoTool(model.id)) {
+      const motion = model.id === VIDEO_MOTION_MODEL;
+      if (
+        !model.options.resolutions?.includes(params.resolution ?? "") ||
+        (params.imageUrls?.length ?? 0) !== 0 ||
+        motion !== Boolean(params.characterKey) ||
+        (!motion && params.orientation) ||
+        params.keyframes ||
+        (params.count ?? 1) !== 1
+      ) {
+        throw new ApiError("Choose the inputs shown for this video tool.", 400, {
+          code: "INVALID_VIDEO_OPTIONS",
+        });
+      }
+      measured = await measuredVideoSource(params.userId, model.id, params);
+      if (measured.seconds !== params.duration)
+        throw new ApiError("Review the measured duration before submitting.", 409, {
+          code: "VIDEO_QUOTE_CHANGED",
+        });
+      if (motion) {
+        character = await validateCharacterImage(params.userId, params.characterKey);
+        const safety = await moderateContent({
+          text: params.prompt,
+          images: [{ url: character.signedUrl, label: "character" }],
+          context: "generation",
+        });
+        if (!isSafetyApproved(safety))
+          throw new ApiError(safetyMessage(safety, params.locale), 422, {
+            code: "CONTENT_BLOCKED",
+            decision: safety.decision,
+            categories: safety.categories,
+          });
+      }
+    }
+
     if (params.keyframes) {
       validateKlingKeyframes({
         ...params, keyframes: params.keyframes,
@@ -643,7 +732,7 @@ export class VideoService {
       }
     }
     const maxImages = model.options.maxImages ?? 0;
-    const imageInputs = (params.imageUrls ?? []).slice(0, maxImages);
+    const imageInputs = character ? [character.key] : (params.imageUrls ?? []).slice(0, maxImages);
     if (model.options.requiresImage && imageInputs.length === 0) {
       throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });
     }
@@ -667,7 +756,8 @@ export class VideoService {
       aspectRatio: params.keyframes ? undefined : pick(params.aspectRatio, model.options.aspects),
       resolution: model.kind === "image" ? imageResolution(model, params.resolution) :
         pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
-      duration: params.duration ?? (params.keyframes ? 10 : undefined),
+      duration: measured?.seconds ?? params.duration ?? (params.keyframes ? 10 : undefined),
+      ...(model.id === VIDEO_MOTION_MODEL ? { orientation:params.orientation ?? "video" } : {}),
       ...(params.keyframes ? { keyframes: params.keyframes } : {}),
       count: imageOutputCount(params.count, model.options.maxCount),
       audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
@@ -676,34 +766,26 @@ export class VideoService {
       instrumental: params.instrumental,
       customMode: params.customMode,
       speed: params.speed,
+      ...(model.kind === "audio" && params.voiceSettings ? { voiceSettings: params.voiceSettings } : {}),
       // Models that require a seed get a random one.
       ...(model.options.requiresVideo ? { seed: randomSeed() } : {}),
     };
 
     const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
+    if (measured && creditsRequired !== params.expectedCredits)
+      throw new ApiError("The quote changed. Review it before generating.", 409, {
+        code: "VIDEO_QUOTE_CHANGED",
+      });
+
     if (!(creditsRequired > 0)) {
       throw new ApiError(`Model ${model.id} has no price`, 400, { code: "MODEL_NOT_PRICED", model: model.id });
     }
     const freeInternal = await isFreeInternalAccount(params.userId);
     const billedCredits = freeInternal ? 0 : creditsRequired;
 
-    const idempotencyKey = params.idempotencyKey;
-    if (idempotencyKey) {
-      const existing = await this.findByIdempotencyKey(params.userId, idempotencyKey);
-      if (existing) {
-        return {
-          videoUuid: existing.uuid,
-          taskId: existing.externalTaskId ?? "",
-          provider: existing.provider as ProviderType,
-          status: existing.status,
-          creditsUsed: existing.creditsUsed,
-        };
-      }
-    }
-
-    const sourceVideo = model.options.requiresVideo
-      ? await this.resolveExtendSource(params.userId, params.sourceVideoUuid)
-      : null;
+    const sourceVideo = measured ?? (model.options.requiresVideo
+      ? await this.resolveExtendSource(params.userId, params.sourceVideoUuid, params.sourceVideoKey)
+      : null);
 
     let providerFrames: KlingKeyframes | undefined;
     let startFrame: string | undefined;
@@ -747,7 +829,9 @@ export class VideoService {
         ...request,
         imageUrls: imageInputs,
         // The source is kept by its id; a signed URL would expire.
-        ...(sourceVideo ? { sourceVideoUuid: sourceVideo.uuid } : {}),
+        ...(sourceVideo?.uuid ? { sourceVideoUuid: sourceVideo.uuid } : {}),
+        ...(params.sourceVideoKey && sourceVideo ? { sourceVideoKey: params.sourceVideoKey } : {}),
+        ...(character ? {characterKey:params.characterKey} : {}),
         ...(idempotencyKey ? { idempotencyKey } : {}),
       },
       idempotencyKey: idempotencyKey ?? null,
@@ -806,6 +890,14 @@ export class VideoService {
           if (!freeInternal) await creditService.release(uuid);
           await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
         }
+        if (isMeasuredVideoTool(model.id)) {
+          throw new ApiError(
+            "The provider declined the source or options. Reserved credits were released.",
+            422,
+            { code: "TOOL_PROVIDER_REJECTED" },
+          );
+        }
+
         if (model.tool === "extend") {
           throw new ApiError("The provider rejected the source or options", 422, { code: "EXTEND_REJECTED" });
         }
@@ -849,7 +941,12 @@ export class VideoService {
     }
   }
 
-  private async resolveExtendSource(userId: string, sourceVideoUuid?: string) {
+  private async resolveExtendSource(userId: string, sourceVideoUuid?: string, sourceVideoKey?:string) {
+    if (sourceVideoKey) {
+      if (sourceVideoUuid) throw new ApiError("Choose one video to extend.",400,{code:"SOURCE_VIDEO_UNAVAILABLE"});
+      const {signedUrl}=await ownedExtendUpload(userId,sourceVideoKey);
+      return {uuid:undefined,signedUrl};
+    }
     if (!sourceVideoUuid) {
       throw new ApiError("Choose a video to work on", 400, { code: "MISSING_SOURCE_VIDEO" });
     }
@@ -1349,6 +1446,14 @@ export class VideoService {
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)));
   }
+  async restoreVideo(uuid: string, userId: string): Promise<boolean> {
+    const [restored] = await db.update(videos)
+      .set({ isDeleted: false })
+      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)))
+      .returning({ uuid: videos.uuid });
+    return Boolean(restored);
+  }
+
 }
 
 export const videoService = new VideoService();

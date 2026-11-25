@@ -1,43 +1,40 @@
 "use client";
 
-import * as React from "react";
+import { useLocale } from "next-intl";
 import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup,
+  DropdownMenuRadioItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import * as Icons from "@/components/ui/icons";
+
+export function AppearanceOptions() {
+  const zh = useLocale().startsWith("zh");
+  const { theme, setTheme } = useTheme();
+  return <>
+    <DropdownMenuLabel>{zh ? "外观" : "Appearance"}</DropdownMenuLabel>
+    <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
+      <DropdownMenuRadioItem value="system">{zh ? "跟随系统" : "System"}</DropdownMenuRadioItem>
+      <DropdownMenuRadioItem value="dark">{zh ? "深色" : "Dark"}</DropdownMenuRadioItem>
+      <DropdownMenuRadioItem value="light">{zh ? "浅色" : "Light"}</DropdownMenuRadioItem>
+    </DropdownMenuRadioGroup>
+  </>;
+}
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
-
+  const zh = useLocale().startsWith("zh");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
-          <Icons.Sun className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Icons.Moon className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
+        <Button variant="ghost" size="sm" aria-label={zh ? "选择外观" : "Choose appearance"}>
+          <Sun className="dark:hidden" aria-hidden="true" />
+          <Moon className="hidden dark:block" aria-hidden="true" />
+          {zh ? "外观" : "Appearance"}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          <Icons.Sun className="mr-2 h-4 w-4" />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <Icons.Moon className="mr-2 h-4 w-4" />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          <Icons.Laptop className="mr-2 h-4 w-4" />
-          <span>System</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      <DropdownMenuContent align="end"><AppearanceOptions /></DropdownMenuContent>
     </DropdownMenu>
   );
 }

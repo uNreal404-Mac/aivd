@@ -44,7 +44,7 @@ describe("model landing pages", () => {
 
   it("prints only numbers the studio offers", () => {
     const kling = landingHighlights(getLandingModel("kling-4-0")!);
-    expect(kling.find((item) => item.label.en === "Longest clip")?.big).toBe("15");
+    expect(kling.find((item) => item.label.en === "Longest clip")?.big).toBe("30");
     expect(kling.find((item) => item.label.en === "Top resolution")?.big).toBe("1080p");
     expect(kling.find((item) => item.label.en === "Reference images")?.big).toBe("4");
     const kimg = landingHighlights(getLandingModel("kling-image-4-0")!);

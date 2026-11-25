@@ -442,6 +442,13 @@ describe("videoService.generate / creditService integration", () => {
     const stillThere = await videoService.getVideo(uuidA, userA);
     expect(stillThere).not.toBeNull();
     expect(stillThere?.uuid).toBe(uuidA);
+
+    await videoService.deleteVideo(uuidA, userA);
+    expect(await videoService.restoreVideo(uuidA, userB)).toBe(false);
+    expect(await videoService.getVideo(uuidA, userA)).toBeNull();
+    expect(await videoService.restoreVideo(uuidA, userA)).toBe(true);
+    expect(await videoService.restoreVideo(uuidA, userA)).toBe(true);
+    expect((await videoService.listVideos(userA)).videos.some((item) => item.uuid === uuidA)).toBe(true);
   });
 
   it("credit freeze/settle/release consistency", async () => {

@@ -55,7 +55,10 @@ export function CanvasTextEditor({ data, zh, open, onOpenChange, onText }: {
     ["insertUnorderedList",zh ? "无序列表" : "Bulleted list",List], ["insertOrderedList",zh ? "有序列表" : "Numbered list",ListOrdered], ["insertHorizontalRule",zh ? "分割线" : "Divider",Minus],
   ];
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="nci-text-editor nodrag nopan nowheel" aria-describedby={undefined}>
+    <DialogContent className="nci-text-editor nodrag nopan nowheel" aria-describedby={undefined} onOpenAutoFocus={(event) => {
+      event.preventDefault();
+      input.current?.focus({ preventScroll: true });
+    }}>
       <DialogTitle className="sr-only">{zh ? "编辑节点正文" : "Edit node text"}</DialogTitle>
       <div className="nci-textbar" role="toolbar" aria-label={zh ? "正文格式" : "Text formatting"}>
         <button type="button" className="nci-copy-text" aria-label={zh ? "复制正文" : "Copy text"} title={zh ? "复制" : "Copy"} onClick={async () => {

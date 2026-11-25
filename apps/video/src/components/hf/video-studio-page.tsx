@@ -22,8 +22,9 @@ export function VideoStudioPage({
   /** Model to open with when the link does not name one. */
   defaultModel?: string;
 }) {
+  const requestedTool = searchParams.tool ?? searchParams.mode;
   const rawModel = (Array.isArray(searchParams.model) ? searchParams.model[0] : searchParams.model) ?? defaultModel;
-  const modelParam = rawModel === "kling-4.0" ? KLING_KEYFRAME_MODEL : rawModel;
+  const modelParam = rawModel === "kling-4.0" ? KLING_KEYFRAME_MODEL : rawModel === "seedance_2_5" ? "bytedance/seedance-2-5" : rawModel;
   const keyframes = searchParams.input === "keyframes" && modelParam === KLING_KEYFRAME_MODEL;
   const availableModelIds = [
     ...getAvailableModels({
@@ -43,9 +44,10 @@ export function VideoStudioPage({
   return (
     <AiVideoStudio
       // Remount when the nav switches models, so the new choice is applied.
-      key={`${modelParam ?? "default"}:${searchParams.mode === "extend" ? "extend" : keyframes ? "keyframes" : "create"}`}
+      key={`${modelParam ?? "default"}:${requestedTool ?? (keyframes ? "keyframes" : "create")}`}
       initialKeyframes={keyframes}
-      initialExtend={searchParams.mode === "extend"}
+      initialExtend={requestedTool === "extend"}
+      initialTool={requestedTool === "motion" || requestedTool === "edit" ? requestedTool : "create"}
       upcomingModel={upcoming ? { name: upcoming.name, desc: locale === "zh" ? upcoming.desc.zh : upcoming.desc.en } : undefined}
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={initialSettings}

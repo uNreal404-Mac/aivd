@@ -16,6 +16,7 @@ import {
   Hand,
   Image as ImageIcon,
   Keyboard,
+  Ellipsis,
   Layers,
   LayoutGrid,
   Link2,
@@ -89,6 +90,7 @@ import {
   inputText,
   inputTypes,
   selectionWithChildren,
+  withoutGraphSelection,
   worldPosition,
   toStoredGraph,
 } from "@/lib/creative-space/canvas-graph";
@@ -97,13 +99,15 @@ import { buildCanvasAgentForm } from "@/lib/creative-space/agent-form";
 import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
 import { listGuestAssets, type PickerAsset, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
 import { UploadError, uploadErrorText, uploadImage } from "@/lib/image-to-video";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { localizedHref } from "@/lib/locale-path";
 import { errorMessage } from "@/lib/media-studio";
 import { CanvasEditModal, type CanvasEditAction, type CanvasEditSubmit } from "../canvas-inpaint-modal";
 import { CanvasActionsContext, type CanvasActions, KIND_LABEL, kindIcon, NODE_TYPES } from "./canvas-nodes";
-import { CompareOverlay, NodeSearch, ShortcutsDialog, ShotsDialog, TemplatesDialog, type CanvasTemplate } from "./canvas-overlays";
+import { CanvasDialog, CompareOverlay, NodeSearch, ShortcutsDialog, ShotsDialog, TemplatesDialog, type CanvasTemplate } from "./canvas-overlays";
 import type { CanvasReference } from "./canvas-prompt";
 import { CanvasViewMenu, useCanvasViewOptions } from "./canvas-view";
+import { CANVAS_IMAGE_TOOLS, type CanvasEditEntry, type CanvasImageTool } from "@/lib/creative-space/canvas-edit-entry";
 import { submissionDelay } from "@/lib/creative-space/submission-delay";
 import { appearanceStyle, useCanvasBackground } from "./canvas-appearance";
 import { PinRail } from "./canvas-pins";
@@ -124,7 +128,7 @@ type CanvasSummary = { id: string; name: string; updatedAt: string | number };
 type SaveState = "idle" | "local" | "dirty" | "saving" | "saved" | "error";
 type LinkOrigin = { id: string; side: "source" | "target"; type?: PortType };
 type Menu = { x: number; y: number; flow: { x: number; y: number }; from?: LinkOrigin; panel?: "pane" | "node"; palette?: boolean; id?: string };
-type Toast = { text: string; error?: boolean };
+type Toast = { text: string; error?: boolean; undoKey?: string };
 
 const DRAFT_KEY = "aivd:node-canvas:draft";
 const LEGACY_DONE_KEY = "aivd:node-canvas:legacy-imported";
@@ -227,7 +231,7 @@ const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
   ];
 };
 
-function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; initialPrompt: string; userId: string | null }) {
+function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { locale: string; initialPrompt: string; initialEdit?: CanvasEditEntry; userId: string | null }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const L = useCallback((cn: string, en: string) => (zh ? cn : en), [zh]);
   const flow = useReactFlow<CanvasData>();
@@ -262,6 +266,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [balance, setBalance] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [viewportRevision, setViewportRevision] = useState(0);
+  const [restoredView, setRestoredView] = useState<{ viewport?: { x: number; y: number; zoom: number }; hasNodes: boolean } | null>(null);
   const graphReady = useRef(false);
   const booted = useRef(false);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -270,6 +276,21 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [menu, setMenu] = useState<Menu | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<CanvasEditEntry | null>(null);
+  const [chooseToolFor, setChooseToolFor] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hydrated || !initialEdit || new URL(window.location.href).searchParams.get("edit") !== initialEdit) return;
+    setEditEntry(initialEdit);
+    setPickerOpen(true);
+  }, [hydrated, initialEdit]);
+  const closePicker = () => {
+    setPickerOpen(false);
+    if (!editEntry) return;
+    setEditEntry(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("edit");
+    window.history.replaceState(window.history.state, "", url);
+  };
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -296,6 +317,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const [editingField, editField] = useState<CanvasActions["editingField"]>(null);
   const menuOpenedAt = useRef(0);
   const flowBox = useRef<HTMLDivElement>(null);
+  const dragGuides = useRef<{ x: number[]; y: number[] } | null>(null);
   const runLocks = useRef(new Set<string>());
   const clipboard = useRef<{ nodes: FlowNode[]; edges: Edge[] } | null>(null);
   const lastSaved = useRef("");
@@ -351,7 +373,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const say = useCallback((text: string, error = false) => setToast({ text, error }), []);
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(null), toast.error ? 7000 : 3200);
+    const timer = setTimeout(() => setToast(null), toast.error || toast.undoKey ? 7000 : 3200);
     return () => clearTimeout(timer);
   }, [toast]);
 
@@ -502,7 +524,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     () => toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, flow.getViewport()),
     [flow],
   );
-  const contentKey = (graph: ReturnType<typeof toStoredGraph>, name: string) => JSON.stringify({ name, nodes: graph.nodes, edges: graph.edges });
+  const contentKey = (graph: ReturnType<typeof toStoredGraph>, name: string) => JSON.stringify({ name, nodes: graph.nodes, edges: graph.edges, viewport: graph.viewport });
 
   const syncList = useCallback(async () => {
     if (!userId) return;
@@ -635,9 +657,12 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const saveLocalDraft = useCallback(() => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: titleRef.current, graph: storedNow() }));
+      const graph = storedNow();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: titleRef.current, graph }));
+      lastSaved.current = contentKey(graph, titleRef.current);
+      setSaveState("local");
     } catch {
-      /* storage full */
+      setSaveState("error");
     }
   }, [storedNow]);
 
@@ -708,15 +733,23 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       const stored = (graph && typeof graph === "object" ? (graph as { revision?: unknown }).revision : undefined);
       revision.current = typeof stored === "number" ? stored : 0;
       setWaitingMedia(new Set());
-      lastSaved.current = contentKey(toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current), name);
-      requestAnimationFrame(() => {
-        if (restored.viewport) flow.setViewport(restored.viewport);
-        else if (restored.nodes.length) flow.fitView({ padding: 0.2, maxZoom: 1 });
-      });
+      lastSaved.current = contentKey(toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, restored.viewport), name);
+      setRestoredView({ viewport: restored.viewport, hasNodes: restored.nodes.length > 0 });
       resetHistory();
     },
-    [flow, replaceGraph, resetHistory, unknownRequest],
+    [replaceGraph, resetHistory, unknownRequest],
   );
+  useEffect(() => {
+    // The first React Flow instance provides placeholder camera methods until
+    // the pane is measured. Applying the draft to that instance loses its view.
+    if (!restoredView || !flow.viewportInitialized) return;
+    const frame = requestAnimationFrame(() => {
+      if (restoredView.viewport) flow.setViewport(restoredView.viewport);
+      else if (restoredView.hasNodes) flow.fitView({ padding: 0.2, maxZoom: 1 });
+      setRestoredView(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [flow, restoredView]);
 
   /** Before leaving this canvas: nothing in flight, and its latest changes saved. */
   const readyToLeave = useCallback(async () => {
@@ -901,8 +934,10 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   // Autosave: signed in → the account (creates the canvas on first content);
   // signed out → this browser.
   useEffect(() => {
-    if (!hydrated) return;
-    const graph = toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current);
+    // React Flow publishes every intermediate drag position. Persist the final drop;
+    // pagehide still flushes the latest coordinates if the user leaves mid-gesture.
+    if (!hydrated || !flow.viewportInitialized || restoredView || nodes.some((node) => node.dragging)) return;
+    const graph = storedNow();
     const key = contentKey(graph, title);
     if (key === lastSaved.current) return;
     if (!userId) {
@@ -914,7 +949,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     setSaveState("dirty");
     const timer = setTimeout(() => void saveRemote(), 1500);
     return () => clearTimeout(timer);
-  }, [edges, hydrated, nodes, saveLocalDraft, saveRemote, title, userId]);
+  }, [edges, flow.viewportInitialized, hydrated, nodes, restoredView, saveLocalDraft, saveRemote, storedNow, title, userId, viewportRevision]);
 
   // Leaving with unsaved changes: send them along with the page unload.
   useEffect(() => {
@@ -1383,6 +1418,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
 
   const addPicked = useCallback(
     (picked: PickerAsset[]) => {
+      if (editEntry && (picked.length !== 1 || !picked[0].mimeType.startsWith("image/"))) return;
       const origin = viewCenter();
       // Elements and brand items made from a local upload carry a picker alias,
       // not the stored file's id: add their file like a fresh upload instead.
@@ -1402,10 +1438,14 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         };
         return makeNode(data, { x: origin.x + index * 36, y: origin.y + index * 36 });
       });
-      if (added.length) addNodes(added);
+      if (added.length) {
+        addNodes(added);
+        if (editEntry === "image") setChooseToolFor(added[0].id);
+        else if (editEntry) setEditing({ id: added[0].id, action: editEntry });
+      }
       setPickerOpen(false);
     },
-    [addFiles, addNodes, makeNode, viewCenter],
+    [addFiles, addNodes, editEntry, makeNode, viewCenter],
   );
 
   /* ------------------------------------------------------ edit and shots */
@@ -1591,8 +1631,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   const focusNode = (node: FlowNode) => {
     setNodes((list) => list.map((item) => ({ ...item, selected: item.id === node.id })));
     const abs = flow.getNode(node.id)?.positionAbsolute ?? absolute(node);
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: reduced ? 0 : 250 });
+    flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: prefersReducedMotion() ? 0 : 250 });
   };
 
   const groupSelected = useCallback(() => {
@@ -1748,20 +1787,24 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     );
     replaceGraph(nodesRef.current.map((node) => (positions.has(node.id) ? { ...node, position: positions.get(node.id)! } : node)), edgesRef.current);
     commit();
-    requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: 300, maxZoom: 1 }));
+    requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: prefersReducedMotion() ? 0 : 300, maxZoom: 1 }));
   }, [commit, flow, replaceGraph]);
 
   const deleteSelected = useCallback(() => {
-    const ids = new Set(nodesRef.current.filter((node) => node.selected).map((node) => node.id));
-    if (!ids.size) return;
-    // Children of a deleted group go with it, like React Flow's own delete.
-    for (const node of nodesRef.current) if (node.parentNode && ids.has(node.parentNode)) ids.add(node.id);
-    replaceGraph(
-      nodesRef.current.filter((node) => !ids.has(node.id)),
-      edgesRef.current.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)),
-    );
+    const next = withoutGraphSelection(nodesRef.current, edgesRef.current);
+    const removed = nodesRef.current.length - next.nodes.length;
+    const links = edgesRef.current.length - next.edges.length;
+    if (!removed && !links) return;
+    replaceGraph(next.nodes, next.edges);
     commit();
-  }, [commit, replaceGraph]);
+    setEdgeMenu(null);
+    setToast({
+      text: removed
+        ? L(`已删除 ${removed} 个节点`, `Deleted ${removed} node${removed === 1 ? "" : "s"}`)
+        : L(`已断开 ${links} 条连线`, `Disconnected ${links} link${links === 1 ? "" : "s"}`),
+      undoKey: structureKey(next.nodes as GraphNode[], next.edges),
+    });
+  }, [L, commit, replaceGraph]);
 
   const wireSelectedInto = useCallback(
     (kind: "image" | "video") => {
@@ -1787,7 +1830,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       for (const spec of specs) keys.set(spec.key, makeNode(spec.data, { x: origin.x + spec.x, y: origin.y + spec.y }));
       addNodes([...keys.values()], links.flatMap(([a, b]) => (keys.get(a) && keys.get(b) ? [wire(keys.get(a)!.id, keys.get(b)!.id)] : [])));
       setTemplatesOpen(false);
-      requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: 300, maxZoom: 1 }));
+      requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: prefersReducedMotion() ? 0 : 300, maxZoom: 1 }));
     },
     [addNodes, flow, makeNode, viewCenter],
   );
@@ -1873,7 +1916,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
           : L(`已导入 ${result.nodes.length} 个节点`, `Imported ${result.nodes.length} nodes`),
       );
       void resolveAll();
-      requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: 300, maxZoom: 1 }));
+      requestAnimationFrame(() => flow.fitView({ padding: 0.2, duration: prefersReducedMotion() ? 0 : 300, maxZoom: 1 }));
     } catch {
       say(L("旧画布读取失败", "Could not read the old canvas"), true);
     }
@@ -1967,32 +2010,42 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     [flow],
   );
 
-  /** Dropping a node onto a group puts it in; dragging it out takes it out. */
-  const showAlignment = (_event: ReactMouseEvent, dragged: FlowNode) => {
-    if (!viewOptions.alignGuides || !flowBox.current) return;
-    const box = flowBox.current.getBoundingClientRect();
-    const viewport = flow.getViewport();
-    const position = absolute(dragged);
-    const mark: { x?: number; y?: number } = {};
-    const x = [position.x, position.x + (dragged.width ?? 0) / 2, position.x + (dragged.width ?? 0)];
-    const y = [position.y, position.y + (dragged.height ?? 0) / 2, position.y + (dragged.height ?? 0)];
-    const tolerance = 4 / viewport.zoom;
+  // Alignment targets do not move during a drag. Collect their edges and centres
+  // once, including the absolute positions of cards inside groups.
+  const onNodeDragStart = (_: ReactMouseEvent, dragged: FlowNode) => {
+    if (!viewOptions.alignGuides) return;
+    const x: number[] = [];
+    const y: number[] = [];
+    const moving = new Set(selectionWithChildren(nodesRef.current).map((node) => node.id));
+    moving.add(dragged.id);
     for (const other of nodesRef.current) {
-      if (other.id === dragged.id || other.selected || other.id === dragged.parentNode || other.parentNode === dragged.id) continue;
+      if (moving.has(other.id) || other.id === dragged.parentNode || other.parentNode === dragged.id) continue;
       const point = absolute(other);
-      const targetX = [point.x, point.x + (other.width ?? 0) / 2, point.x + (other.width ?? 0)];
-      const targetY = [point.y, point.y + (other.height ?? 0) / 2, point.y + (other.height ?? 0)];
-      const matchX = targetX.find((a) => x.some((b) => Math.abs(a - b) <= tolerance));
-      const matchY = targetY.find((a) => y.some((b) => Math.abs(a - b) <= tolerance));
-      if (mark.x === undefined && matchX !== undefined) mark.x = flow.flowToScreenPosition({ x: matchX, y: 0 }).x - box.left;
-      if (mark.y === undefined && matchY !== undefined) mark.y = flow.flowToScreenPosition({ x: 0, y: matchY }).y - box.top;
-      if (mark.x !== undefined && mark.y !== undefined) break;
+      x.push(point.x, point.x + (other.width ?? 0) / 2, point.x + (other.width ?? 0));
+      y.push(point.y, point.y + (other.height ?? 0) / 2, point.y + (other.height ?? 0));
     }
-    setGuides((prev) => prev.x === mark.x && prev.y === mark.y ? prev : mark);
+    dragGuides.current = { x, y };
+  };
+  const showAlignment = (_: ReactMouseEvent, dragged: FlowNode) => {
+    const guides = dragGuides.current;
+    if (!guides || !viewOptions.alignGuides) return;
+    const viewport = flow.getViewport();
+    const point = absolute(dragged);
+    const width = dragged.width ?? 0;
+    const height = dragged.height ?? 0;
+    const tolerance = 4 / viewport.zoom;
+    const matches = (target: number, start: number, size: number) =>
+      Math.abs(target - start) <= tolerance || Math.abs(target - start - size / 2) <= tolerance || Math.abs(target - start - size) <= tolerance;
+    const targetX = guides.x.find((x) => matches(x, point.x, width));
+    const targetY = guides.y.find((y) => matches(y, point.y, height));
+    const x = targetX === undefined ? undefined : viewport.x + targetX * viewport.zoom;
+    const y = targetY === undefined ? undefined : viewport.y + targetY * viewport.zoom;
+    setGuides((prev) => prev.x === x && prev.y === y ? prev : { x, y });
   };
 
   const onNodeDragStop = useCallback(
     (_: ReactMouseEvent, dragged: FlowNode) => {
+      dragGuides.current = null;
       setGuides({});
       const moved = nodesRef.current.filter((node) => node.selected || node.id === dragged.id).filter((node) => node.data.kind !== "group");
       const groups = nodesRef.current.filter((node) => node.data.kind === "group");
@@ -2038,14 +2091,19 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       return Boolean(el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable));
     };
     const onKey = (event: KeyboardEvent) => {
+      if (typing(event.target) || document.querySelector('[role="dialog"]:not([data-state="closed"]), dialog[open]')) return;
       const mod = event.metaKey || event.ctrlKey;
       if (mod && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPanel("locate");
         return;
       }
-      if (typing(event.target) || document.querySelector("[aria-modal=true], dialog[open]")) return;
       const key = event.key.toLowerCase();
+      if (!mod && !event.altKey && (key === "delete" || key === "backspace")) {
+        event.preventDefault();
+        if (!event.repeat) deleteSelected();
+        return;
+      }
       if ((!mod && !event.altKey && ["w", "a", "s", "d", "q", "e"].includes(key)) || (mod && ["=", "+", "-", "0"].includes(key))) {
         event.preventDefault();
         const viewport = flow.getViewport();
@@ -2091,7 +2149,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       }
     };
     const onPaste = (event: ClipboardEvent) => {
-      if (typing(event.target)) return;
+      if (typing(event.target) || document.querySelector('[role="dialog"]:not([data-state="closed"]), dialog[open]')) return;
       const files = Array.from(event.clipboardData?.files ?? []);
       if (files.length) {
         event.preventDefault();
@@ -2107,13 +2165,14 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("paste", onPaste);
     };
-  }, [addFiles, copySelection, duplicateSelected, flow, groupSelected, pasteSelection, restore, setNodes, ungroup, viewOptions.speed, viewOptions.boost]);
+  }, [addFiles, copySelection, deleteSelected, duplicateSelected, flow, groupSelected, pasteSelection, restore, setNodes, ungroup, viewOptions.speed, viewOptions.boost]);
 
   // A selected node's prompt panel opens below it; keep that panel on screen.
   const singleId = selected.length === 1 ? selected[0].id : null;
   useEffect(() => {
     if (!singleId) return;
     const frame = requestAnimationFrame(() => {
+      if (nodesRef.current.some((node) => node.dragging)) return;
       const panel = document.querySelector(".nc-panel-toolbar")?.getBoundingClientRect();
       const box = flowBox.current?.getBoundingClientRect();
       if (!panel || !box) return;
@@ -2127,7 +2186,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
       const dx = panel.right > box.right - 12 ? panel.right - box.right + 24 : panel.left < box.left + 12 ? panel.left - box.left - 24 : 0;
       if (dx === 0 && dy <= 0) return;
       const viewport = flow.getViewport();
-      flow.setViewport({ x: viewport.x - dx, y: viewport.y - Math.max(0, dy), zoom: viewport.zoom }, { duration: 200 });
+      flow.setViewport({ x: viewport.x - dx, y: viewport.y - Math.max(0, dy), zoom: viewport.zoom }, { duration: prefersReducedMotion() ? 0 : 200 });
     });
     return () => cancelAnimationFrame(frame);
   }, [flow, singleId]);
@@ -2198,13 +2257,16 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
     setEdgeMenu(null);
     setMenu({ ...point, flow: flow.screenToFlowPosition(point), panel: id ? "node" : "pane", id });
   };
-  const selectedIds = new Set(selected.map((node) => node.id));
-  const kindById = new Map(nodes.map((node) => [node.id, outputType(node.data)]));
-  const visibleEdges = edges.map((edge) => {
-    if (viewOptions.focusWires && selectedIds.size && !selectedIds.has(edge.source) && !selectedIds.has(edge.target)) return { ...edge, hidden: true };
-    if (viewOptions.colorWires) return { ...edge, className: `nc-wire-${kindById.get(edge.source)}` };
-    return edge;
-  });
+  const visibleEdges = useMemo(() => {
+    if (!viewOptions.focusWires && !viewOptions.colorWires) return edges;
+    const selectedIds = new Set(nodes.filter((node) => node.selected).map((node) => node.id));
+    const kindById = new Map(nodes.map((node) => [node.id, outputType(node.data)]));
+    return edges.map((edge) => {
+      if (viewOptions.focusWires && selectedIds.size && !selectedIds.has(edge.source) && !selectedIds.has(edge.target)) return { ...edge, hidden: true };
+      if (viewOptions.colorWires) return { ...edge, className: `nc-wire-${kindById.get(edge.source)}` };
+      return edge;
+    });
+  }, [edges, nodes, viewOptions.colorWires, viewOptions.focusWires]);
   const onlyGroup = selected.length === 1 && selected[0].data.kind === "group" ? selected[0] : null;
   const groupPlan = onlyGroup ? canvasGroupPlan(onlyGroup.id, nodes as GraphNode[], edges) : [];
   const groupCost = groupPlan.reduce((sum, node) => sum + (isGen(node.data) && !["running", "submitting"].includes(node.data.status) ? quoteOf(node.id) ?? 0 : 0), 0);
@@ -2272,6 +2334,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
               onNodeContextMenu={(event, node) => openContext(event, node.id)}
               onSelectionContextMenu={(event, picked) => openContext(event, picked[0]?.id)}
               onPaneContextMenu={(event) => openContext(event)}
+              onNodeDragStart={onNodeDragStart}
               onNodeDrag={showAlignment}
               selectNodesOnDrag={viewOptions.dragSelect}
               onNodeDragStop={onNodeDragStop}
@@ -2284,8 +2347,9 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
               }}
               onMoveStart={() => { setEdgeMenu(null); setMenu(null); }}
               onMove={(_, view) => setFarOut(view.zoom < 0.14)}
+              onMoveEnd={() => setViewportRevision((revision) => revision + 1)}
               isValidConnection={(connection) => checkConnection(connection.source, connection.target, nodesRef.current as GraphNode[], edgesRef.current).ok}
-              deleteKeyCode={["Backspace", "Delete"]}
+              deleteKeyCode={null}
               multiSelectionKeyCode={["Meta", "Shift", "Control"]}
               selectionOnDrag={selectMode}
               panOnDrag={selectMode ? [1, 2] : true}
@@ -2336,10 +2400,19 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
             <button className="nc-help-button nc-round" type="button" aria-label={L("快捷键","Keyboard shortcuts")} title={L("快捷键","Keyboard shortcuts")} onClick={() => setShortcutsOpen(true)}><Keyboard size={16}/></button>
             <CanvasDock zh={zh} open={panel} onPanel={setPanel} snap={viewOptions.snap} onSnap={() => setViewOptions(v => ({ ...v, snap: !v.snap }))}
               onCreate={kind => createKind(kind, viewCenter())} onUpload={() => fileInput.current?.click()} onTemplates={() => setTemplatesOpen(true)} />
+            {selected.length > 0 && <button className="nc-round nc-touch-actions" type="button"
+              aria-label={L("选中节点操作", "Selected node actions")} aria-haspopup="menu" aria-expanded={menu?.panel === "node"}
+              onClick={(event) => {
+                if (menu?.panel === "node") { setMenu(null); return; }
+                const box = event.currentTarget.getBoundingClientRect();
+                const point = { x: box.left, y: box.bottom + 6 };
+                setEdgeMenu(null);
+                setMenu({ ...point, flow: flow.screenToFlowPosition(point), panel: "node", id: selected[0].id });
+              }}><Ellipsis size={19} aria-hidden="true" /></button>}
             <button className="nc-graph-count" type="button" title={L("节点定位","Find a node")} aria-label={L(`定位节点，${nodes.length} 个节点，${edges.length} 条连线`,`Find nodes, ${nodes.length} nodes, ${edges.length} links`)}
               onClick={() => setPanel(panel === "locate" ? null : "locate")}><LayoutGrid size={13}/>{nodes.length}<Link2 size={13}/>{edges.length}</button>
             {hydrated && !nodes.length && <div className="nc-empty-state">
-              <button className="nc-empty-start" type="button" aria-label={L("添加第一个节点","Add first node")} onClick={() => setPanel("add")}><Plus size={30} strokeWidth={1.4}/></button>
+              <button className="nc-empty-start" type="button" aria-label={L("添加第一个节点","Add first node")} aria-expanded={panel === "add"} aria-controls="nc-add-elements" onClick={() => setPanel((current) => current === "add" ? null : "add")}><Plus size={30} strokeWidth={1.4}/></button>
               <strong className="nc-empty-desktop">{L("双击画布开始创作","Double-click to start creating")}</strong>
               <strong className="nc-empty-touch">{L("轻点加号开始创作","Tap + to start creating")}</strong>
               <span>{L("或从下方添加元素","Or add an element below")}</span>
@@ -2451,6 +2524,9 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         {toast ? (
           <div className={`nc-toast${toast.error ? " is-error" : ""}`} role={toast.error ? "alert" : "status"}>
             <span>{toast.text}</span>
+            {toast.undoKey && canUndo && history.current.stack[history.current.index]?.key === toast.undoKey && (
+              <button type="button" className="nc-undo-removal" onClick={() => { restore(-1); setToast(null); }}>{L("撤销", "Undo")}</button>
+            )}
             {shortfall.action(toast.text)}
             <button type="button" onClick={() => setToast(null)} aria-label={L("关闭", "Close")}><X className="h-4 w-4" /></button>
           </div>
@@ -2459,13 +2535,27 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         <HomeMediaPicker
           lang={locale}
           open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
+          onClose={closePicker}
           onSelect={addPicked}
-          maxSelected={8}
+          maxSelected={editEntry ? 1 : 8}
+          initialTab={editEntry ? "upload" : undefined}
+          uploadsAndWorksOnly={Boolean(editEntry)}
           selectedIds={[]}
           userId={userId ?? undefined}
-          acceptedTypes={["image", "video"]}
+          acceptedTypes={editEntry ? ["image"] : ["image", "video"]}
         />
+        {chooseToolFor && (
+          <CanvasDialog title={L("编辑图像", "Edit image")} onClose={() => setChooseToolFor(null)}>
+            <div className="nc-edit-tool-list">
+              {(Object.keys(CANVAS_IMAGE_TOOLS) as CanvasImageTool[]).map((action) => (
+                <button key={action} type="button" className="nc-btn" onClick={() => {
+                  setEditing({ id: chooseToolFor, action });
+                  setChooseToolFor(null);
+                }}>{CANVAS_IMAGE_TOOLS[action][zh ? "zh" : "en"]}</button>
+              ))}
+            </div>
+          </CanvasDialog>
+        )}
         {(panel === "history" || panel === "assets" || panel === "sounds") && <CanvasResources key={panel} section={panel} zh={zh} nodes={nodes} canvasFetch={canvasFetch}
           onClose={() => setPanel(null)} onLibrary={() => { setPanel(null); setPickerOpen(true); }} onTemplates={() => { setPanel(null); setTemplatesOpen(true); }}
           onFocus={node => { setPanel(null); focusNode(node); }}
@@ -2528,13 +2618,13 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
   );
 }
 
-export function NodeCanvas({ locale, initialPrompt = "" }: { locale: string; initialPrompt?: string }) {
+export function NodeCanvas({ locale, initialPrompt = "", initialEdit }: { locale: string; initialPrompt?: string; initialEdit?: CanvasEditEntry }) {
   const { data: session, isPending } = useSession();
   if (isPending) return <div className="nc-shell" aria-busy="true" />;
   const userId = session?.user?.id ?? null;
   return (
     <ReactFlowProvider key={userId ? `account:${userId}` : "guest"}>
-      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} userId={userId} />
+      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} initialEdit={initialEdit} userId={userId} />
     </ReactFlowProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { elevenDialogueInput, elevenSpeechInput } from "@/lib/audio-voice-settings";
 // KIE "market" models: one registry entry per model we sell beyond the two
 // legacy video models (Veo 3.1 and Wan 2.6, which keep their own mapping in
 // model-mapping.ts). Each entry says which KIE model to call, how to build its
@@ -7,6 +8,7 @@
 import { ProviderRejectedError } from "./types";
 import { isDefiniteRejection } from "./providers/kie";
 import { audioCreditsFromCost, imageCreditsFromCost, videoCreditsFromCost } from "@/config/kie-pricing";
+import { VIDEO_EDIT_MODEL, VIDEO_MOTION_MODEL, type VideoToolOrientation } from "@/lib/video-tool";
 import { secondsBetween } from "@/lib/video-durations";
 import { imageOutputCount } from "@/lib/image-output-count";
 import { KLING_KEYFRAME_MODEL, type KlingKeyframes } from "@/lib/kling-keyframes";
@@ -36,8 +38,10 @@ export interface MarketRequest {
   customMode?: boolean;
   /** Speaking speed multiplier for TTS models that support it (0.7–1.2). */
   speed?: number;
+  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
   /** Signed URL of a video to work on (video tools such as extend). */
   videoUrl?: string;
+  orientation?: VideoToolOrientation;
   /** Random seed, for models that require one. */
   seed?: number;
 }
@@ -79,7 +83,7 @@ export interface MarketModel {
    * A tool that works on an existing creation (extend a video) rather than a
    * model to pick in the studio: never listed by marketModelsOf().
    */
-  tool?: "extend";
+  tool?: "extend" | "edit" | "motion";
 }
 
 const KIE_BASE = "https://api.kie.ai";
@@ -549,7 +553,7 @@ const AUDIO_MODELS: MarketModel[] = [
     costUsd: perThousandChars(0.07),
     buildTask: (req) => ({
       model: "elevenlabs/text-to-dialogue-v3",
-      input: { dialogue: [{ text: req.prompt, voice: voiceOr(req, ELEVENLABS_VOICES) }], stability: 0.5 },
+      input: { dialogue: [{ text: req.prompt, voice: voiceOr(req, ELEVENLABS_VOICES) }], ...elevenDialogueInput(req.voiceSettings) },
     }),
   },
   {
@@ -563,8 +567,7 @@ const AUDIO_MODELS: MarketModel[] = [
       input: {
         text: req.prompt,
         voice: voiceOr(req, ELEVENLABS_VOICES),
-        stability: 0.5,
-        similarity_boost: 0.75,
+        ...elevenSpeechInput(req.voiceSettings),
         speed: Math.min(1.2, Math.max(0.7, req.speed ?? 1)),
       },
     }),
@@ -580,8 +583,7 @@ const AUDIO_MODELS: MarketModel[] = [
       input: {
         text: req.prompt,
         voice: voiceOr(req, ELEVENLABS_VOICES),
-        stability: 0.5,
-        similarity_boost: 0.75,
+        ...elevenSpeechInput(req.voiceSettings),
         speed: Math.min(1.2, Math.max(0.7, req.speed ?? 1)),
       },
     }),
@@ -654,7 +656,28 @@ const PIXVERSE_V6_EXTEND_AUDIO_USD = { "360p": 0.028, "540p": 0.036, "720p": 0.0
 /** Our id for "extend a video"; the source is any of the user's own videos. */
 export const EXTEND_MODEL_ID = "pixverse-v6/extend";
 
+// KIE public model-pricing/page (2026-11-25), transformation and motion control.
+const klingToolPrice = (req: MarketRequest) =>
+  (req.resolution === "1080p" ? 0.151 : 0.1135) * (req.duration ?? 0);
+
 const TOOL_MODELS: MarketModel[] = [
+  {
+    id: VIDEO_EDIT_MODEL, name: "Kling 3.0 Omni Edit", kind: "video", tool: "edit",
+    options: { requiresVideo: true, resolutions: ["720p", "1080p"], minPromptLength: 1, maxPromptLength: 3072 },
+    costUsd: klingToolPrice,
+    buildTask: req => ({ model: VIDEO_EDIT_MODEL, input: {
+      prompt: req.prompt, video_urls: [req.videoUrl], resolution: req.resolution, aspect_ratio: "auto", audio: false,
+    } }),
+  },
+  {
+    id: VIDEO_MOTION_MODEL, name: "Kling 3.0 Motion Control", kind: "video", tool: "motion",
+    options: { requiresVideo: true, requiresImage: true, maxImages: 1, resolutions: ["720p", "1080p"], maxPromptLength: 2500 },
+    costUsd: klingToolPrice,
+    buildTask: req => ({ model: VIDEO_MOTION_MODEL, input: {
+      ...(req.prompt ? { prompt: req.prompt } : {}), video_urls: [req.videoUrl], input_urls: req.imageUrls,
+      mode: req.resolution, character_orientation: req.orientation ?? "video",
+    } }),
+  },
   {
     id: EXTEND_MODEL_ID,
     kind: "video",

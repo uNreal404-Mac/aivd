@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 /** How long a closing element stays mounted: the exit animation (--m-fast)
@@ -21,29 +21,19 @@ export type PresenceState = "open" | "closed";
  */
 export function usePresence(open: boolean, exitMs = PRESENCE_EXIT_MS): { mounted: boolean; state: PresenceState } {
   const [mounted, setMounted] = useState(open);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
     if (open) {
       setMounted(true);
       return;
     }
+    if (!mounted) return;
     if (prefersReducedMotion()) {
       setMounted(false);
       return;
     }
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      setMounted(false);
-    }, exitMs);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [open, exitMs]);
+    const timer = setTimeout(() => setMounted(false), exitMs);
+    return () => clearTimeout(timer);
+  }, [open, mounted, exitMs]);
 
   return { mounted: open || mounted, state: open ? "open" : "closed" };
 }

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 
 import { NodeCanvas } from "@/components/creative-space/canvas/node-canvas";
 import type { Locale } from "@/config/i18n-config";
+import { readCanvasEditEntry } from "@/lib/creative-space/canvas-edit-entry";
 import { buildAlternates } from "@/lib/seo";
 
 interface CreativeSpacePageProps {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ prompt?: string | string[] }>;
+  searchParams: Promise<{ prompt?: string | string[]; edit?: string | string[] }>;
 }
 
 export async function generateMetadata({
@@ -35,8 +36,8 @@ export default async function CreativeSpacePage({
   searchParams,
 }: CreativeSpacePageProps) {
   const { locale } = await params;
-  const { prompt } = await searchParams;
+  const { prompt, edit } = await searchParams;
   const initialPrompt = (Array.isArray(prompt) ? prompt[0] : prompt)?.slice(0, 2000) ?? "";
 
-  return <NodeCanvas locale={locale} initialPrompt={initialPrompt} />;
+  return <NodeCanvas locale={locale} initialPrompt={initialPrompt} initialEdit={readCanvasEditEntry(edit)} />;
 }

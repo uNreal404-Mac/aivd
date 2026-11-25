@@ -26,6 +26,7 @@ import "./extend-dialog.css";
 /** A finished video of the visitor's that can be extended. */
 export type ExtendSource = {
   videoUuid: string;
+  sourceVideoKey?: string;
   /** Signed URL, for the preview of the last frame. */
   videoUrl: string;
   prompt?: string | null;
@@ -70,16 +71,45 @@ export function ExtendDialog({
   const shortfall = useCreditsShortfall(zh);
   const { balance, invalidate, refetch } = useCredits();
 
-  // Each opened video starts from its own quality and sound.
+  const slot = inline
+    ? `aivd:extend-draft:${session?.user?.id ?? "guest"}:${source?.sourceVideoKey || source?.videoUuid || "pending"}`
+    : "";
+  const [readySlot, setReadySlot] = useState<string | null>(null);
   useEffect(() => {
-    if (!inline || !source) {
-      setPrompt(source?.repeat?.prompt ?? "");
-      setDuration(source?.repeat?.duration ?? 5);
+    let saved: Partial<ExtendChoice> | undefined;
+    if (slot) {
+      try {
+        saved = JSON.parse(sessionStorage.getItem(slot) ?? "null") ?? undefined;
+      } catch {
+        /* Keep the current form. */
+      }
     }
-    setResolution(defaultExtendResolution(source?.repeat?.resolution ?? source?.resolution));
-    setAudio(source?.repeat?.audio ?? Boolean(source?.audio));
+    const choice = source?.repeat ?? saved;
+    if (!inline || !source || choice) {
+      setPrompt(typeof choice?.prompt === "string" ? choice.prompt : "");
+      setDuration(
+        typeof choice?.duration === "number" &&
+          choice.duration >= EXTEND_MIN_SECONDS &&
+          choice.duration <= EXTEND_MAX_SECONDS
+          ? choice.duration
+          : 5,
+      );
+    }
+    setResolution(defaultExtendResolution(choice?.resolution ?? source?.resolution));
+    setAudio(typeof choice?.audio === "boolean" ? choice.audio : Boolean(source?.audio));
     setNotice(null);
-  }, [source?.videoUuid]);
+    setReadySlot(slot);
+  }, [slot, source?.videoUuid, source?.sourceVideoKey]);
+
+  useEffect(() => {
+    if (slot && readySlot === slot) {
+      try {
+        sessionStorage.setItem(slot, JSON.stringify({ prompt, duration, resolution, audio }));
+      } catch {
+        /* Keep the current form. */
+      }
+    }
+  }, [slot, readySlot, prompt, duration, resolution, audio]);
 
   const choice = { prompt, duration, resolution, audio };
   const free = freeGeneration ?? (process.env.NEXT_PUBLIC_IS_PREVIEW === "true" && session?.user?.isAdmin === true && session.user.isSuperAccount === true);
@@ -108,7 +138,7 @@ export function ExtendDialog({
     setSubmitting(true);
     setNotice(null);
     try {
-      const result = await submitExtend(source.videoUuid, choice, zh, session.user.id);
+      const result = await submitExtend(source.sourceVideoKey ? { sourceVideoKey:source.sourceVideoKey } : source.videoUuid, choice, zh, session.user.id);
       if (!result.ok) {
         setNotice(result.message);
         if (result.needsLogin) signIn.onOpen();
@@ -118,6 +148,18 @@ export function ExtendDialog({
       invalidate();
       void refetch();
       onStarted({ uuid: result.uuid, prompt: prompt.trim(), duration, credits });
+      if (slot) {
+        try {
+          sessionStorage.removeItem(slot);
+          sessionStorage.removeItem(`aivd:extend-draft:${session.user.id}:pending`);
+        } catch {
+          /* Done in memory below. */
+        }
+        setPrompt("");
+        setDuration(5);
+        setReadySlot(null);
+      }
+
       onClose();
     } finally {
       inFlight.current = false;
@@ -150,7 +192,7 @@ export function ExtendDialog({
           <button type="button" className="xd-pick" onClick={inline.chooseSource}>
             <Film aria-hidden="true" />
             <strong>{zh ? "添加要延长的视频" : "Add a video to extend"}</strong>
-            <span>{zh ? "从已完成的作品中选择" : "Choose a finished creation"}</span>
+            <span>{zh ? "上传视频或从已完成的作品中选择" : "Upload a video or choose a finished creation"}</span>
           </button>
         ) : null}
 

@@ -20,8 +20,10 @@ import {
 // Import proxy configuration for fetch requests
 import "@/lib/proxy-config";
 
+import { VIDEO_MOTION_MODEL } from "@/lib/video-tool";
+
 const generateSchema = z.object({
-  prompt: z.string().min(1).max(10000),
+  prompt: z.string().max(10000),
   model: z.string().min(1),
   duration: z.number().optional(),
   aspectRatio: z.string().optional(),
@@ -40,7 +42,11 @@ const generateSchema = z.object({
   idempotencyKey: z.string().max(200).optional(),
   /** Extend a video: one of the caller's own finished videos. */
   sourceVideoUuid: z.string().max(64).optional(),
-});
+  sourceVideoKey:z.string().max(512).optional(),
+  orientation:z.enum(["image","video"]).optional(),
+  characterKey:z.string().max(512).optional(),
+  expectedCredits:z.number().int().positive().optional(),
+}).refine(data => data.prompt.length > 0 || data.model === VIDEO_MOTION_MODEL, {path:["prompt"], message:"Enter a prompt."});
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,7 +88,7 @@ export async function POST(request: NextRequest) {
     const locale = request.headers.get("accept-language") ?? "en";
     // The service moderates role-based frames after resolving their owner and
     // exact output index, immediately before reserving credits.
-    if (!data.keyframes) {
+    if (!data.keyframes && data.model !== VIDEO_MOTION_MODEL) {
       const safety = await moderateContent({
         text: data.prompt,
         images: imageUrls.map((imageUrl, index) => ({
@@ -114,6 +120,11 @@ export async function POST(request: NextRequest) {
       generateAudio: data.generateAudio,
       idempotencyKey,
       sourceVideoUuid: data.sourceVideoUuid,
+      sourceVideoKey: data.sourceVideoKey,
+      orientation: data.orientation,
+      expectedCredits: data.expectedCredits,
+      characterKey: data.characterKey,
+      ...(data.model === VIDEO_MOTION_MODEL ? {locale} : {}),
     });
 
     return apiSuccess(result);

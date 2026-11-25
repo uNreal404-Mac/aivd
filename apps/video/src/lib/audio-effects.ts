@@ -27,7 +27,7 @@ function encodeWav(audio: AudioBuffer): Blob {
 }
 
 /** Render the recording at its original pace; a video contributes its audio track. */
-export async function renderVoiceEffect(file: File, effect: VoiceEffect): Promise<Blob> {
+export async function renderVoiceEffect(file: File, effect: VoiceEffect, strength = 1): Promise<Blob> {
   const sampleRate = 24000;
   if (file.size > 32 * 1024 * 1024) throw new Error("limit");
   const decoder = new OfflineAudioContext(1, 1, sampleRate);
@@ -37,17 +37,22 @@ export async function renderVoiceEffect(file: File, effect: VoiceEffect): Promis
   const source = ctx.createBufferSource();
   source.buffer = audio;
   const filter = ctx.createBiquadFilter();
+  const amount = Math.min(1, Math.max(0, strength));
+  const dry = ctx.createGain(); dry.gain.value = 1 - amount;
+  const wet = ctx.createGain(); wet.gain.value = amount;
+  source.connect(dry).connect(ctx.destination);
+  wet.connect(ctx.destination);
   source.connect(filter);
   if (effect === "telephone") {
     filter.type = "highpass"; filter.frequency.value = 420;
     const lowpass = ctx.createBiquadFilter();
     lowpass.type = "lowpass"; lowpass.frequency.value = 2700;
-    filter.connect(lowpass).connect(ctx.destination);
+    filter.connect(lowpass).connect(wet);
   } else if (effect === "broadcast") {
     filter.type = "lowshelf"; filter.frequency.value = 225; filter.gain.value = 5;
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.value = -24; compressor.ratio.value = 5;
-    filter.connect(compressor).connect(ctx.destination);
+    filter.connect(compressor).connect(wet);
   } else {
     filter.type = "highpass"; filter.frequency.value = 100;
     const gain = ctx.createGain();
@@ -55,7 +60,7 @@ export async function renderVoiceEffect(file: File, effect: VoiceEffect): Promis
     const oscillator = ctx.createOscillator();
     oscillator.frequency.value = 43;
     oscillator.connect(gain.gain);
-    filter.connect(gain).connect(ctx.destination);
+    filter.connect(gain).connect(wet);
     oscillator.start();
   }
   source.start();

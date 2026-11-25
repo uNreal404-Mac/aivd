@@ -1,3 +1,4 @@
+import { VOICE_LANGUAGES } from "@/lib/audio-voice-settings";
 import { generationRequestKey, readGenerationReplay } from "@/lib/api/generation-replay";
 import { assertMediaAccount } from "@/lib/api/media-account";
 import { NextRequest } from "next/server";
@@ -27,6 +28,12 @@ const schema = z.object({
   style: z.string().max(1000).optional(),
   instrumental: z.boolean().optional(),
   customMode: z.boolean().optional(),
+  voiceSettings: z.object({
+    stability: z.number().min(0).max(1).optional(),
+    similarity: z.number().min(0).max(1).optional(),
+    expression: z.number().min(0).max(1).optional(),
+    language: z.enum(VOICE_LANGUAGES).optional(),
+  }).strict().optional(),
   speed: z.number().min(0.7).max(1.2).optional(),
   idempotencyKey: z.string().max(200).optional(),
 });
@@ -91,6 +98,7 @@ export async function POST(request: NextRequest) {
       instrumental: data.instrumental,
       customMode: data.customMode,
       speed: data.speed,
+      voiceSettings: data.voiceSettings,
       idempotencyKey,
     });
     return apiSuccess(result);

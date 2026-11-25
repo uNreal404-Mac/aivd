@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { ChevronRight, Info, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
@@ -10,7 +10,7 @@ import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
-import { submitMedia, useMediaJobs } from "@/lib/media-studio";
+import { submitMedia, useMediaJobs, type SubmitBody } from "@/lib/media-studio";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import {
   type AudioShowcaseItem,
@@ -29,7 +29,9 @@ import {
   voiceTag,
 } from "./audio-studio/audio-data";
 import { AudioFillSlider, AudioSwitchRow } from "./audio-studio/audio-controls";
-import { TranslateForm, VoiceChangeForm, type LocalVoiceTool } from "./audio-studio/local-voice-tools";
+import { AudioClipForm, type LocalVoiceTool } from "./audio-studio/local-voice-tools";
+import { ElevenControls } from "./audio-studio/eleven-controls";
+import { cleanVoiceSettings, submittedVoiceSettings, type VoiceSettings } from "@/lib/audio-voice-settings";
 import { AudioModelMenu } from "./audio-studio/audio-menus";
 import { AudioStage, type HowPick, type StageTab } from "./audio-studio/audio-stage";
 import { AudioVoiceCard, AudioVoicePicker } from "./audio-studio/audio-voice";
@@ -91,7 +93,7 @@ function AiAudioStudioForm({
   const earlierKey = `aivd:draft:${draftScope}:earlier`;
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
-  const initialModel = getMarketModel(initialModelId);
+  const initialModel = getMarketModel(initialModelId || (initialVoiceMode === "effects" ? "suno-sounds" : ""));
   const startMode: Mode =
     initialModel?.kind === "audio"
       ? ((Object.keys(MODE_MODELS) as Mode[]).find((key) => MODE_MODELS[key].includes(initialModel.id)) ?? "tts")
@@ -133,6 +135,8 @@ function AiAudioStudioForm({
     }
   }, [initialPrompt, sessionLoading, draftScope, earlierKey]);
   const [speed, setSpeed] = useState(1);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>({});
+  const [foot, setFoot] = useState<HTMLDivElement | null>(null);
   const [instrumental, setInstrumental] = useState(false);
   const [customMode, setCustomMode] = useState(false);
   // "Remember settings": the advanced settings come back on the next visit.
@@ -142,14 +146,15 @@ function AiAudioStudioForm({
     try {
       const raw = localStorage.getItem(settingsKey);
       if (!raw) return;
-      const saved = JSON.parse(raw) as { speed?: unknown; instrumental?: unknown; customMode?: unknown; modelId?: string; voice?: string };
-      if (!initialModelId && saved.modelId && MODE_MODELS[startMode].includes(saved.modelId)) {
+      const saved = JSON.parse(raw) as { voiceSettings?: unknown; speed?: unknown; instrumental?: unknown; customMode?: unknown; modelId?: string; voice?: string };
+      if (!initialModel && saved.modelId && MODE_MODELS[startMode].includes(saved.modelId)) {
         const remembered = getMarketModel(saved.modelId);
         if (remembered) {
           setModelId(remembered.id);
           setVoice(remembered.options.voices?.find(v => v.id === saved.voice)?.id ?? remembered.options.voices?.[0]?.id ?? "");
         }
       }
+      setVoiceSettings(cleanVoiceSettings(saved.voiceSettings));
       if (typeof saved.speed === "number" && Number.isFinite(saved.speed)) {
         const stepped = Math.round(saved.speed / SPEED_STEP) * SPEED_STEP;
         setSpeed(Math.min(SPEED_MAX, Math.max(SPEED_MIN, Number(stepped.toFixed(2)))));
@@ -164,11 +169,11 @@ function AiAudioStudioForm({
   useEffect(() => {
     if (!keepSettings) return;
     try {
-      localStorage.setItem(settingsKey, JSON.stringify({ speed, instrumental, customMode, modelId, voice }));
+      localStorage.setItem(settingsKey, JSON.stringify({ speed, voiceSettings, instrumental, customMode, modelId, voice }));
     } catch {
       // Storage can be blocked; the settings then last for this visit only.
     }
-  }, [keepSettings, speed, instrumental, customMode, modelId, voice, settingsKey]);
+  }, [keepSettings, speed, voiceSettings, instrumental, customMode, modelId, voice, settingsKey]);
   const chooseKeepSettings = (on: boolean) => {
     setKeepSettings(on);
     if (!on) {
@@ -205,7 +210,7 @@ function AiAudioStudioForm({
   useEffect(() => {
     if (jobs.length > 0 && !tabChosen.current) setTabState("history");
   }, [jobs.length]);
-  useCreditReturnDraft(draftScope, () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
+  useCreditReturnDraft(draftScope, () => ({ mode, modelId, voice, script, detail, tab, speed, voiceSettings, instrumental, customMode }), (saved) => {
     if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
     const savedModel = getMarketModel(saved.modelId);
@@ -213,6 +218,7 @@ function AiAudioStudioForm({
     setVoice(savedVoices.find((item) => item.id === saved.voice)?.id ?? savedVoices.find((item) => item.name === saved.voice)?.id ?? saved.voice ?? "");
     setScript(saved.script ?? "");
     setDetail(saved.detail ?? "");
+    setVoiceSettings(cleanVoiceSettings(saved.voiceSettings));
     if (typeof saved.speed === "number") setSpeed(saved.speed);
     if (typeof saved.instrumental === "boolean") setInstrumental(saved.instrumental);
     if (typeof saved.customMode === "boolean") setCustomMode(saved.customMode);
@@ -232,7 +238,7 @@ function AiAudioStudioForm({
   useEffect(() => {
     if (advancedOpen) advancedRef.current?.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [advancedOpen]);
-  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change-voice" || initialVoiceMode === "translate" ? initialVoiceMode : null);
+  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change" || initialVoiceMode === "change-voice" ? "change-voice" : initialVoiceMode === "translate" ? "translate" : null);
   const modesRef = useSegmentIndicator<HTMLDivElement>(localTool ?? mode);
 
   const modeModels = MODE_MODELS[mode]
@@ -245,14 +251,22 @@ function AiAudioStudioForm({
   const isSunoSounds = model.id === "suno-sounds";
   const voices = model.options.voices ?? [];
   const currentVoice = voices.find((item) => item.id === voice) ?? voices[0];
+  const isEleven = model.id.startsWith("elevenlabs-");
   const hasAdvanced = supportsSpeed || isSunoMusic || voices.length > 0;
-  const advancedChanged = (supportsSpeed && speed !== 1) || (isSunoMusic && (instrumental || customMode));
+  const advancedChanged = (isEleven && Object.keys(voiceSettings).length > 0) || (supportsSpeed && speed !== 1) || (isSunoMusic && (instrumental || customMode));
 
   // Priced from exactly what is sent (trimmed script and details).
-  const credits = useMemo(
-    () => marketCredits(model, { prompt: script.trim(), voice: voice || undefined, style: supportsStyle && detail.trim() ? detail.trim() : undefined, instrumental: isSunoMusic ? instrumental : undefined, customMode: isSunoMusic ? customMode : undefined, speed: supportsSpeed ? speed : undefined }),
-    [model, script, voice, detail, supportsStyle, isSunoMusic, instrumental, customMode, supportsSpeed, speed],
-  );
+  const generationBody: SubmitBody = {
+    model: model.id,
+    prompt: script.trim(),
+    voice: voice || undefined,
+    style: supportsStyle && detail.trim() ? detail.trim() : undefined,
+    instrumental: isSunoMusic ? instrumental : undefined,
+    customMode: isSunoMusic ? customMode : undefined,
+    speed: supportsSpeed ? speed : undefined,
+    voiceSettings: submittedVoiceSettings(model.id, voiceSettings),
+  };
+  const credits = marketCredits(model, generationBody);
 
   const chooseModel = (id: string) => {
     const next = getMarketModel(id);
@@ -293,6 +307,7 @@ function AiAudioStudioForm({
   };
 
   const resetAdvanced = () => {
+    setVoiceSettings({});
     setSpeed(1);
     setInstrumental(false);
     setCustomMode(false);
@@ -447,31 +462,35 @@ function AiAudioStudioForm({
       scriptRef.current?.focus();
       return;
     }
+    await submitTrack(generationBody);
+  };
+
+  const submittingRef = useRef(false);
+  const submitTrack = async (body: SubmitBody) => {
+    if (submittingRef.current || sessionLoading) return false;
+    if (!session?.user?.id) {
+      signIn.onOpen();
+      return false;
+    }
+    submittingRef.current = true;
     setSubmitting(true);
     setNotice(null);
-    const result = await submitMedia(
-      {
-        model: model.id,
-        prompt: script.trim(),
-        voice: voice || undefined,
-        style: supportsStyle && detail.trim() ? detail.trim() : undefined,
-        instrumental: isSunoMusic ? instrumental : undefined,
-        customMode: isSunoMusic ? customMode : undefined,
-        speed: supportsSpeed ? speed : undefined,
-      },
-      zh,
-      undefined,
-      session?.user?.id,
-    );
-    setSubmitting(false);
+    let result;
+    try {
+      result = await submitMedia(body, zh, undefined, session.user.id);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
     if (!result.ok) {
       setNotice(result.message);
       if (result.needsLogin) signIn.onOpen();
       if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
-      return;
+      return false;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id, createdAt: Date.now() });
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: body.prompt, model: body.model, createdAt: Date.now() });
     setTab("history");
+    return true;
   };
 
   const previewingCurrent = currentVoice !== undefined && preview.previewingVoice === currentVoice.name;
@@ -488,7 +507,13 @@ function AiAudioStudioForm({
                 <button key={option} type="button" role="tab" className="au-mode" aria-selected={option === (localTool ?? mode)}
                   onClick={() => {
                     if (option === "tts" || option === "music") chooseMode(option);
-                    else { setLocalTool(option); setMenu(null); setTab("how"); }
+                    else {
+                      preview.stopAll();
+                      setLocalTool(option);
+                      setNotice(null);
+                      setMenu(null);
+                      setTab("how");
+                    }
                   }}>
                   {option === "change-voice" ? zh ? "变声" : "Voice changer" : option === "translate" ? zh ? "翻译" : "Translate" : t.modes[option]}
                 </button>
@@ -496,7 +521,10 @@ function AiAudioStudioForm({
             </div>
           </div>
 
-          {localTool === "change-voice" ? <VoiceChangeForm zh={zh} /> : localTool === "translate" ? <TranslateForm zh={zh} onRead={text => { chooseMode("tts"); setScript(text); }} /> : <div className="au-fields">
+          {(["change-voice", "translate"] as const).map(tool => <div key={tool} hidden={localTool !== tool}>
+            <AudioClipForm tool={tool} active={localTool === tool} zh={zh} foot={foot} internalFree={internalFree} submitting={submitting} onGenerate={submitTrack} />
+          </div>)}
+          {!localTool ? <div className="au-fields">
             {voices.length > 0 && currentVoice ? (
               <AudioVoiceCard
                 zh={zh}
@@ -718,6 +746,7 @@ function AiAudioStudioForm({
                     {t.reset}
                   </button>
                 </div>
+                {isEleven ? <ElevenControls model={model.id} settings={voiceSettings} onChange={setVoiceSettings} zh={zh} /> : null}
                 {supportsSpeed ? (
                   <AudioFillSlider
                     label={t.speed}
@@ -745,10 +774,11 @@ function AiAudioStudioForm({
                 {creditsShortfall.action(notice)}
               </output>
             ) : null}
-          </div>}
+          </div> : null}
+          {localTool && notice ? <output className="au-notice" aria-live="polite">{notice}{creditsShortfall.action(notice)}</output> : null}
         </div>
 
-        {!localTool ? <div className="au-foot">
+        <div className="au-foot" ref={setFoot}>{!localTool ? <>
           <button
             type="button"
             className="au-generate"
@@ -764,7 +794,7 @@ function AiAudioStudioForm({
               </span>
             )}
           </button>
-        </div> : null}
+        </> : null}</div>
       </aside>
 
       <div

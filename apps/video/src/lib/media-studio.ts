@@ -31,6 +31,7 @@ export type SubmitBody = {
   instrumental?: boolean;
   customMode?: boolean;
   speed?: number;
+  voiceSettings?: import("@/lib/audio-voice-settings").VoiceSettings;
 };
 
 const POLL_MS = 3000;
@@ -124,7 +125,8 @@ function legacyMediaKey(signature: string): string | null {
 export type ExtendSubmitBody = {
   model: string;
   prompt: string;
-  sourceVideoUuid: string;
+  sourceVideoUuid?: string;
+  sourceVideoKey?: string;
   duration: number;
   quality: string;
   generateAudio: boolean;
@@ -181,7 +183,7 @@ async function reserveRetryKey(
 }
 
 export async function submitMedia(
-  body: SubmitBody | ExtendSubmitBody,
+  body: SubmitBody | ExtendSubmitBody | import("@/lib/video-tool").VideoToolSubmit,
   zh: boolean,
   endpoint = MEDIA_ENDPOINT,
   expectedAccount?: string,
@@ -190,7 +192,10 @@ export async function submitMedia(
   const original = JSON.stringify(body);
   // Preserve the existing extend slot format. Media options are flat fields
   // or arrays of strings, so sorting field names preserves reference order.
-  const signature = isExtend ? original : JSON.stringify(body, Object.keys(body).sort());
+  const signature = isExtend ? original : JSON.stringify(body, (_, value: unknown) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+  });
   let retry: RetryReservation;
   const networkError = zh ? "网络错误，请稍后重试。" : "Network error. Please try again.";
   let accountId: string | undefined;

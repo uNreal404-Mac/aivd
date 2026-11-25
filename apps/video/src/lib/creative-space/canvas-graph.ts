@@ -287,6 +287,15 @@ export function selectionWithChildren<T extends { id: string; parentNode?: strin
   return nodes.filter((node) => ids.has(node.id));
 }
 
+/** Dropping a selected group also drops its descendants and every incident link. */
+export function withoutGraphSelection<N extends { id: string; selected?: boolean; parentNode?: string }, E extends { source: string; target: string; selected?: boolean }>(nodes: readonly N[], edges: readonly E[]): { nodes: N[]; edges: E[] } {
+  const removed = new Set(selectionWithChildren(nodes).map((node) => node.id));
+  return {
+    nodes: nodes.filter((node) => !removed.has(node.id)),
+    edges: edges.filter((edge) => !edge.selected && !removed.has(edge.source) && !removed.has(edge.target)),
+  };
+}
+
 /** Text a node contributes downstream (text cards, Agent generation prompts). */
 export function textOf(data: CanvasData): string {
   if (data.kind === "text") return data.text.trim();

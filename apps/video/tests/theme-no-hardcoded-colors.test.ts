@@ -57,6 +57,7 @@ const LEGACY_ALLOWLIST: string[] = [
   "src/config/tool-pages/reference-to-video.config.ts",
   "src/config/tool-pages/text-to-video.config.ts",
   "src/lib/emails/magic-link-email.tsx",
+  "src/lib/emails/magic-link-html.ts",
   "src/lib/emails/reset-password-email.tsx",
   "src/lib/emails/welcome-email.tsx",
   "src/lib/generate-pattern.ts",

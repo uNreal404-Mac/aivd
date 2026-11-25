@@ -711,7 +711,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
           className="du-composer-ref-slot"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          {references.length ? <span className="du-composer-ref-label du-num">{`${references.length}/${referenceLimit}`}</span> : <span className="sr-only">{clipMode ? (zh ? "添加参考视频" : "Add reference videos") : zh ? "添加参考图" : "Add reference images"}</span>}
+          {references.length ? <span className="du-composer-ref-label du-num">{`${references.length}/${referenceLimit}`}</span> : <span className="sr-only du-ref-action-label">{clipMode ? (zh ? "添加参考视频" : "Add reference videos") : zh ? "添加参考图" : "Add reference images"}</span>}
         </button>
       </div>) : null}
       <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>

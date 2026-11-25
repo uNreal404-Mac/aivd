@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   Brush,
   Download,
@@ -86,6 +87,20 @@ const ANIMATE_MODELS = [
   { id: "veo-3.1", name: "Veo 3.1", durations: [8], resolutions: ["720p"], audio: true },
   { id: "wan/3-0-video", name: "Wan 3.0", durations: [5, 10], resolutions: ["720p", "1080p"], audio: true },
 ];
+
+function CanvasEditDialog({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  return (
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="cc-modal-backdrop">
+          <Dialog.Content className="cc-modal" aria-describedby={undefined} onPointerDownOutside={(event) => event.preventDefault()}>
+            {children}
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 
 export function CanvasEditModal({
   locale,
@@ -447,12 +462,11 @@ export function CanvasEditModal({
   };
 
   return (
-    <dialog open className="cc-modal-backdrop m-0 max-h-none max-w-none border-0" aria-label={zh ? titles[action].zh : titles[action].en}>
-      <div className="cc-modal">
+    <CanvasEditDialog onClose={onClose}>
         <div className="cc-modal-head">
           <div className="cc-modal-title">
             <span className="cc-modal-icon">{titles[action].icon}</span>
-            <span>{zh ? titles[action].zh : titles[action].en}</span>
+            <Dialog.Title asChild><span>{zh ? titles[action].zh : titles[action].en}</span></Dialog.Title>
             <span className="cc-pill">@{node.label}</span>
           </div>
           <button type="button" className="cc-icon-btn" onClick={onClose} aria-label={zh ? "关闭" : "Close"}>
@@ -724,7 +738,6 @@ export function CanvasEditModal({
             </div>
           </div>
         </div>
-      </div>
-    </dialog>
+    </CanvasEditDialog>
   );
 }

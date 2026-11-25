@@ -88,6 +88,7 @@ export function ViewMenu({ zh, view, onChange }: { zh: boolean; view: ImageView;
           aria-label={zh ? "结果的显示方式" : "How results are shown"}
           data-presence="pop"
           data-state={presence.state}
+          inert={presence.state === "closed"}
           className="is-pop is-view-pop"
           onKeyDown={moveFocus}
         >

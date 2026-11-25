@@ -35,6 +35,7 @@ import {
   mergeResults,
   modelOptions,
   selectModel,
+  settingsFromSearchParams,
   submitGeneration,
 } from "@/lib/ai-video-studio";
 import type { StudioResult, StudioSettings } from "@/lib/ai-video-studio";
@@ -51,6 +52,9 @@ import { PresetCard, PresetLibrary } from "@/components/hf/video-studio/presets"
 import { ReferenceBlock, referenceToken, type ReferenceThumb } from "@/components/hf/video-studio/reference-block";
 import { PromptCard, insertToken } from "@/components/hf/video-studio/prompt-card";
 import { CardFace, ChoiceCard, DurationCard, widestFirst } from "@/components/hf/video-studio/setting-cards";
+import { VideoToolPanel } from "./video-studio/tool-panel";
+import { ToolGuide } from "./video-studio/tool-guide";
+import "./video-studio/video-tools.css";
 import { HowItWorks, StageTabs, type StageTab } from "@/components/hf/video-studio/stage";
 import { ExtendPanel, asExtendSource } from "./video-studio/extend-panel";
 import type { ExtendSource } from "./extend-dialog";
@@ -81,6 +85,7 @@ function AiVideoStudioForm({
   generationEnabled,
   initialSettings,
   initialExtend = false,
+  initialTool = "create",
   initialKeyframes = false,
   locale,
   availableModelIds,
@@ -90,6 +95,7 @@ function AiVideoStudioForm({
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
   initialExtend?: boolean;
+  initialTool?: "create" | "edit" | "motion";
   initialKeyframes?: boolean;
   locale: string;
   availableModelIds: string[];
@@ -182,6 +188,65 @@ function AiVideoStudioForm({
       ? initialCatalogModelId
       : settings.modelId,
   );
+  const settingsSlot = `aivd:video-create-options:${draftScope}:${initialCatalogModelId ?? "default"}`;
+  const [optionsReady, setOptionsReady] = useState(false);
+  useEffect(() => {
+    try {
+      const explicit = new URL(window.location.href).searchParams;
+      const raw = sessionStorage.getItem(settingsSlot);
+      if (
+        !raw ||
+        initialKeyframes ||
+        ["autostart", "prompt", "sample", "preset", "duration", "resolution", "aspect", "audio"].some(
+          (field) => explicit.has(field),
+        )
+      )
+        return;
+      const saved = JSON.parse(raw);
+      if (
+        typeof saved.model !== "string" ||
+        !availableModelIds.includes(saved.model) ||
+        !VIDEO_CATALOG.some((item) => item.id === saved.model)
+      )
+        return;
+      const restored = settingsFromSearchParams(saved);
+      setCatalogModelId(saved.model);
+      setSettings((previous) => ({ ...restored, prompt: previous.prompt }));
+    } catch {
+      /* Keep the model and options in the link. */
+    } finally {
+      setOptionsReady(true);
+    }
+  }, [settingsSlot]);
+  useEffect(() => {
+    if (!optionsReady || initialKeyframes) return;
+    try {
+      sessionStorage.setItem(
+        settingsSlot,
+        JSON.stringify({
+          model: catalogModelId,
+          preset: settings.preset,
+          duration: String(settings.duration),
+          aspect: settings.aspect,
+          resolution: settings.resolution,
+          audio: String(settings.audio),
+        }),
+      );
+    } catch {
+      /* Keep the settings in this page. */
+    }
+  }, [
+    settingsSlot,
+    optionsReady,
+    initialKeyframes,
+    catalogModelId,
+    settings.preset,
+    settings.duration,
+    settings.aspect,
+    settings.resolution,
+    settings.audio,
+  ]);
+
   const [upcoming, setUpcoming] = useState(upcomingModel);
   const [fileName, setFileName] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -222,8 +287,85 @@ function AiVideoStudioForm({
     if (session) void fetchBalance();
   }, [session, fetchBalance]);
   const [extendMode, setExtendMode] = useState(initialExtend);
+  const [tool, setTool] = useState(initialTool);
+  const [visitedTools, setVisitedTools] = useState<string[]>([initialTool]);
+  function visit(next: typeof tool) {
+    setTool(next);
+    if (next !== "create")
+      setVisitedTools((previous) => (previous.includes(next) ? previous : [...previous, next]));
+  }
+  function chooseMode(next: typeof tool, extend = extendMode) {
+    visit(next);
+    setExtendMode(extend);
+    setPresetsOpen(false);
+    setMediaPickerOpen(false);
+    const url = new URL(window.location.href);
+    const mode = next === "create" ? (extend ? "extend" : "") : next;
+    url.searchParams.delete("mode");
+    if (mode) url.searchParams.set("tool", mode);
+    else url.searchParams.delete("tool");
+    if (url.href !== window.location.href) window.history.pushState(null, "", url);
+  }
+  useEffect(() => {
+    const restoreMode = () => {
+      const search = new URL(window.location.href).searchParams;
+      const mode = search.get("tool") ?? search.get("mode");
+      visit(mode === "edit" || mode === "motion" ? mode : "create");
+      if (mode !== "edit" && mode !== "motion") setExtendMode(mode === "extend");
+      setPresetsOpen(false);
+      setMediaPickerOpen(false);
+    };
+    window.addEventListener("popstate", restoreMode);
+    return () => window.removeEventListener("popstate", restoreMode);
+  }, []);
   const [extendSource, setExtendSource] = useState<ExtendSource | null>(null);
-  useEffect(() => setExtendSource(null), [session?.user?.id]);
+  const sourceSlot = `aivd:extend-source:${session?.user?.id ?? "guest"}`;
+  const [sourceRestored, setSourceRestored] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (!session?.user?.id) return;
+    const restore = async () => {
+      try {
+        const raw = sessionStorage.getItem(sourceSlot);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        let url: string | null = null;
+        if (typeof saved.sourceVideoKey === "string") {
+          const response=await fetch("/api/v1/video/tool-source",{
+            method:"POST",headers:{"Content-Type":"application/json","X-Media-Account":session.user.id},
+            body:JSON.stringify({model:"pixverse-v6/extend",sourceVideoKey:saved.sourceVideoKey}),
+          });
+          const payload=await response.json();
+          url=payload?.data?.preview;
+        } else if (typeof saved.videoUuid === "string" && /^[\w-]+$/.test(saved.videoUuid)) {
+          const status = await fetchResultStatus(saved.videoUuid);
+          if (status.ok && status.status === "completed") url = status.videoUrl ?? null;
+        }
+        if (live && url) setExtendSource((current) => current ?? { ...saved, videoUrl: url });
+      } catch {
+        /* The original source can be chosen again. */
+      } finally {
+        if (live) setSourceRestored(true);
+      }
+    };
+    void restore();
+    return () => {
+      live = false;
+    };
+  }, [sourceSlot, session?.user?.id]);
+  useEffect(() => {
+    if (!sourceRestored || !session?.user?.id) return;
+    try {
+      if (!extendSource) sessionStorage.removeItem(sourceSlot);
+      else {
+        const { videoUrl: _preview, ...stable } = extendSource;
+        sessionStorage.setItem(sourceSlot, JSON.stringify(stable));
+      }
+    } catch {
+      /* Keep the source in this page. */
+    }
+  }, [extendSource, sourceRestored, sourceSlot, session?.user?.id]);
+
   const [results, setResults] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
   // First visit opens on how it works, as the reference does; returning users
@@ -432,6 +574,9 @@ function AiVideoStudioForm({
     });
   }
 
+  const currentDraft = useRef({ settings, frames, homeReferences, imageKey, catalogModelId });
+  currentDraft.current = { settings, frames, homeReferences, imageKey, catalogModelId };
+
   // One request at a time, whether it came from the button or from autostart:
   // the lock is taken before anything is awaited, so a double click or an
   // autostart landing during a click cannot send a second, separately charged
@@ -601,8 +746,22 @@ function AiVideoStudioForm({
         ...previous,
       ]);
       setNotice(null);
-      if (keyframeMode) sessionStorage.removeItem(STUDIO_KEYFRAME_STORAGE);
-      sessionStorage.removeItem("aivd:home-video-references");
+      const live = currentDraft.current;
+      if (
+        live.settings === settings &&
+        live.frames === frames &&
+        live.homeReferences === homeReferences &&
+        live.imageKey === imageKey &&
+        live.catalogModelId === catalogModelId
+      ) {
+        draft.discard();
+        clearSelectedMedia();
+        if (keyframeMode) {
+          setFrames({});
+          sessionStorage.removeItem(STUDIO_KEYFRAME_STORAGE);
+        }
+      }
+
       setActiveTab("History");
     } catch {
       setNotice(isChinese ? "暂时无法确认任务状态，请查看历史记录后重试。" : "The task status is unavailable. Check History before retrying.");
@@ -742,7 +901,7 @@ function AiVideoStudioForm({
     setPreview(null);
     setSettings((current) => ({ ...current, prompt: current.prompt.replace(/@(?:图片|image|视频|video)\d+/gi, "") }));
   };
-  const drop = useImageDrop((files) => void selectMedia(files.slice(0, maxReferences).map((file) => ({ id: `direct:${crypto.randomUUID()}`, name: file.name, mimeType: file.type, url: "", file }))), !keyframeMode && !uploading && maxReferences > 0, videoInput ? isWanVideoMime : undefined);
+  const drop = useImageDrop((files) => void selectMedia(files.slice(0, maxReferences).map((file) => ({ id: `direct:${crypto.randomUUID()}`, name: file.name, mimeType: file.type, url: "", file }))), tool === "create" && !extendMode && !keyframeMode && !uploading && maxReferences > 0, videoInput ? isWanVideoMime : undefined);
 
   // The images shown in the reference block and offered by "@ Elements": the
   // attached references, or the single start frame handed over from the
@@ -858,9 +1017,25 @@ function AiVideoStudioForm({
       />
       <aside aria-label={copy.settings} className="vst-panel">
         <div className="vst-panel-head">
-          <h2 className="vst-panel-title">{copy.panelTitle}</h2>
+          <div className="vtool-tabs" aria-label={isChinese ? "视频工作流" : "Video workflow"}>
+            {(["create","edit","motion"] as const).map(item=><button type="button" key={item} aria-pressed={tool===item} onClick={()=>chooseMode(item)}>
+              {item==="create" ? (isChinese ? "创建视频" : "Create video") : item==="edit" ? (isChinese ? "编辑视频" : "Edit video") : "Motion Control"}
+            </button>)}
+          </div>
         </div>
         <div className="vst-panel-scroll">
+          {(["edit","motion"] as const).filter(item=>visitedTools.includes(item)).map(item=>(
+            <div key={item} className="vtool-mode-pane" hidden={tool!==item}>
+              <VideoToolPanel kind={item} active={tool===item} locale={locale} owner={session?.user?.id} enabled={canUseGeneration} free={internalFree}
+                onExtend={()=>chooseMode("create",true)}
+                onStarted={(uuid,prompt)=>{
+                  if(!mounted.current)return;
+                  setResults(prev=>[{id:uuid,videoUuid:uuid,prompt,status:"queued",createdAt:Date.now()},...prev]);
+                  setActiveTab("History");clearFilters();
+                }}/>
+            </div>
+          ))}
+          <div className="vtool-create-body" hidden={tool !== "create"}>
           {extendMode ? (
             <div className="vst-preset-card vst-extend-cover">
               <img className="vst-preset-cover" src="/home/samples/red-carpet.webp" alt="" />
@@ -883,10 +1058,10 @@ function AiVideoStudioForm({
           />
           )}
         <fieldset className="vst-create-mode" aria-label={isChinese ? "视频工具" : "Video tool"}>
-          <button type="button" aria-pressed={!extendMode} onClick={() => setExtendMode(false)}>{isChinese ? "全能参考" : "References"}</button>
-          <button type="button" disabled={uploading || submitting} aria-pressed={extendMode} onClick={() => { setPresetsOpen(false); setExtendMode(true); }}>{isChinese ? "延长视频" : "Extend video"}</button>
+          <button type="button" aria-pressed={!extendMode} onClick={() => chooseMode("create",false)}>{isChinese ? "全能参考" : "References"}</button>
+          <button type="button" disabled={uploading || submitting} aria-pressed={extendMode} onClick={() => chooseMode("create",true)}>{isChinese ? "延长视频" : "Extend video"}</button>
         </fieldset>
-        {extendMode ? <ExtendPanel
+        <div className="vtool-extend-body" hidden={!extendMode}><ExtendPanel
           key={session?.user?.id ?? "guest"}
           locale={locale} source={extendSource} onSource={setExtendSource} generationEnabled={canUseGeneration} freeGeneration={internalFree}
           onStarted={job => {
@@ -894,7 +1069,8 @@ function AiVideoStudioForm({
             setActiveTab("History");
             clearFilters();
           }}
-        /> : <>
+        /></div>
+        {!extendMode && <>
           {catalogModelId === "wan2.6" ? (
             <fieldset className="vst-reference-modes" aria-label={isChinese ? "参考素材类型" : "Reference type"}>
               {[false, true].map(video => (
@@ -1104,6 +1280,7 @@ function AiVideoStudioForm({
             ) : null}
           </div>
         </>}
+          </div>
         </div>
       </aside>
 
@@ -1120,12 +1297,12 @@ function AiVideoStudioForm({
         {activeTab === "History" && activeFilters.length > 0 ? <ActiveFilters zh={isChinese} filters={activeFilters} onClear={clearFilters} /> : null}
         <div className="vst-stage-body" key={historyKey}>
           {activeTab === "How it works" ? (
-            <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} />
+            tool !== "create" || extendMode ? <ToolGuide kind={tool==="create" ? "extend" : tool} zh={isChinese}/> : <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} />
           ) : noMatch ? (
             <NoMatches zh={isChinese} onClear={clearFilters} />
           ) : results.length === 0 ? (
             // Nothing made yet: the introduction, as on the reference.
-            <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} tip={false} />
+            tool !== "create" || extendMode ? <ToolGuide kind={tool==="create" ? "extend" : tool} zh={isChinese}/> : <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} tip={false} />
           ) : (
             <ResultsGrid
               zh={isChinese}
@@ -1139,7 +1316,7 @@ function AiVideoStudioForm({
                 if (!source) return;
                 setPresetsOpen(false);
                 setExtendSource(source);
-                setExtendMode(true);
+                chooseMode("create",true);
                 requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>(".xd-inline textarea")?.focus());
               }}
               onCanvas={(result) => {

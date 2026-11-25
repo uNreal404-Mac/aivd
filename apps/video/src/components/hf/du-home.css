@@ -49,7 +49,7 @@
    along its bottom, 56 x 32 tabs of light 12px text, and the chosen one on a
    faint fill with an inner light (hooks/use-segment-indicator). */
 .du-hero .du-composer-tabs {
-  --seg-bg: color-mix(in srgb, white 7%, transparent);
+  --seg-bg: var(--ds-fill-2);
   --seg-shadow:
     inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
     inset 4px 4px 5px color-mix(in srgb, black 8%, transparent),
@@ -88,7 +88,7 @@
 
 .du-hero .du-composer-tab-active,
 .du-hero .du-composer-tab-active:hover {
-  color: white;
+  color: var(--du-text);
   font-weight: 300;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .du-hero .du-composer:focus-within {
-  border-color: color-mix(in srgb, white 7%, transparent);
+  border-color: var(--du-border-strong);
 }
 
 .du-hero .du-composer:has(textarea:focus-visible) {
@@ -168,17 +168,17 @@
   width: 39px;
   height: 52px;
   margin-top: 0;
-  border: 1px dashed color-mix(in srgb, white 16%, transparent);
+  border: 1px dashed var(--ds-line-3);
   border-radius: var(--ds-r-sm);
-  background: color-mix(in srgb, white 5%, transparent);
-  color: color-mix(in srgb, white 40%, transparent);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-4);
   transform: none;
 }
 
 .du-hero .du-composer-ref-slot:hover {
   border-color: var(--du-accent-text);
   background: var(--ds-fill-2);
-  color: white;
+  color: var(--du-text);
   transform: none;
 }
 
@@ -204,7 +204,7 @@
   padding: 0 12px;
   border-radius: var(--ds-r-full);
   background: transparent;
-  color: color-mix(in srgb, white 65%, transparent);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-ui);
   font-weight: 300;
 }
@@ -212,7 +212,7 @@
 .du-hero .du-composer-mode {
   display: inline-flex;
   align-items: center;
-  background: color-mix(in srgb, white 5%, transparent);
+  background: var(--ds-fill-1);
   color: var(--du-text);
   white-space: nowrap;
   transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
@@ -221,7 +221,7 @@
 .du-hero .du-composer-mode:hover,
 .du-hero .du-composer-mode[aria-expanded="true"] {
   background: var(--ds-fill-2);
-  color: white;
+  color: var(--du-text);
 }
 
 .du-hero .du-composer-bar [data-model-trigger] span {
@@ -231,8 +231,8 @@
 .du-hero .du-composer-bar [data-model-trigger]:hover,
 .du-hero .du-composer-bar > button:hover,
 .du-hero .du-composer-bar > div:not(.du-composer-model, .ml-auto) > button:not(.du-composer-mode):hover {
-  background: color-mix(in srgb, white 5%, transparent);
-  color: white;
+  background: var(--ds-fill-1);
+  color: var(--du-text);
 }
 
 .du-hero .du-composer-divider {
@@ -263,7 +263,7 @@
   height: 32px;
   background: color-mix(in srgb, white 4%, transparent);
   box-shadow: none;
-  color: color-mix(in srgb, white 25%, transparent);
+  color: var(--ds-text-4);
 }
 
 .du-hero .du-composer-send[data-ready],
@@ -302,8 +302,8 @@
   padding: 0 12px;
   border: 1px solid color-mix(in srgb, white 7%, transparent);
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, white 5%, transparent);
-  color: color-mix(in srgb, white 65%, transparent);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   font-weight: 300;
   white-space: nowrap;
@@ -312,18 +312,18 @@
 
 .du-hero-skill-pill:hover {
   background: var(--ds-fill-2);
-  color: white;
+  color: var(--du-text);
 }
 
 .du-hero-skill-icon {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: color-mix(in srgb, white 65%, transparent);
+  color: var(--ds-text-3);
 }
 
 .du-hero-skill-more {
-  color: color-mix(in srgb, white 50%, transparent);
+  color: var(--ds-text-4);
 }
 
 @media (max-width: 900px) {
@@ -393,7 +393,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 2px 6px;
-  color: color-mix(in srgb, white 40%, transparent);
+  color: var(--ds-text-4);
   font-size: var(--ds-fs-xs);
   font-weight: 300;
 }
@@ -406,7 +406,7 @@
 }
 
 .du-image-ideas-head button:hover {
-  color: white;
+  color: var(--du-text);
 }
 
 .du-image-ideas-head svg {
@@ -422,7 +422,7 @@
   gap: 10px;
   padding: 4px 6px;
   border-radius: var(--ds-r-sm);
-  color: color-mix(in srgb, white 65%, transparent);
+  color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   font-weight: 300;
   text-align: left;
@@ -431,7 +431,7 @@
 
 .du-image-idea:hover {
   background: color-mix(in srgb, white 6%, transparent);
-  color: white;
+  color: var(--du-text);
 }
 
 .du-image-idea img {
@@ -547,4 +547,23 @@
   .du-hero .du-composer-prompt-row > div:not(.du-composer-reference-well) { width: 100%; }
   .du-hero #home-generator-prompt { display: block; height: 40px; min-height: 40px; }
   .du-hero #home-generator-prompt, .du-hero .du-composer-placeholder { line-height: 20px; }
+}
+
+/* The mobile reference well spans the editor. Name its action at this size. */
+@media (max-width: 639px) {
+  .du-hero .du-composer-reference-well:has(.du-ref-action-label) .du-composer-ref-slot {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    gap: var(--ds-space-2);
+  }
+  .du-hero .du-composer-ref-slot .du-ref-action-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    font-size: var(--ds-fs-xs);
+  }
 }

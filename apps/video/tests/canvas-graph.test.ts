@@ -10,6 +10,7 @@ import {
   kindsAccepting,
   inputText,
   selectionWithChildren,
+  withoutGraphSelection,
   worldPosition,
   submitKey,
   toStoredGraph,
@@ -302,5 +303,23 @@ describe("group execution", () => {
     const switched = vi.fn(async () => { active = false; return true; });
     expect(await runCanvasGroup(ids, () => active, switched)).toBe(false);
     expect(switched).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("canvas selection removal", () => {
+  it("removes nested descendants and incoming, outgoing and explicitly selected wires", () => {
+    const nodes = [{ id: "leaf", parentNode: "inner" }, { id: "keep" }, { id: "inner", parentNode: "group" }, { id: "group", selected: true }, { id: "other" }];
+    const retained = { source: "other", target: "keep" };
+    const edges = [{ source: "leaf", target: "keep" }, { source: "other", target: "inner" }, { source: "keep", target: "other", selected: true }, retained];
+    const next = withoutGraphSelection(nodes, edges);
+    expect(next.nodes.map((node) => node.id)).toEqual(["keep", "other"]);
+    expect(next.edges).toEqual([retained]);
+    expect(nodes).toHaveLength(5);
+    expect(edges).toHaveLength(4);
+  });
+
+  it("supports an edge-only selection without removing its nodes", () => {
+    const nodes = [{ id: "a" }, { id: "b" }];
+    expect(withoutGraphSelection(nodes, [{ source: "a", target: "b", selected: true }])).toEqual({ nodes, edges: [] });
   });
 });

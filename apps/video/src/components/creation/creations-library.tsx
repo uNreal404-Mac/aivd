@@ -400,23 +400,38 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   }, [activeId]);
   async function repeatExtension(video: Video) {
     const original = video.parameters?.sourceVideoUuid;
-    if (typeof original !== "string" || loadingOriginal) return;
+    const upload = video.parameters?.sourceVideoKey;
+    if ((typeof original !== "string" && typeof upload !== "string") || loadingOriginal) return;
     const controller = new AbortController();
     repeatRequest.current = controller;
     setLoadingOriginal(true);
     try {
-      const response = await fetch(`/api/v1/video/${encodeURIComponent(original)}`, { cache: "no-store", signal: controller.signal });
-      const payload = response.ok ? await response.json() : null;
-      const source = payload?.success ? payload.data as Video : null;
-      const url = source && mediaUrl(source);
-      if (!source || !url || videoTag(source) !== "done") throw new Error("Source unavailable");
-      const resolution = video.parameters.resolution ?? video.parameters.quality ?? video.resolution;
+      let selected: ExtendSource;
+      if (typeof upload === "string") {
+        const response = await fetch("/api/v1/video/tool-source", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({ model: EXTEND_MODEL_ID, sourceVideoKey: upload }),
+        });
+        const payload = response.ok ? await response.json() : null;
+        if (typeof payload?.data?.preview !== "string") throw new Error("Source unavailable");
+        selected = {videoUuid:"", sourceVideoKey:upload, videoUrl:payload.data.preview};
+      } else {
+        const response = await fetch(`/api/v1/video/${encodeURIComponent(String(original))}`, {cache:"no-store",signal:controller.signal});
+        const payload=response.ok ? await response.json() : null;
+        const source=payload?.success ? payload.data as Video : null;
+        const url=source && mediaUrl(source);
+        if(!source || !url || videoTag(source)!=="done")throw new Error("Source unavailable");
+        selected={videoUuid:source.uuid,videoUrl:url};
+      }
+      const resolution = video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution;
       setExtending({
-        videoUuid: source.uuid, videoUrl: url,
+        ...selected,
         repeat: {
           prompt: video.prompt ?? "", duration: Math.min(EXTEND_MAX_SECONDS, Math.max(EXTEND_MIN_SECONDS, video.duration || 5)),
           resolution: defaultExtendResolution(typeof resolution === "string" ? resolution : null),
-          audio: Boolean(video.parameters.audio ?? video.parameters.generateAudio),
+          audio: Boolean(video.parameters?.audio ?? video.parameters?.generateAudio),
         },
       });
       closeDetail();
@@ -809,7 +824,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
               ) : null}
 
               <div className="cr-detail-actions">
-                {shownVideo.model === EXTEND_MODEL_ID && !isPending(shownTag) && typeof shownVideo.parameters?.sourceVideoUuid === "string" ? (
+                {shownVideo.model === EXTEND_MODEL_ID && !isPending(shownTag) && (typeof shownVideo.parameters?.sourceVideoUuid === "string" || typeof shownVideo.parameters?.sourceVideoKey === "string") ? (
                   <button type="button" className="cr-button cr-button--ghost" disabled={loadingOriginal} onClick={() => void repeatExtension(shownVideo)}>
                     <Sparkles aria-hidden="true" />{zh ? "重新续写" : "Repeat extension"}
                   </button>

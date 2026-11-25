@@ -159,9 +159,8 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          forcedTheme="dark"
-          enableSystem={false}
+          defaultTheme="system"
+          enableSystem
           disableTransitionOnChange
         >
           <NextIntlClientProvider messages={messages}>

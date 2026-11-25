@@ -2343,3 +2343,13 @@ button.au-row:active {
   .au-foot { padding-top:44px; }
   .au-local { min-height:min(620px,65vh); }
 }
+.au-local fieldset { display: grid; gap: 12px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.au-local fieldset:disabled { opacity: .75; }
+.au-clip audio { width: 100%; margin-top: 8px; }
+.au-input-mode { display: flex; gap: 4px; }
+.au-input-mode button { flex: 1; padding: 8px; color: var(--ds-text-2); background: var(--ds-fill-1); border-radius: var(--ds-r-sm); }
+.au-input-mode button[aria-pressed="true"] { color: var(--ds-text-1); background: var(--ds-fill-2); }
+.au-settings-select { grid-template-columns: 1fr auto; align-items: center; }
+.au-note { color: var(--ds-text-2); font-size: var(--ds-fs-xs); line-height: 1.5; }
+.au-manual-script { justify-self: start; color: var(--du-accent-text); font-size: var(--ds-fs-xs); }
+.au-note a { text-decoration: underline; }

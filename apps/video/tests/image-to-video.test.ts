@@ -53,7 +53,7 @@ describe("constants", () => {
     expect(durationsFor("sora-2")).toEqual([10, 15]);
     expect(durationsFor("veo-3.1")).toEqual([8]);
     expect(durationsFor("wan2.6")).toEqual([5, 10, 15]);
-    expect(durationsFor("seedance-1.5-pro")).toEqual([4, 5, 6, 8, 10, 12]);
+    expect(durationsFor("seedance-1.5-pro")).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
   it("omits 1:1 for models that do not support it", () => {

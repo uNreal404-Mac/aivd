@@ -156,40 +156,49 @@
 /* Shared presence helpers for components that mount on open: add
    data-presence="pop" (popover), "dialog", "sheet" (bottom sheet on phones)
    or "fade" (scrims, overlays), and lib/use-presence sets data-state. */
-[data-presence="pop"] {
-  animation: du-pop var(--m-fast) var(--m-ease-out) both;
+[data-presence] {
+  --m-enter-offset: 0 0;
+  --m-enter-scale: 1;
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  transition:
+    opacity var(--m-fast) var(--m-ease-out),
+    translate var(--m-fast) var(--m-ease-out),
+    scale var(--m-fast) var(--m-ease-out);
 }
 
-[data-presence="pop"][data-state="closed"] {
-  animation: du-pop-out var(--m-instant) var(--m-ease-exit) both;
-  pointer-events: none;
+[data-presence="pop"] {
+  --m-enter-offset: 0 -4px;
+  --m-enter-scale: .98;
 }
 
 [data-presence="dialog"] {
-  animation: du-dialog-in var(--m-base) var(--m-ease-out) both;
-}
-
-[data-presence="dialog"][data-state="closed"] {
-  animation: du-dialog-out var(--m-fast) var(--m-ease-exit) both;
-  pointer-events: none;
-}
-
-[data-presence="fade"] {
-  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
-}
-
-[data-presence="fade"][data-state="closed"] {
-  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
-  pointer-events: none;
+  --m-enter-offset: 0 8px;
+  --m-enter-scale: .98;
+  transition-duration: var(--m-base);
 }
 
 [data-presence="sheet"] {
-  animation: du-sheet-in var(--m-base) var(--m-ease-out) both;
+  --m-enter-offset: 0 100%;
+  transition-duration: var(--m-base);
 }
 
-[data-presence="sheet"][data-state="closed"] {
-  animation: du-sheet-out var(--m-fast) var(--m-ease-exit) both;
+[data-presence][data-state="closed"] {
+  opacity: 0;
+  translate: var(--m-enter-offset);
+  scale: var(--m-enter-scale);
+  transition-duration: var(--m-instant);
+  transition-timing-function: var(--m-ease-exit);
   pointer-events: none;
+}
+
+@starting-style {
+  [data-presence]:not([data-state="closed"]) {
+    opacity: 0;
+    translate: var(--m-enter-offset);
+    scale: var(--m-enter-scale);
+  }
 }
 
 /* Dialogs (components/ui/dialog): Radix keeps them mounted until the
@@ -210,6 +219,21 @@
 .du-dialog-overlay[data-state="closed"] {
   animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
 }
+
+/* Radix observes the end of the exit keyframe before removing a sheet. */
+.du-sheet-panel {
+  --m-sheet-x: 0;
+  --m-sheet-y: 100%;
+  animation: du-sheet-arrive var(--m-base) var(--m-ease-out) both;
+}
+.du-sheet-panel[data-edge="top"] { --m-sheet-y: -100%; }
+.du-sheet-panel[data-edge="left"] { --m-sheet-x: -100%; --m-sheet-y: 0; }
+.du-sheet-panel[data-edge="right"] { --m-sheet-x: 100%; --m-sheet-y: 0; }
+.du-sheet-panel[data-state="closed"] {
+  animation: du-sheet-leave var(--m-fast) var(--m-ease-exit) both;
+}
+@keyframes du-sheet-arrive { from { translate: var(--m-sheet-x) var(--m-sheet-y); } }
+@keyframes du-sheet-leave { to { translate: var(--m-sheet-x) var(--m-sheet-y); } }
 
 /* Constrain panel scrolling on touch screens; keep an easy-to-hit dismiss
    button with a smaller visible circle so the heading still has room. */
@@ -411,6 +435,7 @@
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
   }
 
   :root :is(.animate-spin, .cw-spin, .hmp-spin, .du-composer-spinner, .co-spinner, [data-essential-motion]) {

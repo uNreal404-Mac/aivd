@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Film } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
+import { Film, Upload } from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ExtendDialog, type ExtendSource, type ExtendStarted } from "@/components/hf/extend-dialog";
@@ -32,6 +33,34 @@ export function ExtendPanel({ locale, source, onSource, onStarted, generationEna
   const [choices, setChoices] = useState<ExtendSource[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false),
+    [fileError, setFileError] = useState("");
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const upload = async (file: File) => {
+    const owner = session?.user?.id;
+    if (!owner || uploading) return;
+    setUploading(true);
+    setFileError("");
+    try {
+      const { key, url } = await uploadWorkflowVideo(file, fetch, owner);
+      if (mounted.current) {
+        onSource({ videoUuid: "", sourceVideoKey: key, videoUrl: url, prompt: file.name });
+        setPicker(false);
+      }
+    } catch (error) {
+      if (mounted.current)
+        setFileError(error instanceof Error ? error.message : zh ? "上传失败" : "Upload failed.");
+    } finally {
+      if (mounted.current) setUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (!picker || !session?.user?.id) return;
@@ -54,7 +83,10 @@ export function ExtendPanel({ locale, source, onSource, onStarted, generationEna
     <Dialog open={picker} onOpenChange={setPicker}>
       <DialogContent className="xd-picker">
         <DialogTitle>{zh ? "选择要延长的视频" : "Choose a video to extend"}</DialogTitle>
-        <DialogDescription>{zh ? "从我的作品中选择一段已完成的视频。" : "Select a finished clip from your creations."}</DialogDescription>
+        <DialogDescription>{zh ? "上传原视频，或从自己的已完成作品中选择。" : "Upload your source clip or choose a finished creation."}</DialogDescription>
+        <button type="button" className="vtool-upload-extend" disabled={uploading} onClick={()=>fileInput.current?.click()}><Upload/>{uploading ? (zh ? "正在上传…" : "Uploading…") : (zh ? "上传视频" : "Upload video")}</button>
+        <input ref={fileInput} type="file" hidden accept="video/mp4,video/quicktime,video/webm" onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);e.target.value="";}}/>
+        {fileError && <output role="alert">{fileError}</output>}
         {loadError ? <button type="button" className="xd-retry" onClick={() => setAttempt(count => count + 1)}>{zh ? "加载失败，重试" : "Couldn’t load videos. Retry"}</button>
           : choices === null ? <output>{zh ? "正在加载视频…" : "Loading videos…"}</output>
           : choices.length ? <div className="xd-source-grid">{choices.map(item => (

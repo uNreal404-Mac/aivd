@@ -226,7 +226,7 @@ export function AudioStage({
           <div className="au-local-how">
             <img src={localTool === "translate" ? "/home/samples/dancer.webp" : "/home/samples/red-carpet.webp"} alt="" />
             <h2>{localTool === "translate" ? zh ? "用另一种语言讲述" : "Tell it in another language" : zh ? "为录音换一种声音" : "Give your recording a different sound"}</h2>
-            <p>{localTool === "translate" ? zh ? "在浏览器中翻译脚本，再选用自己的配音音色。" : "Translate a script on your device and choose a voice for the result." : zh ? "从音频或视频中读取音轨，应用效果，下载 WAV。" : "Apply a voice effect to an audio or video track and download the WAV."}</p>
+            <p>{localTool === "translate" ? zh ? "上传片段或填写脚本，核对译文，再用所选音色生成配音。" : "Upload a clip or enter a script, review the translation, then voice it in the target language." : zh ? "上传片段，用所选音色重读台词，或导出本机处理的变声 WAV。" : "Upload a clip to revoice its words, or apply an on-device effect and download a WAV."}</p>
           </div>
         ) : tab === "how" ? (
           <HowItWorks zh={zh} mode={mode} how={how} previewingVoice={previewingVoice} onPreviewVoice={onPreviewVoice} onReuse={onReuse} />

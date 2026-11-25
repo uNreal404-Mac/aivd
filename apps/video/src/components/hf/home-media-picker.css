@@ -140,8 +140,7 @@
 @media (max-width: 640px) {
   .hmp-backdrop { align-items: flex-end; padding: 0; }
   /* On phones the picker is a bottom sheet, so it slides up and back down. */
-  .hmp-dialog[data-presence="dialog"] { animation: du-sheet-in var(--m-base) var(--m-ease-out) both; }
-  .hmp-dialog[data-presence="dialog"][data-state="closed"] { animation: du-sheet-out var(--m-fast) var(--m-ease-exit) both; }
+  .hmp-dialog[data-presence="dialog"] { --m-enter-offset: 0 100%; --m-enter-scale: 1; }
   .hmp-dialog { width: 100%; height: min(82vh, 700px); height: min(82dvh, 700px); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); border-bottom: 0; border-radius: var(--ds-r-3xl) var(--ds-r-3xl) 0 0; }
   .hmp-header { flex-basis: 40px; }
   .hmp-header nav button, .hmp-close { height: 40px; }

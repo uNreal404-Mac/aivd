@@ -47,7 +47,7 @@ export function VideoPlayToggle({ zh, className }: { zh: boolean; className?: st
   const label = playing ? (zh ? "暂停视频" : "Pause video") : zh ? "播放视频" : "Play video";
   return (
     <button ref={ref} type="button" className={className ? `vpt ${className}` : "vpt"} aria-label={label} title={label} onClick={toggle}>
-      {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+      {playing ? <Pause key="pause" data-swap aria-hidden="true" /> : <Play key="play" data-swap aria-hidden="true" />}
     </button>
   );
 }

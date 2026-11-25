@@ -145,6 +145,7 @@ export function BarSelect({
           aria-label={title}
           data-presence="pop"
           data-state={presence.state}
+          inert={presence.state === "closed"}
           className={`is-pop${wide ? " is-pop-wide" : ""}${side === "right" ? " is-pop-right" : ""}`}
           onKeyDown={moveFocus}
         >

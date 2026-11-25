@@ -102,6 +102,7 @@ export function MentionMenu({
             aria-label={label}
             data-presence="pop"
             data-state={presence.state}
+          inert={presence.state === "closed"}
             className="is-pop is-mention-pop"
             onKeyDown={moveFocus}
           >

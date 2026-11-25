@@ -69,15 +69,15 @@ export function buildMagicLinkEmail({
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden">
         <tr><td style="background:#000000;padding:20px 28px">
-          <span style="display:inline-block;width:24px;height:24px;border-radius:6px;background:#66fcf1;vertical-align:middle"></span>
+          <span style="display:inline-block;width:24px;height:24px;border-radius:6px;background:#1de8f0;vertical-align:middle"></span>
           <span style="margin-left:10px;color:#ffffff;font-size:18px;font-weight:700;vertical-align:middle">${e(siteName)}</span>
         </td></tr>
         <tr><td style="padding:28px">
           <p style="margin:0 0 12px;font-size:16px;font-weight:600">${e(copy.hello)}</p>
           <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46">${e(copy.body)}</p>
-          <a href="${href}" style="display:inline-block;padding:12px 28px;background:#66fcf1;color:#000000;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none">${e(copy.action)}</a>
+          <a href="${href}" style="display:inline-block;padding:12px 28px;background:#1de8f0;color:#000000;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none">${e(copy.action)}</a>
           <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#71717a">${e(copy.expires)} ${e(copy.ignore)}</p>
-          <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#a1a1aa">${e(copy.fallback)}<br><span style="word-break:break-all">${href}</span></p>
+          <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#52525b">${e(copy.fallback)}<br><span style="word-break:break-all">${href}</span></p>
         </td></tr>
       </table>
     </td></tr>

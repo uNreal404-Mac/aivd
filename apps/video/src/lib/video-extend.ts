@@ -39,12 +39,12 @@ export function canSubmitExtend(choice: ExtendChoice): boolean {
 }
 
 /** Sends the extend job through the video route (same lost-answer key reuse). */
-export function submitExtend(sourceVideoUuid: string, choice: ExtendChoice, zh: boolean, expectedAccount?: string) {
+export function submitExtend(source: string | {sourceVideoKey:string}, choice: ExtendChoice, zh: boolean, expectedAccount?: string) {
   return submitMedia(
     {
       model: EXTEND_MODEL_ID,
       prompt: choice.prompt.trim(),
-      sourceVideoUuid,
+      ...(typeof source === "string" ? {sourceVideoUuid:source} : source),
       duration: choice.duration,
       quality: choice.resolution,
       generateAudio: choice.audio,

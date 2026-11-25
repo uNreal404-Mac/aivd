@@ -73,6 +73,10 @@ class ApiClient {
     });
   }
 
+  async restoreVideo(uuid: string): Promise<{ restored: boolean }> {
+    return this.request(`/video/${uuid}/restore`, { method: "POST" });
+  }
+
   /**
    * Retry a failed video generation
    */

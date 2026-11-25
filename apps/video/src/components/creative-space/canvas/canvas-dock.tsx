@@ -62,7 +62,7 @@ export function CanvasDock({
   return (
     <div ref={root} className="nc-dock-wrap">
       {open === "add" && (
-        <section className="nc-dock-flyout" aria-label={zh ? "添加节点" : "Add nodes"}>
+        <section id="nc-add-elements" className="nc-dock-flyout" aria-label={zh ? "添加节点" : "Add nodes"}>
           <header>
             <strong>{zh ? "添加元素" : "Add elements"}</strong>
             <button type="button" aria-label={zh ? "关闭" : "Close"} onClick={() => onPanel(null)}>
@@ -98,6 +98,7 @@ export function CanvasDock({
             data-tool={key}
             title={zh ? cn : en}
             aria-label={zh ? cn : en}
+            aria-controls={key === "add" ? "nc-add-elements" : undefined}
             aria-expanded={open === key}
             onClick={() => onPanel(open === key ? null : key)}
           >

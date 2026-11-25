@@ -48,6 +48,20 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
   const videos = data?.pages.flatMap((page) => page.videos) || [];
   const hasMore = hasNextPage || false;
 
+  const restoreMutation = useMutation({
+    mutationFn: (uuid: string) => apiClient.restoreVideo(uuid),
+    onSuccess: (_result, uuid) => {
+      toast.success(t("actions.restored"), { id: `delete:${uuid}` });
+      void queryClient.invalidateQueries({ queryKey: ["videos"] });
+    },
+    onError: (_error, uuid) => {
+      toast.error(t("actions.restoreError"), {
+        id: `delete:${uuid}`,
+        action: { label: t("actions.retry"), onClick: () => restoreMutation.mutate(uuid) },
+      });
+    },
+  });
+
   // 删除视频
   const deleteMutation = useMutation({
     mutationKey: DELETE_MUTATION_KEY,
@@ -84,7 +98,11 @@ export function useVideos(filter?: VideoFilterOptions, options: { enabled?: bool
       return { removed };
     },
     onSuccess: (_data, uuid) => {
-      toast.success(t("actions.deleteSuccess"), { id: `delete:${uuid}` });
+      toast.success(t("actions.deleteSuccess"), {
+        id: `delete:${uuid}`,
+        duration: 10000,
+        action: { label: t("actions.undoDelete"), onClick: () => restoreMutation.mutate(uuid) },
+      });
     },
     onError: (_error, uuid, context) => {
       // 回滚: put back just this item, where it was.

@@ -36,10 +36,13 @@ function RouteProgressBar() {
       clear();
       timers.current.push(setTimeout(() => setPhase("loading"), 120));
       // Never leave the bar hanging if the navigation is abandoned.
-      timers.current.push(setTimeout(() => setPhase((current) => (current === "loading" ? "done" : current)), 12000));
+      timers.current.push(setTimeout(() => setPhase("idle"), 12000));
     };
     document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      clear();
+    };
   }, []);
 
   // The URL changed: the new page is in. searchParams is a dependency on purpose.

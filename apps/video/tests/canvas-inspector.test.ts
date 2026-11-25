@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readCanvasEditEntry } from "@/lib/creative-space/canvas-edit-entry";
 import { buildRequest, choicesFor, defaultsFor, followsReferenceAspect, quote, withModel } from "@/components/creative-space/canvas/model-options";
 import { canvasTextLines } from "@/lib/creative-space/text-editor";
 
@@ -35,5 +36,19 @@ describe("canvas rich text", () => {
     expect(canvasTextLines("C#\n\n<img src=x>")).toEqual([
       { kind: "p", value: "C#" }, { kind: "p", value: "" }, { kind: "p", value: "<img src=x>" },
     ]);
+  });
+});
+
+describe("canvas image editing links", () => {
+  it("opens the four implemented editing tools and the image tool chooser", () => {
+    for (const tool of ["inpaint", "cutout", "upscale", "outpaint", "image"]) {
+      expect(readCanvasEditEntry(tool)).toBe(tool);
+    }
+  });
+
+  it("leaves ordinary and ambiguous canvas URLs alone", () => {
+    for (const input of [undefined, "", "video", "toString", ["cutout", "inpaint"]]) {
+      expect(readCanvasEditEntry(input)).toBeUndefined();
+    }
   });
 });
