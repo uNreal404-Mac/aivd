@@ -1,6 +1,6 @@
 import { getMarketModel } from "@/ai/kie-market";
 
-export const MAX_HOME_VIDEO_REFERENCES = 12;
+export const MAX_HOME_REFERENCES = 12;
 
 export type UploadedVideoReference = { key: string; name: string; url: string; mimeType?: string; sourceId?: string };
 

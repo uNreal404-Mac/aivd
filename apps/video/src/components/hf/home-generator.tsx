@@ -28,7 +28,7 @@ import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { AUTOSTART_STORAGE_KEY } from "@/lib/autostart";
 import { HOME_IMAGE_IDEAS } from "@/lib/home-image-ideas";
-import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
+import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
 import "./home-generator.css";
 
 const HomeSpeech = dynamic(() => import("./home-speech").then(module => module.HomeSpeech));
@@ -147,7 +147,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const studioModel = STUDIO_MODELS.find((item) => item.id === modelId && item.available);
   const available = Boolean(current && studioModel);
   const estimatedCredits = studioModel ? estimateCredits({ modelId, duration, resolution }, { images: clipMode || useKeys ? 0 : videoReferences.length, audio: sound }) : null;
-  const videoReferenceLimit = clipMode ? WAN_REFERENCE_MAX_FILES : Math.max(1, maxVideoReferences(modelId));
+  const videoReferenceLimit = clipMode ? WAN_REFERENCE_MAX_FILES : homepage ? MAX_HOME_REFERENCES : Math.max(1, maxVideoReferences(modelId));
   // The settings offer what the chosen model can actually do, nothing greyed out.
   const videoAspects = current?.aspects ?? [];
   const videoResolutions = studioModel?.resolutions ?? [];
@@ -376,18 +376,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         // after passing through a model without sound.
         setSound(supported.audio && (soundChoice.current ?? true));
       }
-      const limit = Math.max(1, maxVideoReferences(id));
-      if (videoReferences.length > limit) {
-        // Keep the first ones, drop @图片N for the rest from the prompt (or
-        // Generate would stop on a missing image), and offer the way back.
-        setTrimmed({ modelId, references: videoReferences, prompt });
-        setVideoReferences(videoReferences.slice(0, limit));
-        let next = prompt;
-        for (let index = videoReferences.length; index > limit; index -= 1) next = removeVideoReferenceToken(next, index);
-        setPrompt(next);
-      } else {
-        setTrimmed(null);
-      }
+      // Keep the home composition intact when changing models. The selected
+      // model's API limit is checked before generation instead.
+      setTrimmed(null);
     } else {
       setSound(false);
     }
@@ -454,6 +445,11 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     params.set("prompt", prompt.trim());
     if (kind === "image") {
       if (!imageAvailable) { setNotice(zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one."); return; }
+      const modelLimit = imageModel?.options.maxImages ?? 0;
+      if (referenceImages.length > modelLimit) {
+        setNotice(zh ? `已添加 ${referenceImages.length} 个参考元素；当前图片模型生成时最多支持 ${modelLimit} 个，请先移除多余素材或切换模型。` : `${referenceImages.length} reference elements are attached. This image model supports ${modelLimit} at generation; remove extras or choose another model.`);
+        return;
+      }
       params.set("model", imageModelId);
       if (homepage) params.set("count", String(imageCount));
       params.set("aspect", aspect);
@@ -485,10 +481,11 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     if (videoReferences.some((item) => Boolean(item.mimeType?.startsWith("video/")) !== clipMode)) {
       setNotice(zh ? "请单独选择图片或视频参考，再提交。" : "Choose either image or video references before submitting."); return;
     }
-    if (videoReferences.length > videoReferenceLimit) {
+    const generationReferenceLimit = clipMode ? WAN_REFERENCE_MAX_FILES : maxVideoReferences(modelId);
+    if (videoReferences.length > generationReferenceLimit) {
       setNotice(clipMode
-        ? (zh ? `最多使用 ${videoReferenceLimit} 段参考视频，请先移除多余视频。` : `Choose up to ${videoReferenceLimit} reference videos.`)
-        : (zh ? `当前模型最多使用 ${videoReferenceLimit} 张参考图，请先移除多余图片。` : `This model accepts up to ${videoReferenceLimit} reference images. Remove the extras before continuing.`));
+        ? (zh ? `最多使用 ${generationReferenceLimit} 段参考视频，请先移除多余视频。` : `Choose up to ${generationReferenceLimit} reference videos.`)
+        : (zh ? `已添加 ${videoReferences.length} 个参考元素；当前视频模型生成时最多支持 ${generationReferenceLimit} 个，请先移除多余素材或切换模型。` : `${videoReferences.length} reference elements are attached. This video model supports ${generationReferenceLimit} at generation; remove extras or choose another model.`));
       return;
     }
     const duplicateClip = clipMode && videoReferences.some((item, index) => videoReferences.slice(0, index).some((prior) => prior.id === item.id || (prior.key && prior.key === item.key)));
@@ -576,10 +573,10 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const divider = <span aria-hidden="true" className="du-composer-divider hidden h-3.5 w-px shrink-0 bg-white/[0.08] sm:block" />;
   const resolutionLabel = (value: string) => value.replace(/k$/, "K");
 
-  const imageRefLimit = imageModel?.options.maxImages ?? 10;
+  const imageRefLimit = homepage ? MAX_HOME_REFERENCES : imageModel?.options.maxImages ?? 10;
   const references = kind === "video" ? videoReferences : referenceImages;
   const referenceLimit = kind === "video" ? videoReferenceLimit : imageRefLimit;
-  const canReference = kind === "video" ? (clipMode || maxVideoReferences(modelId) > 0) : imageRefLimit > 0;
+  const canReference = homepage || (kind === "video" ? (clipMode || maxVideoReferences(modelId) > 0) : imageRefLimit > 0);
   // Some video models only work from an image: no text-only choice for them.
   const needsImage = kind === "video" && Boolean(getMarketModel(modelId)?.options.requiresImage);
   const showRefSlot = canReference && (!textOnly || needsImage);
@@ -652,6 +649,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const hint: [string, string?] = useKeys ? [zh ? "上传关键帧，并" : "Upload keyframes and ", zh ? "引用它们来描述镜头。" : " them to guide your shot."] : clipMode ? [zh ? "添加 1–3 段参考视频，并" : "Add 1–3 reference videos and", zh ? "引用它们来描述镜头。" : "them to guide your shot."] : kind === "video"
     ? (showRefSlot ? [zh ? "上传参考图，并" : "Add reference images and", zh ? "它们作为参考，描述你想生成的视频。" : "them to guide the video."] : [zh ? "描述你想生成的画面和动作，例如：雨夜霓虹街头，镜头缓缓推近。" : "Describe the shot and the motion, e.g. a neon street on a rainy night, slow push-in."])
     : (showRefSlot ? [zh ? "描述你想生成的画面，可以" : "Describe the picture; you can", zh ? "已添加的参考图。" : "a reference image you added."] : [zh ? "描述你想生成的画面，比如主体、场景和风格。" : "Describe the picture: the subject, the setting, the style."]);
+  const referenceIntro = homepage && showRefSlot && !clipMode && !useKeys ? (zh ? "最多添加12个参考元素。 " : "Add up to 12 reference elements. ") : "";
 
   const speechLabel = zh ? "文字转语音" : "Text to speech";
   const modeControl = canReference || offerClip || offerKeyframes || speechMode ? <div data-home-popover className="relative">
@@ -707,7 +705,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         <div className="du-composer-reference-well"><button
           type="button"
           onClick={() => setPickerOpen(true)}
-          title={clipMode ? (zh ? "添加参考视频（最多 3 段，每段 10 MB）" : "Add reference videos (up to 3, 10 MB each)") : zh ? `添加参考图（这个模型最多 ${referenceLimit} 张）` : `Add reference images (up to ${referenceLimit} for this model)`}
+          title={clipMode ? (zh ? "添加参考视频（最多 3 段，每段 10 MB）" : "Add reference videos (up to 3, 10 MB each)") : homepage ? (zh ? "最多添加12个参考元素" : "Add up to 12 reference elements") : zh ? `添加参考图（这个模型最多 ${referenceLimit} 张）` : `Add reference images (up to ${referenceLimit} for this model)`}
           className="du-composer-ref-slot"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
@@ -716,8 +714,8 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       </div>) : null}
       <label htmlFor="home-generator-prompt" className="sr-only">{zh ? "描述创意" : "Describe your idea"}</label>
       <div className="relative min-w-[160px] flex-1">
-        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); if (replaced !== null) setReplaced(null); if (trimmed !== null) setTrimmed(null); if (clearedRefs !== null) setClearedRefs(null); setMentionOpen(kind === "video" && activeRefs.length > 0 && /@(?:图片|image|视频|video)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={3} maxLength={2000} placeholder={hint.length > 1 ? `${hint[0]} @ ${hint[1]}` : hint[0]} className="du-composer-input min-h-[80px] w-full resize-none bg-transparent py-1 text-[14px] font-normal leading-relaxed text-[var(--du-text)] outline-none" />
-        {!prompt ? <div className="du-composer-placeholder">{hint[0]}{hint.length > 1 ? <><button type="button" aria-label={zh ? "引用素材" : "Mention an asset"} className="du-composer-at" onMouseDown={(event) => event.preventDefault()} onClick={(event) => { if (useKeys) { if (keyframeImages.length) setMentionOpen(true); else setNotice(zh ? "先选择首帧、中间帧或尾帧，再引用图片。" : "Choose a keyframe before mentioning it."); } else if (homepage && !clipMode) { setMentionAnchor(event.currentTarget); setPickerOpen(true); } else mentionFirst(); }}><AtSign aria-hidden="true" /></button>{hint[1]}</> : null}</div> : null}
+        <textarea ref={promptRef} id="home-generator-prompt" value={prompt} onChange={(event) => { const next = event.target.value; setPrompt(next); if (replaced !== null) setReplaced(null); if (trimmed !== null) setTrimmed(null); if (clearedRefs !== null) setClearedRefs(null); setMentionOpen(kind === "video" && activeRefs.length > 0 && /@(?:图片|image|视频|video)?\d*$/i.test(next.slice(0, event.target.selectionStart))); if (notice) setNotice(""); }} onKeyDown={(event) => { if (event.key === "Escape") setMentionOpen(false); if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (mentionOpen && videoReferences.length) insertVideoReference(0); else event.currentTarget.form?.requestSubmit(); } }} enterKeyHint="send" rows={3} maxLength={2000} placeholder={hint.length > 1 ? `${referenceIntro}${hint[0]} @ ${hint[1]}` : `${referenceIntro}${hint[0]}`} className="du-composer-input min-h-[80px] w-full resize-none bg-transparent py-1 text-[14px] font-normal leading-relaxed text-[var(--du-text)] outline-none" />
+        {!prompt ? <div className="du-composer-placeholder">{referenceIntro}{hint[0]}{hint.length > 1 ? <><button type="button" aria-label={zh ? "引用素材" : "Mention an asset"} className="du-composer-at" onMouseDown={(event) => event.preventDefault()} onClick={(event) => { if (useKeys) { if (keyframeImages.length) setMentionOpen(true); else setNotice(zh ? "先选择首帧、中间帧或尾帧，再引用图片。" : "Choose a keyframe before mentioning it."); } else if (homepage && !clipMode) { setMentionAnchor(event.currentTarget); setPickerOpen(true); } else mentionFirst(); }}><AtSign aria-hidden="true" /></button>{hint[1]}</> : null}</div> : null}
         {kind === "video" && mentionOpen ? <div className="du-composer-mentions">
           {activeRefs.map((item, index) => <button key={item.id + index} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => insertVideoReference(index)}>{clipMode ? <video src={item.url} muted playsInline preload="metadata" /> : <img src={item.url} alt="" />}<span>@{clipMode ? (zh ? "视频" : "Video") : (zh ? "图片" : "Image")}{index + 1}</span></button>)}
         </div> : null}
