@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Clapperboard,
   Download,
+  FastForward,
   Image as ImageIcon,
   Loader2,
   Sparkles,
@@ -20,6 +21,10 @@ import {
   X,
 } from "lucide-react";
 import { CopyPromptButton } from "@/components/hf/studio-results";
+import { defaultExtendResolution, EXTEND_MAX_SECONDS, EXTEND_MIN_SECONDS } from "@/lib/video-extend";
+import { EXTEND_MODEL_ID } from "@/ai/kie-market";
+import { ExtendDialog, type ExtendSource } from "@/components/hf/extend-dialog";
+import { toast } from "sonner";
 import { failureReason } from "@/lib/failure-reason";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import type { CreationMediaType } from "@/lib/types/dashboard";
@@ -385,6 +390,42 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   const shownVideo = activeVideo ?? (detail.mounted ? lastShown.current : null);
 
   const closeDetail = useCallback(() => setActiveId(null), []);
+  // 续写 opens over the page, so the detail (a modal <dialog>) closes first.
+  const [extending, setExtending] = useState<ExtendSource | null>(null);
+  const [loadingOriginal, setLoadingOriginal] = useState(false);
+  const repeatRequest = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setLoadingOriginal(false);
+    return () => repeatRequest.current?.abort();
+  }, [activeId]);
+  async function repeatExtension(video: Video) {
+    const original = video.parameters?.sourceVideoUuid;
+    if (typeof original !== "string" || loadingOriginal) return;
+    const controller = new AbortController();
+    repeatRequest.current = controller;
+    setLoadingOriginal(true);
+    try {
+      const response = await fetch(`/api/v1/video/${encodeURIComponent(original)}`, { cache: "no-store", signal: controller.signal });
+      const payload = response.ok ? await response.json() : null;
+      const source = payload?.success ? payload.data as Video : null;
+      const url = source && mediaUrl(source);
+      if (!source || !url || videoTag(source) !== "done") throw new Error("Source unavailable");
+      const resolution = video.parameters.resolution ?? video.parameters.quality ?? video.resolution;
+      setExtending({
+        videoUuid: source.uuid, videoUrl: url,
+        repeat: {
+          prompt: video.prompt ?? "", duration: Math.min(EXTEND_MAX_SECONDS, Math.max(EXTEND_MIN_SECONDS, video.duration || 5)),
+          resolution: defaultExtendResolution(typeof resolution === "string" ? resolution : null),
+          audio: Boolean(video.parameters.audio ?? video.parameters.generateAudio),
+        },
+      });
+      closeDetail();
+    } catch {
+      if (!controller.signal.aborted) toast.error(zh ? "无法载入原视频，请确认它仍在我的作品中。" : "Could not load the original video. Check that it is still in your creations.");
+    } finally {
+      if (!controller.signal.aborted) setLoadingOriginal(false);
+    }
+  }
   const showDialog = useCallback((node: HTMLDialogElement | null) => {
     if (node && !node.open) node.showModal();
   }, []);
@@ -460,7 +501,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
 
   const shownTag = shownVideo ? videoTag(shownVideo) : null;
   const shownUrl = shownVideo ? mediaUrl(shownVideo) : null;
-  const againHref = shownVideo && shownTag && !isPending(shownTag) ? regenerateHref(shownVideo, kind, locale) : null;
+  const againHref = shownVideo && shownVideo.model !== EXTEND_MODEL_ID && shownTag && !isPending(shownTag) ? regenerateHref(shownVideo, kind, locale) : null;
 
   return (
     <div className="cr-library">
@@ -647,7 +688,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
       </div>
       <div ref={sentinelRef} className="cr-sentinel" aria-hidden="true" />
 
-      {detail.mounted && shownVideo && shownTag ? (
+      {!extending && detail.mounted && shownVideo && shownTag ? (
         <dialog
           ref={showDialog}
           className="cr-dialog"
@@ -738,7 +779,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 {kind === "video" && shownVideo.duration ? (
                   <div>
                     <dt>{zh ? "时长" : "Length"}</dt>
-                    <dd>{shownVideo.duration}s</dd>
+                    <dd>{shownVideo.model === EXTEND_MODEL_ID ? `+${shownVideo.duration}s ${zh ? "续写" : "added"}` : `${shownVideo.duration}s`}</dd>
                   </div>
                 ) : null}
                 {kind !== "audio" && shownVideo.aspectRatio ? (
@@ -768,6 +809,11 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
               ) : null}
 
               <div className="cr-detail-actions">
+                {shownVideo.model === EXTEND_MODEL_ID && !isPending(shownTag) && typeof shownVideo.parameters?.sourceVideoUuid === "string" ? (
+                  <button type="button" className="cr-button cr-button--ghost" disabled={loadingOriginal} onClick={() => void repeatExtension(shownVideo)}>
+                    <Sparkles aria-hidden="true" />{zh ? "重新续写" : "Repeat extension"}
+                  </button>
+                ) : null}
                 {againHref ? (
                   <a
                     className="cr-button cr-button--ghost"
@@ -776,6 +822,26 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     <Sparkles aria-hidden="true" />
                     {t("actions.regenerate")}
                   </a>
+                ) : null}
+                {kind === "video" && shownTag === "done" && shownUrl ? (
+                  <button
+                    type="button"
+                    className="cr-button cr-button--ghost"
+                    onClick={() => {
+                      const parameters = shownVideo.parameters ?? {};
+                      setExtending({
+                        videoUuid: shownVideo.uuid,
+                        videoUrl: shownUrl,
+                        prompt: shownVideo.prompt,
+                        resolution: typeof parameters.resolution === "string" ? parameters.resolution : typeof parameters.quality === "string" ? parameters.quality : shownVideo.resolution ?? null,
+                        audio: typeof parameters.audio === "boolean" ? parameters.audio : typeof parameters.generateAudio === "boolean" ? parameters.generateAudio : null,
+                      });
+                      closeDetail();
+                    }}
+                  >
+                    <FastForward aria-hidden="true" />
+                    {zh ? "续写" : "Extend"}
+                  </button>
                 ) : null}
                 {shownUrl ? (
                   <DownloadButton
@@ -796,6 +862,15 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
           </div>
         </dialog>
       ) : null}
+      <ExtendDialog
+        source={extending}
+        zh={zh}
+        onClose={() => setExtending(null)}
+        onStarted={(job) => {
+          toast.success(zh ? `已开始续写 +${job.duration} 秒，完成后会出现在这里` : `Extending by ${job.duration}s; it will appear here when ready`);
+          refetch();
+        }}
+      />
     </div>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Clock, Gem, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Gem, Paintbrush, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
+import { imageOutputCount } from "@/lib/image-output-count";
 import { currentUploadUrls } from "@/lib/home-media-library";
 import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
@@ -20,6 +21,9 @@ import { MediaViewer, sendImageToVideo, useImageDrop, type ViewerItem } from "@/
 import { BarSelect, RatioIcon, Tip } from "@/components/hf/image-studio/bar-menu";
 import { MentionMenu, mentionToken } from "@/components/hf/image-studio/mention-menu";
 import { ResultsGrid } from "@/components/hf/image-studio/results-grid";
+import { FilterMenu, INITIAL_FILTER, matchingHistory } from "./video-studio/history-filter";
+import { DrawDialog } from "./image-studio/draw-dialog";
+import { ImageMobileNavigation } from "./image-studio/mobile-navigation";
 import { StudioHero } from "@/components/hf/image-studio/studio-hero";
 import { ViewMenu, useImageView } from "@/components/hf/image-studio/view-menu";
 import { localizedHref } from "@/lib/du-home";
@@ -28,6 +32,7 @@ import "./ai-image-studio.css";
 
 const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
+const DEFAULT_IMAGE_MODEL = IMAGE_MODELS.find(model => model.id === "nano-banana-pro") ?? IMAGE_MODELS[0];
 /** "@", "@图片" or "@图片2" right before the caret: the mention list opens. */
 const MENTION_AT_CARET = /@(?:图片|image)?\d*$/i;
 /** The ratio menu lists shapes in the reference's order: square, then each
@@ -40,34 +45,49 @@ const byRatioOrder = (list: string[]) =>
     return at(a) - at(b);
   });
 
-export function AiImageStudio({
+export function AiImageStudio(props: Parameters<typeof AiImageStudioForm>[0]) {
+  const { data: session, isPending } = useSession();
+  return <AiImageStudioForm key={session?.user?.id ?? (isPending ? "loading" : "guest")} {...props} />;
+}
+
+function AiImageStudioForm({
   locale,
   initialPrompt = "",
   initialModel = "",
   initialAspect = "",
   initialResolution = "",
+  initialCount = 1,
 }: {
   locale: string;
   initialPrompt?: string;
   initialModel?: string;
+  initialCount?: number | string;
   initialAspect?: string;
   /** Resolution chosen on the homepage, used when this model offers it. */
   initialResolution?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
-  const { data: session } = useSession();
+  const { data: session, isPending: sessionLoading } = useSession();
+  const draftScope = session?.user?.id ? `image:${session.user.id}` : sessionLoading ? "image:loading" : "image";
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
     session?.user?.isAdmin === true && session.user.isSuperAccount === true;
-  const [modelId, setModelId] = useState(getMarketModel(initialModel)?.kind === "image" ? initialModel : IMAGE_MODELS[0].id);
+  const [modelId, setModelId] = useState(getMarketModel(initialModel)?.kind === "image" ? initialModel : DEFAULT_IMAGE_MODEL.id);
   const model = getMarketModel(modelId) ?? IMAGE_MODELS[0];
   const options = model.options;
+  const [mobileComposer, setMobileComposer] = useState(Boolean(initialPrompt || initialModel || initialAspect || initialResolution));
+  const [drawOpen, setDrawOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  useEffect(() => {
+    try { setShowGuide(localStorage.getItem("aivd:image-studio-guide-dismissed") !== "1"); } catch { /* Storage is optional. */ }
+  }, []);
   const [prompt, setPrompt] = useState(initialPrompt);
-  const draft = usePromptDraft("image", prompt, setPrompt, Boolean(initialPrompt));
-  const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
+  const draft = usePromptDraft(draftScope, prompt, setPrompt, Boolean(initialPrompt));
+  const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (model.id === DEFAULT_IMAGE_MODEL.id && options.aspects?.includes("3:4") ? "3:4" : options.aspects?.[0] ?? "1:1"));
   const [resolution, setResolution] = useState(options.resolutions?.includes(initialResolution) ? initialResolution : (options.resolutions?.[0] ?? ""));
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState(() => imageOutputCount(initialCount, options.maxCount));
   const [view, setView] = useImageView();
+  const [historyFilter, setHistoryFilter] = useState(INITIAL_FILTER);
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   // Which shelf of the library opens: "@" can open it on the saved elements.
@@ -78,16 +98,21 @@ export function AiImageStudio({
   };
   const [mentionOpen, setMentionOpen] = useState(false);
   useEffect(() => {
+    if (sessionLoading) return;
     const handoff = sessionStorage.getItem("aivd:home-image-references");
+    const owner = sessionStorage.getItem("aivd:home-image-reference-owner");
+    sessionStorage.removeItem("aivd:home-image-reference-owner");
     if (!handoff) return;
     sessionStorage.removeItem("aivd:home-image-references");
+    if (owner && owner !== session?.user?.id) return;
     try {
       const rows: unknown = JSON.parse(handoff);
       if (Array.isArray(rows)) setRefs(rows.filter((row): row is { key: string; name: string; url: string } =>
-        typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string"
+        typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string" &&
+        (!row.key.startsWith("uploads/") || row.key.startsWith(`uploads/${session?.user?.id}/`))
       ).map((row) => ({ key: row.key, name: row.name, preview: row.url })).slice(0, maxImages));
     } catch { /* Ignore a stale handoff. */ }
-  }, []);
+  }, [sessionLoading, session?.user?.id]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -111,16 +136,16 @@ export function AiImageStudio({
   }, []);
   const openInCanvas = (url: string, text: string, modelName?: string, uuid?: string, index?: number) => {
     try {
-      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image", uuid, index }));
+      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image", uuid, index, ownerId: session?.user?.id }));
     } catch { /* ignore */ }
     window.location.href = localizedHref(locale, "/creative-space/canvas");
   };
-  useCreditReturnDraft("image", () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
+  useCreditReturnDraft(draftScope, () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
     if (getMarketModel(saved.modelId)?.kind === "image") setModelId(saved.modelId);
     setPrompt(saved.prompt ?? "");
     setAspect(saved.aspect ?? "1:1");
     setResolution(saved.resolution ?? "");
-    setCount(saved.count ?? 1);
+    setCount(imageOutputCount(saved.count ?? 1, getMarketModel(saved.modelId)?.options.maxCount));
     setRefs(Array.isArray(saved.refs) ? saved.refs : []);
     void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
   });
@@ -144,12 +169,13 @@ export function AiImageStudio({
   );
 
   const reuse = (text: string) => {
+    setMobileComposer(true);
     setPrompt(text);
     setNotice(null);
     promptRef.current?.focus();
     promptRef.current?.scrollIntoView({ block: "center", behavior: scrollMotion() });
   };
-  const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image");
+  const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image", session?.user?.id);
 
   const maxCount = options.maxCount ?? 1;
   const maxImages = options.maxImages ?? 0;
@@ -197,7 +223,7 @@ export function AiImageStudio({
         continue;
       }
       setUploading(true);
-      const result = await uploadImage(file);
+      const result = await uploadImage(file, fetch, session?.user?.id);
       setUploading(false);
       if (result.ok) {
         setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
@@ -211,8 +237,8 @@ export function AiImageStudio({
     setUploading(true);
     setNotice(null);
     try {
-      const selected = await Promise.all(items.map(readyPickerImage));
-      setRefs(selected.map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
+      const selected = await Promise.all(items.map(item => readyPickerImage(item, session?.user?.id)));
+      setRefs([...new Map(selected.map(item => [item.key, item])).values()].map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
     } catch (error) { setNotice(uploadErrorText(error, zh)); }
     finally { setUploading(false); }
   };
@@ -276,6 +302,8 @@ export function AiImageStudio({
         imageUrls: refs.map((item) => item.key),
       },
       zh,
+      undefined,
+      session?.user?.id,
     );
     setSubmitting(false);
     if (!result.ok) {
@@ -289,10 +317,14 @@ export function AiImageStudio({
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 
   const hasResults = jobs.length > 0;
+  const shownJobs = matchingHistory(jobs, historyFilter, Date.now(), job => Boolean(job.urls.length));
+  const filtered = Boolean(historyFilter.model || historyFilter.range !== "all" || historyFilter.hideFailed);
   const noRefsNote = zh ? "该模型不支持参考图" : "This model takes no reference image";
 
   return (
-    <div className="is-root">
+    <div className="is-root" data-composer-open={mobileComposer || undefined}>
+      <ImageMobileNavigation locale={locale} zh={zh} open={mobileComposer} onToggle={() => setMobileComposer(open => !open)} />
+      {drawOpen ? <DrawDialog open onClose={() => setDrawOpen(false)} locale={locale} userId={session?.user?.id} signIn={() => { setDrawOpen(false); signIn.onOpen(); }} /> : null}
       <HomeMediaPicker
         lang={locale}
         open={mediaPickerOpen}
@@ -308,11 +340,23 @@ export function AiImageStudio({
         {/* "View" sits top right whether or not there are results yet, as on
             the reference; the choice is remembered for when they arrive. */}
         <div className="is-topbar">
+          {filtered ? <button type="button" className="is-clear-filter" onClick={() => setHistoryFilter(INITIAL_FILTER)}>{zh ? "清除筛选" : "Clear filters"}</button> : null}
+          <FilterMenu zh={zh} filter={historyFilter} onChange={setHistoryFilter} models={IMAGE_MODELS} />
           <ViewMenu zh={zh} view={view} onChange={setView} />
         </div>
-        {hasResults ? (
+        {!hasResults && showGuide ? (
+          <div className="is-guide">
+            <BookOpen aria-hidden="true" />
+            <a href={localizedHref(locale, "/help")}>{zh ? "查看创作指南" : "Explore the creation guides"}<ChevronRight aria-hidden="true" /></a>
+            <button type="button" aria-label={zh ? "关闭指南提示" : "Dismiss guide"} onClick={() => {
+              setShowGuide(false);
+              try { localStorage.setItem("aivd:image-studio-guide-dismissed", "1"); } catch { /* Still dismissed for this visit. */ }
+            }}><X aria-hidden="true" /></button>
+          </div>
+        ) : null}
+        {hasResults && !shownJobs.length ? <p className="is-filter-empty">{zh ? "没有符合筛选条件的作品。" : "No creations match your filters."}</p> : hasResults ? (
           <ResultsGrid
-            jobs={jobs}
+            jobs={shownJobs}
             view={view}
             zh={zh}
             modelName={modelName}
@@ -325,7 +369,7 @@ export function AiImageStudio({
           <StudioHero zh={zh} modelName={model.name} />
         )}
 
-        <div className="is-dock">
+        <div className="is-dock" id="image-composer">
           {/* Floats just above the bar, so a message never moves the page. */}
           {notice ? (
             <output className="is-notice" aria-live="polite">
@@ -462,8 +506,7 @@ export function AiImageStudio({
                       fixedNote={zh ? "这个模型只有这一档分辨率" : "This model has one resolution"}
                     />
                   ) : null}
-                  {maxCount > 1 ? (
-                    <Tip id="is-count-tip" text={zh ? `每次生成张数（最多 ${maxCount} 张）` : `Images per run (up to ${maxCount})`}>
+                  <Tip id="is-count-tip" text={zh ? `每次生成张数（最多 ${maxCount} 张）` : `Images per run (up to ${maxCount})`}>
                       <fieldset className="is-stepper" aria-label={zh ? "每次生成张数" : "Images per run"} aria-describedby="is-count-tip">
                         <button type="button" aria-label={zh ? "减少一张" : "One fewer"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
                           <Minus className="h-4 w-4" aria-hidden="true" />
@@ -476,8 +519,8 @@ export function AiImageStudio({
                           <Plus className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </fieldset>
-                    </Tip>
-                  ) : null}
+                  </Tip>
+                  <button type="button" className="is-chip" onClick={() => setDrawOpen(true)}><Paintbrush aria-hidden="true" />{zh ? "绘制" : "Draw"}</button>
                 </div>
               </div>
               <button type="submit" className="is-generate" disabled={submitting || uploading}>

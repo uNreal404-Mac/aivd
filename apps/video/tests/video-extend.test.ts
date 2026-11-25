@@ -261,7 +261,12 @@ describe("extend: generateMedia()", () => {
   });
 });
 
-it("rejects an extend if the authenticated account changed after reserving the key", async () => {
+it.each([
+  { "X-Extend-Account": "user_a" },
+  { "X-Media-Account": "user_a" },
+  { "X-Media-Account": "user_b", "X-Extend-Account": "user_a" },
+  { "X-Media-Account": "user_a", "X-Extend-Account": "user_b" },
+] as Record<string, string>[])("checks every declared account before starting a video job", async expectedAccounts => {
   vi.stubEnv("VIDEO_GENERATION_ENABLED", "true");
   requireAuth.mockResolvedValueOnce({ id: "user_b" });
   const generate = vi.spyOn(videoService, "generate").mockRejectedValue(new Error("unexpected submit"));
@@ -269,7 +274,7 @@ it("rejects an extend if the authenticated account changed after reserving the k
     const { POST } = await import("@/app/api/v1/video/generate/route");
     const res = await POST(new NextRequest("https://app.test/api/v1/video/generate", {
       method: "POST",
-      headers: { "X-Extend-Account": "user_a", "Idempotency-Key": "reserved" },
+      headers: { ...expectedAccounts, "Idempotency-Key": "reserved" },
       body: JSON.stringify({ model: EXTEND_MODEL_ID, prompt: "keep going", sourceVideoUuid: "vid_a" }),
     }));
     expect(res.status).toBe(409);

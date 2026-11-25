@@ -28,6 +28,9 @@ import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } f
 import { WAN_REFERENCE_MAX_BYTES, WAN_REFERENCE_MAX_FILES, isWanVideoMime } from "@/lib/wan-video-references";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
 import { isFreeInternalAccount } from "@/lib/internal-test-account";
+import { KLING_KEYFRAME_MODEL, mapKlingFrames, orderedKlingFrames, type KlingKeyframes } from "@/lib/kling-keyframes";
+import { invalidKeyframes, resolveKlingKeyframes, validateKlingKeyframes } from "./kling-keyframes";
+import { isSafetyApproved, moderateContent, safetyMessage } from "@/lib/content-safety";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -39,6 +42,8 @@ export interface GenerateVideoParams {
   imageUrl?: string; // image-to-video
   imageUrls?: string[]; // image-to-video (multi-image)
   videoKeys?: string[]; // private uploaded Wan reference clips
+  keyframes?: KlingKeyframes;
+  locale?: string;
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;
@@ -60,6 +65,8 @@ export interface GenerateMediaParams {
   count?: number;
   /** Uploaded reference / start images: storage keys or allowed URLs. */
   imageUrls?: string[];
+  keyframes?: KlingKeyframes;
+  locale?: string;
   audio?: boolean;
   voice?: string;
   style?: string;
@@ -173,6 +180,8 @@ export class VideoService {
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
     const videoKeys = params.videoKeys ?? [];
+    if (params.keyframes && (params.model !== KLING_KEYFRAME_MODEL || videoKeys.length || (params.outputNumber ?? 1) !== 1)) throw invalidKeyframes();
+    if (params.mode === "keyframes" && !params.keyframes) throw invalidKeyframes();
     if (videoKeys.length) {
       const invalidSelection =
         params.model !== "wan2.6" ||
@@ -201,6 +210,8 @@ export class VideoService {
         resolution: params.quality,
         duration: params.duration,
         imageUrls: [...(params.imageUrl ? [params.imageUrl] : []), ...(params.imageUrls ?? [])],
+        keyframes: params.keyframes,
+        locale: params.locale,
         audio: params.generateAudio,
         idempotencyKey: params.idempotencyKey,
         sourceVideoUuid: params.sourceVideoUuid,
@@ -619,6 +630,12 @@ export class VideoService {
       throw new ApiError("Generation is not configured", 503, { code: "PROVIDER_NOT_CONFIGURED" });
     }
 
+    if (params.keyframes) {
+      validateKlingKeyframes({
+        ...params, keyframes: params.keyframes,
+        hasOtherInputs: Boolean(params.imageUrls?.length || params.sourceVideoUuid),
+      });
+    }
     for (const imageInput of params.imageUrls ?? []) {
       if (isStorageKey(imageInput) && !imageInput.startsWith(`uploads/${params.userId}/`)) {
         throw new ApiError("Invalid image reference", 400, { code: "INVALID_IMAGE_REF" });
@@ -646,9 +663,10 @@ export class VideoService {
       value && (!allowed || allowed.length === 0 || allowed.includes(value)) ? value : undefined;
     const request: MarketRequest = {
       prompt: params.prompt,
-      aspectRatio: pick(params.aspectRatio, model.options.aspects),
-      resolution: pick(params.resolution, model.options.resolutions),
-      duration: params.duration,
+      aspectRatio: params.keyframes ? undefined : pick(params.aspectRatio, model.options.aspects),
+      resolution: pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
+      duration: params.duration ?? (params.keyframes ? 10 : undefined),
+      ...(params.keyframes ? { keyframes: params.keyframes } : {}),
       count: Math.min(model.options.maxCount ?? 1, Math.max(1, params.count ?? 1)),
       audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
       voice: params.voice,
@@ -685,6 +703,22 @@ export class VideoService {
       ? await this.resolveExtendSource(params.userId, params.sourceVideoUuid)
       : null;
 
+    let providerFrames: KlingKeyframes | undefined;
+    let startFrame: string | undefined;
+    if (params.keyframes) {
+      const storedFrames = await resolveKlingKeyframes(params.userId, params.keyframes);
+      startFrame = orderedKlingFrames(storedFrames)[0];
+      providerFrames = mapKlingFrames(storedFrames, (value) => this.signImageInput(value));
+      const safety = await moderateContent({
+        text: params.prompt,
+        images: orderedKlingFrames(providerFrames).map((url, index) => ({ url, label: `keyframe-${index + 1}` })),
+        context: "generation",
+      });
+      if (!isSafetyApproved(safety)) {
+        throw new ApiError(safetyMessage(safety, params.locale), 422, { code: "CONTENT_BLOCKED", decision: safety.decision, categories: safety.categories });
+      }
+    }
+
     // Only videos count against the plan's concurrency; images and audio are quick.
     if (model.kind === "video") {
       if (!freeInternal) await assertWithinConcurrencyLimit(params.userId);
@@ -707,7 +741,7 @@ export class VideoService {
       },
       idempotencyKey: idempotencyKey ?? null,
       status: VideoStatus.PENDING,
-      startImageUrl: imageInputs[0] ?? null,
+      startImageUrl: startFrame ?? imageInputs[0] ?? null,
       creditsUsed: billedCredits,
       duration: model.kind === "video" ? (request.duration ?? null) : null,
       resolution: request.resolution ?? null,
@@ -757,6 +791,7 @@ export class VideoService {
         {
           ...request,
           imageUrls: imageInputs.map((value) => this.signImageInput(value)),
+          ...(providerFrames ? { keyframes: providerFrames } : {}),
           ...(sourceVideo ? { videoUrl: sourceVideo.signedUrl } : {}),
         },
         callbackUrl,

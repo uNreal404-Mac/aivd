@@ -19,13 +19,20 @@ export interface PendingSubmit {
   at: number;
 }
 
-export interface TextData {
+export const PIN_COLORS = ["red", "yellow", "green", "blue", "purple"] as const;
+export type PinColor = (typeof PIN_COLORS)[number];
+
+interface Pinnable {
+  pins?: PinColor[];
+}
+
+export interface TextData extends Pinnable {
   kind: "text";
   title: string;
   text: string;
 }
 
-export interface MediaData {
+export interface MediaData extends Pinnable {
   kind: "media";
   title: string;
   media: "image" | "video" | "audio";
@@ -43,7 +50,7 @@ export interface MediaData {
   busy?: boolean;
 }
 
-export interface GenerateData {
+export interface GenerateData extends Pinnable {
   kind: "image" | "video" | "audio";
   title: string;
   prompt: string;
@@ -71,7 +78,7 @@ export interface AgentStep {
   instruction: string;
 }
 
-export interface AgentData {
+export interface AgentData extends Pinnable {
   kind: "agent";
   title: string;
   prompt: string;
@@ -82,7 +89,7 @@ export interface AgentData {
   error?: string | null;
 }
 
-export interface GroupData {
+export interface GroupData extends Pinnable {
   kind: "group";
   title: string;
   tone?: GroupTone;
@@ -300,18 +307,21 @@ function num(value: unknown): number | undefined {
 
 /** Reads one stored node's data defensively (stored JSON is user-controlled). */
 export function normalizeData(raw: Record<string, unknown>, unknownRequest: string): CanvasData | null {
+  const rawPins = raw.pins;
+  const pins = Array.isArray(rawPins) ? PIN_COLORS.filter((color) => rawPins.includes(color)) : [];
+  const common = { title: str(raw.title), ...(pins.length ? { pins } : {}) };
   const kind = raw.kind;
-  if (kind === "text") return { kind, title: str(raw.title), text: str(raw.text) };
+  if (kind === "text") return { kind, ...common, text: str(raw.text) };
   if (kind === "group") {
     const tone = GROUP_TONES.includes(raw.tone as GroupTone) ? (raw.tone as GroupTone) : undefined;
-    return { kind, title: str(raw.title), ...(tone ? { tone } : {}) };
+    return { kind, ...common, ...(tone ? { tone } : {}) };
   }
   if (kind === "media") {
     const media = raw.media === "video" || raw.media === "audio" ? raw.media : "image";
     return {
       kind,
       media,
-      title: str(raw.title),
+      ...common,
       mime: str(raw.mime, `${media}/*`),
       ...(isUploadKey(raw.assetKey) ? { assetKey: raw.assetKey } : {}),
       ...(typeof raw.resultUuid === "string" ? { resultUuid: raw.resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),
@@ -328,7 +338,7 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
       : undefined;
     return {
       kind,
-      title: str(raw.title),
+      ...common,
       prompt: str(raw.prompt),
       status,
       ...(typeof raw.reply === "string" ? { reply: raw.reply } : {}),
@@ -355,7 +365,7 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
     }
     return {
       kind,
-      title: str(raw.title),
+      ...common,
       prompt: str(raw.prompt),
       modelId: str(raw.modelId),
       ...(typeof raw.aspect === "string" ? { aspect: raw.aspect } : {}),

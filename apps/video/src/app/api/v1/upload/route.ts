@@ -1,3 +1,4 @@
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { nanoid } from "nanoid";
 import { db, mediaAssets } from "@/db";
 
@@ -28,6 +29,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
 
     if (!isStorageConfigured()) {
       throw new ApiError("Storage not configured", 503);

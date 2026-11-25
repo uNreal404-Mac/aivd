@@ -272,6 +272,21 @@ describe("buildGenerateRequest", () => {
     });
   });
 
+  it("submits Wan video references without any image fields and refuses incompatible combinations", () => {
+    const settings = { ...defaultSettings(WAN), prompt: "camera pans" };
+    const keys = ["uploads/u/first.mp4", "uploads/u/second.mov"];
+    const request = buildGenerateRequest(settings, "key", undefined, keys);
+    expect(request.ok && request.body).toMatchObject({ mode: "reference-to-video", videoKeys: keys });
+    expect(request.ok && request.body).not.toHaveProperty("imageUrls");
+    expect(request.ok && request.body).not.toHaveProperty("imageUrl");
+    expect(request.ok && request.body).not.toHaveProperty("generateAudio");
+    expect(request.ok && request.body).not.toHaveProperty("aspectRatio");
+    expect(buildGenerateRequest(settings, "key", "uploads/u/image.png", keys).ok).toBe(false);
+    expect(buildGenerateRequest({ ...settings, modelId: "veo-3.1" }, "key", null, keys).ok).toBe(false);
+    expect(buildGenerateRequest(settings, "key", null, [...keys, ...keys]).ok).toBe(false);
+    expect(buildGenerateRequest(settings, "key", null, ["https://example.test/a.mp4"]).ok).toBe(false);
+  });
+
   it("trims surrounding whitespace from the prompt", () => {
     const result = buildGenerateRequest(
       { ...defaultSettings(WAN), prompt: "  a cat  " },

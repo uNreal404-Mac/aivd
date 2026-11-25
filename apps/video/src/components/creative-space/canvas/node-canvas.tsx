@@ -38,10 +38,12 @@ import {
 import Link from "next/link";
 import {
   type ChangeEvent,
+  type CSSProperties,
   type DragEvent,
   type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -50,7 +52,6 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   type Connection,
-  Controls,
   type Edge,
   MiniMap,
   type Node,
@@ -81,6 +82,7 @@ import {
   type GraphEdge,
   type GraphNode,
   hasOutput,
+  isUploadKey,
   kindsAccepting,
   LEGACY_CANVAS_KEY,
   type MediaData,
@@ -94,13 +96,18 @@ import {
 } from "@/lib/creative-space/canvas-graph";
 import { jobStatus, postGeneration, resolveMedia } from "@/lib/creative-space/canvas-submit";
 import { previewFrame, uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
-import { listGuestAssets, type PickerAsset, readyPickerImage, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
-import { UploadError, uploadErrorText } from "@/lib/image-to-video";
+import { listGuestAssets, type PickerAsset, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
+import { UploadError, uploadErrorText, uploadImage } from "@/lib/image-to-video";
 import { localizedHref } from "@/lib/locale-path";
 import { errorMessage } from "@/lib/media-studio";
 import { CanvasEditModal, type CanvasEditAction, type CanvasEditSubmit } from "../canvas-inpaint-modal";
 import { CanvasActionsContext, type CanvasActions, KIND_LABEL, kindIcon, NODE_TYPES } from "./canvas-nodes";
 import { CompareOverlay, NodeSearch, ShortcutsDialog, ShotsDialog, TemplatesDialog, type CanvasTemplate } from "./canvas-overlays";
+import type { CanvasReference } from "./canvas-prompt";
+import { CanvasViewMenu, useCanvasViewOptions } from "./canvas-view";
+import { submissionDelay } from "@/lib/creative-space/submission-delay";
+import { appearanceStyle, useCanvasBackground } from "./canvas-appearance";
+import { PinRail } from "./canvas-pins";
 import { buildRequest, choicesFor, defaultsFor, IMAGE_MODELS, quote, withModel } from "./model-options";
 import "./node-canvas.css";
 
@@ -224,12 +231,22 @@ const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
   ];
 };
 
-function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPrompt: string }) {
+function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; initialPrompt: string; userId: string | null }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const L = useCallback((cn: string, en: string) => (zh ? cn : en), [zh]);
   const flow = useReactFlow<CanvasData>();
-  const { data: session, isPending: sessionPending } = useSession();
-  const userId = session?.user?.id ?? null;
+  const [lifetime] = useState(() => ({ current: new AbortController() }));
+  const canvasFetch = useCallback<typeof fetch>((input, init = {}) => {
+    const headers = new Headers(init.headers);
+    if (userId) headers.set("X-Media-Account", userId);
+    return fetch(input, { ...init, headers, signal: lifetime.current.signal });
+  }, [lifetime, userId]);
+  const uploadCanvasFile = useCallback(async (file: File) => {
+    if (file.type.startsWith("video/")) return uploadWorkflowVideo(file, canvasFetch);
+    const result = await uploadImage(file, canvasFetch);
+    if (!result.ok) throw new UploadError(result.code);
+    return result;
+  }, [canvasFetch]);
   const signIn = useSigninModal();
   const shortfall = useCreditsShortfall(zh);
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<CanvasData>([]);
@@ -249,6 +266,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [balance, setBalance] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const graphReady = useRef(false);
+  const booted = useRef(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -264,7 +283,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const [selectMode, setSelectMode] = useState(false);
   const [showEdges, setShowEdges] = useState(true);
   const [showMinimap, setShowMinimap] = useState(true);
-  const [snap, setSnap] = useState(false);
+  const [viewOptions, setViewOptions] = useCanvasViewOptions();
+  const [background, saveBackground] = useCanvasBackground();
+  const appearance = useMemo(() => appearanceStyle(viewOptions.miniColors, background), [viewOptions.miniColors, background]);
+  const [pendingSeconds, setPendingSeconds] = useState<Record<string, number>>({});
+  const pendingRuns = useRef(new Map<string, { signature: string; stop: () => void }>());
+  const [farOut, setFarOut] = useState(false);
+  const [guides, setGuides] = useState<{ x?: number; y?: number }>({});
   const [legacyCount, setLegacyCount] = useState(0);
   const [waitingMedia, setWaitingMedia] = useState<Set<string>>(() => new Set());
   const fileInput = useRef<HTMLInputElement>(null);
@@ -294,6 +319,34 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const currentPath = localizedHref(locale, "/creative-space/canvas");
   // Saved templates belong to one account (or to signed-out use) on a shared browser.
   const templatesKey = `${TEMPLATES_PREFIX}:${userId ?? "guest"}`;
+
+  const cancelPending = useCallback((id: string) => {
+    pendingRuns.current.get(id)?.stop();
+    pendingRuns.current.delete(id);
+    setPendingSeconds((current) => {
+      const values = { ...current };
+      delete values[id];
+      return values;
+    });
+  }, []);
+  const cancelAllPending = useCallback(() => {
+    if (pendingRuns.current.size === 0) return;
+    for (const item of pendingRuns.current.values()) item.stop();
+    pendingRuns.current.clear();
+    setPendingSeconds({});
+  }, []);
+  useEffect(() => {
+    const hidden = () => { if (document.hidden) cancelAllPending(); };
+    window.addEventListener("pagehide", cancelAllPending);
+    window.addEventListener("popstate", cancelAllPending);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("pagehide", cancelAllPending);
+      window.removeEventListener("popstate", cancelAllPending);
+      document.removeEventListener("visibilitychange", hidden);
+      cancelAllPending();
+    };
+  }, [cancelAllPending, userId, viewOptions.delaySubmit]);
 
   const say = useCallback((text: string, error = false) => setToast({ text, error }), []);
   useEffect(() => {
@@ -453,18 +506,18 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const syncList = useCallback(async () => {
     if (!userId) return;
     try {
-      const response = await fetch("/api/v1/creative-space/workflows", { cache: "no-store" });
+      const response = await canvasFetch("/api/v1/creative-space/workflows", { cache: "no-store" });
       const body = await response.json();
       if (body?.success) setCanvases(body.data.workflows);
     } catch {
       /* the list is optional */
     }
-  }, [userId]);
+  }, [canvasFetch, userId]);
 
   const refreshBalance = useCallback(async (): Promise<number | null> => {
     if (!userId) return null;
     try {
-      const response = await fetch("/api/v1/credit/balance", { cache: "no-store" });
+      const response = await canvasFetch("/api/v1/credit/balance", { cache: "no-store" });
       const body = await response.json();
       const value = typeof body?.data?.availableCredits === "number" ? body.data.availableCredits : null;
       setBalance(value);
@@ -472,31 +525,30 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     } catch {
       return null;
     }
-  }, [userId]);
+  }, [canvasFetch, userId]);
 
   /** Uploads files that so far live only in this browser, so the canvas can be saved. */
   const uploadLocalAssets = useCallback(async () => {
     const pending = nodesRef.current.filter((node) => node.data.kind === "media" && node.data.localId && !node.data.assetKey);
     if (!pending.length) return;
-    const guests = await listGuestAssets().catch(() => [] as PickerAsset[]);
+    const guests = await listGuestAssets(userId).catch(() => [] as PickerAsset[]);
     for (const node of pending) {
       const data = node.data as MediaData;
       const asset = guests.find((item) => item.id === data.localId);
       if (!asset?.file) continue;
       try {
-        const result = asset.file.type.startsWith("video/")
-          ? await uploadWorkflowVideo(asset.file)
-          : await readyPickerImage({ id: asset.id, name: asset.name, mimeType: asset.mimeType, url: asset.url, file: asset.file });
+        const result = await uploadCanvasFile(asset.file);
+        if (lifetime.current.signal.aborted) return;
         patch(node.id, { assetKey: result.key, url: result.url, localId: undefined } as Partial<MediaData>);
         void removeGuestAsset(asset.id).catch(() => {});
       } catch (error) {
         say(error instanceof UploadError ? uploadErrorText(error, zh) : error instanceof Error ? error.message : L("素材上传失败", "Upload failed"), true);
       }
     }
-  }, [L, patch, say, zh]);
+  }, [L, lifetime, patch, say, uploadCanvasFile, userId, zh]);
 
   const saveRemote = useCallback(async (): Promise<string | null> => {
-    if (!userId || conflict.current) return null;
+    if (!userId || lifetime.current.signal.aborted || conflict.current) return null;
     if (saving.current) {
       saveAgain.current = true;
       return saving.current;
@@ -508,18 +560,18 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       setSaveState("saving");
       try {
         await uploadLocalAssets();
-        if (generation !== canvasGeneration.current) return null;
+        if (lifetime.current.signal.aborted || generation !== canvasGeneration.current) return null;
         const seq = ++saveSeq.current;
         const graph = storedNow();
         const name = titleRef.current.trim() || L("未命名画布", "Untitled canvas");
         const id = canvasIdRef.current;
-        const response = await fetch(id ? `/api/v1/creative-space/workflows/${encodeURIComponent(id)}` : "/api/v1/creative-space/workflows", {
+        const response = await canvasFetch(id ? `/api/v1/creative-space/workflows/${encodeURIComponent(id)}` : "/api/v1/creative-space/workflows", {
           method: id ? "PUT" : "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ name, graph, ...(id ? { baseRevision: revision.current } : {}) }),
         });
         const body = await response.json().catch(() => null);
-        if (response.status === 409) {
+        if (response.status === 409 && body?.error?.details?.code !== "ACCOUNT_CHANGED") {
           // Another window saved this canvas since it was opened here.
           if (generation === canvasGeneration.current) {
             conflict.current = true;
@@ -529,7 +581,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           return null;
         }
         if (!response.ok || !body?.success) throw new Error(body?.error?.message ?? L("保存失败", "Could not save"));
-        if (generation !== canvasGeneration.current) return null;
+        if (lifetime.current.signal.aborted || generation !== canvasGeneration.current) return null;
         const savedId = (id ?? body.data.id) as string;
         revision.current = id ? body.data.workflow.revision : body.data.revision;
         lastSaved.current = contentKey(graph, name);
@@ -560,12 +612,12 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       return await task;
     } finally {
       saving.current = null;
-      if (saveAgain.current) {
+      if (saveAgain.current && !lifetime.current.signal.aborted) {
         saveAgain.current = false;
         void saveRemote();
       }
     }
-  }, [L, currentPath, say, storedNow, syncList, uploadLocalAssets, userId]);
+  }, [L, canvasFetch, currentPath, lifetime, say, storedNow, syncList, uploadLocalAssets, userId]);
 
   /** Saves, and resolves true only once a save taken after this call has succeeded. */
   const persistNow = useCallback(async (): Promise<boolean> => {
@@ -588,10 +640,23 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     }
   }, [storedNow]);
 
+  const saveGuestOnExit = useRef(saveLocalDraft);
+  saveGuestOnExit.current = saveLocalDraft;
+  useLayoutEffect(() => {
+    if (lifetime.current.signal.aborted) lifetime.current = new AbortController();
+    return () => {
+      if (!userId && graphReady.current && (nodesRef.current.length || lastSaved.current)) saveGuestOnExit.current();
+      lifetime.current.abort();
+      canvasGeneration.current += 1;
+      editSession.current += 1;
+      if (!graphReady.current) booted.current = false;
+    };
+  }, [lifetime, userId]);
+
   /** Resolves display URLs for everything that has a stable reference. */
   const resolveAll = useCallback(async () => {
     const list = nodesRef.current;
-    const guests = list.some((node) => node.data.kind === "media" && node.data.localId) ? await listGuestAssets().catch(() => [] as PickerAsset[]) : [];
+    const guests = list.some((node) => node.data.kind === "media" && node.data.localId) ? await listGuestAssets(userId).catch(() => [] as PickerAsset[]) : [];
     for (const node of list) {
       if (node.data.kind === "media" && node.data.localId && !node.data.url) {
         const asset = guests.find((item) => item.id === (node.data as MediaData).localId);
@@ -607,7 +672,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       else if (data.kind === "media" && data.resultUuid) uuids.push(data.resultUuid);
       else if (isGen(data) && data.status === "done" && data.resultUuid) uuids.push(data.resultUuid);
     }
-    const resolved = await resolveMedia(uuids, keys);
+    const resolved = await resolveMedia(uuids, keys, canvasFetch);
     const waiting = new Set<string>();
     for (const node of nodesRef.current) {
       const data = node.data;
@@ -624,7 +689,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       }
     }
     if (waiting.size) setWaitingMedia(waiting);
-  }, [patch, userId]);
+  }, [canvasFetch, patch, userId]);
 
   const loadGraph = useCallback(
     (graph: unknown, name: string, id: string | null) => {
@@ -654,6 +719,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
 
   /** Before leaving this canvas: nothing in flight, and its latest changes saved. */
   const readyToLeave = useCallback(async () => {
+    if (lifetime.current.signal.aborted) return false;
+    cancelAllPending();
     const busy = runLocks.current.size > 0 || nodesRef.current.some((node) => (node.data as { status?: string }).status === "submitting");
     if (busy) {
       say(L("有生成请求正在提交，等它提交完再切换画布", "A generation is being submitted; switch once it is sent"), true);
@@ -669,7 +736,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       return false;
     }
     return true;
-  }, [L, persistNow, say, storedNow, userId]);
+  }, [L, cancelAllPending, lifetime, persistNow, say, storedNow, userId]);
 
   const openCanvas = useCallback(
     async (id: string) => {
@@ -678,11 +745,11 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         if (!(await readyToLeave())) return;
         const before = contentKey(storedNow(), titleRef.current);
         const generation = canvasGeneration.current;
-        const response = await fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
+        const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
         const body = await response.json().catch(() => null);
         if (!response.ok || !body?.success) throw new Error(body?.error?.message ?? L("打不开这个画布", "Could not open this canvas"));
         // Edited or generating while it loaded: stay, nothing is dropped.
-        if (generation !== canvasGeneration.current || runLocks.current.size || contentKey(storedNow(), titleRef.current) !== before) {
+        if (lifetime.current.signal.aborted || generation !== canvasGeneration.current || runLocks.current.size || contentKey(storedNow(), titleRef.current) !== before) {
           say(L("加载期间当前画布有改动，已留在当前画布，请再点一次", "This canvas changed while the other loaded; staying here"), true);
           return;
         }
@@ -694,23 +761,24 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         say(error instanceof Error ? error.message : L("打不开这个画布", "Could not open this canvas"), true);
       }
     },
-    [L, currentPath, loadGraph, readyToLeave, resolveAll, say, storedNow],
+    [L, canvasFetch, currentPath, lifetime, loadGraph, readyToLeave, resolveAll, say, storedNow],
   );
 
   const newCanvas = useCallback(async (force = false) => {
     setListOpen(false);
     if (!force && !(await readyToLeave())) return;
+    if (lifetime.current.signal.aborted) return;
     loadGraph({ version: 2, nodes: [], edges: [] }, L("未命名画布", "Untitled canvas"), null);
     window.history.replaceState(null, "", currentPath);
     setSaveState(userId ? "idle" : "local");
-  }, [L, currentPath, loadGraph, readyToLeave, userId]);
+  }, [L, currentPath, lifetime, loadGraph, readyToLeave, userId]);
 
   const deleteCanvas = useCallback(async () => {
     const id = canvasIdRef.current;
     if (!id) return;
     if (!window.confirm(L("删除这个画布？画布里的生成结果仍保留在「我的作品」。", "Delete this canvas? Its results stay in My creations."))) return;
     try {
-      const response = await fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!response.ok) throw new Error();
       canvasIdRef.current = null;
       setCanvasId(null);
@@ -720,21 +788,22 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     } catch {
       say(L("删除失败，请重试", "Could not delete"), true);
     }
-  }, [L, newCanvas, say, syncList]);
+  }, [L, canvasFetch, newCanvas, say, syncList]);
 
   // First load: saved canvas (?id), else this browser's draft; then studio
   // hand-off and ?prompt=.
-  const booted = useRef(false);
   useEffect(() => {
-    if (booted.current || sessionPending) return;
+    if (booted.current) return;
     booted.current = true;
+    const owner = lifetime.current.signal;
     void (async () => {
       const id = new URLSearchParams(window.location.search).get("id");
       let loaded = false;
       if (id && userId) {
         try {
-          const response = await fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
+          const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
           const body = await response.json();
+          if (owner.aborted) return;
           if (body?.success) {
             loadGraph(body.data.workflow.graph, body.data.workflow.name, id);
             setSaveState("saved");
@@ -744,6 +813,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           /* fall back to the draft */
         }
       }
+      if (owner.aborted) return;
       if (!loaded) {
         try {
           const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as { title?: string; graph?: unknown } | null;
@@ -758,10 +828,21 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       try {
         const handoff = sessionStorage.getItem(HANDOFF_KEY);
         if (handoff) {
-          sessionStorage.removeItem(HANDOFF_KEY);
-          const item = JSON.parse(handoff) as { url?: string; prompt?: string; model?: string; kind?: string; uuid?: string; index?: number };
+          const item = JSON.parse(handoff) as { url?: string; ownerId?: string; model?: string; kind?: string; uuid?: string; index?: number; key?: string; editAction?: string };
           const media = item.kind === "video" || item.kind === "audio" ? item.kind : "image";
-          if (item.url || item.uuid) {
+          const ownedKey = userId && isUploadKey(item.key) && item.key.startsWith(`uploads/${userId}/`) ? item.key : undefined;
+          const allowed = userId && (!item.ownerId || item.ownerId === userId) && (!item.key || ownedKey);
+          let preview = allowed && (ownedKey || item.ownerId) ? item.url : undefined;
+          let verified = Boolean(allowed && (ownedKey || item.ownerId));
+          if (allowed && !verified && item.uuid) {
+            // Older workspaces included a signed URL but no owner. Resolve the stable job under the active account.
+            const result = (await resolveMedia([item.uuid], [], canvasFetch)).results[item.uuid];
+            verified = Boolean(result);
+            preview = result?.urls?.[item.index ?? 0];
+          }
+          if (owner.aborted) return;
+          if (sessionStorage.getItem(HANDOFF_KEY) === handoff) sessionStorage.removeItem(HANDOFF_KEY);
+          if (verified && (preview || item.uuid || ownedKey)) {
             const node = makeNode(
               {
                 kind: "media",
@@ -769,12 +850,16 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
                 title: item.model || L("工作室作品", "Studio result"),
                 mime: `${media}/*`,
                 ...(item.uuid ? { resultUuid: item.uuid, resultIndex: item.index ?? 0 } : {}),
-                ...(item.url ? { url: item.url } : {}),
+                ...(ownedKey ? { assetKey: ownedKey } : {}),
+                ...(preview ? { url: preview } : {}),
               },
               viewCenter(),
             );
             addNodes([node]);
-            if (!item.uuid) say(L("这个作品没有带编号，保存后可能无法再次显示", "This result has no id and may not show after saving"), true);
+            if (ownedKey && media === "image" && (item.editAction === "inpaint" || item.editAction === "animate")) {
+              setEditing({ id: node.id, action: item.editAction });
+            }
+            if (!item.uuid && !ownedKey) say(L("这个作品没有带编号，保存后可能无法再次显示", "This result has no id and may not show after saving"), true);
           }
         }
       } catch {
@@ -790,10 +875,11 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       } catch {
         /* ignore */
       }
+      graphReady.current = true;
       setHydrated(true);
       void resolveAll();
     })();
-  }, [L, addNodes, createKind, currentPath, initialPrompt, loadGraph, makeNode, resetHistory, resolveAll, say, sessionPending, userId, viewCenter]);
+  }, [L, addNodes, canvasFetch, createKind, currentPath, initialPrompt, lifetime, loadGraph, makeNode, resetHistory, resolveAll, say, userId, viewCenter]);
 
   useEffect(() => {
     if (!userId) return;
@@ -802,14 +888,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   }, [refreshBalance, syncList, userId]);
 
   useEffect(() => {
-    if (sessionPending) return;
     try {
       const saved = JSON.parse(localStorage.getItem(templatesKey) || "[]");
       setUserTemplates(Array.isArray(saved) ? saved : []);
     } catch {
       setUserTemplates([]);
     }
-  }, [sessionPending, templatesKey]);
+  }, [templatesKey]);
 
   // Autosave: signed in → the account (creates the canvas on first content);
   // signed out → this browser.
@@ -843,7 +928,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       if (contentKey(graph, name) === lastSaved.current) return;
       const body = JSON.stringify({ name, graph, baseRevision: revision.current });
       if (body.length > 60_000) return;
-      void fetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "PUT", keepalive: true, headers: { "content-type": "application/json" }, body });
+      void canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "PUT", keepalive: true, headers: { "content-type": "application/json" }, body }).catch(() => {});
     };
     // Hidden but still open: a normal save, whose answer updates the revision.
     const onHide = () => {
@@ -857,7 +942,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [saveLocalDraft, saveRemote, storedNow, userId]);
+  }, [canvasFetch, saveLocalDraft, saveRemote, storedNow, userId]);
 
   // After signing in, pick up the URLs of assets in a draft made while signed out.
   useEffect(() => {
@@ -879,7 +964,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       for (const node of nodesRef.current) {
         const data = node.data;
         if (!live || !isGen(data) || data.status !== "running" || !data.resultUuid) continue;
-        const result = await jobStatus(data.resultUuid);
+        const result = await jobStatus(data.resultUuid, canvasFetch);
         if (!live || !result) continue;
         if (result.status === "COMPLETED") {
           patch(node.id, { status: "done", urls: result.urls, error: null } as Partial<GenerateData>);
@@ -897,7 +982,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       live = false;
       clearInterval(timer);
     };
-  }, [L, patch, refreshBalance, runningKey, userId]);
+  }, [L, canvasFetch, patch, refreshBalance, runningKey, userId]);
 
   // Assets that point at a job still running (e.g. imported from the old canvas).
   useEffect(() => {
@@ -912,7 +997,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           done.push(id);
           continue;
         }
-        const result = await jobStatus(data.resultUuid);
+        const result = await jobStatus(data.resultUuid, canvasFetch);
         if (!live || !result) continue;
         if (result.status === "COMPLETED") {
           patch(id, { url: result.urls[data.resultIndex ?? 0] } as Partial<MediaData>);
@@ -927,7 +1012,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       live = false;
       clearInterval(timer);
     };
-  }, [patch, userId, waitingMedia]);
+  }, [canvasFetch, patch, userId, waitingMedia]);
 
   /* ---------------------------------------------------------- generation */
 
@@ -983,7 +1068,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         }
       }
       if (uuids.length) {
-        const resolved = await resolveMedia(uuids, []);
+        const resolved = await resolveMedia(uuids, [], canvasFetch);
         for (let index = 0; index < stable.length; index += 1) {
           if (values[index]) continue;
           const [uuid, position] = stable[index].split(":");
@@ -994,13 +1079,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       }
       return { stable, values };
     },
-    [L, uploadLocalAssets],
+    [L, canvasFetch, uploadLocalAssets],
   );
 
   const runGenerate = useCallback(
     async (id: string) => {
       const node = nodesRef.current.find((item) => item.id === id);
-      if (!node || !isGen(node.data)) return;
+      if (!node || !isGen(node.data) || lifetime.current.signal.aborted) return;
       const data = node.data;
       // A new attempt that fails before a new job exists keeps the last result on show.
       const previous = data.status === "done" && data.resultUuid ? { status: "done" as const } : null;
@@ -1047,7 +1132,9 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           fail(L("画布还没能保存，为免重复扣积分这次没有提交，请稍后再点生成", "The canvas could not be saved, so nothing was sent; try again shortly"), { pending: current?.pending });
           return;
         }
-        const answer = await postGeneration(request.endpoint, request.body, key);
+        if (lifetime.current.signal.aborted) return;
+        const answer = await postGeneration(request.endpoint, request.body, key, canvasFetch);
+        if (lifetime.current.signal.aborted) return;
         if (answer.kind === "ok") {
           patch(id, { status: "running", resultUuid: answer.uuid, resultIndex: 0, urls: undefined, pending: undefined, error: null } as Partial<GenerateData>);
           void saveRemote();
@@ -1076,7 +1163,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         void saveRemote();
       }
     },
-    [L, inputsOf, mergedPrompt, patch, persistNow, prepareImages, refreshBalance, requireLogin, saveRemote, say, shortfall, zh],
+    [L, canvasFetch, inputsOf, lifetime, mergedPrompt, patch, persistNow, prepareImages, refreshBalance, requireLogin, saveRemote, say, shortfall, zh],
   );
 
   const runAgent = useCallback(
@@ -1097,7 +1184,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         form.set("action", "plan");
         form.set("instruction", instruction);
         form.set("locale", locale);
-        const guests = assets.some((item) => item.data.kind === "media" && item.data.localId) ? await listGuestAssets().catch(() => [] as PickerAsset[]) : [];
+        const guests = assets.some((item) => item.data.kind === "media" && item.data.localId) ? await listGuestAssets(userId).catch(() => [] as PickerAsset[]) : [];
         const described: { id: string; label: string; name: string; type: "image" | "video" }[] = [];
         for (const [index, item] of assets.entries()) {
           const label = String.fromCharCode(65 + index);
@@ -1118,7 +1205,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           described.push({ id: item.id, label, name: (item.data.title || label).slice(0, 300), type });
         }
         form.set("assets", JSON.stringify(described));
-        const response = await fetch("/api/v1/creative-space/agent", { method: "POST", body: form });
+        const response = await canvasFetch("/api/v1/creative-space/agent", { method: "POST", body: form });
         if (response.status === 401) {
           patch(id, { status: "idle" } as Partial<AgentData>);
           requireLogin();
@@ -1137,10 +1224,10 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         patch(id, { status: "failed", error: error instanceof Error ? error.message : L("策划失败", "Planning failed") } as Partial<AgentData>);
       }
     },
-    [L, locale, mergedPrompt, patch, requireLogin],
+    [L, canvasFetch, locale, mergedPrompt, patch, requireLogin, userId],
   );
 
-  const run = useCallback(
+  const dispatchRun = useCallback(
     (id: string) => {
       if (!requireLogin()) return;
       if (runLocks.current.has(id)) return;
@@ -1154,6 +1241,41 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     },
     [requireLogin, runAgent, runGenerate],
   );
+
+  const submissionSignature = useCallback((id: string) => {
+    const all = nodesRef.current as GraphNode[];
+    const target = all.find((node) => node.id === id);
+    if (!target || !isGen(target.data)) return null;
+    const inputs = directInputs(id, all, edgesRef.current);
+    const snapshot = toStoredGraph([target, ...inputs], []).nodes.map((node) => [node.id, node.data]);
+    return JSON.stringify([canvasGeneration.current, userId, snapshot]);
+  }, [userId]);
+
+  const run = useCallback((id: string) => {
+    if (pendingRuns.current.has(id)) { cancelPending(id); return; }
+    const data = nodesRef.current.find((node) => node.id === id)?.data;
+    if (!viewOptions.delaySubmit || (data?.kind !== "image" && data?.kind !== "video")) {
+      dispatchRun(id);
+      return;
+    }
+    if (!requireLogin() || runLocks.current.has(id) || data.status === "running" || data.status === "submitting") return;
+    const signature = submissionSignature(id);
+    if (!signature) return;
+    const tick = (seconds: number) => setPendingSeconds((current) => ({ ...current, [id]: seconds }));
+    const stop = submissionDelay(tick, () => {
+      const valid = !document.hidden && submissionSignature(id) === signature;
+      cancelPending(id);
+      if (valid) dispatchRun(id);
+    });
+    pendingRuns.current.set(id, { signature, stop });
+    tick(3);
+  }, [cancelPending, dispatchRun, requireLogin, submissionSignature, viewOptions.delaySubmit]);
+
+  useEffect(() => {
+    for (const [id, item] of pendingRuns.current) {
+      if (item.signature !== submissionSignature(id)) cancelPending(id);
+    }
+  }, [nodes, edges, cancelPending, submissionSignature]);
 
   /* ------------------------------------------------------------- assets */
 
@@ -1172,7 +1294,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       addNodes(created.map((item) => item.node));
       // Every file is kept in this browser before any upload starts, so a
       // reload mid-upload keeps them all (saving uploads what is still local).
-      const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file).catch(() => null)));
+      const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file, userId).catch(() => null)));
+      if (lifetime.current.signal.aborted) return;
       created.forEach(({ node }, index) => {
         const asset = kept[index];
         if (asset) patch(node.id, { localId: asset.id, url: asset.url } as Partial<MediaData>);
@@ -1182,9 +1305,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         try {
           if (!asset) throw new Error(L("素材读取失败", "Could not read this file"));
           if (userId) {
-            const result = file.type.startsWith("video/")
-              ? await uploadWorkflowVideo(file)
-              : await readyPickerImage({ id: asset.id, name: file.name, mimeType: file.type, url: asset.url, file });
+            const result = await uploadCanvasFile(file);
+            if (lifetime.current.signal.aborted) return;
             patch(node.id, { assetKey: result.key, url: result.url, localId: undefined, busy: false } as Partial<MediaData>);
             // The browser store is shared by everyone using this browser: a
             // signed-in upload does not stay there once it is in the account.
@@ -1198,8 +1320,35 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         }
       }
     },
-    [L, addNodes, makeNode, patch, replaceGraph, say, userId, viewCenter, zh],
+    [L, addNodes, lifetime, makeNode, patch, replaceGraph, say, uploadCanvasFile, userId, viewCenter, zh],
   );
+
+  const replaceMedia = useCallback(async (id: string, file: File) => {
+    const original = nodesRef.current.find((item) => item.id === id)?.data;
+    if (original?.kind !== "media" || original.busy || original.media === "audio") return;
+    const isVideo = original.media === "video";
+    const accepted = isVideo ? ["video/mp4", "video/webm", "video/quicktime"] : ["image/png", "image/jpeg", "image/webp"];
+    if (!accepted.includes(file.type) || file.size <= 0 || file.size > (isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES)) {
+      say(isVideo ? L("请选择不超过 25 MB 的 MP4、WebM 或 MOV 视频", "Choose an MP4, WebM or MOV up to 25 MB") : L("请选择不超过 10 MB 的 PNG、JPEG 或 WebP 图片", "Choose a PNG, JPEG or WebP up to 10 MB"), true);
+      return;
+    }
+    const generation = canvasGeneration.current;
+    try {
+      const source = userId
+        ? await uploadCanvasFile(file)
+        : await saveGuestAsset(file);
+      if (generation !== canvasGeneration.current || !nodesRef.current.some((node) => node.id === id)) return;
+      // Swap the reference only once the new file is usable. The same node ID
+      // keeps every downstream wire intact, including after a failed upload.
+      patch(id, {
+        assetKey: "key" in source ? source.key : undefined,
+        localId: "id" in source ? source.id : undefined, url: source.url, mime: file.type,
+        resultUuid: undefined, resultIndex: undefined,
+      } as Partial<MediaData>);
+    } catch (error) {
+      say(error instanceof UploadError ? uploadErrorText(error, zh) : L("替换失败，原素材已保留", "Replacement failed. The original asset is still in place."), true);
+    }
+  }, [L, patch, say, uploadCanvasFile, userId, zh]);
 
   const addPicked = useCallback(
     (picked: PickerAsset[]) => {
@@ -1262,7 +1411,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       try {
         let maskKey: string | undefined;
         if (payload.action !== "animate" && payload.compositeFile) {
-          const uploaded = await readyPickerImage({ id: newId(), name: "mask.png", mimeType: payload.compositeFile.type, url: "", file: payload.compositeFile });
+          const uploaded = await uploadCanvasFile(payload.compositeFile);
           maskKey = uploaded.key;
         }
         // Closed while the mask uploaded: cancelled, nothing is generated.
@@ -1291,7 +1440,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         editLock.current = false;
       }
     },
-    [L, addNodes, editing, makeNode, requireLogin, run, say, zh],
+    [L, addNodes, editing, makeNode, requireLogin, run, say, uploadCanvasFile, zh],
   );
 
   const localCutout = useCallback(
@@ -1339,7 +1488,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       try {
         let blob: Blob | null = null;
         if (node.data.kind === "media" && node.data.localId) {
-          blob = (await listGuestAssets()).find((asset) => asset.id === (node.data as MediaData).localId)?.file ?? null;
+          blob = (await listGuestAssets(userId)).find((asset) => asset.id === (node.data as MediaData).localId)?.file ?? null;
         } else {
           const source = sameOriginUrl(node.data);
           if (!source) throw new Error();
@@ -1370,7 +1519,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         say(L("截帧失败，请等视频加载完成后再试", "Could not capture a frame; wait for the video to load"), true);
       }
     },
-    [L, addFiles, say],
+    [L, addFiles, say, userId],
   );
 
   const spreadSteps = useCallback(
@@ -1407,6 +1556,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   const selected = nodes.filter((node) => node.selected);
 
   const absolute = (node: FlowNode) => node.positionAbsolute ?? node.position;
+
+  const focusNode = (node: FlowNode) => {
+    setNodes((list) => list.map((item) => ({ ...item, selected: item.id === node.id })));
+    const abs = flow.getNode(node.id)?.positionAbsolute ?? absolute(node);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: reduced ? 0 : 250 });
+  };
 
   const groupSelected = useCallback(() => {
     const members = nodesRef.current.filter((node) => node.selected && node.data.kind !== "group");
@@ -1662,6 +1818,30 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     [commit, setEdges],
   );
 
+  const referencesFor = useCallback((targetId: string): CanvasReference[] => {
+    const target = nodesRef.current.find((node) => node.id === targetId)?.data;
+    if (!target || !(target.kind === "agent" || target.kind === "image" || target.kind === "video")) return [];
+    const agent = target.kind === "agent";
+    const limit = agent ? 8 : choicesFor(target.kind, target.modelId).maxImages;
+    if (!limit) return [];
+    const allowed = (data: CanvasData) => hasOutput(data) && (outputType(data) === "image" || (agent && outputType(data) === "video"));
+    const wired = directInputs(targetId, nodesRef.current as GraphNode[], edgesRef.current).filter(({ data }) => allowed(data));
+    return nodesRef.current.flatMap((node) => {
+      if (!allowed(node.data)) return [];
+      const index = wired.findIndex((input) => input.id === node.id);
+      if (index >= limit || (index < 0 && (wired.length >= limit || !checkConnection(node.id, targetId, nodesRef.current as GraphNode[], edgesRef.current).ok))) return [];
+      const name = node.data.title || KIND_LABEL[node.data.kind][zh ? "zh" : "en"];
+      return [{ id: node.id, name, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : name, connected: index >= 0 }];
+    });
+  }, [zh]);
+
+  const attachReference = useCallback((target: string, ref: CanvasReference) => {
+    const current = referencesFor(target).find((item) => item.id === ref.id);
+    if (!current || ref.token !== current.token) return false;
+    if (!current.connected) onConnect({ source: ref.id, target, sourceHandle: "out", targetHandle: "in" });
+    return true;
+  }, [onConnect, referencesFor]);
+
   const onConnectStart = useCallback((_: unknown, params: OnConnectStartParams) => {
     const node = params.nodeId ? nodesRef.current.find((item) => item.id === params.nodeId) : undefined;
     const type = node && params.handleType === "source" ? outputType(node.data) : null;
@@ -1685,8 +1865,32 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
   );
 
   /** Dropping a node onto a group puts it in; dragging it out takes it out. */
+  const showAlignment = (_event: ReactMouseEvent, dragged: FlowNode) => {
+    if (!viewOptions.alignGuides || !flowBox.current) return;
+    const box = flowBox.current.getBoundingClientRect();
+    const viewport = flow.getViewport();
+    const position = absolute(dragged);
+    const mark: { x?: number; y?: number } = {};
+    const x = [position.x, position.x + (dragged.width ?? 0) / 2, position.x + (dragged.width ?? 0)];
+    const y = [position.y, position.y + (dragged.height ?? 0) / 2, position.y + (dragged.height ?? 0)];
+    const tolerance = 4 / viewport.zoom;
+    for (const other of nodesRef.current) {
+      if (other.id === dragged.id || other.selected || other.id === dragged.parentNode || other.parentNode === dragged.id) continue;
+      const point = absolute(other);
+      const targetX = [point.x, point.x + (other.width ?? 0) / 2, point.x + (other.width ?? 0)];
+      const targetY = [point.y, point.y + (other.height ?? 0) / 2, point.y + (other.height ?? 0)];
+      const matchX = targetX.find((a) => x.some((b) => Math.abs(a - b) <= tolerance));
+      const matchY = targetY.find((a) => y.some((b) => Math.abs(a - b) <= tolerance));
+      if (mark.x === undefined && matchX !== undefined) mark.x = flow.flowToScreenPosition({ x: matchX, y: 0 }).x - box.left;
+      if (mark.y === undefined && matchY !== undefined) mark.y = flow.flowToScreenPosition({ x: 0, y: matchY }).y - box.top;
+      if (mark.x !== undefined && mark.y !== undefined) break;
+    }
+    setGuides((prev) => prev.x === mark.x && prev.y === mark.y ? prev : mark);
+  };
+
   const onNodeDragStop = useCallback(
     (_: ReactMouseEvent, dragged: FlowNode) => {
+      setGuides({});
       const moved = nodesRef.current.filter((node) => node.selected || node.id === dragged.id).filter((node) => node.data.kind !== "group");
       const groups = nodesRef.current.filter((node) => node.data.kind === "group");
       let changed = false;
@@ -1737,8 +1941,17 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
         setSearchOpen(true);
         return;
       }
-      if (typing(event.target)) return;
+      if (typing(event.target) || document.querySelector("[aria-modal=true], dialog[open]")) return;
       const key = event.key.toLowerCase();
+      if ((!mod && !event.altKey && ["w", "a", "s", "d", "q", "e"].includes(key)) || (mod && ["=", "+", "-", "0"].includes(key))) {
+        event.preventDefault();
+        const viewport = flow.getViewport();
+        const step = 28 * viewOptions.speed * (event.shiftKey ? viewOptions.boost : 1);
+        if (key === "0") flow.fitView({ padding: 0.15, maxZoom: 1.5 });
+        else if (["q", "e", "=", "+", "-"].includes(key)) flow.zoomTo(Math.min(3, Math.max(0.1, viewport.zoom * Math.exp((key === "q" || key === "-" ? -1 : 1) * step / 180))));
+        else flow.setViewport({ ...viewport, x: viewport.x + (key === "a" ? step : key === "d" ? -step : 0), y: viewport.y + (key === "w" ? step : key === "s" ? -step : 0) });
+        return;
+      }
       if (mod && key === "z") {
         event.preventDefault();
         restore(event.shiftKey ? 1 : -1);
@@ -1759,7 +1972,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       } else if (mod && key === "a") {
         event.preventDefault();
         setNodes((list) => list.map((node) => ({ ...node, selected: true })));
-      } else if (!mod && key === "e") setShowEdges((value) => !value);
+      } else if (!mod && key === "l") setShowEdges((value) => !value);
       else if (!mod && key === "m") setShowMinimap((value) => !value);
       else if (!mod && key === "v") setSelectMode(true);
       else if (!mod && key === "h") setSelectMode(false);
@@ -1786,7 +1999,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("paste", onPaste);
     };
-  }, [addFiles, duplicateSelected, groupSelected, restore, setNodes, ungroup]);
+  }, [addFiles, duplicateSelected, flow, groupSelected, restore, setNodes, ungroup, viewOptions.speed, viewOptions.boost]);
 
   // A selected node's prompt panel opens below it; keep that panel on screen.
   const singleId = selected.length === 1 ? selected[0].id : null;
@@ -1819,6 +2032,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       patch,
       commit,
       run,
+      pendingSeconds,
       inputsOf,
       quoteOf,
       edit: (id, action) => {
@@ -1835,11 +2049,14 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
       },
       canCompare: (id) => Boolean(compareSource(id)),
       captureFrame: (id) => void captureFrame(id),
+      replaceMedia,
+      referencesFor,
+      attachReference,
       spreadSteps,
       agentToVideo,
       singleSelection: selected.length === 1,
     }),
-    [agentToVideo, captureFrame, commit, compareSource, inputsOf, patch, quoteOf, requireLogin, run, selected.length, spreadSteps, zh],
+    [agentToVideo, attachReference, referencesFor, captureFrame, commit, compareSource, inputsOf, patch, pendingSeconds, quoteOf, replaceMedia, requireLogin, run, selected.length, spreadSteps, zh],
   );
 
   /** Screen point → position inside the canvas area (menus are placed there, clamped to stay visible). */
@@ -1849,6 +2066,13 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
     return { left: Math.min(Math.max(point.x - box.left, 8), box.width - width), top: Math.min(Math.max(point.y - box.top, 8), box.height - height) };
   };
   const menuKinds: CanvasKind[] = menu?.from ? kindsAccepting(menu.from.type) : ["text", "image", "video", "audio", "agent", "group"];
+  const selectedIds = new Set(selected.map((node) => node.id));
+  const kindById = new Map(nodes.map((node) => [node.id, outputType(node.data)]));
+  const visibleEdges = edges.map((edge) => {
+    if (viewOptions.focusWires && selectedIds.size && !selectedIds.has(edge.source) && !selectedIds.has(edge.target)) return { ...edge, hidden: true };
+    if (viewOptions.colorWires) return { ...edge, className: `nc-wire-${kindById.get(edge.source)}` };
+    return edge;
+  });
   const onlyGroup = selected.length === 1 && selected[0].data.kind === "group" ? selected[0] : null;
   const selectedImages = selected.filter((node) => outputType(node.data) === "image" && hasOutput(node.data)).length;
   const saveLabel: Record<SaveState, string> = {
@@ -1951,7 +2175,9 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
 
           <div
             ref={flowBox}
-            className={`nc-flow${showEdges ? "" : " edges-hidden"}`}
+            data-backdrop={viewOptions.backdrop}
+            style={{ ...appearance, "--du-canvas-toolbar-scale": viewOptions.toolbarScale } as CSSProperties}
+            className={`nc-flow${showEdges ? "" : " edges-hidden"}${viewOptions.simple && farOut ? " is-far-out" : ""}`}
             onDoubleClick={(event) => {
               if (!(event.target as HTMLElement).classList.contains("react-flow__pane")) return;
               setMenu({ x: event.clientX, y: event.clientY, flow: flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }) });
@@ -1964,7 +2190,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
           >
             <ReactFlow
               nodes={nodes}
-              edges={edges}
+              edges={visibleEdges}
               nodeTypes={NODE_TYPES}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
@@ -1972,6 +2198,8 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
               onConnect={onConnect}
               onConnectStart={onConnectStart}
               onConnectEnd={onConnectEnd}
+              onNodeDrag={showAlignment}
+              selectNodesOnDrag={viewOptions.dragSelect}
               onNodeDragStop={onNodeDragStop}
               onEdgeClick={(event, edge) => setEdgeMenu({ id: edge.id, x: event.clientX, y: event.clientY })}
               onPaneClick={() => {
@@ -1980,6 +2208,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
                 setListOpen(false);
               }}
               onMoveStart={() => setEdgeMenu(null)}
+              onMove={(_, view) => setFarOut(view.zoom < 0.14)}
               isValidConnection={(connection) => checkConnection(connection.source, connection.target, nodesRef.current as GraphNode[], edgesRef.current).ok}
               deleteKeyCode={["Backspace", "Delete"]}
               multiSelectionKeyCode={["Meta", "Shift", "Control"]}
@@ -1987,24 +2216,46 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
               panOnDrag={selectMode ? [1, 2] : true}
               selectionMode={SelectionMode.Partial}
               zoomOnDoubleClick={false}
-              snapToGrid={snap}
+              panOnScroll={viewOptions.wheelPan}
+              zoomOnScroll={!viewOptions.wheelPan}
+              snapToGrid={viewOptions.snap}
               snapGrid={[16, 16]}
-              minZoom={0.15}
+              minZoom={0.1}
               maxZoom={3}
               proOptions={{ hideAttribution: true }}
               defaultEdgeOptions={{ type: "default" }}
             >
-              <Background variant={BackgroundVariant.Dots} gap={18} size={1} className="nc-bg" />
-              <Controls showInteractive={false} position="bottom-left" />
+              <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="nc-bg" />
               {showMinimap ? <MiniMap pannable zoomable position="bottom-right" className="nc-minimap" /> : null}
             </ReactFlow>
 
+            {guides.x !== undefined && <span className="nc-guide-x" style={{ left: guides.x }} aria-hidden="true" />}
+            {guides.y !== undefined && <span className="nc-guide-y" style={{ top: guides.y }} aria-hidden="true" />}
+            {Object.keys(pendingSeconds).length > 0 && <div className="nc-grace-bar">
+              <output>{L("即将提交", "Submitting")} · {Object.keys(pendingSeconds).length} {L("项", "queued")}</output>
+              <button type="button" onClick={cancelAllPending}>{L("全部撤回", "Cancel queued")}</button>
+            </div>}
+            <CanvasViewMenu background={background} saveBackground={saveBackground} zh={zh} options={viewOptions} change={(partial) => setViewOptions((current) => ({ ...current, ...partial }))} />
+            <PinRail
+              nodes={nodes}
+              zh={zh}
+              pick={focusNode}
+              label={(node) => node.data.title || KIND_LABEL[node.data.kind][zh ? "zh" : "en"]}
+              clear={(color) => {
+                const next = nodesRef.current.map((node) => {
+                  const pins = node.data.pins;
+                  if (!pins?.length || (color && !pins.includes(color))) return node;
+                  return { ...node, data: { ...node.data, pins: color ? pins.filter((pin) => pin !== color) : [] } };
+                });
+                replaceGraph(next, edgesRef.current);
+              }}
+            />
             <div className="nc-view-tools" role="toolbar" aria-label={L("画布视图", "View")}>
               <button type="button" className={selectMode ? "" : "is-on"} onClick={() => setSelectMode(false)} title={L("拖动平移 (H)", "Pan (H)")} aria-pressed={!selectMode}><Hand className="h-4 w-4" /></button>
               <button type="button" className={selectMode ? "is-on" : ""} onClick={() => setSelectMode(true)} title={L("框选 (V)", "Box select (V)")} aria-pressed={selectMode}><MousePointer2 className="h-4 w-4" /></button>
-              <button type="button" className={showEdges ? "is-on" : ""} onClick={() => setShowEdges((value) => !value)} title={L("显示连线 (E)", "Wires (E)")} aria-pressed={showEdges}><Link2 className="h-4 w-4" /></button>
+              <button type="button" className={showEdges ? "is-on" : ""} onClick={() => setShowEdges((value) => !value)} title={L("显示连线 (L)", "Wires (L)")} aria-pressed={showEdges}><Link2 className="h-4 w-4" /></button>
               <button type="button" className={showMinimap ? "is-on" : ""} onClick={() => setShowMinimap((value) => !value)} title={L("小地图 (M)", "Minimap (M)")} aria-pressed={showMinimap}><MapIcon className="h-4 w-4" /></button>
-              <button type="button" className={snap ? "is-on" : ""} onClick={() => setSnap((value) => !value)} title={L("网格吸附", "Snap to grid")} aria-pressed={snap}><Grid3x3 className="h-4 w-4" /></button>
+              <button type="button" className={viewOptions.snap ? "is-on" : ""} onClick={() => setViewOptions((value) => ({ ...value, snap: !value.snap }))} title={L("网格吸附", "Snap to grid")} aria-pressed={viewOptions.snap}><Grid3x3 className="h-4 w-4" /></button>
             </div>
 
             {hydrated && !nodes.length ? (
@@ -2122,12 +2373,7 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
             zh={zh}
             nodes={nodes}
             onClose={() => setSearchOpen(false)}
-            onPick={(node) => {
-              setSearchOpen(false);
-              setNodes((list) => list.map((item) => ({ ...item, selected: item.id === node.id })));
-              const abs = absolute(node);
-              flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: 300 });
-            }}
+            onPick={(node) => { setSearchOpen(false); focusNode(node); }}
           />
         ) : null}
         {shortcutsOpen ? <ShortcutsDialog zh={zh} onClose={() => setShortcutsOpen(false)} /> : null}
@@ -2176,9 +2422,12 @@ function NodeCanvasInner({ locale, initialPrompt }: { locale: string; initialPro
 }
 
 export function NodeCanvas({ locale, initialPrompt = "" }: { locale: string; initialPrompt?: string }) {
+  const { data: session, isPending } = useSession();
+  if (isPending) return <div className="nc-shell" aria-busy="true" />;
+  const userId = session?.user?.id ?? null;
   return (
-    <ReactFlowProvider>
-      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} />
+    <ReactFlowProvider key={userId ? `account:${userId}` : "guest"}>
+      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} userId={userId} />
     </ReactFlowProvider>
   );
 }

@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db, creativeWorkflows } from "@/db";
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
@@ -10,6 +11,7 @@ import { parseWorkflowPayload } from "@/lib/creative-space/workflow-graph";
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const workflows = await db.select({ id: creativeWorkflows.id, name: creativeWorkflows.name, updatedAt: creativeWorkflows.updatedAt })
       .from(creativeWorkflows).where(eq(creativeWorkflows.userId, user.id)).orderBy(desc(creativeWorkflows.updatedAt)).limit(100);
     return apiSuccess({ workflows });
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const count = await db.select({ id: creativeWorkflows.id }).from(creativeWorkflows).where(eq(creativeWorkflows.userId, user.id)).limit(101);
     if (count.length >= 100) throw new ApiError("Canvas limit reached.", 400);
     let payload: ReturnType<typeof parseWorkflowPayload>;

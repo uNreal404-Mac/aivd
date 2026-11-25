@@ -1,17 +1,11 @@
 "use client";
 
-// The two buttons at the right of the stage bar while History is open, as on
-// the reference: Filter (hide failed clips) and View (layout, card size, fill
-// or fit). Both open a menu under the button, right edges aligned. The view
-// is remembered on this device; the filter lasts for the visit. Filters the
-// reference also offers that need data we do not keep (by model, by date,
-// liked, downloaded) are left out.
 import { useEffect, useState } from "react";
-import { Check, CircleX, EyeOff, LayoutDashboard, LayoutGrid, ListFilter, Maximize2, Minimize2, Search } from "lucide-react";
+import { Check, CircleX, List, LayoutDashboard, LayoutGrid, Maximize2, Minimize2, Search } from "lucide-react";
 import { moveFocusWithArrows, useAnchoredPopover } from "./use-anchored-popover";
 
 export type HistoryView = {
-  layout: "grid" | "masonry";
+  layout: "list" | "grid" | "masonry";
   /** Card size, 1 (smallest) to 4 (largest). */
   size: 1 | 2 | 3 | 4;
   /** Fill the card (crop) or fit the whole frame in it. */
@@ -29,7 +23,7 @@ export function useHistoryView(): [HistoryView, (patch: Partial<HistoryView>) =>
       if (!saved || typeof saved !== "object") return;
       const row = saved as Partial<HistoryView>;
       setView({
-        layout: row.layout === "masonry" ? "masonry" : "grid",
+        layout: row.layout === "masonry" || row.layout === "list" ? row.layout : "grid",
         size: row.size === 1 || row.size === 2 || row.size === 4 ? row.size : 3,
         fill: row.fill !== false,
       });
@@ -95,54 +89,12 @@ function BarButton({
   );
 }
 
-export function FilterMenu({ zh, hideFailed, onHideFailed }: { zh: boolean; hideFailed: boolean; onHideFailed: (hide: boolean) => void }) {
-  const [open, setOpen] = useState(false);
-  const popover = useAnchoredPopover<HTMLButtonElement>(open, () => setOpen(false), "bottom-end");
-  useFocusFirst(open, popover.popoverRef);
-  return (
-    <>
-      <BarButton
-        anchorRef={popover.anchorRef}
-        open={open}
-        onToggle={() => setOpen((was) => !was)}
-        icon={<ListFilter aria-hidden="true" />}
-        label={zh ? "筛选" : "Filter"}
-        active={hideFailed}
-      />
-      {popover.mounted ? (
-        <div
-          ref={popover.popoverRef}
-          style={popover.style}
-          role="menu"
-          aria-label={zh ? "筛选历史记录" : "Filter history"}
-          data-presence="pop"
-          data-state={popover.state}
-          className="vst-menu vst-bar-menu vst-filter-menu"
-          onKeyDown={moveFocusWithArrows}
-        >
-          <p className="vst-menu-title">{zh ? "类型" : "Type"}</p>
-          <button
-            type="button"
-            role="menuitemcheckbox"
-            aria-checked={hideFailed}
-            className="vst-menu-item vst-bar-item"
-            onClick={() => onHideFailed(!hideFailed)}
-          >
-            <EyeOff className="vst-bar-item-icon" aria-hidden="true" />
-            <span className="vst-bar-item-label">{zh ? "隐藏失败项" : "Hide failed"}</span>
-            <span className={hideFailed ? "vst-switch vst-switch-on" : "vst-switch"} aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 export function ViewMenu({ zh, view, onChange }: { zh: boolean; view: HistoryView; onChange: (patch: Partial<HistoryView>) => void }) {
   const [open, setOpen] = useState(false);
   const popover = useAnchoredPopover<HTMLButtonElement>(open, () => setOpen(false), "bottom-end");
   useFocusFirst(open, popover.popoverRef);
   const layouts = [
+    { id: "list" as const, label: zh ? "列表" : "List", Icon: List },
     { id: "grid" as const, label: zh ? "网格" : "Grid", Icon: LayoutGrid },
     { id: "masonry" as const, label: zh ? "瀑布流" : "Masonry", Icon: LayoutDashboard },
   ];
@@ -222,16 +174,13 @@ export function ViewMenu({ zh, view, onChange }: { zh: boolean; view: HistoryVie
 }
 
 /** The filters in force, under the stage bar, each with its own clear. */
-export function ActiveFilters({ zh, onClear }: { zh: boolean; onClear: () => void }) {
+export function ActiveFilters({ zh, filters, onClear }: { zh: boolean; filters: { key: string; name: string; clear: () => void }[]; onClear: () => void }) {
   return (
     <div className="vst-active-filters">
-      <button type="button" className="vst-filter-chip" onClick={onClear} aria-label={zh ? "取消隐藏失败项" : "Stop hiding failed clips"}>
-        {zh ? "隐藏失败项" : "Hide failed"}
-        <CircleX aria-hidden="true" />
-      </button>
-      <button type="button" className="vst-filter-clear" onClick={onClear}>
-        {zh ? "清除筛选" : "Clear filters"}
-      </button>
+      {filters.map(filter => <button key={filter.key} type="button" className="vst-filter-chip" onClick={filter.clear} aria-label={zh ? `移除筛选 ${filter.name}` : `Remove filter ${filter.name}`}>
+        {filter.name}<CircleX aria-hidden="true" />
+      </button>)}
+      <button type="button" className="vst-filter-clear" onClick={onClear}>{zh ? "清除筛选" : "Clear filters"}</button>
     </div>
   );
 }

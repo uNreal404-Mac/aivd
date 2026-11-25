@@ -16,6 +16,7 @@ export interface Video {
   /** Every output file (images can come in sets). */
   mediaUrls?: string[];
   duration: number;
+  resolution?: string | null;
   aspectRatio: string;
   parameters: Record<string, unknown>;
   creditsUsed: number;

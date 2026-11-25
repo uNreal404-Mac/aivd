@@ -282,7 +282,7 @@
   font-size: var(--ds-fs-2xs);
 }
 
-.du-composer-reference img {
+.du-composer-reference :is(img, video) {
   width: 100%;
   height: 44px;
   border-radius: var(--ds-r-xs);
@@ -338,7 +338,7 @@
   background: var(--ds-fill-1);
 }
 
-.du-composer-mentions img {
+.du-composer-mentions :is(img, video) {
   width: 24px;
   height: 24px;
   border-radius: var(--ds-r-xs);

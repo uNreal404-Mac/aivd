@@ -8,6 +8,7 @@ import { localizedHref } from "@/lib/locale-path";
 import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
 import { AUDIO_SHOWCASE, type AudioShowcaseItem, filterAudioJobs, HISTORY_RANGES, type HistoryRange, type HistoryType, type Mode, voiceHue } from "./audio-data";
+import type { LocalVoiceTool } from "./local-voice-tools";
 import { AudioPopover } from "./audio-popover";
 
 export type StageTab = "history" | "how";
@@ -19,6 +20,8 @@ export function AudioStage({
   zh,
   locale,
   mode,
+  localTool,
+  ownerId,
   tab,
   onTab,
   jobs,
@@ -36,6 +39,8 @@ export function AudioStage({
   zh: boolean;
   locale: string;
   mode: Mode;
+  localTool?: LocalVoiceTool | null;
+  ownerId?: string;
   tab: StageTab;
   onTab: (tab: StageTab) => void;
   jobs: MediaJob[];
@@ -217,7 +222,13 @@ export function AudioStage({
       </div>
 
       <div className="au-stage-body">
-        {tab === "how" ? (
+        {tab === "how" && localTool ? (
+          <div className="au-local-how">
+            <img src={localTool === "translate" ? "/home/samples/dancer.webp" : "/home/samples/red-carpet.webp"} alt="" />
+            <h2>{localTool === "translate" ? zh ? "用另一种语言讲述" : "Tell it in another language" : zh ? "为录音换一种声音" : "Give your recording a different sound"}</h2>
+            <p>{localTool === "translate" ? zh ? "在浏览器中翻译脚本，再选用自己的配音音色。" : "Translate a script on your device and choose a voice for the result." : zh ? "从音频或视频中读取音轨，应用效果，下载 WAV。" : "Apply a voice effect to an audio or video track and download the WAV."}</p>
+          </div>
+        ) : tab === "how" ? (
           <HowItWorks zh={zh} mode={mode} how={how} previewingVoice={previewingVoice} onPreviewVoice={onPreviewVoice} onReuse={onReuse} />
         ) : jobs.length === 0 ? (
           <div className="au-empty">
@@ -324,7 +335,7 @@ export function AudioStage({
                           aria-label={zh ? "发送到无限画布" : "Send to Infinite Canvas"}
                           onClick={() => {
                             try {
-                              sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ kind: "audio", url: job.urls[0], prompt: job.prompt, model: modelLabel, uuid: job.uuid, index: 0 }));
+                              sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ kind: "audio", ownerId, url: job.urls[0], prompt: job.prompt, model: modelLabel, uuid: job.uuid, index: 0 }));
                             } catch {
                               // Ignore storage errors.
                             }

@@ -20,6 +20,12 @@ describe("homepage video references", () => {
     expect(prepareVideoReferencePrompt("模仿 @图片0", 2)).toEqual({ ok: false, index: 0 });
   });
 
+  it("keeps video and image mentions tied to the matching kind and order", () => {
+    expect(prepareVideoReferencePrompt("@视频2 then @Video1", 2, "video")).toEqual({ ok: true, prompt: "video 2 then video 1" });
+    expect(prepareVideoReferencePrompt("@图片1", 2, "video")).toEqual({ ok: false, index: 1 });
+    expect(prepareVideoReferencePrompt("@Video1", 1)).toEqual({ ok: false, index: 1 });
+    expect(removeVideoReferenceToken("@视频1 @Video2", 1)).toBe(" @Video1");
+  });
   it("removes a deleted reference and renumbers the rest", () => {
     expect(removeVideoReferenceToken("@图片1 转到 @图片3 and @Image2", 2)).toBe("@图片1 转到 @图片2 and ");
   });

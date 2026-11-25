@@ -304,6 +304,7 @@ async function readJson(response: FetchResponseLike): Promise<unknown> {
 export async function uploadImage(
   file: File,
   fetchFn: FetchLike = fetch,
+  expectedAccount?: string,
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
@@ -311,6 +312,7 @@ export async function uploadImage(
   try {
     const response = await fetchFn(UPLOAD_ENDPOINT, {
       method: "POST",
+      ...(expectedAccount ? { headers: { "X-Media-Account": expectedAccount } } : {}),
       body: form,
     });
 

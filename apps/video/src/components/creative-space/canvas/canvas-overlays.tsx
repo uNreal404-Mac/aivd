@@ -100,7 +100,10 @@ export function ShortcutsDialog({ zh, onClose }: { zh: boolean; onClose: () => v
         ["Delete", "删除所选"],
         ["H / V", "平移 / 框选"],
         ["Shift + 拖动", "框选"],
-        ["E / M", "显隐连线 / 小地图"],
+        ["W A S D", "画布巡航，按住 Shift 加速"],
+        ["Q / E", "缩小 / 放大"],
+        ["⌘0", "适合屏幕"],
+        ["L / M", "显隐连线 / 小地图"],
       ]
     : [
         ["Double-click empty space", "Add a node"],
@@ -115,7 +118,10 @@ export function ShortcutsDialog({ zh, onClose }: { zh: boolean; onClose: () => v
         ["Delete", "Delete selection"],
         ["H / V", "Pan / box select"],
         ["Shift + drag", "Box select"],
-        ["E / M", "Wires / minimap"],
+        ["W A S D", "Pan the canvas; hold Shift to accelerate"],
+        ["Q / E", "Zoom out / in"],
+        ["⌘0", "Fit to screen"],
+        ["L / M", "Wires / minimap"],
       ];
   return (
     <Dialog title={zh ? "快捷键" : "Shortcuts"} onClose={onClose}>

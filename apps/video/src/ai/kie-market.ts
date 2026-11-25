@@ -8,6 +8,7 @@ import { ProviderRejectedError } from "./types";
 import { isDefiniteRejection } from "./providers/kie";
 import { audioCreditsFromCost, imageCreditsFromCost, videoCreditsFromCost } from "@/config/kie-pricing";
 import { secondsBetween } from "@/lib/video-durations";
+import { KLING_KEYFRAME_MODEL, type KlingKeyframes } from "@/lib/kling-keyframes";
 
 export type MarketKind = "video" | "image" | "audio";
 
@@ -21,6 +22,7 @@ export interface MarketRequest {
   count?: number;
   /** Signed URLs of reference / start images. */
   imageUrls?: string[];
+  keyframes?: KlingKeyframes;
   /** Native audio on/off (video models that support it). */
   audio?: boolean;
   /** Voice id (speech models). */
@@ -189,12 +191,22 @@ const VIDEO_MODELS: MarketModel[] = [
     }),
   },
   {
-    id: "kling/v4-reference-to-video",
+    id: KLING_KEYFRAME_MODEL,
     kind: "video",
     name: "Kling 4.0",
     options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 30), maxImages: 4 },
     costUsd: (req) => perSecond(KLING_4_USD, "720p")(req, 3, 30, 5),
-    buildTask: (req) => ({
+    buildTask: (req) => req.keyframes ? {
+      model: "kling-4.0/keyframe-to-video",
+      input: {
+        prompt: req.prompt,
+        resolution: req.resolution ?? "1080p",
+        duration: clampDuration(req, 3, 30, 10),
+        ...(req.keyframes.first ? { first_frame_url: req.keyframes.first } : {}),
+        ...(req.keyframes.middle?.length ? { keyframe_urls: req.keyframes.middle } : {}),
+        ...(req.keyframes.last ? { last_frame_url: req.keyframes.last } : {}),
+      },
+    } : ({
       model: "kling-4.0/reference-to-video",
       input: {
         prompt: req.prompt,

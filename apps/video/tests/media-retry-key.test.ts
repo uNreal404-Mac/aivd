@@ -135,6 +135,15 @@ describe("submitMedia idempotency key", () => {
       .toEqual(["user_a", "user_a", "user_a", "user_b", "user_a", "user_a", "user_b"]);
   });
 
+  it("sends nothing when the account that filled the form differs from the current session", async () => {
+    getSession.mockResolvedValueOnce(session("user_b"));
+    const post = vi.fn();
+    vi.stubGlobal("fetch", post);
+    expect(await submitMedia(audio, false, undefined, "user_a")).toMatchObject({ ok: false, code: "ACCOUNT_CHANGED" });
+    expect(post).not.toHaveBeenCalled();
+    expect(tab.size).toBe(0);
+  });
+
   it.each(["af77f17d-e690-4960-a8d8-6816e93ff284", "1733097600000"])(
     "recovers legacy key %s once per account even when the other account retries first", async (legacyKey) => {
       // Original storage fixture for the red bicycle body, including the old Date.now() key format.

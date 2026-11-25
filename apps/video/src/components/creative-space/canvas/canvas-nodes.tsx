@@ -14,6 +14,7 @@ import {
   Loader2,
   Music,
   Paintbrush,
+  Replace,
   Scissors,
   SplitSquareHorizontal,
   Sparkles,
@@ -36,6 +37,8 @@ import type {
 } from "@/lib/creative-space/canvas-graph";
 import { inputTypes, outputType } from "@/lib/creative-space/canvas-graph";
 import type { CanvasEditAction } from "../canvas-inpaint-modal";
+import { CanvasPrompt, type CanvasReference } from "./canvas-prompt";
+import { NodePins } from "./canvas-pins";
 import { choicesFor, modelsFor, withModel } from "./model-options";
 
 export interface NodeInputsSummary {
@@ -49,6 +52,7 @@ export interface CanvasActions {
   patch: (id: string, partial: Partial<CanvasData>) => void;
   commit: () => void;
   run: (id: string) => void;
+  pendingSeconds: Record<string, number>;
   inputsOf: (id: string) => NodeInputsSummary;
   quoteOf: (id: string) => number | null;
   edit: (id: string, action: CanvasEditAction) => void;
@@ -56,6 +60,9 @@ export interface CanvasActions {
   compare: (id: string) => void;
   canCompare: (id: string) => boolean;
   captureFrame: (id: string) => void;
+  referencesFor: (id: string) => CanvasReference[];
+  attachReference: (id: string, ref: CanvasReference) => boolean;
+  replaceMedia: (id: string, file: File) => Promise<void>;
   spreadSteps: (id: string) => void;
   agentToVideo: (id: string) => void;
   singleSelection: boolean;
@@ -168,7 +175,7 @@ function Shell({
   className?: string;
   status?: string;
 }) {
-  const { zh } = useActions();
+  const { zh, patch } = useActions();
   const Icon = kindIcon(data.kind, data.kind === "media" ? data.media : undefined);
   const fallback = KIND_LABEL[data.kind][zh ? "zh" : "en"];
   return (
@@ -177,6 +184,7 @@ function Shell({
       <div className="nc-node-head">
         <Icon className="h-4 w-4" aria-hidden="true" />
         <Title id={id} title={data.title} fallback={fallback} />
+        <NodePins pins={data.pins} selected={selected} zh={zh} onChange={(pins) => patch(id, { pins })} />
         {status ? <span className={`nc-dot nc-dot-${status}`} aria-hidden="true" /> : null}
       </div>
       {children}
@@ -251,11 +259,28 @@ export const TextNode = memo(function TextNode({ id, data, selected }: NodeProps
 });
 
 export const MediaNode = memo(function MediaNode({ id, data, selected }: NodeProps<MediaData>) {
-  const { zh } = useActions();
+  const { zh, replaceMedia } = useActions();
+  const [replacing, setReplacing] = useState(false);
   const missing = !data.url && !data.busy;
   return (
     <>
       <OutputTools id={id} media={data.media} url={data.url} selected={selected} />
+      {selected && data.media !== "audio" && !data.busy && <NodeToolbar position={Position.Bottom} className="nc-node-tools">
+        <label className="nc-replace">
+          {replacing ? <Loader2 className="nc-spin" size={15} /> : <Replace size={15} />}
+          {zh ? "替换素材" : "Replace asset"}
+          <input type="file" aria-label={zh ? "替换素材" : "Replace asset"} disabled={replacing}
+            accept={data.media === "image" ? "image/png,image/jpeg,image/webp" : "video/mp4,video/webm,video/quicktime"}
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (!file) return;
+              setReplacing(true);
+              try { await replaceMedia(id, file); } finally { setReplacing(false); }
+            }}
+          />
+        </label>
+      </NodeToolbar>}
       <Shell id={id} data={data} selected={selected} status={data.busy ? "running" : missing ? "failed" : "done"}>
         <div className={`nc-preview nc-preview-${data.media}`}>
           {data.busy ? (
@@ -294,6 +319,7 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
   const choices = choicesFor(data.kind, data.modelId);
   const inputs = actions.inputsOf(id);
   const credits = actions.quoteOf(id);
+  const seconds = actions.pendingSeconds[id];
   const busy = data.status === "submitting" || data.status === "running";
   const linked = [
     inputs.texts ? `${inputs.texts} ${zh ? "段文字" : inputs.texts > 1 ? "texts" : "text"}` : "",
@@ -302,18 +328,9 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
   const overLimit = data.kind !== "audio" && inputs.images > choices.maxImages;
   return (
     <div className="nc-panel nodrag nowheel" onKeyDown={(event) => event.stopPropagation()}>
-      <textarea
-        className="nc-prompt"
-        value={data.prompt}
-        placeholder={
-          data.kind === "audio"
-            ? zh ? "要说的台词，或音乐的描述" : "Lines to speak, or the music to make"
-            : zh ? "描述画面；连进来的文字会自动拼在前面" : "Describe the shot; wired text is added in front"
-        }
-        maxLength={5000}
-        onChange={(event) => patch(id, { prompt: event.target.value })}
-        aria-label={zh ? "提示词" : "Prompt"}
-      />
+      <CanvasPrompt value={data.prompt} label={zh ? "提示词" : "Prompt"} zh={zh}
+        placeholder={data.kind === "audio" ? (zh ? "要说的台词，或音乐的描述" : "Lines to speak, or the music to make") : (zh ? "描述画面，输入 @ 引用画布素材" : "Describe the shot; type @ for canvas references")}
+        list={() => actions.referencesFor(id)} attach={(ref) => actions.attachReference(id, ref)} change={(prompt) => patch(id, { prompt })} />
       <p className="nc-linked">
         {linked.length ? `${zh ? "已连接" : "Wired"}：${linked.join(zh ? "，" : ", ")}` : zh ? "从左侧端口连入文字或图片" : "Wire text or images into the left port"}
         {overLimit ? ` · ${zh ? `这个模型最多用 ${choices.maxImages} 张，多出的不会发送` : `this model uses ${choices.maxImages} at most`}` : ""}
@@ -362,7 +379,7 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
         <span className="nc-quote">{credits !== null ? `${zh ? "约" : "≈"} ${credits} ${zh ? "积分" : "credits"}` : ""}</span>
         <button type="button" className="nc-run" disabled={busy} onClick={() => actions.run(id)}>
           {busy ? <Loader2 className="h-4 w-4 nc-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
-          {busy ? (zh ? "生成中" : "Working") : data.resultUuid ? (zh ? "重新生成" : "Regenerate") : zh ? "生成" : "Generate"}
+          {seconds ? (zh ? `撤回（${seconds} 秒）` : `Cancel (${seconds}s)`) : busy ? (zh ? "生成中" : "Working") : data.resultUuid ? (zh ? "重新生成" : "Regenerate") : zh ? "生成" : "Generate"}
         </button>
       </div>
     </div>
@@ -451,14 +468,9 @@ export const AgentNode = memo(function AgentNode({ id, data, selected }: NodePro
       </Shell>
       <NodeToolbar isVisible={selected && actions.singleSelection} position={Position.Bottom} className="nc-panel-toolbar">
         <div className="nc-panel nodrag nowheel" onKeyDown={(event) => event.stopPropagation()}>
-          <textarea
-            className="nc-prompt"
-            value={data.prompt}
-            maxLength={5000}
-            placeholder={zh ? "例如：用 @A 做一条 15 秒的新品宣传片，三个镜头" : "e.g. a 15s launch film for @A in three shots"}
-            onChange={(event) => patch(id, { prompt: event.target.value })}
-            aria-label={zh ? "给 Agent 的需求" : "Brief"}
-          />
+          <CanvasPrompt value={data.prompt} label={zh ? "给 Agent 的需求" : "Brief"} zh={zh}
+            placeholder={zh ? "输入 @ 选择画布素材，描述你要制作的片子" : "Type @ to choose a canvas reference, then describe the piece"}
+            list={() => actions.referencesFor(id)} attach={(ref) => actions.attachReference(id, ref)} change={(prompt) => patch(id, { prompt })} />
           <p className="nc-linked">
             {inputs.images + inputs.videos
               ? `${zh ? "已连接素材" : "Wired assets"}：${inputs.images + inputs.videos}（${zh ? "按连接顺序记作 @A、@B…" : "@A, @B… in wire order"}）`
@@ -484,7 +496,7 @@ export const AgentNode = memo(function AgentNode({ id, data, selected }: NodePro
 });
 
 export const GroupNode = memo(function GroupNode({ id, data, selected }: NodeProps<GroupData>) {
-  const { zh, commit } = useActions();
+  const { zh, commit, patch } = useActions();
   return (
     <>
       <NodeResizer isVisible={selected} minWidth={240} minHeight={160} onResizeEnd={commit} lineClassName="nc-resize-line" handleClassName="nc-resize-handle" />
@@ -492,6 +504,7 @@ export const GroupNode = memo(function GroupNode({ id, data, selected }: NodePro
         <div className="nc-group-head">
           <Layers className="h-4 w-4" aria-hidden="true" />
           <Title id={id} title={data.title} fallback={zh ? "分组" : "Group"} />
+          <NodePins pins={data.pins} selected={selected} zh={zh} onChange={(pins) => patch(id, { pins })} />
         </div>
       </div>
     </>

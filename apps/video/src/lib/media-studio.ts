@@ -47,6 +47,10 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
   switch (code) {
     case "UNAUTHORIZED":
       return zh ? "请先登录再生成。" : "Sign in to generate.";
+    case "ACCOUNT_CHANGED":
+      return zh ? "登录账号已切换，请在当前账号重新选择并提交。" : "Your account changed. Review your selection and submit again.";
+    case "INVALID_KEYFRAMES":
+      return zh ? "请检查关键帧数量，并重新选择当前账户的首帧、中间帧或尾帧图片。" : "Check the number of keyframes and choose available first, middle or last frame images from your account.";
     case "INVALID_VIDEO_REFERENCE":
       return zh ? "请选择自己上传的 MP4 或 MOV，每个不超过 10 MB，最多 3 个。" : "Choose up to three of your own MP4 or MOV uploads, 10 MB each.";
     case "INSUFFICIENT_CREDITS":
@@ -178,6 +182,7 @@ export async function submitMedia(
   body: SubmitBody | ExtendSubmitBody,
   zh: boolean,
   endpoint = MEDIA_ENDPOINT,
+  expectedAccount?: string,
 ): Promise<SubmitResult> {
   const isExtend = "sourceVideoUuid" in body;
   const original = JSON.stringify(body);
@@ -196,6 +201,9 @@ export async function submitMedia(
     return { ok: false, message: networkError };
   }
   if (!accountId) return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
+  if (expectedAccount && accountId !== expectedAccount) {
+    return { ok: false, code: "ACCOUNT_CHANGED", message: errorMessage("ACCOUNT_CHANGED", "", zh) };
+  }
   try {
     retry = await reserveRetryKey(accountId, endpoint, signature, isExtend ? null : original);
   } catch {

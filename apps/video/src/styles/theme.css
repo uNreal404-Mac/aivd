@@ -112,3 +112,41 @@
     -webkit-backdrop-filter: none;
   }
 }
+
+/* Canvas node marker colours, paired with the semantic red, yellow and green. */
+.nc-shell { --du-pin-blue: #609af4; --du-pin-purple: #ac7ae8; }
+
+/* Warm studio light, scoped to the home generator and the media shelf it opens. */
+.du-hero,
+.hmp-backdrop[data-home-library] {
+  --du-agent-shadow: #0006;
+  --du-agent-scrim: rgb(0 0 0 / .93);
+  --du-agent-close-bg: #141418cc;
+  --du-accent: #ff4900;
+  --du-accent-2: #ff7d05;
+  --du-accent-hover: #e93c08;
+  --du-accent-soft: #ff490033;
+  --du-accent-text: #ff8d62;
+  --du-on-accent: #fff;
+  --du-editor-bg: #0d0d12;
+  --du-editor-text: #fff;
+  --du-editor-muted: #ffffffa6;
+  --du-editor-placeholder: #ffffff66;
+}
+
+/* Creator workspaces use the measured lime controls and four neutral layers;
+   portals inherit the same palette even when mounted outside the studio. */
+:where(.is-root, .vst-root, .au-root, .is-draw-dialog, .vst-menu, .au-pop, .au-vpicker),
+body:has(:is(.is-root, .vst-root, .au-root)) :where([role="dialog"], [role="menu"]) {
+  --du-accent: #d1fe17;
+  --du-accent-text: #d1fe17;
+  --du-accent-hover: #deff58;
+  --du-accent-soft: rgb(209 254 23 / 12%);
+  --du-on-accent: #131517;
+  --du-bg: #0f1113;
+  --du-bg-elev: #17191b;
+  --du-surface: #1c1e21;
+  --du-surface-2: #242629;
+}
+
+.au-root { --du-voice-cool: #24475e; --du-voice-warm: #c4e344; --du-studio-yellow: #ffff14; }

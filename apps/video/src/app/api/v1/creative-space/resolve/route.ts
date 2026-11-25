@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { db, mediaAssets, videos } from "@/db";
 import { requireAuth } from "@/lib/api/auth";
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { ApiError } from "@/lib/api/error";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
 import { signMediaRef } from "@/lib/storage";
@@ -27,6 +28,7 @@ function chunks<T>(list: T[], size = 90): T[][] {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const parsed = schema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) throw new ApiError("The request is not valid.", 400, { code: "INVALID_REQUEST" });
     const { uuids, keys } = parsed.data;

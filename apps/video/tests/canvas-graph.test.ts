@@ -93,6 +93,14 @@ describe("stored upload keys", () => {
 });
 
 describe("saving and opening", () => {
+  it("keeps known pin colours and reads canvases that predate pins", () => {
+    const graph = toStoredGraph([image("i", { pins: ["blue", "red"] }), text("t")], []);
+    const raw = { ...graph, nodes: graph.nodes.map((node) => node.id === "i" ? { ...node, data: { ...node.data, pins: ["blue", "other", "red", "red"] } } : node) };
+    const { nodes } = fromStoredGraph(raw, "?");
+    expect(nodes[0].data.pins).toEqual(["red", "blue"]);
+    expect(nodes[1].data.pins).toBeUndefined();
+  });
+
   it("stores references only, never URLs", () => {
     const graph = toStoredGraph(
       [

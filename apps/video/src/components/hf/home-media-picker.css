@@ -65,11 +65,11 @@
 .hmp-card:hover::after { box-shadow: inset 0 0 0 1px var(--ds-line-3); }
 .hmp-card.selected::after { box-shadow: inset 0 0 0 2px var(--du-accent); }
 .hmp-thumb { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; color: var(--ds-text-3); }
-.hmp-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.hmp-thumb :is(img, video) { width: 100%; height: 100%; object-fit: cover; }
 /* A file's name is noise on a picture; saved elements and kits keep theirs. */
 .hmp-card-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hmp-grid[data-named] .hmp-card-name { position: static; display: block; width: auto; height: auto; overflow: hidden; clip-path: none; padding: 7px 9px; font-size: var(--ds-fs-xs); font-weight: 500; text-overflow: ellipsis; }
-.hmp-card.selected .hmp-thumb img { opacity: .92; }
+.hmp-card.selected .hmp-thumb :is(img, video) { opacity: .92; }
 
 /* The upload tile: a hairline square with a round icon over "Upload file". */
 .hmp-add {
@@ -155,3 +155,71 @@
 @media (max-height: 620px) and (min-width: 641px) {
   .hmp-dialog { height: calc(100dvh - 24px); }
 }
+
+/* The home composer opens the full media shelf. Other tools retain their compact picker. */
+@media (min-width: 768px) {
+  .hmp-backdrop[data-home-library] .hmp-dialog {
+    width: min(1200px, calc(100vw - 32px));
+    height: min(800px, calc(100dvh - 64px));
+    padding: 16px;
+    border-radius: var(--ds-r-xl);
+    gap: 12px;
+  }
+  .hmp-backdrop[data-home-library] .hmp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  }
+}
+.hmp-backdrop[data-mention] { background: transparent; padding: 0; }
+.hmp-backdrop[data-mention] .hmp-dialog {
+  position: fixed;
+  width: min(420px, calc(100vw - 24px));
+  height: min(400px, calc(100dvh - 24px));
+  padding: 8px;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface-2);
+}
+.hmp-backdrop[data-mention] .hmp-header,
+.hmp-backdrop[data-mention] .hmp-shelf-title,
+.hmp-backdrop[data-mention] .hmp-footer button { display: none; }
+.hmp-backdrop[data-mention] .hmp-shelf { background: transparent; }
+.hmp-backdrop[data-mention] .hmp-footer:has(.hmp-count) { display: none; }
+.hmp-backdrop[data-mention] .hmp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hmp-preview-button,
+.hmp-preview-close {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface-2);
+  color: var(--du-text);
+}
+.hmp-preview-button {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+}
+.hmp-card-wrap:is(:hover, :focus-within) .hmp-preview-button { opacity: 1; }
+@media (hover: none) { .hmp-preview-button { opacity: 1; } }
+.hmp-preview {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  color: var(--du-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px 12px;
+  background: var(--du-bg);
+}
+.hmp-preview-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; }
+.hmp-preview :is(img, video) { min-height: 0; max-height: calc(100% - 2rem); max-width: 100%; object-fit: contain; }
+.hmp-preview p { font-size: var(--ds-fs-ui); overflow-wrap: anywhere; }

@@ -2,7 +2,8 @@ import { AiVideoStudio } from "@/components/hf/ai-video-studio";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { marketModelsOf } from "@/ai/kie-market";
 import { getAvailableModels } from "@/config/credits";
-import { settingsFromSearchParams, selectModel } from "@/lib/ai-video-studio";
+import { KLING_KEYFRAME_MODEL } from "@/lib/kling-keyframes";
+import { settingsFromSearchParams } from "@/lib/ai-video-studio";
 import { findNavModel } from "@/lib/nav-models";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -21,7 +22,9 @@ export function VideoStudioPage({
   /** Model to open with when the link does not name one. */
   defaultModel?: string;
 }) {
-  const modelParam = (Array.isArray(searchParams.model) ? searchParams.model[0] : searchParams.model) ?? defaultModel;
+  const rawModel = (Array.isArray(searchParams.model) ? searchParams.model[0] : searchParams.model) ?? defaultModel;
+  const modelParam = rawModel === "kling-4.0" ? KLING_KEYFRAME_MODEL : rawModel;
+  const keyframes = searchParams.input === "keyframes" && modelParam === KLING_KEYFRAME_MODEL;
   const availableModelIds = [
     ...getAvailableModels({
       provider: getConfiguredAIProvider() ?? "kie",
@@ -32,13 +35,17 @@ export function VideoStudioPage({
   // A nav model that cannot generate yet opens as coming soon, under the
   // same name the menu shows.
   const upcoming = modelParam && !availableModelIds.includes(modelParam) ? findNavModel("video", modelParam) : undefined;
-  const parsed = settingsFromSearchParams(searchParams);
-  const initialSettings = modelParam && modelParam !== parsed.modelId ? selectModel(parsed, modelParam) : parsed;
+  const modelDefaults = modelParam === "bytedance/seedance-2-5"
+    ? { duration: "5", resolution: "1080p", aspect: "16:9", audio: "true" }
+    : keyframes ? { duration: "10", resolution: "1080p" } : {};
+  const initialSettings = settingsFromSearchParams({ ...modelDefaults, ...searchParams, model: modelParam });
 
   return (
     <AiVideoStudio
       // Remount when the nav switches models, so the new choice is applied.
-      key={modelParam ?? "default"}
+      key={`${modelParam ?? "default"}:${searchParams.mode === "extend" ? "extend" : keyframes ? "keyframes" : "create"}`}
+      initialKeyframes={keyframes}
+      initialExtend={searchParams.mode === "extend"}
       upcomingModel={upcoming ? { name: upcoming.name, desc: locale === "zh" ? upcoming.desc.zh : upcoming.desc.en } : undefined}
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={initialSettings}

@@ -1,9 +1,12 @@
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { NextRequest } from "next/server";
 import { videoService } from "@/services/video";
 import { requireAuth } from "@/lib/api/auth";
 import { canGenerateInPreview } from "@/lib/internal-test-account";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
+import { invalidKeyframes } from "@/services/kling-keyframes";
+import { KLING_MAX_MIDDLE_FRAMES } from "@/lib/kling-keyframes";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
 import { WAN_REFERENCE_MAX_FILES } from "@/lib/wan-video-references";
 import { imageRefSchema } from "@/lib/image-ref-schema";
@@ -24,6 +27,11 @@ const generateSchema = z.object({
   quality: z.string().optional(),
   imageUrl: imageRefSchema.optional(),
   imageUrls: z.array(imageRefSchema).optional(),
+  keyframes: z.object({
+    first: z.string().min(1).max(1024).optional(),
+    middle: z.array(z.string().min(1).max(1024)).max(KLING_MAX_MIDDLE_FRAMES).optional(),
+    last: z.string().min(1).max(1024).optional(),
+  }).strict().optional(),
   videoKeys: z.array(z.string().min(1).max(512)).min(1).max(WAN_REFERENCE_MAX_FILES).optional(),
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
@@ -36,6 +44,7 @@ const generateSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     if (!canGenerateInPreview(user)) {
       return apiError(
         "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
@@ -45,12 +54,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const data = generateSchema.parse(body);
-    // The session cookie can change between reserving a retry key and POST.
-    const retryAccount = request.headers.get("X-Extend-Account");
-    if (retryAccount !== null && retryAccount !== user.id) {
-      return apiError("Your account changed. Please try again.", 409, { code: "ACCOUNT_CHANGED" });
+    const parsed = generateSchema.safeParse(body);
+    if (!parsed.success) {
+      if (parsed.error.issues.some((issue) => issue.path[0] === "keyframes")) throw invalidKeyframes();
+      throw parsed.error;
     }
+    const data = parsed.data;
 
     const imageUrls = [
       ...(data.imageUrl ? [data.imageUrl] : []),
@@ -66,24 +75,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const safetyImages = imageUrls.map((imageUrl, index) => ({
-      url: /^https?:\/\//i.test(imageUrl)
-        ? imageUrl
-        : getStorage().getSignedUrl(imageUrl),
-      label: `reference-${index + 1}`,
-    }));
     const locale = request.headers.get("accept-language") ?? "en";
-    const safety = await moderateContent({
-      text: data.prompt,
-      images: safetyImages,
-      context: "generation",
-    });
-    if (!isSafetyApproved(safety)) {
-      return apiError(safetyMessage(safety, locale), 422, {
-        code: "CONTENT_BLOCKED",
-        decision: safety.decision,
-        categories: safety.categories,
+    // The service moderates role-based frames after resolving their owner and
+    // exact output index, immediately before reserving credits.
+    if (!data.keyframes) {
+      const safety = await moderateContent({
+        text: data.prompt,
+        images: imageUrls.map((imageUrl, index) => ({
+          url: /^https?:\/\//i.test(imageUrl) ? imageUrl : getStorage().getSignedUrl(imageUrl),
+          label: `reference-${index + 1}`,
+        })),
+        context: "generation",
       });
+      if (!isSafetyApproved(safety)) {
+        return apiError(safetyMessage(safety, locale), 422, {
+          code: "CONTENT_BLOCKED", decision: safety.decision, categories: safety.categories,
+        });
+      }
     }
 
     const headerKey = request.headers.get("Idempotency-Key");
@@ -102,6 +110,7 @@ export async function POST(request: NextRequest) {
       imageUrls: data.imageUrls,
       mode: data.mode,
       videoKeys: data.videoKeys,
+      ...(data.keyframes ? { keyframes: data.keyframes, locale } : {}),
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
       idempotencyKey,

@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db, creativeWorkflows } from "@/db";
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
@@ -11,6 +12,7 @@ type Context = { params: Promise<{ id: string }> };
 export async function GET(request: Request, { params }: Context) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const { id } = await params;
     const [workflow] = await db.select().from(creativeWorkflows)
       .where(and(eq(creativeWorkflows.id, id), eq(creativeWorkflows.userId, user.id))).limit(1);
@@ -22,6 +24,7 @@ export async function GET(request: Request, { params }: Context) {
 export async function PUT(request: Request, { params }: Context) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const { id } = await params;
     let payload: ReturnType<typeof parseWorkflowPayload>;
     try { payload = parseWorkflowPayload(await request.json()); }
@@ -50,6 +53,7 @@ export async function PUT(request: Request, { params }: Context) {
 export async function DELETE(request: Request, { params }: Context) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const { id } = await params;
     const [workflow] = await db.delete(creativeWorkflows)
       .where(and(eq(creativeWorkflows.id, id), eq(creativeWorkflows.userId, user.id)))

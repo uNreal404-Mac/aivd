@@ -2,7 +2,7 @@ import { getMarketModel } from "@/ai/kie-market";
 
 export const MAX_HOME_VIDEO_REFERENCES = 12;
 
-export type UploadedVideoReference = { key: string; name: string; url: string; sourceId?: string };
+export type UploadedVideoReference = { key: string; name: string; url: string; mimeType?: string; sourceId?: string };
 
 // The two legacy video models accept a single start image. Market models
 // declare their own limit, which is currently at most four for video.
@@ -11,16 +11,17 @@ export function maxVideoReferences(modelId: string): number {
   return marketModel ? (marketModel.options.maxImages ?? 0) : 1;
 }
 
-const REFERENCE_TOKEN = /@(图片|image)(\d+)(?!\d)/gi;
+const REFERENCE_TOKEN = /@(图片|image|视频|video)(\d+)(?!\d)/gi;
 
-export function prepareVideoReferencePrompt(prompt: string, count: number):
+export function prepareVideoReferencePrompt(prompt: string, count: number, kind: "image" | "video" = "image"):
   | { ok: true; prompt: string }
   | { ok: false; index: number } {
   let invalidIndex: number | null = null;
-  const prepared = prompt.replace(REFERENCE_TOKEN, (_token, _label: string, number: string) => {
+  const prepared = prompt.replace(REFERENCE_TOKEN, (_token, label: string, number: string) => {
     const index = Number(number);
-    if ((index < 1 || index > count) && invalidIndex === null) invalidIndex = index;
-    return `image ${index}`;
+    const tokenKind = /^(video|视频)$/i.test(label) ? "video" : "image";
+    if ((index < 1 || index > count || tokenKind !== kind) && invalidIndex === null) invalidIndex = index;
+    return `${kind} ${index}`;
   });
   return invalidIndex !== null ? { ok: false, index: invalidIndex } : { ok: true, prompt: prepared };
 }

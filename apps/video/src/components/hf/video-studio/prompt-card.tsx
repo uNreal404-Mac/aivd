@@ -32,6 +32,7 @@ export function PromptCard({
   onSubmit,
   references,
   canReference,
+  showLibraryLink = true,
   onOpenMedia,
   audio,
   draftRestored,
@@ -47,6 +48,7 @@ export function PromptCard({
   onSubmit: () => void;
   references: ReferenceThumb[];
   canReference: boolean;
+  showLibraryLink?: boolean;
   /** Opens the media library: on its Elements tab from the "@ Elements"
    * chip (as the reference does), on Upload from "Add or change images". */
   onOpenMedia: (tab: "upload" | "elements") => void;
@@ -73,7 +75,7 @@ export function PromptCard({
   const mention = (index: number) => {
     const field = textareaRef.current;
     const current = textRef.current;
-    const token = referenceToken(index, zh);
+    const token = referenceToken(index, zh, references[index]?.video);
     const at = menu?.typedAt;
     const start = at ?? field?.selectionStart ?? current.length;
     const end = at !== undefined ? at + 1 : (field?.selectionEnd ?? start);
@@ -95,11 +97,11 @@ export function PromptCard({
       : "This model takes no reference images"
     : references.length
       ? zh
-        ? "在提示词里 @ 引用一张参考图片"
-        : "Mention a reference image in the prompt"
+        ? "在提示词里 @ 引用素材"
+        : "Mention a reference in the prompt"
       : zh
-        ? "先添加一张参考图片，再用 @ 引用它"
-        : "Add a reference image first, then mention it with @";
+        ? "添加素材后可用 @ 引用"
+        : "Add a reference, then mention it with @";
 
   return (
     <div className="vst-prompt">
@@ -206,15 +208,15 @@ export function PromptCard({
           className="vst-menu vst-mentions"
           onKeyDown={moveFocusWithArrows}
         >
-          <p className="vst-menu-title">{zh ? "引用参考图片" : "Mention a reference"}</p>
+          <p className="vst-menu-title">{zh ? "引用参考素材" : "Mention a reference"}</p>
           {references.map((item, index) => (
             <button key={item.key} type="button" className="vst-menu-item vst-mention" onClick={() => mention(index)}>
-              <img src={item.url} alt="" />
-              <span className="vst-mention-token">{referenceToken(index, zh)}</span>
+              {item.video ? <video src={item.url} muted playsInline preload="metadata" /> : <img src={item.url} alt="" />}
+              <span className="vst-mention-token">{referenceToken(index, zh, references[index]?.video)}</span>
               <span className="vst-mention-name">{item.name}</span>
             </button>
           ))}
-          {canReference ? (
+          {canReference && showLibraryLink ? (
             <button
               type="button"
               className="vst-menu-item vst-mention"
@@ -226,7 +228,7 @@ export function PromptCard({
               <span className="vst-mention-add" aria-hidden="true">
                 <ImagePlus />
               </span>
-              <span className="vst-mention-token">{zh ? "添加或更换图片…" : "Add or change images…"}</span>
+              <span className="vst-mention-token">{zh ? "添加或更换素材…" : "Add or change references…"}</span>
             </button>
           ) : null}
         </div>

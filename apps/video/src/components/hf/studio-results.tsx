@@ -403,7 +403,7 @@ export function WaveformPlayer({ url, zh }: { url: string; zh: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 /** Accept image files dropped on an element or pasted while it has focus. */
-export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
+export function useImageDrop(onFiles: (files: File[]) => void, enabled = true, accept = (type: string) => type.startsWith("image/")) {
   const [over, setOver] = useState(false);
   const depth = useRef(0);
   const pick = (list: FileList | DataTransferItemList | null | undefined): File[] => {
@@ -411,7 +411,7 @@ export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
     const files: File[] = [];
     for (const entry of Array.from(list as ArrayLike<File | DataTransferItem>)) {
       const file = entry instanceof File ? entry : entry.kind === "file" ? entry.getAsFile() : null;
-      if (file?.type.startsWith("image/")) files.push(file);
+      if (file && accept(file.type)) files.push(file);
     }
     return files;
   };
@@ -456,7 +456,9 @@ export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
 }
 
 /** Hand an image result to the video studio as its start frame. */
-export function sendImageToVideo(url: string, href: string, name: string) {
+export function sendImageToVideo(url: string, href: string, name: string, userId?: string) {
+  if (userId) sessionStorage.setItem("aivd:home-start-image-owner", userId);
+  else sessionStorage.removeItem("aivd:home-start-image-owner");
   sessionStorage.setItem("aivd:home-start-image", url);
   sessionStorage.setItem("aivd:home-start-image-name", name);
   sessionStorage.setItem("aivd:home-start-image-preview", url);

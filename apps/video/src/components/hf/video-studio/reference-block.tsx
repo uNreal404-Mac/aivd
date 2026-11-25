@@ -2,7 +2,7 @@
 
 import { Image as ImageIcon, Loader2, Plus, Shirt, UserRound, X } from "lucide-react";
 
-export type ReferenceThumb = { key: string; url: string; name: string };
+export type ReferenceThumb = { key: string; url: string; name: string; video?: boolean };
 
 type DropBind = {
   onDragEnter: (event: React.DragEvent) => void;
@@ -14,18 +14,18 @@ type DropBind = {
 };
 
 /** The @ token a reference image is mentioned by in the prompt. */
-export function referenceToken(index: number, zh: boolean): string {
-  return `@${zh ? "图片" : "Image"}${index + 1}`;
+export function referenceToken(index: number, zh: boolean, video = false): string {
+  return `@${video ? (zh ? "视频" : "Video") : zh ? "图片" : "Image"}${index + 1}`;
 }
 
 /**
  * "Add reference": opens the media library (or takes a dropped or pasted
  * image). Once images are attached they show here as thumbnails; a click on
- * one mentions it in the prompt, the corner button removes it. Images only:
- * the models here take no video or audio references.
+ * one mentions it in the prompt, the corner button removes it. Wan 2.6 accepts video clips in its video reference mode.
  */
 export function ReferenceBlock({
   zh,
+  video,
   references,
   max,
   uploading,
@@ -36,6 +36,7 @@ export function ReferenceBlock({
   onRemove,
 }: {
   zh: boolean;
+  video: boolean;
   references: ReferenceThumb[];
   /** How many images the model accepts; 0 means text only. */
   max: number;
@@ -46,8 +47,8 @@ export function ReferenceBlock({
   onMention: (index: number) => void;
   onRemove: (index: number) => void;
 }) {
-  const dropLabel = zh ? "松开即可添加图片" : "Drop to add images";
-  const limit = zh ? `图片，最多 ${max} 张` : max === 1 ? "Image, 1 at most" : `Images, up to ${max}`;
+  const dropLabel = video ? (zh ? "松开即可添加视频" : "Drop reference videos") : zh ? "松开即可添加图片" : "Drop to add images";
+  const limit = video ? (zh ? "MP4 / MOV · 最多 3 个 · 每个 10 MB" : "MP4 / MOV · Up to 3 clips · 10 MB each") : zh ? `图片，最多 ${max} 张` : max === 1 ? "Image, 1 at most" : `Images, up to ${max}`;
 
   if (references.length === 0) {
     return (
@@ -100,7 +101,7 @@ export function ReferenceBlock({
     >
       <div className="vst-ref-grid">
         {references.map((item, index) => {
-          const token = referenceToken(index, zh);
+          const token = referenceToken(index, zh, item.video);
           return (
             <div key={item.key} className="vst-ref-thumb">
               <button
@@ -109,14 +110,14 @@ export function ReferenceBlock({
                 title={zh ? `在提示词里插入 ${token}` : `Mention ${token} in the prompt`}
                 onClick={() => onMention(index)}
               >
-                <img src={item.url} alt={zh ? `参考图片 ${index + 1}` : `Reference image ${index + 1}`} />
+                {item.video ? <video src={item.url} muted playsInline preload="metadata" aria-label={token} /> : <img src={item.url} alt={token} />}
                 <span className="vst-ref-tag">{token}</span>
               </button>
               <button
                 type="button"
                 className="vst-ref-remove"
                 onClick={() => onRemove(index)}
-                aria-label={zh ? `移除参考图片 ${index + 1}` : `Remove reference image ${index + 1}`}
+                aria-label={zh ? `移除 ${token}` : `Remove ${token}`}
               >
                 <X aria-hidden="true" />
               </button>
@@ -124,7 +125,7 @@ export function ReferenceBlock({
           );
         })}
         {references.length < max ? (
-          <button type="button" className="vst-ref-add" disabled={uploading} onClick={onOpen} aria-label={zh ? "添加参考图片" : "Add reference image"}>
+          <button type="button" className="vst-ref-add" disabled={uploading} onClick={onOpen} aria-label={video ? zh ? "添加参考视频" : "Add reference video" : zh ? "添加参考图片" : "Add reference image"}>
             {uploading ? <Loader2 className="vst-spin animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
           </button>
         ) : null}
@@ -134,6 +135,7 @@ export function ReferenceBlock({
           ? zh
             ? "上传中…"
             : "Uploading…"
+          : video ? (zh ? `点视频可在提示词里 @ 引用 · 最多 ${max} 个` : `Click a clip to @mention it · up to ${max}`)
           : zh
             ? `点图片可在提示词里 @ 引用 · 最多 ${max} 张`
             : `Click an image to @mention it · up to ${max}`}

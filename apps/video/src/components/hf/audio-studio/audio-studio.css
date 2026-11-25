@@ -30,6 +30,33 @@
   }
 }
 
+/* A desktop grab area shares the gutter with the two panes. */
+.au-panel-resizer { display: none; }
+@media (min-width: 1024px) {
+  .au-panel-resizer {
+    position: relative;
+    z-index: 1;
+    display: block;
+    align-self: stretch;
+    flex: 0 0 12px;
+    margin-inline: calc(-6px - var(--ds-space-5) / 2);
+    transform: translateX(calc(var(--ds-space-5) / -2));
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+  }
+  .au-panel-resizer::after {
+    position: absolute;
+    inset: 0 calc(50% - 1px);
+    background: transparent;
+    content: "";
+    transition: background-color var(--m-instant) var(--m-ease-out);
+  }
+  .au-panel-resizer:is(:hover, :active, :focus-visible)::after {
+    background: var(--du-accent);
+  }
+}
+
 /* ---------- Settings panel ---------- */
 
 .au-panel {
@@ -41,7 +68,7 @@
 
 @media (min-width: 1024px) {
   .au-panel {
-    width: 394px;
+    width: var(--au-panel-width, 394px);
     flex-shrink: 0;
     overflow: hidden;
     border: 1px solid var(--ds-line-1);
@@ -2289,4 +2316,34 @@ button.au-row:active {
   .au-list {
     padding: 12px;
   }
+}
+
+.au-local { min-height: 100%; }
+.au-effect-choice, .au-local-result { display: grid; gap: 8px; padding: 14px; }
+.au-effect-choice > span { color: var(--ds-text-2); }
+.au-effect-choice select { width: 100%; color: var(--ds-text-1); background: var(--du-surface); border-radius: var(--ds-r-sm); padding: 8px; }
+.au-clip { position: relative; }
+.au-clip-upload { display: flex; width: 100%; min-height: 146px; gap: 6px; justify-content: center; align-items: center; flex-direction: column; border: 1px dashed var(--ds-line-2); border-radius: var(--ds-r-lg); background: var(--ds-fill-1); }
+.au-clip-upload small,.au-local-how p { color: var(--ds-text-2); }
+.au-clip-upload strong { overflow-wrap: anywhere; max-width: 88%; }
+.au-clip-remove { position: absolute; top: 8px; right: 8px; }
+.au-clip-remove svg { width: 16px; }
+.au-local-result audio { width: 100%; }
+.au-local-result a, .au-local-result button { display: flex; align-items: center; gap: 8px; color: var(--du-accent-text); }
+.au-local-result svg { width: 16px; }
+.au-local > .au-generate { margin-top: auto; flex-shrink: 0; }
+.au-local-how { min-height: min(70vh,620px); display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; text-align: center; }
+.au-local-how img { width: min(100%,380px); max-height: 320px; object-fit: cover; border-radius: var(--ds-r-xl); }
+.au-local-how h2 { font-size: clamp(22px,3vw,38px); font-weight: 650; }
+
+.au-batch-row { display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:0 12px; border-radius:var(--ds-r-md); background:var(--ds-fill-1); font-size:var(--ds-fs-sm); }
+.au-batch-row output { color:var(--ds-text-2); font-variant-numeric:tabular-nums; }
+.au-vcard::before { background:linear-gradient(108deg,var(--du-bg-elev),var(--du-voice-cool) 40%,var(--du-voice-warm)); filter:none; }
+.au-generate, .au-generate:disabled { background:linear-gradient(to bottom,transparent,var(--du-studio-yellow)),var(--du-accent); color:var(--du-on-accent); }
+.au-generate:disabled { filter:brightness(.6); }
+@media (min-width:1024px) {
+  .au-panel { align-self:flex-start; max-height:100%; }
+  .au-fields > .au-script { min-height:160px; flex:0 0 160px; }
+  .au-foot { padding-top:44px; }
+  .au-local { min-height:min(620px,65vh); }
 }

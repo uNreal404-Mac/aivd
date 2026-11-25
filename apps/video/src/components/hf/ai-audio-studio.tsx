@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Info, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
@@ -29,6 +29,7 @@ import {
   voiceTag,
 } from "./audio-studio/audio-data";
 import { AudioFillSlider, AudioSwitchRow } from "./audio-studio/audio-controls";
+import { TranslateForm, VoiceChangeForm, type LocalVoiceTool } from "./audio-studio/local-voice-tools";
 import { AudioModelMenu } from "./audio-studio/audio-menus";
 import { AudioStage, type HowPick, type StageTab } from "./audio-studio/audio-stage";
 import { AudioVoiceCard, AudioVoicePicker } from "./audio-studio/audio-voice";
@@ -37,16 +38,14 @@ import "./audio-studio/audio-studio.css";
 
 const AUDIO_MODELS = marketModelsOf("audio");
 
-/** An unsent script set aside when the studio opens with another one. */
-const EARLIER_AUDIO_DRAFT_KEY = "aivd:draft:audio:earlier";
 /** Advanced settings kept for next time ("Remember settings"). */
-const AUDIO_SETTINGS_KEY = "aivd:audio:settings";
+const BASE_SETTINGS_KEY = "aivd:audio:settings";
 const MAX_EARLIER_DRAFTS = 5;
 
 /** Set-aside drafts, newest first (an older page stored a single string). */
-function readEarlierDrafts(): string[] {
+function readEarlierDrafts(storageKey: string): string[] {
   try {
-    const raw = localStorage.getItem(EARLIER_AUDIO_DRAFT_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
@@ -60,16 +59,21 @@ function readEarlierDrafts(): string[] {
   }
 }
 
-function writeEarlierDrafts(drafts: string[]): void {
+function writeEarlierDrafts(storageKey: string, drafts: string[]): void {
   try {
-    if (drafts.length) localStorage.setItem(EARLIER_AUDIO_DRAFT_KEY, JSON.stringify(drafts));
-    else localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
+    if (drafts.length) localStorage.setItem(storageKey, JSON.stringify(drafts));
+    else localStorage.removeItem(storageKey);
   } catch {
     // Storage can be blocked; nothing is kept then.
   }
 }
 
-export function AiAudioStudio({
+export function AiAudioStudio(props: Parameters<typeof AiAudioStudioForm>[0]) {
+  const { data: session, isPending } = useSession();
+  return <AiAudioStudioForm key={session?.user?.id ?? (isPending ? "loading" : "guest")} {...props} />;
+}
+
+function AiAudioStudioForm({
   locale,
   initialVoiceMode = "",
   initialModelId = "",
@@ -81,6 +85,10 @@ export function AiAudioStudio({
   /** A script to open with ("Generate again" from My creations). */
   initialPrompt?: string;
 }) {
+  const { data: session, isPending: sessionLoading } = useSession();
+  const draftScope = session?.user?.id ? `audio:${session.user.id}` : sessionLoading ? "audio:loading" : "audio";
+  const settingsKey = session?.user?.id ? `${BASE_SETTINGS_KEY}:${session.user.id}` : BASE_SETTINGS_KEY;
+  const earlierKey = `aivd:draft:${draftScope}:earlier`;
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
   const initialModel = getMarketModel(initialModelId);
@@ -99,14 +107,15 @@ export function AiAudioStudio({
   // kept here and offered back.
   const [earlierDraft, setEarlierDraft] = useState<string | null>(null);
   useEffect(() => {
+    if (sessionLoading) return;
     try {
       // Every unsent draft set aside by opening a creation's script is kept
       // (newest first) and offered back one at a time, also after a reload.
-      const saved = localStorage.getItem("aivd:draft:audio");
-      let earlier = readEarlierDrafts();
+      const saved = localStorage.getItem(`aivd:draft:${draftScope}`);
+      let earlier = readEarlierDrafts(earlierKey);
       if (initialPrompt && saved?.trim() && saved.trim() !== initialPrompt.trim() && !earlier.some((item) => item.trim() === saved.trim())) {
         earlier = [saved, ...earlier].slice(0, MAX_EARLIER_DRAFTS);
-        writeEarlierDrafts(earlier);
+        writeEarlierDrafts(earlierKey, earlier);
       }
       // The script came from the address once; a reload restores the draft
       // (with the visitor's edits) instead of the original script again.
@@ -117,12 +126,12 @@ export function AiAudioStudio({
       }
       const shown = (initialPrompt || saved || "").trim();
       const rest = earlier.filter((item) => item.trim() && item.trim() !== shown);
-      if (rest.length !== earlier.length) writeEarlierDrafts(rest);
+      if (rest.length !== earlier.length) writeEarlierDrafts(earlierKey, rest);
       setEarlierDraft(rest[0] ?? null);
     } catch {
       // Storage can be blocked; nothing to offer back then.
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, sessionLoading, draftScope, earlierKey]);
   const [speed, setSpeed] = useState(1);
   const [instrumental, setInstrumental] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -131,9 +140,16 @@ export function AiAudioStudio({
   const [keepSettings, setKeepSettings] = useState(false);
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(AUDIO_SETTINGS_KEY);
+      const raw = localStorage.getItem(settingsKey);
       if (!raw) return;
-      const saved = JSON.parse(raw) as { speed?: unknown; instrumental?: unknown; customMode?: unknown };
+      const saved = JSON.parse(raw) as { speed?: unknown; instrumental?: unknown; customMode?: unknown; modelId?: string; voice?: string };
+      if (!initialModelId && saved.modelId && MODE_MODELS[startMode].includes(saved.modelId)) {
+        const remembered = getMarketModel(saved.modelId);
+        if (remembered) {
+          setModelId(remembered.id);
+          setVoice(remembered.options.voices?.find(v => v.id === saved.voice)?.id ?? remembered.options.voices?.[0]?.id ?? "");
+        }
+      }
       if (typeof saved.speed === "number" && Number.isFinite(saved.speed)) {
         const stepped = Math.round(saved.speed / SPEED_STEP) * SPEED_STEP;
         setSpeed(Math.min(SPEED_MAX, Math.max(SPEED_MIN, Number(stepped.toFixed(2)))));
@@ -148,26 +164,25 @@ export function AiAudioStudio({
   useEffect(() => {
     if (!keepSettings) return;
     try {
-      localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify({ speed, instrumental, customMode }));
+      localStorage.setItem(settingsKey, JSON.stringify({ speed, instrumental, customMode, modelId, voice }));
     } catch {
       // Storage can be blocked; the settings then last for this visit only.
     }
-  }, [keepSettings, speed, instrumental, customMode]);
+  }, [keepSettings, speed, instrumental, customMode, modelId, voice, settingsKey]);
   const chooseKeepSettings = (on: boolean) => {
     setKeepSettings(on);
     if (!on) {
       try {
-        localStorage.removeItem(AUDIO_SETTINGS_KEY);
+        localStorage.removeItem(settingsKey);
       } catch {
         // Nothing stored then.
       }
     }
   };
-  const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
     session?.user?.isAdmin === true && session.user.isSuperAccount === true;
-  const draft = usePromptDraft("audio", script, setScript, Boolean(initialPrompt));
+  const draft = usePromptDraft(draftScope, script, setScript, Boolean(initialPrompt));
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -190,7 +205,7 @@ export function AiAudioStudio({
   useEffect(() => {
     if (jobs.length > 0 && !tabChosen.current) setTabState("history");
   }, [jobs.length]);
-  useCreditReturnDraft("audio", () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
+  useCreditReturnDraft(draftScope, () => ({ mode, modelId, voice, script, detail, tab, speed, instrumental, customMode }), (saved) => {
     if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
     if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
     const savedModel = getMarketModel(saved.modelId);
@@ -208,13 +223,17 @@ export function AiAudioStudio({
   const modelRowRef = useRef<HTMLButtonElement>(null);
   const voiceCardRef = useRef<HTMLButtonElement>(null);
   const stageRef = useRef<HTMLElement>(null);
+  const [panelWidth, setPanelWidth] = useState(394);
+  const panelDrag = useRef<{ x: number; width: number } | null>(null);
+  const resizePanel = (width: number) => setPanelWidth(Math.max(342, Math.min(640, Math.round(width))));
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const advanced = usePresence(advancedOpen);
   const advancedRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (advancedOpen) advancedRef.current?.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [advancedOpen]);
-  const modesRef = useSegmentIndicator<HTMLDivElement>(mode);
+  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change-voice" || initialVoiceMode === "translate" ? initialVoiceMode : null);
+  const modesRef = useSegmentIndicator<HTMLDivElement>(localTool ?? mode);
 
   const modeModels = MODE_MODELS[mode]
     .map((id) => getMarketModel(id))
@@ -226,7 +245,7 @@ export function AiAudioStudio({
   const isSunoSounds = model.id === "suno-sounds";
   const voices = model.options.voices ?? [];
   const currentVoice = voices.find((item) => item.id === voice) ?? voices[0];
-  const hasAdvanced = supportsSpeed || isSunoMusic;
+  const hasAdvanced = supportsSpeed || isSunoMusic || voices.length > 0;
   const advancedChanged = (supportsSpeed && speed !== 1) || (isSunoMusic && (instrumental || customMode));
 
   // Priced from exactly what is sent (trimmed script and details).
@@ -243,6 +262,7 @@ export function AiAudioStudio({
   };
 
   const chooseMode = (next: Mode) => {
+    setLocalTool(null);
     setMode(next);
     setNotice(null);
     setMenu(null);
@@ -259,6 +279,7 @@ export function AiAudioStudio({
   };
 
   const applyShowcasePreset = (item: AudioShowcaseItem) => {
+    setLocalTool(null);
     setMode(item.mode);
     chooseModel(item.modelId);
     // Showcase items name their voice; the request needs the voice's id.
@@ -439,6 +460,8 @@ export function AiAudioStudio({
         speed: supportsSpeed ? speed : undefined,
       },
       zh,
+      undefined,
+      session?.user?.id,
     );
     setSubmitting(false);
     if (!result.ok) {
@@ -456,27 +479,24 @@ export function AiAudioStudio({
   const scriptEmpty = !script.trim();
 
   return (
-    <div className="au-root">
-      <aside aria-label={t.modes[mode]} className="au-panel">
+    <div className="au-root" style={{ "--au-panel-width": `${panelWidth}px` } as CSSProperties}>
+      <aside id="audio-settings" aria-label={t.modes[mode]} className="au-panel">
         <div className="au-scroll">
           <div className="au-modes-bar">
             <div ref={modesRef} role="tablist" aria-label={zh ? "音频类型" : "Audio type"} className="au-modes du-seg">
-              {MODES.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  role="tab"
-                  aria-selected={option === mode}
-                  onClick={() => chooseMode(option)}
-                  className="au-mode"
-                >
-                  {t.modes[option]}
+              {(mode === "music" ? ["tts", "music", "change-voice", "translate"] as const : ["tts", "change-voice", "translate"] as const).map(option => (
+                <button key={option} type="button" role="tab" className="au-mode" aria-selected={option === (localTool ?? mode)}
+                  onClick={() => {
+                    if (option === "tts" || option === "music") chooseMode(option);
+                    else { setLocalTool(option); setMenu(null); setTab("how"); }
+                  }}>
+                  {option === "change-voice" ? zh ? "变声" : "Voice changer" : option === "translate" ? zh ? "翻译" : "Translate" : t.modes[option]}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="au-fields">
+          {localTool === "change-voice" ? <VoiceChangeForm zh={zh} /> : localTool === "translate" ? <TranslateForm zh={zh} onRead={text => { chooseMode("tts"); setScript(text); }} /> : <div className="au-fields">
             {voices.length > 0 && currentVoice ? (
               <AudioVoiceCard
                 zh={zh}
@@ -545,9 +565,9 @@ export function AiAudioStudio({
                       // The script on screen is kept too, so nothing is lost.
                       const current = script;
                       setScript(earlierDraft);
-                      const rest = readEarlierDrafts().filter((item) => item !== earlierDraft);
+                      const rest = readEarlierDrafts(earlierKey).filter((item) => item !== earlierDraft);
                       const next = current.trim() ? [current, ...rest].slice(0, MAX_EARLIER_DRAFTS) : rest;
-                      writeEarlierDrafts(next);
+                      writeEarlierDrafts(earlierKey, next);
                       setEarlierDraft(null);
                     }}
                   >
@@ -556,8 +576,8 @@ export function AiAudioStudio({
                   <button
                     type="button"
                     onClick={() => {
-                      const rest = readEarlierDrafts().filter((item) => item !== earlierDraft);
-                      writeEarlierDrafts(rest);
+                      const rest = readEarlierDrafts(earlierKey).filter((item) => item !== earlierDraft);
+                      writeEarlierDrafts(earlierKey, rest);
                       setEarlierDraft(rest.find((item) => item.trim() !== script.trim()) ?? null);
                     }}
                   >
@@ -664,6 +684,9 @@ export function AiAudioStudio({
               </div>
             ) : null}
 
+            <div className="au-batch-row" title={zh ? "这个模型每次生成一条音频" : "This model produces one audio track per request"}>
+              <span>{zh ? "批量大小" : "Batch size"}</span><output>1 / 1</output>
+            </div>
             {hasAdvanced ? (
               <button
                 type="button"
@@ -722,10 +745,10 @@ export function AiAudioStudio({
                 {creditsShortfall.action(notice)}
               </output>
             ) : null}
-          </div>
+          </div>}
         </div>
 
-        <div className="au-foot">
+        {!localTool ? <div className="au-foot">
           <button
             type="button"
             className="au-generate"
@@ -741,14 +764,47 @@ export function AiAudioStudio({
               </span>
             )}
           </button>
-        </div>
+        </div> : null}
       </aside>
 
+      <div
+        className="au-panel-resizer"
+        role="separator"
+        tabIndex={0}
+        aria-label={zh ? "调整音频面板宽度" : "Resize audio panel"}
+        aria-controls="audio-settings"
+        aria-orientation="vertical"
+        aria-valuemin={342}
+        aria-valuemax={640}
+        aria-valuenow={panelWidth}
+        onPointerDown={(event) => {
+          if (event.button !== 0 || !event.isPrimary) return;
+          panelDrag.current = { x: event.clientX, width: panelWidth };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (panelDrag.current && event.currentTarget.hasPointerCapture(event.pointerId)) {
+            resizePanel(panelDrag.current.width + event.clientX - panelDrag.current.x);
+          }
+        }}
+        onLostPointerCapture={() => { panelDrag.current = null; }}
+        onKeyDown={(event) => {
+          const widths: Record<string, number> = {
+            ArrowLeft: panelWidth - 16, ArrowRight: panelWidth + 16, Home: 342, End: 640,
+          };
+          if (Object.hasOwn(widths, event.key)) {
+            event.preventDefault();
+            resizePanel(widths[event.key]);
+          }
+        }}
+      />
       <AudioStage
         sectionRef={stageRef}
         zh={zh}
         locale={locale}
         mode={mode}
+        localTool={localTool}
+        ownerId={session?.user?.id}
         tab={tab}
         onTab={setTab}
         jobs={jobs}

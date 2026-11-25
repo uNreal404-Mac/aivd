@@ -1,6 +1,7 @@
 "use client";
 
-import { Paintbrush, RotateCcw } from "lucide-react";
+import { FastForward, Paintbrush, RotateCcw } from "lucide-react";
+import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 import type { StudioResult } from "@/lib/ai-video-studio";
 import type { HistoryView } from "./history-tools";
 import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef, type ViewerItem } from "@/components/hf/studio-results";
@@ -16,6 +17,7 @@ export function ResultsGrid({
   onView,
   onReuse,
   onCanvas,
+  onExtend,
 }: {
   zh: boolean;
   results: StudioResult[];
@@ -24,6 +26,7 @@ export function ResultsGrid({
   onView: (position: number) => void;
   onReuse: (prompt: string | null | undefined) => void;
   onCanvas: (result: StudioResult) => void;
+  onExtend: (result: StudioResult) => void;
 }) {
   return (
     <div className="vst-results du-fade-swap" data-layout={view.layout} data-size={view.size} data-fit={view.fill ? undefined : true}>
@@ -49,6 +52,15 @@ export function ResultsGrid({
               />
               <button type="button" className="sr-card-open" aria-label={zh ? "全屏播放" : "Play full screen"} onClick={() => onView(position)} />
               <span className="sr-card-shade" aria-hidden="true" />
+              {view.layout === "list" ? (
+                <figcaption className="vst-list-description">
+                  <span className="vst-list-meta">
+                    {VIDEO_CATALOG.find(model => model.id === result.model)?.name ?? result.model}
+                    {result.createdAt ? <time dateTime={new Date(result.createdAt).toISOString()}>{new Date(result.createdAt).toLocaleDateString(zh ? "zh-CN" : "en-US")}</time> : null}
+                  </span>
+                  <span>{result.prompt}</span>
+                </figcaption>
+              ) : null}
               <span className="sr-card-top">
                 {result.prompt ? <CopyPromptButton prompt={result.prompt} zh={zh} /> : null}
                 <DownloadLink url={result.videoUrl} zh={zh} />
@@ -57,6 +69,9 @@ export function ResultsGrid({
                 <span className="sr-card-prompt">{result.prompt}</span>
                 <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => onReuse(result.prompt)}>
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button type="button" className="sr-icon" title={zh ? "延长视频" : "Extend video"} aria-label={zh ? "延长视频" : "Extend video"} onClick={() => onExtend(result)}>
+                  <FastForward className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <button
                   type="button"

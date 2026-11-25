@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type FormEvent, type RefObject } from "react";
-import { ArrowUp, Bot, Check, Coins, ImagePlus, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
+import { ArrowUp, Bot, Check, Coins, ImagePlus, Loader2, Plus, X } from "lucide-react";
 
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSession } from "@/lib/auth/client";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { type PickerAsset } from "@/lib/home-media-library";
 import { localizedHref } from "@/lib/du-home";
+import type { CreativeSkill } from "@/lib/creative-skills";
 
 type AgentPlan = {
   reply: string;
@@ -37,14 +38,17 @@ async function visualFile(asset: PickerAsset, label: string): Promise<File> {
   return new File([blob], `${label}__${asset.name}`, { type: mimeType });
 }
 
-export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inputRef }: {
+export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inputRef, home }: {
   lang: string;
   active: boolean;
   brief: string;
   onBriefChange: (value: string) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  home?: { controls: ReactNode; resizeGrip: ReactNode; skill: CreativeSkill | null };
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
+  const language = zh ? "zh" : "en";
+  const instruction = [home?.skill?.brief[language], brief.trim()].filter(Boolean).join("\n\n");
   const { data: session } = useSession();
   const signIn = useSigninModal();
   const [assets, setAssets] = useState<PickerAsset[]>([]);
@@ -53,6 +57,15 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
   const [plan, setPlan] = useState<AgentPlan | null>(null);
   const [error, setError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const revision = useRef(0);
+  const owner = session?.user?.id;
+  const activeRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => { activeRequest.current?.abort(); }, [owner]);
+  useEffect(() => {
+    revision.current++;
+    setPlan(null);
+    setError("");
+  }, [instruction, assets]);
 
   const changeBrief = (value: string) => {
     onBriefChange(value);
@@ -70,10 +83,13 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
     setPlanning(true);
     setPlan(null);
     setError("");
+    const submittedRevision = revision.current;
+    const controller = new AbortController();
+    activeRequest.current = controller;
     try {
       const data = new FormData();
       data.set("action", "plan");
-      data.set("instruction", brief.trim());
+      data.set("instruction", instruction);
       data.set("locale", lang);
       data.set("assets", JSON.stringify(assets.map((asset, index) => ({
         id: asset.id,
@@ -84,8 +100,9 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
       for (const [index, asset] of assets.entries()) {
         data.append("visual", await visualFile(asset, String.fromCharCode(65 + index)));
       }
-      const response = await fetch("/api/v1/creative-space/agent", { method: "POST", body: data });
+      const response = await fetch("/api/v1/creative-space/agent", { method: "POST", headers: { "X-Media-Account": session.user.id }, body: data, signal: controller.signal });
       const payload: unknown = await response.json().catch(() => null);
+      if (submittedRevision !== revision.current) return;
       if (!response.ok) {
         if (response.status === 401) signIn.onOpenWithRedirect(`${window.location.pathname}${window.location.search}`);
         throw new Error(responseMessage(payload, zh ? "Agent 暂时不可用，请稍后重试。" : "The Agent is unavailable. Try again shortly."));
@@ -95,8 +112,9 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
       if (typeof result.reply !== "string") throw new Error("Invalid Agent response");
       setPlan(result);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : (zh ? "Agent 暂时不可用。" : "The Agent is unavailable."));
+      if (!controller.signal.aborted && submittedRevision === revision.current) setError(cause instanceof Error ? cause.message : (zh ? "Agent 暂时不可用。" : "The Agent is unavailable."));
     } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
       setPlanning(false);
     }
   };
@@ -104,6 +122,7 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
   return <div className="cs-agent-panel" hidden={!active}>
     <HomeMediaPicker
       lang={lang}
+      homepage={Boolean(home)}
       open={pickerOpen && active}
       onClose={() => setPickerOpen(false)}
       onSelect={(items) => { setAssets(items); setPlan(null); setError(""); }}
@@ -113,10 +132,11 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
       userId={session?.user?.id}
     />
     <form ref={formRef} className="cs-composer cs-agent-form" onSubmit={(event) => void submit(event)}>
+      {home?.resizeGrip}
       <div className="cs-agent-input-row">
-        <button type="button" className="cs-agent-add" onClick={() => setPickerOpen(true)} aria-label={zh ? "添加参考图片" : "Add reference images"} title={zh ? "从素材库添加图片" : "Add images from the library"}>
+        {!home ? <button type="button" className="cs-agent-add" onClick={() => setPickerOpen(true)} aria-label={zh ? "添加参考图片" : "Add reference images"} title={zh ? "从素材库添加图片" : "Add images from the library"}>
           <ImagePlus className="h-5 w-5" aria-hidden="true" />
-        </button>
+        </button> : null}
         <textarea
           ref={inputRef}
           value={brief}
@@ -124,7 +144,7 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
           onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) formRef.current?.requestSubmit(); }}
           rows={3}
           maxLength={2000}
-          placeholder={zh ? "告诉 Agent 你的创意目标，可用 @A、@B 引用参考图……" : "Tell the Agent what to create. Use @A or @B to reference images…"}
+          placeholder={home?.skill ? (zh ? `描述你想创作的${home.skill.title.zh}……` : `Describe your ${home.skill.title.en.toLowerCase()}…`) : zh ? "告诉 Agent 你的创意目标，可用 @A、@B 引用参考图……" : "Tell the Agent what to create. Use @A or @B to reference images…"}
           aria-label={zh ? "Agent 创作目标" : "Agent creative brief"}
           className="cs-input"
         />
@@ -134,9 +154,9 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
         <button type="button" className="cs-agent-asset-remove" onClick={() => { setAssets((current) => current.filter((item) => item.id !== asset.id)); setPlan(null); }} aria-label={zh ? `移除 ${asset.name}` : `Remove ${asset.name}`}><X className="h-3 w-3" /></button>
       </div>)}</div> : null}
       <div className="cs-composer-bar cs-agent-bar">
-        <button type="button" className="cs-chip-btn" onClick={() => setPickerOpen(true)}><ImagePlus className="h-4 w-4" aria-hidden="true" />{zh ? "添加素材" : "Add assets"}</button>
+        {home ? <><button type="button" className="ha-attachment" aria-label={zh ? "添加参考图片" : "Add reference images"} onClick={() => setPickerOpen(true)}><Plus size={16} /></button>{home.controls}</> : <><button type="button" className="cs-chip-btn" onClick={() => setPickerOpen(true)}><ImagePlus className="h-4 w-4" aria-hidden="true" />{zh ? "添加素材" : "Add assets"}</button>
         <span className="cs-meta"><Bot className="h-4 w-4" aria-hidden="true" />DeepSeek Agent</span>
-        <span className="cs-cost"><Coins className="h-3.5 w-3.5" aria-hidden="true" />{zh ? "计划免费" : "Free plan"}</span>
+        <span className="cs-cost"><Coins className="h-3.5 w-3.5" aria-hidden="true" />{zh ? "计划免费" : "Free plan"}</span></>}
         <button type="submit" className="cs-send" disabled={!brief.trim() || planning} aria-label={zh ? "发送给 Agent" : "Send to Agent"}>{planning ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ArrowUp className="h-4 w-4" aria-hidden="true" />}</button>
       </div>
     </form>

@@ -30,12 +30,12 @@ export function previewFrame(file: File): Promise<File> {
   });
 }
 
-export async function uploadWorkflowVideo(file: File): Promise<{ key: string; url: string }> {
+export async function uploadWorkflowVideo(file: File, fetchImpl: typeof fetch = fetch, expectedAccount?: string): Promise<{ key: string; url: string }> {
   if (file.size > 25 * 1024 * 1024) throw new Error("Videos must be 25 MB or smaller.");
   const form = new FormData();
   form.set("file", file);
   form.set("frame", await previewFrame(file));
-  const response = await fetch("/api/v1/creative-space/video-assets", { method: "POST", body: form });
+  const response = await fetchImpl("/api/v1/creative-space/video-assets", { method: "POST", body: form, ...(expectedAccount ? { headers: { "X-Media-Account": expectedAccount } } : {}) });
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload?.success) throw new Error(payload?.error?.message ?? "Video upload failed.");
   return { key: payload.data.key, url: payload.data.signedUrl };

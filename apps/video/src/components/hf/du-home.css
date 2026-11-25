@@ -1,13 +1,13 @@
-/* Homepage Hero — Jimeng 6.2:1 Wide Slate Proportion × Pollo Soft Diffused Studio Aura.
-   Zero noisy grid dots, zero loud neon outlines, zero double-stacked clutter. */
+/* Homepage creation area. */
 
 .du-hero {
   position: relative;
   overflow-x: clip;
-  padding: 52px 24px 44px;
+  padding: 47px 24px 44px;
+  background: var(--du-editor-bg);
 }
 
-/* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
+/* The diffused light is confined to the creation area. */
 .du-hero-glow {
   position: absolute;
   inset: -64px 0 auto;
@@ -16,7 +16,7 @@
      grid over it, fading out towards the gallery (Pollo's backdrop). */
   background:
     radial-gradient(585px 585px at 50% 18%, color-mix(in srgb, var(--du-accent) 20%, transparent) 0%, color-mix(in srgb, var(--du-accent) 9%, transparent) 47%, transparent 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='1' height='1' fill='white' fill-opacity='.22'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='1' height='1' fill='white' fill-opacity='.075'/%3E%3C/svg%3E");
   mask-image: linear-gradient(to bottom, black 35%, transparent 92%);
   pointer-events: none;
 }
@@ -27,14 +27,15 @@
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
-  max-width: 1120px;
+  width: 100%;
+  max-width: 1200px;
   text-align: center;
 }
 
 .du-hero-title {
   max-width: 100%;
   margin-bottom: 24px;
-  color: white;
+  color: var(--du-editor-text);
   font-size: var(--ds-fs-xl);
   font-weight: 300;
   line-height: 1.5;
@@ -42,10 +43,10 @@
   text-wrap: balance;
 }
 
-/* Composer at Jimeng's proportions (1010 x 158 at a 1440 window, about
-   6.4 : 1); everything inside it is measured from Pollo's. */
+/* Pollo's editor starts at 700 × 164 and can grow within the content column. */
 .du-hero #home-generator {
-  max-width: 1010px;
+  width: min(100%, var(--du-editor-width, 700px));
+  max-width: 1200px;
 }
 
 /* Tabs: a 40px pill with a gradient hairline that brightens into the accent
@@ -79,7 +80,7 @@
 
 .du-hero .du-composer-tab {
   display: inline-flex;
-  min-width: 56px;
+  min-width: 64px;
   height: 32px;
   align-items: center;
   justify-content: center;
@@ -98,7 +99,7 @@
 .du-hero .du-composer {
   position: relative;
   display: flex;
-  min-height: 158px;
+  min-height: var(--du-editor-height, 164px);
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
@@ -158,7 +159,7 @@
 
 .du-hero .du-composer-placeholder {
   top: 0;
-  color: color-mix(in srgb, white 25%, transparent);
+  color: var(--du-editor-placeholder);
   font-size: var(--ds-fs-ui);
   font-weight: 300;
   line-height: 20px;
@@ -214,6 +215,7 @@
   display: inline-flex;
   align-items: center;
   background: color-mix(in srgb, white 5%, transparent);
+  color: var(--du-editor-text);
   white-space: nowrap;
   transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
@@ -330,7 +332,7 @@
 
 @media (max-width: 600px) {
   .du-hero {
-    padding: 32px 14px 28px;
+    padding: 32px 16px 28px;
   }
 
   .du-hero-title {
@@ -442,4 +444,104 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.du-hero .du-composer-resize {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: var(--ds-r-sm);
+  background: transparent;
+  color: var(--ds-text-3);
+  opacity: 0;
+  cursor: nesw-resize;
+  touch-action: none;
+}
+.du-hero .du-composer:hover .du-composer-resize,
+.du-hero .du-composer-resize:focus-visible { opacity: 1; }
+.du-hero .du-composer-prompt-row { flex: 1; }
+.du-hero .du-composer-prompt-row > div { align-self: stretch; }
+.du-hero #home-generator-prompt { height: 100%; }
+.du-hero .du-composer-expand { display: none; }
+.du-hero .du-model-picker-panel { width: min(384px, calc(100vw - 32px)); }
+.du-hero .du-mode-menu { min-width: 162px; border-radius: var(--ds-r-lg); }
+.du-hero .du-mode-menu :is(button, a) {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-ui);
+  text-decoration: none;
+}
+.du-hero .du-mode-menu a:hover { background: var(--ds-fill-2); }
+.du-home-agent { width: 100%; margin-top: 24px; text-align: left; }
+.du-home-agent .cs-agent-form { min-height: 164px; display: flex; flex-direction: column; justify-content: space-between; }
+.du-home-agent .cs-input { min-height: 84px; }
+@media (max-width: 767px) {
+  .du-hero .du-composer-resize { display: none; }
+  .du-hero #home-generator { width: 100%; }
+  .du-hero .du-composer { min-height: 152px; }
+  .du-hero .du-composer-ref-slot { width: 48px; height: 48px; }
+  .du-hero .du-composer-bar { position: relative; flex-wrap: nowrap; gap: 2px; }
+  .du-hero .du-composer-bar[data-expanded] > div:has(> .du-composer-mode) { display: none; }
+  .du-hero .du-composer-bar[data-expanded] > .du-composer-model { flex: 1; max-width: 112px; }
+  .du-hero .du-composer-bar[data-expanded] > button:not(.du-composer-expand) { padding-inline: 4px; }
+  .du-hero .du-composer-bar[data-expanded] .du-composer-settings { padding-inline: 4px; }
+  .du-hero .du-composer-settings .du-composer-divider { display: none; }
+  .du-hero .du-composer-bar > .du-composer-divider { display: none; }
+  .du-hero .du-composer-bar:not([data-expanded]) > :is(button:not(.du-composer-expand), div:has(> .du-composer-settings)) { display: none; }
+  .du-hero .du-composer-bar > .du-composer-expand { display: grid; width: 28px; padding: 0; place-items: center; }
+  .du-hero .du-composer-expand[aria-expanded=true] svg { transform: rotate(180deg); }
+  .du-hero .du-composer-model { max-width: 35%; }
+  .du-hero .du-composer-model [data-model-trigger] { max-width: 100%; padding-inline: 4px; }
+  .du-hero .du-composer-bar > div:has(> .du-composer-settings) { position: static; }
+  .du-hero .du-home-settings { inset-inline: 0; width: 100%; }
+  .du-hero .du-composer-mode { max-width: 112px; padding-inline: 6px; font-size: var(--ds-fs-xs); }
+}
+
+
+.du-composer-mobile-aspect { display: none; }
+@media (max-width: 767px) {
+  .du-hero .du-composer-settings .du-composer-settings-summary { display: none; }
+  .du-hero .du-composer-mobile-aspect { display: inline; }
+}
+.du-wan-sound {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 8px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+}
+@media (max-width: 767px) {
+  .du-hero .du-composer-bar:not([data-expanded]) > .du-wan-sound { display: none; }
+}
+
+
+.du-composer-reference-well { display: contents; }
+@media (max-width: 767px) {
+  .du-hero .du-composer:has(.du-composer-reference-well) { min-height: 174px; }
+  .du-hero .du-composer-prompt-row { flex-direction: column; gap: 8px; }
+  .du-hero .du-composer-reference-well {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding: 4px;
+    border: 1px solid var(--ds-line-1);
+    border-radius: var(--ds-r-lg);
+    background: var(--ds-fill-1);
+  }
+  .du-hero .du-composer-prompt-row > div:not(.du-composer-reference-well) { width: 100%; }
+  .du-hero #home-generator-prompt { display: block; height: 40px; min-height: 40px; }
+  .du-hero #home-generator-prompt, .du-hero .du-composer-placeholder { line-height: 20px; }
 }

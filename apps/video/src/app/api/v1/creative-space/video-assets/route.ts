@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 
 import { db, mediaAssets } from "@/db";
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
@@ -13,6 +14,7 @@ const VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const form = await request.formData();
     const file = form.get("file");
     const frame = form.get("frame");

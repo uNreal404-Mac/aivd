@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Film, Image as ImageIcon, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
+import { Check, Expand, Image as ImageIcon, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
+import { isWanVideoMime, WAN_REFERENCE_MAX_BYTES } from "@/lib/wan-video-references";
+import { canUseHomeKeyframe } from "@/lib/home-keyframes";
 import { MAX_BYTES, uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { listGuestAssets, removeGuestAsset, saveGuestAsset, type PickerAsset } from "@/lib/home-media-library";
 import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
@@ -44,11 +46,16 @@ function saved<T extends { id: string }>(key: string): T[] {
   } catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab }: {
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, homepage = false, mentionAnchor, onMention }: {
   lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string; acceptedTypes?: MediaType[];
   /** The shelf it opens on each time (an "@" button opens it on the elements). Without it, the last shelf stays. */
   initialTab?: Tab;
+  homepage?: boolean;
+  wanVideoOnly?: boolean;
+  keyframeOnly?: boolean;
+  mentionAnchor?: HTMLButtonElement | null;
+  onMention?: (item: PickerAsset) => void;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const allowVideo = acceptedTypes.includes("video");
@@ -64,6 +71,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [works, setWorks] = useState<PickerAsset[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [initial, setInitial] = useState<string[]>([]);
+  const [preview, setPreview] = useState<PickerAsset | null>(null);
+  const previewOpener = useRef<HTMLButtonElement | null>(null);
+  const closePreview = () => { setPreview(null); requestAnimationFrame(() => previewOpener.current?.focus({ preventScroll: true })); };
   const [limitNote, setLimitNote] = useState(false);
   const [elements, setElements] = useState<Element[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -72,6 +82,11 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [category, setCategory] = useState("all");
   const [sourceId, setSourceId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const uploadRevision = useRef(0);
+  useEffect(() => {
+    setUploading(false);
+    return () => { uploadRevision.current++; };
+  }, [userId]);
   const [armed, setArmed] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string[]>([]);
@@ -107,6 +122,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     setError("");
     setAssets([]);
+    setWorks([]);
     setLoadingAssets(true);
     const local = listGuestAssets().catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return [] as PickerAsset[]; });
     const remote = userId
@@ -119,7 +135,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       });
     });
     let worksLoaded: Promise<unknown> = Promise.resolve();
-    if (userId) {
+    if (userId && !wanVideoOnly) {
       // Only ask for the kinds of creations this caller can use.
       worksLoaded = Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
         if (!live) return;
@@ -132,21 +148,45 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     void Promise.allSettled([libraryLoaded, worksLoaded]).then(() => { if (live) setLoadingAssets(false); });
     return () => { live = false; };
-  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey]);
+  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey, wanVideoOnly]);
 
   useEffect(() => {
     if (!open) return;
     // Escape first takes back a pending delete, then closes.
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (preview) { closePreview(); return; }
       if (armed) { if (armTimer.current) clearTimeout(armTimer.current); armTimer.current = null; setArmed(null); return; }
       onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, armed]);
+  }, [open, onClose, armed, preview]);
 
   useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
+
+  const [position, setPosition] = useState({ left: 0, top: 0 });
+  useEffect(() => {
+    if (!open || !mentionAnchor) return;
+    const place = () => {
+      const anchor = mentionAnchor.getBoundingClientRect();
+      const width = Math.min(420, window.innerWidth - 24);
+      const height = Math.min(400, window.innerHeight - 24);
+      const above = anchor.top - height - 8;
+      const below = anchor.bottom + 8;
+      setPosition({
+        left: Math.max(12, Math.min(anchor.left, window.innerWidth - width - 12)),
+        top: Math.max(12, Math.min(below + height <= window.innerHeight - 12 || above < 12 ? below : above, window.innerHeight - height - 12)),
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, mentionAnchor]);
 
   const wantFocus = useRef(false);
   useEffect(() => {
@@ -164,14 +204,15 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   useEffect(() => {
     if (!open || !mounted || !wantFocus.current) return;
     wantFocus.current = false;
+    if (mentionAnchor) { dialogRef.current?.querySelector<HTMLElement>(".hmp-toolbar button")?.focus({ preventScroll: true }); return; }
     dialogRef.current?.querySelector<HTMLElement>(`.hmp-header nav button[data-tab="${initialTab ?? tab}"]`)?.focus({ preventScroll: true });
-  }, [open, mounted, tab, initialTab]);
+  }, [open, mounted, tab, initialTab, mentionAnchor]);
 
   // Each opening starts on the shelf the caller asked for (only on opening,
   // not when the selection changes while it is open).
   useEffect(() => {
-    if (open && initialTab) { setTab(initialTab); setCreate(null); setCategory("all"); }
-  }, [open, initialTab]);
+    if (open && (initialTab || wanVideoOnly)) { setTab(wanVideoOnly ? "upload" : initialTab!); setCreate(null); setCategory("all"); }
+  }, [open, initialTab, wanVideoOnly]);
 
   // Closing the library, or moving to another source, cancels a half-done
   // delete: the library never reopens with a bin already armed. (Above the
@@ -180,10 +221,18 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     if (armTimer.current) clearTimeout(armTimer.current);
     armTimer.current = null;
     setArmed(null);
+    setPreview(null);
   }, [open, tab]);
 
   if (!mounted) return null;
-  const acceptable = (item: PickerAsset) => Boolean(item.url) && acceptedTypes.some((type) => item.mimeType?.startsWith(`${type}/`));
+  const acceptable = (item: PickerAsset) => {
+    if (!item.url || !acceptedTypes.some((type) => item.mimeType?.startsWith(`${type}/`))) return false;
+    if (keyframeOnly) return canUseHomeKeyframe(item, userId);
+    if (!wanVideoOnly) return true;
+    const size = item.file?.size ?? item.size;
+    return isWanVideoMime(item.mimeType) && Boolean(item.file || (userId && item.key?.startsWith(`uploads/${userId}/`)))
+      && typeof size === "number" && size > 0 && size <= WAN_REFERENCE_MAX_BYTES;
+  };
   const elementAssets = elements.map((item) => ({ ...assets.find((asset) => asset.id === item.assetId), id: `element:${item.id}`, name: item.name } as PickerAsset));
   const brandAssets = brands.map((item) => ({ ...assets.find((asset) => asset.id === item.logoId), id: `brand:${item.id}`, name: item.name } as PickerAsset));
   const source = tab === "works" ? works : tab === "upload" ? assets : tab === "elements" ? elementAssets : brandAssets;
@@ -212,9 +261,19 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const selectAsset = (item: PickerAsset) => {
     if (!acceptable(item)) { setError(zh ? "这里不能选这类素材" : "This type of file can't be used here."); return; }
     setError("");
+    if (onMention) {
+      if (!selected.includes(item.id) && selected.length >= maxSelected) { setLimitNote(true); return; }
+      onMention(item);
+      return;
+    }
     toggle(item.id);
   };
   const fileProblem = (file: File): string => {
+    if (wanVideoOnly) {
+      if (!isWanVideoMime(file.type)) return zh ? "请选择 MP4 或 MOV 视频" : "Choose an MP4 or MOV video.";
+      if (!file.size || file.size > WAN_REFERENCE_MAX_BYTES) return zh ? "视频不能为空或超过 10 MB" : "Choose a non-empty video up to 10 MB.";
+      return "";
+    }
     if (allowVideo && file.type.startsWith("video/")) {
       if (!VIDEO_TYPES.has(file.type)) return zh ? "不支持这个视频格式，请用 MP4、WebM 或 MOV" : "That video format isn't supported. Use an MP4, WebM or MOV.";
       if (file.size > MAX_VIDEO_BYTES) return zh ? `视频超过 ${mb(MAX_VIDEO_BYTES)} MB，请换一个小一点的` : `That video is over ${mb(MAX_VIDEO_BYTES)} MB. Choose a smaller one.`;
@@ -225,27 +284,36 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   };
   const addFiles = async (files: FileList | File[]) => {
     if (!files.length || uploading) return;
+    const revision = uploadRevision.current;
     setUploading(true); setError("");
-    for (const file of Array.from(files)) {
+    for (const original of Array.from(files)) {
+      if (revision !== uploadRevision.current) return;
+      // Some macOS file pickers omit the MIME type for MOV. The upload
+      // service still decodes a preview frame and validates the stored asset.
+      const file = wanVideoOnly && !original.type && /\.(mov|mp4)$/i.test(original.name)
+        ? new File([original], original.name, { type: /\.mov$/i.test(original.name) ? "video/quicktime" : "video/mp4", lastModified: original.lastModified })
+        : original;
       const invalid = fileProblem(file);
       if (invalid) { setError(invalid); continue; }
       try {
         if (userId) {
           const isVideo = file.type.startsWith("video/");
-          const uploaded = isVideo ? await uploadWorkflowVideo(file).then((result) => ({ ok: true as const, key: result.key, url: result.url })) : await uploadImage(file);
+          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId).then((result) => ({ ok: true as const, key: result.key, url: result.url })) : await uploadImage(file, fetch, userId);
+          if (revision !== uploadRevision.current) return;
           if (uploaded.ok) {
-            const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, key: uploaded.key, url: uploaded.url };
+            const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, size: file.size, key: uploaded.key, url: uploaded.url };
             setAssets((current) => [remote, ...current]);
             toggle(remote.id, true);
           } else { setError(uploadErrorText(uploaded, zh)); }
         } else {
           const local = await saveGuestAsset(file);
+          if (revision !== uploadRevision.current) return;
           setAssets((current) => [local, ...current]);
           toggle(local.id, true);
         }
-      } catch { setError(uploadErrorText("upload_failed", zh)); }
+      } catch { if (revision === uploadRevision.current) setError(uploadErrorText("upload_failed", zh)); }
     }
-    setUploading(false);
+    if (revision === uploadRevision.current) setUploading(false);
   };
   /** Elements and brand kits built on an upload go with it. */
   const usageNote = (id: string): string => {
@@ -322,7 +390,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     setCreate(null); setName(""); setSourceId(""); setError("");
   };
-  const limits = allowVideo
+  const limits = wanVideoOnly ? (zh ? "MP4 / MOV · 每段最多 10 MB" : "MP4 / MOV · up to 10 MB each") : allowVideo
     ? (zh ? `图片 ${mb(MAX_BYTES)} MB 内 · 视频 ${mb(MAX_VIDEO_BYTES)} MB 内（MP4/WebM/MOV）` : `Images up to ${mb(MAX_BYTES)} MB · videos up to ${mb(MAX_VIDEO_BYTES)} MB`)
     : (zh ? `图片 ${mb(MAX_BYTES)} MB 内` : `Images up to ${mb(MAX_BYTES)} MB`);
   const status = uploading ? "" : error || (limitNote ? limitText : "");
@@ -335,10 +403,18 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // tabs with a round close button, then one inset shelf whose header names
   // what it shows (with its filters on the right) above a grid of square
   // tiles. Our footer stays: several files can be chosen, then confirmed.
-  return createPortal(<div className="hmp-backdrop" data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <dialog ref={dialogRef} open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" data-presence="dialog" data-state={state}>
+  return createPortal(<div className="hmp-backdrop" data-home-library={homepage || undefined} data-mention={Boolean(mentionAnchor) || undefined} data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <dialog ref={dialogRef} open aria-modal="true" onKeyDown={(event) => {
+      if (event.key !== "Tab") return;
+      const focusRoot = preview ? event.currentTarget.querySelector(".hmp-preview") ?? event.currentTarget : event.currentTarget;
+      const targets = Array.from(focusRoot.querySelectorAll<HTMLElement>("button:not(:disabled), input:not([hidden]), select, a[href], video[controls]")).filter((el) => el.getClientRects().length);
+      const first = targets[0];
+      const last = targets.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }} aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" style={mentionAnchor ? position : undefined} data-presence="dialog" data-state={state}>
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
-        {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
+        {((wanVideoOnly ? ["upload"] : keyframeOnly ? ["upload", "elements", "works"] : ["upload", "elements", "brand", "works"]) as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
       </nav><button type="button" className="hmp-close" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={16} /></button></header>
       <section className="hmp-shelf" aria-label={tabNames[tab]}>
       <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : tabNames[tab]}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
@@ -354,7 +430,11 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           const isArmed = armed === item.id;
           const note = isArmed ? usageNote(item.id) : "";
           return <div key={item.id} className="hmp-card-wrap" data-leaving={leaving.includes(item.id) || undefined}>
-            <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <Film />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
+            <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} onClick={() => selectAsset(item)}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : <video src={item.url} muted playsInline preload="metadata" />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
+            {homepage && !onMention ? <button type="button" className="hmp-preview-button" aria-label={zh ? `预览 ${item.name}` : `Preview ${item.name}`} onClick={(event) => {
+              previewOpener.current = event.currentTarget; setPreview(item);
+              requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLButtonElement>(".hmp-preview-close")?.focus());
+            }}><Expand size={14} /></button> : null}
             {tab === "upload" ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting)} onClick={() => pressDelete(item)}
               aria-label={isArmed ? (zh ? `再按一次删除 ${item.name}${note ? `，${note}` : ""}` : `Press again to delete ${item.name}${note ? `. ${note}` : ""}`) : (zh ? `删除 ${item.name}` : `Delete ${item.name}`)}
               title={isArmed ? undefined : (zh ? "删除这个素材" : "Delete this file")}>
@@ -366,7 +446,12 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       </main>
       </section>
       <footer className="hmp-footer"><span aria-live="polite">{uploading ? <><Loader2 className="hmp-spin" size={16} />{zh ? "上传中…" : "Uploading…"}</> : status ? <span key={status} className="hmp-status">{status}</span> : <span className="hmp-count" data-num>{zh ? `已选 ${selected.length}/${maxSelected} ${unit}` : `${selected.length}/${maxSelected} selected`}</span>}</span><button type="button" disabled={!canConfirm} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{selected.length === 0 && changed ? (zh ? "清空已选" : "Clear selection") : (zh ? "选择" : "Select")}</button></footer>
-      <input ref={fileInput} type="file" accept={allowVideo ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif"} multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
+      {preview ? <dialog open className="hmp-preview" aria-modal="true" aria-label={preview.name}>
+        <button className="hmp-preview-close" type="button" aria-label={zh ? "关闭预览" : "Close preview"} onClick={closePreview}><X size={18} /></button>
+        {preview.mimeType.startsWith("video/") ? <video src={preview.url} controls playsInline preload="metadata" /> : <img src={preview.url} alt={preview.name} />}
+        <p>{preview.name}</p>
+      </dialog> : null}
+      <input ref={fileInput} type="file" accept={wanVideoOnly ? "video/mp4,video/quicktime" : allowVideo ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif"} multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
     </dialog>
   </div>, document.body);
 }
