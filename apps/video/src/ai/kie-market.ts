@@ -370,7 +370,7 @@ const IMAGE_MODELS: MarketModel[] = [
     id: "gpt-image-2",
     kind: "image",
     name: "GPT Image 2",
-    options: { aspects: ["auto", ...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K", "4K"], maxCount: 1, maxImages: 16 },
+    options: { aspects: ["auto", ...IMAGE_ASPECTS, "2:1", "1:2", "21:9"], resolutions: ["1K", "2K", "4K"], maxCount: 1, maxImages: 16 },
     costUsd: (req) => GPT_IMAGE_2_USD[(req.resolution ?? "1K") as keyof typeof GPT_IMAGE_2_USD] ?? GPT_IMAGE_2_USD["4K"],
     buildTask: (req) => ({
       model: refs(req, 16).length ? "gpt-image-2-image-to-image" : "gpt-image-2-text-to-image",

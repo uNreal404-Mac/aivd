@@ -35,6 +35,7 @@ export const PRICING_UNITS: PricingUnit[] = [
   { id: "grok-imagine/text-to-video", kind: "video", name: "Grok Imagine", spec: { zh: "6 秒 · 720p", en: "6s · 720p" }, credits: market("grok-imagine/text-to-video", { prompt: "", duration: 6, resolution: "720p" }) },
   { id: "nano-banana-2-1", kind: "image", name: "Nano Banana 2.1", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-2-1", { prompt: "", resolution: "1K" }) },
   { id: "nano-banana-pro", kind: "image", name: "Nano Banana Pro", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-pro", { prompt: "", resolution: "1K" }) },
+  { id: "gpt-image-2", kind: "image", name: "GPT Image 2", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("gpt-image-2", { prompt: "", resolution: "1K" }) },
   { id: "gpt-image-2-6-sunburst", kind: "image", name: "GPT Image 2.6", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("gpt-image-2-6-sunburst", { prompt: "", resolution: "1K" }) },
   { id: "flux3/klein-text-to-image", kind: "image", name: "FLUX 3", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("flux3/klein-text-to-image", { prompt: "", resolution: "1K" }) },
   { id: "grok-imagine-image-2-0/text-to-image", kind: "image", name: "Grok Imagine 2.0", spec: { zh: "每张", en: "per image" }, credits: market("grok-imagine-image-2-0/text-to-image", { prompt: "" }) },

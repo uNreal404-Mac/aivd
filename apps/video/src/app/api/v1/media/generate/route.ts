@@ -38,7 +38,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const data = schema.parse(await request.json());
+    const parsed = schema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      const tooLong = parsed.error.issues.some((issue) => issue.path[0] === "prompt" && issue.code === "too_big");
+      return apiError(tooLong ? "The prompt is too long: 5,000 characters at most." : "The request is not valid.", 400, {
+        code: tooLong ? "PROMPT_TOO_LONG" : "INVALID_REQUEST",
+      });
+    }
+    const data = parsed.data;
     const model = getMarketModel(data.model);
     if (!model || model.kind === "video") {
       return apiError("Unsupported model", 400, { code: "UNSUPPORTED_MODEL" });

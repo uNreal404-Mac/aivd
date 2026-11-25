@@ -63,6 +63,8 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
       }
       return fallback || "You have reached your plan's limit of videos generating at once. Wait for one to finish, or upgrade for more at once.";
     }
+    case "PROMPT_TOO_LONG":
+      return zh ? "提示词太长了，最多 5000 字。" : "The prompt is too long: 5,000 characters at most.";
     case "CONTENT_BLOCKED":
       return fallback;
     default:

@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 import { ApiError } from "./error";
 
 /**
@@ -26,6 +28,16 @@ export function apiError(message: string, status = 400, details?: unknown) {
 export function handleApiError(error: unknown) {
   if (error instanceof ApiError) {
     return apiError(error.message, error.status, error.details);
+  }
+  // A request that fails its schema is the caller's mistake, not a server
+  // error: answer 400 and say which field (any route that uses .parse()).
+  if (error instanceof ZodError) {
+    const issue = error.issues[0];
+    const field = issue?.path.join(".") || "body";
+    return apiError(`The request is not valid: ${field}.`, 400, {
+      code: issue?.code === "too_big" && field === "prompt" ? "PROMPT_TOO_LONG" : "INVALID_REQUEST",
+      field,
+    });
   }
   console.error("Unexpected error:", error);
   return apiError("Internal server error", 500);
