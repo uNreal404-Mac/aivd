@@ -44,6 +44,7 @@ export const NAV_IMAGE_MODELS: NavModel[] = [
   m("seedream-5-5", "Seedream 5.5", "智能图像生成，支持透明背景", "Smart image generation with transparent backgrounds", "new"),
   m("gpt-image-2-6-sunburst", "GPT Image 2.6 Sunburst", "品质出众，编辑精准", "Outstanding quality, precise edits", "new"),
   m("gpt-image-2-6-flare", "GPT Image 2.6 Flare", "惊艳的日常图片，快速生成", "Striking everyday images, fast", "new"),
+  m("gpt-image-2", "GPT Image 2", "文字或图片生成图片，最多 16 张参考图", "Text or images to image, up to 16 references", "new"),
   m("nano-banana-2-1", "Nano Banana 2.1", "Google 新一代旗舰图像模型", "Google's latest flagship image model"),
   m("kling-image-4", "Kling Image 4.0", "最高 8K，支持文字和参考图", "Up to 8K from text and references", "new"),
   m("minimax-h3-image", "MiniMax H3 Image", "用 MiniMax H3 生成图像", "Images from MiniMax H3", "new"),

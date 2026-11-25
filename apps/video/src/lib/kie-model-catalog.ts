@@ -103,6 +103,7 @@ export const IMAGE_CATALOG: CatalogModel[] = [
   { id: "seedream-5-5", name: "Seedream 5.5", family: "Seedream", icon: "S", detail: "Text · image to image", badge: "New" },
   { id: "gpt-image-2-6-sunburst", name: "GPT Image 2.6 Sunburst", family: "GPT Image", icon: "O", detail: "Text · image to image", badge: "New" },
   { id: "gpt-image-2-6-flare", name: "GPT Image 2.6 Flare", family: "GPT Image", icon: "O", detail: "Text · image to image", badge: "New" },
+  { id: "gpt-image-2", name: "GPT Image 2", family: "GPT Image", icon: "O", detail: "Text · image to image", badge: "New" },
   { id: "nano-banana-2-1", name: "Nano Banana 2.1", family: "Nano Banana", icon: "G", detail: "Text · image to image" },
   { id: "nano-banana-pro", name: "Nano Banana Pro", family: "Nano Banana", icon: "G", detail: "Up to 4K" },
   { id: "kling-image-4", name: "Kling Image 4.0", family: "Kling", icon: "K", detail: "Up to 8K · up to 9 images", badge: "New" },
@@ -111,7 +112,7 @@ export const IMAGE_CATALOG: CatalogModel[] = [
 
 export const IMAGE_FEATURED_IDS = [
   // Ready to generate, in menu order.
-  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2-1",
+  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "gpt-image-2", "nano-banana-2-1",
   "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
   "grok-imagine-image-2-0/text-to-image",
 ];

@@ -130,6 +130,7 @@ const MODEL_BADGES: Record<string, { label: string; tone: "top" | "new" | "fast"
   "veo-3.1": { label: "TOP", tone: "top" },
   "seedream-5-5": { label: "TOP", tone: "top" },
   "gpt-image-2-6-sunburst": { label: "NEW", tone: "new" },
+  "gpt-image-2": { label: "NEW", tone: "new" },
   "minimax-h3-image": { label: "FAST", tone: "fast" },
 };
 

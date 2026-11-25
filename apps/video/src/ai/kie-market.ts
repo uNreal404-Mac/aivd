@@ -320,6 +320,12 @@ const IMAGE_ASPECTS = ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"];
 const GPT_IMAGE_26_USD = { "1K": 0.04, "2K": 0.0795, "4K": 0.1325 };
 const GPT_IMAGE_26_REF_USD = 0.011;
 
+// GPT Image 2: one price per image by resolution, the same for text-to-image
+// and image-to-image, nothing extra per reference image (kie.ai/gpt-image-2,
+// read 2026-11-24). KIE rejects 5:4, 4:5, 3:1, 1:3 and 9:21 at 2K or 4K, so
+// only shapes valid at every resolution are offered.
+const GPT_IMAGE_2_USD = { "1K": 0.03, "2K": 0.05, "4K": 0.08 };
+
 const IMAGE_MODELS: MarketModel[] = [
   {
     id: "seedream-5-5",
@@ -360,6 +366,23 @@ const IMAGE_MODELS: MarketModel[] = [
       }),
     }),
   ),
+  {
+    id: "gpt-image-2",
+    kind: "image",
+    name: "GPT Image 2",
+    options: { aspects: ["auto", ...IMAGE_ASPECTS, "21:9"], resolutions: ["1K", "2K", "4K"], maxCount: 1, maxImages: 16 },
+    costUsd: (req) => GPT_IMAGE_2_USD[(req.resolution ?? "1K") as keyof typeof GPT_IMAGE_2_USD] ?? GPT_IMAGE_2_USD["4K"],
+    buildTask: (req) => ({
+      model: refs(req, 16).length ? "gpt-image-2-image-to-image" : "gpt-image-2-text-to-image",
+      input: {
+        prompt: req.prompt,
+        aspect_ratio: req.aspectRatio ?? "auto",
+        // KIE asks for the resolution to be set explicitly.
+        resolution: req.resolution ?? "1K",
+        ...(refs(req, 16).length ? { input_urls: refs(req, 16) } : {}),
+      },
+    }),
+  },
   {
     id: "nano-banana-2-1",
     kind: "image",
