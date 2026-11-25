@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
           cursor: searchParams.get("cursor") ?? undefined,
         });
 
-    return apiSuccess(result);
+    const response = apiSuccess(result);
+    response.headers.set("Cache-Control", "public, max-age=60, s-maxage=60, stale-while-revalidate=300");
+    return response;
   } catch (error) {
     return handleApiError(error);
   }

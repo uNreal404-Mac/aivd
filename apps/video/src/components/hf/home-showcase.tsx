@@ -104,7 +104,7 @@ function Media({ media, className, eager }: { media: ShowMedia; className?: stri
   return media.video ? (
     <InViewVideo className={className} src={media.src} poster={media.poster} hoverPlay={false} documentGallery />
   ) : (
-    <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} />
+    <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
   );
 }
 
@@ -161,13 +161,13 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
                 slide.media.video ? (
                   <div key={slide.href} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties} data-video-scope>
                     <Link href={href(slide.href)} className="hs-slide-link">
-                      <SlideContent slide={slide} eager={index < 3} t={t} />
+                      <SlideContent slide={slide} eager={columnIndex === 0 && index === 0} t={t} />
                     </Link>
                     <VideoPlayToggle zh={zh} className="hs-slide-play" />
                   </div>
                 ) : (
                   <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
-                    <SlideContent slide={slide} eager={index < 3} t={t} />
+                    <SlideContent slide={slide} eager={columnIndex === 0 && index === 0} t={t} />
                   </Link>
                 ),
               )}
