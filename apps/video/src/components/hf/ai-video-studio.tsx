@@ -7,7 +7,7 @@ import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { currentUploadUrls } from "@/lib/home-media-library";
 import { uploadErrorText } from "@/lib/image-to-video";
-import { claimAutostart } from "@/lib/autostart";
+import { AUTOSTART_STORAGE_KEY, claimAutostart } from "@/lib/autostart";
 import { KLING_KEYFRAME_MODEL, maxKlingFrames } from "@/lib/kling-keyframes";
 import { frameKeys, frameReferences, parseStudioFrames, prepareKeyframePrompt, renumberFrameMentions, STUDIO_KEYFRAME_STORAGE, validFrameCount, type StudioFrames } from "@/lib/studio-keyframes";
 import { KeyframeInput } from "./video-studio/keyframe-input";
@@ -91,6 +91,7 @@ function AiVideoStudioForm({
   availableModelIds,
   initialCatalogModelId,
   upcomingModel,
+  homeHandoffToken = "",
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
@@ -100,6 +101,7 @@ function AiVideoStudioForm({
   locale: string;
   availableModelIds: string[];
   initialCatalogModelId?: string;
+  homeHandoffToken?: string;
   /** A model picked from the nav that is not connected or catalogued yet. */
   upcomingModel?: { name: string; desc: string };
 }) {
@@ -168,7 +170,7 @@ function AiVideoStudioForm({
     draftScope,
     settings.prompt,
     (text) => setSettings((previous) => ({ ...previous, prompt: text })),
-    Boolean(initialSettings?.prompt),
+    Boolean(initialSettings?.prompt || homeHandoffToken),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
@@ -532,6 +534,10 @@ function AiVideoStudioForm({
       setHomeReferences((items) => items.map((item) => ({ ...item, url: urls.get(item.key) ?? item.url })));
       if (saved.imageKey) setPreview((current) => urls.get(saved.imageKey!) ?? current);
     });
+  }, () => {
+    if (!homeHandoffToken) return false;
+    try { return JSON.parse(sessionStorage.getItem(AUTOSTART_STORAGE_KEY) || "null")?.token === homeHandoffToken; }
+    catch { return false; }
   });
 
   // Show earlier generations only when signed in (avoids 401 noise for guests).

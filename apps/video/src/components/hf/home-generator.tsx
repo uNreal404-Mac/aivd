@@ -469,6 +469,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
           sessionStorage.setItem("aivd:home-image-reference-owner", session.user.id);
           sessionStorage.setItem("aivd:home-image-references", JSON.stringify(uploaded));
         }
+        const handoff = crypto.randomUUID();
+        sessionStorage.setItem("aivd:home-image-handoff", handoff);
+        params.set("handoff", handoff);
         router.push(`${localizedHref(lang, "/ai/image")}?${params}`);
       } catch { setNotice(zh ? "准备参考图片失败，请重试。" : "Could not prepare the reference images."); setSubmitting(false); }
       return;

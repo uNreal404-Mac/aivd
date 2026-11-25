@@ -57,6 +57,7 @@ function AiImageStudioForm({
   initialAspect = "",
   initialResolution = "",
   initialCount = 1,
+  homeHandoffToken = "",
 }: {
   locale: string;
   initialPrompt?: string;
@@ -65,6 +66,7 @@ function AiImageStudioForm({
   initialAspect?: string;
   /** Resolution chosen on the homepage, used when this model offers it. */
   initialResolution?: string;
+  homeHandoffToken?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
@@ -82,7 +84,7 @@ function AiImageStudioForm({
     try { setShowGuide(localStorage.getItem("aivd:image-studio-guide-dismissed") !== "1"); } catch { /* Storage is optional. */ }
   }, []);
   const [prompt, setPrompt] = useState(initialPrompt);
-  const draft = usePromptDraft(draftScope, prompt, setPrompt, Boolean(initialPrompt));
+  const draft = usePromptDraft(draftScope, prompt, setPrompt, Boolean(initialPrompt || homeHandoffToken));
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (model.id === DEFAULT_IMAGE_MODEL.id && options.aspects?.includes("3:4") ? "3:4" : options.aspects?.[0] ?? "1:1"));
   const [resolution, setResolution] = useState(imageResolution(model, initialResolution) ?? "");
   const [count, setCount] = useState(() => imageOutputCount(initialCount, options.maxCount));
@@ -150,6 +152,10 @@ function AiImageStudioForm({
     setCount(imageOutputCount(saved.count, restored.options.maxCount));
     setRefs(Array.isArray(saved.refs) ? saved.refs.slice(0, restored.options.maxImages ?? 0) : []);
     void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
+  }, () => {
+    if (sessionLoading || !homeHandoffToken || sessionStorage.getItem("aivd:home-image-handoff") !== homeHandoffToken) return false;
+    sessionStorage.removeItem("aivd:home-image-handoff");
+    return true;
   });
 
   const modelName = (id?: string) => (id ? (getMarketModel(id)?.name ?? id) : "");

@@ -3,18 +3,23 @@
 import { useEffect, useRef } from "react";
 
 /** Save a generator's complete state only for the detour through pricing. */
-export function useCreditReturnDraft<T>(kind: string, snapshot: () => T, restore: (draft: T) => void): void {
-  const callbacks = useRef({ snapshot, restore });
-  callbacks.current = { snapshot, restore };
+export function useCreditReturnDraft<T>(kind: string, snapshot: () => T, restore: (draft: T) => void, preferNewHandoff?: () => boolean): void {
+  const callbacks = useRef({ snapshot, restore, preferNewHandoff });
+  callbacks.current = { snapshot, restore, preferNewHandoff };
 
   useEffect(() => {
     const key = `aivd:credit-draft:${kind}`;
     const path = window.location.pathname;
     try {
-      const saved = JSON.parse(sessionStorage.getItem(key) || "null") as { path?: string; draft?: T } | null;
-      if (saved?.path === path && saved.draft) {
-        callbacks.current.restore(saved.draft);
+      if (callbacks.current.preferNewHandoff?.()) {
+        // A fresh homepage submission wins over an older pricing detour.
         sessionStorage.removeItem(key);
+      } else {
+        const saved = JSON.parse(sessionStorage.getItem(key) || "null") as { path?: string; draft?: T } | null;
+        if (saved?.path === path && saved.draft) {
+          callbacks.current.restore(saved.draft);
+          sessionStorage.removeItem(key);
+        }
       }
     } catch { sessionStorage.removeItem(key); }
 
