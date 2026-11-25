@@ -111,7 +111,7 @@ const BACKUP_IMAGE_FEATURED = [
   "qwen3/text-to-image",
 ];
 
-// Match final-003's menu order. Models added later remain available after its entries.
+// Match final-003's menu contents and search order exactly.
 const FINAL003_VIDEO_ORDER = [
   "veo-3.1", "wan2.6", "bytedance/seedance-2-5", "seedance-2-5-flash",
   "kling/v4-reference-to-video", "kling/v4-flash-reference-to-video", "gemini-omni-flash-1-2",
@@ -212,12 +212,15 @@ export function KieModelPicker({
   const backupIds = kind === "video" ? BACKUP_VIDEO_IDS : BACKUP_IMAGE_IDS;
   const fullCatalog = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const catalog = catalogSet === "backup" ? fullCatalog.filter((item) => backupIds.includes(item.id)) : fullCatalog;
-  const displayCatalog = catalogSet === "backup" ? catalog : catalog.filter((item) => connectedIds.includes(item.id));
+  const final003Ids = kind === "video" ? FINAL003_VIDEO_ORDER : FINAL003_IMAGE_ORDER;
+  const displayCatalog = catalogSet === "backup"
+    ? catalog
+    : catalog.filter((item) => final003Ids.includes(item.id) && connectedIds.includes(item.id));
   const featuredIds = catalogSet === "backup"
     ? kind === "video" ? BACKUP_VIDEO_FEATURED : BACKUP_IMAGE_FEATURED
     : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
   const orderedCatalog = catalogSet === "current"
-    ? inFinal003Order(displayCatalog, kind === "video" ? FINAL003_VIDEO_ORDER : FINAL003_IMAGE_ORDER)
+    ? inFinal003Order(displayCatalog, final003Ids)
     : inDisplayOrder(displayCatalog, featuredIds);
   // Without a connected list every entry counts as ready (older callers).
   const isConnected = (id: string) => connectedIds.length === 0 || connectedIds.includes(id);
@@ -271,7 +274,8 @@ export function KieModelPicker({
       item.family.toLowerCase().includes(needle);
     return connectedFirst(orderedCatalog.filter(matches), isConnected);
   }, [kind, query, catalogSet, connectedIds]);
-  const readyCatalog = orderedCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
+  // The full catalogue keeps final-003's family order; featured rows use their own explicit order.
+  const readyCatalog = displayCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
   const sortedByMode = useMemo(() => {
     if (sortBy === "default") return [];
     const costOf = (id: string) =>
@@ -508,18 +512,23 @@ export function KieModelPicker({
               <>
                 <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>
                 <p className="px-3 pb-1 text-xs font-semibold text-[var(--du-text-muted)]">{family}</p>
-                {connectedFirst(orderedCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
+                {connectedFirst(readyCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
               </>
             ) : (
               <>
                 <p className="du-model-section"><Sparkles aria-hidden="true" />{copy.featured}</p>
                 {featuredIds.map((id) => readyCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
-                {readyCatalog.some((item) => !featuredIds.includes(item.id)) ? (
-                  <>
-                    <p className="du-model-section">{copy.all}</p>
-                    {readyCatalog.filter((item) => !featuredIds.includes(item.id)).map(availableRow)}
-                  </>
-                ) : null}
+                <p className="du-model-section">{copy.all}</p>
+                {Array.from(new Set(readyCatalog.map((item) => item.family))).map((name) => (
+                  <button key={name} type="button" className="du-model-row" onClick={() => setFamily(name)}>
+                    <span aria-hidden="true" className="du-model-tile"><ModelIcon family={name} kind={kind} /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="du-model-name">{name}</span>
+                      <span className="du-model-meta">{readyCatalog.filter((item) => item.family === name).length} {copy.models}</span>
+                    </span>
+                    <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
+                  </button>
+                ))}
                 {comingSoon.length ? (
                   <>
                     <p className="du-model-section">{t("comingSoonSection")}</p>
