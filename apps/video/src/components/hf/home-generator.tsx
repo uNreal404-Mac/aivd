@@ -692,9 +692,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       </a>
       <figure className="du-canvas-entry-card du-canvas-entry-preview" data-video-scope>
         <div className="du-canvas-entry-media" aria-hidden="true">
-          <InViewVideo src="/home/example-zombie-kitten-21-24.mp4" poster="/home/example-zombie-kitten-21-24-poster.webp" documentGallery />
+          <InViewVideo src="/home/example-samurai-cat-7s.mp4" poster="/home/example-samurai-cat-7s-poster.webp" documentGallery />
         </div>
-        <figcaption>{zh ? "僵尸小猫 · 示例视频" : "Zombie kitten · Sample video"}</figcaption>
+        <figcaption>{zh ? "武士猫 · 示例视频" : "Samurai cat · Sample video"}</figcaption>
       </figure>
     </div> : null}
     {homepage && kind === "video" && speechMode ? <HomeSpeech lang={lang} modeControl={modeControl} onResize={setEditorSize} /> : kind === "video" || kind === "image" ?
