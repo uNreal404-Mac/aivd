@@ -210,6 +210,7 @@ export class Storage {
     sourceUrl: string;
     key: string;
     contentType?: string;
+    requireNonEmpty?: boolean;
   }): Promise<{ key: string; fileSize: number }> {
     const response = await fetch(params.sourceUrl);
     if (!response.ok) {
@@ -217,6 +218,9 @@ export class Storage {
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
+    if (params.requireNonEmpty && buffer.byteLength === 0) {
+      throw new Error("Cannot store an empty media download");
+    }
     const contentType =
       params.contentType ||
       response.headers.get("content-type") ||

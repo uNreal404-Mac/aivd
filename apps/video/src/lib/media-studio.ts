@@ -134,6 +134,7 @@ type SubmitResult = { ok: true; uuid: string; credits: number } | { ok: false; m
 
 type RetryReservation = {
   key: string;
+  recovering: boolean;
   forget: () => void;
 };
 
@@ -167,6 +168,7 @@ async function reserveRetryKey(
   if (key === unmigrated) saveRetryKey(migratedSlot, key);
   return {
     key,
+    recovering: stored !== null || Boolean(unmigrated),
     forget: () => {
       // A late response must not clear a newer reservation.
       try {
@@ -229,13 +231,15 @@ export async function submitMedia(
       retry.forget();
       return { ok: true, uuid, credits: payload?.data?.creditsUsed ?? 0 };
     }
-    const accountChanged = payload?.error?.details?.code === "ACCOUNT_CHANGED";
-    if (payload?.success === false && response.status >= 400 && response.status < 500 && response.status !== 408 && !accountChanged) {
+    const code = payload?.error?.details?.code;
+    // A reply to a later attempt cannot establish the outcome of the original POST.
+    // Changing any submitted parameter reserves its own key through the request signature.
+    const firstRefusal = !retry.recovering && payload?.success === false && response.status >= 400 && response.status < 500;
+    if (firstRefusal && response.status !== 408 && code !== "ACCOUNT_CHANGED" && code !== "CONTENT_BLOCKED") {
       retry.forget();
     }
     if (!payload) return { ok: false, message: networkError };
     // Errors look like { success: false, error: { message, details: { code } } }.
-    const code = payload?.error?.details?.code;
     const message = payload?.error?.message ?? "";
     const requiredCredits = payload?.error?.details?.requiredCredits;
     return {

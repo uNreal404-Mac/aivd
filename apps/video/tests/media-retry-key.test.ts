@@ -129,7 +129,7 @@ describe("submitMedia idempotency key", () => {
     const [a, after503, after401, b, afterSwitch, after422, bAgain] = keysOf(post);
     expect([after503, after401, afterSwitch]).toEqual([a, a, a]);
     expect(b).not.toBe(a);
-    expect(after422).not.toBe(a);
+    expect(after422).toBe(a);
     expect(bAgain).toBe(b);
     expect(post.mock.calls.map(([, init]) => init.headers["X-Media-Account"]))
       .toEqual(["user_a", "user_a", "user_a", "user_b", "user_a", "user_a", "user_b"]);

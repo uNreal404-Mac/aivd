@@ -1,3 +1,4 @@
+import { generationRequestKey, readGenerationReplay } from "@/lib/api/generation-replay";
 import { assertMediaAccount } from "@/lib/api/media-account";
 import { NextRequest } from "next/server";
 import { videoService } from "@/services/video";
@@ -45,13 +46,6 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     assertMediaAccount(request, user.id);
-    if (!canGenerateInPreview(user)) {
-      return apiError(
-        "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
-        503,
-        { code: "GENERATION_DISABLED" },
-      );
-    }
 
     const body = await request.json();
     const parsed = generateSchema.safeParse(body);
@@ -60,6 +54,16 @@ export async function POST(request: NextRequest) {
       throw parsed.error;
     }
     const data = parsed.data;
+    const idempotencyKey = generationRequestKey(request, data.idempotencyKey);
+    const replay = await readGenerationReplay(user.id, idempotencyKey);
+    if (replay) return apiSuccess(replay);
+    if (!canGenerateInPreview(user)) {
+      return apiError(
+        "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
+        503,
+        { code: "GENERATION_DISABLED" },
+      );
+    }
 
     const imageUrls = [
       ...(data.imageUrl ? [data.imageUrl] : []),
@@ -93,11 +97,6 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-
-    const headerKey = request.headers.get("Idempotency-Key");
-    const idempotencyKey = headerKey
-      ? headerKey.slice(0, 200)
-      : data.idempotencyKey;
 
     const result = await videoService.generate({
       userId: user.id,

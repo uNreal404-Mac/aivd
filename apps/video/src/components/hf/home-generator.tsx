@@ -9,7 +9,7 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { WAN_REFERENCE_MAX_FILES } from "@/lib/wan-video-references";
 import { listGuestAssets, readyPickerVideo, type PickerAsset } from "@/lib/home-media-library";
-import { findHomeDraft, homeDraftKey } from "@/lib/home-draft";
+import { findHomeDraft, homeDraftKey, homeDraftReferences } from "@/lib/home-draft";
 import { HomeKeyframes } from "./home-keyframes";
 import { prepareHomeKeyframes, remapHomeKeyframeMentions } from "@/lib/home-keyframes";
 import { KLING_KEYFRAME_MODEL, KLING_MAX_MIDDLE_FRAMES, mapKlingFrames, orderedKlingFrames, maxKlingFrames, type KlingKeyframes } from "@/lib/kling-keyframes";
@@ -125,6 +125,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   videoReferencesRef.current = videoReferences;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
+  const draftStore = useRef<Storage | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [aspect, setAspect] = useState(initialKind === "image" ? "1:1" : (defaultVideoModel?.aspects[0] ?? "16:9"));
   const [duration, setDuration] = useState(defaultVideoModel?.durations[0] ?? 4);
@@ -217,10 +218,15 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       try {
         const pending = JSON.parse(localStorage.getItem(pendingStorageKey) || "null");
         const resume = Boolean(owner && pending?.path === window.location.pathname && Date.now() - pending.at < PENDING_TTL_MS);
-        const draft = findHomeDraft(localStorage, draftStorageKey, owner, resume);
+        const deviceDraft = findHomeDraft(localStorage, draftStorageKey, owner, resume);
+        const continuingGuest = resume && deviceDraft?.key === homeDraftKey(draftStorageKey);
+        const tabDraft = !continuingGuest && sessionStorage.getItem(scopedDraftKey) ? findHomeDraft(sessionStorage, draftStorageKey, owner, false) : null;
+        const draft = tabDraft ?? deviceDraft;
+        const source = tabDraft ? sessionStorage : localStorage;
         if (draft) {
           const { saved } = draft;
-          const local = await listGuestAssets();
+          const hasLocalFiles = homeDraftReferences(saved).some(item => item.id && !(item.key && item.url));
+          const local = hasLocalFiles ? await listGuestAssets(owner) : [];
           const restore = (items: unknown): PickerAsset[] => Array.isArray(items) ? items.flatMap((item) => {
             if (!item || typeof item.id !== "string") return [];
             const guest = local.find((asset) => asset.id === item.id);
@@ -230,7 +236,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
           if (!live) return;
           const restoredKind = chosenTab.current ?? (!hideKindTabs && (saved.kind === "video" || saved.kind === "image") ? saved.kind : initialKind);
           if (!chosenTab.current && !hideKindTabs && (saved.kind === "video" || saved.kind === "image")) setKind(saved.kind);
-          resumedGuestRequest.current = resume && draft.key !== scopedDraftKey && !chosenTab.current;
+          resumedGuestRequest.current = continuingGuest && !chosenTab.current;
           if (typeof saved.prompt === "string" && !initialPrompt) setPrompt(saved.prompt);
           // The visitor's own text replaced by an idea can still be brought back after a reload.
           if (!initialPrompt && saved.replaced && typeof saved.replaced.prompt === "string" && typeof saved.replaced.aspect === "string") setReplaced({ prompt: saved.replaced.prompt, aspect: saved.replaced.aspect });
@@ -259,10 +265,17 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
             setKeyframes({ first: restore([saved.keyframes.first])[0], middle: restore(saved.keyframes.middle), last: restore([saved.keyframes.last])[0] });
           }
           setKeyframeMode(homepage && restoredVideoModelId === KLING_KEYFRAME_MODEL && saved.keyframeMode === true);
-          if (draft.key !== scopedDraftKey && localStorage.getItem(draft.key) === draft.raw) {
-            localStorage.setItem(scopedDraftKey, JSON.stringify({ ...saved, owner }));
-            localStorage.removeItem(draft.key);
+          const accountRaw = localStorage.getItem(scopedDraftKey);
+          // A guest continuation must not overwrite an existing account draft.
+          // Keep it editable and reloadable in this signed-in tab instead.
+          draftStore.current = tabDraft || (accountRaw !== null && (draft.key !== scopedDraftKey || accountRaw !== draft.raw)) ? sessionStorage : localStorage;
+          if (draft.key !== scopedDraftKey && source.getItem(draft.key) === draft.raw) {
+            const imported = JSON.stringify({ ...saved, owner });
+            draftStore.current.setItem(scopedDraftKey, imported);
+            if (draftStore.current === source && source.getItem(scopedDraftKey) === imported && source.getItem(draft.key) === draft.raw) source.removeItem(draft.key);
           }
+        } else {
+          draftStore.current = localStorage.getItem(scopedDraftKey) === null ? localStorage : sessionStorage;
         }
       } catch { /* An old draft must not prevent the composer opening. */ }
       if (live) setDraftReady(true);
@@ -271,10 +284,10 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   }, [sessionPending, draftReady, owner, scopedDraftKey, draftStorageKey, pendingStorageKey]);
 
   useEffect(() => {
-    if (sessionPending || !draftReady) return;
+    if (sessionPending || !draftReady || !draftStore.current) return;
     const compactAsset = ({ id, name, mimeType, key, url, size }: PickerAsset) => ({ id, name, mimeType, key, size, url: key ? url : "" });
     const compact = (items: PickerAsset[]) => items.map(compactAsset);
-    localStorage.setItem(scopedDraftKey, JSON.stringify({ owner, kind, prompt, modelId, imageModelId, imageCount, wanClipMode, keyframeMode, keyframes: mapKlingFrames(keyframes, compactAsset), aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages), replaced }));
+    draftStore.current.setItem(scopedDraftKey, JSON.stringify({ owner, kind, prompt, modelId, imageModelId, imageCount, wanClipMode, keyframeMode, keyframes: mapKlingFrames(keyframes, compactAsset), aspect, resolution, duration, sound, videoReferences: compact(videoReferences), referenceImages: compact(referenceImages), replaced }));
   }, [sessionPending, draftReady, owner, scopedDraftKey, kind, prompt, modelId, imageModelId, imageCount, wanClipMode, keyframeMode, keyframes, aspect, resolution, duration, sound, videoReferences, referenceImages, replaced]);
 
   // A "Generate" pressed while signed out continues after sign-in, if that
@@ -491,10 +504,10 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         const frames = await prepareHomeKeyframes(keyframes, session.user.id, () => alive.current, (asset, uploaded) => {
           const merge = (item: PickerAsset) => item.id === asset.id ? { ...item, ...uploaded } : item;
           setKeyframes((previous) => mapKlingFrames(previous, merge));
-          const saved = JSON.parse(localStorage.getItem(scopedDraftKey) || "null");
+          const saved = JSON.parse(draftStore.current?.getItem(scopedDraftKey) || "null");
           if (saved?.owner === owner && saved.keyframes) {
             saved.keyframes = mapKlingFrames(saved.keyframes as KlingKeyframes<PickerAsset>, merge);
-            localStorage.setItem(scopedDraftKey, JSON.stringify(saved));
+            draftStore.current?.setItem(scopedDraftKey, JSON.stringify(saved));
           }
         });
         if (!alive.current) return;
@@ -519,10 +532,10 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
               setVideoReferences((current) => current.map((ref) => ref.id === item.id ? updated : ref));
               // Save this successful upload before attempting the next one.
               // A partial failure or refresh can then reuse its server key.
-              const saved = JSON.parse(localStorage.getItem(scopedDraftKey) || "null");
+              const saved = JSON.parse(draftStore.current?.getItem(scopedDraftKey) || "null");
               if (saved?.owner === owner && Array.isArray(saved.videoReferences)) {
                 saved.videoReferences = saved.videoReferences.map((ref: PickerAsset) => ref.id === item.id ? { ...ref, key: prepared.key, url: prepared.url, size: updated.size } : ref);
-                localStorage.setItem(scopedDraftKey, JSON.stringify(saved));
+                draftStore.current?.setItem(scopedDraftKey, JSON.stringify(saved));
               }
             }
             continue;

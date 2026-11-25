@@ -1,17 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
+import { D1PreparedQuery } from "drizzle-orm/d1";
 
 import { getMarketModel, imageResolution, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { POST } from "@/app/api/v1/media/generate/route";
 import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/pricing-user";
-import { CreditTransType, db, users } from "@/db";
+import { CreditTransType, db, users, videos } from "@/db";
 import { IMAGE_FEATURED_IDS } from "@/lib/kie-model-catalog";
 import { NAV_IMAGE_MODELS } from "@/lib/nav-models";
+import { Storage } from "@/lib/storage";
 import { creditService } from "@/services/credit";
 import { VideoService, videoService } from "@/services/video";
 import { countTransactions, getBalance, getHoldRow, getVideoRow, giveCredits, uniqueOrderNo, uniqueUserId } from "./helpers";
 
-const upload = vi.hoisted(() => vi.fn(async ({ key }: { key: string; sourceUrl: string }) => ({ key })));
+const upload = vi.hoisted(() => vi.fn(async ({ key }: { key: string; sourceUrl: string }) => ({ key, fileSize: 12 })));
 const deleteFile = vi.hoisted(() => vi.fn(async (_key: string) => {}));
 vi.mock("@/lib/storage", async (original) => ({
   ...await original<typeof import("@/lib/storage")>(),
@@ -211,6 +214,151 @@ it.each(cases)("$id settles the submitted batch once and delivers all outputs in
 });
 
 const batch = { model: "flux3/klein-text-to-image", prompt: "a cat", resolution: "2K", count: 4 };
+
+describe("image batch storage integrity", () => {
+  it.each(["complete", "null body", "zero bytes", "download rejected", "zero-byte receipt"] as const)(
+    "only settles a batch with four non-empty stored images (%s)",
+    async scenario => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 100);
+      const job = await videoService.generateMedia({ ...batch, userId });
+      expect(await getHoldRow(job.videoUuid)).toMatchObject({ status: "HOLDING", credits: job.creditsUsed });
+
+      const sources = urls(batch.count);
+      const storage = new Storage({
+        endpoint: "https://storage.test", region: "auto", bucket: "fixtures",
+        accessKeyId: "test-key", secretAccessKey: "test-secret",
+      });
+      const put = vi.spyOn(storage, "uploadFile").mockImplementation(async ({ key }) => ({ key }));
+      upstream.mockImplementation(async source => {
+        if (String(source) === sources[1]) {
+          if (scenario === "null body") return new Response(null);
+          if (scenario === "zero bytes") return new Response(new Uint8Array(0), { headers: { "content-length": "15" } });
+          if (scenario === "download rejected") return new Response(null, { status: 503 });
+        }
+        return new Response(Uint8Array.of(1, 2, 3), { headers: { "content-type": "image/png" } });
+      });
+      for (let index = 0; index < sources.length; index++) {
+        upload.mockImplementationOnce(async params => {
+          const stored = await storage.downloadAndUpload(params);
+          return scenario === "zero-byte receipt" && index === 1 ? { ...stored, fileSize: 0 } : stored;
+        });
+      }
+
+      await finish(job.videoUuid, "success", sources);
+      await finish(job.videoUuid, "success", sources);
+      const keys = upload.mock.calls.map(([params]) => params.key);
+      expect(keys).toHaveLength(batch.count);
+      if (scenario === "complete") {
+        expect(put).toHaveBeenCalledTimes(batch.count);
+        expect(deleteFile).not.toHaveBeenCalled();
+        expect(await getVideoRow(job.videoUuid)).toMatchObject({
+          status: "COMPLETED", videoUrl: keys[0], parameters: { extraKeys: keys.slice(1) },
+        });
+        expect(await countTransactions(job.videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(1);
+        expect(await getBalance(userId)).toMatchObject({ availableCredits: 100 - job.creditsUsed, frozenCredits: 0 });
+        return;
+      }
+
+      const storedKeys = scenario === "zero-byte receipt" ? keys : keys.filter((_, index) => index !== 1);
+      expect(put.mock.calls.map(([params]) => params.key).sort()).toEqual([...storedKeys].sort());
+      expect(deleteFile.mock.calls.map(([key]) => key).sort()).toEqual([...storedKeys].sort());
+      const row = await getVideoRow(job.videoUuid);
+      expect(row).toMatchObject({ status: "FAILED", videoUrl: null, creditsUsed: 0 });
+      expect(row?.parameters?.extraKeys).toBeUndefined();
+      expect(await getHoldRow(job.videoUuid)).toMatchObject({ status: "RELEASED", credits: job.creditsUsed });
+      expect(await countTransactions(job.videoUuid, CreditTransType.REFUND)).toBe(1);
+      expect(await countTransactions(job.videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(0);
+      expect(await getBalance(userId)).toMatchObject({ availableCredits: 100, frozenCredits: 0, usedCredits: 0 });
+    },
+  );
+});
+
+it("preserves an upload claimed after the failure callback read GENERATING", async () => {
+  const userId = uniqueUserId();
+  await giveCredits(userId, 100);
+  const { videoUuid, creditsUsed } = await videoService.generateMedia({ ...batch, userId });
+  const uploading = Promise.withResolvers<void>();
+  const resumeUpload = Promise.withResolvers<void>();
+  upload.mockImplementationOnce(async ({ key }) => {
+    uploading.resolve();
+    await resumeUpload.promise;
+    return { key, fileSize: 12 };
+  });
+
+  // Run the real success callback immediately before D1 executes the competing
+  // FAILED update. Keep the uploader in progress until the failure callback returns.
+  let success: Promise<void> | undefined;
+  const all = D1PreparedQuery.prototype.all;
+  const write = vi.spyOn(D1PreparedQuery.prototype, "all").mockImplementation(async function (this: D1PreparedQuery, bindings) {
+    const { params } = this.getQuery();
+    if (params[0] === "FAILED" && params.includes(videoUuid)) {
+      success = finish(videoUuid, "success", urls(batch.count));
+      await Promise.race([uploading.promise, success]);
+    }
+    return all.call(this, bindings);
+  });
+  try {
+    await finish(videoUuid, "fail");
+    expect(await getVideoRow(videoUuid)).toMatchObject({ status: "UPLOADING", creditsUsed });
+    expect(await getHoldRow(videoUuid)).toMatchObject({ status: "HOLDING", credits: creditsUsed });
+  } finally {
+    write.mockRestore();
+    resumeUpload.resolve();
+    await success;
+  }
+  expect(await getVideoRow(videoUuid)).toMatchObject({ status: "COMPLETED", creditsUsed });
+  expect(await getHoldRow(videoUuid)).toMatchObject({ status: "SETTLED" });
+  expect(await countTransactions(videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(1);
+  expect(await countTransactions(videoUuid, CreditTransType.REFUND)).toBe(0);
+  expect(await getBalance(userId)).toMatchObject({ availableCredits: 100 - creditsUsed, frozenCredits: 0, usedCredits: creditsUsed });
+});
+
+it.each(["failure callback", "incomplete success callback", "status poll"])(
+  "recovers an interrupted refund on %s retries", async retry => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 100);
+    const request = { ...batch, userId, idempotencyKey: "refund-retry" };
+    const { videoUuid, creditsUsed } = await videoService.generateMedia(request);
+    const callback = () => retry === "incomplete success callback"
+      ? finish(videoUuid, "success", urls(batch.count - 1))
+      : finish(videoUuid, "fail");
+    const release = vi.spyOn(creditService, "release").mockRejectedValueOnce(new Error("refund interrupted"));
+    try {
+      await expect(callback()).rejects.toThrow("refund interrupted");
+    } finally {
+      release.mockRestore();
+    }
+    expect(await getVideoRow(videoUuid)).toMatchObject({ status: "FAILED", creditsUsed: 0 });
+    expect(await getHoldRow(videoUuid)).toMatchObject({ status: "HOLDING", credits: creditsUsed });
+
+    const replay = () => retry === "status poll" ? videoService.refreshStatus(videoUuid, userId) : callback();
+    await Promise.all([replay(), replay()]);
+    await finish(videoUuid, "success", urls(batch.count));
+    expect(upload).not.toHaveBeenCalled();
+    expect(await getVideoRow(videoUuid)).toMatchObject({ status: "FAILED", creditsUsed: 0, videoUrl: null });
+    expect(await getHoldRow(videoUuid)).toMatchObject({ status: "RELEASED" });
+    expect(await countTransactions(videoUuid, CreditTransType.REFUND)).toBe(1);
+    expect(await countTransactions(videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(0);
+    expect(await getBalance(userId)).toMatchObject({ availableCredits: 100, frozenCredits: 0, usedCredits: 0 });
+  }
+);
+
+it("reconciles a legacy failed image with its quote and hold still present", async () => {
+  const userId = uniqueUserId();
+  await giveCredits(userId, 100);
+  const request = { ...batch, userId, idempotencyKey: "legacy-failure" };
+  const { videoUuid } = await videoService.generateMedia(request);
+  await db.update(videos).set({ status: "FAILED" }).where(eq(videos.uuid, videoUuid));
+
+  await finish(videoUuid, "fail");
+  expect(await videoService.generateMedia(request)).toMatchObject({ videoUuid, status: "FAILED", creditsUsed: 0 });
+  expect(await getVideoRow(videoUuid)).toMatchObject({ status: "FAILED", creditsUsed: 0 });
+  expect(await getHoldRow(videoUuid)).toMatchObject({ status: "RELEASED" });
+  expect(await countTransactions(videoUuid, CreditTransType.REFUND)).toBe(1);
+  expect(await getBalance(userId)).toMatchObject({ availableCredits: 100, frozenCredits: 0 });
+});
+
 it("does not hold image credits when the callback cannot be signed before dispatch", async () => {
   vi.stubEnv("AI_CALLBACK_URL", "https://studio.test/callback");
   vi.stubEnv("CALLBACK_HMAC_SECRET", "");
@@ -291,6 +439,13 @@ it("waives an image batch for a verified preview super-admin", async () => {
   const job = await videoService.generateMedia({ userId: id, ...batch });
   expect(job.creditsUsed).toBe(0);
   await finish(job.videoUuid, "success", urls(batch.count));
+  await finish(job.videoUuid, "fail");
   expect(await getVideoRow(job.videoUuid)).toMatchObject({ status: "COMPLETED", creditsUsed: 0 });
   expect(await getHoldRow(job.videoUuid)).toBeNull();
+  const failed = await videoService.generateMedia({ userId: id, ...batch });
+  await finish(failed.videoUuid, "fail");
+  await finish(failed.videoUuid, "fail");
+  expect(await getVideoRow(failed.videoUuid)).toMatchObject({ status: "FAILED", creditsUsed: 0 });
+  expect(await getHoldRow(failed.videoUuid)).toBeNull();
+  expect(await countTransactions(failed.videoUuid, CreditTransType.REFUND)).toBe(0);
 });

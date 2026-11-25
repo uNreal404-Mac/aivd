@@ -337,7 +337,7 @@ describe("submitExtend retry reservations", () => {
     expect([...tab.values()]).toEqual([key(2)]);
   });
 
-  it("isolates accounts and choices, keeps uncertain keys and clears a definite rejection", async () => {
+  it("isolates accounts and choices and retains the unresolved key across a rejected retry", async () => {
     const recorded: Array<{ key: string | null; account: string | null }> = [];
     let responseStatus = 502;
     vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
@@ -357,7 +357,7 @@ describe("submitExtend retry reservations", () => {
     expect(recorded[0].account).toBe("user_a");
     expect(new Set(recorded.slice(0, 3).map((r) => r.key)).size).toBe(3);
     expect(recorded[3].key).toBe(recorded[0].key);
-    expect(recorded[4].key).not.toBe(recorded[0].key);
+    expect(recorded[4].key).toBe(recorded[0].key);
   });
 
   it("never posts with inaccessible storage or an unconfirmed write", async () => {

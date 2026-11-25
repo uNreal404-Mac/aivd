@@ -35,7 +35,7 @@
 .nc-flow .nc-annotation svg { flex: none; margin-top: 2px; }
 .nc-flow .nc-annotation button { white-space: pre-wrap; text-align: left; overflow-wrap: anywhere; }
 .nc-flow .nc-annotation textarea { min-width: 155px; resize: vertical; background: transparent; color: inherit; outline: 0; }
-.nc-flow .nc-node .nc-port { width: 30px; height: 30px; border: none; border-radius: 50%; background: transparent; opacity: 0; transform: translateY(-50%); transition: opacity 120ms; }
+.nc-flow .nc-node .nc-port { width: 30px; height: 30px; border: none; border-radius: 50%; background: transparent; opacity: 0; transform: translateY(-50%); transition: opacity var(--m-fast) var(--m-ease-out); }
 .nc-flow .nc-node .nc-port-in { left: -36px; }
 .nc-flow .nc-node .nc-port-out { right: -36px; }
 .nc-flow .nc-node .nc-port::after { content: "+"; position: absolute; inset: 1px; display: grid; place-items: center; border: 1.5px solid var(--ds-text-3); border-radius: 50%; color: var(--ds-text-2); background: var(--ds-surface-1); font-size: var(--ds-fs-md); font-weight: 400; line-height: 1; pointer-events: none; }

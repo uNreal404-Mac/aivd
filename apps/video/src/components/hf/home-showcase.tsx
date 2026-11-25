@@ -332,10 +332,10 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
             <div className="hs-spot-visual hs-spot-canvas-visual" aria-hidden="true">
               <div className="hs-spot-pair">
                 <figure className="hs-spot-frame">
-                  <img src={MEDIA.carpet.src} alt="" loading="lazy" />
+                  <img src="/canvas/templates/character.webp" alt="" loading="lazy" />
                 </figure>
                 <figure className="hs-spot-frame">
-                  <img src={MEDIA.studio.src} alt="" loading="lazy" />
+                  <img src="/canvas/templates/three-act.webp" alt="" loading="lazy" />
                 </figure>
               </div>
               <span className="hs-spot-prompt-pill">

@@ -1,4 +1,4 @@
-import { VideoStatus, db, mediaAssets, videos } from "@/db";
+import { VideoStatus, db, mediaAssets, videos, type Video } from "@/db";
 import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
@@ -800,8 +800,12 @@ export class VideoService {
       taskId = await createMarketTask(model, providerRequest, callbackUrl, apiKey);
     } catch (error) {
       if (error instanceof ProviderRejectedError) {
-        if (!freeInternal) await creditService.release(uuid);
-        await db.update(videos).set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        if (model.kind === "image") {
+          await this.tryFailGeneration(uuid, String(error));
+        } else {
+          if (!freeInternal) await creditService.release(uuid);
+          await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        }
         if (model.tool === "extend") {
           throw new ApiError("The provider rejected the source or options", 422, { code: "EXTEND_REJECTED" });
         }
@@ -968,6 +972,7 @@ export class VideoService {
     }
 
     if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
+      await this.refundFailedImage(video);
       return {
         status: video.status,
         videoUrl: signMediaRef(video.videoUrl) || undefined,
@@ -1005,14 +1010,17 @@ export class VideoService {
           };
         }
         if (result.status === "processing" && video.status === VideoStatus.PENDING) {
-          await db
+          const [updated] = await db
             .update(videos)
             .set({
               status: VideoStatus.GENERATING,
               updatedAt: new Date(),
             })
-            .where(eq(videos.uuid, video.uuid));
-          return { status: VideoStatus.GENERATING };
+            .where(and(eq(videos.uuid, video.uuid), eq(videos.status, VideoStatus.PENDING)))
+            .returning({ status: videos.status });
+          if (updated) return updated;
+          const [current] = await db.select({ status: videos.status }).from(videos).where(eq(videos.uuid, video.uuid));
+          if (current) return current;
         }
       } catch (error) {
         console.error("Failed to refresh status from provider:", error);
@@ -1077,6 +1085,7 @@ export class VideoService {
         .where(eq(videos.uuid, videoUuid))
         .limit(1);
       if (!current) throw new Error("Video not found");
+      await this.refundFailedImage(current);
       return {
         status: current.status,
         videoUrl:
@@ -1103,18 +1112,22 @@ export class VideoService {
         const storage = getStorage();
         const transfers = await Promise.allSettled(
           outputs.map((sourceUrl, index) =>
-            storage.downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` }),
+            storage.downloadAndUpload({
+              sourceUrl,
+              key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}`,
+              requireNonEmpty: true,
+            }),
           ),
         );
-        const keys = transfers.flatMap(item => item.status === "fulfilled" ? [item.value.key] : []);
-        if (keys.length !== outputs.length) {
-          // These objects belong only to this failed attempt. A cleanup failure
-          // must not keep the user's credits frozen.
-          await Promise.allSettled(keys.map(key => storage.deleteFile(key)));
+        const stored = transfers.flatMap(item => item.status === "fulfilled" ? [item.value] : []);
+        if (stored.length !== outputs.length || !stored.every(file => file.fileSize > 0)) {
+          // Even a zero-byte receipt can refer to an object we must remove.
+          // A cleanup failure must not keep the user's credits frozen.
+          await Promise.allSettled(stored.map(file => storage.deleteFile(file.key)));
           throw new Error("Incomplete image transfer");
         }
-        uploaded = { key: keys[0] };
-        extraKeys = keys.slice(1);
+        uploaded = stored[0];
+        extraKeys = stored.slice(1).map(file => file.key);
       } catch {
         return this.tryFailGeneration(videoUuid, "Failed to store the generated images", true);
       }
@@ -1181,9 +1194,17 @@ export class VideoService {
     return { status: VideoStatus.COMPLETED, videoUrl: signedUrl };
   }
 
-  /**
-   * Try to mark as failed (transaction + row lock)
-   */
+  private async refundFailedImage(video: Video): Promise<void> {
+    if (video.mediaType !== "image" || video.status !== VideoStatus.FAILED) return;
+    // Older failed rows can still carry the original quote.
+    if (video.creditsUsed !== 0) {
+      await db.update(videos).set({ creditsUsed: 0 })
+        .where(and(eq(videos.uuid, video.uuid), eq(videos.status, VideoStatus.FAILED)));
+    }
+    // The hold records what is left to refund even when the displayed charge is zero.
+    await creditService.release(video.uuid, { ifHolding: true });
+  }
+
   private async tryFailGeneration(
     videoUuid: string,
     errorMessage?: string,
@@ -1196,15 +1217,15 @@ export class VideoService {
       .limit(1);
 
     if (!video) throw new Error("Video not found");
-    if (
-      video.status === VideoStatus.COMPLETED ||
-      video.status === VideoStatus.FAILED ||
-      (video.mediaType === "image" && video.status === VideoStatus.UPLOADING && !imageDeliveryFailed)
-    ) {
+    if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
+      await this.refundFailedImage(video);
       return { status: video.status, errorMessage: video.errorMessage };
     }
-
-    if (video.creditsUsed > 0) await creditService.release(videoUuid);
+    const failFrom: VideoStatus[] = [VideoStatus.PENDING, VideoStatus.GENERATING];
+    if (video.mediaType !== "image") {
+      if (video.creditsUsed > 0) await creditService.release(videoUuid);
+      failFrom.push(VideoStatus.UPLOADING);
+    }
 
     const message = errorMessage || "Generation failed";
     const [failed] = await db
@@ -1218,11 +1239,8 @@ export class VideoService {
       .where(
         and(
           eq(videos.uuid, videoUuid),
-          inArray(videos.status, [
-            VideoStatus.PENDING,
-            VideoStatus.GENERATING,
-            VideoStatus.UPLOADING,
-          ])
+          // Only the image uploader can surrender its claim after a delivery failure.
+          imageDeliveryFailed ? eq(videos.status, VideoStatus.UPLOADING) : inArray(videos.status, failFrom)
         )
       )
       .returning();
@@ -1234,6 +1252,7 @@ export class VideoService {
         .where(eq(videos.uuid, videoUuid))
         .limit(1);
       if (!current) throw new Error("Video not found");
+      await this.refundFailedImage(current);
       return { status: current.status, errorMessage: current.errorMessage };
     }
 
@@ -1243,7 +1262,7 @@ export class VideoService {
       status: "FAILED",
       error: message,
     });
-
+    await this.refundFailedImage(failed);
     return { status: VideoStatus.FAILED, errorMessage: message };
   }
 

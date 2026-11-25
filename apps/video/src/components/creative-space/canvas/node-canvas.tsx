@@ -1154,7 +1154,7 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
         }
         const message = errorMessage(answer.code, answer.message, zh);
         // A refused retry says nothing about the first, unanswered attempt: keep its key.
-        fail(message, { pending: reused ? current?.pending : undefined });
+        fail(message, reused || answer.code === "CONTENT_BLOCKED" ? {} : { pending: undefined });
         if (answer.code === "INSUFFICIENT_CREDITS") shortfall.report(message, answer.requiredCredits);
         say(message, true);
       } catch (error) {
