@@ -1,4 +1,4 @@
-import { VideoStatus, db, videos } from "@/db";
+import { VideoStatus, db, mediaAssets, videos } from "@/db";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
@@ -25,6 +25,7 @@ import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
 import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { WAN_REFERENCE_MAX_BYTES, WAN_REFERENCE_MAX_FILES, isWanVideoMime } from "@/lib/wan-video-references";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
 import { isFreeInternalAccount } from "@/lib/internal-test-account";
 
@@ -37,6 +38,7 @@ export interface GenerateVideoParams {
   quality?: string; // "standard" | "high"
   imageUrl?: string; // image-to-video
   imageUrls?: string[]; // image-to-video (multi-image)
+  videoKeys?: string[]; // private uploaded Wan reference clips
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;
@@ -156,6 +158,12 @@ export class VideoService {
    * Create video generation task
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
+    const videoKeys = params.videoKeys ?? [];
+    if (videoKeys.length && (params.model !== "wan2.6" || params.mode !== "reference-to-video" ||
+        params.imageUrl || params.imageUrls?.length || videoKeys.length > WAN_REFERENCE_MAX_FILES ||
+        videoKeys.some((key) => !key.startsWith(`uploads/${params.userId}/`)) || new Set(videoKeys).size !== videoKeys.length)) {
+      throw new ApiError("Use up to three of your uploaded videos with Wan 2.6.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+    }
     // Market models (everything beyond the two legacy KIE video models) share
     // one generic path with image and audio generation.
     if (getMarketModel(params.model)) {
@@ -225,7 +233,7 @@ export class VideoService {
       (resolvedMode === "image-to-video" ||
         resolvedMode === "reference-to-video" ||
         resolvedMode === "frames-to-video") &&
-      !hasImageInput
+      !hasImageInput && !videoKeys.length
     ) {
       throw new ApiError(
         `Mode ${resolvedMode} requires uploaded input media`,
@@ -263,6 +271,9 @@ export class VideoService {
     }
 
     const actualProvider = configuredProvider || modelConfig.provider;
+    if (videoKeys.length && actualProvider !== "kie") {
+      throw new ApiError("Video reference inputs require the KIE Wan 2.6 model.", 400, { code: "MODE_NOT_SUPPORTED" });
+    }
     if (!isModelModeSupported(params.model, actualProvider, resolvedMode)) {
       throw new ApiError(
         `Mode ${resolvedMode} is not supported for model ${params.model} on provider ${actualProvider}`,
@@ -297,6 +308,17 @@ export class VideoService {
       }
     }
 
+    // Replays return their existing job even if an attachment was removed later.
+    // Only sign keys issued for this user's validated uploads, never a client URL.
+    if (videoKeys.length) {
+      const assets = await db.select({ size: mediaAssets.size, mimeType: mediaAssets.mimeType }).from(mediaAssets)
+        .where(and(eq(mediaAssets.userId, params.userId), inArray(mediaAssets.key, videoKeys)));
+      if (assets.length !== videoKeys.length || assets.some((asset) => !isWanVideoMime(asset.mimeType) ||
+          asset.size <= 0 || asset.size > WAN_REFERENCE_MAX_BYTES)) {
+        throw new ApiError("Use uploaded MP4 or MOV clips up to 10 MB each.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+      }
+    }
+
     // Plan limit on videos in progress. After the idempotency lookup, so a
     // retried submit gets its existing job back; before the row is created
     // and credits are frozen.
@@ -313,6 +335,7 @@ export class VideoService {
       mode: resolvedMode,
       imageUrl: params.imageUrl,
       imageUrls: params.imageUrls,
+      ...(videoKeys.length ? { videoKeys } : {}),
       generateAudio: params.generateAudio,
     };
     if (idempotencyKey) {
@@ -450,6 +473,7 @@ export class VideoService {
         quality: params.quality,
         imageUrl: signedImageUrl,
         imageUrls: signedImageUrls,
+        ...(videoKeys.length ? { videoUrls: videoKeys.map((key) => getStorage().getSignedUrl(key, 3600)) } : {}),
         mode: resolvedMode,
         outputNumber,
         generateAudio: params.generateAudio,

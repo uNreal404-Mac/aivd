@@ -5,6 +5,7 @@ import { canGenerateInPreview } from "@/lib/internal-test-account";
 import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
 import { z } from "zod";
 import { isAllowedImageInput } from "@/lib/image-url-allowlist";
+import { WAN_REFERENCE_MAX_FILES } from "@/lib/wan-video-references";
 import { imageRefSchema } from "@/lib/image-ref-schema";
 import { getStorage } from "@/lib/storage";
 import {
@@ -23,6 +24,7 @@ const generateSchema = z.object({
   quality: z.string().optional(),
   imageUrl: imageRefSchema.optional(),
   imageUrls: z.array(imageRefSchema).optional(),
+  videoKeys: z.array(z.string().min(1).max(512)).min(1).max(WAN_REFERENCE_MAX_FILES).optional(),
   mode: z.string().optional(),
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
@@ -92,6 +94,7 @@ export async function POST(request: NextRequest) {
       imageUrl: data.imageUrl,
       imageUrls: data.imageUrls,
       mode: data.mode,
+      videoKeys: data.videoKeys,
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
       idempotencyKey,
