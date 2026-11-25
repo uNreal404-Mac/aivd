@@ -52,7 +52,7 @@ export const ModalProvider = ({
           <DialogContent className="inset-0 m-auto h-fit max-h-[calc(100svh-2rem)] w-[min(92vw,640px)] max-w-[640px] gap-0 overflow-y-auto rounded-2xl p-0 md:max-w-[640px]">
             {/* Hidden title for accessibility */}
             <DialogTitle className="sr-only">
-              Sign In
+              {locale.startsWith("zh") ? "登录" : "Sign in"}
             </DialogTitle>
             <SignInModalContent lang={locale} />
           </DialogContent>

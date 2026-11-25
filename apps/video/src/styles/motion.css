@@ -203,11 +203,39 @@
 }
 
 .du-dialog-overlay {
+  background: var(--du-glass-overlay-scrim);
   animation: du-fade-in var(--m-base) var(--m-ease-out) both;
 }
 
 .du-dialog-overlay[data-state="closed"] {
   animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
+}
+
+/* Constrain panel scrolling on touch screens; keep an easy-to-hit dismiss
+   button with a smaller visible circle so the heading still has room. */
+.du-dialog { overscroll-behavior: contain; }
+.du-dialog-dismiss {
+  position: absolute;
+  top: var(--ds-space-1);
+  right: var(--ds-space-1);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+}
+.du-dialog-dismiss::before {
+  position: absolute;
+  inset: var(--ds-space-2);
+  border-radius: inherit;
+  background: var(--ds-fill-2);
+  content: "";
+}
+.du-dialog-dismiss svg { position: relative; width: 16px; height: 16px; }
+.du-dialog-dismiss:hover::before { background: var(--ds-fill-3); }
+@media (prefers-reduced-transparency: reduce) {
+  .du-dialog-overlay { backdrop-filter: none; }
 }
 
 /* An icon that replaces another (copy → check, play → pause, menu → close)
