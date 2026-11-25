@@ -11,8 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Clapperboard,
+  Clock3,
+  Coins,
   Film,
   Image as ImageIcon,
+  MonitorPlay,
   Orbit,
   Search,
   Sparkles,
@@ -216,6 +219,7 @@ export function KieModelPicker({
         all: "全部模型",
         models: "个模型",
         from: (credits: number) => `${credits} 积分起`,
+        more: "更多模型",
         none: "没有匹配的模型",
         noneAvailable: "暂无模型",
       }
@@ -227,6 +231,7 @@ export function KieModelPicker({
         all: "All models",
         models: "models",
         from: (credits: number) => `From ${credits} credits`,
+        more: "More models",
         none: "No models match",
         noneAvailable: "No models available",
       };
@@ -353,6 +358,9 @@ export function KieModelPicker({
     const credits = !ready ? null : kind === "video" ? startingCredits(item.id) : startingImageCredits(item.id);
     const specs = kind === "video" ? VIDEO_MODEL_SPECS[item.id] : undefined;
     const badge = MODEL_BADGES[item.id];
+    // Highest resolution the model renders (image models from the registry).
+    const resolution = specs?.resolution ?? getMarketModel(item.id)?.options.resolutions?.at(-1);
+    const duration = specs ? (specs.duration === "source" ? (zh ? "继承原片" : "Source clip") : specs.duration) : null;
     return (
       <button
         key={item.id}
@@ -361,48 +369,30 @@ export function KieModelPicker({
         aria-pressed={selected}
         aria-disabled={!selectable || undefined}
         disabled={!selectable}
+        title={detailOf(item)}
         onClick={() => {
           if (!selectable) return;
           onChange(item.id);
           close(true);
         }}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${selectable ? "hover:bg-[var(--du-surface-2)]" : "cursor-not-allowed opacity-55"} ${selected ? "bg-[var(--du-surface-2)]" : ""}`}
+        className={`du-model-row ${selectable ? "" : "is-unavailable"} ${selected ? "is-selected" : ""}`}
       >
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"
-        >
+        <span aria-hidden="true" className="du-model-tile">
           <ModelIcon family={item.family} kind={kind} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-[var(--du-text)]">{item.name}</span>
-            {badge ? (
-              <span
-                className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold tracking-wide ${
-                  badge.tone === "top"
-                    ? "bg-[var(--du-accent)] text-[var(--du-on-accent)]"
-                    : badge.tone === "new"
-                      ? "bg-[var(--du-accent-soft)] text-[var(--du-accent-text)]"
-                      : "bg-[var(--du-surface-2)] text-[var(--du-text-muted)]"
-                }`}
-              >
-                {badge.label}
-              </span>
-            ) : null}
+            <span className="du-model-name">{item.name}</span>
+            {badge ? <span className={`du-model-badge is-${badge.tone}`}>{badge.label}</span> : null}
           </span>
-          {specs ? <span className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-[var(--du-text-muted)]"><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5">▣ {specs.resolution}</span><span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5" title={item.id === "bytedance/seedance-2-5-draft" ? (zh ? "时长继承原样片任务" : "Duration follows the source draft task") : undefined}>◷ {specs.duration === "source" ? (zh ? "继承原片" : "Source clip") : specs.duration}</span></span> : <span className="mt-0.5 block truncate text-xs text-[var(--du-text-muted)]">{detailOf(item)}</span>}
+          <span className="du-model-meta">
+            {resolution ? <span><MonitorPlay aria-hidden="true" />{resolution}</span> : null}
+            {duration ? <span title={item.id === "bytedance/seedance-2-5-draft" ? (zh ? "时长继承原样片任务" : "Duration follows the source draft task") : undefined}><Clock3 aria-hidden="true" />{duration}</span> : null}
+            {credits !== null ? <span className="du-num"><Coins aria-hidden="true" />{copy.from(credits)}</span> : null}
+            {!ready && !allowUnconnectedSelection ? <span>{t("comingSoon")}</span> : null}
+            {!resolution && !duration && credits === null && ready ? <span>{detailOf(item)}</span> : null}
+          </span>
         </span>
-        {credits !== null ? (
-          <span className="shrink-0 rounded-md bg-[var(--du-surface-2)] px-2 py-1 text-[11px] font-medium tabular-nums text-[var(--du-accent-text)]">
-            {copy.from(credits)}
-          </span>
-        ) : null}
-        {!ready && !allowUnconnectedSelection ? (
-          <span className="shrink-0 rounded-md border border-[var(--du-border)] px-2 py-1 text-[11px] font-medium text-[var(--du-text-muted)]">
-            {t("comingSoon")}
-          </span>
-        ) : null}
         {selected ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-accent-text)]" /> : null}
       </button>
     );
@@ -460,9 +450,9 @@ export function KieModelPicker({
           data-state={panelPresence.state}
           onKeyDown={onListKeyDown}
           style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: "min(70vh, 520px)" } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel ${placement === "top" ? "origin-bottom-left" : "origin-top-left"} z-50 flex w-[min(92vw,400px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
+          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel ${placement === "top" ? "origin-bottom-left" : "origin-top-left"} z-50 flex w-[min(92vw,368px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
         >
-          <div className="du-model-picker-search flex items-center gap-2 border-b border-[var(--du-border)] px-3 py-2.5">
+          <div className="du-model-picker-search flex items-center gap-2 px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />
             <input
               ref={searchRef}
@@ -474,41 +464,10 @@ export function KieModelPicker({
               aria-label={copy.search}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--du-text)] outline-none placeholder:text-[var(--du-text-muted)]"
             />
-            <button type="button" aria-label={copy.close} onClick={() => close(true)}>
-              <X className="h-4 w-4 text-[var(--du-text-muted)]" />
-            </button>
-          </div>
-
-          {/* Krea-style Sort Tabs (Default / Fast / Value / Quality) */}
-          <div className="flex items-center gap-1 border-b border-[var(--du-border)] px-2.5 py-1.5" role="tablist" aria-label={zh ? "模型排序方式" : "Sort models"}>
-            {([
-              ["default", zh ? "推荐" : "Default"],
-              ["fast", zh ? "极速" : "Speed"],
-              ["value", zh ? "性价比" : "Value"],
-              ["quality", zh ? "高画质" : "Quality"],
-            ] as const).map(([mode, modeLabel]) => (
-              <button
-                key={mode}
-                type="button"
-                role="tab"
-                aria-selected={sortBy === mode}
-                onClick={() => {
-                  setSortBy(mode);
-                  setFamily(null);
-                }}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                  sortBy === mode
-                    ? "bg-[var(--ds-fill-3)] text-[var(--ds-text-1)]"
-                    : "text-[var(--du-text-muted)] hover:bg-[var(--ds-fill-1)] hover:text-[var(--ds-text-1)]"
-                }`}
-              >
-                {modeLabel}
-              </button>
-            ))}
           </div>
 
           {/* The panel is the only scrolling container, including on Windows. */}
-          <div ref={listRef} className="p-2">
+          <div ref={listRef} className="du-model-list">
             {query.trim() ? (
               matches.length ? matches.map(availableRow) : <p className="px-3 py-3 text-sm text-[var(--du-text-muted)]">{copy.none}</p>
             ) : sortBy !== "default" ? (
@@ -521,19 +480,17 @@ export function KieModelPicker({
               </>
             ) : (
               <>
-                <p className="px-3 pb-1 pt-2 text-xs font-semibold text-[var(--du-text-muted)]">{copy.featured}</p>
+                <p className="du-model-section"><Sparkles aria-hidden="true" />{copy.featured}</p>
                 {featuredIds.map((id) => readyCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
-                <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{copy.all}</p>
-                {Array.from(new Set(readyCatalog.map((item) => item.family))).map((name) => (
-                  <button key={name} type="button" onClick={() => setFamily(name)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[var(--du-surface-2)]">
-                    <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--du-surface-2)] text-[var(--du-accent-text)]"><ModelIcon family={name} kind={kind} /></span>
-                    <span className="min-w-0 flex-1 text-sm text-[var(--du-text)]">{name}<span className="block text-xs text-[var(--du-text-muted)]">{readyCatalog.filter((item) => item.family === name).length} {copy.models}</span></span>
-                    <ChevronRight className="h-4 w-4 text-[var(--du-text-muted)]" />
-                  </button>
-                ))}
+                {readyCatalog.some((item) => !featuredIds.includes(item.id)) ? (
+                  <>
+                    <p className="du-model-section">{copy.more}</p>
+                    {readyCatalog.filter((item) => !featuredIds.includes(item.id)).map(availableRow)}
+                  </>
+                ) : null}
                 {comingSoon.length ? (
                   <>
-                    <p className="mt-2 border-t border-[var(--du-border)] px-3 pb-1 pt-3 text-xs font-semibold text-[var(--du-text-muted)]">{t("comingSoonSection")}</p>
+                    <p className="du-model-section">{t("comingSoonSection")}</p>
                     {comingSoon.map(availableRow)}
                   </>
                 ) : null}

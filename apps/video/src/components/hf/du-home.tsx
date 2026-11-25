@@ -56,7 +56,7 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
         <div className="du-hero-glow" aria-hidden="true" />
         <div className="du-hero-inner">
           <h1 className="du-hero-title">{homeSeo(isChinese ? "zh" : "en").h1}</h1>
-          <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} showSuggestions={false} />
+          <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} showSuggestions={false} showImageIdeas />
           <nav className="du-hero-skills" aria-label={isChinese ? "快捷创作技能" : "Quick creative skills"}>
             {slashSkills.map((skill) =>
               skill.href ? (

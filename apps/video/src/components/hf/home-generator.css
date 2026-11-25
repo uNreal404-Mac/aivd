@@ -476,51 +476,167 @@
   height: 14px;
 }
 
-/* Mode menu under the mode pill. */
+/* Mode menu under the mode pill: a compact list, one line per mode, 32px
+   rows of light 14px text, the chosen one on a faint fill (Pollo). */
 .du-mode-menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   z-index: 50;
-  width: 264px;
+  min-width: 152px;
   padding: 6px;
   border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-xl);
+  border-radius: var(--ds-r-lg);
   transform-origin: top left;
 }
 
 .du-mode-menu button {
   display: flex;
   width: 100%;
+  height: 32px;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: var(--ds-r-md);
-  color: var(--ds-text-2);
+  padding: 0 8px;
+  border-radius: var(--ds-r-sm);
+  color: color-mix(in srgb, white 85%, transparent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  white-space: nowrap;
   text-align: left;
   transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 .du-mode-menu button:hover,
 .du-mode-menu button[aria-pressed="true"] {
-  background: var(--ds-fill-1);
-}
-
-.du-mode-menu button > span {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.du-mode-menu strong {
+  background: color-mix(in srgb, white 7%, transparent);
   color: white;
-  font-size: var(--ds-fs-ui);
-  font-weight: 500;
 }
 
-.du-mode-menu small {
-  color: var(--ds-text-4);
+/* Settings: Pollo's grouped panel. Small grey labels, each group on a darker
+   rounded track with the chosen item lifted; ratios as shape + label tiles;
+   length on a thin slider with its value on the right. */
+.du-home-settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  width: min(92vw, 432px);
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  transform-origin: top left;
+}
+
+@media (max-width: 640px) {
+  .du-home-settings {
+    right: 0;
+    left: auto;
+    transform-origin: top right;
+  }
+}
+
+.du-home-settings section {
+  padding: 4px 0;
+}
+
+.du-set-label {
+  padding: 4px 4px 8px;
+  color: color-mix(in srgb, white 40%, transparent);
   font-size: var(--ds-fs-xs);
+  font-weight: 300;
+}
+
+.du-set-track {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ds-r-md);
+  background: color-mix(in srgb, black 35%, transparent);
+}
+
+.du-set-track button {
+  display: flex;
+  min-height: 34px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-sm);
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-set-track button:hover {
+  color: white;
+}
+
+.du-set-track button[aria-pressed="true"] {
+  background: color-mix(in srgb, white 10%, transparent);
+  color: white;
+}
+
+.du-set-aspects button {
+  min-height: 52px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.du-aspect-shape {
+  display: block;
+  border: 1.5px solid currentColor;
+  border-radius: calc(var(--ds-r-xs) / 2);
+}
+
+.du-aspect-shape.is-auto {
+  border-style: dashed;
+}
+
+.du-set-slider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 6px 6px 10px;
+}
+
+.du-set-slider input {
+  height: 4px;
+  flex: 1;
+  appearance: none;
+  border-radius: var(--ds-r-full);
+  background: linear-gradient(to right, color-mix(in srgb, white 75%, transparent) var(--fill, 0%), color-mix(in srgb, white 12%, transparent) var(--fill, 0%));
+  cursor: pointer;
+}
+
+.du-set-slider input::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  appearance: none;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px color-mix(in srgb, black 45%, transparent);
+}
+
+.du-set-slider input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: white;
+}
+
+.du-set-slider > span,
+.du-set-fixed {
+  min-width: 32px;
+  color: white;
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  text-align: right;
+}
+
+.du-set-fixed {
+  padding: 4px;
+  text-align: left;
 }

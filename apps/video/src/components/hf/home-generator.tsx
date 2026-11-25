@@ -19,12 +19,13 @@ import { uploadErrorText, uploadImage } from "@/lib/image-to-video";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { AUTOSTART_STORAGE_KEY } from "@/lib/autostart";
+import { HOME_IMAGE_IDEAS } from "@/lib/home-image-ideas";
 import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
 import "./home-generator.css";
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 export type HomeGeneratorPreset = { prompt: string; aspect?: string; nonce: number };
-type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean; draftStorageKey?: string; showSuggestions?: boolean };
+type Props = { lang: string; models: Model[]; onModelChange: (id: string) => void; preset?: HomeGeneratorPreset | null; initialKind?: "video" | "image"; initialPrompt?: string; hideKindTabs?: boolean; draftStorageKey?: string; showSuggestions?: boolean; showImageIdeas?: boolean };
 type Panel = "settings" | "mode" | null;
 
 // Every ratio a saved draft may hold; the panel shows only the model's own.
@@ -49,7 +50,15 @@ function withStudioModels(models: Model[]): Model[] {
   return [...models, ...extra];
 }
 
-export function HomeGenerator({ lang, models: serverModels, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false, draftStorageKey = "aivd:home-draft", showSuggestions = true }: Props) {
+/** A small outline in the shape of an aspect ratio (dashed square for auto). */
+function AspectShape({ value }: { value: string }) {
+  const [w, h] = value.split(":").map(Number);
+  if (!w || !h) return <span aria-hidden="true" className="du-aspect-shape is-auto" style={{ width: 14, height: 14 }} />;
+  const scale = 16 / Math.max(w, h);
+  return <span aria-hidden="true" className="du-aspect-shape" style={{ width: Math.max(6, Math.round(w * scale)), height: Math.max(6, Math.round(h * scale)) }} />;
+}
+
+export function HomeGenerator({ lang, models: serverModels, onModelChange, preset, initialKind = "video", initialPrompt = "", hideKindTabs = false, draftStorageKey = "aivd:home-draft", showSuggestions = true, showImageIdeas = false }: Props) {
   const zh = lang.toLowerCase().startsWith("zh");
   const pendingStorageKey = draftStorageKey === "aivd:home-draft" ? "aivd:home-pending-generate" : `${draftStorageKey}:pending-generate`;
   const router = useRouter();
@@ -120,6 +129,16 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   // with images attached takes them off, and that can be undone.
   // Per tab: the video and image tabs keep their own references and mode.
   const [textOnlyByKind, setTextOnlyByKind] = useState({ video: false, image: false });
+  // "Try these" prompts under the Image tab (Pollo); hidden for good on request.
+  const [imageIdeaOffset, setImageIdeaOffset] = useState(0);
+  const [imageIdeasHidden, setImageIdeasHidden] = useState(true);
+  useEffect(() => {
+    try {
+      setImageIdeasHidden(localStorage.getItem("aivd:home-image-ideas-hidden") === "1");
+    } catch {
+      setImageIdeasHidden(false);
+    }
+  }, []);
   const textOnly = kind === "image" ? textOnlyByKind.image : kind === "video" ? textOnlyByKind.video : false;
   const setTextOnly = (value: boolean) => setTextOnlyByKind((previous) => (kind === "image" ? { ...previous, image: value } : kind === "video" ? { ...previous, video: value } : previous));
   const [clearedRefs, setClearedRefs] = useState<{ kind: "video" | "image"; references: PickerAsset[]; prompt: string } | null>(null);
@@ -395,13 +414,7 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
   const chip = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-white/[0.06] px-3 text-xs font-medium text-[var(--du-text)] transition-colors hover:bg-white/[0.11] sm:text-[13px]";
   const plainControl = "inline-flex h-8 max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 text-xs text-[var(--du-text-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--du-text)] sm:text-[13px] disabled:cursor-not-allowed disabled:opacity-40";
   const divider = <span aria-hidden="true" className="du-composer-divider hidden h-3.5 w-px shrink-0 bg-white/[0.08] sm:block" />;
-  const segment = (value: string, selected: boolean, onClick: () => void, label = value) => <button key={value} type="button" onClick={onClick} aria-pressed={selected} className={`min-h-10 rounded-xl px-3 text-sm transition-colors ${selected ? "bg-[var(--du-border-strong)] text-[var(--du-text)]" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{label}</button>;
   const resolutionLabel = (value: string) => value.replace(/k$/, "K");
-  const settingRow = (title: string, items: string[], selected: string, choose: (value: string) => void, format: (value: string) => string = (value) => value) =>
-    items.length > 1 ? <>
-      <p className="mt-4 text-xs text-[var(--du-text-muted)]">{title}</p>
-      <div className={`mt-2 grid gap-1 rounded-xl bg-[var(--du-surface-2)] p-1 ${items.length > 4 ? "grid-cols-4" : items.length === 4 ? "grid-cols-4" : items.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>{items.map((item) => segment(item, selected === item, () => choose(item), format(item)))}</div>
-    </> : items.length === 1 ? <p className="mt-4 flex justify-between text-xs text-[var(--du-text-muted)]"><span>{title}</span><span className="text-[var(--du-text)]">{format(items[0])}</span></p> : null;
 
   const imageRefLimit = imageModel?.options.maxImages ?? 10;
   const references = kind === "video" ? videoReferences : referenceImages;
@@ -501,17 +514,27 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
       {canReference ? <div data-home-popover className="relative">
         <button ref={modeTriggerRef} type="button" className="du-composer-mode" aria-expanded={panel === "mode"} onClick={() => setPanel(panel === "mode" ? null : "mode")}>{modeLabel(!showRefSlot)}<ChevronDown className="h-3 w-3" aria-hidden="true" /></button>
         {modePanel.mounted ? <div data-presence="pop" data-state={modePanel.state} className="du-home-popover du-mode-menu">
-          {(needsImage ? [false] : [false, true]).map((text) => <button key={String(text)} type="button" aria-pressed={!showRefSlot === text} onClick={() => chooseMode(text)}><span><strong>{modeLabel(text)}</strong><small>{modeHint(text)}</small></span>{!showRefSlot === text ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}</button>)}
+          {(needsImage ? [false] : [false, true]).map((text) => <button key={String(text)} type="button" aria-pressed={!showRefSlot === text} title={modeHint(text)} onClick={() => chooseMode(text)}>{modeLabel(text)}</button>)}
         </div> : null}
       </div> : null}
       <div className="du-composer-model relative min-w-0"><KieModelPicker kind={kind} locale={lang} value={kind === "video" ? modelId : imageModelId} onChange={kind === "video" ? selectModel : (id) => { setImageModelId(id); setNotice(IMAGE_MODEL_IDS.includes(id) ? "" : (zh ? "这个图片模型暂未开放，请换一个模型" : "This image model isn't available yet. Choose another one.")); }} connectedIds={kind === "video" ? models.map((item) => item.id) : IMAGE_MODEL_IDS} placement="bottom" showConnectionStatus={false} catalogSet="current" compact /></div>
       {kind === "video" && studioModel?.audio ? <>{divider}<button type="button" className={plainControl} onClick={() => { soundChoice.current = !sound; setSound(!sound); }} aria-pressed={sound} aria-label={zh ? (sound ? "声音：开启" : "声音：关闭") : (sound ? "Sound: on" : "Sound: off")}><span className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true"><Music2 className="h-4 w-4" />{!sound ? <svg data-swap className="absolute inset-0 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3 21 21" /></svg> : null}</span>{sound ? (zh ? "开启" : "On") : (zh ? "关闭" : "Off")}</button></> : null}
-      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={`${plainControl} du-composer-settings`} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"} aria-label={zh ? "生成设置" : "Generation settings"}><span className="du-num">{(kind === "video" ? [aspect, `${duration}s`, resolutionLabel(resolution)] : imageResolutions.length ? [aspect, resolutionLabel(resolution)] : [aspect]).join(" / ")}</span><span aria-hidden="true" className="du-composer-divider" /><Settings2 className="h-4 w-4 shrink-0" aria-hidden="true" /></button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings absolute top-11 right-0 z-50 max-h-[min(52vh,380px)] w-[min(92vw,420px)] origin-top-right overflow-y-auto rounded-2xl border border-[var(--du-border)] p-4 shadow-2xl"><div className="flex items-center justify-between text-sm font-semibold"><span>{zh ? "生成设置" : "Generation settings"}</span><button type="button" onClick={() => setPanel(null)} aria-label={zh ? "关闭" : "Close"}><X className="h-4 w-4" /></button></div>
-        {settingRow(zh ? "画面比例" : "Aspect ratio", kind === "video" ? videoAspects : imageAspects, aspect, setAspect)}
-        {kind === "video" ? (videoDurations.length > 6
-          ? <><p className="mt-4 text-xs text-[var(--du-text-muted)]">{zh ? "视频时长" : "Video length"} · <span className="du-num">{duration}s</span></p><input type="range" min={videoDurations[0]} max={videoDurations.at(-1)} value={duration} onChange={(event) => { const raw = Number(event.target.value); setDuration(videoDurations.reduce((nearest, next) => (Math.abs(next - raw) < Math.abs(nearest - raw) ? next : nearest), videoDurations[0])); }} className="mt-2 w-full accent-[var(--du-accent)]" aria-label={zh ? "视频时长" : "Video length"} /></>
-          : settingRow(zh ? "视频时长" : "Video length", videoDurations.map(String), String(duration), (value) => setDuration(Number(value)), (value) => `${value}s`)) : null}
-        {settingRow(zh ? "分辨率" : "Resolution", kind === "video" ? videoResolutions : imageResolutions, resolution, setResolution, resolutionLabel)}
+      {divider}<div data-home-popover className="relative"><button ref={settingsTriggerRef} type="button" className={`${plainControl} du-composer-settings`} onClick={() => setPanel(panel === "settings" ? null : "settings")} aria-expanded={panel === "settings"} aria-label={zh ? "生成设置" : "Generation settings"}><span className="du-num">{(kind === "video" ? [aspect, `${duration}s`, resolutionLabel(resolution)] : imageResolutions.length ? [aspect, resolutionLabel(resolution)] : [aspect]).join(" / ")}</span><span aria-hidden="true" className="du-composer-divider" /><Settings2 className="h-4 w-4 shrink-0" aria-hidden="true" /></button>{settingsPanel.mounted ? <div data-presence="pop" data-state={settingsPanel.state} className="du-home-popover du-home-settings">
+        {(kind === "video" ? videoAspects : imageAspects).length ? <section>
+          <p className="du-set-label">{zh ? "画面比例" : "Aspect ratio"}</p>
+          <div className="du-set-track du-set-aspects">{(kind === "video" ? videoAspects : imageAspects).map((item) => <button key={item} type="button" aria-pressed={aspect === item} onClick={() => setAspect(item)}><AspectShape value={item} /><span>{item === "auto" ? (zh ? "自动" : "Auto") : item}</span></button>)}</div>
+        </section> : null}
+        {kind === "video" && videoDurations.length ? <section>
+          <p className="du-set-label">{zh ? "视频时长" : "Video length"}</p>
+          {videoDurations.length > 1 ? <div className="du-set-slider">
+            <input type="range" min={0} max={videoDurations.length - 1} step={1} value={Math.max(0, videoDurations.indexOf(duration))} onChange={(event) => setDuration(videoDurations[Number(event.target.value)] ?? videoDurations[0])} aria-label={zh ? "视频时长" : "Video length"} aria-valuetext={`${duration}s`} style={{ "--fill": `${(Math.max(0, videoDurations.indexOf(duration)) / Math.max(1, videoDurations.length - 1)) * 100}%` } as React.CSSProperties} />
+            <span className="du-num">{duration}s</span>
+          </div> : <p className="du-set-fixed du-num">{videoDurations[0]}s</p>}
+        </section> : null}
+        {(kind === "video" ? videoResolutions : imageResolutions).length ? <section>
+          <p className="du-set-label">{zh ? "分辨率" : "Resolution"}</p>
+          <div className="du-set-track">{(kind === "video" ? videoResolutions : imageResolutions).map((item) => <button key={item} type="button" aria-pressed={resolution === item} onClick={() => setResolution(item)}>{resolutionLabel(item)}</button>)}</div>
+        </section> : null}
       </div> : null}</div>
       <div className="ml-auto flex items-center gap-2">
         {kind === "video" && estimatedCredits !== null ? <span className="du-composer-cost" title={zh ? `本次消耗 ${estimatedCredits} 积分` : `This generation uses ${estimatedCredits} credits`}><Coins className="h-3 w-3" aria-hidden="true" /><span className="du-num">{estimatedCredits}</span><span className="sr-only">{zh ? " 积分" : " credits"}</span></span> : null}
@@ -555,5 +578,18 @@ export function HomeGenerator({ lang, models: serverModels, onModelChange, prese
     </div> : null}
     {kind === "video" && showSuggestions && suggestionsHidden ? <div className="du-composer-suggestions"><button type="button" onClick={() => setSuggestionsHidden(false)} className="du-composer-suggestions-label">{zh ? "快捷灵感" : "Quick ideas"}</button></div> : null}
     </form> : null}
+    {kind === "image" && showImageIdeas && !imageIdeasHidden ? <div className="du-image-ideas" data-presence="fade">
+      <div className="du-image-ideas-head">
+        <span>{zh ? "试试这些提示" : "Try these prompts"}</span>
+        <button type="button" onClick={() => setImageIdeaOffset((value) => (value + 3) % HOME_IMAGE_IDEAS.length)} aria-label={zh ? "换一批" : "Show others"} title={zh ? "换一批" : "Show others"}><RefreshCw aria-hidden="true" /></button>
+        <button type="button" className="ml-auto" onClick={() => { setImageIdeasHidden(true); try { localStorage.setItem("aivd:home-image-ideas-hidden", "1"); } catch { /* storage blocked: hidden for this visit */ } }}>{zh ? "不再显示" : "Don't show again"}</button>
+      </div>
+      {[0, 1, 2].map((step) => HOME_IMAGE_IDEAS[(imageIdeaOffset + step) % HOME_IMAGE_IDEAS.length]).map((idea) => (
+        <button key={idea.id} type="button" className="du-image-idea" onClick={() => { replacePrompt(zh ? idea.prompt.zh : idea.prompt.en); setNotice(""); promptRef.current?.focus({ preventScroll: true }); }}>
+          <img src={idea.image} alt="" loading="lazy" />
+          <span>{zh ? idea.prompt.zh : idea.prompt.en}</span>
+        </button>
+      ))}
+    </div> : null}
   </div>;
 }
