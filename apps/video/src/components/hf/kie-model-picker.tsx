@@ -111,6 +111,27 @@ const BACKUP_IMAGE_FEATURED = [
   "qwen3/text-to-image",
 ];
 
+// Match final-003's menu order. Models added later remain available after its entries.
+const FINAL003_VIDEO_ORDER = [
+  "veo-3.1", "wan2.6", "bytedance/seedance-2-5", "seedance-2-5-flash",
+  "kling/v4-reference-to-video", "kling/v4-flash-reference-to-video", "gemini-omni-flash-1-2",
+  "minimax-h3/text-to-video", "wan/3-0-video", "grok-imagine/text-to-video",
+  "grok-imagine-1-5", "happyhorse-1-1", "bytedance/seedance-2-5-draft",
+  "bytedance/seedance-2", "bytedance/seedance-2-fast", "bytedance/seedance-2-mini",
+  "seedance-1.5-pro", "kling/kling-3-0", "wan/3-0-video-prime",
+  "google/gemini-omni-flash-1-1", "minimax-h3-max/text-to-video",
+  "hailuo/02-text-to-video-pro", "hailuo/02-text-to-video-standard",
+  "happyhorse/text-to-video", "sora-2",
+];
+const FINAL003_IMAGE_ORDER = [
+  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2-1",
+  "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
+  "grok-imagine-image-2-0/text-to-image", "flux2/pro-text-to-image",
+  "flux2/flex-text-to-image", "seedream/5-pro-text-to-image",
+  "seedream/5-flash-text-to-image", "google/imagen4", "google/imagen4-fast",
+  "ideogram/v3-text-to-image", "qwen3/text-to-image", "z-image/z-image",
+];
+
 /** Cheapest credit price a video model can be run at, or null if unpriced. */
 function startingCredits(modelId: string): number | null {
   const model = STUDIO_MODELS.find((item) => item.id === modelId);
@@ -164,6 +185,11 @@ function inDisplayOrder(models: CatalogModel[], featuredIds: string[]): CatalogM
   return [...models].sort((a, b) => rank(a.id) - rank(b.id));
 }
 
+function inFinal003Order(models: CatalogModel[], ids: string[]): CatalogModel[] {
+  const rank = new Map(ids.map((id, index) => [id, index]));
+  return [...models].sort((a, b) => (rank.get(a.id) ?? ids.length) - (rank.get(b.id) ?? ids.length));
+}
+
 export function KieModelPicker({
   kind,
   locale,
@@ -190,6 +216,9 @@ export function KieModelPicker({
   const featuredIds = catalogSet === "backup"
     ? kind === "video" ? BACKUP_VIDEO_FEATURED : BACKUP_IMAGE_FEATURED
     : kind === "video" ? VIDEO_FEATURED_IDS : IMAGE_FEATURED_IDS;
+  const orderedCatalog = catalogSet === "current"
+    ? inFinal003Order(displayCatalog, kind === "video" ? FINAL003_VIDEO_ORDER : FINAL003_IMAGE_ORDER)
+    : inDisplayOrder(displayCatalog, featuredIds);
   // Without a connected list every entry counts as ready (older callers).
   const isConnected = (id: string) => connectedIds.length === 0 || connectedIds.includes(id);
   const detailOf = useCatalogDetail();
@@ -219,7 +248,6 @@ export function KieModelPicker({
         all: "全部模型",
         models: "个模型",
         from: (credits: number) => `${credits} 积分起`,
-        more: "更多模型",
         none: "没有匹配的模型",
         noneAvailable: "暂无模型",
       }
@@ -231,7 +259,6 @@ export function KieModelPicker({
         all: "All models",
         models: "models",
         from: (credits: number) => `From ${credits} credits`,
-        more: "More models",
         none: "No models match",
         noneAvailable: "No models available",
       };
@@ -242,9 +269,9 @@ export function KieModelPicker({
       needle === "" ||
       item.name.toLowerCase().includes(needle) ||
       item.family.toLowerCase().includes(needle);
-    return connectedFirst(inDisplayOrder(displayCatalog.filter(matches), featuredIds), isConnected);
+    return connectedFirst(orderedCatalog.filter(matches), isConnected);
   }, [kind, query, catalogSet, connectedIds]);
-  const readyCatalog = displayCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
+  const readyCatalog = orderedCatalog.filter((item) => allowUnconnectedSelection || isConnected(item.id));
   const sortedByMode = useMemo(() => {
     if (sortBy === "default") return [];
     const costOf = (id: string) =>
@@ -262,7 +289,7 @@ export function KieModelPicker({
     }
     return list.sort((a, b) => Number(isQuality(b)) - Number(isQuality(a)) || costOf(b.id) - costOf(a.id));
   }, [sortBy, readyCatalog, kind]);
-  const comingSoon = allowUnconnectedSelection ? [] : inDisplayOrder(displayCatalog.filter((item) => !isConnected(item.id)), featuredIds);
+  const comingSoon = allowUnconnectedSelection ? [] : orderedCatalog.filter((item) => !isConnected(item.id));
 
   const current = fullCatalog.find((item) => item.id === value);
   const triggerLabel = valueLabel ?? current?.name ?? (compact ? copy.noneAvailable : copy.choose);
@@ -481,7 +508,7 @@ export function KieModelPicker({
               <>
                 <button type="button" onClick={() => setFamily(null)} className="mb-1 flex items-center gap-1 px-3 py-2 text-xs text-[var(--du-text-muted)] hover:text-[var(--du-text)]"><ChevronLeft className="h-4 w-4" />{copy.all}</button>
                 <p className="px-3 pb-1 text-xs font-semibold text-[var(--du-text-muted)]">{family}</p>
-                {connectedFirst(displayCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
+                {connectedFirst(orderedCatalog.filter((item) => item.family === family), isConnected).map(availableRow)}
               </>
             ) : (
               <>
@@ -489,7 +516,7 @@ export function KieModelPicker({
                 {featuredIds.map((id) => readyCatalog.find((item) => item.id === id)).filter((item): item is CatalogModel => Boolean(item)).map(availableRow)}
                 {readyCatalog.some((item) => !featuredIds.includes(item.id)) ? (
                   <>
-                    <p className="du-model-section">{copy.more}</p>
+                    <p className="du-model-section">{copy.all}</p>
                     {readyCatalog.filter((item) => !featuredIds.includes(item.id)).map(availableRow)}
                   </>
                 ) : null}

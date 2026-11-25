@@ -112,7 +112,7 @@ export const IMAGE_CATALOG: CatalogModel[] = [
 
 export const IMAGE_FEATURED_IDS = [
   // Ready to generate, in menu order.
-  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "gpt-image-2", "nano-banana-2-1",
+  "seedream-5-5", "gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2-1",
   "kling-image-4", "minimax-h3-image", "nano-banana-pro", "flux3/klein-text-to-image",
   "grok-imagine-image-2-0/text-to-image",
 ];
