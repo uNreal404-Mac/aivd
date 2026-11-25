@@ -25,7 +25,8 @@ export async function POST(request: Request) {
     try { payload = parseWorkflowPayload(await request.json()); }
     catch (error) { throw new ApiError(error instanceof Error ? error.message : "Invalid canvas.", 400); }
     const id = nanoid();
-    await db.insert(creativeWorkflows).values({ id, userId: user.id, name: payload.name, graph: payload.graph });
-    return apiSuccess({ id, name: payload.name, graph: payload.graph });
+    const graph = { ...payload.graph, revision: 1 };
+    await db.insert(creativeWorkflows).values({ id, userId: user.id, name: payload.name, graph });
+    return apiSuccess({ id, name: payload.name, graph, revision: 1 });
   } catch (error) { return handleApiError(error); }
 }

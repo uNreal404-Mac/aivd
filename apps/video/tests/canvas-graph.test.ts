@@ -6,8 +6,8 @@ import {
   directInputs,
   fromLegacyLocalCanvas,
   fromStoredGraph,
+  isUploadKey,
   kindsAccepting,
-  PENDING_TTL_MS,
   submitKey,
   toStoredGraph,
   type CanvasData,
@@ -59,13 +59,22 @@ describe("typed connections", () => {
 
 describe("idempotency key for a node's request", () => {
   const make = vi.fn(() => "new-key");
-  it("reuses the key of an unanswered identical request", () => {
-    expect(submitKey({ key: "old", signature: "s", at: 1000 }, "s", 2000, make)).toBe("old");
+  it("reuses the key of an unanswered identical request, however old", () => {
+    expect(submitKey({ key: "old", signature: "s", at: 0 }, "s", make)).toEqual({ key: "old", reused: true });
   });
-  it("uses a new key when the request changed or the old one is stale", () => {
-    expect(submitKey({ key: "old", signature: "s", at: 1000 }, "s2", 2000, make)).toBe("new-key");
-    expect(submitKey({ key: "old", signature: "s", at: 0 }, "s", PENDING_TTL_MS + 1, make)).toBe("new-key");
-    expect(submitKey(undefined, "s", 0, make)).toBe("new-key");
+  it("uses a new key when the request changed or nothing is pending", () => {
+    expect(submitKey({ key: "old", signature: "s", at: 1000 }, "s2", make)).toEqual({ key: "new-key", reused: false });
+    expect(submitKey(undefined, "s", make)).toEqual({ key: "new-key", reused: false });
+  });
+});
+
+describe("stored upload keys", () => {
+  it("keeps only upload keys, never URLs", () => {
+    expect(isUploadKey("uploads/u1/abc.png")).toBe(true);
+    expect(isUploadKey("https://bucket.example/uploads/u1/abc.png?X-Amz-Signature=1")).toBe(false);
+    expect(isUploadKey("uploads/u1/../x.png")).toBe(false);
+    const { nodes } = fromStoredGraph({ version: 2, nodes: [{ id: "m", position: { x: 0, y: 0 }, data: { kind: "media", media: "image", title: "", mime: "image/png", assetKey: "https://signed/x" } }], edges: [] }, "?");
+    expect(nodes[0].data).not.toHaveProperty("assetKey");
   });
 });
 

@@ -226,16 +226,20 @@ export function hasOutput(data: CanvasData): boolean {
 /* Submissions                                                                */
 /* -------------------------------------------------------------------------- */
 
-export const PENDING_TTL_MS = 30 * 60 * 1000;
-
 /**
  * Key for a generation request. A request whose answer never arrived is sent
- * again under its old key (the server returns the job it may have created
- * instead of charging again); a changed request gets a new key.
+ * again under its old key, however long ago (the server returns the job it
+ * may have created instead of charging again); a changed request gets a new
+ * key. `pending` is cleared once an answer arrives.
  */
-export function submitKey(pending: PendingSubmit | undefined, signature: string, now: number, makeKey: () => string): string {
-  if (pending && pending.signature === signature && now - pending.at < PENDING_TTL_MS) return pending.key;
-  return makeKey();
+export function submitKey(pending: PendingSubmit | undefined, signature: string, makeKey: () => string): { key: string; reused: boolean } {
+  if (pending && pending.signature === signature) return { key: pending.key, reused: true };
+  return { key: makeKey(), reused: false };
+}
+
+/** An upload key in our bucket (never a URL): what may be stored as `assetKey`. */
+export function isUploadKey(value: unknown): value is string {
+  return typeof value === "string" && /^uploads\/[A-Za-z0-9_-]+\/[A-Za-z0-9_./-]+$/.test(value) && !value.includes("..");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -301,7 +305,7 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
       media,
       title: str(raw.title),
       mime: str(raw.mime, `${media}/*`),
-      ...(typeof raw.assetKey === "string" ? { assetKey: raw.assetKey } : {}),
+      ...(isUploadKey(raw.assetKey) ? { assetKey: raw.assetKey } : {}),
       ...(typeof raw.resultUuid === "string" ? { resultUuid: raw.resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),
       ...(typeof raw.localId === "string" ? { localId: raw.localId } : {}),
     };
@@ -357,7 +361,7 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
       ...(resultUuid ? { resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),
       ...(error ? { error } : {}),
       ...(pending ? { pending } : {}),
-      ...(typeof raw.maskKey === "string" ? { maskKey: raw.maskKey } : {}),
+      ...(isUploadKey(raw.maskKey) ? { maskKey: raw.maskKey } : {}),
     };
   }
   return null;
@@ -377,9 +381,9 @@ function migrateV1(raw: Record<string, unknown>): CanvasData | null {
       media,
       mime,
       title: str(raw.assetName, str(raw.title)),
-      ...(typeof raw.assetKey === "string" ? { assetKey: raw.assetKey } : {}),
+      ...(isUploadKey(raw.assetKey) ? { assetKey: raw.assetKey } : {}),
       ...(typeof raw.resultUuid === "string" ? { resultUuid: raw.resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),
-      ...(typeof raw.assetSourceId === "string" && typeof raw.assetKey !== "string" && typeof raw.resultUuid !== "string" ? { localId: raw.assetSourceId } : {}),
+      ...(typeof raw.assetSourceId === "string" && !isUploadKey(raw.assetKey) && typeof raw.resultUuid !== "string" ? { localId: raw.assetSourceId } : {}),
     };
   }
   if (kind === "agent") {
@@ -500,7 +504,8 @@ export function fromLegacyLocalCanvas(value: unknown, makeId: () => string): { t
     } else if (raw.kind === "image" || raw.kind === "video" || raw.kind === "audio") {
       const media = raw.kind;
       const jobUuid = typeof raw.jobUuid === "string" ? raw.jobUuid : undefined;
-      const storageKey = typeof raw.storageKey === "string" ? raw.storageKey : undefined;
+      // Older library picks stored a signed URL here; only real upload keys are kept.
+      const storageKey = isUploadKey(raw.storageKey) ? raw.storageKey : undefined;
       if (jobUuid) data = { kind: "media", media, title, mime: `${media}/*`, resultUuid: jobUuid, resultIndex: 0 };
       else if (storageKey) data = { kind: "media", media, title, mime: `${media}/*`, assetKey: storageKey };
     }

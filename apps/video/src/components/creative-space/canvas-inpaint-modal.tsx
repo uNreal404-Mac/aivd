@@ -139,6 +139,25 @@ export function CanvasEditModal({
   const [animateResolution, setAnimateResolution] = useState("720p");
   const [animateAudio, setAnimateAudio] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
+  const confirming = useRef(false);
+  const submittedRef = useRef(false);
+  const sawSubmitting = useRef(false);
+  useEffect(() => {
+    if (submitting) sawSubmitting.current = true;
+    else if (sawSubmitting.current) {
+      // The parent finished (or failed): another confirm is allowed again.
+      sawSubmitting.current = false;
+      confirming.current = false;
+    }
+  }, [submitting]);
+  const send = (payload: CanvasEditSubmit) => {
+    submittedRef.current = true;
+    onSubmit(payload);
+    // The parent may decline at once (e.g. asks to sign in) without submitting.
+    setTimeout(() => {
+      if (!sawSubmitting.current) confirming.current = false;
+    }, 4000);
+  };
 
   const activeAnimate = ANIMATE_MODELS.find((item) => item.id === animateModelId) ?? ANIMATE_MODELS[0];
 
@@ -298,7 +317,9 @@ export function CanvasEditModal({
     const editModelId = action === "text-edit" ? "gpt-image-2-6-sunburst" : "seedream-5-5";
     const model = getMarketModel(editModelId);
     const res = editModelId === "seedream-5-5" ? "2K" : "1K";
-    return model ? marketCredits(model, { prompt: prompt || "edit", resolution: res, imageUrls: [node.url] }) : 12;
+    // Painted inpaint / erase also sends the marked-up copy: two reference images.
+    const images = isMaskTool && strokes.length > 0 ? [node.url, "mask"] : [node.url];
+    return model ? marketCredits(model, { prompt: prompt || "edit", resolution: res, imageUrls: images }) : 12;
   })();
 
   const titles: Record<CanvasEditAction, { zh: string; en: string; icon: React.ReactNode }> = {
@@ -312,13 +333,26 @@ export function CanvasEditModal({
   };
 
   const handleConfirm = async () => {
+    // One press, one job: locked before the mask export is awaited.
+    if (confirming.current || submitting) return;
+    confirming.current = true;
     setLocalError(null);
+    try {
+      await confirm();
+    } finally {
+      // Released when the parent reports it finished (below) or on a local error.
+      if (!submittedRef.current) confirming.current = false;
+      submittedRef.current = false;
+    }
+  };
+
+  const confirm = async () => {
     if (action === "animate") {
       if (!prompt.trim()) {
         setLocalError(zh ? "请描述画面想要如何运动。" : "Describe how the scene should move.");
         return;
       }
-      onSubmit({
+      send({
         action: "animate",
         modelId: animateModelId,
         prompt: prompt.trim(),
@@ -343,7 +377,7 @@ export function CanvasEditModal({
       const composed = oldText.trim()
         ? `Replace the text "${oldText.trim()}" in the image with "${newText.trim()}". Keep the exact original typography, layout, lighting, perspective, and background untouched.`
         : `Update the visible headline/signage text in the image to read "${newText.trim()}", matching the original font style, lighting, and perspective seamlessly.`;
-      onSubmit({
+      send({
         action: "text-edit",
         modelId: "gpt-image-2-6-sunburst",
         prompt: composed,
@@ -355,7 +389,7 @@ export function CanvasEditModal({
 
     if (action === "upscale") {
       const target = UPSCALE_MODES[upscaleIndex];
-      onSubmit({
+      send({
         action: "upscale",
         modelId: target.modelId,
         prompt: "Ultra high-definition restoration and detail enhancement. Preserve the exact composition, faces, colors, and subject identity from the reference image while sharpening fine textures, lighting, and clarity.",
@@ -366,7 +400,7 @@ export function CanvasEditModal({
     }
 
     if (action === "outpaint") {
-      onSubmit({
+      send({
         action: "outpaint",
         modelId: "seedream-5-5",
         prompt: `Outpaint and expand the image naturally into ${outpaintAspect} aspect ratio. ${prompt.trim()}`,
@@ -377,7 +411,7 @@ export function CanvasEditModal({
     }
 
     if (action === "cutout") {
-      onSubmit({
+      send({
         action: "cutout",
         modelId: "seedream-5-5",
         prompt: prompt.trim(),
@@ -389,6 +423,10 @@ export function CanvasEditModal({
 
     // Inpaint or Erase
     const compositeFile = await buildCompositeFile();
+    if (strokes.length > 0 && !compositeFile) {
+      setLocalError(zh ? "涂抹区域没能导出，请重试。没有扣积分。" : "The painted area could not be exported; try again. No credits used.");
+      return;
+    }
     const editPrompt =
       action === "inpaint"
         ? strokes.length > 0
@@ -398,7 +436,7 @@ export function CanvasEditModal({
           ? `Erase and cleanly remove everything inside the cyan-highlighted masked area, reconstructing natural background textures seamlessly. Remove the cyan highlight overlay completely. ${prompt.trim()}`
           : prompt.trim();
 
-    onSubmit({
+    send({
       action,
       modelId: "seedream-5-5",
       prompt: editPrompt,

@@ -30,6 +30,8 @@ const edge = z.object({
 
 export const workflowGraphSchema = z.object({
   version: z.literal(2).optional(),
+  /** Bumped by the server on every save; a save from an older copy is refused. */
+  revision: z.number().int().min(0).optional(),
   nodes: z.array(node).max(MAX_CANVAS_NODES),
   edges: z.array(edge).max(MAX_CANVAS_EDGES),
   viewport: z.object({ x: z.number().finite(), y: z.number().finite(), zoom: z.number().min(0.1).max(4) }).optional(),
@@ -38,6 +40,8 @@ export const workflowGraphSchema = z.object({
 export const workflowPayloadSchema = z.object({
   name: z.string().trim().min(1).max(100),
   graph: workflowGraphSchema,
+  /** The revision this save was made from (version 2 canvases). */
+  baseRevision: z.number().int().min(0).optional(),
 });
 
 export function parseWorkflowPayload(value: unknown) {
