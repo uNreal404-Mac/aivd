@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUp, AtSign, Check, ChevronDown, Coins, Film, Image as ImageIcon, Loader2, Music2, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
+import { ArrowUp, AtSign, Check, ChevronDown, Coins, Loader2, Music2, Plus, RefreshCw, Settings2, Sparkles, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { HomeComposerResize } from "./home-composer-resize";
+import { InViewVideo } from "./in-view-video";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { WAN_REFERENCE_MAX_FILES } from "@/lib/wan-video-references";
@@ -32,7 +33,6 @@ import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, r
 import "./home-generator.css";
 
 const HomeSpeech = dynamic(() => import("./home-speech").then(module => module.HomeSpeech));
-const HomeAgentComposer = dynamic(() => import("./home-agent").then((module) => module.HomeAgent));
 
 type Model = { id: string; name: string; durations: number[]; aspects: string[] };
 export type HomeGeneratorPreset = { prompt: string; aspect?: string; nonce: number };
@@ -96,10 +96,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       if (sessionStorage.getItem("aivd:home-speech:resume") === "guest") setSpeechMode(true);
     } catch { /* Optional guest resume. */ }
   }, [owner, homepage]);
-  const [agentVisited, setAgentVisited] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [mentionAnchor, setMentionAnchor] = useState<HTMLButtonElement | null>(null);
-  const [kind, setKind] = useState<"video" | "image" | "canvas" | "agent">(initialKind);
+  const [kind, setKind] = useState<"video" | "image" | "canvas">(initialKind);
   const chosenTab = useRef<typeof kind | null>(null);
   const resumedGuestRequest = useRef(false);
   const [panel, setPanel] = useState<Panel>(null);
@@ -400,12 +399,11 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
 
   // Switching tabs starts clean: an error from the other tab (an unconnected
   // video model, say) must not follow the visitor to the image tab.
-  const switchKind = (next: "video" | "image" | "canvas" | "agent") => {
+  const switchKind = (next: "video" | "image" | "canvas") => {
     setSpeechMode(false);
     chosenTab.current = next;
     // An undo for a replaced prompt belongs to the tab it was made on.
     if (next !== kind) setReplaced(null);
-    if (next === "agent") setAgentVisited(true);
     setKind(next);
     setMobileExpanded(false);
     setPanel(null);
@@ -685,23 +683,20 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     {hideKindTabs ? null : <div ref={kindTabsRef} className="du-composer-tabs du-seg" role="tablist" aria-label={zh ? "生成类型" : "Generation type"}>
       <button type="button" role="tab" aria-selected={kind === "video"} onClick={() => { switchKind("video"); setAspect(current?.aspects[0] ?? "16:9"); setResolution(studioModel?.resolutions[0] ?? "720p"); }} className={`du-composer-tab ${kind === "video" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "视频" : "Video"}</button>
       <button type="button" role="tab" aria-selected={kind === "image"} onClick={() => { switchKind("image"); setAspect("1:1"); setResolution(imageModel?.options.resolutions?.[0] ?? "1K"); }} className={`du-composer-tab ${kind === "image" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "图片" : "Image"}</button>
-      <button type="button" role="tab" aria-selected={kind === (homepage ? "agent" : "canvas")} onClick={() => switchKind(homepage ? "agent" : "canvas")} className={`du-composer-tab ${kind === (homepage ? "agent" : "canvas") ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{homepage ? "Agent" : zh ? "画布" : "Canvas"}</button>
+      <button type="button" role="tab" aria-selected={kind === "canvas"} onClick={() => switchKind("canvas")} className={`du-composer-tab ${kind === "canvas" ? "du-composer-tab-active" : "text-[var(--du-text-muted)] hover:text-[var(--du-text)]"}`}>{zh ? "无限画布" : "Infinite Canvas"}</button>
     </div>}
     {kind === "canvas" ? <div className="du-canvas-entry" role="tabpanel" aria-label={zh ? "无限画布" : "Infinite Canvas"}>
       <a className="du-canvas-entry-card du-canvas-entry-new" href={localizedHref(lang, "/creative-space/canvas")}>
         <span className="du-canvas-entry-plus"><Plus aria-hidden="true" /></span>
         <span>{zh ? "新建画布" : "New canvas"}</span>
       </a>
-      <a className="du-canvas-entry-card du-canvas-entry-video" href={localizedHref(lang, "/creative-space/canvas")}>
-        <span className="du-canvas-entry-visual"><Film aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
-        <span>{zh ? "视频创作" : "Video creation"}</span>
-      </a>
-      <a className="du-canvas-entry-card du-canvas-entry-image" href={localizedHref(lang, "/creative-space/canvas")}>
-        <span className="du-canvas-entry-visual"><ImageIcon aria-hidden="true" /><span className="du-canvas-entry-line" /></span>
-        <span>{zh ? "图片创作" : "Image creation"}</span>
-      </a>
+      <figure className="du-canvas-entry-card du-canvas-entry-preview" data-video-scope>
+        <div className="du-canvas-entry-media" aria-hidden="true">
+          <InViewVideo src="/home/example-zombie-kitten-21-24.mp4" poster="/home/example-zombie-kitten-21-24-poster.webp" documentGallery />
+        </div>
+        <figcaption>{zh ? "僵尸小猫 · 示例视频" : "Zombie kitten · Sample video"}</figcaption>
+      </figure>
     </div> : null}
-    {agentVisited ? <HomeAgentComposer lang={lang} active={kind === "agent"} onResize={setEditorSize} /> : null}
     {homepage && kind === "video" && speechMode ? <HomeSpeech lang={lang} modeControl={modeControl} onResize={setEditorSize} /> : kind === "video" || kind === "image" ?
     <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {homepage ? <HomeComposerResize zh={zh} onResize={setEditorSize} /> : null}
