@@ -2340,7 +2340,8 @@ function NodeCanvasInner({ locale, initialPrompt, userId }: { locale: string; in
               onClick={() => setPanel(panel === "locate" ? null : "locate")}><LayoutGrid size={13}/>{nodes.length}<Link2 size={13}/>{edges.length}</button>
             {hydrated && !nodes.length && <div className="nc-empty-state">
               <button className="nc-empty-start" type="button" aria-label={L("添加第一个节点","Add first node")} onClick={() => setPanel("add")}><Plus size={30} strokeWidth={1.4}/></button>
-              <strong>{L("双击画布开始创作","Double-click to start creating")}</strong>
+              <strong className="nc-empty-desktop">{L("双击画布开始创作","Double-click to start creating")}</strong>
+              <strong className="nc-empty-touch">{L("轻点加号开始创作","Tap + to start creating")}</strong>
               <span>{L("或从下方添加元素","Or add an element below")}</span>
             </div>}
 

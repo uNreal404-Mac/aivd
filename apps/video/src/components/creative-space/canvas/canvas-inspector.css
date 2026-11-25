@@ -1,5 +1,5 @@
 .nc-inspector, .nci-pop, .nci-text-editor {
-  --nci-bg: var(--ds-surface-2);
+  --nci-bg: color-mix(in srgb, var(--ds-surface-2) 76%, var(--du-bg));
   --nci-line: var(--ds-line-1);
   --nci-chip: var(--ds-fill-1);
   --nci-ink: var(--ds-text-1);
@@ -124,3 +124,9 @@ fieldset.nci-options { min-width: 76px; }
 .nci-prose ol { list-style-type: decimal; }
 .nci-prose hr { border: 0; border-top: 1px solid var(--ds-line-2); margin: 1em 0; }
 .nci-text-preview { align-self: start; justify-self: stretch; }
+
+.nci-segment, .nci-segment button { border-radius: var(--ds-r-full); }
+.nci-toggle { display: inline-flex; align-items: center; background: var(--ds-fill-3); width: 25px; height: 14px; border-radius: var(--ds-r-full); padding: 2px; }
+.nci-toggle::before { content: ""; width: 10px; height: 10px; background: var(--ds-text-2); border-radius: var(--ds-r-full); }
+[aria-pressed="true"] > .nci-toggle { justify-content: flex-end; background: var(--ds-fill-4); }
+.nci-submit .nci-run:disabled { opacity: 1; color: var(--ds-text-3); background: var(--ds-fill-1); }

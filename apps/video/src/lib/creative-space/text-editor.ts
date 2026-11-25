@@ -10,14 +10,27 @@ export function canvasTextLines(text: string) {
 
 function appendInline(parent: HTMLElement, text: string) {
   let offset = 0;
-  for (const match of text.matchAll(/\*\*([^*]+)\*\*|\*([^*]+)\*/g)) {
-    parent.append(document.createTextNode(text.slice(offset, match.index)));
-    const tag = document.createElement(match[1] ? "strong" : "em");
-    tag.textContent = match[1] ?? match[2];
-    parent.append(tag);
-    offset = match.index + match[0].length;
+  const stack: { element: HTMLElement; width: number }[] = [{ element: parent, width: 0 }];
+  const current = () => stack[stack.length - 1].element;
+  for (const match of text.matchAll(/\*+/g)) {
+    current().append(document.createTextNode(text.slice(offset, match.index)));
+    const end = match.index + match[0].length;
+    let width = match[0].length;
+    if (match.index > 0 && !/\s/.test(text[match.index - 1])) {
+      while (stack.length > 1 && stack[stack.length - 1].width <= width) width -= stack.pop()!.width;
+    }
+    if (end < text.length && !/\s/.test(text[end])) {
+      while (width > 0) {
+        const open = width >= 2 ? 2 : 1;
+        if (text.indexOf("*".repeat(open), end) < 0) break;
+        const element = document.createElement(open === 2 ? "strong" : "em");
+        current().append(element); stack.push({ element, width: open }); width -= open;
+      }
+    }
+    if (width) current().append(document.createTextNode("*".repeat(width)));
+    offset = end;
   }
-  if (offset < text.length) parent.append(document.createTextNode(text.slice(offset)));
+  if (offset < text.length) current().append(document.createTextNode(text.slice(offset)));
   if (!parent.childNodes.length) parent.append(document.createElement("br"));
 }
 

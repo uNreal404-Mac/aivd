@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Camera, Check, ChevronRight, CircleDollarSign, ExternalLink, Files, Layers, Loader2, Maximize, Palette, Ratio, SlidersHorizontal, Square, Volume2, VolumeX, WandSparkles } from "lucide-react";
+import { ArrowUp, Camera, Check, ChevronRight, Sparkle, ExternalLink, Files, Layers, Loader2, Maximize, Palette, Ratio, SlidersHorizontal, Square, WandSparkles } from "lucide-react";
 import { useState } from "react";
 import { VIDEO_PRESETS } from "@/lib/video-presets";
 import type { GenerateData } from "@/lib/creative-space/canvas-graph";
@@ -109,12 +109,12 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
             {autoAspect ? <p className="nci-info">{zh ? "画幅跟随参考图片" : "The video follows the reference image’s aspect ratio"}</p> : choices.aspects.length > 0 && <><small>{zh ? "宽高比" : "Aspect ratio"}</small><InspectorOptions grid label={zh ? "宽高比" : "Aspect ratio"} options={choices.aspects} value={data.aspect} set={v => patch({ aspect: v })}/></>}
           </>}
         </InspectorMenu>
-        {choices.audio && <button type="button" className="nci-chip" aria-pressed={Boolean(data.audio)} onClick={() => patch({ audio: !data.audio })}>{data.audio ? <Volume2/> : <VolumeX/>}{zh ? "音频" : "Sound"}</button>}
+        {choices.audio && <button type="button" className="nci-chip" aria-pressed={Boolean(data.audio)} onClick={() => patch({ audio: !data.audio })}>{zh ? "音频" : "Sound"}<span className="nci-toggle" aria-hidden="true"/></button>}
       </> : <>{dimensions("aspect")}{dimensions("resolution")}
         {<InspectorMenu disabled={choices.maxCount === 1} label={choices.maxCount === 1 ? zh ? "当前模型每次生成一张" : "This model generates one image at a time" : zh ? "批量张数" : "Batch size"} triggerClass="nci-batch" button={<><Files/>{zh ? "批量" : "Batch"}{(data.count ?? 1) > 1 ? ` ×${data.count}` : ""}</>}>
           {close => <InspectorOptions label={zh ? "张数" : "Count"} options={Array.from({ length: choices.maxCount }, (_, index) => String(index + 1))} value={String(data.count ?? 1)} set={count => { patch({ count: Number(count) }); close(); }}/>}
         </InspectorMenu>}</>}
-      <div className="nci-submit">{credits !== null && <span title={zh ? "预计积分" : "Estimated credits"}><CircleDollarSign size={13}/>{credits}</span>}
+      <div className="nci-submit">{credits !== null && <span title={zh ? "预计积分" : "Estimated credits"}><Sparkle size={13} fill="currentColor"/>{credits}</span>}
         <button className="nci-run" type="button" disabled={busy || uploading || (!pending && ((!data.prompt.trim() && !inputs.texts) || (choices.requiresImage && !inputs.images)))} onClick={() => actions.run(id)} aria-label={pending ? zh ? "撤回生成" : "Cancel generation" : zh ? "生成" : "Generate"}>
           {pending ? <><Square size={11}/>{pending}</> : busy ? <Loader2 className="nc-spin"/> : <ArrowUp/>}
         </button></div>
