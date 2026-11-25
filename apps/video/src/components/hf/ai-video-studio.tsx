@@ -1,5 +1,6 @@
 "use client";
 
+import { ExtendDialog, type ExtendSource } from "@/components/hf/extend-dialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { localizedHref } from "@/lib/locale-path";
 
@@ -180,6 +181,7 @@ export function AiVideoStudio({
     if (session) void fetchBalance();
   }, [session, fetchBalance]);
   const [results, setResults] = useState<StudioResult[]>([]);
+  const [extending, setExtending] = useState<ExtendSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // First visit opens on how it works, as the reference does; returning users
   // land on their history once it loads.
@@ -861,6 +863,9 @@ export function AiVideoStudio({
               gallery={gallery}
               onView={setViewing}
               onReuse={reuse}
+              onExtend={(result) => {
+                if (result.videoUuid && result.videoUrl) setExtending({ videoUuid: result.videoUuid, videoUrl: result.videoUrl, prompt: result.prompt });
+              }}
               onCanvas={(result) => {
                 try {
                   sessionStorage.setItem(
@@ -896,6 +901,18 @@ export function AiVideoStudio({
           onReuse={(item) => reuse(item.prompt)}
         />
       ) : null}
+      <ExtendDialog
+        source={extending}
+        zh={isChinese}
+        onClose={() => setExtending(null)}
+        onStarted={(job) => {
+          setResults((previous) => [
+            { id: job.uuid, status: "queued", videoUuid: job.uuid, prompt: job.prompt, createdAt: Date.now() },
+            ...previous,
+          ]);
+          setActiveTab("History");
+        }}
+      />
     </div>
   );
 }

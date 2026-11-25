@@ -33,6 +33,10 @@ export interface MarketRequest {
   customMode?: boolean;
   /** Speaking speed multiplier for TTS models that support it (0.7–1.2). */
   speed?: number;
+  /** Signed URL of a video to work on (video tools such as extend). */
+  videoUrl?: string;
+  /** Random seed, for models that require one. */
+  seed?: number;
 }
 
 export interface MarketOptions {
@@ -50,6 +54,10 @@ export interface MarketOptions {
   maxPromptLength?: number;
   /** The model cannot run without a start image. */
   requiresImage?: boolean;
+  /** The model works on an existing video (`videoUrl`). */
+  requiresVideo?: boolean;
+  /** Shortest prompt the model accepts. */
+  minPromptLength?: number;
 }
 
 export interface MarketModel {
@@ -62,6 +70,11 @@ export interface MarketModel {
   costUsd: (req: MarketRequest) => number;
   /** Builds the KIE createTask body (without callBackUrl). */
   buildTask: (req: MarketRequest) => { model: string; input: Record<string, unknown> };
+  /**
+   * A tool that works on an existing creation (extend a video) rather than a
+   * model to pick in the studio: never listed by marketModelsOf().
+   */
+  tool?: "extend";
 }
 
 const KIE_BASE = "https://api.kie.ai";
@@ -610,7 +623,50 @@ const AUDIO_MODELS: MarketModel[] = [
 // Registry
 // ---------------------------------------------------------------------------
 
-export const MARKET_MODELS: MarketModel[] = [...VIDEO_MODELS, ...IMAGE_MODELS, ...AUDIO_MODELS];
+// ---------------------------------------------------------------------------
+// Tools that work on an existing creation
+// ---------------------------------------------------------------------------
+
+// PixVerse V6 extend, billed only for the newly added seconds (kie.ai pricing
+// data "pixverse-v6, Extend, <quality>(no audio|with audio)", read 2026-11-25).
+const PIXVERSE_V6_EXTEND_USD = { "360p": 0.02, "540p": 0.028, "720p": 0.036, "1080p": 0.072 };
+const PIXVERSE_V6_EXTEND_AUDIO_USD = { "360p": 0.028, "540p": 0.036, "720p": 0.048, "1080p": 0.092 };
+
+/** Our id for "extend a video"; the source is any of the user's own videos. */
+export const EXTEND_MODEL_ID = "pixverse-v6/extend";
+
+const TOOL_MODELS: MarketModel[] = [
+  {
+    id: EXTEND_MODEL_ID,
+    kind: "video",
+    name: "PixVerse V6 Extend",
+    tool: "extend",
+    options: {
+      resolutions: ["360p", "540p", "720p", "1080p"],
+      durations: secondsBetween(1, 15),
+      audioToggle: true,
+      requiresVideo: true,
+      minPromptLength: 3,
+      maxPromptLength: 5000,
+    },
+    costUsd: (req) => perSecond(req.audio ? PIXVERSE_V6_EXTEND_AUDIO_USD : PIXVERSE_V6_EXTEND_USD, "720p")(req, 1, 15, 5),
+    buildTask: (req) => ({
+      model: "pixverse-v6/extend",
+      input: {
+        // By URL, so any of the user's videos can be extended, whichever
+        // model made it (KIE: MP4/MOV/MKV/AVI/WebM, 50 MB at most).
+        video_url: req.videoUrl,
+        prompt: req.prompt,
+        duration: clampDuration(req, 1, 15, 5),
+        quality: req.resolution && req.resolution in PIXVERSE_V6_EXTEND_USD ? req.resolution : "720p",
+        seed: req.seed ?? 0,
+        generate_audio_switch: Boolean(req.audio),
+      },
+    }),
+  },
+];
+
+export const MARKET_MODELS: MarketModel[] = [...VIDEO_MODELS, ...IMAGE_MODELS, ...AUDIO_MODELS, ...TOOL_MODELS];
 
 export function getMarketModel(id: string | undefined | null): MarketModel | undefined {
   if (!id) return undefined;
@@ -626,6 +682,13 @@ export function marketCredits(model: MarketModel, req: MarketRequest): number {
   return audioCreditsFromCost(cost);
 }
 
+/** Models to pick from in a studio (tools such as extend are left out). */
 export function marketModelsOf(kind: MarketKind): MarketModel[] {
-  return MARKET_MODELS.filter((item) => item.kind === kind);
+  return MARKET_MODELS.filter((item) => item.kind === kind && !item.tool);
+}
+
+/** Credits to extend a video: what the server freezes for the same choice. */
+export function extendCredits(choice: { resolution: string; duration: number; audio: boolean }): number {
+  const model = getMarketModel(EXTEND_MODEL_ID)!;
+  return marketCredits(model, { prompt: "", resolution: choice.resolution, duration: choice.duration, audio: choice.audio });
 }

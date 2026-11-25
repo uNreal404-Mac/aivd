@@ -1,6 +1,6 @@
 "use client";
 
-import { Paintbrush, RotateCcw, Sparkles } from "lucide-react";
+import { FastForward, Paintbrush, RotateCcw, Sparkles } from "lucide-react";
 import type { StudioResult } from "@/lib/ai-video-studio";
 import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef, type ViewerItem } from "@/components/hf/studio-results";
 
@@ -157,6 +157,7 @@ export function ResultsGrid({
   onView,
   onReuse,
   onCanvas,
+  onExtend,
 }: {
   zh: boolean;
   results: StudioResult[];
@@ -164,6 +165,8 @@ export function ResultsGrid({
   onView: (position: number) => void;
   onReuse: (prompt: string | null | undefined) => void;
   onCanvas: (result: StudioResult) => void;
+  /** 续写: continue a finished clip from its last frame. */
+  onExtend?: (result: StudioResult) => void;
 }) {
   return (
     <div className="vst-results du-fade-swap">
@@ -198,6 +201,17 @@ export function ResultsGrid({
                 <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => onReuse(result.prompt)}>
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </button>
+                {onExtend && result.videoUuid ? (
+                  <button
+                    type="button"
+                    className="sr-icon"
+                    title={zh ? "续写：从结尾接着往下生成" : "Extend from the last frame"}
+                    aria-label={zh ? "续写这段视频" : "Extend this clip"}
+                    onClick={() => onExtend(result)}
+                  >
+                    <FastForward className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="sr-icon"

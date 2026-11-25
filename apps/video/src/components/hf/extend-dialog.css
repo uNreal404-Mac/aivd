@@ -1,0 +1,260 @@
+/* 续写 dialog: one calm sheet. The last frame of the source, what happens
+   next, how many seconds, quality, sound, and the price on the button. */
+.xd-dialog {
+  gap: 16px;
+  padding: 24px;
+  border-color: var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-surface);
+}
+
+.xd-title {
+  color: white;
+  font-size: var(--ds-fs-lg);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.xd-sub {
+  margin-top: -8px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+  line-height: 1.5;
+}
+
+.xd-source {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: black;
+}
+
+.xd-source video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.xd-source-tag {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, black 62%, transparent);
+  color: white;
+  font-size: var(--ds-fs-xs);
+  backdrop-filter: blur(10px);
+}
+
+.xd-source-tag > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--du-accent-text);
+}
+
+.xd-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xd-label {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+}
+
+.xd-label strong {
+  margin-left: 4px;
+  color: white;
+  font-weight: 600;
+}
+
+.xd-field textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+  color: var(--du-text);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.6;
+  outline: none;
+  transition: border-color var(--m-instant) var(--m-ease-out);
+}
+
+.xd-field textarea:focus {
+  border-color: color-mix(in srgb, var(--du-accent) 55%, var(--ds-line-2));
+}
+
+.xd-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.xd-seconds {
+  flex: 1;
+}
+
+.xd-seconds input[type="range"] {
+  width: 100%;
+  accent-color: var(--du-accent);
+}
+
+.xd-sound {
+  display: inline-flex;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-ui);
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.xd-sound[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--du-accent) 45%, var(--ds-line-1));
+  color: white;
+}
+
+.xd-sound > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.xd-seg {
+  --seg-bg: var(--ds-fill-3);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+}
+
+.xd-seg button {
+  height: 32px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.xd-seg button.xd-seg-on {
+  color: white;
+  font-weight: 500;
+}
+
+.xd-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-xs);
+}
+
+.xd-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.xd-terms {
+  min-width: 0;
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+.xd-short {
+  color: var(--du-accent-text);
+}
+
+.xd-go {
+  display: inline-flex;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+}
+
+.xd-go:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.xd-go:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.xd-go:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.xd-go > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.xd-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--du-on-accent) 25%, transparent);
+  font-weight: 500;
+}
+
+.xd-cost > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.xd-spin {
+  animation: xd-turn 0.8s linear infinite;
+}
+
+@keyframes xd-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .xd-dialog {
+    padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .xd-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .xd-go {
+    justify-content: center;
+  }
+}

@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Clapperboard,
   Download,
+  FastForward,
   Image as ImageIcon,
   Loader2,
   Sparkles,
@@ -20,6 +21,8 @@ import {
   X,
 } from "lucide-react";
 import { CopyPromptButton } from "@/components/hf/studio-results";
+import { ExtendDialog, type ExtendSource } from "@/components/hf/extend-dialog";
+import { toast } from "sonner";
 import { failureReason } from "@/lib/failure-reason";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import type { CreationMediaType } from "@/lib/types/dashboard";
@@ -385,6 +388,8 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
   const shownVideo = activeVideo ?? (detail.mounted ? lastShown.current : null);
 
   const closeDetail = useCallback(() => setActiveId(null), []);
+  // 续写 opens over the page, so the detail (a modal <dialog>) closes first.
+  const [extending, setExtending] = useState<ExtendSource | null>(null);
   const showDialog = useCallback((node: HTMLDialogElement | null) => {
     if (node && !node.open) node.showModal();
   }, []);
@@ -777,6 +782,26 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     {t("actions.regenerate")}
                   </a>
                 ) : null}
+                {kind === "video" && shownTag === "done" && shownUrl ? (
+                  <button
+                    type="button"
+                    className="cr-button cr-button--ghost"
+                    onClick={() => {
+                      const parameters = shownVideo.parameters ?? {};
+                      setExtending({
+                        videoUuid: shownVideo.uuid,
+                        videoUrl: shownUrl,
+                        prompt: shownVideo.prompt,
+                        resolution: typeof parameters.resolution === "string" ? parameters.resolution : null,
+                        audio: typeof parameters.audio === "boolean" ? parameters.audio : null,
+                      });
+                      closeDetail();
+                    }}
+                  >
+                    <FastForward aria-hidden="true" />
+                    {zh ? "续写" : "Extend"}
+                  </button>
+                ) : null}
                 {shownUrl ? (
                   <DownloadButton
                     key={`download-${shownVideo.uuid}`}
@@ -796,6 +821,15 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
           </div>
         </dialog>
       ) : null}
+      <ExtendDialog
+        source={extending}
+        zh={zh}
+        onClose={() => setExtending(null)}
+        onStarted={(job) => {
+          toast.success(zh ? `已开始续写 +${job.duration} 秒，完成后会出现在这里` : `Extending by ${job.duration}s; it will appear here when ready`);
+          refetch();
+        }}
+      />
     </div>
   );
 }

@@ -41,7 +41,12 @@ export interface GenerateVideoParams {
   outputNumber?: number;
   generateAudio?: boolean;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
 }
+
+/** KIE takes at most 50 MB of video for PixVerse extend (kie.ai/pixverse-v6). */
+export const MAX_SOURCE_VIDEO_BYTES = 50 * 1024 * 1024;
 
 export interface GenerateMediaParams {
   userId: string;
@@ -60,6 +65,8 @@ export interface GenerateMediaParams {
   customMode?: boolean;
   speed?: number;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
 }
 
 export interface VideoGenerationResult {
@@ -69,6 +76,13 @@ export interface VideoGenerationResult {
   status: string;
   estimatedTime?: number;
   creditsUsed: number;
+}
+
+/** A seed in KIE's range (0 to 2^31 - 1). */
+function randomSeed(): number {
+  const value = new Uint32Array(1);
+  crypto.getRandomValues(value);
+  return value[0] % 2147483648;
 }
 
 /** File extension from a provider URL, falling back when it has none. */
@@ -169,6 +183,7 @@ export class VideoService {
         imageUrls: [...(params.imageUrl ? [params.imageUrl] : []), ...(params.imageUrls ?? [])],
         audio: params.generateAudio,
         idempotencyKey: params.idempotencyKey,
+        sourceVideoUuid: params.sourceVideoUuid,
       });
     }
 
@@ -576,6 +591,37 @@ export class VideoService {
     if (model.options.requiresImage && imageInputs.length === 0) {
       throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });
     }
+    const minPrompt = model.options.minPromptLength;
+    if (minPrompt && params.prompt.trim().length < minPrompt) {
+      throw new ApiError(`Prompt is shorter than ${minPrompt} characters`, 400, { code: "PROMPT_TOO_SHORT", min: minPrompt });
+    }
+    // A tool that works on a video takes one of the user's own finished
+    // videos, never a URL from the request; KIE fetches it by a signed URL.
+    let sourceVideo: { uuid: string; key: string } | null = null;
+    if (model.options.requiresVideo) {
+      if (!params.sourceVideoUuid) {
+        throw new ApiError("Choose a video to work on", 400, { code: "MISSING_SOURCE_VIDEO" });
+      }
+      const [source] = await db
+        .select({
+          uuid: videos.uuid,
+          mediaType: videos.mediaType,
+          status: videos.status,
+          videoUrl: videos.videoUrl,
+          fileSize: videos.fileSize,
+          isDeleted: videos.isDeleted,
+        })
+        .from(videos)
+        .where(and(eq(videos.uuid, params.sourceVideoUuid), eq(videos.userId, params.userId)))
+        .limit(1);
+      if (!source || source.isDeleted || (source.mediaType ?? "video") !== "video" || source.status !== VideoStatus.COMPLETED || !source.videoUrl) {
+        throw new ApiError("This video cannot be used", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+      }
+      if (source.fileSize && source.fileSize > MAX_SOURCE_VIDEO_BYTES) {
+        throw new ApiError("The video is larger than 50 MB", 400, { code: "SOURCE_VIDEO_TOO_LARGE" });
+      }
+      sourceVideo = { uuid: source.uuid, key: source.videoUrl };
+    }
     const maxPrompt = model.options.maxPromptLength;
     if (maxPrompt && params.prompt.length > maxPrompt) {
       throw new ApiError(`Prompt is longer than ${maxPrompt} characters`, 400, { code: "PROMPT_TOO_LONG", max: maxPrompt });
@@ -599,6 +645,8 @@ export class VideoService {
       instrumental: params.instrumental,
       customMode: params.customMode,
       speed: params.speed,
+      // Models that require a seed get a random one.
+      ...(model.options.requiresVideo ? { seed: randomSeed() } : {}),
     };
 
     const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
@@ -638,6 +686,8 @@ export class VideoService {
       parameters: {
         ...request,
         imageUrls: imageInputs,
+        // The source is kept by its id; a signed URL would expire.
+        ...(sourceVideo ? { sourceVideoUuid: sourceVideo.uuid } : {}),
         ...(idempotencyKey ? { idempotencyKey } : {}),
       },
       idempotencyKey: idempotencyKey ?? null,
@@ -689,7 +739,11 @@ export class VideoService {
     try {
       taskId = await createMarketTask(
         model,
-        { ...request, imageUrls: imageInputs.map((value) => this.signImageInput(value)) },
+        {
+          ...request,
+          imageUrls: imageInputs.map((value) => this.signImageInput(value)),
+          ...(sourceVideo ? { videoUrl: this.signImageInput(sourceVideo.key) } : {}),
+        },
         callbackUrl,
         apiKey,
       );

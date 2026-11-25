@@ -27,6 +27,8 @@ const generateSchema = z.object({
   outputNumber: z.number().int().min(1).optional().default(1),
   generateAudio: z.boolean().optional(),
   idempotencyKey: z.string().max(200).optional(),
+  /** Extend a video: one of the caller's own finished videos. */
+  sourceVideoUuid: z.string().max(64).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest) {
       outputNumber: data.outputNumber,
       generateAudio: data.generateAudio,
       idempotencyKey,
+      sourceVideoUuid: data.sourceVideoUuid,
     });
 
     return apiSuccess(result);

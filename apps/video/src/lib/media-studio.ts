@@ -65,6 +65,13 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
     }
     case "PROMPT_TOO_LONG":
       return zh ? "提示词太长了，最多 5000 字。" : "The prompt is too long: 5,000 characters at most.";
+    case "SOURCE_VIDEO_UNAVAILABLE":
+    case "MISSING_SOURCE_VIDEO":
+      return zh ? "这段视频现在不能续写：它可能已删除，或还没生成完。" : "This video can't be extended: it may have been deleted or isn't finished yet.";
+    case "SOURCE_VIDEO_TOO_LARGE":
+      return zh ? "这段视频超过 50 MB，暂时不能续写。" : "This video is larger than 50 MB and can't be extended yet.";
+    case "PROMPT_TOO_SHORT":
+      return zh ? "再多写几个字，说说接下来发生什么。" : "Write a few more words about what happens next.";
     case "CONTENT_BLOCKED":
       return fallback;
     default:
@@ -112,9 +119,20 @@ function writeLostAnswers(answers: LostAnswers): void {
   }
 }
 
+/** Body for the video route's extend tool (see lib/video-extend.ts). */
+export type ExtendSubmitBody = {
+  model: string;
+  prompt: string;
+  sourceVideoUuid: string;
+  duration: number;
+  quality: string;
+  generateAudio: boolean;
+};
+
 export async function submitMedia(
-  body: SubmitBody,
+  body: SubmitBody | ExtendSubmitBody,
   zh: boolean,
+  endpoint = "/api/v1/media/generate",
 ): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number }> {
   const signature = JSON.stringify(body);
   const hash = requestHash(signature);
@@ -130,7 +148,7 @@ export async function submitMedia(
     writeLostAnswers(answers);
   };
   try {
-    const response = await fetch("/api/v1/media/generate", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
