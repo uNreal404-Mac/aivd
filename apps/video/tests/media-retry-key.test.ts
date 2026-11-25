@@ -32,4 +32,24 @@ describe("submitMedia idempotency key", () => {
     expect(changed).not.toBe(first);
     expect(again).not.toBe(changed);
   });
+
+  it("keeps the key when the answer's body broke off", async () => {
+    const broken = new Response("{\"success\": tr", { status: 200 });
+    const fetchMock = vi.fn().mockResolvedValueOnce(broken).mockResolvedValueOnce(ok());
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await submitMedia({ ...body, prompt: "broken body" }, true)).ok).toBe(false);
+    expect((await submitMedia({ ...body, prompt: "broken body" }, true)).ok).toBe(true);
+    const [first, second] = keysOf(fetchMock);
+    expect(second).toBe(first);
+  });
+
+  it("keeps the key when another job is sent in between", async () => {
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("network")).mockResolvedValue(ok());
+    vi.stubGlobal("fetch", fetchMock);
+    await submitMedia({ ...body, prompt: "job A" }, true);
+    await submitMedia({ ...body, prompt: "job B" }, true);
+    await submitMedia({ ...body, prompt: "job A" }, true);
+    const [a, , aAgain] = keysOf(fetchMock);
+    expect(aAgain).toBe(a);
+  });
 });

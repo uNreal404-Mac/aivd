@@ -70,20 +70,63 @@ export function errorMessage(code: string | undefined, fallback: string, zh: boo
   }
 }
 
-// When a request's answer is lost (network error), the same request sent again
-// keeps its idempotency key, so the server returns the job it may already have
-// created and frozen credits for, instead of creating and charging a second.
-let lostAnswer: { signature: string; key: string } | null = null;
+// When a request's answer is lost (network error, or the response body broke
+// off), the same request sent again keeps its idempotency key, so the server
+// returns the job it may already have created and frozen credits for instead
+// of creating and charging a second one. Kept per tab in sessionStorage, by a
+// hash of the request, so a reload or another job in between does not lose it.
+const LOST_ANSWERS_KEY = "aivd:media-lost-answers";
+const LOST_ANSWER_TTL_MS = 30 * 60 * 1000;
+
+function requestHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${(hash >>> 0).toString(36)}:${text.length}`;
+}
+
+type LostAnswers = Record<string, { key: string; at: number }>;
+const memoryLostAnswers: LostAnswers = {};
+
+function readLostAnswers(): LostAnswers {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(LOST_ANSWERS_KEY) || "{}") as LostAnswers;
+    return stored && typeof stored === "object" ? stored : {};
+  } catch {
+    return memoryLostAnswers;
+  }
+}
+
+function writeLostAnswers(answers: LostAnswers): void {
+  const now = Date.now();
+  const fresh = Object.fromEntries(Object.entries(answers).filter(([, item]) => now - item.at < LOST_ANSWER_TTL_MS));
+  try {
+    sessionStorage.setItem(LOST_ANSWERS_KEY, JSON.stringify(fresh));
+  } catch {
+    for (const key of Object.keys(memoryLostAnswers)) delete memoryLostAnswers[key];
+    Object.assign(memoryLostAnswers, fresh);
+  }
+}
 
 export async function submitMedia(
   body: SubmitBody,
   zh: boolean,
 ): Promise<{ ok: true; uuid: string; credits: number } | { ok: false; message: string; needsLogin?: boolean; code?: string; requiredCredits?: number }> {
   const signature = JSON.stringify(body);
+  const hash = requestHash(signature);
+  const pending = readLostAnswers()[hash];
   const key =
-    lostAnswer?.signature === signature
-      ? lostAnswer.key
+    pending && Date.now() - pending.at < LOST_ANSWER_TTL_MS
+      ? pending.key
       : typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+  const rememberLost = () => writeLostAnswers({ ...readLostAnswers(), [hash]: { key, at: Date.now() } });
+  const forget = () => {
+    const answers = readLostAnswers();
+    delete answers[hash];
+    writeLostAnswers(answers);
+  };
   try {
     const response = await fetch("/api/v1/media/generate", {
       method: "POST",
@@ -93,9 +136,21 @@ export async function submitMedia(
       },
       body: signature,
     });
-    lostAnswer = null;
-    const payload = await response.json().catch(() => null);
-    if (response.status === 401) return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
+    // Not signed in: nothing was created, whatever the body says.
+    if (response.status === 401) {
+      forget();
+      return { ok: false, message: errorMessage("UNAUTHORIZED", "", zh), needsLogin: true };
+    }
+    let payload: any = null;
+    try {
+      payload = await response.json();
+    } catch {
+      // No readable answer (the body broke off, or an error page): the job
+      // may exist, so a retry must reuse this key.
+      rememberLost();
+      return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
+    }
+    forget();
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
     if (payload?.success && uuid) return { ok: true, uuid, credits: payload.data.creditsUsed ?? 0 };
     // 202: submitted, outcome unknown; it still shows up and resolves later.
@@ -111,7 +166,7 @@ export async function submitMedia(
       requiredCredits: typeof requiredCredits === "number" ? requiredCredits : undefined,
     };
   } catch {
-    lostAnswer = { signature, key };
+    rememberLost();
     return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
   }
 }

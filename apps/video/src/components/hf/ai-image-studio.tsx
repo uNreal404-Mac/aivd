@@ -36,11 +36,14 @@ export function AiImageStudio({
   initialPrompt = "",
   initialModel = "",
   initialAspect = "",
+  initialResolution = "",
 }: {
   locale: string;
   initialPrompt?: string;
   initialModel?: string;
   initialAspect?: string;
+  /** Resolution chosen on the homepage, used when this model offers it. */
+  initialResolution?: string;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
@@ -53,7 +56,7 @@ export function AiImageStudio({
   const [prompt, setPrompt] = useState(initialPrompt);
   const draft = usePromptDraft("image", prompt, setPrompt, Boolean(initialPrompt));
   const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
-  const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
+  const [resolution, setResolution] = useState(options.resolutions?.includes(initialResolution) ? initialResolution : (options.resolutions?.[0] ?? ""));
   const [count, setCount] = useState(1);
   const [view, setView] = useImageView();
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);

@@ -38,6 +38,33 @@ const AUDIO_MODELS = marketModelsOf("audio");
 
 /** An unsent script set aside when the studio opens with another one. */
 const EARLIER_AUDIO_DRAFT_KEY = "aivd:draft:audio:earlier";
+const MAX_EARLIER_DRAFTS = 5;
+
+/** Set-aside drafts, newest first (an older page stored a single string). */
+function readEarlierDrafts(): string[] {
+  try {
+    const raw = localStorage.getItem(EARLIER_AUDIO_DRAFT_KEY);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((item): item is string => typeof item === "string");
+    } catch {
+      // Not JSON: the single draft an older version kept.
+    }
+    return [raw];
+  } catch {
+    return [];
+  }
+}
+
+function writeEarlierDrafts(drafts: string[]): void {
+  try {
+    if (drafts.length) localStorage.setItem(EARLIER_AUDIO_DRAFT_KEY, JSON.stringify(drafts));
+    else localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
+  } catch {
+    // Storage can be blocked; nothing is kept then.
+  }
+}
 
 export function AiAudioStudio({
   locale,
@@ -70,15 +97,13 @@ export function AiAudioStudio({
   const [earlierDraft, setEarlierDraft] = useState<string | null>(null);
   useEffect(() => {
     try {
-      // Kept under its own key: the draft key soon holds the new script, and
-      // a reload must still offer the earlier one back.
+      // Every unsent draft set aside by opening a creation's script is kept
+      // (newest first) and offered back one at a time, also after a reload.
       const saved = localStorage.getItem("aivd:draft:audio");
-      let earlier = localStorage.getItem(EARLIER_AUDIO_DRAFT_KEY);
-      // Only the first draft set aside is kept: a later edit of the opened
-      // script must not take its place.
-      if (initialPrompt && !earlier?.trim() && saved?.trim() && saved.trim() !== initialPrompt.trim()) {
-        earlier = saved;
-        localStorage.setItem(EARLIER_AUDIO_DRAFT_KEY, saved);
+      let earlier = readEarlierDrafts();
+      if (initialPrompt && saved?.trim() && saved.trim() !== initialPrompt.trim() && !earlier.some((item) => item.trim() === saved.trim())) {
+        earlier = [saved, ...earlier].slice(0, MAX_EARLIER_DRAFTS);
+        writeEarlierDrafts(earlier);
       }
       // The script came from the address once; a reload restores the draft
       // (with the visitor's edits) instead of the original script again.
@@ -87,11 +112,10 @@ export function AiAudioStudio({
         url.searchParams.delete("prompt");
         window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
       }
-      // Offered until used or dismissed, also after a reload (when the page
-      // restores the edited script from its own draft).
       const shown = (initialPrompt || saved || "").trim();
-      if (earlier?.trim() && earlier.trim() !== shown) setEarlierDraft(earlier);
-      else if (earlier?.trim()) localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
+      const rest = earlier.filter((item) => item.trim() && item.trim() !== shown);
+      if (rest.length !== earlier.length) writeEarlierDrafts(rest);
+      setEarlierDraft(rest[0] ?? null);
     } catch {
       // Storage can be blocked; nothing to offer back then.
     }
@@ -415,13 +439,13 @@ export function AiAudioStudio({
                   <button
                     type="button"
                     onClick={() => {
+                      // The script on screen is kept too, so nothing is lost.
+                      const current = script;
                       setScript(earlierDraft);
+                      const rest = readEarlierDrafts().filter((item) => item !== earlierDraft);
+                      const next = current.trim() ? [current, ...rest].slice(0, MAX_EARLIER_DRAFTS) : rest;
+                      writeEarlierDrafts(next);
                       setEarlierDraft(null);
-                      try {
-                        localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
-                      } catch {
-                        // Nothing kept to clear.
-                      }
                     }}
                   >
                     {zh ? "换回上次没生成的草稿" : "Use your unsent draft instead"}
@@ -429,12 +453,9 @@ export function AiAudioStudio({
                   <button
                     type="button"
                     onClick={() => {
-                      setEarlierDraft(null);
-                      try {
-                        localStorage.removeItem(EARLIER_AUDIO_DRAFT_KEY);
-                      } catch {
-                        // Nothing kept to clear.
-                      }
+                      const rest = readEarlierDrafts().filter((item) => item !== earlierDraft);
+                      writeEarlierDrafts(rest);
+                      setEarlierDraft(rest.find((item) => item.trim() !== script.trim()) ?? null);
                     }}
                   >
                     {zh ? "不用了" : "Dismiss"}

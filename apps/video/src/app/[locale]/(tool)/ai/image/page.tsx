@@ -20,5 +20,5 @@ export default async function AiImagePage({ params, searchParams }: { params: Pr
   const query = await searchParams;
   const modelParam = typeof query.model === "string" ? query.model : "";
   // Remount when the nav switches models, so the new choice is applied.
-  return <AiImageStudio key={modelParam || "default"} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} />;
+  return <AiImageStudio key={modelParam || "default"} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} initialResolution={typeof query.resolution === "string" ? query.resolution : ""} />;
 }
