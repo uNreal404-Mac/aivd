@@ -5,8 +5,8 @@ import { ApiError } from "./error";
 /**
  * Standard success response
  */
-export function apiSuccess<T>(data: T, status = 200) {
-  return Response.json({ success: true, data }, { status });
+export function apiSuccess<T>(data: T, status = 200, headers?: HeadersInit) {
+  return Response.json({ success: true, data }, { status, headers });
 }
 
 /**
