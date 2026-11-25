@@ -44,9 +44,11 @@ function saved<T extends { id: string }>(key: string): T[] {
   } catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"] }: {
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab }: {
   lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string; acceptedTypes?: MediaType[];
+  /** The shelf it opens on each time (an "@" button opens it on the elements). Without it, the last shelf stays. */
+  initialTab?: Tab;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const allowVideo = acceptedTypes.includes("video");
@@ -75,6 +77,10 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [leaving, setLeaving] = useState<string[]>([]);
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  // Focus moves into the library when it opens (onto the open tab) and goes
+  // back to whatever opened it when it closes.
+  const returnFocus = useRef<HTMLElement | null>(null);
   const selectedRef = useRef<string[]>([]);
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const armedAt = useRef(0);
@@ -141,6 +147,31 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   }, [open, onClose, armed]);
 
   useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
+
+  const wantFocus = useRef(false);
+  useEffect(() => {
+    if (open) {
+      returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      wantFocus.current = true;
+      return;
+    }
+    wantFocus.current = false;
+    const opener = returnFocus.current;
+    returnFocus.current = null;
+    if (opener?.isConnected && (!document.activeElement || document.activeElement === document.body || dialogRef.current?.contains(document.activeElement))) opener.focus({ preventScroll: true });
+  }, [open]);
+  // Once the panel is on screen, onto the tab of the shelf it opens on.
+  useEffect(() => {
+    if (!open || !mounted || !wantFocus.current) return;
+    wantFocus.current = false;
+    dialogRef.current?.querySelector<HTMLElement>(`.hmp-header nav button[data-tab="${initialTab ?? tab}"]`)?.focus({ preventScroll: true });
+  }, [open, mounted, tab, initialTab]);
+
+  // Each opening starts on the shelf the caller asked for (only on opening,
+  // not when the selection changes while it is open).
+  useEffect(() => {
+    if (open && initialTab) { setTab(initialTab); setCreate(null); setCategory("all"); }
+  }, [open, initialTab]);
 
   // Closing the library, or moving to another source, cancels a half-done
   // delete: the library never reopens with a bin already armed. (Above the
@@ -294,23 +325,31 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const limits = allowVideo
     ? (zh ? `图片 ${mb(MAX_BYTES)} MB 内 · 视频 ${mb(MAX_VIDEO_BYTES)} MB 内（MP4/WebM/MOV）` : `Images up to ${mb(MAX_BYTES)} MB · videos up to ${mb(MAX_VIDEO_BYTES)} MB`)
     : (zh ? `图片 ${mb(MAX_BYTES)} MB 内` : `Images up to ${mb(MAX_BYTES)} MB`);
-  const showToolbar = ((tab === "upload" || tab === "works") && filters.length > 0) || tab === "elements" || (tab === "brand" && !create);
   const status = uploading ? "" : error || (limitNote ? limitText : "");
+  const tabNames: Record<Tab, string> = { upload: zh ? "上传" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" };
+  // The upload tile opens the file chooser; it leads the uploads grid, even
+  // when there is nothing uploaded yet.
+  const addTile = <button type="button" className="hmp-add" title={limits} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{zh ? "上传文件" : "Upload file"}</button>;
 
+  // Laid out like the reference's library: a frosted panel, a row of pill
+  // tabs with a round close button, then one inset shelf whose header names
+  // what it shows (with its filters on the right) above a grid of square
+  // tiles. Our footer stays: several files can be chosen, then confirmed.
   return createPortal(<div className="hmp-backdrop" data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <dialog open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" data-presence="dialog" data-state={state}>
+    <dialog ref={dialogRef} open aria-modal="true" aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" data-presence="dialog" data-state={state}>
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
-        {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{({ upload: zh ? "上传内容" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" })[item]}</button>)}
-      </nav><button type="button" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={22} /></button></header>
-      {showToolbar ? <div className="hmp-toolbar">{(tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div> : null}
+        {(["upload", "elements", "brand", "works"] as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
+      </nav><button type="button" className="hmp-close" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={16} /></button></header>
+      <section className="hmp-shelf" aria-label={tabNames[tab]}>
+      <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : tabNames[tab]}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
       <main className="hmp-body">
-        {create ? <div className="hmp-create"><h3>{create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</h3>
+        {create ? <div className="hmp-create">
           <label>{zh ? "名称" : "Name"}<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></label>
           {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "all" ? "character" : category} onChange={(e) => setCategory(e.target.value)}>{ELEMENT_CATEGORIES.filter((item) => item.id !== "all").map((item) => <option key={item.id} value={item.id}>{zh ? item.zh : item.en}</option>)}</select></label> : null}
           <label>{create === "element" ? (zh ? "元素图片" : "Element image") : "Logo"}<select value={sourceId} onChange={(e) => setSourceId(e.target.value)}><option value="">{zh ? "选择已上传图片" : "Choose an uploaded image"}</option>{assets.filter((a) => a.mimeType.startsWith("image/")).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
           <div className="hmp-create-actions"><button type="button" onClick={() => setCreate(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" onClick={saveCreation}>{zh ? "保存" : "Save"}</button></div></div>
-        : tab === "upload" && !shown.length ? <button type="button" className="hmp-drop" onClick={() => fileInput.current?.click()}><UploadCloud size={40} /><strong>{allowVideo ? (zh ? "拖入图片或视频，或点击上传" : "Drop images or videos here, or click to upload") : (zh ? "拖入图片，或点击上传" : "Drop images here, or click to upload")}</strong><span>{limits}</span></button>
-        : shown.length ? <div className="hmp-grid">{tab === "upload" ? <button type="button" className="hmp-add" onClick={() => fileInput.current?.click()}><Plus />{allowVideo ? (zh ? "上传素材" : "Upload media") : (zh ? "上传图片" : "Upload image")}</button> : null}{shown.map((item) => {
+        : tab === "upload" && !shown.length ? <><div className="hmp-grid">{addTile}</div><div className="hmp-empty hmp-empty-uploads"><strong>{loadingAssets ? (zh ? "正在读取上传内容…" : "Loading your uploads…") : (zh ? "还没有上传内容" : "Nothing uploaded yet")}</strong><p>{allowVideo ? (zh ? "点上传文件，或把图片、视频拖进来" : "Choose Upload file, or drop images or videos here") : (zh ? "点上传文件，或把图片拖进来" : "Choose Upload file, or drop images here")} · {limits}</p></div></>
+        : shown.length ? <div className="hmp-grid" data-named={tab === "elements" || tab === "brand" || undefined}>{tab === "upload" ? addTile : null}{shown.map((item) => {
           const isSelected = selected.includes(item.id);
           const isArmed = armed === item.id;
           const note = isArmed ? usageNote(item.id) : "";
@@ -323,10 +362,10 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
             </button> : null}
           </div>;
         })}</div>
-        : <div className="hmp-empty"><ImageIcon size={42} /><strong>{tab === "elements" ? (zh ? "还没有元素" : "No elements yet") : tab === "brand" ? (zh ? "还没有品牌工具箱" : "No brand kits yet") : (zh ? "还没有作品" : "No creations yet")}</strong><p>{tab === "works" ? (allowVideo ? (zh ? "生成的图片和视频会出现在这里" : "Everything you generate will appear here.") : (zh ? "生成的图片会出现在这里" : "Your generated images will appear here.")) : (zh ? "把常用素材存起来，下次生成可以直接选用" : "Save the ones you use often and pick them straight away next time.")}</p>{tab !== "works" ? <button type="button" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={18} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>}
+        : <div className="hmp-empty"><span className="hmp-empty-icon"><ImageIcon size={20} aria-hidden="true" /></span><strong>{tab === "elements" ? (zh ? "还没有元素" : "No elements yet") : tab === "brand" ? (zh ? "还没有品牌工具箱" : "No brand kits yet") : (zh ? "还没有作品" : "No creations yet")}</strong><p>{tab === "works" ? (allowVideo ? (zh ? "生成的图片和视频会出现在这里" : "Everything you generate will appear here.") : (zh ? "生成的图片会出现在这里" : "Your generated images will appear here.")) : (zh ? "把常用素材存起来，下次生成可以直接选用" : "Save the ones you use often and pick them straight away next time.")}</p>{tab !== "works" ? <button type="button" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={18} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>}
       </main>
-      <div className="hmp-count" data-num>{zh ? `已选 ${selected.length}/${maxSelected} ${unit}` : `${selected.length}/${maxSelected} selected`}</div>
-      <footer className="hmp-footer"><span aria-live="polite">{uploading ? <><Loader2 className="hmp-spin" size={16} />{zh ? "上传中…" : "Uploading…"}</> : status ? <span key={status} className="hmp-status">{status}</span> : null}</span><button type="button" disabled={!canConfirm} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{selected.length === 0 && changed ? (zh ? "清空已选" : "Clear selection") : (zh ? "选择" : "Select")}</button></footer>
+      </section>
+      <footer className="hmp-footer"><span aria-live="polite">{uploading ? <><Loader2 className="hmp-spin" size={16} />{zh ? "上传中…" : "Uploading…"}</> : status ? <span key={status} className="hmp-status">{status}</span> : <span className="hmp-count" data-num>{zh ? `已选 ${selected.length}/${maxSelected} ${unit}` : `${selected.length}/${maxSelected} selected`}</span>}</span><button type="button" disabled={!canConfirm} onClick={() => { onSelect(selected.map((id) => choices.find((a) => a.id === id)).filter((a): a is PickerAsset => Boolean(a?.url))); onClose(); }}>{selected.length === 0 && changed ? (zh ? "清空已选" : "Clear selection") : (zh ? "选择" : "Select")}</button></footer>
       <input ref={fileInput} type="file" accept={allowVideo ? "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/gif"} multiple hidden onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
     </dialog>
   </div>, document.body);

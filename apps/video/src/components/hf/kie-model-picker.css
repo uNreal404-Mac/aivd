@@ -143,3 +143,13 @@
   height: 12px;
   color: color-mix(in srgb, white 40%, transparent);
 }
+
+/* In the studios the list follows Higgsfield's: 56px rows, 40px tiles. */
+.du-model-picker-panel.is-studio .du-model-row {
+  min-height: 56px;
+}
+
+.du-model-picker-panel.is-studio .du-model-tile {
+  width: 40px;
+  height: 40px;
+}

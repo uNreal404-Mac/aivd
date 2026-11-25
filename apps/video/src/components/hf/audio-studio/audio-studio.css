@@ -159,6 +159,69 @@
   padding-right: 40px;
 }
 
+.au-card-head-info {
+  padding-right: 0;
+}
+
+/* The (i) beside the script label: a short note on what the field is for,
+   shown on hover or focus. */
+.au-info {
+  position: relative;
+  display: flex;
+}
+
+.au-info-btn {
+  position: relative;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.au-info-btn::after {
+  position: absolute;
+  inset: -12px;
+  content: "";
+}
+
+.au-info-btn:hover,
+.au-info-btn:focus-visible {
+  color: var(--ds-text-1);
+}
+
+.au-info-tip {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 8px);
+  right: -6px;
+  width: max-content;
+  max-width: 228px;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg);
+  box-shadow: var(--ds-shadow-2);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  line-height: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--m-fast) var(--m-ease-out),
+    transform var(--m-fast) var(--m-ease-out);
+}
+
+.au-info:hover .au-info-tip,
+.au-info-btn:focus + .au-info-tip {
+  opacity: 1;
+  transform: none;
+}
+
 .au-card-label {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
@@ -349,21 +412,6 @@ button.au-row:active {
   cursor: default;
 }
 
-.au-row-wrap {
-  position: relative;
-}
-
-.au-row-voice {
-  padding-right: 80px;
-}
-
-.au-row-voice .au-row-chevron {
-  position: absolute;
-  top: calc(50% - 8px);
-  right: 12px;
-}
-
-.au-row-avatar,
 .au-opt-avatar {
   display: inline-flex;
   width: 32px;
@@ -415,12 +463,6 @@ button.au-row:active {
 .au-play-on:hover {
   background: var(--du-accent);
   color: var(--du-on-accent);
-}
-
-.au-play-row {
-  position: absolute;
-  top: calc(50% - 14px);
-  right: 40px;
 }
 
 /* Advanced settings: a row that opens a card of the model's own controls. */
@@ -507,11 +549,11 @@ button.au-row:active {
     opacity var(--m-instant) var(--m-ease-out);
 }
 
-.au-reset:hover:not(:disabled) {
+.au-reset:hover:not([aria-disabled="true"]) {
   background: var(--ds-fill-2);
 }
 
-.au-reset:disabled {
+.au-reset[aria-disabled="true"] {
   cursor: default;
   opacity: 0.4;
 }
@@ -541,7 +583,17 @@ button.au-row:active {
   bottom: 0;
   left: 0;
   width: var(--au-fill);
-  background: var(--ds-fill-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-fill-1);
+  pointer-events: none;
+}
+
+.au-fill-tick {
+  position: absolute;
+  top: calc(50% - 6px);
+  width: 1px;
+  height: 12px;
+  background: var(--ds-line-2);
   pointer-events: none;
 }
 
@@ -624,18 +676,23 @@ button.au-row:active {
   line-height: 16px;
 }
 
+.au-switch-row-quiet .au-switch-label {
+  color: var(--ds-text-3);
+}
+
 .au-switch {
   position: relative;
   width: 44px;
   height: 24px;
   flex-shrink: 0;
   border-radius: var(--ds-r-full);
-  background: var(--ds-fill-3);
+  background: var(--ds-fill-4);
   transition: background-color var(--m-fast) var(--m-ease-in-out);
 }
 
+/* On is green, as the reference's (and the system's) switches are. */
 .au-switch[aria-checked="true"] {
-  background: var(--du-accent);
+  background: var(--du-success);
 }
 
 .au-switch-knob {
@@ -712,10 +769,11 @@ button.au-row:active {
   transform: scale(0.98);
 }
 
+/* Waiting for a script: the accent, dimmed, as on the reference. */
 .au-generate:disabled {
   cursor: not-allowed;
-  background: var(--ds-fill-2);
-  color: var(--ds-text-3);
+  background: color-mix(in srgb, var(--du-accent) 36%, var(--ds-surface-2));
+  color: color-mix(in srgb, var(--du-on-accent) 72%, transparent);
 }
 
 .au-generate-cost {
@@ -747,6 +805,50 @@ button.au-row:active {
   color: var(--ds-text-1);
 }
 
+.au-pop-inner {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Model list: a search field across the top, under a hairline. */
+.au-pop-search {
+  display: flex;
+  height: 41px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--ds-line-1);
+}
+
+.au-pop-search-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--ds-text-3);
+}
+
+.au-pop-search input {
+  min-width: 0;
+  height: 40px;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  outline: none;
+}
+
+.au-pop-search input::placeholder {
+  color: var(--ds-text-4);
+}
+
+.au-pop-search input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
 .au-pop-head {
   display: flex;
   flex-shrink: 0;
@@ -759,9 +861,20 @@ button.au-row:active {
   font-weight: 500;
 }
 
-.au-pop-hint {
-  color: var(--ds-text-4);
-  font-weight: 400;
+.au-pop-head-icon {
+  justify-content: flex-start;
+  padding: 8px 18px 4px;
+}
+
+.au-pop-head-icon svg {
+  color: var(--ds-text-1);
+}
+
+.au-pop-none {
+  padding: 16px 8px 20px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+  text-align: center;
 }
 
 .au-pop-list {
@@ -794,13 +907,10 @@ button.au-row:active {
 }
 
 .au-opt:hover,
-.au-opt:focus-visible {
-  background: var(--ds-fill-1);
-}
-
+.au-opt:focus-visible,
 .au-opt[aria-selected="true"],
 .au-opt[aria-pressed="true"] {
-  background: var(--ds-fill-2);
+  background: var(--ds-fill-1);
 }
 
 .au-opt-voice {
@@ -829,6 +939,11 @@ button.au-row:active {
   height: 40px;
 }
 
+.au-opt-orb {
+  width: 40px;
+  height: 40px;
+}
+
 .au-opt[aria-selected="true"] .au-opt-tile,
 .au-opt[aria-pressed="true"] .au-opt-tile {
   color: var(--du-accent-text);
@@ -843,7 +958,7 @@ button.au-row:active {
 }
 
 .au-opt-name {
-  font-size: var(--ds-fs-ui);
+  font-size: var(--ds-fs-xs);
   font-weight: 500;
   line-height: 18px;
 }
@@ -858,8 +973,8 @@ button.au-row:active {
 }
 
 .au-opt-check {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   color: var(--du-accent-text);
 }
@@ -868,24 +983,65 @@ button.au-row:active {
   margin-right: 4px;
 }
 
+/* Menus (filters), measured from the reference: 28px group headings, 36px
+   rows with a 16px icon, a check on the right. */
 .au-pop-menu {
   border-radius: var(--ds-r-lg);
 }
 
+.au-pop-menu .au-pop-inner {
+  padding: 8px 0;
+}
+
 .au-pop-menu .au-pop-head {
-  padding: 10px 14px 4px;
+  height: 28px;
+  padding: 0 16px;
 }
 
 .au-pop-menu .au-pop-list {
-  padding: 0 8px 8px;
+  padding: 2px 8px 0;
+}
+
+.au-pop-menu .au-pop-list + .au-pop-head {
+  margin-top: 11px;
+}
+
+.au-pop-foot {
+  margin-top: 13px;
+  padding: 0 8px;
+}
+
+.au-menu-value {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
+}
+
+.au-menu-clear {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.au-menu-clear:hover,
+.au-menu-clear:focus-visible {
+  background: var(--ds-fill-1);
 }
 
 .au-menu-row {
   display: flex;
+  width: 100%;
   height: 36px;
   align-items: center;
   gap: 10px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: var(--ds-r-sm);
   color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
@@ -896,6 +1052,513 @@ button.au-row:active {
 .au-menu-row:hover,
 .au-menu-row:focus-visible {
   background: var(--ds-fill-1);
+}
+
+/* ---------- Voice: the card in the settings and the picker ---------- */
+
+/* Each voice has its own colour: the accent turned by --au-hue degrees. */
+.au-orb {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-full);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--du-accent) 52%, white),
+    color-mix(in srgb, var(--du-accent) 78%, black)
+  );
+  box-shadow: inset 0 0 0 1px var(--ds-line-2);
+  filter: hue-rotate(calc(var(--au-hue, 0) * 1deg));
+}
+
+/* The chosen voice, at the top of the settings (160px, as the reference). */
+.au-vcard {
+  position: relative;
+  display: flex;
+  height: 160px;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-fill-1);
+  transition: border-color var(--m-instant) var(--m-ease-out);
+}
+
+/* A flat wash of the voice's colour. */
+.au-vcard::before {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--du-accent) 7%, transparent);
+  content: "";
+  filter: hue-rotate(calc(var(--au-hue, 0) * 1deg));
+  pointer-events: none;
+}
+
+.au-vcard:hover {
+  border-color: var(--ds-line-2);
+}
+
+.au-vcard-open {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.au-vcard-open:focus-visible {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: -2px;
+}
+
+.au-vcard-change {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 9px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.au-vcard-open:hover .au-vcard-change,
+.au-vcard-open[aria-expanded="true"] .au-vcard-change {
+  background: var(--ds-fill-2);
+}
+
+.au-vcard-orb {
+  position: relative;
+  pointer-events: none;
+}
+
+.au-vcard-foot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.au-vcard-play {
+  position: relative;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+  pointer-events: auto;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.au-vcard-play::after {
+  position: absolute;
+  inset: -4px;
+  content: "";
+}
+
+.au-vcard-play:hover {
+  background: var(--ds-fill-3);
+}
+
+.au-vcard-play:active {
+  transform: scale(0.94);
+}
+
+.au-vcard-play-on,
+.au-vcard-play-on:hover {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.au-vcard-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.au-vcard-name {
+  overflow: hidden;
+  font-size: var(--ds-fs-md);
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-vcard-tag {
+  overflow: hidden;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The picker: over the stage's top-left corner on wide screens. */
+.au-vpicker {
+  position: fixed;
+  z-index: 60;
+  right: auto;
+  bottom: auto;
+  display: flex;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-lg);
+  background: var(--du-bg);
+  box-shadow: var(--ds-shadow-float);
+  color: var(--ds-text-1);
+  transform-origin: top left;
+}
+
+.au-vpicker-head {
+  position: relative;
+  flex-shrink: 0;
+  padding: 26px 64px 22px 28px;
+}
+
+.au-vpicker-title {
+  font-size: var(--ds-fs-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 36px;
+}
+
+.au-vpicker-sub {
+  max-width: 380px;
+  margin-top: 6px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.au-vpicker-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.au-vpicker-close::after {
+  position: absolute;
+  inset: -6px;
+  content: "";
+}
+
+.au-vpicker-close:hover {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.au-vpicker-close:active {
+  transform: scale(0.94);
+}
+
+.au-vpicker-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  margin: 0 4px 4px;
+  padding: 2px 8px 8px;
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-fill-1);
+}
+
+.au-vpicker-bar {
+  display: flex;
+  height: 46px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.au-vpicker-label {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.au-vfilter {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.au-vfilter:hover,
+.au-vfilter[aria-expanded="true"],
+.au-vfilter-on {
+  background: var(--ds-fill-2);
+}
+
+.au-vgrid {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
+  margin: -2px;
+  scrollbar-width: thin;
+}
+
+.au-vgrid > .au-pop-none {
+  grid-column: 1 / -1;
+}
+
+.au-vpick {
+  position: relative;
+  display: flex;
+  height: 108px;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-lg);
+  background: var(--du-bg-elev);
+  transition: border-color var(--m-instant) var(--m-ease-out);
+}
+
+.au-vpick:hover {
+  border-color: var(--ds-line-3);
+}
+
+/* The chosen voice: a 2px ring in the accent, as the reference's. */
+.au-vpick[data-on]::after {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--du-accent);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.au-vpick-main {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.au-vpick-main:focus-visible {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: 2px;
+}
+
+.au-vpick-top {
+  position: relative;
+  display: flex;
+  height: 58px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-surface-3);
+  pointer-events: none;
+}
+
+.au-vpick-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.au-vpick-name {
+  overflow: hidden;
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-vpick-tag {
+  overflow: hidden;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-vpick-foot {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+.au-vpick-play {
+  position: relative;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-1);
+  pointer-events: auto;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.au-vpick-play::after {
+  position: absolute;
+  inset: -8px;
+  content: "";
+}
+
+.au-vpick-play:hover {
+  background: var(--ds-fill-2);
+}
+
+.au-vpick-play:active {
+  transform: scale(0.9);
+}
+
+/* Drawn waveform: grey bars, the part already heard bright, a playhead in
+   the accent while it plays (--au-progress is set by the preview). */
+.au-wave {
+  position: relative;
+  min-width: 0;
+  height: 22px;
+  flex: 1;
+}
+
+.au-wave-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.au-wave-bars > span {
+  width: 2px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-4);
+}
+
+.au-wave-done {
+  clip-path: inset(0 calc((1 - var(--au-progress, 0)) * 100%) 0 0);
+}
+
+.au-wave-done > span {
+  background: var(--ds-text-1);
+}
+
+.au-wave-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--au-progress, 0) * 100%);
+  width: 2px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
+  opacity: 0;
+}
+
+.au-vpick[data-playing] .au-wave-head {
+  opacity: 1;
+}
+
+/* Phones: a bottom sheet over a dimmed page, two columns. */
+.au-vpicker-scrim {
+  position: fixed;
+  z-index: 59;
+  inset: 0;
+  background: color-mix(in srgb, black 72%, transparent);
+}
+
+.au-vpicker-sheet {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  max-height: 82svh;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-bottom: 0;
+  border-radius: var(--ds-r-3xl) var(--ds-r-3xl) 0 0;
+}
+
+.au-vpicker-grabber {
+  display: block;
+  width: 40px;
+  height: 4px;
+  flex-shrink: 0;
+  margin: 10px auto 0;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-3);
+}
+
+.au-vpicker-sheet .au-vpicker-head {
+  padding: 14px 60px 16px 20px;
+}
+
+.au-vpicker-sheet .au-vpicker-title {
+  font-size: var(--ds-fs-xl);
+  line-height: 30px;
+}
+
+.au-vpicker-sheet .au-vpicker-close {
+  top: 14px;
+}
+
+.au-vpicker-sheet .au-vgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 /* ---------- Stage ---------- */
@@ -956,29 +1619,23 @@ button.au-row:active {
   color: var(--ds-text-1);
 }
 
-.au-stage-count {
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: var(--ds-r-full);
-  background: var(--ds-fill-2);
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-2xs);
-  line-height: 16px;
-}
-
 .au-filter {
   display: inline-flex;
   height: 32px;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
+  padding: 0 11px;
   border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-md);
   background: var(--du-bg-elev);
   color: var(--ds-text-3);
   font-size: var(--ds-fs-xs);
   font-weight: 500;
-  transition: color var(--m-instant) var(--m-ease-out);
+  transition:
+    color var(--m-instant) var(--m-ease-out),
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out);
 }
 
 .au-filter:hover,
@@ -986,8 +1643,19 @@ button.au-row:active {
   color: var(--ds-text-1);
 }
 
+/* Something is narrowed: lifted, white, with a dot. */
 .au-filter-on {
-  color: var(--du-accent-text);
+  border-color: var(--ds-line-2);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.au-filter-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-full);
+  background: var(--du-accent);
 }
 
 .au-stage-body {
@@ -1460,14 +2128,50 @@ button.au-row:active {
   align-items: center;
 }
 
+/* Nothing matches the filter: centred in the stage, as on the reference. */
+.au-stage-body:has(> .au-none) {
+  display: flex;
+  flex: 1 1 auto;
+}
+
 .au-none {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 56px 24px;
+  justify-content: center;
+  gap: 6px;
+  padding: 96px 24px;
+  text-align: center;
+}
+
+.au-none-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-3);
+}
+
+.au-none-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.au-none-sub {
   color: var(--ds-text-3);
   font-size: var(--ds-fs-sm);
+  line-height: 20px;
+}
+
+.au-none .au-pill {
+  margin-top: 12px;
 }
 
 /* ---------- Phones and narrow windows ---------- */
@@ -1485,14 +2189,20 @@ button.au-row:active {
     border-radius: var(--ds-r-xl);
   }
 
-  /* The phone script card drops its label: the large placeholder says it. */
-  .au-script > .au-card-label {
+  /* The phone script card drops its label and the (i), as the reference
+     phone does: the large placeholder says it. The label stays for screen
+     readers. */
+  .au-script .au-card-head-info {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .au-script .au-info {
+    display: none;
   }
 
   .au-script textarea {
@@ -1511,6 +2221,28 @@ button.au-row:active {
 
   .au-row {
     min-height: 58px;
+  }
+
+  /* 44px touch targets in menus and on the small filter buttons. */
+  .au-menu-row,
+  .au-menu-clear {
+    height: 44px;
+  }
+
+  .au-filter,
+  .au-vfilter {
+    position: relative;
+  }
+
+  .au-filter::after,
+  .au-vfilter::after {
+    position: absolute;
+    inset: -8px -4px;
+    content: "";
+  }
+
+  .au-vpick-play::after {
+    inset: -10px;
   }
 
   .au-how {

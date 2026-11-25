@@ -1,12 +1,16 @@
 "use client";
 
-import type { RefObject } from "react";
-import { Check, Play, Square } from "lucide-react";
+import { type RefObject, useId, useState } from "react";
+import { Check, Search, Sparkles } from "lucide-react";
 import type { MarketModel } from "@/ai/kie-market";
-import { MODEL_INFO, voiceTag } from "./audio-data";
+import { MODEL_INFO } from "./audio-data";
 import { AudioPopover } from "./audio-popover";
 
-/** The model list the "Model" row opens. */
+/**
+ * The model list the "Model" row opens, measured from the reference: a search
+ * field on top, a heading, then 52px rows with a 40px icon tile, the name and
+ * one line about the model, a check on the chosen one.
+ */
 export function AudioModelMenu({
   open,
   onClose,
@@ -26,11 +30,46 @@ export function AudioModelMenu({
   value: string;
   onChange: (id: string) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const searchId = useId();
+  // Every opening starts from the whole list. Reset while rendering, so the
+  // list is placed at its full height (an effect would run after placing).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setQuery("");
+  }
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? models.filter((item) => {
+        const info = MODEL_INFO[item.id];
+        return [item.name, info?.zh, info?.en].some((text) => text?.toLowerCase().includes(needle));
+      })
+    : models;
+
   return (
     <AudioPopover open={open} onClose={onClose} anchorRef={anchorRef} label={title}>
-      <p className="au-pop-head">{title}</p>
+      <div className="au-pop-search">
+        <Search className="au-pop-search-icon" aria-hidden="true" />
+        <label htmlFor={searchId} className="sr-only">
+          {zh ? "搜索模型" : "Search models"}
+        </label>
+        <input
+          id={searchId}
+          type="search"
+          value={query}
+          placeholder={zh ? "搜索……" : "Search…"}
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      <p className="au-pop-head au-pop-head-icon">
+        <Sparkles className="h-4 w-4" aria-hidden="true" />
+        <span className="flex-1">{title}</span>
+      </p>
       <div className="au-pop-list">
-        {models.map((item) => {
+        {shown.map((item) => {
           const info = MODEL_INFO[item.id];
           const Icon = info?.icon;
           const on = item.id === value;
@@ -57,77 +96,7 @@ export function AudioModelMenu({
             </button>
           );
         })}
-      </div>
-    </AudioPopover>
-  );
-}
-
-/** The voice list the "Voice" row opens: pick one, or play any to hear it. */
-export function AudioVoiceMenu({
-  open,
-  onClose,
-  anchorRef,
-  zh,
-  title,
-  voices,
-  value,
-  onChange,
-  previewing,
-  onPreview,
-}: {
-  open: boolean;
-  onClose: () => void;
-  anchorRef: RefObject<HTMLElement | null>;
-  zh: boolean;
-  title: string;
-  voices: { id: string; name: string }[];
-  value: string;
-  onChange: (id: string) => void;
-  previewing: string | null;
-  onPreview: (name: string) => void;
-}) {
-  return (
-    <AudioPopover open={open} onClose={onClose} anchorRef={anchorRef} label={title}>
-      <p className="au-pop-head">
-        {title}
-        <span className="au-pop-hint">{zh ? "点 ▶ 试听" : "Tap ▶ to hear"}</span>
-      </p>
-      <div className="au-pop-list">
-        {voices.map((item) => {
-          const on = item.id === value;
-          const playing = previewing === item.name;
-          return (
-            <div key={item.id} className="au-opt-wrap">
-              <button
-                type="button"
-                aria-pressed={on}
-                className="au-opt au-opt-voice"
-                onClick={() => {
-                  onChange(item.id);
-                  onClose();
-                  anchorRef.current?.focus();
-                }}
-              >
-                <span className="au-opt-tile au-opt-avatar" aria-hidden="true">
-                  {item.name.slice(0, 1)}
-                </span>
-                <span className="au-opt-text">
-                  <span className="au-opt-name">{item.name}</span>
-                  <span className="au-opt-sub">{voiceTag(item.name, zh)}</span>
-                </span>
-                {on ? <Check className="au-opt-check du-check-pop" aria-hidden="true" /> : null}
-              </button>
-              <button
-                type="button"
-                className={playing ? "au-play au-play-on" : "au-play"}
-                aria-label={playing ? (zh ? `停止试听 ${item.name}` : `Stop ${item.name}`) : zh ? `试听 ${item.name}` : `Preview ${item.name}`}
-                onClick={() => onPreview(item.name)}
-              >
-                {playing ? <Square key="stop" data-swap="" className="h-3 w-3" aria-hidden="true" /> : <Play key="play" data-swap="" className="h-3 w-3" aria-hidden="true" />}
-              </button>
-            </div>
-          );
-        })}
+        {shown.length === 0 ? <p className="au-pop-none">{zh ? "没有找到相关模型" : "No models match"}</p> : null}
       </div>
     </AudioPopover>
   );

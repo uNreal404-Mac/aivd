@@ -17,7 +17,7 @@ import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
 import { ImageShowcase } from "@/components/hf/image-showcase";
 import { MediaViewer, sendImageToVideo, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
-import { BarSelect, RatioIcon } from "@/components/hf/image-studio/bar-menu";
+import { BarSelect, RatioIcon, Tip } from "@/components/hf/image-studio/bar-menu";
 import { MentionMenu, mentionToken } from "@/components/hf/image-studio/mention-menu";
 import { ResultsGrid } from "@/components/hf/image-studio/results-grid";
 import { StudioHero } from "@/components/hf/image-studio/studio-hero";
@@ -30,6 +30,15 @@ const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
 /** "@", "@图片" or "@图片2" right before the caret: the mention list opens. */
 const MENTION_AT_CARET = /@(?:图片|image)?\d*$/i;
+/** The ratio menu lists shapes in the reference's order: square, then each
+ * landscape shape followed by its portrait twin, widest last. Ratios a model
+ * adds beyond these keep their own order at the end. */
+const RATIO_ORDER = ["auto", "1:1", "3:2", "2:3", "16:9", "9:16", "4:3", "3:4", "21:9"];
+const byRatioOrder = (list: string[]) =>
+  [...list].sort((a, b) => {
+    const at = (value: string) => (RATIO_ORDER.includes(value) ? RATIO_ORDER.indexOf(value) : RATIO_ORDER.length + list.indexOf(value));
+    return at(a) - at(b);
+  });
 
 export function AiImageStudio({
   locale,
@@ -61,6 +70,12 @@ export function AiImageStudio({
   const [view, setView] = useImageView();
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  // Which shelf of the library opens: "@" can open it on the saved elements.
+  const [pickerTab, setPickerTab] = useState<"upload" | "elements">("upload");
+  const openPicker = (tab: "upload" | "elements") => {
+    setPickerTab(tab);
+    setMediaPickerOpen(true);
+  };
   const [mentionOpen, setMentionOpen] = useState(false);
   useEffect(() => {
     const handoff = sessionStorage.getItem("aivd:home-image-references");
@@ -80,6 +95,20 @@ export function AiImageStudio({
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const { jobs, add } = useMediaJobs("image", Boolean(session));
   const [viewing, setViewing] = useState<number | null>(null);
+  // The card that opened the viewer gets focus back when it closes.
+  const viewerOpener = useRef<HTMLElement | null>(null);
+  const openViewer = (index: number) => {
+    viewerOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setViewing(index);
+  };
+  const closeViewer = useCallback(() => {
+    setViewing(null);
+    const opener = viewerOpener.current;
+    viewerOpener.current = null;
+    requestAnimationFrame(() => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    });
+  }, []);
   const openInCanvas = (url: string, text: string, modelName?: string) => {
     try {
       sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image" }));
@@ -267,6 +296,7 @@ export function AiImageStudio({
       <HomeMediaPicker
         lang={locale}
         open={mediaPickerOpen}
+        initialTab={pickerTab}
         onClose={() => setMediaPickerOpen(false)}
         onSelect={(items) => void selectMedia(items)}
         onDelete={(id) => setRefs((current) => current.filter((item) => (item.sourceId ?? `upload:${item.key}`) !== id))}
@@ -275,27 +305,28 @@ export function AiImageStudio({
         userId={session?.user?.id}
       />
       <div className={hasResults ? "is-first is-first-results" : "is-first"}>
+        {/* "View" sits top right whether or not there are results yet, as on
+            the reference; the choice is remembered for when they arrive. */}
+        <div className="is-topbar">
+          <ViewMenu zh={zh} view={view} onChange={setView} />
+        </div>
         {hasResults ? (
-          <>
-            <div className="is-topbar">
-              <ViewMenu zh={zh} view={view} onChange={setView} />
-            </div>
-            <ResultsGrid
-              jobs={jobs}
-              view={view}
-              zh={zh}
-              modelName={modelName}
-              onOpen={(key) => setViewing(gallery.findIndex((item) => item.key === key))}
-              onReuse={reuse}
-              onCanvas={openInCanvas}
-              onVideo={toVideo}
-            />
-          </>
+          <ResultsGrid
+            jobs={jobs}
+            view={view}
+            zh={zh}
+            modelName={modelName}
+            onOpen={(key) => openViewer(gallery.findIndex((item) => item.key === key))}
+            onReuse={reuse}
+            onCanvas={openInCanvas}
+            onVideo={toVideo}
+          />
         ) : (
           <StudioHero zh={zh} modelName={model.name} />
         )}
 
         <div className="is-dock">
+          {/* Floats just above the bar, so a message never moves the page. */}
           {notice ? (
             <output className="is-notice" aria-live="polite">
               {notice}
@@ -370,16 +401,18 @@ export function AiImageStudio({
                 />
                 <div className="is-controls">
                   <span className="is-icon-group">
-                    <button
-                      type="button"
-                      className="is-icon-btn"
-                      disabled={maxImages === 0 || uploading}
-                      title={maxImages === 0 ? noRefsNote : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}
-                      aria-label={zh ? "添加参考图" : "Add reference images"}
-                      onClick={() => setMediaPickerOpen(true)}
-                    >
-                      {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
-                    </button>
+                    <Tip id="is-add-tip" text={maxImages === 0 ? noRefsNote : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}>
+                      <button
+                        type="button"
+                        className="is-icon-btn"
+                        disabled={maxImages === 0 || uploading}
+                        aria-label={zh ? "添加参考图" : "Add reference images"}
+                        aria-describedby="is-add-tip"
+                        onClick={() => openPicker("upload")}
+                      >
+                        {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
+                      </button>
+                    </Tip>
                     <span className="is-icon-sep" aria-hidden="true" />
                     <MentionMenu
                       zh={zh}
@@ -387,7 +420,8 @@ export function AiImageStudio({
                       open={mentionOpen}
                       onOpenChange={closeMention}
                       onPick={insertMention}
-                      onAdd={() => setMediaPickerOpen(true)}
+                      onAdd={() => openPicker("upload")}
+                      onElements={() => openPicker("elements")}
                       disabled={maxImages === 0}
                       disabledNote={noRefsNote}
                     />
@@ -398,10 +432,11 @@ export function AiImageStudio({
                   </div>
                   {options.aspects?.length ? (
                     <BarSelect
+                      id="is-aspect"
                       title={zh ? "画面比例" : "Aspect ratio"}
                       icon={<Scan className="h-4 w-4" aria-hidden="true" />}
                       value={aspect}
-                      options={options.aspects.map((option) => ({
+                      options={byRatioOrder(options.aspects).map((option) => ({
                         value: option,
                         label: option === "auto" ? (zh ? "自动" : "Auto") : option,
                         icon: option === "auto" ? <Scan className="h-4 w-4" aria-hidden="true" /> : <RatioIcon ratio={option} />,
@@ -412,10 +447,12 @@ export function AiImageStudio({
                   ) : null}
                   {options.resolutions?.length ? (
                     <BarSelect
+                      id="is-resolution"
                       title={zh ? "分辨率" : "Resolution"}
                       icon={<Gem className="h-4 w-4" aria-hidden="true" />}
                       value={resolution}
                       wide
+                      side="right"
                       options={options.resolutions.map((option) => ({
                         value: option,
                         label: option,
@@ -426,18 +463,20 @@ export function AiImageStudio({
                     />
                   ) : null}
                   {maxCount > 1 ? (
-                    <fieldset className="is-stepper" aria-label={zh ? "每次生成张数" : "Images per run"}>
-                      <button type="button" aria-label={zh ? "减少一张" : "One fewer"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
-                        <Minus className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <output className="is-stepper-value" aria-live="polite">
-                        {count}
-                        <span>/{maxCount}</span>
-                      </output>
-                      <button type="button" aria-label={zh ? "增加一张" : "One more"} disabled={count >= maxCount} onClick={() => setCount((value) => Math.min(maxCount, value + 1))}>
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </fieldset>
+                    <Tip id="is-count-tip" text={zh ? `每次生成张数（最多 ${maxCount} 张）` : `Images per run (up to ${maxCount})`}>
+                      <fieldset className="is-stepper" aria-label={zh ? "每次生成张数" : "Images per run"} aria-describedby="is-count-tip">
+                        <button type="button" aria-label={zh ? "减少一张" : "One fewer"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
+                          <Minus className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <output className="is-stepper-value" aria-live="polite">
+                          {count}
+                          <span>/{maxCount}</span>
+                        </output>
+                        <button type="button" aria-label={zh ? "增加一张" : "One more"} disabled={count >= maxCount} onClick={() => setCount((value) => Math.min(maxCount, value + 1))}>
+                          <Plus className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </fieldset>
+                    </Tip>
                   ) : null}
                 </div>
               </div>
@@ -459,7 +498,7 @@ export function AiImageStudio({
           index={viewing}
           zh={zh}
           onIndex={setViewing}
-          onClose={() => setViewing(null)}
+          onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
           onToVideo={(item) => toVideo(item.url)}
         />

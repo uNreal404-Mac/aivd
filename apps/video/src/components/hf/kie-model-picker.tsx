@@ -307,14 +307,19 @@ export function KieModelPicker({
       const width = panelRef.current?.offsetWidth ?? 400;
       const height = panelRef.current?.offsetHeight ?? 480;
       if (placement === "top") {
-        const maxHeight = Math.max(160, Math.min(420, trigger.top - 68));
+        // Image studio (Higgsfield): fills the room above the bar, left edge on the button.
+        const maxHeight = Math.max(160, Math.min(640, trigger.top - 68));
         setFloatAt({ left: Math.min(0, window.innerWidth - trigger.left - width - 16), top: -(maxHeight + 8), maxHeight });
       } else if (placement === "bottom") {
         const maxHeight = Math.max(160, Math.min(420, window.innerHeight - trigger.bottom - 20));
         setFloatAt({ left: Math.min(0, window.innerWidth - trigger.left - width - 16), top: trigger.height + 8, maxHeight });
       } else {
-        const left = Math.min(trigger.right + 12, window.innerWidth - width - 16);
-        const top = Math.max(64, Math.min(trigger.top, window.innerHeight - height - 16));
+        // Studio column (Higgsfield): 8px right of the settings column, centred
+        // vertically in the window rather than following the card.
+        const column = triggerRef.current?.closest("aside") ?? triggerRef.current;
+        const columnRight = column ? column.getBoundingClientRect().right : trigger.right;
+        const left = Math.min(columnRight + 8, window.innerWidth - width - 16);
+        const top = Math.max(64, Math.round((window.innerHeight - height) / 2));
         setFloatAt({ left, top });
       }
     };
@@ -449,8 +454,8 @@ export function KieModelPicker({
           data-presence="pop"
           data-state={panelPresence.state}
           onKeyDown={onListKeyDown}
-          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: "min(70vh, 520px)" } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
-          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel ${placement === "top" ? "origin-bottom-left" : "origin-top-left"} z-50 flex w-[min(92vw,368px)] max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
+          style={placement === "card" ? { position: "fixed", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: "min(80vh, 570px)" } : placement === "top" || placement === "bottom" ? { position: "absolute", left: floatAt?.left ?? -9999, top: floatAt?.top ?? 0, maxHeight: floatAt?.maxHeight } : undefined}
+          className={`${placement === "inline" ? "mt-2" : ""} du-model-picker-panel ${placement === "top" ? "origin-bottom-left" : "origin-top-left"} z-50 flex ${placement === "card" || placement === "top" ? "is-studio w-[min(92vw,402px)]" : "w-[min(92vw,368px)]"} max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-[var(--du-border)] ${glass ? "du-model-picker-glass" : "bg-[var(--du-surface)]"} shadow-2xl`}
         >
           <div className="du-model-picker-search flex items-center gap-2 px-3 py-2.5">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--du-text-muted)]" />

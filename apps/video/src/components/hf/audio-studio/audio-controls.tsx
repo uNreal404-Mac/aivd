@@ -4,9 +4,10 @@ import { type CSSProperties, useId } from "react";
 
 /**
  * A slider drawn as a filled bar, the way the reference draws its advanced
- * controls: label on the left, value on the right, the fill up to the thumb.
- * A native range input sits on top, so dragging, clicking and the arrow keys
- * all work and screen readers read it as a slider.
+ * controls: label on the left, value on the right, the rounded fill up to a
+ * 4px thumb, faint ticks at each step between them. A native range input
+ * sits on top, so dragging, clicking and the arrow keys all work and screen
+ * readers read it as a slider.
  */
 export function AudioFillSlider({
   label,
@@ -27,9 +28,15 @@ export function AudioFillSlider({
 }) {
   const id = useId();
   const pct = ((value - min) / (max - min)) * 100;
+  const steps = Math.round((max - min) / step);
+  // Ticks between the label and the value, as on the reference.
+  const ticks = Array.from({ length: Math.max(0, steps - 1) }, (_, index) => ((index + 1) / steps) * 100).filter((at) => at > 28 && at < 86);
   return (
     <div className="au-fill" style={{ "--au-fill": `${pct}%` } as CSSProperties}>
       <span className="au-fill-bar" aria-hidden="true" />
+      {ticks.map((at) => (
+        <span key={at} className="au-fill-tick" style={{ left: `${at}%` }} aria-hidden="true" />
+      ))}
       <span className="au-fill-thumb" aria-hidden="true" />
       <label htmlFor={id} className="au-fill-label">
         {label}
@@ -51,21 +58,26 @@ export function AudioFillSlider({
   );
 }
 
-/** An on/off setting: label and a short explanation, switch on the right. */
+/**
+ * An on/off setting: label and a short explanation, switch on the right.
+ * `quiet` greys the label, as the reference does for its "save settings" row.
+ */
 export function AudioSwitchRow({
   label,
   hint,
   checked,
   onChange,
+  quiet = false,
 }: {
   label: string;
   hint?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  quiet?: boolean;
 }) {
   const id = useId();
   return (
-    <div className="au-switch-row">
+    <div className={quiet ? "au-switch-row au-switch-row-quiet" : "au-switch-row"}>
       <span className="au-switch-text">
         <span id={`${id}-label`} className="au-switch-label">
           {label}

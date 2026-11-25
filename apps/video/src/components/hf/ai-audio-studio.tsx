@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Play, RotateCcw, SlidersHorizontal, Sparkles, Square } from "lucide-react";
+import { ChevronRight, Info, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
@@ -29,8 +29,9 @@ import {
   voiceTag,
 } from "./audio-studio/audio-data";
 import { AudioFillSlider, AudioSwitchRow } from "./audio-studio/audio-controls";
-import { AudioModelMenu, AudioVoiceMenu } from "./audio-studio/audio-menus";
+import { AudioModelMenu } from "./audio-studio/audio-menus";
 import { AudioStage, type HowPick, type StageTab } from "./audio-studio/audio-stage";
+import { AudioVoiceCard, AudioVoicePicker } from "./audio-studio/audio-voice";
 import { useAudioPreview } from "./audio-studio/use-audio-preview";
 import "./audio-studio/audio-studio.css";
 
@@ -38,6 +39,8 @@ const AUDIO_MODELS = marketModelsOf("audio");
 
 /** An unsent script set aside when the studio opens with another one. */
 const EARLIER_AUDIO_DRAFT_KEY = "aivd:draft:audio:earlier";
+/** Advanced settings kept for next time ("Remember settings"). */
+const AUDIO_SETTINGS_KEY = "aivd:audio:settings";
 const MAX_EARLIER_DRAFTS = 5;
 
 /** Set-aside drafts, newest first (an older page stored a single string). */
@@ -123,6 +126,43 @@ export function AiAudioStudio({
   const [speed, setSpeed] = useState(1);
   const [instrumental, setInstrumental] = useState(false);
   const [customMode, setCustomMode] = useState(false);
+  // "Remember settings": the advanced settings come back on the next visit.
+  // Restored before a credit-return draft, which then wins (it is newer).
+  const [keepSettings, setKeepSettings] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AUDIO_SETTINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { speed?: unknown; instrumental?: unknown; customMode?: unknown };
+      if (typeof saved.speed === "number" && Number.isFinite(saved.speed)) {
+        const stepped = Math.round(saved.speed / SPEED_STEP) * SPEED_STEP;
+        setSpeed(Math.min(SPEED_MAX, Math.max(SPEED_MIN, Number(stepped.toFixed(2)))));
+      }
+      if (typeof saved.instrumental === "boolean") setInstrumental(saved.instrumental);
+      if (typeof saved.customMode === "boolean") setCustomMode(saved.customMode);
+      setKeepSettings(true);
+    } catch {
+      // Storage blocked or a broken entry: start from the defaults.
+    }
+  }, []);
+  useEffect(() => {
+    if (!keepSettings) return;
+    try {
+      localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify({ speed, instrumental, customMode }));
+    } catch {
+      // Storage can be blocked; the settings then last for this visit only.
+    }
+  }, [keepSettings, speed, instrumental, customMode]);
+  const chooseKeepSettings = (on: boolean) => {
+    setKeepSettings(on);
+    if (!on) {
+      try {
+        localStorage.removeItem(AUDIO_SETTINGS_KEY);
+      } catch {
+        // Nothing stored then.
+      }
+    }
+  };
   const { data: session, isPending: sessionLoading } = useSession();
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
@@ -166,7 +206,8 @@ export function AiAudioStudio({
 
   const [menu, setMenu] = useState<"model" | "voice" | null>(null);
   const modelRowRef = useRef<HTMLButtonElement>(null);
-  const voiceRowRef = useRef<HTMLButtonElement>(null);
+  const voiceCardRef = useRef<HTMLButtonElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const advanced = usePresence(advancedOpen);
   const advancedRef = useRef<HTMLDivElement>(null);
@@ -241,6 +282,17 @@ export function AiAudioStudio({
         modes: { tts: "文本转语音", music: "音乐与音效" } as Record<Mode, string>,
         optional: "可选",
         script: isSunoMusic ? (customMode ? "歌词" : "歌曲描述") : isSunoSounds ? "音效描述" : "脚本",
+        scriptInfo: isSunoMusic
+          ? customMode
+            ? "这里的文字会按歌词来唱，可用 [Verse] / [Chorus] 标出段落。"
+            : "写下想要的歌：情绪、主题、乐器都可以。打开「自定义歌词」后，这里按歌词来唱。"
+          : isSunoSounds
+            ? "描述想要的声音和场景，越具体越好。"
+            : "声音会一字不差地朗读这里的文字。",
+        aboutScript: "关于这一栏",
+        writeFirst: "先写下内容",
+        keepSettings: "记住这些设置",
+        keepSettingsHint: "下次打开时自动用上",
         scriptHint: isSunoMusic
           ? customMode
             ? "写下完整歌词，可用 [Verse] / [Chorus] 标出段落"
@@ -270,6 +322,17 @@ export function AiAudioStudio({
         modes: { tts: "Text to speech", music: "Music & SFX" } as Record<Mode, string>,
         optional: "Optional",
         script: isSunoMusic ? (customMode ? "Lyrics" : "Song description") : isSunoSounds ? "Sound description" : "Script",
+        scriptInfo: isSunoMusic
+          ? customMode
+            ? "This text is sung as lyrics; mark parts with [Verse] / [Chorus]."
+            : "Describe the song: mood, theme, instruments. With Custom lyrics on, this text is sung as lyrics."
+          : isSunoSounds
+            ? "Describe the sound and the scene; the more specific, the better."
+            : "The voice reads this text word for word.",
+        aboutScript: "About this field",
+        writeFirst: "Write something first",
+        keepSettings: "Remember settings",
+        keepSettingsHint: "Used again next time you open this page",
         scriptHint: isSunoMusic
           ? customMode
             ? "Write your lyrics; mark parts with [Verse] / [Chorus]"
@@ -389,6 +452,8 @@ export function AiAudioStudio({
   };
 
   const previewingCurrent = currentVoice !== undefined && preview.previewingVoice === currentVoice.name;
+  // Like the reference, Generate waits for something to read or describe.
+  const scriptEmpty = !script.trim();
 
   return (
     <div className="au-root">
@@ -412,10 +477,48 @@ export function AiAudioStudio({
           </div>
 
           <div className="au-fields">
+            {voices.length > 0 && currentVoice ? (
+              <AudioVoiceCard
+                zh={zh}
+                voice={currentVoice}
+                open={menu === "voice"}
+                onOpen={() => setMenu((open) => (open === "voice" ? null : "voice"))}
+                triggerRef={voiceCardRef}
+                playing={previewingCurrent}
+                onPreview={() => preview.auditionVoice(currentVoice.name)}
+              />
+            ) : null}
+            {voices.length > 0 ? (
+              <AudioVoicePicker
+                open={menu === "voice"}
+                onClose={() => setMenu(null)}
+                anchorRef={voiceCardRef}
+                stageRef={stageRef}
+                zh={zh}
+                voices={voices}
+                value={currentVoice?.id ?? ""}
+                onChange={(id) => {
+                  setVoice(id);
+                  setNotice(null);
+                }}
+                previewing={preview.previewingVoice}
+                onPreview={preview.auditionVoice}
+              />
+            ) : null}
             <div className="au-card au-script">
-              <label htmlFor="audio-script" className="au-card-label">
-                {t.script}
-              </label>
+              <span className="au-card-head au-card-head-info">
+                <label htmlFor="audio-script" className="au-card-label">
+                  {t.script}
+                </label>
+                <span className="au-info">
+                  <button type="button" className="au-info-btn" aria-label={t.aboutScript} aria-describedby="audio-script-info">
+                    <Info className="h-[18px] w-[18px]" aria-hidden="true" />
+                  </button>
+                  <span role="tooltip" id="audio-script-info" className="au-info-tip">
+                    {t.scriptInfo}
+                  </span>
+                </span>
+              </span>
               <textarea
                 id="audio-script"
                 ref={scriptRef}
@@ -481,7 +584,7 @@ export function AiAudioStudio({
                   </div>
                 ) : null}
                 <span className="au-count" data-num="">
-                  {script.length}/{maxScript}
+                  {script.length} / {maxScript}
                 </span>
               </div>
             </div>
@@ -514,54 +617,7 @@ export function AiAudioStudio({
               }}
             />
 
-            {voices.length > 0 && currentVoice ? (
-              <div className="au-row-wrap">
-                <button
-                  ref={voiceRowRef}
-                  type="button"
-                  className="au-row au-row-voice"
-                  aria-haspopup="dialog"
-                  aria-expanded={menu === "voice"}
-                  onClick={() => setMenu((open) => (open === "voice" ? null : "voice"))}
-                >
-                  <span className="au-row-avatar" aria-hidden="true">
-                    {currentVoice.name.slice(0, 1)}
-                  </span>
-                  <span className="au-row-text">
-                    <span className="au-row-label">{t.voice}</span>
-                    <span className="au-row-value">
-                      {currentVoice.name}
-                      <span className="au-row-tag">{voiceTag(currentVoice.name, zh)}</span>
-                    </span>
-                  </span>
-                  <ChevronRight className="au-row-chevron" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className={previewingCurrent ? "au-play au-play-row au-play-on" : "au-play au-play-row"}
-                  aria-label={
-                    previewingCurrent
-                      ? zh ? `停止试听 ${currentVoice.name}` : `Stop ${currentVoice.name}`
-                      : zh ? `试听 ${currentVoice.name}` : `Preview ${currentVoice.name}`
-                  }
-                  onClick={() => preview.auditionVoice(currentVoice.name)}
-                >
-                  {previewingCurrent ? <Square key="stop" data-swap="" className="h-3 w-3" aria-hidden="true" /> : <Play key="play" data-swap="" className="h-3 w-3" aria-hidden="true" />}
-                </button>
-                <AudioVoiceMenu
-                  open={menu === "voice"}
-                  onClose={() => setMenu(null)}
-                  anchorRef={voiceRowRef}
-                  zh={zh}
-                  title={t.voices}
-                  voices={voices}
-                  value={currentVoice.id}
-                  onChange={setVoice}
-                  previewing={preview.previewingVoice}
-                  onPreview={preview.auditionVoice}
-                />
-              </div>
-            ) : model.id === "suno-speech" ? (
+            {model.id === "suno-speech" ? (
               <div className="au-row au-row-fixed">
                 <span className="au-row-text">
                   <span className="au-row-label">{t.voice}</span>
@@ -602,7 +658,7 @@ export function AiAudioStudio({
                     </div>
                   ) : null}
                   <span className="au-count au-count-sm" data-num="">
-                    {detail.length}/{DETAIL_MAX}
+                    {detail.length} / {DETAIL_MAX}
                   </span>
                 </div>
               </div>
@@ -626,7 +682,15 @@ export function AiAudioStudio({
               <div ref={advancedRef} id="audio-advanced" className="au-adv-card" data-presence="fade" data-state={advanced.state}>
                 <div className="au-adv-head">
                   <span>{t.advancedFor}</span>
-                  <button type="button" className="au-reset" disabled={!advancedChanged} onClick={resetAdvanced}>
+                  <button
+                    type="button"
+                    className="au-reset"
+                    aria-disabled={!advancedChanged}
+                    onClick={() => {
+                      // Stays focusable when there is nothing to reset, so focus is never dropped.
+                      if (advancedChanged) resetAdvanced();
+                    }}
+                  >
                     <RotateCcw className="h-3 w-3" aria-hidden="true" />
                     {t.reset}
                   </button>
@@ -648,6 +712,7 @@ export function AiAudioStudio({
                     <AudioSwitchRow label={t.customMode} hint={t.customModeHint} checked={customMode} onChange={setCustomMode} />
                   </>
                 ) : null}
+                <AudioSwitchRow label={t.keepSettings} hint={t.keepSettingsHint} checked={keepSettings} onChange={chooseKeepSettings} quiet />
               </div>
             ) : null}
 
@@ -661,17 +726,26 @@ export function AiAudioStudio({
         </div>
 
         <div className="au-foot">
-          <button type="button" className="au-generate" disabled={submitting} onClick={() => void generate()}>
+          <button
+            type="button"
+            className="au-generate"
+            disabled={submitting || scriptEmpty}
+            title={scriptEmpty && !submitting ? t.writeFirst : undefined}
+            onClick={() => void generate()}
+          >
             {submitting ? t.submitting : t.generate}
-            <span className="au-generate-cost" data-num="">
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              {internalFree ? 0 : credits}
-            </span>
+            {scriptEmpty ? null : (
+              <span className="au-generate-cost" data-num="">
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                {internalFree ? 0 : credits}
+              </span>
+            )}
           </button>
         </div>
       </aside>
 
       <AudioStage
+        sectionRef={stageRef}
         zh={zh}
         locale={locale}
         mode={mode}

@@ -3,10 +3,27 @@
 // Small popovers that open from the image studio's creation bar (ratio,
 // resolution, @ references) and from the view button above the results.
 // They grow out of the control that opened them, close on an outside press or
-// Escape (focus goes back to the control) and move with the arrow keys.
+// Escape (focus goes back to the control), a second press on the control, or a
+// choice, and move with the arrow keys.
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Check } from "lucide-react";
 import { usePresence } from "@/hooks/use-presence";
+
+/**
+ * A short dark label above a control, shown on hover (after a moment) or on
+ * keyboard focus, and hidden while the control's own menu is open. The
+ * control should point at it with aria-describedby={id}.
+ */
+export function Tip({ id, text, children }: { id: string; text: string; children: ReactNode }) {
+  return (
+    <span className="is-tipped">
+      {children}
+      <span id={id} role="tooltip" className="is-tip">
+        {text}
+      </span>
+    </span>
+  );
+}
 
 /** Close on a press outside `wrapRef` or on Escape. */
 export function useDismiss(open: boolean, close: (refocus: boolean) => void, wrapRef: RefObject<HTMLElement | null>) {
@@ -46,19 +63,25 @@ export function moveFocus(event: React.KeyboardEvent<HTMLElement>) {
 export type BarOption = { value: string; label: string; sub?: string; icon?: ReactNode };
 
 /**
- * A chip in the creation bar that opens a list of choices above it: a small
- * title, one row per choice, a check on the chosen one. With a single choice
- * it is a plain value that explains itself on hover.
+ * A chip in the creation bar that opens a list of choices: a small title, one
+ * row per choice, a check on the chosen one. The list opens above the chip, or
+ * beside it (bottom edges level) for the two-line resolution rows, as on the
+ * reference. With a single choice it is a plain value that explains itself on
+ * hover.
  */
 export function BarSelect({
+  id,
   title,
   icon,
   value,
   options,
   onChange,
   wide = false,
+  side = "top",
   fixedNote,
 }: {
+  /** Stable id prefix for the hover label of a fixed value. */
+  id: string;
   title: string;
   icon: ReactNode;
   value: string;
@@ -66,6 +89,8 @@ export function BarSelect({
   onChange: (value: string) => void;
   /** Rows with a second line (resolution) get the wider menu. */
   wide?: boolean;
+  /** Where the list opens on wider screens; phones always open it above. */
+  side?: "top" | "right";
   /** Hover text when the model allows only one choice. */
   fixedNote: string;
 }) {
@@ -90,10 +115,12 @@ export function BarSelect({
 
   if (options.length <= 1) {
     return (
-      <span className="is-chip is-chip-fixed" title={fixedNote}>
-        {current?.icon ?? icon}
-        <span>{current?.label}</span>
-      </span>
+      <Tip id={`${id}-tip`} text={fixedNote}>
+        <span className="is-chip is-chip-fixed" aria-describedby={`${id}-tip`}>
+          {current?.icon ?? icon}
+          <span>{current?.label}</span>
+        </span>
+      </Tip>
     );
   }
 
@@ -118,7 +145,7 @@ export function BarSelect({
           aria-label={title}
           data-presence="pop"
           data-state={presence.state}
-          className={wide ? "is-pop is-pop-wide" : "is-pop"}
+          className={`is-pop${wide ? " is-pop-wide" : ""}${side === "right" ? " is-pop-right" : ""}`}
           onKeyDown={moveFocus}
         >
           <p className="is-pop-title">{title}</p>

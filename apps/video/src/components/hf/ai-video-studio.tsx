@@ -40,15 +40,16 @@ import { closestDuration, durationLabel } from "@/lib/video-durations";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
-import { VIDEO_PRESETS, findVideoPreset } from "@/lib/video-presets";
+import { findVideoPreset } from "@/lib/video-presets";
 import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
 import { MediaViewer, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
 import { PresetCard, PresetLibrary } from "@/components/hf/video-studio/presets";
 import { ReferenceBlock, referenceToken, type ReferenceThumb } from "@/components/hf/video-studio/reference-block";
 import { PromptCard, insertToken } from "@/components/hf/video-studio/prompt-card";
-import { CardFace, ChoiceCard, DurationCard } from "@/components/hf/video-studio/setting-cards";
+import { CardFace, ChoiceCard, DurationCard, widestFirst } from "@/components/hf/video-studio/setting-cards";
 import { HowItWorks, StageTabs, type StageTab } from "@/components/hf/video-studio/stage";
-import { EmptyHistory, ResultsGrid } from "@/components/hf/video-studio/history-view";
+import { ResultsGrid } from "@/components/hf/video-studio/history-view";
+import { ActiveFilters, FilterMenu, NoMatches, ViewMenu, useHistoryView } from "@/components/hf/video-studio/history-tools";
 import "./ai-video-studio.css";
 
 // Cover art for the preset card while no camera preset is chosen.
@@ -150,6 +151,12 @@ export function AiVideoStudio({
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  // The tab the media library opens on: Upload, or Elements from the chip.
+  const [mediaTab, setMediaTab] = useState<"upload" | "elements">("upload");
+  const openMedia = (tab: "upload" | "elements" = "upload") => {
+    setMediaTab(tab);
+    setMediaPickerOpen(true);
+  };
   const [durationOpen, setDurationOpen] = useState(false);
   // Start on a model that can generate: the one in the URL when it is on sale,
   // otherwise whatever the settings resolved to.
@@ -184,6 +191,9 @@ export function AiVideoStudio({
   // First visit opens on how it works, as the reference does; returning users
   // land on their history once it loads.
   const [activeTab, setActiveTab] = useState<StageTab>("How it works");
+  // History's Filter and View menus (stage bar, History tab only).
+  const [hideFailed, setHideFailed] = useState(false);
+  const [historyView, setHistoryView] = useHistoryView();
 
   const model =
     STUDIO_MODELS.find((item) => item.id === settings.modelId) ??
@@ -467,6 +477,41 @@ export function AiVideoStudio({
     }
   }
 
+  // Signed out, Generate opens sign-in straight away, as on the reference,
+  // and brings the visitor back here with the prompt and settings filled in
+  // (the same return address the server's "sign in first" answer leads to).
+  // Nothing is sent, so nothing can be charged.
+  function signInToGenerate() {
+    const params = new URLSearchParams({
+      prompt: settings.prompt.trim(),
+      model: catalogModelId,
+      duration: String(settings.duration),
+      aspect: settings.aspect,
+      resolution: settings.resolution,
+      audio: String(settings.audio),
+    });
+    signIn.onOpenWithRedirect(`${window.location.pathname}?${params}`);
+  }
+  const startGenerate = () => {
+    if (signedOut) {
+      signInFromGenerate.current = true;
+      signInToGenerate();
+    } else void handleGenerate();
+  };
+  // Closing that sign-in without signing in puts focus back on Generate.
+  const generateRef = useRef<HTMLButtonElement>(null);
+  const signInFromGenerate = useRef(false);
+  const signInOpen = signIn.isOpen;
+  useEffect(() => {
+    if (signInOpen || !signInFromGenerate.current) return;
+    signInFromGenerate.current = false;
+    // After the dialog's exit (--m-base), once it has let go of focus.
+    const timer = setTimeout(() => {
+      if (!document.activeElement || document.activeElement === document.body) generateRef.current?.focus({ preventScroll: true });
+    }, 360);
+    return () => clearTimeout(timer);
+  }, [signInOpen]);
+
   // "Generate" on the homepage arrives with ?autostart=<token> and starts that
   // generation here, so the visitor does not press Generate twice (see
   // lib/autostart). It waits for the session, the handed-over references and,
@@ -582,6 +627,19 @@ export function AiVideoStudio({
     });
   };
 
+  // The viewer hands focus back to the card it was opened from.
+  const viewerReturn = useRef<HTMLElement | null>(null);
+  const openViewer = (position: number) => {
+    viewerReturn.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setViewing(position);
+  };
+  const closeViewer = () => {
+    setViewing(null);
+    requestAnimationFrame(() => {
+      if (!document.activeElement || document.activeElement === document.body) viewerReturn.current?.focus({ preventScroll: true });
+    });
+  };
+
   const reuse = (text: string | null | undefined) => {
     if (!text) return;
     setSettings((previous) => ({ ...previous, prompt: text }));
@@ -595,6 +653,13 @@ export function AiVideoStudio({
         .map((item) => ({ key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "" })),
     [results],
   );
+  // History as the Filter menu leaves it: failed clips (and finished ones
+  // that came back without a file) can be hidden.
+  const shownResults = hideFailed
+    ? results.filter((item) => item.status !== "failed" && !(item.status === "completed" && !item.videoUrl))
+    : results;
+  const historyKey =
+    activeTab === "How it works" ? "how" : hideFailed && shownResults.length === 0 ? "none" : results.length ? "results" : "intro";
   const activePreset = findVideoPreset(settings.preset);
   // Effects from the effects page arrive as a preset id; show their name.
   const effectTemplate = settings.preset && !activePreset ? EFFECT_TEMPLATES.find((item) => item.id === settings.preset) : undefined;
@@ -628,6 +693,7 @@ export function AiVideoStudio({
       <HomeMediaPicker
         lang={locale}
         open={mediaPickerOpen}
+        initialTab={mediaTab}
         onClose={() => setMediaPickerOpen(false)}
         onSelect={(items) => void selectMedia(items)}
         onDelete={(id) => {
@@ -663,7 +729,7 @@ export function AiVideoStudio({
             uploading={uploading}
             dropOver={drop.over}
             dropBind={drop.bind}
-            onOpen={() => setMediaPickerOpen(true)}
+            onOpen={() => openMedia("upload")}
             onMention={mentionReference}
             onRemove={(index) => (homeReferences.length ? removeHomeReference(index) : clearSelectedMedia())}
           />
@@ -680,11 +746,11 @@ export function AiVideoStudio({
             }}
             onSubmit={() => {
               // ⌘/Ctrl+Enter generates, the same shortcut as the image studio.
-              if (!generateDisabled) void handleGenerate();
+              if (!generateDisabled) startGenerate();
             }}
             references={referenceThumbs}
             canReference={maxReferences > 0}
-            onOpenMedia={() => setMediaPickerOpen(true)}
+            onOpenMedia={openMedia}
             audio={model.audio ? { on: settings.audio, onToggle: () => setSettings((previous) => ({ ...previous, audio: !previous.audio })) } : undefined}
             draftRestored={draft.restored}
             onDiscardDraft={draft.discard}
@@ -750,7 +816,7 @@ export function AiVideoStudio({
             <ChoiceCard
               label={copy.aspect}
               value={settings.aspect}
-              options={model.aspects}
+              options={widestFirst(model.aspects)}
               fixedNote={isChinese ? `${model.name} 只支持 ${settings.aspect}` : `${model.name} only makes ${settings.aspect}`}
               onChange={(aspect) => setSettings((previous) => ({ ...previous, aspect }))}
             />
@@ -769,7 +835,7 @@ export function AiVideoStudio({
             {needsStartImage ? (
               <output className="vst-notice">
                 {isChinese ? `${bannerName} 需要至少 1 张参考图片才能生成，` : `${bannerName} needs at least 1 reference image to generate — `}
-                <button type="button" disabled={uploading} className="vst-notice-link" onClick={() => setMediaPickerOpen(true)}>
+                <button type="button" disabled={uploading} className="vst-notice-link" onClick={() => openMedia("upload")}>
                   {uploading ? (isChinese ? "上传中…" : "uploading…") : (isChinese ? "立即添加" : "add one now")}
                 </button>
               </output>
@@ -803,9 +869,10 @@ export function AiVideoStudio({
             ) : null}
 
             <button
+              ref={generateRef}
               type="button"
               disabled={generateDisabled}
-              onClick={() => void handleGenerate()}
+              onClick={startGenerate}
               aria-busy={submitting || undefined}
               className="vst-generate"
               title={internalFree ? (isChinese ? "内部测试账号免费" : "Free for internal test account") : selectedModelConnected ? copy.creditCostNote : copy.creditEstimateNote}
@@ -831,35 +898,32 @@ export function AiVideoStudio({
         </div>
       </aside>
 
-      <section aria-label={copy.results} className="vst-stage">
+      <section aria-label={copy.results} className="vst-stage" data-library={presetsOpen || undefined}>
         <div className="vst-stage-bar">
           <StageTabs zh={isChinese} active={activeTab} count={results.length} onChange={setActiveTab} />
+          {activeTab === "History" ? (
+            <div className="vst-stage-tools">
+              <FilterMenu zh={isChinese} hideFailed={hideFailed} onHideFailed={setHideFailed} />
+              <ViewMenu zh={isChinese} view={historyView} onChange={setHistoryView} />
+            </div>
+          ) : null}
         </div>
-        <div className="vst-stage-body" key={activeTab === "History" && results.length ? "results" : activeTab}>
+        {activeTab === "History" && hideFailed ? <ActiveFilters zh={isChinese} onClear={() => setHideFailed(false)} /> : null}
+        <div className="vst-stage-body" key={historyKey}>
           {activeTab === "How it works" ? (
             <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} />
+          ) : hideFailed && shownResults.length === 0 ? (
+            <NoMatches zh={isChinese} onClear={() => setHideFailed(false)} />
           ) : results.length === 0 ? (
-            <EmptyHistory
-              zh={isChinese}
-              signedOut={signedOut}
-              onSignIn={() => signIn.onOpen()}
-              onRecreate={(reel, index) => {
-                const presetId = VIDEO_PRESETS[index % VIDEO_PRESETS.length]?.id;
-                setSettings((previous) => ({
-                  ...previous,
-                  prompt: isChinese ? reel.promptZh : reel.promptEn,
-                  aspect: model.aspects.includes(reel.aspect) ? reel.aspect : previous.aspect,
-                  preset: presetId ?? previous.preset,
-                }));
-                promptRef.current?.focus();
-              }}
-            />
+            // Nothing made yet: the introduction, as on the reference.
+            <HowItWorks zh={isChinese} templatesHref={localizedHref(locale, "/templates")} tip={false} />
           ) : (
             <ResultsGrid
               zh={isChinese}
-              results={results}
+              results={shownResults}
               gallery={gallery}
-              onView={setViewing}
+              view={historyView}
+              onView={openViewer}
               onReuse={reuse}
               onCanvas={(result) => {
                 try {
@@ -892,7 +956,7 @@ export function AiVideoStudio({
           index={viewing}
           zh={isChinese}
           onIndex={setViewing}
-          onClose={() => setViewing(null)}
+          onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
         />
       ) : null}
