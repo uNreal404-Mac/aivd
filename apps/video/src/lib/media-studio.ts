@@ -147,6 +147,9 @@ export async function submitMedia(
     delete answers[hash];
     writeLostAnswers(answers);
   };
+  // Kept before sending: if the page is reloaded while the request is out,
+  // the same request sent again reuses this key and cannot charge twice.
+  rememberLost();
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -172,6 +175,15 @@ export async function submitMedia(
     }
     forget();
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
+    // A retry under an earlier key can return that earlier job; if it failed,
+    // say so (its credits were returned) instead of reporting a new job.
+    if (payload?.success && uuid && String(payload.data?.status ?? "").toUpperCase() === "FAILED") {
+      return {
+        ok: false,
+        message: zh ? "上次提交没有生成成功，积分已退回，可以再试一次。" : "The last attempt failed and its credits were returned. Please try again.",
+        code: "PREVIOUS_ATTEMPT_FAILED",
+      };
+    }
     if (payload?.success && uuid) return { ok: true, uuid, credits: payload.data.creditsUsed ?? 0 };
     // 202: submitted, outcome unknown; it still shows up and resolves later.
     if (response.status === 202 && uuid) return { ok: true, uuid, credits: 0 };

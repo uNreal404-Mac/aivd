@@ -210,23 +210,26 @@ export class Storage {
     sourceUrl: string;
     key: string;
     contentType?: string;
-  }): Promise<{ key: string }> {
+  }): Promise<{ key: string; size: number }> {
     const response = await fetch(params.sourceUrl);
     if (!response.ok) {
       throw new Error(`Failed to download: ${response.statusText}`);
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
+    // An empty file is not a result: never store it or charge for it.
+    if (buffer.length === 0) throw new EmptyMediaError(params.sourceUrl);
     const contentType =
       params.contentType ||
       response.headers.get("content-type") ||
       "video/mp4";
 
-    return this.uploadFile({
+    const uploaded = await this.uploadFile({
       key: params.key,
       body: buffer,
       contentType,
     });
+    return { ...uploaded, size: buffer.length };
   }
 
   /**
@@ -337,4 +340,12 @@ export function getStorage(): Storage {
 /** Test-only helper: clears the cached singleton. */
 export function resetStorageForTests(): void {
   storageInstance = null;
+}
+
+/** The provider reported success but the file it returned was empty. */
+export class EmptyMediaError extends Error {
+  constructor(sourceUrl: string) {
+    super(`The provider returned an empty file: ${sourceUrl.split("?")[0]}`);
+    this.name = "EmptyMediaError";
+  }
 }

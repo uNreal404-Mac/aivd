@@ -905,6 +905,7 @@ export function AiVideoStudio({
         source={extending}
         zh={isChinese}
         onClose={() => setExtending(null)}
+        onRestore={setExtending}
         onStarted={(job) => {
           setResults((previous) => [
             { id: job.uuid, status: "queued", videoUuid: job.uuid, prompt: job.prompt, createdAt: Date.now() },

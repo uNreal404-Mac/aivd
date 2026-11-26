@@ -8,18 +8,34 @@ vi.mock("@/ai/kie-market", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/ai/kie-market")>();
   return { ...actual, createMarketTask };
 });
-vi.mock("@/lib/storage", () => ({
-  getStorage: vi.fn(() => ({ getSignedUrl: vi.fn((key: string) => `https://signed.test/${key}`) })),
-  isStorageConfigured: vi.fn(() => true),
-  isStorageKey: (value: string) => Boolean(value) && !/^https?:\/\//.test(value),
-  signMediaRef: vi.fn((value: string | null | undefined) => (value ? `https://signed.test/${value}` : null)),
+const storageState = vi.hoisted(() => ({
+  signFails: false,
+  upload: vi.fn(async ({ key }: { key: string }) => ({ key, size: 1234 })),
 }));
+vi.mock("@/lib/storage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/storage")>();
+  return {
+    EmptyMediaError: actual.EmptyMediaError,
+    getStorage: vi.fn(() => ({
+      getSignedUrl: vi.fn((key: string) => {
+        if (storageState.signFails) throw new Error("storage not configured");
+        return `https://signed.test/${key}`;
+      }),
+      downloadAndUpload: storageState.upload,
+    })),
+    isStorageConfigured: vi.fn(() => true),
+    isStorageKey: (value: string) => Boolean(value) && !/^https?:\/\//.test(value),
+    signMediaRef: vi.fn((value: string | null | undefined) => (value ? `https://signed.test/${value}` : null)),
+  };
+});
 vi.mock("@/lib/video-events", () => ({ emitVideoEvent: vi.fn() }));
 
 import { EXTEND_MODEL_ID, extendCredits, getMarketModel, marketModelsOf } from "@/ai/kie-market";
 import { VideoStatus, db, videos } from "@/db";
 import { ApiError } from "@/lib/api/error";
 import { canSubmitExtend, defaultExtendResolution } from "@/lib/video-extend";
+import { EmptyMediaError } from "@/lib/storage";
+import { eq } from "drizzle-orm";
 import { MAX_SOURCE_VIDEO_BYTES, videoService } from "@/services/video";
 import { getBalance, getVideoRow, giveCredits, uniqueUserId } from "./helpers";
 
@@ -94,6 +110,9 @@ describe("extend: generateMedia()", () => {
     process.env.KIE_API_KEY = "test-key";
     createMarketTask.mockReset();
     createMarketTask.mockResolvedValue("task_extend_1");
+    storageState.signFails = false;
+    storageState.upload.mockReset();
+    storageState.upload.mockImplementation(async ({ key }: { key: string }) => ({ key, size: 1234 }));
   });
 
   it("extends the user's own finished video: signed source, frozen price, source kept by id", async () => {
@@ -166,5 +185,68 @@ describe("extend: generateMedia()", () => {
 
     await videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", duration: 5, quality: "720p", sourceVideoUuid: source }).catch(() => null);
     expect((await getBalance(userId)).availableCredits).toBe(1_000);
+  });
+
+  it("cannot sign the source: nothing frozen, nothing sent (review #2)", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1_000);
+    const source = await insertSource(userId);
+    storageState.signFails = true;
+    const error = await rejection(videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", duration: 5, quality: "720p", sourceVideoUuid: source }));
+    expect(error.status).toBe(503);
+    expect(createMarketTask).not.toHaveBeenCalled();
+    expect((await getBalance(userId)).availableCredits).toBe(1_000);
+  });
+
+  it("a source with no recorded size is measured before freezing (review #6)", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1_000);
+    const source = await insertSource(userId, { fileSize: null });
+    const fetchMock = vi.fn(async () => new Response("x", { status: 206, headers: { "content-range": `bytes 0-0/${MAX_SOURCE_VIDEO_BYTES + 10}` } }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const error = await rejection(videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", sourceVideoUuid: source }));
+      expect(error.details).toMatchObject({ code: "SOURCE_VIDEO_TOO_LARGE" });
+      expect(createMarketTask).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("a final state that arrives before the create response is kept (review #5)", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1_000);
+    const source = await insertSource(userId);
+    createMarketTask.mockImplementationOnce(async () => {
+      // The failure callback lands first.
+      await db.update(videos).set({ status: VideoStatus.FAILED }).where(eq(videos.status, VideoStatus.PENDING));
+      return "task_late";
+    });
+    const result = await videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", duration: 5, quality: "720p", sourceVideoUuid: source });
+    const row = await getVideoRow(result.videoUuid);
+    expect(row?.status).toBe(VideoStatus.FAILED);
+    expect(row?.externalTaskId).toBe("task_late");
+  });
+
+  it("an empty result fails and refunds; a storage error can be retried; size is recorded (review #3, #4)", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1_000);
+    const source = await insertSource(userId);
+    const start = (key: string) => videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", duration: 5, quality: "720p", generateAudio: false, sourceVideoUuid: source, idempotencyKey: key });
+    const done = { taskId: "t", provider: "kie" as const, status: "completed" as const, videoUrl: "https://kie.test/out.mp4" };
+
+    const empty = await start(`empty-${nanoid(6)}`);
+    storageState.upload.mockRejectedValueOnce(new EmptyMediaError("https://kie.test/out.mp4"));
+    expect((await videoService.tryCompleteGeneration(empty.videoUuid, done)).status).toBe(VideoStatus.FAILED);
+    expect((await getBalance(userId)).availableCredits).toBe(1_000);
+
+    const flaky = await start(`flaky-${nanoid(6)}`);
+    storageState.upload.mockRejectedValueOnce(new Error("R2 timeout"));
+    await expect(videoService.tryCompleteGeneration(flaky.videoUuid, done)).rejects.toThrow("R2 timeout");
+    expect((await getVideoRow(flaky.videoUuid))?.status).toBe(VideoStatus.GENERATING);
+    expect((await videoService.tryCompleteGeneration(flaky.videoUuid, done)).status).toBe(VideoStatus.COMPLETED);
+    const completed = await getVideoRow(flaky.videoUuid);
+    expect(completed?.fileSize).toBe(1234);
+    expect((await getBalance(userId)).availableCredits).toBe(1_000 - 55);
   });
 });

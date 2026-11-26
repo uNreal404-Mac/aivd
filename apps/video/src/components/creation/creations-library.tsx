@@ -788,14 +788,17 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     className="cr-button cr-button--ghost"
                     onClick={() => {
                       const parameters = shownVideo.parameters ?? {};
-                      setExtending({
+                      const next: ExtendSource = {
                         videoUuid: shownVideo.uuid,
                         videoUrl: shownUrl,
                         prompt: shownVideo.prompt,
                         resolution: typeof parameters.resolution === "string" ? parameters.resolution : null,
                         audio: typeof parameters.audio === "boolean" ? parameters.audio : null,
-                      });
+                      };
                       closeDetail();
+                      // Opens once the detail (a modal <dialog>) has left the
+                      // top layer, so focus lands in the extend dialog.
+                      window.setTimeout(() => setExtending(next), prefersReducedMotion() ? 0 : PRESENCE_EXIT_MS);
                     }}
                   >
                     <FastForward aria-hidden="true" />
@@ -825,6 +828,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
         source={extending}
         zh={zh}
         onClose={() => setExtending(null)}
+        onRestore={setExtending}
         onStarted={(job) => {
           toast.success(zh ? `已开始续写 +${job.duration} 秒，完成后会出现在这里` : `Extending by ${job.duration}s; it will appear here when ready`);
           refetch();

@@ -1,7 +1,7 @@
 import { VideoStatus, db, videos } from "@/db";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import {
+import { EmptyMediaError,
   getStorage,
   isStorageConfigured,
   isStorageKey,
@@ -137,6 +137,35 @@ export class VideoService {
    * Sign a private storage key for a short-lived provider fetch.
    * http(s) URLs pass through unchanged.
    */
+  /**
+   * Record the provider's task id. The status moves to GENERATING only from
+   * PENDING: a failure (or success) callback can arrive before the create
+   * request returns, and that final state must not be overwritten.
+   */
+  private async saveSubmittedTask(uuid: string, values: { externalTaskId: string; provider?: string }): Promise<void> {
+    await db
+      .update(videos)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(videos.uuid, uuid));
+    await db
+      .update(videos)
+      .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
+      .where(and(eq(videos.uuid, uuid), eq(videos.status, VideoStatus.PENDING)));
+  }
+
+  /** Size in bytes of a stored object (one-byte range read), or null. */
+  private async storedSize(key: string): Promise<number | null> {
+    try {
+      const response = await fetch(getStorage().getSignedUrl(key, 300), { headers: { Range: "bytes=0-0" } });
+      const range = response.headers.get("content-range");
+      const total = range ? Number(range.split("/")[1]) : Number(response.headers.get("content-length"));
+      await response.body?.cancel().catch(() => undefined);
+      return Number.isFinite(total) && total > 0 ? total : null;
+    } catch {
+      return null;
+    }
+  }
+
   private signImageInput(value: string): string {
     return isStorageKey(value) ? getStorage().getSignedUrl(value, 3600) : value;
   }
@@ -520,15 +549,10 @@ export class VideoService {
     let lastSaveError: unknown;
     for (let attempt = 1; attempt <= SUBMIT_SAVE_MAX_ATTEMPTS; attempt++) {
       try {
-        await db
-          .update(videos)
-          .set({
-            status: VideoStatus.GENERATING,
-            externalTaskId: providerResult.taskId,
-            provider: actualProvider,
-            updatedAt: new Date(),
-          })
-          .where(eq(videos.uuid, videoResult.uuid));
+        await this.saveSubmittedTask(videoResult.uuid, {
+          externalTaskId: providerResult.taskId,
+          provider: actualProvider,
+        });
         saved = true;
         break;
       } catch (error) {
@@ -617,7 +641,13 @@ export class VideoService {
       if (!source || source.isDeleted || (source.mediaType ?? "video") !== "video" || source.status !== VideoStatus.COMPLETED || !source.videoUrl) {
         throw new ApiError("This video cannot be used", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
       }
-      if (source.fileSize && source.fileSize > MAX_SOURCE_VIDEO_BYTES) {
+      // Only files in our own storage are handed to the provider.
+      if (!isStorageKey(source.videoUrl)) {
+        throw new ApiError("This video cannot be used", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+      }
+      // Older rows have no size recorded: ask storage before anything is frozen.
+      const size = source.fileSize ?? (await this.storedSize(source.videoUrl));
+      if (size !== null && size > MAX_SOURCE_VIDEO_BYTES) {
         throw new ApiError("The video is larger than 50 MB", 400, { code: "SOURCE_VIDEO_TOO_LARGE" });
       }
       sourceVideo = { uuid: source.uuid, key: source.videoUrl };
@@ -648,6 +678,18 @@ export class VideoService {
       // Models that require a seed get a random one.
       ...(model.options.requiresVideo ? { seed: randomSeed() } : {}),
     };
+
+    // Signed URLs are made before anything is frozen: if storage cannot sign,
+    // nothing is charged and nothing is sent.
+    let signedImages: string[];
+    let signedVideoUrl: string | undefined;
+    try {
+      signedImages = imageInputs.map((value) => this.signImageInput(value));
+      signedVideoUrl = sourceVideo ? this.signImageInput(sourceVideo.key) : undefined;
+    } catch (error) {
+      console.error("Could not sign media for a generation:", error);
+      throw new ApiError("Storage is not available right now. No credits were used.", 503, { code: "STORAGE_UNAVAILABLE" });
+    }
 
     const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
     if (!(creditsRequired > 0)) {
@@ -741,8 +783,8 @@ export class VideoService {
         model,
         {
           ...request,
-          imageUrls: imageInputs.map((value) => this.signImageInput(value)),
-          ...(sourceVideo ? { videoUrl: this.signImageInput(sourceVideo.key) } : {}),
+          imageUrls: signedImages,
+          ...(signedVideoUrl ? { videoUrl: signedVideoUrl } : {}),
         },
         callbackUrl,
         apiKey,
@@ -764,10 +806,7 @@ export class VideoService {
 
     for (let attempt = 1; attempt <= SUBMIT_SAVE_MAX_ATTEMPTS; attempt++) {
       try {
-        await db
-          .update(videos)
-          .set({ status: VideoStatus.GENERATING, externalTaskId: taskId, updatedAt: new Date() })
-          .where(eq(videos.uuid, uuid));
+        await this.saveSubmittedTask(uuid, { externalTaskId: taskId });
         break;
       } catch (error) {
         if (attempt === SUBMIT_SAVE_MAX_ATTEMPTS) {
@@ -988,31 +1027,46 @@ export class VideoService {
     const storage = getStorage();
     const stamp = Date.now();
     const sources = result.resultUrls?.length ? result.resultUrls : [result.videoUrl!];
-    let uploaded: { key: string };
+    let uploaded: { key: string; size?: number };
     let extraKeys: string[] = [];
-    if (claimed.mediaType === "image") {
-      // Image sets: keep every output. The first is the cover; the rest are
-      // stored in parameters.extraKeys. The source decides the content type.
-      const keys = await Promise.all(
-        sources.map((sourceUrl, index) =>
-          storage
-            .downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` })
-            .then((item) => item.key),
-        ),
-      );
-      uploaded = { key: keys[0] };
-      extraKeys = keys.slice(1);
-    } else if (claimed.mediaType === "audio") {
-      uploaded = await storage.downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
-      });
-    } else {
-      uploaded = await storage.downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `videos/${videoUuid}/${stamp}.mp4`,
-        contentType: "video/mp4",
-      });
+    try {
+      if (claimed.mediaType === "image") {
+        // Image sets: keep every output. The first is the cover; the rest are
+        // stored in parameters.extraKeys. The source decides the content type.
+        const keys = await Promise.all(
+          sources.map((sourceUrl, index) =>
+            storage
+              .downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` })
+              .then((item) => item),
+          ),
+        );
+        uploaded = keys[0];
+        extraKeys = keys.slice(1).map((item) => item.key);
+      } else if (claimed.mediaType === "audio") {
+        uploaded = await storage.downloadAndUpload({
+          sourceUrl: sources[0],
+          key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
+        });
+      } else {
+        uploaded = await storage.downloadAndUpload({
+          sourceUrl: sources[0],
+          key: `videos/${videoUuid}/${stamp}.mp4`,
+          contentType: "video/mp4",
+        });
+      }
+    } catch (error) {
+      if (error instanceof EmptyMediaError) {
+        // Nothing usable came back: fail the job and give the credits back.
+        const failed = await this.tryFailGeneration(videoUuid, `EMPTY_RESULT: ${error.message}`);
+        return { status: failed.status, videoUrl: null };
+      }
+      // Storage hiccup: put the job back so the next callback or poll can
+      // finish it, instead of leaving it (and its credits) in UPLOADING.
+      await db
+        .update(videos)
+        .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
+        .where(and(eq(videos.uuid, videoUuid), eq(videos.status, VideoStatus.UPLOADING)));
+      throw error;
     }
 
     if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);
@@ -1022,6 +1076,7 @@ export class VideoService {
       .set({
         status: VideoStatus.COMPLETED,
         videoUrl: uploaded.key,
+        fileSize: uploaded.size ?? null,
         ...(extraKeys.length > 0
           ? { parameters: { ...(claimed.parameters ?? {}), extraKeys } }
           : {}),

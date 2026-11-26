@@ -19,6 +19,7 @@ import {
   extendPrice,
   submitExtend,
 } from "@/lib/video-extend";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { useCredits } from "@/stores/credits-store";
 import "./extend-dialog.css";
 
@@ -44,11 +45,14 @@ export function ExtendDialog({
   zh,
   onClose,
   onStarted,
+  onRestore,
 }: {
   source: ExtendSource | null;
   zh: boolean;
   onClose: () => void;
   onStarted: (job: ExtendStarted) => void;
+  /** Back from buying credits: reopen this source with what was filled in. */
+  onRestore: (source: ExtendSource) => void;
 }) {
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(5);
@@ -64,13 +68,28 @@ export function ExtendDialog({
   const shortfall = useCreditsShortfall(zh);
   const { balance, invalidate, refetch } = useCredits();
 
-  // Each opened video starts from its own quality and sound.
+  // A trip to the pricing page keeps the open extend and what was filled in.
+  const restored = useRef<{ uuid: string; prompt: string; duration: number; resolution: string; audio: boolean } | null>(null);
+  useCreditReturnDraft(
+    "extend",
+    () => (source ? { source, prompt, duration, resolution, audio } : null),
+    (saved) => {
+      if (!saved?.source?.videoUuid) return;
+      restored.current = { uuid: saved.source.videoUuid, prompt: saved.prompt ?? "", duration: saved.duration ?? 5, resolution: saved.resolution ?? "720p", audio: Boolean(saved.audio) };
+      onRestore(saved.source);
+    },
+  );
+
+  // Each opened video starts from its own quality and sound (or, back from
+  // pricing, from what was filled in before).
   useEffect(() => {
     if (!source) return;
-    setPrompt("");
-    setDuration(5);
-    setResolution(defaultExtendResolution(source.resolution));
-    setAudio(Boolean(source.audio));
+    const back = restored.current?.uuid === source.videoUuid ? restored.current : null;
+    restored.current = null;
+    setPrompt(back?.prompt ?? "");
+    setDuration(back?.duration ?? 5);
+    setResolution(back?.resolution ?? defaultExtendResolution(source.resolution));
+    setAudio(back ? back.audio : Boolean(source.audio));
     setNotice(null);
   }, [source?.videoUuid]);
 

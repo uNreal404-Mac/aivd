@@ -52,4 +52,25 @@ describe("submitMedia idempotency key", () => {
     const [a, , aAgain] = keysOf(fetchMock);
     expect(aAgain).toBe(a);
   });
+
+  it("keeps the key while the request is still out (a reload then resends under it)", async () => {
+    let release: (value: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockImplementationOnce(() => new Promise<Response>((resolve) => { release = resolve; })).mockResolvedValue(ok());
+    vi.stubGlobal("fetch", fetchMock);
+    const first = submitMedia({ ...body, prompt: "pending job" }, true);
+    // Same request again before the first answer (as after a reload).
+    await submitMedia({ ...body, prompt: "pending job" }, true);
+    release(ok());
+    await first;
+    const [a, b] = keysOf(fetchMock);
+    expect(b).toBe(a);
+  });
+
+  it("reports a retried job that had failed as a failure, not a new job", async () => {
+    const failed = new Response(JSON.stringify({ success: true, data: { videoUuid: "u9", status: "FAILED", creditsUsed: 9 } }), { status: 200 });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(failed));
+    const result = await submitMedia({ ...body, prompt: "earlier failed" }, true);
+    expect(result.ok).toBe(false);
+    expect(result.ok ? "" : result.code).toBe("PREVIOUS_ATTEMPT_FAILED");
+  });
 });
