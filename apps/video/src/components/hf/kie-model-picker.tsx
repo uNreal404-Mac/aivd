@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 
-import { getMarketModel, marketCredits } from "@/ai/kie-market";
+import { getMarketModel, marketCredits, type MarketModel } from "@/ai/kie-market";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import "./kie-model-picker.css";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
@@ -120,20 +120,31 @@ const FINAL003_IMAGE_ORDER = [
   "ideogram/v3-text-to-image", "qwen3/text-to-image", "z-image/z-image",
 ];
 
+/** Image counts a model can be run with: none (unless it needs one) and one. */
+function imageCountChoices(model: MarketModel | undefined): number[] {
+  if (!model) return [0];
+  const max = Math.min(model.options.maxImages ?? 0, 1);
+  return Array.from({ length: max + 1 }, (_, count) => count).filter((count) => count > 0 || !model.options.requiresImage);
+}
+
 /** Cheapest credit price a video model can be run at, or null if unpriced. */
 function startingCredits(modelId: string): number | null {
   const model = STUDIO_MODELS.find((item) => item.id === modelId);
   if (!model) return null;
+  const market = getMarketModel(modelId);
   let lowest: number | null = null;
-  // Sound off is the cheaper choice where the model lets you turn it off.
-  const audioChoices = getMarketModel(modelId)?.options.audioToggle ? [true, false] : [undefined];
+  // Sound off is the cheaper choice where the model lets you turn it off, and
+  // some models charge differently with a start image.
+  const audioChoices = market?.options.audioToggle ? [true, false] : [undefined];
   for (const duration of model.durations) {
     for (const resolution of model.resolutions) {
       for (const audio of audioChoices) {
-        const credits = audio === undefined
-          ? estimateCredits({ modelId, duration, resolution })
-          : estimateCredits({ modelId, duration, resolution }, { audio });
-        if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+        for (const images of imageCountChoices(market)) {
+          const credits = market
+            ? estimateCredits({ modelId, duration, resolution }, { audio, images })
+            : estimateCredits({ modelId, duration, resolution });
+          if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+        }
       }
     }
   }
@@ -160,8 +171,11 @@ function startingImageCredits(modelId: string): number | null {
   const resolutions = model.options.resolutions?.length ? model.options.resolutions : [undefined];
   let lowest: number | null = null;
   for (const resolution of resolutions) {
-    const credits = marketCredits(model, { prompt: "", resolution, count: 1 });
-    if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+    for (const images of imageCountChoices(model)) {
+      const imageUrls = Array.from({ length: images }, (_, index) => `reference-${index}`);
+      const credits = marketCredits(model, { prompt: "", resolution, count: 1, imageUrls });
+      if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+    }
   }
   return lowest;
 }

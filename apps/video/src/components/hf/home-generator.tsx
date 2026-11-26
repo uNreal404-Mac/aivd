@@ -30,6 +30,7 @@ import { HOME_TEMPLATES } from "@/lib/home-templates";
 import { AUTOSTART_STORAGE_KEY } from "@/lib/autostart";
 import { HOME_IMAGE_IDEAS } from "@/lib/home-image-ideas";
 import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
+import { marketImageNotice, marketInputNotice } from "@/lib/market-input-check";
 import "./home-generator.css";
 
 const HomeSpeech = dynamic(() => import("./home-speech").then(module => module.HomeSpeech));
@@ -452,6 +453,8 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         setNotice(zh ? `已添加 ${referenceImages.length} 个参考元素；当前图片模型生成时最多支持 ${modelLimit} 个，请先移除多余素材或切换模型。` : `${referenceImages.length} reference elements are attached. This image model supports ${modelLimit} at generation; remove extras or choose another model.`);
         return;
       }
+      const imageInputNotice = marketInputNotice(imageModelId, { prompt: prompt.trim(), imageCount: referenceImages.length }, zh);
+      if (imageInputNotice) { setNotice(imageInputNotice); promptRef.current?.focus({ preventScroll: true }); return; }
       params.set("model", imageModelId);
       if (homepage) params.set("count", String(imageCount));
       params.set("aspect", aspect);
@@ -502,6 +505,10 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     }
     const preparedPrompt = prepareVideoReferencePrompt(prompt.trim(), activeRefs.length, clipMode ? "video" : "image");
     if (!preparedPrompt.ok) { setNotice(zh ? `找不到 @${clipMode ? "视频" : "图片"}${preparedPrompt.index} 对应的素材，请补传或删掉这个引用` : `No reference for @${clipMode ? "Video" : "Image"}${preparedPrompt.index}. Add one or remove it from the prompt.`); return; }
+    const videoInputNotice = marketInputNotice(modelId, { prompt: preparedPrompt.prompt, imageCount: activeRefs.length }, zh);
+    if (videoInputNotice) { setNotice(videoInputNotice); promptRef.current?.focus({ preventScroll: true }); return; }
+    const videoImageNotice = clipMode ? null : await marketImageNotice(modelId, activeRefs, zh);
+    if (videoImageNotice) { setNotice(videoImageNotice); return; }
     setSubmitting(true);
     try {
       if (useKeys) {

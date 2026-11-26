@@ -18,6 +18,7 @@ import { getMarketModel, imageResolution, marketCredits, marketModelsOf } from "
 import { uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
 import { prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
+import { marketInputNotice } from "@/lib/market-input-check";
 import { ImageShowcase } from "@/components/hf/image-showcase";
 import { MediaViewer, sendImageToVideo, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
 import { BarSelect, RatioIcon, Tip } from "@/components/hf/image-studio/bar-menu";
@@ -315,9 +316,15 @@ function AiImageStudioForm({
       }
       // "@图片2" with only one picture attached would send the model a reference
       // that is not there.
-      const prepared = prepareVideoReferencePrompt(prompt.trim(), refs.length);
+      const prepared = prepareVideoReferencePrompt(prompt.trim(), refs.length, "image", model.id);
       if (!prepared.ok) {
         setNotice(zh ? `找不到 @图片${prepared.index} 对应的参考图，请添加图片或删掉这个引用。` : `No reference image for @Image${prepared.index}. Add one or remove it from the prompt.`);
+        promptRef.current?.focus();
+        return;
+      }
+      const inputNotice = marketInputNotice(model.id, { prompt: prepared.prompt, imageCount: refs.length }, zh);
+      if (inputNotice) {
+        setNotice(inputNotice);
         promptRef.current?.focus();
         return;
       }

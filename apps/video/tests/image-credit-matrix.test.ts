@@ -301,6 +301,30 @@ it("rejects an image-only video before freezing any credits or submitting to KIE
   }
 });
 
+it("bills, sends and saves a fixed-length video at the length the model makes", async () => {
+  const userId = uniqueUserId();
+  await giveCredits(userId, 1000);
+  const model = getMarketModel("wan/2-5-text-to-video")!;
+  const result = await videoService.generateMedia({ userId, model: model.id, prompt: "a cat", duration: 6, resolution: "720p" });
+  const wire = JSON.parse(String(upstream.mock.lastCall?.[1]?.body));
+  expect(wire.input.duration).toBe("5");
+  expect(result.creditsUsed).toBe(marketCredits(model, { prompt: "a cat", duration: 5, resolution: "720p" }));
+  expect(await getVideoRow(result.videoUuid)).toMatchObject({ duration: 5 });
+});
+
+it("saves no ratio for a one-image Vidu Q4 clip, which keeps the image's ratio", async () => {
+  const userId = uniqueUserId();
+  await giveCredits(userId, 1000);
+  const one = await videoService.generateMedia({ userId, model: "vidu-q4/image-to-video", prompt: "a cat", aspectRatio: "16:9", imageUrls: [`uploads/${userId}/a.png`] });
+  expect(JSON.parse(String(upstream.mock.lastCall?.[1]?.body)).input.aspect_ratio).toBeUndefined();
+  expect(await getVideoRow(one.videoUuid)).toMatchObject({ aspectRatio: null });
+  const other = uniqueUserId();
+  await giveCredits(other, 1000);
+  const two = await videoService.generateMedia({ userId: other, model: "vidu-q4/image-to-video", prompt: "a cat", aspectRatio: "9:16", imageUrls: [`uploads/${other}/a.png`, `uploads/${other}/b.png`] });
+  expect(JSON.parse(String(upstream.mock.lastCall?.[1]?.body)).input.aspect_ratio).toBe("9:16");
+  expect(await getVideoRow(two.videoUuid)).toMatchObject({ aspectRatio: "9:16" });
+});
+
 function finish(uuid: string, state: "fail" | "success", images: string[] = []) {
   return videoService.handleCallback("kie", {
     code: 200, data: { taskId: "test-task", state, resultJson: JSON.stringify({ resultUrls: images }) },

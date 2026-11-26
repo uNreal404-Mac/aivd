@@ -48,6 +48,7 @@ import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { findVideoPreset } from "@/lib/video-presets";
+import { marketImageNotice, marketInputNotice } from "@/lib/market-input-check";
 import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
 import { MediaViewer, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
 import { PresetCard, PresetLibrary } from "@/components/hf/video-studio/presets";
@@ -691,6 +692,19 @@ function AiVideoStudioForm({
       setNotice(isChinese ? `第 ${preparedPrompt.index} 个引用与当前素材不匹配，请重新选择引用` : `Reference ${preparedPrompt.index} does not match your selected media. Select the reference again.`);
       return;
     }
+    const inputNotice = keyframeMode || videoInput ? null
+      : marketInputNotice(catalogModelId, { prompt: preparedPrompt.prompt, imageCount: startImageCount }, isChinese);
+    if (inputNotice) {
+      setNotice(inputNotice);
+      promptRef.current?.focus();
+      return;
+    }
+    const imageNotice = keyframeMode || videoInput ? null : await marketImageNotice(catalogModelId,
+      homeReferences.length ? homeReferences : imageKey ? [{ url: preview, name: fileName }] : [], isChinese);
+    if (imageNotice) {
+      setNotice(imageNotice);
+      return;
+    }
 
     // Signed in and the balance does not cover this clip: say so, with the
     // cost and the balance, before anything is sent.
@@ -927,7 +941,10 @@ function AiVideoStudioForm({
       ? (copy.modelTaglines[model.id] ?? (model.tagline || (navEntry ? (isChinese ? navEntry.desc.zh : navEntry.desc.en) : "")))
       : (catalogEntry ? catalogDetail(catalogEntry) : ""));
   // Some models (Grok Imagine 1.5 on KIE) only run from a start image.
-  const needsStartImage = Boolean(getMarketModel(catalogModelId)?.options.requiresImage) && !imageKey;
+  const startImageCount = homeReferences.length || (imageKey ? 1 : 0);
+  const needsStartImage = Boolean(getMarketModel(catalogModelId)?.options.requiresImage) && startImageCount === 0;
+  // Vidu Q4 from one picture keeps that picture's ratio; the choice only applies to two or more.
+  const aspectFollowsImage = Boolean(getMarketModel(catalogModelId)?.options.aspectFollowsSingleImage) && startImageCount === 1;
   const modelCover = MODEL_COVERS[coverModelId] ?? "/home/samples/cosmic-bloom.webp";
   const generateDisabled =
     submitting || uploading || availableModels.length === 0 || !selectedModelConnected || needsStartImage || (keyframeMode && !validFrameCount(frames, settings.duration));
@@ -1292,8 +1309,11 @@ function AiVideoStudioForm({
             {!videoInput && !keyframeMode ? <ChoiceCard
               label={copy.aspect}
               value={settings.aspect}
-              options={widestFirst(model.aspects)}
-              fixedNote={isChinese ? `${model.name} 只支持 ${settings.aspect}` : `${model.name} only makes ${settings.aspect}`}
+              options={aspectFollowsImage ? [settings.aspect] : widestFirst(model.aspects)}
+              format={aspectFollowsImage ? () => (isChinese ? "跟随首图" : "From image") : undefined}
+              fixedNote={aspectFollowsImage
+                ? (isChinese ? "只用一张图片时，画幅跟随这张图片。加第二张参考图后可以选画幅。" : "With one image the clip keeps its ratio. Add a second reference to choose one.")
+                : isChinese ? `${model.name} 只支持 ${settings.aspect}` : `${model.name} only makes ${settings.aspect}`}
               onChange={(aspect) => setSettings((previous) => ({ ...previous, aspect }))}
             /> : null}
             <ChoiceCard

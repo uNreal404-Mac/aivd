@@ -25,7 +25,7 @@ import { generateSignedCallbackUrl } from "@/ai/utils/callback-signature";
 import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
-import { createMarketTask, getMarketModel, imageResolution, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { allowedDuration, createMarketTask, getMarketModel, imageResolution, marketCredits, type MarketRequest } from "@/ai/kie-market";
 import { imageOutputCount } from "@/lib/image-output-count";
 import { WAN_REFERENCE_MAX_BYTES, WAN_REFERENCE_MAX_FILES, isWanVideoMime } from "@/lib/wan-video-references";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
@@ -760,10 +760,12 @@ export class VideoService {
       value && (!allowed || allowed.length === 0 || allowed.includes(value)) ? value : undefined;
     const request: MarketRequest = {
       prompt: params.prompt,
-      aspectRatio: params.keyframes ? undefined : pick(params.aspectRatio, model.options.aspects),
+      // A ratio the model ignores is not saved, so history shows what was made.
+      aspectRatio: params.keyframes || (model.options.aspectFollowsSingleImage && imageInputs.length === 1)
+        ? undefined : pick(params.aspectRatio, model.options.aspects),
       resolution: model.kind === "image" ? imageResolution(model, params.resolution) :
         pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
-      duration: measured?.seconds ?? params.duration ?? (params.keyframes ? 10 : undefined),
+      duration: measured?.seconds ?? (params.keyframes ? params.duration ?? 10 : allowedDuration(model, params.duration)),
       ...(model.id === VIDEO_MOTION_MODEL ? { orientation:params.orientation ?? "video" } : {}),
       ...(params.keyframes ? { keyframes: params.keyframes } : {}),
       count: imageOutputCount(params.count, model.options.maxCount),

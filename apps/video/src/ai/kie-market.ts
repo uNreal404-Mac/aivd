@@ -67,6 +67,12 @@ export interface MarketOptions {
   requiresVideo?: boolean;
   /** Shortest prompt the model accepts. */
   minPromptLength?: number;
+  /** Image types the model accepts when narrower than JPEG, PNG and WebP. */
+  imageTypes?: string[];
+  /** Smallest width and height, in pixels, the model accepts for an input image. */
+  minImageSide?: number;
+  /** With exactly one image the output keeps that image's ratio; `aspects` applies to the other modes. */
+  aspectFollowsSingleImage?: boolean;
 }
 
 export interface MarketModel {
@@ -180,6 +186,7 @@ const hd = (req: MarketRequest) => req.resolution === "1080p" ? "1080p" : "720p"
 const option = (value: string | undefined, allowed: string[], fallback: string) =>
   value && allowed.includes(value) ? value : fallback;
 
+const JPEG_PNG = ["image/jpeg", "image/png"];
 const VIDEO_ASPECTS = ["16:9", "9:16", "1:1"];
 const SEEDANCE_1_USD = { "480p": .014, "720p": .03, "1080p": .07 };
 const VIDU_Q4_USD = { "540p": .036, "720p": .076, "1080p": .096, "2k": .152, "4k": .312 };
@@ -571,7 +578,7 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "wan/2-6-flash-image-to-video", kind: "video", name: "Wan 2.6 Flash",
-    options: { aspects: ["auto"], resolutions: ["720p", "1080p"], durations: [5, 10, 15], maxImages: 1, requiresImage: true, audioToggle: true, maxPromptLength: 1500 },
+    options: { aspects: ["auto"], resolutions: ["720p", "1080p"], durations: [5, 10, 15], maxImages: 1, requiresImage: true, audioToggle: true, maxPromptLength: 1500, minImageSide: 256 },
     costUsd: (req) => {
       const clips = hd(req) === "1080p"
         ? (req.audio === false ? { 5: .15, 10: .30, 15: .45 } : { 5: .30, 10: .60, 15: .90 })
@@ -585,7 +592,7 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "kling/v3-turbo-text-to-video", kind: "video", name: "Kling 3.0 Turbo",
-    options: { aspects: VIDEO_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1, maxPromptLength: 2500 },
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1, maxPromptLength: 2500, imageTypes: JPEG_PNG },
     costUsd: (req) => perSecond({ "720p": .101, "1080p": .126 }, "720p")(req, 3, 15, 5),
     buildTask: (req) => {
       const common = { prompt: req.prompt, resolution: hd(req), duration: String(clampDuration(req, 3, 15, 5)) };
@@ -596,7 +603,7 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "kling/v3-omni-text-to-video", kind: "video", name: "Kling 3.0 Omni",
-    options: { aspects: VIDEO_ASPECTS, resolutions: Object.keys(KLING_OMNI_USD), durations: secondsBetween(3, 15), maxImages: 7, audioToggle: true, maxPromptLength: 3072 },
+    options: { aspects: VIDEO_ASPECTS, resolutions: Object.keys(KLING_OMNI_USD), durations: secondsBetween(3, 15), maxImages: 7, audioToggle: true, maxPromptLength: 3072, imageTypes: JPEG_PNG, minImageSide: 300 },
     costUsd: (req) => perSecond(req.audio === false ? KLING_OMNI_USD : KLING_OMNI_AUDIO_USD, "720p")(req, 3, 15, 5),
     buildTask: (req) => {
       const images = refs(req, 7);
@@ -612,7 +619,7 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "kling/text-to-video", kind: "video", name: "Kling 2.6",
-    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 1, audioToggle: true, maxPromptLength: 2500 },
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 1, audioToggle: true, maxPromptLength: 2500, imageTypes: JPEG_PNG },
     costUsd: (req) => (req.audio === false ? { 5: .315, 10: .63 } : { 5: .63, 10: 1.26 })[fiveOrTen(req)],
     buildTask: (req) => {
       const common = { prompt: req.prompt, duration: String(fiveOrTen(req)), sound: req.audio ?? true };
@@ -623,7 +630,7 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "kling/v25-turbo-text-to-video-pro", kind: "video", name: "Kling 2.5 Turbo",
-    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 2, maxPromptLength: 2500 },
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 2, maxPromptLength: 2500, imageTypes: JPEG_PNG },
     costUsd: (req) => ({ 5: .315, 10: .63 })[fiveOrTen(req)],
     buildTask: (req) => {
       const common = { prompt: req.prompt, duration: String(fiveOrTen(req)) };
@@ -644,7 +651,7 @@ const VIDEO_MODELS: MarketModel[] = [
   })),
   {
     id: "vidu-q4/image-to-video", kind: "video", name: "Vidu Q4",
-    options: { aspects: COMMON_ASPECTS, resolutions: Object.keys(VIDU_Q4_USD), durations: secondsBetween(3, 16), maxImages: 15, requiresImage: true, audioToggle: true, maxPromptLength: 20000 },
+    options: { aspects: COMMON_ASPECTS, resolutions: Object.keys(VIDU_Q4_USD), durations: secondsBetween(3, 16), maxImages: 15, requiresImage: true, audioToggle: true, maxPromptLength: 20000, aspectFollowsSingleImage: true },
     costUsd: (req) => perSecond(VIDU_Q4_USD, "720p")(req, 3, 16, 5),
     buildTask: (req) => {
       const images = refs(req, 15);
@@ -1027,7 +1034,9 @@ const IMAGE_MODELS: MarketModel[] = [
       return {
         model: "kling-4-0/long-image",
         input: {
-          prompt: req.prompt, resolution: req.resolution === "1K" ? "1k" : "2k",
+          // KIE reads every "@" as an image tag and rejects unknown ones, so an
+          // e-mail address or a stray "@" goes out as a full-width "＠".
+          prompt: req.prompt.replace(/@(?!image_[1-3](?!\d))/g, "＠"), resolution: req.resolution === "1K" ? "1k" : "2k",
           ...(images.length ? { skill: "ecommerce", length: "medium", image_urls: images } : { skill: "webpage" }),
         },
       };
@@ -1379,6 +1388,18 @@ export function marketCredits(model: MarketModel, req: MarketRequest): number {
 }
 
 /** Models to pick from in a studio (tools such as extend are left out). */
+// A video model with a fixed list of lengths only produces those lengths. Any
+// other request is moved to the nearest one (the longer on a tie) so the
+// price, the provider request and the saved record all use the same value.
+export function allowedDuration(model: MarketModel, duration: number | undefined): number | undefined {
+  const choices = model.kind === "video" ? model.options.durations : undefined;
+  if (duration === undefined || !choices?.length || choices.includes(duration)) return duration;
+  return choices.reduce((best, value) => {
+    const gap = Math.abs(value - duration), bestGap = Math.abs(best - duration);
+    return gap < bestGap || (gap === bestGap && value > best) ? value : best;
+  });
+}
+
 export function marketModelsOf(kind: MarketKind): MarketModel[] {
   return MARKET_MODELS.filter((item) => item.kind === kind && !item.tool);
 }
