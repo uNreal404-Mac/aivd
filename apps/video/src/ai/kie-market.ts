@@ -173,6 +173,21 @@ const MAGI_2_ASPECTS = ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"];
 /** Gemini Omni 1.1 only renders 4/6/8/10 s: the shortest length that covers the request. */
 const omniDuration = (req: MarketRequest) => [4, 6, 8, 10].find((value) => value >= (req.duration ?? 4)) ?? 10;
 
+// Fixed-length endpoints bill the clip we submit, including requests between two lengths.
+const fiveOrTen = (req: MarketRequest) => (req.duration ?? 5) > 5 ? 10 : 5;
+const wanFlashDuration = (req: MarketRequest) => (req.duration ?? 5) > 10 ? 15 : fiveOrTen(req);
+const hd = (req: MarketRequest) => req.resolution === "1080p" ? "1080p" : "720p";
+const option = (value: string | undefined, allowed: string[], fallback: string) =>
+  value && allowed.includes(value) ? value : fallback;
+
+const VIDEO_ASPECTS = ["16:9", "9:16", "1:1"];
+const SEEDANCE_1_USD = { "480p": .014, "720p": .03, "1080p": .07 };
+const VIDU_Q4_USD = { "540p": .036, "720p": .076, "1080p": .096, "2k": .152, "4k": .312 };
+const KLING_OMNI_USD = { "720p": .0755, "1080p": .101, "4k": .3775 };
+const KLING_OMNI_AUDIO_USD = { "720p": .101, "1080p": .126, "4k": .3775 };
+const PIXVERSE_V6_USD = { "360p": .02, "540p": .028, "720p": .036, "1080p": .072 };
+const PIXVERSE_V6_AUDIO_USD = { "360p": .028, "540p": .036, "720p": .048, "1080p": .092 };
+
 const VIDEO_MODELS: MarketModel[] = [
   {
     id: "bytedance/seedance-2-5",
@@ -498,6 +513,185 @@ const VIDEO_MODELS: MarketModel[] = [
       return { model: "magi-2/text-to-video", input: { ...common, aspect_ratio } };
     },
   },
+  {
+    id: "bytedance/seedance-2-5-draft", kind: "video", name: "Seedance 2.5 Draft",
+    options: { aspects: MAGI_2_ASPECTS, resolutions: ["480p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true, maxPromptLength: 20480 },
+    // Assumption: no separate draft tariff is published. Use Seedance 2.5's no-video-input 480p rate.
+    costUsd: (req) => SEEDANCE_25_USD["480p"] * clampDuration(req, 4, 30, 5),
+    buildTask: (req) => ({
+      model: "bytedance/seedance-2-5",
+      input: {
+        prompt: req.prompt, draft: true, resolution: "480p", duration: clampDuration(req, 4, 30, 5),
+        aspect_ratio: firstImage(req) ? "adaptive" : option(req.aspectRatio, MAGI_2_ASPECTS, "16:9"),
+        generate_audio: req.audio ?? true, ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+      },
+    }),
+  },
+  {
+    id: "bytedance/v1-pro-text-to-video", kind: "video", name: "Seedance 1.0 Pro",
+    options: { aspects: MAGI_2_ASPECTS, resolutions: Object.keys(SEEDANCE_1_USD), durations: [5, 10], maxImages: 1, maxPromptLength: 10000 },
+    costUsd: (req) => (SEEDANCE_1_USD[req.resolution as keyof typeof SEEDANCE_1_USD] ?? .03) * fiveOrTen(req),
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, duration: String(fiveOrTen(req)), resolution: option(req.resolution, Object.keys(SEEDANCE_1_USD), "720p") };
+      return firstImage(req)
+        ? { model: "bytedance/v1-pro-image-to-video", input: { ...common, image_url: firstImage(req) } }
+        : { model: "bytedance/v1-pro-text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, MAGI_2_ASPECTS, "16:9") } };
+    },
+  },
+  {
+    id: "bytedance/v1-pro-fast-image-to-video", kind: "video", name: "Seedance 1.0 Pro Fast",
+    options: { aspects: ["auto"], resolutions: ["720p", "1080p"], durations: [5, 10], maxImages: 1, requiresImage: true, maxPromptLength: 10000 },
+    costUsd: (req) => (hd(req) === "1080p" ? { 5: .18, 10: .36 } : { 5: .08, 10: .18 })[fiveOrTen(req)],
+    buildTask: (req) => ({
+      model: "bytedance/v1-pro-fast-image-to-video",
+      input: { prompt: req.prompt, image_url: firstImage(req), resolution: hd(req), duration: String(fiveOrTen(req)) },
+    }),
+  },
+  {
+    id: "wan/2-7-text-to-video", kind: "video", name: "Wan 2.7",
+    options: { aspects: COMMON_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(2, 15), maxImages: 2, maxPromptLength: 5000 },
+    costUsd: (req) => perSecond({ "720p": .08, "1080p": .12 }, "720p")(req, 2, 15, 5),
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, resolution: hd(req), duration: clampDuration(req, 2, 15, 5) };
+      return firstImage(req)
+        ? { model: "wan/2-7-image-to-video", input: { ...common, first_frame_url: firstImage(req), ...(req.imageUrls?.[1] ? { last_frame_url: req.imageUrls[1] } : {}) } }
+        : { model: "wan/2-7-text-to-video", input: { ...common, ratio: option(req.aspectRatio, COMMON_ASPECTS, "16:9") } };
+    },
+  },
+  {
+    id: "wan/2-5-text-to-video", kind: "video", name: "Wan 2.5",
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["720p", "1080p"], durations: [5, 10], maxImages: 1, maxPromptLength: 800 },
+    costUsd: (req) => (hd(req) === "1080p" ? { 5: .5, 10: 1 } : { 5: .3, 10: .6 })[fiveOrTen(req)],
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, resolution: hd(req), duration: String(fiveOrTen(req)) };
+      return firstImage(req)
+        ? { model: "wan/2-5-image-to-video", input: { ...common, image_url: firstImage(req) } }
+        : { model: "wan/2-5-text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, VIDEO_ASPECTS, "16:9") } };
+    },
+  },
+  {
+    id: "wan/2-6-flash-image-to-video", kind: "video", name: "Wan 2.6 Flash",
+    options: { aspects: ["auto"], resolutions: ["720p", "1080p"], durations: [5, 10, 15], maxImages: 1, requiresImage: true, audioToggle: true, maxPromptLength: 1500 },
+    costUsd: (req) => {
+      const clips = hd(req) === "1080p"
+        ? (req.audio === false ? { 5: .15, 10: .30, 15: .45 } : { 5: .30, 10: .60, 15: .90 })
+        : (req.audio === false ? { 5: .10, 10: .20, 15: .30 } : { 5: .20, 10: .40, 15: .60 });
+      return clips[wanFlashDuration(req)];
+    },
+    buildTask: (req) => ({
+      model: "wan/2-6-flash-image-to-video",
+      input: { prompt: req.prompt, image_urls: refs(req, 1), resolution: hd(req), duration: String(wanFlashDuration(req)), audio: req.audio ?? true },
+    }),
+  },
+  {
+    id: "kling/v3-turbo-text-to-video", kind: "video", name: "Kling 3.0 Turbo",
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1, maxPromptLength: 2500 },
+    costUsd: (req) => perSecond({ "720p": .101, "1080p": .126 }, "720p")(req, 3, 15, 5),
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, resolution: hd(req), duration: String(clampDuration(req, 3, 15, 5)) };
+      return firstImage(req)
+        ? { model: "kling/v3-turbo-image-to-video", input: { ...common, image_urls: refs(req, 1) } }
+        : { model: "kling/v3-turbo-text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, VIDEO_ASPECTS, "16:9") } };
+    },
+  },
+  {
+    id: "kling/v3-omni-text-to-video", kind: "video", name: "Kling 3.0 Omni",
+    options: { aspects: VIDEO_ASPECTS, resolutions: Object.keys(KLING_OMNI_USD), durations: secondsBetween(3, 15), maxImages: 7, audioToggle: true, maxPromptLength: 3072 },
+    costUsd: (req) => perSecond(req.audio === false ? KLING_OMNI_USD : KLING_OMNI_AUDIO_USD, "720p")(req, 3, 15, 5),
+    buildTask: (req) => {
+      const images = refs(req, 7);
+      const common = {
+        prompt: req.prompt, duration: clampDuration(req, 3, 15, 5),
+        resolution: option(req.resolution, Object.keys(KLING_OMNI_USD), "720p"), audio: req.audio ?? true,
+      };
+      const aspect_ratio = option(req.aspectRatio, VIDEO_ASPECTS, "16:9");
+      if (images.length > 1) return { model: "kling-3.0-omni/reference-to-video", input: { ...common, image_urls: images, aspect_ratio } };
+      if (images.length) return { model: "kling-3.0-omni/image-to-video", input: { ...common, image_urls: images, aspect_ratio: "auto" } };
+      return { model: "kling-3.0-omni/text-to-video", input: { ...common, aspect_ratio } };
+    },
+  },
+  {
+    id: "kling/text-to-video", kind: "video", name: "Kling 2.6",
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 1, audioToggle: true, maxPromptLength: 2500 },
+    costUsd: (req) => (req.audio === false ? { 5: .315, 10: .63 } : { 5: .63, 10: 1.26 })[fiveOrTen(req)],
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, duration: String(fiveOrTen(req)), sound: req.audio ?? true };
+      return firstImage(req)
+        ? { model: "kling-2.6/image-to-video", input: { ...common, image_urls: refs(req, 1) } }
+        : { model: "kling-2.6/text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, VIDEO_ASPECTS, "16:9") } };
+    },
+  },
+  {
+    id: "kling/v25-turbo-text-to-video-pro", kind: "video", name: "Kling 2.5 Turbo",
+    options: { aspects: VIDEO_ASPECTS, resolutions: ["1080p"], durations: [5, 10], maxImages: 2, maxPromptLength: 2500 },
+    costUsd: (req) => ({ 5: .315, 10: .63 })[fiveOrTen(req)],
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, duration: String(fiveOrTen(req)) };
+      return firstImage(req)
+        ? { model: "kling/v2-5-turbo-image-to-video-pro", input: { ...common, image_url: firstImage(req), ...(req.imageUrls?.[1] ? { tail_image_url: req.imageUrls[1] } : {}) } }
+        : { model: "kling/v2-5-turbo-text-to-video-pro", input: { ...common, aspect_ratio: option(req.aspectRatio, VIDEO_ASPECTS, "16:9") } };
+    },
+  },
+  ...(["pro", "standard"] as const).map((tier): MarketModel => ({
+    id: `hailuo/2-3-image-to-video-${tier}`, kind: "video", name: `Hailuo 2.3 ${tier === "pro" ? "Pro" : "Standard"}`,
+    // 1080P cannot render 10s. Keep all combinations exposed by the picker valid.
+    options: { aspects: ["auto"], resolutions: ["768p", "1080p"], durations: [6], maxImages: 1, requiresImage: true, maxPromptLength: 5000 },
+    costUsd: (req) => (tier === "pro" ? { "768p": .225, "1080p": .4 } : { "768p": .15, "1080p": .25 })[req.resolution === "1080p" ? "1080p" : "768p"],
+    buildTask: (req) => ({
+      model: `hailuo/2-3-image-to-video-${tier}`,
+      input: { prompt: req.prompt, image_url: firstImage(req), duration: "6", resolution: req.resolution === "1080p" ? "1080P" : "768P" },
+    }),
+  })),
+  {
+    id: "vidu-q4/image-to-video", kind: "video", name: "Vidu Q4",
+    options: { aspects: COMMON_ASPECTS, resolutions: Object.keys(VIDU_Q4_USD), durations: secondsBetween(3, 16), maxImages: 15, requiresImage: true, audioToggle: true, maxPromptLength: 20000 },
+    costUsd: (req) => perSecond(VIDU_Q4_USD, "720p")(req, 3, 16, 5),
+    buildTask: (req) => {
+      const images = refs(req, 15);
+      const common = { prompt: req.prompt, duration: clampDuration(req, 3, 16, 5), resolution: option(req.resolution, Object.keys(VIDU_Q4_USD), "720p"), audio: req.audio ?? true };
+      return images.length > 1
+        ? { model: "vidu-q4/reference-to-video", input: { ...common, reference_image_urls: images, aspect_ratio: option(req.aspectRatio, COMMON_ASPECTS, "16:9") } }
+        : { model: "vidu-q4/image-to-video", input: { ...common, image_url: images[0] } };
+    },
+  },
+  {
+    id: "pixverse/text-to-video", kind: "video", name: "PixVerse V6",
+    options: { aspects: [...MAGI_2_ASPECTS, "2:3", "3:2"], resolutions: Object.keys(PIXVERSE_V6_USD), durations: secondsBetween(1, 15), maxImages: 1, audioToggle: true, minPromptLength: 3, maxPromptLength: 5000 },
+    costUsd: (req) => perSecond(req.audio === false ? PIXVERSE_V6_USD : PIXVERSE_V6_AUDIO_USD, "720p")(req, 1, 15, 5),
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, duration: clampDuration(req, 1, 15, 5), quality: option(req.resolution, Object.keys(PIXVERSE_V6_USD), "720p"), generate_audio_switch: req.audio ?? true };
+      return firstImage(req)
+        ? { model: "pixverse-v6/image-to-video", input: { ...common, image_urls: refs(req, 1) } }
+        : { model: "pixverse-v6/text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, [...MAGI_2_ASPECTS, "2:3", "3:2"], "16:9") } };
+    },
+  },
+  {
+    id: "wan/2-2-a14b-text-to-video-turbo", kind: "video", name: "Wan 2.2 Turbo",
+    // KIE documents no length field and bills per second; the A14B turbo
+    // renders about 5 s (81 frames at 16 fps). Assumption: bill 6 s so a
+    // clip that rounds up is still covered.
+    options: { aspects: ["16:9", "9:16"], resolutions: ["480p", "720p"], durations: [5], maxImages: 1, maxPromptLength: 5000 },
+    costUsd: (req) => (req.resolution === "480p" ? .04 : .08) * 6,
+    buildTask: (req) => {
+      const common = { prompt: req.prompt, resolution: req.resolution === "480p" ? "480p" : "720p" };
+      return firstImage(req)
+        ? { model: "wan/2-2-a14b-image-to-video-turbo", input: { ...common, image_url: firstImage(req) } }
+        : { model: "wan/2-2-a14b-text-to-video-turbo", input: { ...common, aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9" } };
+    },
+  },
+  {
+    id: "gemini-omni-video", kind: "video", name: "Gemini Omni Video",
+    options: { aspects: ["16:9", "9:16"], resolutions: ["720p", "1080p", "4k"], durations: [4, 6, 8, 10], maxImages: 7, maxPromptLength: 20000 },
+    // The no-video tariff matches Flash 1.1 at each of these clip lengths.
+    costUsd: (req) => (req.resolution === "4k" ? GEMINI_OMNI_11_4K_USD : GEMINI_OMNI_11_USD)[omniDuration(req)],
+    buildTask: (req) => ({
+      model: "gemini-omni-video",
+      input: {
+        prompt: req.prompt, duration: String(omniDuration(req)), resolution: option(req.resolution, ["720p", "1080p", "4k"], "720p"),
+        aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9", ...(firstImage(req) ? { image_urls: refs(req, 7) } : {}),
+      },
+    }),
+  },
 ];
 
 
@@ -529,6 +723,16 @@ const QWEN3_ASPECTS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"
 const IDEOGRAM_SIZES: Record<string, string> = {
   "1:1": "square_hd", "4:3": "landscape_4_3", "3:4": "portrait_4_3", "16:9": "landscape_16_9", "9:16": "portrait_16_9",
 };
+
+const IMAGE_SIZES = ["1K", "2K", "4K"];
+const GPT_25_ASPECTS = ["auto", ...IMAGE_ASPECTS, "21:9"];
+const BANANA_2_ASPECTS = [...GPT_25_ASPECTS, "1:4", "4:1", "1:8", "8:1", "4:5", "5:4"];
+const WAN_IMAGE_ASPECTS = ["1:1", "16:9", "4:3", "21:9", "3:4", "9:16", "8:1", "1:8"];
+const SEEDREAM_4_SIZES: Record<string, string> = {
+  ...IDEOGRAM_SIZES, "3:2": "landscape_3_2", "2:3": "portrait_3_2", "21:9": "landscape_21_9",
+};
+const imageSize = (req: MarketRequest) =>
+  req.resolution === "4K" || req.resolution === "2K" ? req.resolution : "1K";
 
 const IMAGE_MODELS: MarketModel[] = [
   {
@@ -808,6 +1012,162 @@ const IMAGE_MODELS: MarketModel[] = [
         aspect_ratio: req.aspectRatio && ["1:1", "4:3", "3:4", "16:9", "9:16"].includes(req.aspectRatio) ? req.aspectRatio : "1:1",
       },
     }),
+  },
+  {
+    id: "kling-4-0/long-image", kind: "image", name: "Kling Long Image 4.0",
+    options: { aspects: [], resolutions: ["1K", "2K"], defaultResolution: "2K", maxCount: 1, maxImages: 3, maxPromptLength: 20000 },
+    costUsd: (req) => {
+      const images = refs(req, 3);
+      const oneK = req.resolution === "1K";
+      if (!images.length) return oneK ? .495 : .5375;
+      return (oneK ? .4225 : .495) + images.length * .0025;
+    },
+    buildTask: (req) => {
+      const images = refs(req, 3);
+      return {
+        model: "kling-4-0/long-image",
+        input: {
+          prompt: req.prompt, resolution: req.resolution === "1K" ? "1k" : "2k",
+          ...(images.length ? { skill: "ecommerce", length: "medium", image_urls: images } : { skill: "webpage" }),
+        },
+      };
+    },
+  },
+  ...(["sunburst", "flare"] as const).map((variant): MarketModel => ({
+    id: `gpt/gpt-image-2-5-${variant}-text-to-image`, kind: "image",
+    name: `GPT Image 2.5 ${variant === "sunburst" ? "Sunburst" : "Flare"}`,
+    // 2.5 has no quality field. Only send priced resolutions and ratios valid at all sizes.
+    options: { aspects: GPT_25_ASPECTS, resolutions: IMAGE_SIZES, maxCount: 1, maxImages: 16, maxPromptLength: 20000 },
+    costUsd: (req) => GPT_IMAGE_2_USD[imageSize(req)],
+    buildTask: (req) => {
+      const images = refs(req, 16);
+      return {
+        model: `gpt-image-2-5-${variant}-${images.length ? "image-to-image" : "text-to-image"}`,
+        input: {
+          prompt: req.prompt, resolution: imageSize(req), aspect_ratio: option(req.aspectRatio, GPT_25_ASPECTS, "auto"),
+          ...(images.length ? { input_urls: images } : {}),
+        },
+      };
+    },
+  })),
+  {
+    id: "gpt-image/1-5-text-to-image", kind: "image", name: "GPT Image 1.5",
+    options: { aspects: ["1:1", "2:3", "3:2"], resolutions: [], maxCount: 1, maxImages: 16 },
+    costUsd: () => .02,
+    buildTask: (req) => {
+      const images = refs(req, 16);
+      return {
+        model: images.length ? "gpt-image/1.5-image-to-image" : "gpt-image/1.5-text-to-image",
+        input: { prompt: req.prompt, quality: "medium", aspect_ratio: option(req.aspectRatio, ["1:1", "2:3", "3:2"], "1:1"), ...(images.length ? { input_urls: images } : {}) },
+      };
+    },
+  },
+  {
+    id: "seedream/5-lite-text-to-image", kind: "image", name: "Seedream 5 Lite",
+    options: { aspects: SEEDREAM_5_ASPECTS, resolutions: ["2K", "3K", "4K"], maxCount: 1, maxImages: 14, minPromptLength: 4, maxPromptLength: 2995 },
+    costUsd: () => .0275,
+    buildTask: (req) => {
+      const images = refs(req, 14);
+      return {
+        model: images.length ? "seedream/5-lite-image-to-image" : "seedream/5-lite-text-to-image",
+        input: {
+          prompt: req.prompt, aspect_ratio: option(req.aspectRatio, SEEDREAM_5_ASPECTS, "1:1"),
+          quality: req.resolution === "4K" ? "ultra" : req.resolution === "3K" ? "high" : "basic",
+          ...(images.length ? { image_urls: images } : {}),
+        },
+      };
+    },
+  },
+  {
+    id: "seedream/4-5-text-to-image", kind: "image", name: "Seedream 4.5",
+    options: { aspects: SEEDREAM_5_ASPECTS, resolutions: ["2K", "4K"], maxCount: 1, maxImages: 14, maxPromptLength: 3000 },
+    costUsd: () => .0325,
+    buildTask: (req) => {
+      const images = refs(req, 14);
+      return {
+        model: images.length ? "seedream/4.5-edit" : "seedream/4.5-text-to-image",
+        input: {
+          prompt: req.prompt, aspect_ratio: option(req.aspectRatio, SEEDREAM_5_ASPECTS, "1:1"),
+          quality: req.resolution === "4K" ? "high" : "basic", ...(images.length ? { image_urls: images } : {}),
+        },
+      };
+    },
+  },
+  {
+    id: "seedream/seedream-v4-text-to-image", kind: "image", name: "Seedream 4.0",
+    options: { aspects: Object.keys(SEEDREAM_4_SIZES), resolutions: IMAGE_SIZES, maxCount: 1, maxImages: 10, maxPromptLength: 5000 },
+    costUsd: () => .025,
+    buildTask: (req) => {
+      const images = refs(req, 10);
+      return {
+        model: images.length ? "bytedance/seedream-v4-edit" : "bytedance/seedream-v4-text-to-image",
+        input: {
+          prompt: req.prompt, image_size: SEEDREAM_4_SIZES[option(req.aspectRatio, Object.keys(SEEDREAM_4_SIZES), "1:1")],
+          image_resolution: imageSize(req), max_images: 1, ...(images.length ? { image_urls: images } : {}),
+        },
+      };
+    },
+  },
+  {
+    id: "google/nanobanana2", kind: "image", name: "Nano Banana 2",
+    options: { aspects: BANANA_2_ASPECTS, resolutions: IMAGE_SIZES, maxCount: 1, maxImages: 10, maxPromptLength: 20000 },
+    costUsd: (req) => ({ "1K": .04, "2K": .06, "4K": .09 })[imageSize(req)],
+    buildTask: (req) => ({
+      model: "nano-banana-2",
+      input: { prompt: req.prompt, aspect_ratio: option(req.aspectRatio, BANANA_2_ASPECTS, "auto"), resolution: imageSize(req), ...(firstImage(req) ? { image_input: refs(req, 10) } : {}) },
+    }),
+  },
+  {
+    id: "google/nano-banana-2-lite", kind: "image", name: "Nano Banana 2 Lite",
+    options: { aspects: BANANA_2_ASPECTS, resolutions: [], maxCount: 1, maxImages: 10, maxPromptLength: 20000 },
+    costUsd: () => .02,
+    buildTask: (req) => ({
+      model: "nano-banana-2-lite",
+      input: { prompt: req.prompt, aspect_ratio: option(req.aspectRatio, BANANA_2_ASPECTS, "auto"), ...(firstImage(req) ? { image_urls: refs(req, 10) } : {}) },
+    }),
+  },
+  {
+    id: "qwen3-pro/text-to-image", kind: "image", name: "Qwen Image 3.0 Pro",
+    options: { aspects: QWEN3_ASPECTS, resolutions: ["1K", "2K"], maxCount: 1, maxImages: 3, maxPromptLength: 5000 },
+    costUsd: (req) => (req.resolution === "2K" ? .06 : .032) + refs(req, 3).length * .0025,
+    buildTask: (req) => {
+      const images = refs(req, 3);
+      return {
+        model: images.length ? "qwen3/pro-image-to-image" : "qwen3/pro-text-to-image",
+        input: {
+          prompt: req.prompt, resolution: req.resolution === "2K" ? "2K" : "1K",
+          image_size: option(req.aspectRatio, QWEN3_ASPECTS, "1:1"), ...(images.length ? { image_urls: images } : {}),
+        },
+      };
+    },
+  },
+  ...([["wan/2-7-image", "Wan 2.7 Image", .024], ["wan/2-7-image-pro", "Wan 2.7 Image Pro", .06]] as const).map(([id, name, usd]): MarketModel => ({
+    id, kind: "image", name,
+    // 4K Pro is text-only. Offer sizes valid both with and without references.
+    options: { aspects: WAN_IMAGE_ASPECTS, resolutions: ["1K", "2K"], defaultResolution: "2K", maxCount: 1, maxImages: 9, maxPromptLength: 5000 },
+    costUsd: () => usd,
+    buildTask: (req) => {
+      const images = refs(req, 9);
+      return {
+        model: id,
+        input: {
+          prompt: req.prompt, resolution: req.resolution === "1K" ? "1K" : "2K", n: 1, enable_sequential: false,
+          ...(images.length ? { input_urls: images } : { aspect_ratio: option(req.aspectRatio, WAN_IMAGE_ASPECTS, "1:1") }),
+        },
+      };
+    },
+  })),
+  {
+    id: "grok-imagine/text-to-image", kind: "image", name: "Grok Imagine",
+    options: { aspects: ["1:1", "2:3", "3:2", "16:9", "9:16"], resolutions: [], maxCount: 1, maxImages: 5 },
+    // One speed-mode request returns a pair for $0.02. An edit is $0.02 per generation.
+    costUsd: () => .02,
+    buildTask: (req) => {
+      const images = refs(req, 5);
+      return images.length
+        ? { model: "grok-imagine/image-to-image", input: { prompt: req.prompt, image_urls: images } }
+        : { model: "grok-imagine/text-to-image", input: { prompt: req.prompt, aspect_ratio: option(req.aspectRatio, ["1:1", "2:3", "3:2", "16:9", "9:16"], "1:1"), enable_pro: false } };
+    },
   },
 ];
 

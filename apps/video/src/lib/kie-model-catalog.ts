@@ -13,7 +13,7 @@ export type CatalogModel = {
 
 export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "bytedance/seedance-2-5", name: "Seedance 2.5", family: "Seedance", icon: "S", detail: "Text · image · multimodal", badge: "Top" },
-  { id: "bytedance/seedance-2-5-draft", name: "Seedance 2.5 Draft", family: "Seedance", icon: "S", detail: "Draft task required" },
+  { id: "bytedance/seedance-2-5-draft", name: "Seedance 2.5 Draft", family: "Seedance", icon: "S", detail: "Low-cost 480p draft" },
   { id: "bytedance/seedance-2", name: "Seedance 2.0", family: "Seedance", icon: "S", detail: "Text · image" },
   { id: "bytedance/seedance-2-fast", name: "Seedance 2.0 Fast", family: "Seedance", icon: "S", detail: "Fast generation" },
   { id: "bytedance/seedance-2-mini", name: "Seedance 2.0 Mini", family: "Seedance", icon: "S", detail: "Fast generation" },
@@ -38,6 +38,21 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "grok-imagine-1-5", name: "Grok Imagine 1.5", family: "Grok Imagine", icon: "X", detail: "Image to video · sound" },
   { id: "happyhorse-1-1", name: "HappyHorse 1.1", family: "HappyHorse", icon: "H", detail: "Text · image to video" },
   { id: "magi-2", name: "MAGI-2", family: "MAGI", icon: "M", detail: "Text · image · reference · sound", badge: "New" },
+  { id: "bytedance/v1-pro-text-to-video", name: "Seedance 1.0 Pro", family: "Seedance", icon: "S", detail: "Text · image to video" },
+  { id: "bytedance/v1-pro-fast-image-to-video", name: "Seedance 1.0 Pro Fast", family: "Seedance", icon: "S", detail: "Image to video" },
+  { id: "wan/2-7-text-to-video", name: "Wan 2.7", family: "Wan", icon: "W", detail: "Text · image to video" },
+  { id: "wan/2-5-text-to-video", name: "Wan 2.5", family: "Wan", icon: "W", detail: "Text · image to video" },
+  { id: "wan/2-6-flash-image-to-video", name: "Wan 2.6 Flash", family: "Wan", icon: "W", detail: "Image to video" },
+  { id: "kling/v3-turbo-text-to-video", name: "Kling 3.0 Turbo", family: "Kling", icon: "K", detail: "Text · image to video" },
+  { id: "kling/v3-omni-text-to-video", name: "Kling 3.0 Omni", family: "Kling", icon: "K", detail: "Text · image · reference to video" },
+  { id: "kling/text-to-video", name: "Kling 2.6", family: "Kling", icon: "K", detail: "Text · image to video" },
+  { id: "kling/v25-turbo-text-to-video-pro", name: "Kling 2.5 Turbo", family: "Kling", icon: "K", detail: "Text · image to video" },
+  { id: "hailuo/2-3-image-to-video-pro", name: "Hailuo 2.3 Pro", family: "MiniMax Hailuo", icon: "M", detail: "Image to video" },
+  { id: "hailuo/2-3-image-to-video-standard", name: "Hailuo 2.3 Standard", family: "MiniMax Hailuo", icon: "M", detail: "Image to video" },
+  { id: "vidu-q4/image-to-video", name: "Vidu Q4", family: "Vidu", icon: "V", detail: "Image · reference to video" },
+  { id: "pixverse/text-to-video", name: "PixVerse V6", family: "PixVerse", icon: "P", detail: "Text · image to video" },
+  { id: "wan/2-2-a14b-text-to-video-turbo", name: "Wan 2.2 Turbo", family: "Wan", icon: "W", detail: "Text · image to video" },
+  { id: "gemini-omni-video", name: "Gemini Omni Video", family: "Gemini Omni Flash", icon: "G", detail: "Text · image to video" },
 ];
 
 export const VIDEO_FEATURED_IDS = [
@@ -53,7 +68,7 @@ export const VIDEO_FEATURED_IDS = [
 export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: string }> = {
   "bytedance/seedance-2-5": { resolution: "1080p", duration: "4–30s" },
   "seedance-2-5-flash": { resolution: "720p", duration: "4–30s" },
-  "bytedance/seedance-2-5-draft": { resolution: "1080p", duration: "source" },
+  "bytedance/seedance-2-5-draft": { resolution: "480p", duration: "4–30s" },
   "bytedance/seedance-2": { resolution: "720p", duration: "4–15s" },
   "bytedance/seedance-2-fast": { resolution: "720p", duration: "4–15s" },
   "bytedance/seedance-2-mini": { resolution: "720p", duration: "4–15s" },
@@ -77,6 +92,21 @@ export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: s
   "hailuo/02-text-to-video-pro": { resolution: "1080p", duration: "6s" },
   "hailuo/02-text-to-video-standard": { resolution: "768p", duration: "6/10s" },
   "magi-2": { resolution: "1080p", duration: "4–30s" },
+  "bytedance/v1-pro-text-to-video": { resolution: "1080p", duration: "5/10s" },
+  "bytedance/v1-pro-fast-image-to-video": { resolution: "1080p", duration: "5/10s" },
+  "wan/2-7-text-to-video": { resolution: "1080p", duration: "2–15s" },
+  "wan/2-5-text-to-video": { resolution: "1080p", duration: "5/10s" },
+  "wan/2-6-flash-image-to-video": { resolution: "1080p", duration: "5/10/15s" },
+  "kling/v3-turbo-text-to-video": { resolution: "1080p", duration: "3–15s" },
+  "kling/v3-omni-text-to-video": { resolution: "4K", duration: "3–15s" },
+  "kling/text-to-video": { resolution: "1080p", duration: "5/10s" },
+  "kling/v25-turbo-text-to-video-pro": { resolution: "1080p", duration: "5/10s" },
+  "hailuo/2-3-image-to-video-pro": { resolution: "1080p", duration: "6s" },
+  "hailuo/2-3-image-to-video-standard": { resolution: "1080p", duration: "6s" },
+  "vidu-q4/image-to-video": { resolution: "4K", duration: "3–16s" },
+  "pixverse/text-to-video": { resolution: "1080p", duration: "1–15s" },
+  "wan/2-2-a14b-text-to-video-turbo": { resolution: "720p", duration: "5s" },
+  "gemini-omni-video": { resolution: "4K", duration: "4/6/8/10s" },
 };
 
 /** Duration shown for catalogue entries that are not connected yet. */
@@ -110,6 +140,19 @@ export const IMAGE_CATALOG: CatalogModel[] = [
   { id: "nano-banana-pro", name: "Nano Banana Pro", family: "Nano Banana", icon: "G", detail: "Up to 4K" },
   { id: "kling-image-4", name: "Kling Image 4.0", family: "Kling", icon: "K", detail: "Up to 8K · up to 9 images", badge: "New" },
   { id: "minimax-h3-image", name: "MiniMax H3 Image", family: "MiniMax Hailuo", icon: "M", detail: "Text · image to image" },
+  { id: "kling-4-0/long-image", name: "Kling Long Image 4.0", family: "Kling", icon: "K", detail: "Text · image to image" },
+  { id: "gpt/gpt-image-2-5-sunburst-text-to-image", name: "GPT Image 2.5 Sunburst", family: "GPT Image", icon: "O", detail: "Text · image to image" },
+  { id: "gpt/gpt-image-2-5-flare-text-to-image", name: "GPT Image 2.5 Flare", family: "GPT Image", icon: "O", detail: "Text · image to image" },
+  { id: "gpt-image/1-5-text-to-image", name: "GPT Image 1.5", family: "GPT Image", icon: "O", detail: "Text · image to image" },
+  { id: "seedream/5-lite-text-to-image", name: "Seedream 5 Lite", family: "Seedream", icon: "S", detail: "Text · image to image" },
+  { id: "seedream/4-5-text-to-image", name: "Seedream 4.5", family: "Seedream", icon: "S", detail: "Text · image to image" },
+  { id: "seedream/seedream-v4-text-to-image", name: "Seedream 4.0", family: "Seedream", icon: "S", detail: "Text · image to image" },
+  { id: "google/nanobanana2", name: "Nano Banana 2", family: "Nano Banana", icon: "G", detail: "Text · image to image" },
+  { id: "google/nano-banana-2-lite", name: "Nano Banana 2 Lite", family: "Nano Banana", icon: "G", detail: "Text · image to image" },
+  { id: "qwen3-pro/text-to-image", name: "Qwen Image 3.0 Pro", family: "Qwen", icon: "Q", detail: "Text · image to image" },
+  { id: "wan/2-7-image", name: "Wan 2.7 Image", family: "Wan", icon: "W", detail: "Text · image to image" },
+  { id: "wan/2-7-image-pro", name: "Wan 2.7 Image Pro", family: "Wan", icon: "W", detail: "Text · image to image" },
+  { id: "grok-imagine/text-to-image", name: "Grok Imagine", family: "Grok Imagine", icon: "X", detail: "Text · image to image" },
 ];
 
 export const IMAGE_FEATURED_IDS = [

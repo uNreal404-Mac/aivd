@@ -72,6 +72,7 @@ const urls = (count: number) => Array.from({ length: count }, (_, index) => `htt
 interface ExtraCase {
   id: string;
   sizes: Record<string, number>;
+  editSizes?: Record<string, number>;
   maxRefs: number;
   /** USD per reference image after the free ones. */
   refUsd: number;
@@ -120,6 +121,87 @@ const extraCases: ExtraCase[] = [
     id: "z-image/z-image", sizes: { "": .004 }, maxRefs: 0, refUsd: 0, textModel: "z-image", editModel: "z-image",
     wire: (input, _size, aspect) => sameAspect(input, aspect),
   },
+  {
+    id: "kling-4-0/long-image", sizes: { "1K": .495, "2K": .5375 }, editSizes: { "1K": .4225, "2K": .495 },
+    maxRefs: 3, refUsd: .0025, textModel: "kling-4-0/long-image", editModel: "kling-4-0/long-image",
+    wire: (input, size, _aspect, refs) => {
+      expect(input).toEqual({
+        prompt: "a cat", resolution: size.toLowerCase(),
+        ...(refs.length ? { skill: "ecommerce", length: "medium", image_urls: refs } : { skill: "webpage" }),
+      });
+    },
+  },
+  ...(["sunburst", "flare"] as const).map((tier): ExtraCase => ({
+    id: `gpt/gpt-image-2-5-${tier}-text-to-image`, sizes: { "1K": .03, "2K": .05, "4K": .08 }, maxRefs: 16, refUsd: 0,
+    textModel: `gpt-image-2-5-${tier}-text-to-image`, editModel: `gpt-image-2-5-${tier}-image-to-image`,
+    wire: (input, size, aspect, refs) => {
+      expect(["27:16", "16:27", "8:9", "9:8"]).not.toContain(aspect); // Only valid at 1K.
+      expect(input).toEqual({ prompt: "a cat", resolution: size, aspect_ratio: aspect, ...(refs.length ? { input_urls: refs } : {}) });
+    },
+  })),
+  {
+    id: "gpt-image/1-5-text-to-image", sizes: { "": .02 }, maxRefs: 16, refUsd: 0,
+    textModel: "gpt-image/1.5-text-to-image", editModel: "gpt-image/1.5-image-to-image",
+    wire: (input, _size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", quality: "medium", aspect_ratio: aspect, ...(refs.length ? { input_urls: refs } : {}) });
+    },
+  },
+  {
+    id: "seedream/5-lite-text-to-image", sizes: { "2K": .0275, "3K": .0275, "4K": .0275 }, maxRefs: 14, refUsd: 0,
+    textModel: "seedream/5-lite-text-to-image", editModel: "seedream/5-lite-image-to-image",
+    wire: (input, size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", quality: { "2K": "basic", "3K": "high", "4K": "ultra" }[size], aspect_ratio: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+    },
+  },
+  {
+    id: "seedream/4-5-text-to-image", sizes: { "2K": .0325, "4K": .0325 }, maxRefs: 14, refUsd: 0,
+    textModel: "seedream/4.5-text-to-image", editModel: "seedream/4.5-edit",
+    wire: (input, size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", quality: size === "4K" ? "high" : "basic", aspect_ratio: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+    },
+  },
+  {
+    id: "seedream/seedream-v4-text-to-image", sizes: { "1K": .025, "2K": .025, "4K": .025 }, maxRefs: 10, refUsd: 0,
+    textModel: "bytedance/seedream-v4-text-to-image", editModel: "bytedance/seedream-v4-edit",
+    wire: (input, size, aspect, refs) => {
+      const shapes: Record<string, string> = { "1:1": "square_hd", "4:3": "landscape_4_3", "3:4": "portrait_4_3", "16:9": "landscape_16_9", "9:16": "portrait_16_9", "3:2": "landscape_3_2", "2:3": "portrait_3_2", "21:9": "landscape_21_9" };
+      expect(input).toEqual({ prompt: "a cat", image_size: shapes[aspect], image_resolution: size, max_images: 1, ...(refs.length ? { image_urls: refs } : {}) });
+    },
+  },
+  {
+    id: "google/nanobanana2", sizes: { "1K": .04, "2K": .06, "4K": .09 }, maxRefs: 10, refUsd: 0,
+    textModel: "nano-banana-2", editModel: "nano-banana-2",
+    wire: (input, size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", resolution: size, aspect_ratio: aspect, ...(refs.length ? { image_input: refs } : {}) });
+    },
+  },
+  {
+    id: "google/nano-banana-2-lite", sizes: { "": .02 }, maxRefs: 10, refUsd: 0,
+    textModel: "nano-banana-2-lite", editModel: "nano-banana-2-lite",
+    wire: (input, _size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", aspect_ratio: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+    },
+  },
+  {
+    id: "qwen3-pro/text-to-image", sizes: { "1K": .032, "2K": .06 }, maxRefs: 3, refUsd: .0025,
+    textModel: "qwen3/pro-text-to-image", editModel: "qwen3/pro-image-to-image",
+    wire: (input, size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", resolution: size, image_size: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+    },
+  },
+  ...([["wan/2-7-image", .024], ["wan/2-7-image-pro", .06]] as const).map(([id, unitUsd]): ExtraCase => ({
+    id, sizes: { "1K": unitUsd, "2K": unitUsd }, maxRefs: 9, refUsd: 0, textModel: id, editModel: id,
+    wire: (input, size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", n: 1, enable_sequential: false, resolution: size, ...(refs.length ? { input_urls: refs } : { aspect_ratio: aspect }) });
+    },
+  })),
+  {
+    id: "grok-imagine/text-to-image", sizes: { "": .02 }, maxRefs: 5, refUsd: 0,
+    textModel: "grok-imagine/text-to-image", editModel: "grok-imagine/image-to-image",
+    wire: (input, _size, aspect, refs) => {
+      expect(input).toEqual({ prompt: "a cat", ...(refs.length ? { image_urls: refs } : { enable_pro: false, aspect_ratio: aspect }) });
+    },
+  },
 ];
 
 it("covers every selectable image model, featured model and public nav entry", () => {
@@ -136,8 +218,9 @@ describe.each(extraCases)("$id", (c) => {
     for (const [size, unitUsd] of Object.entries(c.sizes)) {
       for (let refs = 0; refs <= c.maxRefs; refs++) {
         const imageUrls = urls(refs);
-        const usd = unitUsd + Math.max(0, refs - (c.freeRefs ?? 0)) * c.refUsd;
-        for (const aspectRatio of model.options.aspects!) {
+        const baseUsd = refs ? c.editSizes?.[size] ?? unitUsd : unitUsd;
+        const usd = baseUsd + Math.max(0, refs - (c.freeRefs ?? 0)) * c.refUsd;
+        for (const aspectRatio of model.options.aspects?.length ? model.options.aspects : [""]) {
           const request = { prompt: "a cat", aspectRatio, resolution: size || undefined, count: 1, imageUrls };
           const { model: providerId, input } = model.buildTask(request);
           expect(providerId).toBe(refs ? c.editModel : c.textModel);
@@ -202,6 +285,21 @@ beforeEach(() => {
   deleteFile.mockClear();
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+it("rejects an image-only video before freezing any credits or submitting to KIE", async () => {
+  const userId = uniqueUserId();
+  await giveCredits(userId, 100);
+  const freeze = vi.spyOn(creditService, "freeze");
+  try {
+    await expect(videoService.generateMedia({ userId, model: "vidu-q4/image-to-video", prompt: "a cat" }))
+      .rejects.toMatchObject({ status: 400, details: { code: "MISSING_INPUT_MEDIA" } });
+    expect(freeze).not.toHaveBeenCalled();
+    expect(upstream).not.toHaveBeenCalled();
+    expect(await getBalance(userId)).toMatchObject({ availableCredits: 100, frozenCredits: 0 });
+  } finally {
+    freeze.mockRestore();
+  }
+});
 
 function finish(uuid: string, state: "fail" | "success", images: string[] = []) {
   return videoService.handleCallback("kie", {

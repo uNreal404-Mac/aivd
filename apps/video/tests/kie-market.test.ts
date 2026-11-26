@@ -75,6 +75,13 @@ describe("KIE market registry", () => {
     expect(magi.costUsd(req({ duration: 10, audio: false }))).toBeCloseTo(0.88);
   });
 
+  it("bills Wan 2.2 Turbo for a rounded-up 6 s clip and splits text and image input", () => {
+    const wan = getMarketModel("wan/2-2-a14b-text-to-video-turbo")!;
+    expect(wan.buildTask(req({ aspectRatio: "9:16", resolution: "480p" }))).toEqual({ model: "wan/2-2-a14b-text-to-video-turbo", input: { prompt: req().prompt, resolution: "480p", aspect_ratio: "9:16" } });
+    expect(wan.buildTask(req({ imageUrls: ["https://x/a.png"] }))).toEqual({ model: "wan/2-2-a14b-image-to-video-turbo", input: { prompt: req().prompt, resolution: "720p", image_url: "https://x/a.png" } });
+    expect(wan.costUsd(req())).toBeCloseTo(0.48);
+  });
+
   it("caps GPT Image 2.6 at the quality it is priced for", () => {
     for (const id of ["gpt-image-2-6-sunburst", "gpt-image-2-6-flare"]) {
       expect(getMarketModel(id)!.buildTask(req({ resolution: "4K" })).input.quality).toBe("medium");
@@ -111,6 +118,126 @@ describe("KIE market registry", () => {
     expect(marketModelsOf("video").length).toBeGreaterThan(5);
     expect(marketModelsOf("image").length).toBeGreaterThan(5);
     expect(marketModelsOf("audio").length).toBeGreaterThan(3);
+  });
+});
+
+describe("video model requests from the November 26 KIE catalogue", () => {
+  const images = ["https://x/first.png", "https://x/last.png"];
+  const aspect = "9:16";
+  const input = { prompt: "a cat", duration: 10, resolution: "1080p", aspectRatio: aspect, audio: false };
+
+  // Text inputs and first-frame inputs use different field names even within a family.
+  it.each([
+    {
+      id: "bytedance/seedance-2-5-draft", text: "bytedance/seedance-2-5", edit: "bytedance/seedance-2-5",
+      common: { duration: 10, resolution: "480p", draft: true, generate_audio: false },
+      noImages: { aspect_ratio: aspect }, withImages: { first_frame_url: images[0], aspect_ratio: "adaptive" }, usd: 1.4,
+    },
+    {
+      id: "bytedance/v1-pro-text-to-video", text: "bytedance/v1-pro-text-to-video", edit: "bytedance/v1-pro-image-to-video",
+      common: { duration: "10", resolution: "1080p" }, noImages: { aspect_ratio: aspect }, withImages: { image_url: images[0] }, usd: .7,
+    },
+    {
+      id: "wan/2-7-text-to-video", text: "wan/2-7-text-to-video", edit: "wan/2-7-image-to-video",
+      common: { duration: 10, resolution: "1080p" }, noImages: { ratio: aspect }, withImages: { first_frame_url: images[0], last_frame_url: images[1] }, usd: 1.2,
+    },
+    {
+      id: "wan/2-5-text-to-video", text: "wan/2-5-text-to-video", edit: "wan/2-5-image-to-video",
+      common: { duration: "10", resolution: "1080p" }, noImages: { aspect_ratio: aspect }, withImages: { image_url: images[0] }, usd: 1,
+    },
+    {
+      id: "kling/v3-turbo-text-to-video", text: "kling/v3-turbo-text-to-video", edit: "kling/v3-turbo-image-to-video",
+      common: { duration: "10", resolution: "1080p" }, noImages: { aspect_ratio: aspect }, withImages: { image_urls: [images[0]] }, usd: 1.26,
+    },
+    {
+      id: "kling/text-to-video", text: "kling-2.6/text-to-video", edit: "kling-2.6/image-to-video",
+      common: { duration: "10", sound: false }, noImages: { aspect_ratio: aspect }, withImages: { image_urls: [images[0]] }, usd: .63,
+    },
+    {
+      id: "kling/v25-turbo-text-to-video-pro", text: "kling/v2-5-turbo-text-to-video-pro", edit: "kling/v2-5-turbo-image-to-video-pro",
+      common: { duration: "10" }, noImages: { aspect_ratio: aspect }, withImages: { image_url: images[0], tail_image_url: images[1] }, usd: .63,
+    },
+    {
+      id: "pixverse/text-to-video", text: "pixverse-v6/text-to-video", edit: "pixverse-v6/image-to-video",
+      common: { duration: 10, quality: "1080p", generate_audio_switch: false }, noImages: { aspect_ratio: aspect }, withImages: { image_urls: [images[0]] }, usd: .72,
+    },
+    {
+      id: "gemini-omni-video", text: "gemini-omni-video", edit: "gemini-omni-video",
+      common: { duration: "10", resolution: "1080p", aspect_ratio: aspect }, noImages: {}, withImages: { image_urls: images }, usd: .63,
+    },
+  ])("$id sends the documented text and image payloads", ({ id, text, edit, common, noImages, withImages, usd }) => {
+    const model = getMarketModel(id)!;
+    expect(model.buildTask(input)).toEqual({ model: text, input: { prompt: input.prompt, ...common, ...noImages } });
+    expect(model.buildTask({ ...input, imageUrls: images })).toEqual({ model: edit, input: { prompt: input.prompt, ...common, ...withImages } });
+    for (const imageUrls of [[], images]) expect(model.costUsd({ ...input, imageUrls })).toBeCloseTo(usd);
+  });
+
+  it.each([
+    ["bytedance/v1-pro-fast-image-to-video", { duration: "10", resolution: "1080p", image_url: images[0] }, .36],
+    ["wan/2-6-flash-image-to-video", { duration: "10", resolution: "1080p", image_urls: [images[0]], audio: false }, .30],
+    ["hailuo/2-3-image-to-video-pro", { duration: "6", resolution: "1080P", image_url: images[0] }, .4],
+    ["hailuo/2-3-image-to-video-standard", { duration: "6", resolution: "1080P", image_url: images[0] }, .25],
+  ] as const)("%s requires a first frame and quotes the clip actually rendered", (id, fields, usd) => {
+    const model = getMarketModel(id)!;
+    const request = { ...input, imageUrls: images };
+    expect(model.options.requiresImage).toBe(true);
+    expect(model.buildTask(request)).toEqual({ model: id, input: { prompt: input.prompt, ...fields } });
+    expect(model.costUsd(request)).toBeCloseTo(usd);
+  });
+
+  it("routes Kling Omni and Vidu references at the no-video-input rate", () => {
+    const omni = getMarketModel("kling/v3-omni-text-to-video")!;
+    const vidu = getMarketModel("vidu-q4/image-to-video")!;
+    const many = Array.from({ length: 20 }, (_, i) => `https://x/${i}.png`);
+    const common = { prompt: input.prompt, resolution: "1080p", duration: 10, audio: false };
+    expect(omni.buildTask(input)).toEqual({ model: "kling-3.0-omni/text-to-video", input: { ...common, aspect_ratio: aspect } });
+    expect(omni.buildTask({ ...input, imageUrls: [images[0]] })).toEqual({ model: "kling-3.0-omni/image-to-video", input: { ...common, aspect_ratio: "auto", image_urls: [images[0]] } });
+    expect(omni.buildTask({ ...input, imageUrls: many })).toEqual({ model: "kling-3.0-omni/reference-to-video", input: { ...common, aspect_ratio: aspect, image_urls: many.slice(0, 7) } });
+    expect(vidu.options.requiresImage).toBe(true);
+    expect(vidu.buildTask({ ...input, imageUrls: [images[0]] })).toEqual({ model: "vidu-q4/image-to-video", input: { ...common, image_url: images[0] } });
+    expect(vidu.buildTask({ ...input, imageUrls: many })).toEqual({ model: "vidu-q4/reference-to-video", input: { ...common, aspect_ratio: aspect, reference_image_urls: many.slice(0, 15) } });
+    expect(vidu.costUsd({ ...input, imageUrls: many })).toBeCloseTo(.96);
+  });
+
+  it.each([
+    ["kling/v3-omni-text-to-video", "720p", .755, 1.01],
+    ["kling/v3-omni-text-to-video", "1080p", 1.01, 1.26],
+    ["kling/v3-omni-text-to-video", "4k", 3.775, 3.775],
+    ["kling/text-to-video", "", .63, 1.26],
+    ["wan/2-6-flash-image-to-video", "720p", .20, .40],
+    ["wan/2-6-flash-image-to-video", "1080p", .30, .60],
+    ["pixverse/text-to-video", "360p", .20, .28],
+    ["pixverse/text-to-video", "540p", .28, .36],
+    ["pixverse/text-to-video", "720p", .36, .48],
+    ["pixverse/text-to-video", "1080p", .72, .92],
+  ] as const)("%s bills native audio separately at %s", (id, resolution, silent, sound) => {
+    const model = getMarketModel(id)!;
+    for (const imageUrls of [[], images]) {
+      const request = { ...input, resolution, imageUrls };
+      expect(model.costUsd({ ...request, audio: false })).toBeCloseTo(silent);
+      expect(model.costUsd({ ...request, audio: true })).toBeCloseTo(sound);
+    }
+  });
+
+  it("uses the same duration tier on the wire and in per-clip prices", () => {
+    const fast = getMarketModel("bytedance/v1-pro-fast-image-to-video")!;
+    const flash = getMarketModel("wan/2-6-flash-image-to-video")!;
+    const gemini = getMarketModel("gemini-omni-video")!;
+    for (const [duration, seconds, usd] of [[-3, 5, .08], [6, 10, .18], [70, 10, .18]]) {
+      const request = { ...input, duration, resolution: "720p", imageUrls: images };
+      expect(fast.buildTask(request).input.duration).toBe(String(seconds));
+      expect(fast.costUsd(request)).toBeCloseTo(usd);
+    }
+    for (const [duration, seconds, usd] of [[1, 5, .3], [6, 10, .6], [12, 15, .9]]) {
+      const request = { ...input, duration, audio: true, imageUrls: images };
+      expect(flash.buildTask(request).input.duration).toBe(String(seconds));
+      expect(flash.costUsd(request)).toBeCloseTo(usd);
+    }
+    for (const [duration, seconds, usd] of [[1, 4, .735], [5, 6, .84], [7, 8, .945], [11, 10, 1.05]]) {
+      const request = { ...input, duration, resolution: "4k" };
+      expect(gemini.buildTask(request).input.duration).toBe(String(seconds));
+      expect(gemini.costUsd(request)).toBeCloseTo(usd);
+    }
   });
 });
 

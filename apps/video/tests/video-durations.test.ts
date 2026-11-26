@@ -24,12 +24,28 @@ describe("video duration choices", () => {
       "wan/3-0-video-prime": [2, 30],
       "happyhorse/text-to-video": [3, 15],
       "magi-2": [4, 30],
+      "bytedance/seedance-2-5-draft": [4, 30],
+      "wan/2-7-text-to-video": [2, 15],
+      "kling/v3-turbo-text-to-video": [3, 15],
+      "kling/v3-omni-text-to-video": [3, 15],
+      "vidu-q4/image-to-video": [3, 16],
+      "pixverse/text-to-video": [1, 15],
     };
     // Models KIE only renders at fixed lengths.
     const fixed: Record<string, number[]> = {
       "google/gemini-omni-flash-1-1": [4, 6, 8, 10],
       "hailuo/02-text-to-video-pro": [6],
       "hailuo/02-text-to-video-standard": [6, 10],
+      "bytedance/v1-pro-text-to-video": [5, 10],
+      "bytedance/v1-pro-fast-image-to-video": [5, 10],
+      "wan/2-5-text-to-video": [5, 10],
+      "wan/2-6-flash-image-to-video": [5, 10, 15],
+      "kling/text-to-video": [5, 10],
+      "kling/v25-turbo-text-to-video-pro": [5, 10],
+      "hailuo/2-3-image-to-video-pro": [6],
+      "hailuo/2-3-image-to-video-standard": [6],
+      "gemini-omni-video": [4, 6, 8, 10],
+      "wan/2-2-a14b-text-to-video-turbo": [5],
     };
     expect(marketModelsOf("video").map((model) => model.id).sort()).toEqual([...Object.keys(ranges), ...Object.keys(fixed)].sort());
     for (const [id, durations] of Object.entries(fixed)) {
