@@ -2,7 +2,7 @@ import type { VoiceSettings } from "@/lib/audio-voice-settings";
 import { VideoStatus, db, mediaAssets, videos, type Video } from "@/db";
 import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import {
+import { UnusableMediaError,
   getStorage,
   isStorageConfigured,
   isStorageKey,
@@ -488,6 +488,25 @@ export class VideoService {
       }
     }
 
+    // Signing can fail locally before any task exists: do it before credits
+    // are reserved, so a failure leaves nothing frozen.
+    let callbackUrl: string | undefined;
+    let signedImageUrl: string | undefined;
+    let signedImageUrls: string[] | undefined;
+    try {
+      callbackUrl = this.callbackBaseUrl
+        ? generateSignedCallbackUrl(`${this.callbackBaseUrl}/${actualProvider}`, videoResult.uuid)
+        : undefined;
+      signedImageUrl = params.imageUrl ? this.signImageInput(params.imageUrl) : undefined;
+      signedImageUrls = params.imageUrls?.map((value) => this.signImageInput(value));
+    } catch (error) {
+      await db
+        .update(videos)
+        .set({ status: VideoStatus.FAILED, errorMessage: `SIGN_FAILED: ${String(error)}`, updatedAt: new Date() })
+        .where(eq(videos.uuid, videoResult.uuid));
+      throw new ApiError("Storage is not available right now. No credits were used.", 503, { code: "STORAGE_UNAVAILABLE" });
+    }
+
     let freezeResult: { success: boolean; holdId: number };
     try {
       freezeResult = freeInternal
@@ -534,19 +553,6 @@ export class VideoService {
 
 
 
-    const callbackUrl = this.callbackBaseUrl
-      ? generateSignedCallbackUrl(
-        `${this.callbackBaseUrl}/${actualProvider}`,
-        videoResult.uuid
-      )
-      : undefined;
-
-    const signedImageUrl = params.imageUrl
-      ? this.signImageInput(params.imageUrl)
-      : undefined;
-    const signedImageUrls = params.imageUrls?.map((value) =>
-      this.signImageInput(value)
-    );
 
     // Call the provider. Split definite rejections from unknown outcomes.
     let providerResult: VideoTaskResponse;
@@ -618,7 +624,8 @@ export class VideoService {
         await db
           .update(videos)
           .set({
-            status: VideoStatus.GENERATING,
+            // A callback that arrived first keeps its final state.
+            status: sql`case when ${videos.status} = 'PENDING' then 'GENERATING' else ${videos.status} end`,
             externalTaskId: providerResult.taskId,
             provider: actualProvider,
             updatedAt: new Date(),
@@ -926,10 +933,9 @@ export class VideoService {
         const [saved] = await db
           .update(videos)
           .set({
-            // A fast image callback may have already delivered or released the hold.
-            status: model.kind === "image"
-              ? sql`case when ${videos.status} = 'PENDING' then 'GENERATING' else ${videos.status} end`
-              : VideoStatus.GENERATING,
+            // A fast callback (any kind) may have already delivered or
+            // released the hold: only PENDING moves on to GENERATING.
+            status: sql`case when ${videos.status} = 'PENDING' then 'GENERATING' else ${videos.status} end`,
             externalTaskId: taskId, updatedAt: new Date(),
           })
           .where(eq(videos.uuid, uuid))
@@ -1238,19 +1244,33 @@ export class VideoService {
       } catch {
         return this.tryFailGeneration(videoUuid, "Failed to store the generated images", true);
       }
-    } else if (claimed.mediaType === "audio") {
-      uploaded = await getStorage().downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
-      });
     } else {
-      const storedVideo = await getStorage().downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `videos/${videoUuid}/${stamp}.mp4`,
-        contentType: "video/mp4",
-      });
-      uploaded = storedVideo;
-      videoFileSize = storedVideo.fileSize;
+      const audio = claimed.mediaType === "audio";
+      try {
+        // Success with no result URL, an empty file or an error page means
+        // nothing was delivered.
+        if (!sources[0]) throw new UnusableMediaError("");
+        const stored = await getStorage().downloadAndUpload({
+          sourceUrl: sources[0],
+          key: audio ? `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}` : `videos/${videoUuid}/${stamp}.mp4`,
+          ...(audio ? {} : { contentType: "video/mp4" }),
+          requireNonEmpty: true,
+        });
+        uploaded = stored;
+        if (!audio) videoFileSize = stored.fileSize;
+      } catch (error) {
+        if (error instanceof UnusableMediaError) {
+          // Fail the job and give the credits back.
+          return this.tryFailGeneration(videoUuid, `No usable result: ${error.message}`);
+        }
+        // A storage hiccup: hand the job back so the next callback or poll
+        // can finish it, instead of leaving it (and its credits) in UPLOADING.
+        await db
+          .update(videos)
+          .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
+          .where(and(eq(videos.uuid, videoUuid), eq(videos.status, VideoStatus.UPLOADING)));
+        throw error;
+      }
     }
 
     if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);

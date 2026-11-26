@@ -218,8 +218,11 @@ export class Storage {
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (params.requireNonEmpty && buffer.byteLength === 0) {
-      throw new Error("Cannot store an empty media download");
+    // An empty body or a web page served with 200 (an error page) is not a
+    // result: never store it as one, and never charge for it.
+    const served = (response.headers.get("content-type") || "").toLowerCase();
+    if (params.requireNonEmpty && (buffer.byteLength === 0 || served.startsWith("text/html") || served.startsWith("application/json"))) {
+      throw new UnusableMediaError(params.sourceUrl);
     }
     const contentType =
       params.contentType ||
@@ -362,4 +365,12 @@ export function getStorage(): Storage {
 /** Test-only helper: clears the cached singleton. */
 export function resetStorageForTests(): void {
   storageInstance = null;
+}
+
+/** The provider reported success but sent no usable file (empty or a web page). */
+export class UnusableMediaError extends Error {
+  constructor(sourceUrl: string) {
+    super(`No usable media at ${sourceUrl ? sourceUrl.split("?")[0] : "(no result URL)"}`);
+    this.name = "UnusableMediaError";
+  }
 }
