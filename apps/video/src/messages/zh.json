@@ -734,6 +734,7 @@
       "gemini_omni_flash_1_2": "多模态视频 · 最高 4K",
       "grok_imagine_1_5": "图片生成视频 · 有声",
       "happyhorse_1_1": "文字/图片生成视频",
+      "magi_2": "文字/图片/参考 · 有声",
       "grok_imagine_image_2_0_text_to_image": "文字生成图片",
       "flux3_klein_text_to_image": "文字生成图片",
       "flux2_pro_text_to_image": "文字生成图片",

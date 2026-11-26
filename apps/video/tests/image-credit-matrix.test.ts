@@ -67,11 +67,87 @@ function expectedCredits(usd: number) {
 
 const urls = (count: number) => Array.from({ length: count }, (_, index) => `https://image.test/${index}.png`);
 
+// Catalogue models connected later. Their KIE inputs differ in shape (quality
+// tiers, ratio names), so each case names its own wire check.
+interface ExtraCase {
+  id: string;
+  sizes: Record<string, number>;
+  maxRefs: number;
+  /** USD per reference image after the free ones. */
+  refUsd: number;
+  freeRefs?: number;
+  textModel: string;
+  editModel: string;
+  wire: (input: Record<string, unknown>, size: string, aspect: string, refs: string[]) => void;
+}
+
+const sameAspect = (input: Record<string, unknown>, aspect: string) => expect(input.aspect_ratio).toBe(aspect);
+const extraCases: ExtraCase[] = [
+  ...(["pro", "flex"] as const).map((tier): ExtraCase => ({
+    id: `flux2/${tier}-text-to-image`, sizes: tier === "pro" ? { "1K": .025, "2K": .035 } : { "1K": .07, "2K": .12 }, maxRefs: 8, refUsd: 0,
+    textModel: `flux-2/${tier}-text-to-image`, editModel: `flux-2/${tier}-image-to-image`,
+    wire: (input, size, aspect, refs) => { sameAspect(input, aspect); expect(input.resolution).toBe(size); expect(input.input_urls).toEqual(refs.length ? refs : undefined); },
+  })),
+  {
+    id: "seedream/5-pro-text-to-image", sizes: { "1K": .035, "2K": .07 }, maxRefs: 10, refUsd: .0025, freeRefs: 1,
+    textModel: "seedream/5-pro-text-to-image", editModel: "seedream/5-pro-image-to-image",
+    wire: (input, size, aspect, refs) => { sameAspect(input, aspect); expect(input.quality).toBe(size === "2K" ? "high" : "basic"); expect(input.image_urls).toEqual(refs.length ? refs : undefined); },
+  },
+  {
+    id: "seedream/5-flash-text-to-image", sizes: { "1K": .0162, "2K": .0162 }, maxRefs: 10, refUsd: 0,
+    textModel: "seedream/5-flash-text-to-image", editModel: "seedream/5-flash-image-to-image",
+    wire: (input, size, aspect, refs) => { sameAspect(input, aspect); expect(input.size).toBe(size); expect(input.image_urls).toEqual(refs.length ? refs : undefined); },
+  },
+  ...([["google/imagen4", .04], ["google/imagen4-fast", .02]] as const).map(([id, usd]): ExtraCase => ({
+    id, sizes: { "": usd }, maxRefs: 0, refUsd: 0, textModel: id, editModel: id,
+    wire: (input, _size, aspect) => sameAspect(input, aspect),
+  })),
+  {
+    id: "ideogram/v3-text-to-image", sizes: { "": .035 }, maxRefs: 1, refUsd: 0,
+    textModel: "ideogram/v3-text-to-image", editModel: "ideogram/v3-remix",
+    wire: (input, _size, aspect, refs) => {
+      expect(input.rendering_speed).toBe("BALANCED");
+      expect(input.image_size).toBe({ "1:1": "square_hd", "4:3": "landscape_4_3", "3:4": "portrait_4_3", "16:9": "landscape_16_9", "9:16": "portrait_16_9" }[aspect]);
+      expect(input.image_url).toBe(refs[0]);
+    },
+  },
+  {
+    id: "qwen3/text-to-image", sizes: { "1K": .024, "2K": .024 }, maxRefs: 3, refUsd: .0025,
+    textModel: "qwen3/text-to-image", editModel: "qwen3/image-to-image",
+    wire: (input, size, aspect, refs) => { expect(input.image_size).toBe(aspect); expect(input.resolution).toBe(size); expect(input.image_urls).toEqual(refs.length ? refs : undefined); },
+  },
+  {
+    id: "z-image/z-image", sizes: { "": .004 }, maxRefs: 0, refUsd: 0, textModel: "z-image", editModel: "z-image",
+    wire: (input, _size, aspect) => sameAspect(input, aspect),
+  },
+];
+
 it("covers every selectable image model, featured model and public nav entry", () => {
-  const ids = cases.map(c => c.id).sort();
+  const ids = [...cases.map(c => c.id), ...extraCases.map(c => c.id)].sort();
   expect(marketModelsOf("image").map(m => m.id).sort()).toEqual(ids);
-  expect([...IMAGE_FEATURED_IDS].sort()).toEqual(ids);
-  expect(NAV_IMAGE_MODELS.map(m => m.id).sort()).toEqual(ids);
+  for (const id of [...IMAGE_FEATURED_IDS, ...NAV_IMAGE_MODELS.map(m => m.id)]) expect(ids, id).toContain(id);
+});
+
+describe.each(extraCases)("$id", (c) => {
+  it("quotes every size, reference count and aspect for the actual KIE payload", () => {
+    const model = getMarketModel(c.id)!;
+    expect(model.options.resolutions).toEqual(Object.keys(c.sizes).filter(Boolean));
+    expect(model.options).toMatchObject({ maxCount: 1, maxImages: c.maxRefs });
+    for (const [size, unitUsd] of Object.entries(c.sizes)) {
+      for (let refs = 0; refs <= c.maxRefs; refs++) {
+        const imageUrls = urls(refs);
+        const usd = unitUsd + Math.max(0, refs - (c.freeRefs ?? 0)) * c.refUsd;
+        for (const aspectRatio of model.options.aspects!) {
+          const request = { prompt: "a cat", aspectRatio, resolution: size || undefined, count: 1, imageUrls };
+          const { model: providerId, input } = model.buildTask(request);
+          expect(providerId).toBe(refs ? c.editModel : c.textModel);
+          c.wire(input, size, aspectRatio, imageUrls);
+          expect(model.costUsd(request)).toBeCloseTo(usd, 10);
+          expect(marketCredits(model, request)).toBe(expectedCredits(usd));
+        }
+      }
+    }
+  });
 });
 
 describe.each(cases)("$id", (c) => {

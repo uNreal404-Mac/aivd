@@ -156,6 +156,22 @@ const MINIMAX_H3_IMAGE_INPUT_USD = 0.02;
 const WAN_3_USD = { "480p": 0.04, "720p": 0.08, "1080p": 0.16 };
 const GROK_USD = { "480p": 0.012, "720p": 0.0225, "1080p": 0.04 };
 const HAPPYHORSE_11_USD = { "720p": 0.1125, "1080p": 0.145 };
+// KIE public price list, read 2026-11-25 (no video input).
+const SEEDANCE_2_USD = { "480p": 0.095, "720p": 0.205, "1080p": 0.51 };
+const SEEDANCE_2_FAST_USD = { "480p": 0.059, "720p": 0.124 };
+const SEEDANCE_2_MINI_USD = { "480p": 0.019, "720p": 0.041 };
+const KLING_3_USD = { "720p": 0.0755, "1080p": 0.101 };
+const KLING_3_AUDIO_USD = { "720p": 0.1135, "1080p": 0.151 };
+const WAN_3_PRIME_USD = { "480p": 0.0612, "720p": 0.126, "1080p": 0.252 };
+const HAPPYHORSE_10_USD = { "720p": 0.14, "1080p": 0.24 };
+const GEMINI_OMNI_11_USD: Record<number, number> = { 4: 0.315, 6: 0.42, 8: 0.525, 10: 0.63 };
+const GEMINI_OMNI_11_4K_USD: Record<number, number> = { 4: 0.735, 6: 0.84, 8: 0.945, 10: 1.05 };
+// MAGI-2 (Sand AI), read 2026-11-26: one 1080p rate for text, image and
+// reference input; sound on or off costs the same.
+const MAGI_2_USD = { "1080p": 0.088 };
+const MAGI_2_ASPECTS = ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"];
+/** Gemini Omni 1.1 only renders 4/6/8/10 s: the shortest length that covers the request. */
+const omniDuration = (req: MarketRequest) => [4, 6, 8, 10].find((value) => value >= (req.duration ?? 4)) ?? 10;
 
 const VIDEO_MODELS: MarketModel[] = [
   {
@@ -339,6 +355,149 @@ const VIDEO_MODELS: MarketModel[] = [
         : { model: "happyhorse-1-1/text-to-video", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } };
     },
   },
+  // Seedance 2.0 family (docs.kie.ai/market/bytedance/seedance-2*, prices 2026-11-25).
+  ...([
+    ["bytedance/seedance-2", "Seedance 2.0", SEEDANCE_2_USD, ["480p", "720p", "1080p"]],
+    ["bytedance/seedance-2-fast", "Seedance 2.0 Fast", SEEDANCE_2_FAST_USD, ["480p", "720p"]],
+    ["bytedance/seedance-2-mini", "Seedance 2.0 Mini", SEEDANCE_2_MINI_USD, ["480p", "720p"]],
+  ] as const).map(([id, name, table, resolutions]): MarketModel => ({
+    id,
+    kind: "video",
+    name,
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: [...resolutions], durations: secondsBetween(4, 15), maxImages: 1, audioToggle: true },
+    costUsd: (req) => perSecond(table, "720p")(req, 4, 15, 5),
+    buildTask: (req) => ({
+      model: id,
+      input: {
+        prompt: req.prompt,
+        resolution: req.resolution && (resolutions as readonly string[]).includes(req.resolution) ? req.resolution : "720p",
+        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        duration: clampDuration(req, 4, 15, 5),
+        generate_audio: req.audio ?? true,
+        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+      },
+    }),
+  })),
+  {
+    id: "kling/kling-3-0",
+    kind: "video",
+    name: "Kling 3.0",
+    // std renders 720p, pro 1080p; sound changes the price.
+    options: { aspects: ["16:9", "9:16", "1:1"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1, audioToggle: true },
+    costUsd: (req) => {
+      const table = req.audio === false ? KLING_3_USD : KLING_3_AUDIO_USD;
+      return perSecond(table, "720p")(req, 3, 15, 5);
+    },
+    buildTask: (req) => ({
+      model: "kling-3.0/video",
+      input: {
+        prompt: req.prompt,
+        sound: req.audio ?? true,
+        duration: String(clampDuration(req, 3, 15, 5)),
+        aspect_ratio: req.aspectRatio && ["16:9", "9:16", "1:1"].includes(req.aspectRatio) ? req.aspectRatio : "16:9",
+        mode: req.resolution === "1080p" ? "pro" : "std",
+        multi_shots: false,
+        ...(firstImage(req) ? { image_urls: [firstImage(req)] } : {}),
+      },
+    }),
+  },
+  {
+    id: "wan/3-0-video-prime",
+    kind: "video",
+    name: "Wan 3.0 Prime",
+    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 1, audioToggle: true },
+    costUsd: (req) => perSecond(WAN_3_PRIME_USD, "720p")(req, 2, 30, 5),
+    buildTask: (req) => ({
+      model: "wan/3-0-video-prime",
+      input: {
+        prompt: req.prompt,
+        resolution: (req.resolution ?? "720p").toUpperCase(),
+        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        duration: clampDuration(req, 2, 30, 5),
+        audio: req.audio ?? true,
+        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+      },
+    }),
+  },
+  {
+    id: "google/gemini-omni-flash-1-1",
+    kind: "video",
+    name: "Gemini Omni Flash 1.1",
+    // Billed per clip by length: 4/6/8/10 s, one price up to 1080p and one for 4K.
+    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: [4, 6, 8, 10], maxImages: 1 },
+    costUsd: (req) => (req.resolution === "4k" ? GEMINI_OMNI_11_4K_USD : GEMINI_OMNI_11_USD)[omniDuration(req)],
+    buildTask: (req) => ({
+      model: "google/gemini-omni-flash-1-1",
+      input: {
+        prompt: req.prompt,
+        duration: String(omniDuration(req)),
+        aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9",
+        resolution: req.resolution ?? "720p",
+        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+      },
+    }),
+  },
+  {
+    id: "happyhorse/text-to-video",
+    kind: "video",
+    name: "HappyHorse 1.0",
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1 },
+    costUsd: (req) => perSecond(HAPPYHORSE_10_USD, "1080p")(req, 3, 15, 5),
+    buildTask: (req) => {
+      const resolution = req.resolution ?? "1080p";
+      const duration = clampDuration(req, 3, 15, 5);
+      return firstImage(req)
+        ? { model: "happyhorse/image-to-video", input: { prompt: req.prompt, image_urls: [firstImage(req)], resolution, duration } }
+        : { model: "happyhorse/text-to-video", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } };
+    },
+  },
+  {
+    id: "hailuo/02-text-to-video-pro",
+    kind: "video",
+    name: "MiniMax Hailuo 02 Pro",
+    // A fixed 6 s 1080p clip, priced per clip.
+    options: { aspects: ["16:9"], resolutions: ["1080p"], durations: [6], maxImages: 1 },
+    costUsd: () => 0.285,
+    buildTask: (req) => firstImage(req)
+      ? { model: "hailuo/02-image-to-video-pro", input: { prompt: req.prompt.slice(0, 1500), image_url: firstImage(req), prompt_optimizer: true } }
+      : { model: "hailuo/02-text-to-video-pro", input: { prompt: req.prompt.slice(0, 1500), prompt_optimizer: true } },
+  },
+  {
+    id: "hailuo/02-text-to-video-standard",
+    kind: "video",
+    name: "MiniMax Hailuo 02 Standard",
+    options: { aspects: ["16:9"], resolutions: ["768p"], durations: [6, 10], maxImages: 1 },
+    costUsd: (req) => ((req.duration ?? 6) > 6 ? 0.25 : 0.15),
+    buildTask: (req) => {
+      const duration = (req.duration ?? 6) > 6 ? "10" : "6";
+      return firstImage(req)
+        ? { model: "hailuo/02-image-to-video-standard", input: { prompt: req.prompt.slice(0, 1500), image_url: firstImage(req), duration, resolution: "768P", prompt_optimizer: true } }
+        : { model: "hailuo/02-text-to-video-standard", input: { prompt: req.prompt.slice(0, 1500), duration, prompt_optimizer: true } };
+    },
+  },
+  {
+    id: "magi-2",
+    kind: "video",
+    name: "MAGI-2",
+    // docs.kie.ai/market/magi-2/*: one image is the first frame; two or more
+    // become reference images (up to 10) for reference-to-video.
+    options: { aspects: MAGI_2_ASPECTS, resolutions: ["1080p"], durations: secondsBetween(4, 30), maxImages: 10, audioToggle: true, maxPromptLength: 15000 },
+    costUsd: (req) => perSecond(MAGI_2_USD, "1080p")(req, 4, 30, 5),
+    buildTask: (req) => {
+      const images = req.imageUrls?.slice(0, 10) ?? [];
+      const common = {
+        prompt: req.prompt.slice(0, 15000),
+        duration: clampDuration(req, 4, 30, 5),
+        resolution: "1080p",
+        generate_audio: req.audio ?? true,
+      };
+      const aspect_ratio = req.aspectRatio && MAGI_2_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : "16:9";
+      if (images.length > 1) return { model: "magi-2/reference-to-video", input: { ...common, aspect_ratio, reference_image_urls: images } };
+      // Image-to-video follows the first frame's shape and takes no aspect ratio.
+      if (images.length === 1) return { model: "magi-2/image-to-video", input: { ...common, first_frame_url: images[0] } };
+      return { model: "magi-2/text-to-video", input: { ...common, aspect_ratio } };
+    },
+  },
 ];
 
 
@@ -361,6 +520,15 @@ const GPT_IMAGE_26_REF_USD = 0.011;
 // read 2026-11-24). KIE rejects 5:4, 4:5, 3:1, 1:3 and 9:21 at 2K or 4K, so
 // only shapes valid at every resolution are offered.
 const GPT_IMAGE_2_USD = { "1K": 0.03, "2K": 0.05, "4K": 0.08 };
+
+// Shapes each model's KIE schema accepts (docs.kie.ai, read 2026-11-25).
+const FLUX2_ASPECTS = ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3"];
+const SEEDREAM_5_ASPECTS = ["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"];
+const IMAGEN_ASPECTS = ["1:1", "16:9", "9:16", "3:4", "4:3"];
+const QWEN3_ASPECTS = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
+const IDEOGRAM_SIZES: Record<string, string> = {
+  "1:1": "square_hd", "4:3": "landscape_4_3", "3:4": "portrait_4_3", "16:9": "landscape_16_9", "9:16": "portrait_16_9",
+};
 
 const IMAGE_MODELS: MarketModel[] = [
   {
@@ -520,6 +688,126 @@ const IMAGE_MODELS: MarketModel[] = [
       refs(req, 5).length
         ? { model: "grok-imagine-image-2-0/image-edit", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "auto", image_urls: refs(req, 5) } }
         : { model: "grok-imagine-image-2-0/text-to-image", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "1:1" } },
+  },
+  // FLUX.2 Pro / Flex (docs.kie.ai/market/flux2/*): 1K or 2K, up to 8 references.
+  ...([
+    ["flux2/pro-text-to-image", "FLUX.2 Pro", "pro", { "1K": 0.025, "2K": 0.035 }],
+    ["flux2/flex-text-to-image", "FLUX.2 Flex", "flex", { "1K": 0.07, "2K": 0.12 }],
+  ] as const).map(([id, name, tier, prices]): MarketModel => ({
+    id,
+    kind: "image",
+    name,
+    options: { aspects: FLUX2_ASPECTS, resolutions: ["1K", "2K"], maxCount: 1, maxImages: 8 },
+    costUsd: (req) => prices[req.resolution === "2K" ? "2K" : "1K"],
+    buildTask: (req) => {
+      const images = refs(req, 8);
+      const aspect = req.aspectRatio && FLUX2_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : images.length ? "auto" : "1:1";
+      return {
+        model: `flux-2/${tier}-${images.length ? "image-to-image" : "text-to-image"}`,
+        input: {
+          prompt: req.prompt,
+          aspect_ratio: !images.length && aspect === "auto" ? "1:1" : aspect,
+          resolution: req.resolution === "2K" ? "2K" : "1K",
+          ...(images.length ? { input_urls: images } : {}),
+        },
+      };
+    },
+  })),
+  {
+    id: "seedream/5-pro-text-to-image",
+    kind: "image",
+    name: "Seedream 5 Pro",
+    // basic renders 1K and high 2K; the first reference image is free.
+    options: { aspects: SEEDREAM_5_ASPECTS, resolutions: ["1K", "2K"], maxCount: 1, maxImages: 10 },
+    costUsd: (req) => (req.resolution === "2K" ? 0.07 : 0.035) + Math.max(0, refs(req, 10).length - 1) * 0.0025,
+    buildTask: (req) => ({
+      model: refs(req, 10).length ? "seedream/5-pro-image-to-image" : "seedream/5-pro-text-to-image",
+      input: {
+        prompt: req.prompt,
+        aspect_ratio: req.aspectRatio && SEEDREAM_5_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : "1:1",
+        quality: req.resolution === "2K" ? "high" : "basic",
+        output_format: "png",
+        ...(refs(req, 10).length ? { image_urls: refs(req, 10) } : {}),
+      },
+    }),
+  },
+  {
+    id: "seedream/5-flash-text-to-image",
+    kind: "image",
+    name: "Seedream 5 Flash",
+    options: { aspects: SEEDREAM_5_ASPECTS, resolutions: ["1K", "2K"], maxCount: 1, maxImages: 10 },
+    costUsd: () => 0.0162,
+    buildTask: (req) => ({
+      model: refs(req, 10).length ? "seedream/5-flash-image-to-image" : "seedream/5-flash-text-to-image",
+      input: {
+        prompt: req.prompt,
+        aspect_ratio: req.aspectRatio && SEEDREAM_5_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : "1:1",
+        size: req.resolution === "2K" ? "2K" : "1K",
+        output_format: "png",
+        ...(refs(req, 10).length ? { image_urls: refs(req, 10) } : {}),
+      },
+    }),
+  },
+  ...([
+    ["google/imagen4", "Imagen 4", 0.04],
+    ["google/imagen4-fast", "Imagen 4 Fast", 0.02],
+  ] as const).map(([id, name, usd]): MarketModel => ({
+    id,
+    kind: "image",
+    name,
+    // Text to image only.
+    options: { aspects: IMAGEN_ASPECTS, resolutions: [], maxCount: 1, maxImages: 0 },
+    costUsd: () => usd,
+    buildTask: (req) => ({
+      model: id,
+      input: { prompt: req.prompt, aspect_ratio: req.aspectRatio && IMAGEN_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : "1:1" },
+    }),
+  })),
+  {
+    id: "ideogram/v3-text-to-image",
+    kind: "image",
+    name: "Ideogram V3",
+    // Always BALANCED, the speed it is priced at; one reference turns it into a remix.
+    options: { aspects: Object.keys(IDEOGRAM_SIZES), resolutions: [], maxCount: 1, maxImages: 1 },
+    costUsd: () => 0.035,
+    buildTask: (req) => {
+      const image_size = IDEOGRAM_SIZES[req.aspectRatio ?? "1:1"] ?? "square_hd";
+      const image = refs(req, 1)[0];
+      return image
+        ? { model: "ideogram/v3-remix", input: { prompt: req.prompt, image_url: image, rendering_speed: "BALANCED", image_size, num_images: "1" } }
+        : { model: "ideogram/v3-text-to-image", input: { prompt: req.prompt, rendering_speed: "BALANCED", image_size } };
+    },
+  },
+  {
+    id: "qwen3/text-to-image",
+    kind: "image",
+    name: "Qwen Image 3",
+    options: { aspects: QWEN3_ASPECTS, resolutions: ["1K", "2K"], maxCount: 1, maxImages: 3 },
+    costUsd: (req) => 0.024 + refs(req, 3).length * 0.0025,
+    buildTask: (req) => ({
+      model: refs(req, 3).length ? "qwen3/image-to-image" : "qwen3/text-to-image",
+      input: {
+        prompt: req.prompt,
+        resolution: req.resolution === "2K" ? "2K" : "1K",
+        image_size: req.aspectRatio && QWEN3_ASPECTS.includes(req.aspectRatio) ? req.aspectRatio : "1:1",
+        output_format: "png",
+        ...(refs(req, 3).length ? { image_urls: refs(req, 3) } : {}),
+      },
+    }),
+  },
+  {
+    id: "z-image/z-image",
+    kind: "image",
+    name: "Z-Image",
+    options: { aspects: ["1:1", "4:3", "3:4", "16:9", "9:16"], resolutions: [], maxCount: 1, maxImages: 0, maxPromptLength: 1000 },
+    costUsd: () => 0.004,
+    buildTask: (req) => ({
+      model: "z-image",
+      input: {
+        prompt: req.prompt.slice(0, 1000),
+        aspect_ratio: req.aspectRatio && ["1:1", "4:3", "3:4", "16:9", "9:16"].includes(req.aspectRatio) ? req.aspectRatio : "1:1",
+      },
+    }),
   },
 ];
 

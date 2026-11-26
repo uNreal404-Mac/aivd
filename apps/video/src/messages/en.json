@@ -734,6 +734,7 @@
       "gemini_omni_flash_1_2": "Multimodal video · up to 4K",
       "grok_imagine_1_5": "Image to video · sound",
       "happyhorse_1_1": "Text · image to video",
+      "magi_2": "Text · image · reference · sound",
       "grok_imagine_image_2_0_text_to_image": "Text to image",
       "flux3_klein_text_to_image": "Text to image",
       "flux2_pro_text_to_image": "Text to image",

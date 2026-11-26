@@ -137,6 +137,7 @@ function startingCredits(modelId: string): number | null {
 const MODEL_BADGES: Record<string, { label: string; tone: "top" | "new" | "fast" }> = {
   "bytedance/seedance-2-5": { label: "TOP", tone: "top" },
   "kling/v4-reference-to-video": { label: "NEW", tone: "new" },
+  "magi-2": { label: "NEW", tone: "new" },
   "seedance-2-5-flash": { label: "FAST", tone: "fast" },
   "kling/v4-flash-reference-to-video": { label: "FAST", tone: "fast" },
   "veo-3.1": { label: "TOP", tone: "top" },

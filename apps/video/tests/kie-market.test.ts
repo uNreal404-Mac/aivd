@@ -60,6 +60,21 @@ describe("KIE market registry", () => {
     expect(getMarketModel("seedance-2-5-flash")!.buildTask(req({ imageUrls: ["https://x/a.png"] })).input.aspect_ratio).toBe("adaptive");
   });
 
+  it("routes MAGI-2 to text, first-frame or reference input and prices it per second", () => {
+    const magi = getMarketModel("magi-2")!;
+    const text = magi.buildTask(req({ duration: 12, aspectRatio: "21:9", audio: false }));
+    expect(text).toEqual({ model: "magi-2/text-to-video", input: { prompt: req().prompt, duration: 12, resolution: "1080p", generate_audio: false, aspect_ratio: "21:9" } });
+    const image = magi.buildTask(req({ imageUrls: ["https://x/a.png"], aspectRatio: "9:16" }));
+    expect(image.model).toBe("magi-2/image-to-video");
+    expect(image.input.first_frame_url).toBe("https://x/a.png");
+    expect(image.input.aspect_ratio).toBeUndefined();
+    const refs = magi.buildTask(req({ imageUrls: Array.from({ length: 12 }, (_, i) => `https://x/${i}.png`) }));
+    expect(refs.model).toBe("magi-2/reference-to-video");
+    expect(refs.input.reference_image_urls).toHaveLength(10);
+    expect(magi.costUsd(req({ duration: 10 }))).toBeCloseTo(0.88);
+    expect(magi.costUsd(req({ duration: 10, audio: false }))).toBeCloseTo(0.88);
+  });
+
   it("caps GPT Image 2.6 at the quality it is priced for", () => {
     for (const id of ["gpt-image-2-6-sunburst", "gpt-image-2-6-flare"]) {
       expect(getMarketModel(id)!.buildTask(req({ resolution: "4K" })).input.quality).toBe("medium");

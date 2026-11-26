@@ -17,9 +17,27 @@ describe("video duration choices", () => {
       "grok-imagine/text-to-video": [6, 30],
       "grok-imagine-1-5": [1, 15],
       "happyhorse-1-1": [3, 15],
+      "bytedance/seedance-2": [4, 15],
+      "bytedance/seedance-2-fast": [4, 15],
+      "bytedance/seedance-2-mini": [4, 15],
+      "kling/kling-3-0": [3, 15],
+      "wan/3-0-video-prime": [2, 30],
+      "happyhorse/text-to-video": [3, 15],
+      "magi-2": [4, 30],
     };
-    expect(marketModelsOf("video").map((model) => model.id).sort()).toEqual(Object.keys(ranges).sort());
-    for (const model of marketModelsOf("video")) {
+    // Models KIE only renders at fixed lengths.
+    const fixed: Record<string, number[]> = {
+      "google/gemini-omni-flash-1-1": [4, 6, 8, 10],
+      "hailuo/02-text-to-video-pro": [6],
+      "hailuo/02-text-to-video-standard": [6, 10],
+    };
+    expect(marketModelsOf("video").map((model) => model.id).sort()).toEqual([...Object.keys(ranges), ...Object.keys(fixed)].sort());
+    for (const [id, durations] of Object.entries(fixed)) {
+      const model = marketModelsOf("video").find((item) => item.id === id)!;
+      expect(model.options.durations, id).toEqual(durations);
+      expect(STUDIO_MODELS.find((item) => item.id === id)?.durations, id).toEqual(durations);
+    }
+    for (const model of marketModelsOf("video").filter((item) => item.id in ranges)) {
       const [min, max] = ranges[model.id];
       const allowed = secondsBetween(min, max);
       expect(model.options.durations, model.id).toEqual(allowed);

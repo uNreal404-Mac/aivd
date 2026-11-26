@@ -37,6 +37,7 @@ export const VIDEO_CATALOG: CatalogModel[] = [
   { id: "gemini-omni-flash-1-2", name: "Gemini Omni Flash 1.2", family: "Gemini Omni Flash", icon: "G", detail: "Multimodal video · up to 4K", badge: "New" },
   { id: "grok-imagine-1-5", name: "Grok Imagine 1.5", family: "Grok Imagine", icon: "X", detail: "Image to video · sound" },
   { id: "happyhorse-1-1", name: "HappyHorse 1.1", family: "HappyHorse", icon: "H", detail: "Text · image to video" },
+  { id: "magi-2", name: "MAGI-2", family: "MAGI", icon: "M", detail: "Text · image · reference · sound", badge: "New" },
 ];
 
 export const VIDEO_FEATURED_IDS = [
@@ -65,7 +66,7 @@ export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: s
   "wan2.6": { resolution: "1080p", duration: "5/10/15s" },
   "veo-3.1": { resolution: "720p", duration: "8s" },
   "google/gemini-omni-flash-1-1": { resolution: "4K", duration: "4–10s" },
-  "kling/kling-3-0": { resolution: "4K", duration: "3–15s" },
+  "kling/kling-3-0": { resolution: "1080p", duration: "3–15s" },
   "seedance-1.5-pro": { resolution: "1080p", duration: "4–12s" },
   "sora-2": { resolution: "720p", duration: "10/15s" },
   "gemini-omni-flash-1-2": { resolution: "4K", duration: "3–15s" },
@@ -73,8 +74,9 @@ export const VIDEO_MODEL_SPECS: Record<string, { resolution: string; duration: s
   "grok-imagine-1-5": { resolution: "1080p", duration: "1–15s" },
   "happyhorse-1-1": { resolution: "1080p", duration: "3–15s" },
   "happyhorse/text-to-video": { resolution: "1080p", duration: "3–15s" },
-  "hailuo/02-text-to-video-pro": { resolution: "1080p", duration: "6–10s" },
-  "hailuo/02-text-to-video-standard": { resolution: "768p", duration: "6–10s" },
+  "hailuo/02-text-to-video-pro": { resolution: "1080p", duration: "6s" },
+  "hailuo/02-text-to-video-standard": { resolution: "768p", duration: "6/10s" },
+  "magi-2": { resolution: "1080p", duration: "4–30s" },
 };
 
 /** Duration shown for catalogue entries that are not connected yet. */
