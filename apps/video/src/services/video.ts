@@ -1,5 +1,5 @@
 import { VideoStatus, db, videos } from "@/db";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { EmptyMediaError,
   getStorage,
@@ -143,22 +143,23 @@ export class VideoService {
    * request returns, and that final state must not be overwritten.
    */
   private async saveSubmittedTask(uuid: string, values: { externalTaskId: string; provider?: string }): Promise<void> {
+    // One write, so nothing can read the row between the two changes.
     await db
       .update(videos)
-      .set({ ...values, updatedAt: new Date() })
+      .set({
+        ...values,
+        status: sql`CASE WHEN ${videos.status} = ${VideoStatus.PENDING} THEN ${VideoStatus.GENERATING} ELSE ${videos.status} END`,
+        updatedAt: new Date(),
+      })
       .where(eq(videos.uuid, uuid));
-    await db
-      .update(videos)
-      .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
-      .where(and(eq(videos.uuid, uuid), eq(videos.status, VideoStatus.PENDING)));
   }
 
   /** Size in bytes of a stored object (one-byte range read), or null. */
   private async storedSize(key: string): Promise<number | null> {
     try {
       const response = await fetch(getStorage().getSignedUrl(key, 300), { headers: { Range: "bytes=0-0" } });
-      const range = response.headers.get("content-range");
-      const total = range ? Number(range.split("/")[1]) : Number(response.headers.get("content-length"));
+      const range = response.status === 206 ? response.headers.get("content-range") : null;
+      const total = range ? Number(range.split("/")[1]) : Number.NaN;
       await response.body?.cancel().catch(() => undefined);
       return Number.isFinite(total) && total > 0 ? total : null;
     } catch {
@@ -647,7 +648,10 @@ export class VideoService {
       }
       // Older rows have no size recorded: ask storage before anything is frozen.
       const size = source.fileSize ?? (await this.storedSize(source.videoUrl));
-      if (size !== null && size > MAX_SOURCE_VIDEO_BYTES) {
+      if (size === null) {
+        throw new ApiError("Could not check the video's size. Please try again.", 503, { code: "SOURCE_VIDEO_SIZE_UNKNOWN" });
+      }
+      if (size > MAX_SOURCE_VIDEO_BYTES) {
         throw new ApiError("The video is larger than 50 MB", 400, { code: "SOURCE_VIDEO_TOO_LARGE" });
       }
       sourceVideo = { uuid: source.uuid, key: source.videoUrl };
@@ -1033,26 +1037,37 @@ export class VideoService {
       if (claimed.mediaType === "image") {
         // Image sets: keep every output. The first is the cover; the rest are
         // stored in parameters.extraKeys. The source decides the content type.
-        const keys = await Promise.all(
+        // An unusable file among several is dropped; the set fails only
+        // when none of them is usable.
+        const settled = await Promise.allSettled(
           sources.map((sourceUrl, index) =>
-            storage
-              .downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` })
-              .then((item) => item),
+            storage.downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` }),
           ),
         );
+        const other = settled.find((item) => item.status === "rejected" && !(item.reason instanceof EmptyMediaError));
+        if (other && other.status === "rejected") throw other.reason;
+        const keys = settled.flatMap((item) => (item.status === "fulfilled" ? [item.value] : []));
+        if (keys.length === 0) throw new EmptyMediaError(sources[0] ?? "");
         uploaded = keys[0];
         extraKeys = keys.slice(1).map((item) => item.key);
-      } else if (claimed.mediaType === "audio") {
-        uploaded = await storage.downloadAndUpload({
-          sourceUrl: sources[0],
-          key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
-        });
       } else {
-        uploaded = await storage.downloadAndUpload({
-          sourceUrl: sources[0],
-          key: `videos/${videoUuid}/${stamp}.mp4`,
-          contentType: "video/mp4",
-        });
+        // Audio and video keep one file: the first usable one in order.
+        const audio = claimed.mediaType === "audio";
+        let found: { key: string; size?: number } | null = null;
+        for (const sourceUrl of sources) {
+          try {
+            found = await storage.downloadAndUpload({
+              sourceUrl,
+              key: audio ? `audio/${videoUuid}/${stamp}.${mediaExtension(sourceUrl, "mp3")}` : `videos/${videoUuid}/${stamp}.mp4`,
+              ...(audio ? {} : { contentType: "video/mp4" }),
+            });
+            break;
+          } catch (error) {
+            if (!(error instanceof EmptyMediaError)) throw error;
+          }
+        }
+        if (!found) throw new EmptyMediaError(sources[0] ?? "");
+        uploaded = found;
       }
     } catch (error) {
       if (error instanceof EmptyMediaError) {

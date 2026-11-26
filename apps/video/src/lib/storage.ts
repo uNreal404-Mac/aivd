@@ -217,8 +217,12 @@ export class Storage {
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    // An empty file is not a result: never store it or charge for it.
-    if (buffer.length === 0) throw new EmptyMediaError(params.sourceUrl);
+    // An empty file or a web page (an error page served with 200) is not a
+    // result: never store it or charge for it.
+    const served = (response.headers.get("content-type") || "").toLowerCase();
+    if (buffer.length === 0 || served.startsWith("text/html") || served.startsWith("application/json")) {
+      throw new EmptyMediaError(params.sourceUrl);
+    }
     const contentType =
       params.contentType ||
       response.headers.get("content-type") ||
@@ -345,7 +349,7 @@ export function resetStorageForTests(): void {
 /** The provider reported success but the file it returned was empty. */
 export class EmptyMediaError extends Error {
   constructor(sourceUrl: string) {
-    super(`The provider returned an empty file: ${sourceUrl.split("?")[0]}`);
+    super(`The provider returned no usable file: ${sourceUrl.split("?")[0]}`);
     this.name = "EmptyMediaError";
   }
 }

@@ -173,7 +173,9 @@ export async function submitMedia(
       rememberLost();
       return { ok: false, message: zh ? "网络错误，请稍后再试。" : "Network error. Please try again." };
     }
-    forget();
+    // Only a definite answer settles it. 202 (outcome unknown) and 5xx keep
+    // the key, so the next try cannot create and charge a second job.
+    if (response.status !== 202 && response.status < 500) forget();
     const uuid = payload?.data?.videoUuid ?? payload?.error?.details?.videoUuid;
     // A retry under an earlier key can return that earlier job; if it failed,
     // say so (its credits were returned) instead of reporting a new job.

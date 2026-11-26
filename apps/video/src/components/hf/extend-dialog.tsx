@@ -68,17 +68,28 @@ export function ExtendDialog({
   const shortfall = useCreditsShortfall(zh);
   const { balance, invalidate, refetch } = useCredits();
 
-  // A trip to the pricing page keeps the open extend and what was filled in.
+  // A trip to the pricing page keeps the open extend and what was filled in,
+  // for the same account only: it is applied once the session says who is
+  // signed in, and dropped for anyone else.
+  type Saved = { userId: string; source: ExtendSource; prompt: string; duration: number; resolution: string; audio: boolean };
   const restored = useRef<{ uuid: string; prompt: string; duration: number; resolution: string; audio: boolean } | null>(null);
-  useCreditReturnDraft(
+  const pendingRestore = useRef<Saved | null>(null);
+  const userId = session?.user?.id ?? null;
+  useCreditReturnDraft<Saved | null>(
     "extend",
-    () => (source ? { source, prompt, duration, resolution, audio } : null),
+    () => (source && userId ? { userId, source, prompt, duration, resolution, audio } : null),
     (saved) => {
-      if (!saved?.source?.videoUuid) return;
-      restored.current = { uuid: saved.source.videoUuid, prompt: saved.prompt ?? "", duration: saved.duration ?? 5, resolution: saved.resolution ?? "720p", audio: Boolean(saved.audio) };
-      onRestore(saved.source);
+      if (saved?.source?.videoUuid && saved.userId) pendingRestore.current = saved;
     },
   );
+  useEffect(() => {
+    const saved = pendingRestore.current;
+    if (!saved || !userId) return;
+    pendingRestore.current = null;
+    if (saved.userId !== userId) return;
+    restored.current = { uuid: saved.source.videoUuid, prompt: saved.prompt ?? "", duration: saved.duration ?? 5, resolution: saved.resolution ?? "720p", audio: Boolean(saved.audio) };
+    onRestore(saved.source);
+  }, [userId]);
 
   // Each opened video starts from its own quality and sound (or, back from
   // pricing, from what was filled in before).

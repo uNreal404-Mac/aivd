@@ -73,4 +73,14 @@ describe("submitMedia idempotency key", () => {
     expect(result.ok).toBe(false);
     expect(result.ok ? "" : result.code).toBe("PREVIOUS_ATTEMPT_FAILED");
   });
+
+  it("keeps the key after a 503 (the job may exist), drops it after a definite 4xx", async () => {
+    const busy = () => new Response(JSON.stringify({ success: false, error: { message: "busy", details: { code: "STORAGE_UNAVAILABLE" } } }), { status: 503 });
+    const fetchMock = vi.fn().mockResolvedValueOnce(busy()).mockResolvedValueOnce(ok());
+    vi.stubGlobal("fetch", fetchMock);
+    await submitMedia({ ...body, prompt: "after 503" }, true);
+    await submitMedia({ ...body, prompt: "after 503" }, true);
+    const [a, b] = keysOf(fetchMock);
+    expect(b).toBe(a);
+  });
 });

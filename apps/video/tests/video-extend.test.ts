@@ -51,6 +51,7 @@ async function insertSource(userId: string, overrides: Partial<typeof videos.$in
     mediaType: "video",
     status: VideoStatus.COMPLETED,
     videoUrl: `videos/${uuid}/clip.mp4`,
+    fileSize: 8 * 1024 * 1024,
     ...overrides,
   });
   return uuid;
@@ -248,5 +249,42 @@ describe("extend: generateMedia()", () => {
     const completed = await getVideoRow(flaky.videoUuid);
     expect(completed?.fileSize).toBe(1234);
     expect((await getBalance(userId)).availableCredits).toBe(1_000 - 55);
+  });
+
+  it("a source whose size cannot be read is refused before freezing (review 2 #6)", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1_000);
+    const source = await insertSource(userId, { fileSize: null });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>denied</html>", { status: 403 })));
+    try {
+      const error = await rejection(videoService.generate({ userId, model: EXTEND_MODEL_ID, prompt: "keep going", sourceVideoUuid: source }));
+      expect(error.details).toMatchObject({ code: "SOURCE_VIDEO_SIZE_UNKNOWN" });
+      expect(createMarketTask).not.toHaveBeenCalled();
+      expect((await getBalance(userId)).availableCredits).toBe(1_000);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("drops an unusable file from a set or a track list instead of losing the good ones (review 2)", async () => {
+    const userId = uniqueUserId();
+    const insert = async (mediaType: "image" | "audio") => {
+      const uuid = `${mediaType === "image" ? "img" : "aud"}_${nanoid(21)}`;
+      await db.insert(videos).values({ uuid, userId, prompt: "p", model: "m", mediaType, status: VideoStatus.GENERATING, creditsUsed: 0 });
+      return uuid;
+    };
+    const image = await insert("image");
+    storageState.upload.mockImplementation(async ({ key, sourceUrl }: { key: string; sourceUrl: string }) => {
+      if (sourceUrl.includes("bad")) throw new EmptyMediaError(sourceUrl);
+      return { key, size: 10 };
+    });
+    const set = await videoService.tryCompleteGeneration(image, { taskId: "t", provider: "kie", status: "completed", resultUrls: ["https://k/a.png", "https://k/bad.png", "https://k/c.png"] });
+    expect(set.status).toBe(VideoStatus.COMPLETED);
+    expect(((await getVideoRow(image))?.parameters as { extraKeys?: string[] })?.extraKeys).toHaveLength(1);
+
+    const audio = await insert("audio");
+    const track = await videoService.tryCompleteGeneration(audio, { taskId: "t", provider: "kie", status: "completed", resultUrls: ["https://k/bad.mp3", "https://k/good.mp3"] });
+    expect(track.status).toBe(VideoStatus.COMPLETED);
+    expect(storageState.upload.mock.calls.some(([arg]) => (arg as { sourceUrl: string }).sourceUrl === "https://k/good.mp3")).toBe(true);
   });
 });
