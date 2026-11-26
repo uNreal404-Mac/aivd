@@ -471,7 +471,7 @@ const VIDEO_MODELS: MarketModel[] = [
     kind: "video",
     name: "MiniMax Hailuo 02 Pro",
     // A fixed 6 s 1080p clip, priced per clip.
-    options: { aspects: ["16:9"], resolutions: ["1080p"], durations: [6], maxImages: 1 },
+    options: { aspects: ["16:9"], resolutions: ["1080p"], durations: [6], maxImages: 1, maxPromptLength: 1500 },
     costUsd: () => 0.285,
     buildTask: (req) => firstImage(req)
       ? { model: "hailuo/02-image-to-video-pro", input: { prompt: req.prompt.slice(0, 1500), image_url: firstImage(req), prompt_optimizer: true } }
@@ -481,7 +481,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "hailuo/02-text-to-video-standard",
     kind: "video",
     name: "MiniMax Hailuo 02 Standard",
-    options: { aspects: ["16:9"], resolutions: ["768p"], durations: [6, 10], maxImages: 1 },
+    options: { aspects: ["16:9"], resolutions: ["768p"], durations: [6, 10], maxImages: 1, maxPromptLength: 1500 },
     costUsd: (req) => ((req.duration ?? 6) > 6 ? 0.25 : 0.15),
     buildTask: (req) => {
       const duration = (req.duration ?? 6) > 6 ? "10" : "6";
@@ -1073,6 +1073,7 @@ const IMAGE_MODELS: MarketModel[] = [
         input: {
           prompt: req.prompt, aspect_ratio: option(req.aspectRatio, SEEDREAM_5_ASPECTS, "1:1"),
           quality: req.resolution === "4K" ? "ultra" : req.resolution === "3K" ? "high" : "basic",
+          output_format: "png",
           ...(images.length ? { image_urls: images } : {}),
         },
       };
@@ -1136,7 +1137,7 @@ const IMAGE_MODELS: MarketModel[] = [
         model: images.length ? "qwen3/pro-image-to-image" : "qwen3/pro-text-to-image",
         input: {
           prompt: req.prompt, resolution: req.resolution === "2K" ? "2K" : "1K",
-          image_size: option(req.aspectRatio, QWEN3_ASPECTS, "1:1"), ...(images.length ? { image_urls: images } : {}),
+          image_size: option(req.aspectRatio, QWEN3_ASPECTS, "1:1"), output_format: "png", ...(images.length ? { image_urls: images } : {}),
         },
       };
     },

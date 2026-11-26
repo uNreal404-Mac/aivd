@@ -150,7 +150,7 @@ const extraCases: ExtraCase[] = [
     id: "seedream/5-lite-text-to-image", sizes: { "2K": .0275, "3K": .0275, "4K": .0275 }, maxRefs: 14, refUsd: 0,
     textModel: "seedream/5-lite-text-to-image", editModel: "seedream/5-lite-image-to-image",
     wire: (input, size, aspect, refs) => {
-      expect(input).toEqual({ prompt: "a cat", quality: { "2K": "basic", "3K": "high", "4K": "ultra" }[size], aspect_ratio: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+      expect(input).toEqual({ prompt: "a cat", quality: { "2K": "basic", "3K": "high", "4K": "ultra" }[size], aspect_ratio: aspect, output_format: "png", ...(refs.length ? { image_urls: refs } : {}) });
     },
   },
   {
@@ -186,7 +186,7 @@ const extraCases: ExtraCase[] = [
     id: "qwen3-pro/text-to-image", sizes: { "1K": .032, "2K": .06 }, maxRefs: 3, refUsd: .0025,
     textModel: "qwen3/pro-text-to-image", editModel: "qwen3/pro-image-to-image",
     wire: (input, size, aspect, refs) => {
-      expect(input).toEqual({ prompt: "a cat", resolution: size, image_size: aspect, ...(refs.length ? { image_urls: refs } : {}) });
+      expect(input).toEqual({ prompt: "a cat", resolution: size, image_size: aspect, output_format: "png", ...(refs.length ? { image_urls: refs } : {}) });
     },
   },
   ...([["wan/2-7-image", .024], ["wan/2-7-image-pro", .06]] as const).map(([id, unitUsd]): ExtraCase => ({

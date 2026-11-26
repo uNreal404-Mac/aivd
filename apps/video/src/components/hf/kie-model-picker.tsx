@@ -125,10 +125,16 @@ function startingCredits(modelId: string): number | null {
   const model = STUDIO_MODELS.find((item) => item.id === modelId);
   if (!model) return null;
   let lowest: number | null = null;
+  // Sound off is the cheaper choice where the model lets you turn it off.
+  const audioChoices = getMarketModel(modelId)?.options.audioToggle ? [true, false] : [undefined];
   for (const duration of model.durations) {
     for (const resolution of model.resolutions) {
-      const credits = estimateCredits({ modelId, duration, resolution });
-      if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+      for (const audio of audioChoices) {
+        const credits = audio === undefined
+          ? estimateCredits({ modelId, duration, resolution })
+          : estimateCredits({ modelId, duration, resolution }, { audio });
+        if (credits > 0 && (lowest === null || credits < lowest)) lowest = credits;
+      }
     }
   }
   return lowest;
