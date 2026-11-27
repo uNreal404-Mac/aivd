@@ -147,6 +147,48 @@ function deriveSigningKey(
   return hmac(kService, "aws4_request");
 }
 
+/** Longest a provider download may take before the transfer is abandoned. */
+const DOWNLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+/**
+ * Multipart part size. R2 needs every part but the last to be the same size
+ * and at least 5 MiB; 16 MiB keeps memory use small.
+ */
+export const MULTIPART_PART_SIZE = 16 * 1024 * 1024;
+
+/** Reads a response body as consecutive parts of exactly `size` bytes (the last may be shorter). */
+async function* readParts(response: Response, size: number): AsyncGenerator<Buffer> {
+  if (!response.body) {
+    const whole = Buffer.from(await response.arrayBuffer());
+    for (let offset = 0; offset < whole.byteLength; offset += size) {
+      yield whole.subarray(offset, offset + size);
+    }
+    return;
+  }
+  const reader = response.body.getReader();
+  let pending: Buffer[] = [];
+  let pendingBytes = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (value?.byteLength) {
+        pending.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength));
+        pendingBytes += value.byteLength;
+        while (pendingBytes >= size) {
+          const joined = Buffer.concat(pending, pendingBytes);
+          yield Buffer.from(joined.subarray(0, size));
+          const rest = joined.subarray(size);
+          pending = rest.byteLength ? [Buffer.from(rest)] : [];
+          pendingBytes = rest.byteLength;
+        }
+      }
+      if (done) break;
+    }
+    if (pendingBytes > 0) yield Buffer.concat(pending, pendingBytes);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export class Storage {
   private client: s3mini;
   private endpoint: string;
@@ -205,33 +247,68 @@ export class Storage {
 
   /**
    * 从 URL 下载文件并上传到 R2/S3
+   *
+   * Media is streamed in fixed-size parts instead of being read into memory
+   * at once: a long 4K video can be larger than a Worker's memory. Files that
+   * fit in one part are stored with a single PUT, as before.
    */
   async downloadAndUpload(params: {
     sourceUrl: string;
     key: string;
     contentType?: string;
     requireNonEmpty?: boolean;
+    /** Tests only: a smaller part size. */
+    partSize?: number;
   }): Promise<{ key: string; fileSize: number }> {
-    const response = await fetch(params.sourceUrl);
+    const response = await fetch(params.sourceUrl, {
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    });
     if (!response.ok) {
       throw new Error(`Failed to download: ${response.statusText}`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (params.requireNonEmpty && buffer.byteLength === 0) {
-      throw new Error("Cannot store an empty media download");
     }
     const contentType =
       params.contentType ||
       response.headers.get("content-type") ||
       "video/mp4";
 
-    const uploaded = await this.uploadFile({
-      key: params.key,
-      body: buffer,
-      contentType,
-    });
-    return { ...uploaded, fileSize: buffer.byteLength };
+    const parts = readParts(response, params.partSize ?? MULTIPART_PART_SIZE);
+    const first = await parts.next();
+    const firstPart = first.done ? Buffer.alloc(0) : first.value;
+    const second = first.done ? first : await parts.next();
+
+    // One part (or less): a single PUT, exactly as before.
+    if (second.done) {
+      if (params.requireNonEmpty && firstPart.byteLength === 0) {
+        throw new Error("Cannot store an empty media download");
+      }
+      const uploaded = await this.uploadFile({
+        key: params.key,
+        body: firstPart,
+        contentType,
+      });
+      return { ...uploaded, fileSize: firstPart.byteLength };
+    }
+
+    const uploadId = await this.client.getMultipartUploadId(params.key, contentType);
+    try {
+      const uploadedParts = [
+        await this.client.uploadPart(params.key, uploadId, firstPart, 1),
+        await this.client.uploadPart(params.key, uploadId, second.value, 2),
+      ];
+      let fileSize = firstPart.byteLength + second.value.byteLength;
+      for (let next = await parts.next(); !next.done; next = await parts.next()) {
+        uploadedParts.push(
+          await this.client.uploadPart(params.key, uploadId, next.value, uploadedParts.length + 1)
+        );
+        fileSize += next.value.byteLength;
+      }
+      await this.client.completeMultipartUpload(params.key, uploadId, uploadedParts);
+      return { key: params.key, fileSize };
+    } catch (error) {
+      await parts.return(undefined).catch(() => undefined);
+      await this.client.abortMultipartUpload(params.key, uploadId).catch(() => undefined);
+      throw error;
+    }
   }
 
   /**

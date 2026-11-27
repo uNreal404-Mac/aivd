@@ -93,7 +93,7 @@ vi.mock("@/lib/video-events", () => ({
 // ---------------------------------------------------------------------------
 
 import { db, videos, mediaAssets, creditHolds, CreditTransType } from "@/db";
-import { videoService, type GenerateVideoParams } from "@/services/video";
+import { STALE_UPLOAD_CLAIM_MS, videoService, type GenerateVideoParams } from "@/services/video";
 import { creditService } from "@/services/credit";
 import { ApiError } from "@/lib/api/error";
 import { getModelConfig, calculateModelCredits } from "@/config/credits";
@@ -413,6 +413,54 @@ describe("videoService.generate / creditService integration", () => {
 
     const after = await getBalance(userId);
     expect(after.availableCredits).toBe(before.availableCredits - EXPECTED_COST);
+  });
+
+  it("a failed video transfer gives back its claim so the next delivery retries it", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+    const before = await getBalance(userId);
+
+    fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_retry", provider: "evolink", status: "pending" });
+    const { videoUuid } = await videoService.generate(baseParams(userId));
+    fakeProvider.parseCallback.mockReturnValue({
+      taskId: "ext_retry", provider: "evolink", status: "completed", videoUrl: "http://provider.test/v.mp4",
+    });
+
+    downloadAndUpload.mockRejectedValueOnce(new Error("transfer cut off"));
+    await expect(videoService.handleCallback("evolink", {}, videoUuid)).rejects.toThrow("transfer cut off");
+    expect((await getVideoRow(videoUuid))?.status).toBe("GENERATING");
+    expect((await getHoldRow(videoUuid))?.status).toBe("HOLDING");
+
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("COMPLETED");
+    expect((await getHoldRow(videoUuid))?.status).toBe("SETTLED");
+    expect(await countTransactions(videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(1);
+    expect((await getBalance(userId)).availableCredits).toBe(before.availableCredits - EXPECTED_COST);
+  });
+
+  it("a delivery cut off mid-transfer can be taken over once its claim is stale", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+
+    fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_stale", provider: "evolink", status: "pending" });
+    const { videoUuid } = await videoService.generate(baseParams(userId));
+    fakeProvider.parseCallback.mockReturnValue({
+      taskId: "ext_stale", provider: "evolink", status: "completed", videoUrl: "http://provider.test/v.mp4",
+    });
+
+    // A fresh claim is respected: a second delivery does nothing.
+    await db.update(videos).set({ status: "UPLOADING", updatedAt: new Date() }).where(eq(videos.uuid, videoUuid));
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("UPLOADING");
+    expect(downloadAndUpload).not.toHaveBeenCalled();
+
+    // An abandoned claim is taken over and the video completes.
+    await db.update(videos)
+      .set({ updatedAt: new Date(Date.now() - STALE_UPLOAD_CLAIM_MS - 1000) })
+      .where(eq(videos.uuid, videoUuid));
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("COMPLETED");
+    expect((await getHoldRow(videoUuid))?.status).toBe("SETTLED");
   });
 
   it("user isolation", async () => {
