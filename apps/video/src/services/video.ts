@@ -128,6 +128,15 @@ const SUBMIT_SAVE_RETRY_DELAY_MS = 200;
  */
 export const STALE_UPLOAD_CLAIM_MS = 30 * 60 * 1000;
 
+/** Reconciliation leaves a generation alone until it has been quiet this long. */
+export const RECONCILE_QUIET_MS = 10 * 60 * 1000;
+/** A submission that never recorded a provider task is given up after this. */
+export const RECONCILE_NO_TASK_MS = 30 * 60 * 1000;
+/** No generation takes this long; one still open is failed and refunded. */
+export const RECONCILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export type ReconcileAction = "synced" | "still_running" | "failed_no_task" | "failed_timeout" | "error";
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -1163,6 +1172,65 @@ export class VideoService {
   /**
    * Refresh status by external task id
    */
+  /**
+   * Settles generations nobody is watching. Callbacks and the studio's polling
+   * normally finish every task, but a lost callback, a closed tab or a
+   * submission whose outcome was unknown (SUBMIT_UNKNOWN) would otherwise keep
+   * the row open and its credits reserved forever. Run on a schedule.
+   */
+  async reconcileStuckGenerations(
+    { now = new Date(), limit = 25 }: { now?: Date; limit?: number } = {},
+  ): Promise<Array<{ uuid: string; action: ReconcileAction; status?: string }>> {
+    const quietSince = new Date(now.getTime() - RECONCILE_QUIET_MS);
+    const rows = await db
+      .select()
+      .from(videos)
+      .where(
+        and(
+          inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING, VideoStatus.UPLOADING]),
+          lt(videos.updatedAt, quietSince),
+        ),
+      )
+      .orderBy(videos.updatedAt)
+      .limit(limit);
+
+    const results: Array<{ uuid: string; action: ReconcileAction; status?: string }> = [];
+    for (const video of rows) {
+      try {
+        const age = now.getTime() - video.createdAt.getTime();
+        if (age > RECONCILE_MAX_AGE_MS) {
+          const failed = await this.tryFailGeneration(video.uuid, "Generation timed out. Reserved credits were returned.");
+          results.push({ uuid: video.uuid, action: "failed_timeout", status: failed.status });
+          continue;
+        }
+        if (!video.externalTaskId) {
+          if (age > RECONCILE_NO_TASK_MS) {
+            const failed = await this.tryFailGeneration(video.uuid, "The provider did not confirm this task. Reserved credits were returned.");
+            results.push({ uuid: video.uuid, action: "failed_no_task", status: failed.status });
+          } else {
+            results.push({ uuid: video.uuid, action: "still_running", status: video.status });
+          }
+          continue;
+        }
+        const synced = await this.refreshStatus(video.uuid, video.userId);
+        if (synced.status === VideoStatus.PENDING || synced.status === VideoStatus.GENERATING) {
+          // Still running: move it to the back of the queue so other rows get checked.
+          await db
+            .update(videos)
+            .set({ updatedAt: now })
+            .where(and(eq(videos.uuid, video.uuid), inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING])));
+          results.push({ uuid: video.uuid, action: "still_running", status: synced.status });
+        } else {
+          results.push({ uuid: video.uuid, action: "synced", status: synced.status });
+        }
+      } catch (error) {
+        console.error(`[reconcile] ${video.uuid} failed:`, error);
+        results.push({ uuid: video.uuid, action: "error" });
+      }
+    }
+    return results;
+  }
+
   async refreshStatusByTaskId(taskId: string, userId: string) {
     const [video] = await db
       .select()

@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        // 从 evolink 获取状态
-        const provider = getProvider("evolink");
+        // Ask the provider that ran the task (KIE for every market model).
+        const provider = getProvider((video.provider || "evolink") as Parameters<typeof getProvider>[0]);
         const taskStatus = await provider.getTaskStatus(video.externalTaskId);
 
         if (taskStatus.status === "completed" && taskStatus.videoUrl) {
