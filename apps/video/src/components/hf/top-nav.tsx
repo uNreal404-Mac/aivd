@@ -11,6 +11,7 @@ import {
   Bot,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   Code2,
   Compass,
   CreditCard,
@@ -493,10 +494,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               </Link>
             ))}
             <Link href={href("/creative-space")} className="hf-item" data-active={pathname === "/creative-space" || undefined}>
-              AGENT
+              AGENT <span className="hf-beta">BETA</span>
             </Link>
             <Link href={href("/creative-space/canvas")} className="hf-item" data-active={isActive("/creative-space/canvas") || undefined}>
-              {zh ? "画布" : "Canvas"}
+              {zh ? "画布" : "Canvas"} <span className="hf-beta">BETA</span>
             </Link>
             {primaryDropdowns.filter((menu) => menu.id === "templates").map((menu) => (
               <Link
@@ -576,6 +577,11 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             {t.pricing}
             {/* The sign-up gift only means something to someone not signed in yet. */}
             {user ? null : <span className="hf-act-discount">{t.offerTag}</span>}
+          </Link>
+          <Link href={href("/help")} className="hf-act hf-act-help" aria-label={zh ? "帮助中心" : "Help center"} title={zh ? "帮助中心" : "Help center"}>
+            <CircleHelp aria-hidden="true" />
+            <span className="hf-help-full">{zh ? "帮助中心" : "Help center"}</span>
+            <span className="hf-help-short">{zh ? "帮助" : "Help"}</span>
           </Link>
           <span className="hf-lang">
             <LocaleChange />
@@ -741,8 +747,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 <button type="button" className="hf-mm-search" onClick={() => setOverlay("search")}><Search aria-hidden="true" />{zh ? "搜索" : "Search"}</button>
                 <Link href={href("/")} className="hf-mm-direct" data-active={pathname === "/" || undefined}><Compass aria-hidden="true" />{t.home}</Link>
                 {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map(mobileSection)}
-                <Link href={href("/creative-space")} className="hf-mm-direct" data-active={pathname === "/creative-space" || undefined}><Bot aria-hidden="true" />AGENT</Link>
-                <Link href={href("/creative-space/canvas")} className="hf-mm-direct" data-active={isActive("/creative-space/canvas") || undefined}><LayoutGrid aria-hidden="true" />{zh ? "画布" : "Canvas"}</Link>
+                <Link href={href("/creative-space")} className="hf-mm-direct" data-active={pathname === "/creative-space" || undefined}><Bot aria-hidden="true" />AGENT<span className="hf-beta">BETA</span></Link>
+                <Link href={href("/creative-space/canvas")} className="hf-mm-direct" data-active={isActive("/creative-space/canvas") || undefined}><LayoutGrid aria-hidden="true" />{zh ? "画布" : "Canvas"}<span className="hf-beta">BETA</span></Link>
                 {primaryDropdowns.filter((menu) => menu.id === "templates").map(mobileSection)}
                 <Link href={href("/ai/video")} className="hf-mm-direct" data-active={isActive("/ai/video") || undefined}><Film aria-hidden="true" />{zh ? "视频工作室" : "Video Studio"}</Link>
                 <Link href={href("/my-creations")} className="hf-mm-direct" data-active={isActive("/my-creations") || undefined}><Folder aria-hidden="true" />{t.creations}</Link>
@@ -759,6 +765,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                     </span>
                     <ChevronRight aria-hidden="true" />
                   </Link>
+                  <Link href={href("/help")} className="hf-mm-lang"><CircleHelp aria-hidden="true" />{zh ? "帮助中心" : "Help center"}</Link>
                   <Link href={localizedHref(otherLang, pathname + languageSuffix)} className="hf-mm-lang">
                     <Languages aria-hidden="true" />
                     {zh ? "English" : "简体中文"}

@@ -20,6 +20,34 @@
   pointer-events: none;
 }
 
+/* The dots and soft cyan light brighten around the pointer, like a responsive
+   field rather than a static image. The base pattern stays visible at rest. */
+.du-hero-glow::before,
+.du-hero-glow::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.du-hero-glow::before {
+  background: radial-gradient(circle 360px at var(--du-pointer-x, 50%) var(--du-pointer-y, 38%), color-mix(in srgb, var(--du-accent) 19%, transparent), transparent 76%);
+}
+
+.du-hero-glow::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='2' height='2' fill='white' fill-opacity='.7'/%3E%3C/svg%3E");
+  mask-image: radial-gradient(circle 280px at var(--du-pointer-x, 50%) var(--du-pointer-y, 38%), black 4%, transparent 92%);
+}
+
+.du-hero-glow[data-pointer]::before,
+.du-hero-glow[data-pointer]::after { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .du-hero-glow::before,
+  .du-hero-glow::after { transition: none; }
+}
+
 .du-hero-inner {
   position: relative;
   display: flex;

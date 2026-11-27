@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Camera, ChevronRight, Clapperboard, CloudRain, Footprints, LayoutGrid, Repeat2, Sparkles, type LucideIcon } from "lucide-react";
 
 import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
@@ -25,7 +25,34 @@ const noop = () => {};
 export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[] }) {
   const isChinese = lang.toLowerCase().startsWith("zh");
   const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const pointerFrame = useRef<number | null>(null);
+  const pointerPosition = useRef({ x: 0, y: 0 });
   const href = (path: string) => localizedHref(lang, path);
+
+  useEffect(() => () => {
+    if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current);
+  }, []);
+  const moveGlow = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "touch" || !glowRef.current) return;
+    const bounds = glowRef.current.getBoundingClientRect();
+    pointerPosition.current = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    if (pointerFrame.current !== null) return;
+    pointerFrame.current = requestAnimationFrame(() => {
+      const glow = glowRef.current;
+      if (glow) {
+        glow.style.setProperty("--du-pointer-x", `${pointerPosition.current.x}px`);
+        glow.style.setProperty("--du-pointer-y", `${pointerPosition.current.y}px`);
+        glow.dataset.pointer = "true";
+      }
+      pointerFrame.current = null;
+    });
+  };
+  const clearGlow = () => {
+    if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current);
+    pointerFrame.current = null;
+    glowRef.current?.removeAttribute("data-pointer");
+  };
 
   // One calm, Jimeng-style external row of slash skills right below the composer.
   // Quick actions under the composer, each with its own icon (Pollo-style row).
@@ -52,8 +79,8 @@ export function DuHome({ lang, models }: { lang: string; models: HomeVideoModel[
   return (
     <div className="bg-[var(--du-bg)] text-[var(--du-text)]">
       {/* 1. Calm, Wide Jimeng 6.2:1 × Pollo Velvety Matte Hero Stage */}
-      <section className="du-hero">
-        <div className="du-hero-glow" aria-hidden="true" />
+      <section className="du-hero" onPointerMove={moveGlow} onPointerLeave={clearGlow}>
+        <div ref={glowRef} className="du-hero-glow" aria-hidden="true" />
         <div className="du-hero-inner">
           <h1 className="du-hero-title">{homeSeo(isChinese ? "zh" : "en").h1}</h1>
           <p className="du-hero-sub">

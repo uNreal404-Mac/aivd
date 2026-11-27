@@ -218,6 +218,20 @@ a.hf-item:hover,
   white-space: nowrap;
 }
 
+.hf-beta {
+  flex: none;
+  margin-left: 3px;
+  padding: 1px 6px;
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, white 17%, transparent);
+  color: var(--ds-text-1);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  letter-spacing: .02em;
+}
+.hf-mm-direct .hf-beta { margin-left: auto; }
+
 /* Right-hand actions */
 .hf-actions {
   display: flex;
@@ -268,14 +282,16 @@ a.hf-item:hover,
 }
 
 .hf-act-accent,
-.hf-act-pricing {
+.hf-act-pricing,
+.hf-act-help {
   background: transparent;
   box-shadow: none;
   padding: 0 8px;
 }
 
 .hf-act-accent:hover,
-.hf-act-pricing:hover {
+.hf-act-pricing:hover,
+.hf-act-help:hover {
   background: var(--ds-fill-1);
   box-shadow: none;
 }
@@ -288,6 +304,8 @@ a.hf-item:hover,
 .hf-act-pricing svg {
   color: var(--du-accent-text);
 }
+
+.hf-help-short { display: none; }
 
 .hf-act-dot {
   position: absolute;
@@ -409,28 +427,22 @@ a.hf-item:hover,
   }
 }
 
-/* Narrower desktops drop the offer button first (it opens /pricing, like the
-   Pricing button beside it), then the language button, then the link row
-   gives way to the menu button before it can run under the actions. */
+/* Keep the original language, pricing and help actions visible on desktop.
+   The link row scrolls inside its own column when space is tight. */
 @media (max-width: 1439px) {
   .hf-act-accent {
     display: none;
   }
-}
-
-/* Keep every requested primary destination visible on laptop widths. Pricing
-   remains available from More, and the sign-up button opens the same login flow. */
-@media (max-width: 1439px) {
   .hf-nav-inner { gap: 12px; }
-  .hf-act-pricing,
-  .hf-lang,
+  .hf-act-discount,
   .hf-auth-login { display: none; }
+  .hf-help-full { display: none; }
+  .hf-help-short { display: inline; }
 }
 
 @media (max-width: 1279px) {
-  .hf-lang {
-    display: none;
-  }
+  .hf-act-help { width: 32px; padding: 0; }
+  .hf-act-help span { display: none; }
 }
 
 @media (max-width: 1079px) {
@@ -452,6 +464,7 @@ a.hf-item:hover,
   .hf-nav-scroll,
   .hf-act-accent,
   .hf-act-pricing,
+  .hf-act-help,
   .hf-lang,
   .hf-auth-login {
     display: none;
