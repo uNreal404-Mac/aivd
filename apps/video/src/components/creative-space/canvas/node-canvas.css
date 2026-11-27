@@ -100,7 +100,7 @@
 .nc-danger:hover { color: var(--du-danger) !important; }
 
 /* Body */
-.nc-body { display: flex; min-height: 0; flex: 1; }
+.nc-body { position: relative; display: flex; min-height: 0; flex: 1; }
 .nc-rail {
   display: flex;
   width: 76px;

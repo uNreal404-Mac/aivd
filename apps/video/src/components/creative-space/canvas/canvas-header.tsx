@@ -14,7 +14,6 @@ import {
   LoaderCircle,
   Map,
   Mail,
-  MessageCircle,
   Pencil,
   Plus,
   Redo2,
@@ -45,8 +44,6 @@ interface Props {
   onDelete: () => void;
   onDeleteCanvas: (id: string) => void;
   onHome: () => void;
-  agentOpen: boolean;
-  toggleAgent: () => void;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -175,8 +172,6 @@ export function CanvasHeader(p: Props) {
         )}
       </div>
       <div className="nc-session-tools">
-        <button className="nc-round" type="button" aria-pressed={p.agentOpen} aria-label={l("切换 Agent 对话", "Toggle Agent chat")}
-          title={l("Agent 对话", "Agent chat")} onClick={p.toggleAgent}><MessageCircle size={18} /></button>
         <button
           className="nc-round"
           type="button"

@@ -9,6 +9,7 @@ import {
   AlignVerticalJustifyStart,
   Bookmark,
   ChevronDown,
+  ChevronRight,
   Play,
   Download,
   Film,
@@ -20,6 +21,7 @@ import {
   Layers,
   LayoutGrid,
   Link2,
+  MessageCircle,
   MousePointer2,
   Plus,
   Trash2,
@@ -2375,11 +2377,15 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
         <CanvasHeader zh={zh} title={title} onTitle={setTitle} back={localizedHref(locale,"/creative-space")} creditsHref={localizedHref(locale,"/credits")} contactHref={localizedHref(locale,"/contact")}
           save={saveLabel[saveState]} saveState={saveState} account={!!userId} balance={balance} signIn={requireLogin}
           canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => { if (canvasId) void deleteCanvasById(canvasId); }} onDeleteCanvas={id => void deleteCanvasById(id)}
-          onHome={() => void goHome()} agentOpen={agentOpen} toggleAgent={() => setAgentOpen(open => !open)}
+          onHome={() => void goHome()}
           canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
           edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
           <CanvasAgentSidebar key={canvasGeneration.current} zh={zh} hidden={!agentOpen} onClose={() => setAgentOpen(false)} onSend={askCanvasAgent} onApply={applyAgentPrompt} />
+          <button type="button" className="nc-agent-reopen" hidden={agentOpen} onClick={() => setAgentOpen(true)}
+            aria-label={L("展开 Agent 对话栏", "Expand Agent sidebar")} title={L("展开 Agent 对话栏", "Expand Agent sidebar")}>
+            <MessageCircle size={17}/><span>Agent</span><ChevronRight size={15}/>
+          </button>
             <input
               ref={fileInput}
               type="file"

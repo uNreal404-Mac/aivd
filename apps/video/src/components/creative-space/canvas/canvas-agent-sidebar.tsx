@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Bot, Loader2, Sparkles, X } from "lucide-react";
+import { ArrowUp, Bot, ChevronLeft, Loader2, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 type Message = { role: "user" | "agent"; text: string; prompt?: string };
@@ -31,8 +31,7 @@ export function CanvasAgentSidebar({ zh, hidden, onClose, onSend, onApply }: {
     } finally { setBusy(false); }
   };
   return <aside hidden={hidden} className="nc-agent-sidebar" aria-label={zh ? "画布 Agent 对话" : "Canvas Agent chat"}>
-    <div className="nc-agent-sidebar-head"><span><Bot size={19} />Agent <small>DeepSeek Flash</small></span>
-      <button type="button" onClick={onClose} aria-label={zh ? "隐藏 Agent" : "Hide Agent"}><X size={17}/></button></div>
+    <div className="nc-agent-sidebar-head"><span><Bot size={19} />Agent <small>DeepSeek Flash</small></span></div>
     <div className="nc-agent-messages" role="log" aria-live="polite">
       {messages.length === 0 && <div className="nc-agent-empty"><Sparkles size={25}/><strong>{zh ? "一起构思画布" : "Create together"}</strong>
         <p>{zh ? "告诉我想做的画面或影片。我会结合当前画布素材，帮你整理创意和提示词。" : "Describe your image or film. I can use this canvas to help plan and write prompts."}</p></div>}
@@ -50,5 +49,7 @@ export function CanvasAgentSidebar({ zh, hidden, onClose, onSend, onApply }: {
       <div><small>{zh ? "可让 Agent 协助编辑创作" : "Ask Agent to help create"}</small>
         <button type="submit" disabled={busy || !question.trim()} aria-label={zh ? "发送给 Agent" : "Send to Agent"}><ArrowUp size={18}/></button></div>
     </form>
+    <button type="button" className="nc-agent-collapse" onClick={onClose} aria-label={zh ? "收起 Agent 对话栏" : "Collapse Agent sidebar"}
+      title={zh ? "收起 Agent 对话栏" : "Collapse Agent sidebar"}><ChevronLeft size={17}/><span>{zh ? "收起" : "Hide"}</span></button>
   </aside>;
 }
