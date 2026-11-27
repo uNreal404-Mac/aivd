@@ -26,7 +26,11 @@
   gap: 84px;
 }
 
-/* A justified row keeps portrait and landscape frames at their source ratios. */
+/* A single rail keeps every frame at its source ratio and lets the rest scroll. */
+.hs-release-rail {
+  --hs-release-height: clamp(166px, 15vw, 220px);
+  position: relative;
+}
 .hs-release-grid {
   display: flex;
   gap: 14px;
@@ -35,12 +39,9 @@
   scrollbar-width: none;
 }
 .hs-release-grid::-webkit-scrollbar { display: none; }
-.hs-release-column { display: contents; }
-.hs-release-grid .hs-slide { flex: var(--hs-media-ratio, 1) 1 0%; }
-@media (min-width: 900px) {
-  .hs-release-grid .hs-slide { min-width: max(120px, calc(var(--hs-media-ratio, 1) * 120px)); }
-}
+.hs-release-grid .hs-slide { flex: 0 0 calc(var(--hs-media-ratio, 1) * var(--hs-release-height)); }
 .hs-release-grid .hs-slide-media { aspect-ratio: var(--hs-media-ratio, 1); }
+.hs-release-rail .hs-arrow { top: calc(var(--hs-release-height) / 2 - 19px); }
 .hs-release-grid .hs-slide-media :is(img, video) { object-fit: contain; object-position: center; }
 .hs-release-grid .hs-slide:hover .hs-slide-media :is(img, video),
 .hs-discover-masonry .wc-video:hover video { transform: none; }
@@ -1056,17 +1057,6 @@
 }
 
 @media (max-width: 899px) {
-  .hs-release-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    align-items: start;
-  }
-  .hs-release-column {
-    display: grid;
-    min-width: 0;
-    gap: 16px;
-  }
   .hs-steps {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
@@ -1092,7 +1082,6 @@
     gap: 8px;
   }
 
-  .hs-release-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .hs-discover-column { gap: 8px; }
 
   .hs-wall > .hs-wall-item {

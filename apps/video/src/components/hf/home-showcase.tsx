@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowRight,
   ArrowUp,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
 import { InViewVideo } from "@/components/hf/in-view-video";
+import { useCarousel } from "@/components/hf/use-carousel";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
@@ -127,17 +128,15 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
   const t = (value: Bi) => (zh ? value.zh : value.en);
   const href = (path: string) => localizedHref(lang, path);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("all");
-  const [columns, setColumns] = useState({ releases: 1, discovery: 4 });
+  const releaseTrackRef = useRef<HTMLDivElement>(null);
+  const releaseCarousel = useCarousel(releaseTrackRef);
+  const [discoveryColumns, setDiscoveryColumns] = useState(4);
   useEffect(() => {
     const mobile = window.matchMedia("(max-width: 767px)");
-    const narrow = window.matchMedia("(max-width: 899px)");
     const tablet = window.matchMedia("(max-width: 1199px)");
-    const update = () => setColumns({
-      releases: mobile.matches ? 2 : narrow.matches ? 3 : 1,
-      discovery: mobile.matches ? 2 : tablet.matches ? 3 : 4,
-    });
+    const update = () => setDiscoveryColumns(mobile.matches ? 2 : tablet.matches ? 3 : 4);
     update();
-    const queries = [mobile, narrow, tablet];
+    const queries = [mobile, tablet];
     queries.forEach(query => query.addEventListener("change", update));
     return () => queries.forEach(query => query.removeEventListener("change", update));
   }, []);
@@ -153,24 +152,23 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
       <ScrollReveal />
 
       <section className="hs-shell hs-releases" aria-label={zh ? "最新功能" : "Featured releases"}>
-        <div className="hs-release-grid">
-          {mediaColumns(FEATURE_SLIDES, columns.releases).map((column, columnIndex) => (
-            <div className="hs-release-column" key={columnIndex}>
-              {column.map((slide, index) =>
-                slide.media.video ? (
-                  <div key={slide.href} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties} data-video-scope>
-                    <Link href={href(slide.href)} className="hs-slide-link">
-                      <SlideContent slide={slide} eager={columnIndex === 0 && index === 0} t={t} />
-                    </Link>
-                  </div>
-                ) : (
-                  <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
-                    <SlideContent slide={slide} eager={columnIndex === 0 && index === 0} t={t} />
+        <div className="hs-release-rail">
+          <div className="hs-release-grid" ref={releaseTrackRef}>
+            {FEATURE_SLIDES.map((slide, index) =>
+              slide.media.video ? (
+                <div key={slide.href} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties} data-video-scope>
+                  <Link href={href(slide.href)} className="hs-slide-link">
+                    <SlideContent slide={slide} eager={index === 0} t={t} />
                   </Link>
-                ),
-              )}
-            </div>
-          ))}
+                </div>
+              ) : (
+                <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
+                  <SlideContent slide={slide} eager={index === 0} t={t} />
+                </Link>
+              ),
+            )}
+          </div>
+          <CarouselArrows zh={zh} {...releaseCarousel} />
         </div>
       </section>
 
@@ -210,7 +208,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
           </div>
 
           <div className="hs-discover-masonry">
-            {mediaColumns(visibleDiscover, columns.discovery).map((column, columnIndex) => (
+            {mediaColumns(visibleDiscover, discoveryColumns).map((column, columnIndex) => (
               <div className="hs-discover-column" key={columnIndex}>
                 {column.map((item, index) => {
                   const promptText = item.prompt ? t(item.prompt) : undefined;
