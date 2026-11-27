@@ -69,15 +69,15 @@ export function PendingCard({
       : "Failed, credits returned"
     : status === "submitting"
       ? zh
-        ? "正在提交…"
-        : "Submitting…"
+        ? "生成中 · 正在提交"
+        : "Generating · Submitting"
     : status === "generating"
       ? zh
         ? "生成中"
         : "Generating"
       : zh
-        ? "排队中"
-        : "Queued";
+        ? "生成中 · 排队中"
+        : "Generating · Queued";
   return (
     <div className={`sr-pending ${failed ? "sr-pending-failed" : ""} ${className}`} title={prompt ?? undefined}>
       {failed ? null : <span className="sr-shimmer" aria-hidden="true" />}

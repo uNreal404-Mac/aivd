@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Film, Paintbrush, Plus } from "lucide-react";
+import { Film, Loader2, Paintbrush, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { localizedHref } from "@/lib/locale-path";
@@ -53,8 +53,9 @@ export function DrawDialog({ open, onClose, locale, userId, signIn }: {
           <DialogDescription>{edit ? zh ? "上传图片，涂出需要改动的区域。" : "Upload an image and brush over the area you want to change." : zh ? "上传起始画面，再描述镜头如何移动。" : "Upload a starting frame, then describe the motion."}</DialogDescription>
           {error ? <output>{error}</output> : null}
           <button type="button" className="is-draw-upload" disabled={uploading} onClick={() => userId ? input.current?.click() : signIn()}>
-            <Plus />{uploading ? zh ? "上传中…" : "Uploading…" : zh ? "上传图片" : "Upload image"}
+            {uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus />}{uploading ? zh ? "上传中…" : "Uploading…" : zh ? "上传图片" : "Upload image"}
           </button>
+          {uploading ? <output aria-live="polite">{zh ? "图片正在上传，完成后会自动打开画布" : "Uploading the image. The canvas will open when it is ready."}</output> : null}
           <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={e => { const file=e.target.files?.[0]; e.target.value=""; if(file) void load(file); }} />
         </div>
       </DialogContent>

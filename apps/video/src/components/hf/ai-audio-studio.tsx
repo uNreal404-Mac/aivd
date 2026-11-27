@@ -10,7 +10,7 @@ import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
-import { submitMedia, useMediaJobs, type SubmitBody } from "@/lib/media-studio";
+import { submitMedia, useMediaJobs, type MediaJob, type SubmitBody } from "@/lib/media-studio";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import {
   type AudioShowcaseItem,
@@ -190,6 +190,7 @@ function AiAudioStudioForm({
   const draft = usePromptDraft(draftScope, script, setScript, Boolean(initialPrompt));
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingSubmission, setPendingSubmission] = useState<MediaJob | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
   const { jobs, add } = useMediaJobs("audio", Boolean(session));
@@ -476,13 +477,16 @@ function AiAudioStudioForm({
     }
     submittingRef.current = true;
     setSubmitting(true);
+    setPendingSubmission({ uuid: `submitting:${crypto.randomUUID()}`, status: "submitting", urls: [], prompt: body.prompt, model: body.model, createdAt: Date.now() });
+    setTab("history");
     setNotice(null);
-    let result;
+    let result: Awaited<ReturnType<typeof submitMedia>>;
     try {
       result = await submitMedia(body, zh, undefined, session.user.id);
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
+      setPendingSubmission(null);
     }
     if (!result.ok) {
       setNotice(result.message);
@@ -843,7 +847,7 @@ function AiAudioStudioForm({
         ownerId={session?.user?.id}
         tab={tab}
         onTab={setTab}
-        jobs={jobs}
+        jobs={pendingSubmission ? [pendingSubmission, ...jobs] : jobs}
         signedOut={signedOut}
         onSignIn={() => signIn.onOpen()}
         onReuse={reuse}

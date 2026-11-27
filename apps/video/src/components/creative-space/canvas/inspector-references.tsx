@@ -44,6 +44,7 @@ export function InspectorReferences({ id, actions, limit, busy, onAttach, onBusy
             : <p>{zh ? "当前画布没有可用素材" : "No available assets on this canvas"}</p>}
         </>}
       </InspectorMenu>
+      {uploading ? <output className="nci-thumb nci-uploading"><Loader2 className="nc-spin" size={16} aria-hidden="true" /><span>{zh ? "上传中" : "Uploading"}</span></output> : null}
       {attached.map(ref => onMention ? <InspectorMenu key={ref.id} label={`${zh ? "引用" : "Mention"} ${ref.name}`}
         triggerClass="nci-thumb nci-thumb-button" button={<ReferenceImage item={ref}/>}>
         {close => <>

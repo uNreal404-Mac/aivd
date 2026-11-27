@@ -81,6 +81,7 @@ export function VideoToolPanel({
   enabled,
   free,
   onStarted,
+  onPending,
   onExtend,
 }: {
   kind: VideoTool;
@@ -91,6 +92,7 @@ export function VideoToolPanel({
   enabled: boolean;
   free: boolean;
   onStarted: (uuid: string, prompt: string) => void;
+  onPending: (id: string, prompt?: string) => void;
 }) {
   const zh = locale.startsWith("zh"),
     motion = kind === "motion",
@@ -281,6 +283,8 @@ export function VideoToolPanel({
       return;
     }
     locked.current = true;
+    const pendingId = crypto.randomUUID();
+    onPending(pendingId, draft.prompt.trim() || market.name);
     setSending(true);
     setNotice("");
     try {
@@ -322,6 +326,7 @@ export function VideoToolPanel({
         ),
       );
     } finally {
+      onPending(pendingId);
       locked.current = false;
       if (mounted.current) setSending(false);
     }
@@ -513,6 +518,7 @@ export function VideoToolPanel({
           {label("正在核验原视频…", "Checking the source clip…")}
         </small>
       )}
+      {progress ? <output className="vst-notice" aria-live="polite"><Loader2 className="inline h-4 w-4 animate-spin" aria-hidden="true" /> {label("正在上传并准备素材…", "Uploading and preparing media…")}</output> : null}
       {(sourceError || characterError) && (
         <output className="vst-notice" role="alert">
           {sourceError || characterError}

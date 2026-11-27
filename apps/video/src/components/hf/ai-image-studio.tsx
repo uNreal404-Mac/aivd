@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, ChevronRight, Clock, Gem, Paintbrush, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, Gem, Loader2, Paintbrush, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
@@ -228,25 +228,34 @@ function AiImageStudioForm({
   };
 
   const onFiles = async (files: File[]) => {
+    if (uploading) return;
     if (maxImages === 0) {
       setNotice(zh ? "该模型不支持参考图。" : "This model takes no reference image.");
       return;
     }
     const room = maxImages - refs.length;
-    for (const file of files.slice(0, Math.max(0, room))) {
-      const error = validateImageFile(file, zh ? "zh" : "en");
-      if (error) {
-        setNotice(error);
-        continue;
+    if (room <= 0) return;
+    setUploading(true);
+    try {
+      for (const file of files.slice(0, room)) {
+        const error = validateImageFile(file, zh ? "zh" : "en");
+        if (error) {
+          setNotice(error);
+          continue;
+        }
+        try {
+          const result = await uploadImage(file, fetch, session?.user?.id);
+          if (result.ok) {
+            setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
+          } else {
+            setNotice(uploadErrorText(result, zh));
+          }
+        } catch (error) {
+          setNotice(uploadErrorText(error, zh));
+        }
       }
-      setUploading(true);
-      const result = await uploadImage(file, fetch, session?.user?.id);
+    } finally {
       setUploading(false);
-      if (result.ok) {
-        setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
-      } else {
-        setNotice(uploadErrorText(result, zh));
-      }
     }
   };
 
@@ -384,7 +393,7 @@ function AiImageStudioForm({
 
   const visibleJobs = pendingSubmission ? [pendingSubmission, ...jobs] : jobs;
   const hasResults = visibleJobs.length > 0;
-  const shownJobs = matchingHistory(visibleJobs, historyFilter, Date.now(), job => Boolean(job.urls.length));
+  const shownJobs = [...(pendingSubmission ? [pendingSubmission] : []), ...matchingHistory(jobs, historyFilter, Date.now(), job => Boolean(job.urls.length))];
   const filtered = Boolean(historyFilter.model || historyFilter.range !== "all" || historyFilter.hideFailed);
   const noRefsNote = zh ? "该模型不支持参考图" : "This model takes no reference image";
 
@@ -455,7 +464,7 @@ function AiImageStudioForm({
           >
             <div className="is-bar-inner">
               <div className="is-bar-main">
-                {refs.length > 0 ? (
+                {refs.length > 0 || uploading ? (
                   <div className="is-refs">
                     {refs.map((item, index) => (
                       <span key={item.key} className="is-ref">
@@ -475,6 +484,7 @@ function AiImageStudioForm({
                         </button>
                       </span>
                     ))}
+                    {uploading ? <output className="is-ref-uploading"><Loader2 className="animate-spin" size={16} aria-hidden="true" />{zh ? "上传中" : "Uploading"}</output> : null}
                   </div>
                 ) : null}
                 {draft.restored ? (

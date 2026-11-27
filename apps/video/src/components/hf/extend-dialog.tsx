@@ -47,6 +47,7 @@ export function ExtendDialog({
   zh,
   onClose,
   onStarted,
+  onPending,
   inline,
   freeGeneration,
 }: {
@@ -56,6 +57,7 @@ export function ExtendDialog({
   zh: boolean;
   onClose: () => void;
   onStarted: (job: ExtendStarted) => void;
+  onPending?: (id: string, prompt?: string) => void;
 }) {
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(5);
@@ -142,7 +144,9 @@ export function ExtendDialog({
     }
     const submittedPrompt = prompt;
     const submittedDuration = duration;
+    const pendingId = crypto.randomUUID();
     inFlight.current = true;
+    onPending?.(pendingId, submittedPrompt.trim());
     setSubmitting(true);
     setNotice(null);
     try {
@@ -170,6 +174,7 @@ export function ExtendDialog({
       }
       if (!inline || promptUnchanged) onClose();
     } finally {
+      onPending?.(pendingId);
       inFlight.current = false;
       setSubmitting(false);
     }

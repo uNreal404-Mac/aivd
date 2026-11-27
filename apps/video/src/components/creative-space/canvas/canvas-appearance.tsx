@@ -61,6 +61,7 @@ export function CanvasAppearance({ zh, background, save, colors, setColors }: {
   setColors: (value: MiniColors) => void;
 }) {
   const [error, setError] = useState("");
+  const [processing, setProcessing] = useState(false);
   const [theme, setTheme] = useState<MiniColors>({});
   const element = useRef<HTMLFieldSetElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -79,6 +80,7 @@ export function CanvasAppearance({ zh, background, save, colors, setColors }: {
       setError(zh ? "请选择 5 MB 以内的 PNG、JPG 或 WebP。" : "Choose a PNG, JPG or WebP of 5 MB or less.");
       return;
     }
+    setProcessing(true);
     let bitmap: ImageBitmap | undefined;
     try {
       bitmap = await createImageBitmap(image);
@@ -101,17 +103,19 @@ export function CanvasAppearance({ zh, background, save, colors, setColors }: {
       if (revision.current === version) setError(zh ? "无法保存这张背景图，请换用更小的图片或检查浏览器存储空间。" : "Could not save this background. Try a smaller image or check browser storage.");
     } finally {
       bitmap?.close();
+      if (revision.current === version) setProcessing(false);
     }
   }
   return <>
     <label>{zh ? "自定义背景" : "Background image"}
-      <button type="button" onClick={() => file.current?.click()}>{background ? (zh ? "更换图片" : "Replace image") : (zh ? "选择图片" : "Choose image")}</button>
+      <button type="button" disabled={processing} onClick={() => file.current?.click()}>{processing ? (zh ? "处理中…" : "Processing…") : background ? (zh ? "更换图片" : "Replace image") : (zh ? "选择图片" : "Choose image")}</button>
       <input type="file" hidden ref={file} accept="image/png,image/jpeg,image/webp" onChange={(e) => {
         const selected = e.target.files?.[0];
         e.target.value = "";
         if (selected) void pick(selected);
       }} />
     </label>
+    {processing ? <output aria-live="polite">{zh ? "正在读取并保存背景图片…" : "Reading and saving the background image…"}</output> : null}
     {background && <button type="button" onClick={() => {
       revision.current += 1;
       try { save(""); setError(""); } catch { setError(zh ? "无法清除浏览器保存的背景" : "Could not clear the saved background"); }

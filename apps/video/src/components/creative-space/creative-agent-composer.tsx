@@ -161,6 +161,7 @@ export function CreativeAgentComposer({ lang, active, brief, onBriefChange, inpu
       </div>
     </form>
     {error ? <p role="alert" className="cs-agent-error">{error}</p> : null}
+    {planning ? <output className="cs-agent-plan cs-agent-loading" aria-live="polite"><span><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />{zh ? "生成中 · Agent 正在整理创作计划" : "Generating · Agent is preparing your plan"}</span><span className="cs-agent-loading-line" aria-hidden="true" /><span className="cs-agent-loading-line" aria-hidden="true" /></output> : null}
     {plan ? <section className="cs-agent-plan" aria-live="polite">
       <div className="cs-agent-plan-head"><span><Check className="h-4 w-4" aria-hidden="true" />{zh ? "Agent 创作计划" : "Agent plan"}</span><Link href={`${localizedHref(lang, "/creative-space/canvas")}?prompt=${encodeURIComponent(plan.generationPrompt || brief)}`}>{zh ? "在画布中继续" : "Continue on canvas"}</Link></div>
       <p>{plan.reply}</p>

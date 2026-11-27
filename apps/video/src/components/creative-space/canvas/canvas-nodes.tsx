@@ -324,10 +324,10 @@ export const MediaNode = memo(function MediaNode({ id, data, selected }: NodePro
           />
         </label>
       </NodeToolbar>}
-      <Shell id={id} data={data} selected={selected} status={data.busy ? "running" : missing ? "failed" : "done"}>
+      <Shell id={id} data={data} selected={selected} status={data.busy || replacing ? "running" : missing ? "failed" : "done"}>
         <div className={`nc-preview nc-preview-${data.media}`}>
-          {data.busy ? (
-            <span className="nc-empty"><Loader2 className="h-5 w-5 nc-spin" aria-hidden="true" />{zh ? "上传并检查中…" : "Uploading…"}</span>
+          {data.busy || replacing ? (
+            <output className="nc-empty"><Loader2 className="h-5 w-5 nc-spin" aria-hidden="true" />{zh ? "上传中…" : "Uploading…"}</output>
           ) : null}
           {missing ? (
             <span className="nc-empty">
@@ -454,7 +454,7 @@ export const GenerateNode = memo(function GenerateNode({ id, data, selected }: N
               {data.status === "submitting" || data.status === "running" ? (
                 <>
                   <Loader2 className="h-5 w-5 nc-spin" aria-hidden="true" />
-                  {data.status === "submitting" ? (zh ? "提交中…" : "Submitting…") : zh ? "生成中，完成后自动显示" : "Generating…"}
+                  {data.status === "submitting" ? (zh ? "生成中 · 正在提交" : "Generating · Submitting") : zh ? "生成中，完成后自动显示" : "Generating…"}
                 </>
               ) : data.status === "failed" ? (
                 data.error || (zh ? "生成失败" : "Generation failed")

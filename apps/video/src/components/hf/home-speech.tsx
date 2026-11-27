@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, AudioLines, Check, Coins, Mic, Pause, Play } from "lucide-react";
+import { ArrowUp, AudioLines, Check, Coins, Loader2, Mic, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -164,7 +164,8 @@ export function HomeSpeech({ lang, modeControl, onResize }: {
         </div>
       </div>
     </form>
+    {busy ? <output className="hs-notice" aria-live="polite"><Loader2 className="inline h-4 w-4 animate-spin" aria-hidden="true" /> {zh ? "生成中 · 正在提交" : "Generating · Submitting"}</output> : null}
     {notice ? <output className="hs-notice">{notice} {shortfall.action(notice)}</output> : null}
-    {result ? <output className="hs-notice">{zh ? "配音任务已提交。" : "Your voiceover was submitted."} <a href={localizedHref(lang, "/audio")}>{zh ? "在音频工作室查看" : "View in Audio Studio"}</a></output> : null}
+    {result ? <output className="hs-notice">{zh ? "生成中，配音任务已提交。" : "Generating. Your voiceover was submitted."} <a href={localizedHref(lang, "/audio")}>{zh ? "在音频工作室查看" : "View in Audio Studio"}</a></output> : null}
   </>;
 }

@@ -84,6 +84,12 @@
 .hmp-add:active { transform: scale(.98); }
 .hmp-add:disabled { opacity: .5; cursor: not-allowed; }
 .hmp-add-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--ds-line-3); border-radius: var(--ds-r-full); background: var(--ds-fill-1); }
+.hmp-uploading {
+  display: flex; aspect-ratio: 1; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  border-radius: var(--ds-r-md); background: var(--ds-fill-2); color: var(--du-text); text-align: center;
+  font-size: var(--ds-fs-sm);
+}
+.hmp-uploading small { color: var(--ds-text-3); font-size: var(--ds-fs-xs); }
 
 /* Delete is a bin that shows on hover or focus (always on touch screens).
    The first press turns it into a red "Delete?" for a few seconds; only a

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
-import { Film, Upload } from "lucide-react";
+import { Film, Loader2, Upload } from "lucide-react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ExtendDialog, type ExtendSource, type ExtendStarted } from "@/components/hf/extend-dialog";
@@ -16,6 +16,7 @@ type Props = {
   source: ExtendSource | null;
   onSource: (source: ExtendSource | null) => void;
   onStarted: (job: ExtendStarted) => void;
+  onPending: (id: string, prompt?: string) => void;
   generationEnabled: boolean;
   freeGeneration: boolean;
 };
@@ -25,7 +26,7 @@ export function asExtendSource(row: StudioResult): ExtendSource | null {
   return { videoUuid: row.videoUuid, videoUrl: row.videoUrl, prompt: row.prompt, resolution: row.resolution, audio: row.audio };
 }
 
-export function ExtendPanel({ locale, source, onSource, onStarted, generationEnabled, freeGeneration }: Props) {
+export function ExtendPanel({ locale, source, onSource, onStarted, onPending, generationEnabled, freeGeneration }: Props) {
   const zh = locale.startsWith("zh");
   const { data: session } = useSession();
   const login = useSigninModal();
@@ -78,13 +79,14 @@ export function ExtendPanel({ locale, source, onSource, onStarted, generationEna
   }, [picker, session?.user?.id, attempt]);
 
   return <>
-    <ExtendDialog freeGeneration={freeGeneration} source={source} zh={zh} onClose={() => onSource(null)} onStarted={onStarted}
+    <ExtendDialog freeGeneration={freeGeneration} source={source} zh={zh} onClose={() => onSource(null)} onStarted={onStarted} onPending={onPending}
       inline={{ generationEnabled, chooseSource: () => { if (session?.user?.id) setPicker(true); else login.onOpen(); } }} />
     <Dialog open={picker} onOpenChange={setPicker}>
       <DialogContent className="xd-picker">
         <DialogTitle>{zh ? "选择要延长的视频" : "Choose a video to extend"}</DialogTitle>
         <DialogDescription>{zh ? "上传原视频，或从自己的已完成作品中选择。" : "Upload your source clip or choose a finished creation."}</DialogDescription>
-        <button type="button" className="vtool-upload-extend" disabled={uploading} onClick={()=>fileInput.current?.click()}><Upload/>{uploading ? (zh ? "正在上传…" : "Uploading…") : (zh ? "上传视频" : "Upload video")}</button>
+        <button type="button" className="vtool-upload-extend" disabled={uploading} onClick={()=>fileInput.current?.click()}>{uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Upload/>}{uploading ? (zh ? "上传中…" : "Uploading…") : (zh ? "上传视频" : "Upload video")}</button>
+        {uploading ? <output aria-live="polite">{zh ? "视频上传中，完成后会自动添加" : "Uploading the video. It will be added when ready."}</output> : null}
         <input ref={fileInput} type="file" hidden accept="video/mp4,video/quicktime,video/webm" onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);e.target.value="";}}/>
         {fileError && <output role="alert">{fileError}</output>}
         {loadError ? <button type="button" className="xd-retry" onClick={() => setAttempt(count => count + 1)}>{zh ? "加载失败，重试" : "Couldn’t load videos. Retry"}</button>

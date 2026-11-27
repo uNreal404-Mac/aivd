@@ -411,6 +411,7 @@ function AiVideoStudioForm({
     id: `submitting:${homeHandoffToken}`, status: "submitting", prompt: initialSettings?.prompt ?? "",
     model: initialCatalogModelId ?? initialSettings?.modelId, createdAt: Date.now(),
   } : null);
+  const [pendingTools, setPendingTools] = useState<StudioResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
   // First visit opens on how it works, as the reference does; returning users
   // land on their history once it loads.
@@ -1054,10 +1055,16 @@ function AiVideoStudioForm({
         })),
     [results],
   );
-  const shownResults = matchingVideos(pendingSubmission ? [pendingSubmission, ...results] : results, historyFilter, Date.now());
+  const shownResults = [...(pendingSubmission ? [pendingSubmission] : []), ...pendingTools, ...matchingVideos(results, historyFilter, Date.now())];
   const filterModels = [...new Set([...availableModelIds, ...results.flatMap(item => item.model ? [item.model] : [])])]
     .map(id => ({ id, name: VIDEO_CATALOG.find(item => item.id === id)?.name ?? getMarketModel(id)?.name ?? id }));
   const clearFilters = () => setHistoryFilter(INITIAL_FILTER);
+  const trackToolPending = (id: string, prompt?: string) => {
+    setPendingTools((current) => prompt === undefined
+      ? current.filter((item) => item.id !== `submitting:${id}`)
+      : [{ id: `submitting:${id}`, status: "submitting", prompt, createdAt: Date.now() }, ...current]);
+    if (prompt !== undefined) { setActiveTab("History"); clearFilters(); }
+  };
   const activeFilters = [
     ...(historyFilter.model ? [{ key: "model", name: filterModels.find(item => item.id === historyFilter.model)?.name ?? historyFilter.model, clear: () => setHistoryFilter(current => ({ ...current, model: "" })) }] : []),
     ...(historyFilter.range !== "all" ? [{ key: "range", name: rangeName(historyFilter.range, isChinese), clear: () => setHistoryFilter(current => ({ ...current, range: "all", dates: undefined })) }] : []),
@@ -1138,6 +1145,7 @@ function AiVideoStudioForm({
                 enabled={canUseGeneration}
                 free={internalFree}
                 onExtend={() => chooseMode("create", true)}
+                onPending={trackToolPending}
                 onStarted={(uuid, prompt) => {
                   if (!mounted.current) return;
                   setResults((prev) => [{ id: uuid, videoUuid: uuid, prompt, status: "queued", createdAt: Date.now() }, ...prev]);
@@ -1176,6 +1184,7 @@ function AiVideoStudioForm({
         <div className="vtool-extend-body" hidden={!extendMode}><ExtendPanel
           key={session?.user?.id ?? "guest"}
           locale={locale} source={extendSource} onSource={changeExtendSource} generationEnabled={canUseGeneration} freeGeneration={internalFree}
+          onPending={trackToolPending}
           onStarted={job => {
             setResults(previous => [{ id: job.uuid, videoUuid: job.uuid, status: "queued", prompt: job.prompt, createdAt: Date.now() }, ...previous]);
             setActiveTab("History");
@@ -1401,7 +1410,7 @@ function AiVideoStudioForm({
 
       <section aria-label={copy.results} className="vst-stage" data-library={presetsOpen || undefined}>
         <div className="vst-stage-bar">
-          <StageTabs zh={isChinese} active={activeTab} count={results.length + (pendingSubmission ? 1 : 0)} onChange={setActiveTab} />
+          <StageTabs zh={isChinese} active={activeTab} count={results.length + pendingTools.length + (pendingSubmission ? 1 : 0)} onChange={setActiveTab} />
           {activeTab === "History" ? (
             <div className="vst-stage-tools">
               <FilterMenu zh={isChinese} filter={historyFilter} models={filterModels} onChange={setHistoryFilter} />

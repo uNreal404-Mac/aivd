@@ -113,6 +113,11 @@
 .cs-agent-asset-remove { position: absolute; top: -5px; right: -5px; display: flex; width: 18px; height: 18px; align-items: center; justify-content: center; border-radius: 50%; background: var(--du-surface-2); color: var(--ds-text-1); }
 .cs-agent-error { margin: 10px 4px 0; color: var(--du-accent-text); font-size: var(--ds-fs-xs); }
 .cs-agent-plan { margin-top: 12px; padding: 20px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-2xl); background: var(--du-surface); color: var(--ds-text-2); font-size: var(--ds-fs-sm); line-height: 1.6; }
+.cs-agent-loading { display: grid; gap: 12px; }
+.cs-agent-loading > span { display: flex; align-items: center; gap: 8px; color: var(--du-accent-text); }
+.cs-agent-loading-line { display: block; width: 88%; height: 10px; border-radius: var(--ds-r-full); background: var(--ds-fill-2); animation: cs-agent-wait 1.5s ease-in-out infinite alternate; }
+.cs-agent-loading-line:last-child { width: 62%; animation-delay: .2s; }
+@keyframes cs-agent-wait { to { opacity: .38; } }
 .cs-agent-plan-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .cs-agent-plan-head span { display: inline-flex; align-items: center; gap: 6px; color: var(--du-accent-text); font-weight: 600; }
 .cs-agent-plan-head a { color: var(--du-accent-text); font-size: var(--ds-fs-xs); }

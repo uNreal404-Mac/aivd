@@ -620,6 +620,11 @@ button.is-chip[aria-expanded="true"] {
   width: 44px;
   height: 44px;
 }
+.is-ref-uploading {
+  display: flex; min-height: 44px; align-items: center; gap: 7px; padding: 0 12px;
+  border-radius: var(--ds-r-sm); background: var(--ds-fill-2); color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+}
 
 .is-ref-mention {
   display: block;

@@ -321,6 +321,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     if (!files.length || uploading) return;
     const batch = Array.from(files);
     const revision = uploadRevision.current;
+    setTab("upload");
     setUploading(true); setError(""); setUploadProgress({ done: 0, total: batch.length });
     let failures = 0;
     for (const [index, original] of batch.entries()) {
@@ -487,6 +488,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // The upload tile opens the file chooser; it leads the uploads grid, even
   // when there is nothing uploaded yet.
   const addTile = <button type="button" className="hmp-add" title={limits} disabled={uploading || deletingMany} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{homepage ? (zh ? "批量上传文件" : "Upload files") : (zh ? "上传文件" : "Upload file")}</button>;
+  const uploadingTile = uploading ? <output className="hmp-uploading" aria-live="polite"><Loader2 className="hmp-spin" size={24} aria-hidden="true" /><strong>{zh ? "上传中" : "Uploading"}</strong>{uploadProgress.total > 1 ? <small>{uploadProgress.done}/{uploadProgress.total}</small> : null}</output> : null;
   const deleteTargets = confirmDelete === "all" ? assets : assets.filter((asset) => managed.includes(asset.id));
   const linkedCount = elements.filter((element) => deleteTargets.some((asset) => asset.id === element.assetId)).length + brands.filter((brand) => deleteTargets.some((asset) => asset.id === brand.logoId)).length;
 
@@ -515,8 +517,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           {create === "element" ? <label>{zh ? "分类" : "Category"}<select value={category === "all" ? "character" : category} onChange={(e) => setCategory(e.target.value)}>{ELEMENT_CATEGORIES.filter((item) => item.id !== "all").map((item) => <option key={item.id} value={item.id}>{zh ? item.zh : item.en}</option>)}</select></label> : null}
           <label>{create === "element" ? (zh ? "元素图片" : "Element image") : "Logo"}<select value={sourceId} onChange={(e) => setSourceId(e.target.value)}><option value="">{zh ? "选择已上传图片" : "Choose an uploaded image"}</option>{assets.filter((a) => a.mimeType.startsWith("image/")).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
           <div className="hmp-create-actions"><button type="button" onClick={() => setCreate(null)}>{zh ? "取消" : "Cancel"}</button><button type="button" onClick={saveCreation}>{zh ? "保存" : "Save"}</button></div></div>
-        : tab === "upload" && !shown.length ? <><div className="hmp-grid">{addTile}</div><div className="hmp-empty hmp-empty-uploads"><strong>{loadingAssets ? (zh ? "正在读取上传内容…" : "Loading your uploads…") : (zh ? "还没有上传内容" : "Nothing uploaded yet")}</strong><p>{homepage ? (zh ? "可一次选择多张图片、多段视频或音频，也可以拖入文件" : "Choose multiple images, videos, or audio files at once, or drop them here") : allowVideo ? (zh ? "点上传文件，或把图片、视频拖进来" : "Choose Upload file, or drop images or videos here") : (zh ? "点上传文件，或把图片拖进来" : "Choose Upload file, or drop images here")} · {limits}</p></div></>
-        : shown.length ? <div className="hmp-grid" data-named={tab === "elements" || tab === "brand" || undefined}>{tab === "upload" ? addTile : null}{shown.map((item) => {
+        : tab === "upload" && !shown.length ? <><div className="hmp-grid">{addTile}{uploadingTile}</div>{!uploading ? <div className="hmp-empty hmp-empty-uploads"><strong>{loadingAssets ? (zh ? "正在读取上传内容…" : "Loading your uploads…") : (zh ? "还没有上传内容" : "Nothing uploaded yet")}</strong><p>{homepage ? (zh ? "可一次选择多张图片、多段视频或音频，也可以拖入文件" : "Choose multiple images, videos, or audio files at once, or drop them here") : allowVideo ? (zh ? "点上传文件，或把图片、视频拖进来" : "Choose Upload file, or drop images or videos here") : (zh ? "点上传文件，或把图片拖进来" : "Choose Upload file, or drop images here")} · {limits}</p></div> : null}</>
+        : shown.length ? <div className="hmp-grid" data-named={tab === "elements" || tab === "brand" || undefined}>{tab === "upload" ? <>{addTile}{uploadingTile}</> : null}{shown.map((item) => {
           const isSelected = manageMode && tab === "upload" ? managed.includes(item.id) : selected.includes(item.id);
           const isArmed = armed === item.id;
           const note = isArmed ? usageNote(item.id) : "";

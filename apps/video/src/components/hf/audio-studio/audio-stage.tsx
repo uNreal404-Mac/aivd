@@ -79,7 +79,10 @@ export function AudioStage({
     if (!filterOpen) setRangeOpen(false);
   }, [filterOpen]);
   const filtered = type !== "all" || range !== "all";
-  const shown = useMemo(() => filterAudioJobs(jobs, { type, range }, Date.now()), [jobs, type, range]);
+  const shown = useMemo(() => [
+    ...jobs.filter((job) => job.status === "submitting"),
+    ...filterAudioJobs(jobs.filter((job) => job.status !== "submitting"), { type, range }, Date.now()),
+  ], [jobs, type, range]);
   const types: { id: HistoryType; label: string; icon: typeof AudioLines }[] = [
     { id: "all", label: zh ? "全部" : "All", icon: LayoutGrid },
     { id: "speech", label: zh ? "语音" : "Speech", icon: AudioLines },
