@@ -7,6 +7,8 @@ import { languageSwitchSuffix, localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AudioLines,
+  Bot,
   ChevronDown,
   ChevronRight,
   Code2,
@@ -14,6 +16,7 @@ import {
   CreditCard,
   Crown,
   Folder,
+  Film,
   Languages,
   LogOut,
   Megaphone,
@@ -210,25 +213,19 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       };
 
   const dropdowns = buildDropdowns(zh);
+  const primaryDropdowns = dropdowns.filter((menu) => ["image", "video", "templates"].includes(menu.id));
 
-  // Top-level products that are not built yet, shown the way the reference
-  // site shows its upcoming products: in the bar, with a small badge.
-  // Products that are not built yet sit under "More", as the reference keeps
-  // its secondary items, instead of crowding the bar.
   const moreMenu = {
     id: "more",
     label: zh ? "更多" : "More",
     path: "",
     routes: [] as string[],
     columns: [
-      // Shown only when the bar folds its secondary links into "More"
-      // (English pages, or windows 1280px and narrower; see top-nav.css).
       {
-        title: zh ? "浏览" : "Browse",
-        secondary: true,
+        title: zh ? "更多页面" : "More pages",
         items: [
-          { title: zh ? "模板" : "Templates", desc: zh ? "挑一个模板，提示词一键带入" : "Pick one and its prompt loads for you", icon: LayoutGrid, href: "/templates" },
-          { title: t.community, desc: zh ? "看看大家生成的作品" : "See what people are making", icon: Users, href: "/gallery" },
+          { title: t.pricing, desc: zh ? "查看套餐和积分" : "Explore plans and credits", icon: Crown, href: "/pricing" },
+          { title: zh ? "帮助中心" : "Help center", desc: zh ? "查找使用指南和常见问题" : "Guides and common questions", icon: Compass, href: "/help" },
         ] as DropItem[],
       },
       {
@@ -245,7 +242,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   const href = (path: string) => localizedHref(lang, path);
   const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  const activeSection = dropdowns.find((menu) => inRoutes(menu.routes));
+  const activeSection = primaryDropdowns.find((menu) => inRoutes(menu.routes));
   const headerRef = useRef<HTMLElement>(null);
   // Tool layouts size their workspace to the space under the header.
   useEffect(() => {
@@ -304,7 +301,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       setOpen((current) => (current === id ? null : current));
     },
   });
-  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links .hf-item")].filter((item) => item.offsetParent !== null);
+  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links a.hf-item, .hf-nav-links button.hf-item")].filter((item) => item.offsetParent !== null);
   const panelKeys = {
     onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
       const rows = panelRows();
@@ -366,6 +363,26 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     );
   };
 
+  const mobileSection = (menu: { id: string; label: string; path: string; columns: { title: string; items: DropItem[] }[] }) => {
+    const expanded = menuSection === menu.id;
+    const current = activeSection?.id === menu.id;
+    return <section key={menu.id} className="hf-mm-sec" data-open={expanded || undefined}>
+      <button type="button" className="hf-mm-head" aria-expanded={expanded} onClick={() => setMenuSection(expanded ? null : menu.id)}>
+        <span className="hf-mm-label">{menu.label}{current ? <span className="hf-mm-here">{zh ? "当前" : "Here"}</span> : null}</span>
+        <ChevronDown className="hf-mm-chev" aria-hidden="true" />
+      </button>
+      <div className="hf-mm-collapse" inert={!expanded}>
+        <div className="hf-mm-body">
+          {menu.columns.map((column) => <div key={column.title} className="hf-mm-col">
+            <p className="hf-dd-col-title">{column.title}</p>
+            {column.items.map(row)}
+          </div>)}
+          {menu.path && <Link href={href(menu.path)} className="hf-mm-all">{zh ? `打开${menu.label}` : `Open ${menu.label}`}<ChevronRight aria-hidden="true" /></Link>}
+        </div>
+      </div>
+    </section>;
+  };
+
   // Keep the dropdown inside the window when its trigger sits near the right.
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -410,12 +427,10 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     router.refresh();
   };
 
-  // The narrow-screen menu opens on the current section (on a page outside
-  // every section, on Video: this is a video site, and Image comes first in
-  // the list), closes on Escape and holds the page still underneath.
+  // The narrow-screen menu opens on the current section when there is one.
   useEffect(() => {
     if (!menuOpen) return;
-    setMenuSection((current) => current ?? activeSection?.id ?? dropdowns.find((menu) => menu.id === "video")?.id ?? dropdowns[0]?.id ?? null);
+    setMenuSection((current) => current ?? activeSection?.id ?? null);
     const wide = window.matchMedia("(min-width: 1080px)");
     const closeOnWide = () => { if (wide.matches) setOverlay(null); };
     wide.addEventListener("change", closeOnWide);
@@ -432,7 +447,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     { label: t.billing, href: "/credits", icon: CreditCard },
     { label: t.account, href: "/account", icon: UserRound },
   ];
-  const openMenu = open === "more" ? moreMenu : dropdowns.find((menu) => menu.id === open);
+  const openMenu = open === "more" ? moreMenu : primaryDropdowns.find((menu) => menu.id === open);
   // Menus stay mounted long enough to leave (hooks/use-presence); the panel
   // keeps showing the last menu while it fades out.
   const lastMenu = useRef(openMenu);
@@ -448,7 +463,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
 
   return (
-    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")} data-compact-nav={!zh || undefined}>
+    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
       <div className="hf-nav-inner">
         <Link href={href("/")} className="hf-brand">
           <img src="/logo.svg" alt="" width={26} height={26} className="hf-brand-logo" />
@@ -461,7 +476,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link href={href("/")} className="hf-item" data-active={pathname === "/" || undefined}>
               {t.home}
             </Link>
-            {dropdowns.map((menu) => (
+            {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map((menu) => (
               <Link
                 key={menu.id}
                 href={href(menu.path)}
@@ -469,7 +484,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 aria-haspopup="true"
                 onFocus={(event) => openNow(menu.id, event.currentTarget)}
                 {...triggerKeys(menu.id)}
-                className={cn("hf-item", menu.id === "templates" && "hf-item-secondary")}
+                className="hf-item"
                 data-open={open === menu.id || undefined}
                 data-active={activeSection?.id === menu.id || undefined}
                 {...hover(menu.id)}
@@ -477,9 +492,40 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 {menu.label}
               </Link>
             ))}
-            <Link href={href("/gallery")} className="hf-item hf-item-secondary" data-active={isActive("/gallery") || undefined}>
-              {t.community}
+            <Link href={href("/creative-space")} className="hf-item" data-active={pathname === "/creative-space" || undefined}>
+              AGENT
             </Link>
+            <Link href={href("/creative-space/canvas")} className="hf-item" data-active={isActive("/creative-space/canvas") || undefined}>
+              {zh ? "画布" : "Canvas"}
+            </Link>
+            {primaryDropdowns.filter((menu) => menu.id === "templates").map((menu) => (
+              <Link
+                key={menu.id}
+                href={href(menu.path)}
+                aria-expanded={open === menu.id}
+                aria-haspopup="true"
+                onFocus={(event) => openNow(menu.id, event.currentTarget)}
+                {...triggerKeys(menu.id)}
+                className="hf-item"
+                data-open={open === menu.id || undefined}
+                data-active={activeSection?.id === menu.id || undefined}
+                {...hover(menu.id)}
+              >
+                {menu.label}
+              </Link>
+            ))}
+            <Link href={href("/ai/video")} className="hf-item" data-active={isActive("/ai/video") || undefined}>
+              {zh ? "视频工作室" : "Video Studio"}
+            </Link>
+            <Link href={href("/my-creations")} className="hf-item" data-active={isActive("/my-creations") || undefined}>
+              {t.creations}
+            </Link>
+            <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
+              {zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span>
+            </span>
+            <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
+              {t.community}<span className="hf-tag">Coming Soon</span>
+            </span>
             <button
               type="button"
               className="hf-item"
@@ -692,67 +738,17 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                   if ((event.target as HTMLElement).closest("a")) setOverlay(null);
                 }}
               >
-                <div className="hf-mm-quick">
-                  <Link href={href("/")} className="hf-mm-quick-item" data-active={pathname === "/" || undefined}>
-                    <Compass aria-hidden="true" />
-                    {t.home}
-                  </Link>
-                  <button
-                    type="button"
-                    className="hf-mm-quick-item"
-                    onClick={() => {
-                      setOverlay("search");
-                    }}
-                  >
-                    <Search aria-hidden="true" />
-                    {zh ? "搜索" : "Search"}
-                  </button>
-                  <Link href={href("/gallery")} className="hf-mm-quick-item" data-active={isActive("/gallery") || undefined}>
-                    <Users aria-hidden="true" />
-                    {t.community}
-                  </Link>
-                  <Link href={href("/pricing")} className="hf-mm-quick-item" data-active={isActive("/pricing") || undefined}>
-                    <Crown aria-hidden="true" />
-                    {t.pricing}
-                  </Link>
-                </div>
-
-                {[...dropdowns, moreMenu].map((menu) => {
-                  const expanded = menuSection === menu.id;
-                  const current = activeSection?.id === menu.id;
-                  return (
-                    <section key={menu.id} className="hf-mm-sec" data-open={expanded || undefined}>
-                      <button
-                        type="button"
-                        className="hf-mm-head"
-                        aria-expanded={expanded}
-                        onClick={() => setMenuSection(expanded ? null : menu.id)}
-                      >
-                        <span className="hf-mm-label">
-                          {menu.label}
-                          {current ? <span className="hf-mm-here">{zh ? "当前" : "Here"}</span> : null}
-                        </span>
-                        <ChevronDown className="hf-mm-chev" aria-hidden="true" />
-                      </button>
-                      <div className="hf-mm-collapse" inert={!expanded}>
-                        <div className="hf-mm-body">
-                          {menu.columns.map((column) => (
-                            <div key={column.title} className="hf-mm-col">
-                              <p className="hf-dd-col-title">{column.title}</p>
-                              {column.items.map(row)}
-                            </div>
-                          ))}
-                          {menu.path ? (
-                            <Link href={href(menu.path)} className="hf-mm-all">
-                              {zh ? `打开${menu.label}` : `Open ${menu.label}`}
-                              <ChevronRight aria-hidden="true" />
-                            </Link>
-                          ) : null}
-                        </div>
-                      </div>
-                    </section>
-                  );
-                })}
+                <button type="button" className="hf-mm-search" onClick={() => setOverlay("search")}><Search aria-hidden="true" />{zh ? "搜索" : "Search"}</button>
+                <Link href={href("/")} className="hf-mm-direct" data-active={pathname === "/" || undefined}><Compass aria-hidden="true" />{t.home}</Link>
+                {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map(mobileSection)}
+                <Link href={href("/creative-space")} className="hf-mm-direct" data-active={pathname === "/creative-space" || undefined}><Bot aria-hidden="true" />AGENT</Link>
+                <Link href={href("/creative-space/canvas")} className="hf-mm-direct" data-active={isActive("/creative-space/canvas") || undefined}><LayoutGrid aria-hidden="true" />{zh ? "画布" : "Canvas"}</Link>
+                {primaryDropdowns.filter((menu) => menu.id === "templates").map(mobileSection)}
+                <Link href={href("/ai/video")} className="hf-mm-direct" data-active={isActive("/ai/video") || undefined}><Film aria-hidden="true" />{zh ? "视频工作室" : "Video Studio"}</Link>
+                <Link href={href("/my-creations")} className="hf-mm-direct" data-active={isActive("/my-creations") || undefined}><Folder aria-hidden="true" />{t.creations}</Link>
+                <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><AudioLines aria-hidden="true" />{zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span></span>
+                <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><Users aria-hidden="true" />{t.community}<span className="hf-tag">Coming Soon</span></span>
+                {mobileSection(moreMenu)}
 
                 <div className="hf-mm-foot">
                   <Link href={href("/pricing")} className="hf-mm-offer">

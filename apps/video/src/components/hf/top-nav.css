@@ -136,6 +136,7 @@
   display: flex;
   width: max-content;
   align-items: center;
+  gap: 2px;
 }
 
 .hf-item {
@@ -176,6 +177,24 @@ a.hf-item:hover,
 
 .hf-item-off {
   cursor: default;
+}
+
+.hf-item-coming {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 0 6px;
+  color: var(--ds-text-3);
+  opacity: .56;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hf-item-coming .hf-tag {
+  padding: 0 3px;
+  background: transparent;
+  font-size: 9px;
+  line-height: 10px;
 }
 
 .hf-sep {
@@ -384,47 +403,9 @@ a.hf-item:hover,
   padding: 12px 8px 8px;
 }
 
-.hf-nav[data-compact-nav] .hf-nav-inner {
-  gap: 16px;
-}
-
-.hf-nav[data-compact-nav] .hf-item-secondary {
-  display: none;
-}
-
-.hf-nav[data-compact-nav] .hf-nav-scroll {
-  overflow: visible;
-  mask-image: none;
-}
-
-.hf-nav[data-compact-nav] .hf-dd .hf-dd-col-secondary {
-  display: flex;
-}
-
-.hf-nav[data-compact-nav] .hf-dd .hf-dd-col-secondary + .hf-dd-col {
-  padding-left: 0;
-}
-
 @media (max-width: 1280px) {
   .hf-nav-inner {
     gap: 16px;
-  }
-
-  .hf-item-secondary {
-    display: none;
-  }
-
-  .hf-nav-scroll {
-    overflow: visible;
-    mask-image: none;
-  }
-
-  .hf-dd .hf-dd-col-secondary {
-    display: flex;
-  }
-
-  .hf-dd .hf-dd-col-secondary + .hf-dd-col {
-    padding-left: 0;
   }
 }
 
@@ -435,6 +416,15 @@ a.hf-item:hover,
   .hf-act-accent {
     display: none;
   }
+}
+
+/* Keep every requested primary destination visible on laptop widths. Pricing
+   remains available from More, and the sign-up button opens the same login flow. */
+@media (max-width: 1439px) {
+  .hf-nav-inner { gap: 12px; }
+  .hf-act-pricing,
+  .hf-lang,
+  .hf-auth-login { display: none; }
 }
 
 @media (max-width: 1279px) {
@@ -894,6 +884,52 @@ a.hf-dd-row:active {
   gap: var(--ds-space-2);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: var(--ds-space-2);
+}
+
+.hf-mm-search,
+.hf-mm-direct {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: var(--ds-r-lg);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+  text-align: left;
+}
+
+.hf-mm-search {
+  margin-bottom: 12px;
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+}
+
+.hf-mm-search:hover,
+a.hf-mm-direct:hover,
+.hf-mm-direct[data-active] {
+  background: var(--ds-fill-1);
+}
+
+.hf-mm-search svg,
+.hf-mm-direct svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--ds-text-3);
+}
+
+.hf-mm-direct-off {
+  color: var(--ds-text-3);
+  opacity: .56;
+  user-select: none;
+}
+
+.hf-mm-direct-off .hf-tag {
+  margin-left: auto;
+  font-size: 10px;
 }
 
 .hf-mm-quick-item {

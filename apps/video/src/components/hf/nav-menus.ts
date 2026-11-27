@@ -114,8 +114,8 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
     {
       id: "video",
       label: zh ? "视频" : "Video",
-      path: "/ai/video",
-      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video"],
+      path: "/video",
+      routes: ["/video", "/text-to-video", "/image-to-video", "/reference-to-video"],
       columns: [
         {
           title: zh ? "功能" : "Features",
@@ -205,7 +205,6 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           title: zh ? "灵感" : "Inspiration",
           items: [
             { title: zh ? "特效模板" : "Effect templates", desc: zh ? "热门视频特效" : "Trending video effects", icon: Sparkles, href: "/effects", badge: "hot" },
-            { title: zh ? "社区画廊" : "Community gallery", desc: zh ? "看看大家都在做什么" : "See what others are making", icon: Users, href: "/gallery" },
           ],
         },
       ],
