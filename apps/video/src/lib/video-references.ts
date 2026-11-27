@@ -4,11 +4,11 @@ export const MAX_HOME_REFERENCES = 12;
 
 export type UploadedVideoReference = { key: string; name: string; url: string; mimeType?: string; sourceId?: string };
 
-// The two legacy video models accept a single start image. Market models
-// declare their own reference-image limit, subject to the site's 12-item UI cap.
+// Market models declare their own reference-image limit, subject to the site's
+// 12-item UI cap. KIE Veo 3.1 material mode accepts three reference images.
 export function maxVideoReferences(modelId: string): number {
   const marketModel = getMarketModel(modelId);
-  return marketModel ? (marketModel.options.maxImages ?? 0) : 1;
+  return marketModel ? (marketModel.options.maxImages ?? 0) : modelId === "veo-3.1" ? 3 : 1;
 }
 
 const REFERENCE_TOKEN = /@(图片|image|视频|video)(\d+)(?!\d)/gi;

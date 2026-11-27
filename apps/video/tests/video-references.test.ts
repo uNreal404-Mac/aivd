@@ -4,8 +4,8 @@ import { maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceTo
 
 describe("homepage video references", () => {
   it("uses the selected model's reference limit", () => {
-    expect(maxVideoReferences("veo-3.1")).toBe(1);
-    expect(maxVideoReferences("kling/v4-reference-to-video")).toBe(4);
+    expect(maxVideoReferences("veo-3.1")).toBe(3);
+    expect(maxVideoReferences("kling/v4-reference-to-video")).toBe(10);
     expect(maxVideoReferences("bytedance/seedance-2-5")).toBe(12);
     expect(maxVideoReferences("seedance-2-5-flash")).toBe(10);
     expect(maxVideoReferences("bytedance/seedance-2")).toBe(9);

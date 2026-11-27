@@ -274,7 +274,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: KLING_KEYFRAME_MODEL,
     kind: "video",
     name: "Kling 4.0",
-    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 30), maxImages: 4 },
+    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 30), maxImages: 10 },
     costUsd: (req) => perSecond(KLING_4_USD, "720p")(req, 3, 30, 5),
     buildTask: (req) => req.keyframes ? {
       model: "kling-4.0/keyframe-to-video",
@@ -289,11 +289,11 @@ const VIDEO_MODELS: MarketModel[] = [
     } : ({
       model: "kling-4.0/reference-to-video",
       input: {
-        prompt: req.prompt,
+        prompt: bindImageTags(req.prompt, Math.min(req.imageUrls?.length ?? 0, 10), (index) => `@image_${index}`),
         resolution: req.resolution ?? "720p",
         aspect_ratio: req.imageUrls?.length ? "auto" : (req.aspectRatio ?? "16:9"),
         duration: clampDuration(req, 3, 30, 5),
-        ...(req.imageUrls?.length ? { image_urls: req.imageUrls.slice(0, 4) } : {}),
+        ...(req.imageUrls?.length ? { image_urls: req.imageUrls.slice(0, 10) } : {}),
       },
     }),
   },
@@ -301,16 +301,16 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "kling/v4-flash-reference-to-video",
     kind: "video",
     name: "Kling 4.0 Flash",
-    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p"], durations: secondsBetween(3, 20), maxImages: 4 },
+    options: { aspects: ["16:9", "9:16", "1:1", "21:9"], resolutions: ["720p"], durations: secondsBetween(3, 20), maxImages: 10 },
     costUsd: (req) => perSecond(KLING_4_FLASH_USD, "720p")(req, 3, 20, 5),
     buildTask: (req) => ({
       model: "kling-4.0/flash-reference-to-video",
       input: {
-        prompt: req.prompt,
+        prompt: bindImageTags(req.prompt, Math.min(req.imageUrls?.length ?? 0, 10), (index) => `@image_${index}`),
         resolution: "720p",
         aspect_ratio: req.imageUrls?.length ? "auto" : (req.aspectRatio ?? "16:9"),
         duration: clampDuration(req, 3, 20, 5),
-        ...(req.imageUrls?.length ? { image_urls: req.imageUrls.slice(0, 4) } : {}),
+        ...(req.imageUrls?.length ? { image_urls: req.imageUrls.slice(0, 10) } : {}),
       },
     }),
   },
@@ -318,7 +318,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "gemini-omni-flash-1-2",
     kind: "video",
     name: "Gemini Omni Flash 1.2",
-    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: secondsBetween(3, 15), maxImages: 1 },
+    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: secondsBetween(3, 15), maxImages: 6 },
     costUsd: (req) => perSecond(GEMINI_OMNI_12_USD, "720p")(req, 3, 15, 5),
     buildTask: (req) => ({
       model: "google/gemini-omni-flash-1-2",
@@ -327,7 +327,9 @@ const VIDEO_MODELS: MarketModel[] = [
         resolution: req.resolution ?? "720p",
         aspect_ratio: req.aspectRatio ?? "16:9",
         duration: clampDuration(req, 3, 15, 5),
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...(req.imageUrls && req.imageUrls.length > 1
+          ? { image_urls: req.imageUrls.slice(0, 6) }
+          : firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
       },
     }),
   },
@@ -335,13 +337,17 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "minimax-h3/text-to-video",
     kind: "video",
     name: "MiniMax H3",
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["768p", "2k"], durations: secondsBetween(4, 15), maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["768p", "2k"], durations: secondsBetween(4, 15), maxImages: 9 },
     costUsd: (req) =>
-      perSecond(MINIMAX_H3_USD, "768p")(req, 4, 15, 6) + (firstImage(req) ? MINIMAX_H3_IMAGE_INPUT_USD : 0),
+      perSecond(MINIMAX_H3_USD, "768p")(req, 4, 15, 6)
+      + (firstImage(req) ? MINIMAX_H3_IMAGE_INPUT_USD : 0)
+      + Math.max(0, (req.imageUrls?.length ?? 0) - 5) * MINIMAX_H3_IMAGE_INPUT_USD,
     buildTask: (req) => {
       const resolution = req.resolution === "2k" ? "2K" : "768P";
       const duration = clampDuration(req, 4, 15, 6);
-      return firstImage(req)
+      return (req.imageUrls?.length ?? 0) > 1
+        ? { model: "minimax-h3/reference-to-video", input: { prompt: req.prompt, reference_image_urls: req.imageUrls!.slice(0, 9), aspect_ratio: req.aspectRatio ?? "16:9", duration, resolution } }
+        : firstImage(req)
         ? { model: "minimax-h3/image-to-video", input: { prompt: req.prompt, first_frame_url: firstImage(req), duration, resolution } }
         : { model: "minimax-h3/text-to-video", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "16:9", duration, resolution } };
     },
@@ -350,17 +356,21 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "wan/3-0-video",
     kind: "video",
     name: "Wan 3.0",
-    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 1, audioToggle: true },
+    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 10, audioToggle: true },
     costUsd: (req) => perSecond(WAN_3_USD, "720p")(req, 2, 30, 5),
     buildTask: (req) => ({
       model: "wan/3-0-video",
       input: {
-        prompt: req.prompt,
+        prompt: req.imageUrls && req.imageUrls.length > 1
+          ? bindImageTags(req.prompt, Math.min(req.imageUrls.length, 10), (index) => `Image${index}`)
+          : req.prompt,
         resolution: (req.resolution ?? "720p").toUpperCase(),
-        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        aspect_ratio: req.imageUrls?.length === 1 ? "adaptive" : (req.aspectRatio ?? "16:9"),
         duration: clampDuration(req, 2, 30, 5),
         audio: req.audio ?? true,
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...(req.imageUrls && req.imageUrls.length > 1
+          ? { reference_image_urls: req.imageUrls.slice(0, 10) }
+          : firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
       },
     }),
   },
@@ -402,12 +412,14 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "happyhorse-1-1",
     kind: "video",
     name: "HappyHorse 1.1",
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 9 },
     costUsd: (req) => perSecond(HAPPYHORSE_11_USD, "1080p")(req, 3, 15, 5),
     buildTask: (req) => {
       const resolution = req.resolution ?? "1080p";
       const duration = clampDuration(req, 3, 15, 5);
-      return firstImage(req)
+      return (req.imageUrls?.length ?? 0) > 1
+        ? { model: "happyhorse-1-1/reference-to-video", input: { prompt: bindImageTags(req.prompt, Math.min(req.imageUrls!.length, 9), (index) => `[Image ${index}]`), reference_image: req.imageUrls!.slice(0, 9), aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } }
+        : firstImage(req)
         ? { model: "happyhorse-1-1/image-to-video", input: { prompt: req.prompt, image_urls: [firstImage(req)], resolution, duration } }
         : { model: "happyhorse-1-1/text-to-video", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } };
     },
@@ -440,7 +452,7 @@ const VIDEO_MODELS: MarketModel[] = [
     kind: "video",
     name: "Kling 3.0",
     // std renders 720p, pro 1080p; sound changes the price.
-    options: { aspects: ["16:9", "9:16", "1:1"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1, audioToggle: true },
+    options: { aspects: ["16:9", "9:16", "1:1"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 2, audioToggle: true },
     costUsd: (req) => {
       const table = req.audio === false ? KLING_3_USD : KLING_3_AUDIO_USD;
       return perSecond(table, "720p")(req, 3, 15, 5);
@@ -454,7 +466,7 @@ const VIDEO_MODELS: MarketModel[] = [
         aspect_ratio: req.aspectRatio && ["16:9", "9:16", "1:1"].includes(req.aspectRatio) ? req.aspectRatio : "16:9",
         mode: req.resolution === "1080p" ? "pro" : "std",
         multi_shots: false,
-        ...(firstImage(req) ? { image_urls: [firstImage(req)] } : {}),
+        ...(firstImage(req) ? { image_urls: req.imageUrls!.slice(0, 2) } : {}),
       },
     }),
   },
@@ -462,17 +474,21 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "wan/3-0-video-prime",
     kind: "video",
     name: "Wan 3.0 Prime",
-    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 1, audioToggle: true },
+    options: { aspects: COMMON_ASPECTS, resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(2, 30), maxImages: 10, audioToggle: true },
     costUsd: (req) => perSecond(WAN_3_PRIME_USD, "720p")(req, 2, 30, 5),
     buildTask: (req) => ({
       model: "wan/3-0-video-prime",
       input: {
-        prompt: req.prompt,
+        prompt: req.imageUrls && req.imageUrls.length > 1
+          ? bindImageTags(req.prompt, Math.min(req.imageUrls.length, 10), (index) => `Image${index}`)
+          : req.prompt,
         resolution: (req.resolution ?? "720p").toUpperCase(),
-        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        aspect_ratio: req.imageUrls?.length === 1 ? "adaptive" : (req.aspectRatio ?? "16:9"),
         duration: clampDuration(req, 2, 30, 5),
         audio: req.audio ?? true,
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...(req.imageUrls && req.imageUrls.length > 1
+          ? { reference_image_urls: req.imageUrls.slice(0, 10) }
+          : firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
       },
     }),
   },
@@ -481,7 +497,7 @@ const VIDEO_MODELS: MarketModel[] = [
     kind: "video",
     name: "Gemini Omni Flash 1.1",
     // Billed per clip by length: 4/6/8/10 s, one price up to 1080p and one for 4K.
-    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: [4, 6, 8, 10], maxImages: 1 },
+    options: { aspects: ["16:9", "9:16"], resolutions: ["360p", "720p", "1080p", "4k"], durations: [4, 6, 8, 10], maxImages: 7 },
     costUsd: (req) => (req.resolution === "4k" ? GEMINI_OMNI_11_4K_USD : GEMINI_OMNI_11_USD)[omniDuration(req)],
     buildTask: (req) => ({
       model: "google/gemini-omni-flash-1-1",
@@ -490,7 +506,9 @@ const VIDEO_MODELS: MarketModel[] = [
         duration: String(omniDuration(req)),
         aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9",
         resolution: req.resolution ?? "720p",
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...(req.imageUrls && req.imageUrls.length > 1
+          ? { image_urls: req.imageUrls.slice(0, 7) }
+          : firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
       },
     }),
   },
@@ -498,12 +516,14 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "happyhorse/text-to-video",
     kind: "video",
     name: "HappyHorse 1.0",
-    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 1 },
+    options: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutions: ["720p", "1080p"], durations: secondsBetween(3, 15), maxImages: 9 },
     costUsd: (req) => perSecond(HAPPYHORSE_10_USD, "1080p")(req, 3, 15, 5),
     buildTask: (req) => {
       const resolution = req.resolution ?? "1080p";
       const duration = clampDuration(req, 3, 15, 5);
-      return firstImage(req)
+      return (req.imageUrls?.length ?? 0) > 1
+        ? { model: "happyhorse/reference-to-video", input: { prompt: bindImageTags(req.prompt, Math.min(req.imageUrls!.length, 9), (index) => `character${index}`), reference_image: req.imageUrls!.slice(0, 9), aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } }
+        : firstImage(req)
         ? { model: "happyhorse/image-to-video", input: { prompt: req.prompt, image_urls: [firstImage(req)], resolution, duration } }
         : { model: "happyhorse/text-to-video", input: { prompt: req.prompt, aspect_ratio: req.aspectRatio ?? "16:9", resolution, duration } };
     },
@@ -591,11 +611,13 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "wan/2-7-text-to-video", kind: "video", name: "Wan 2.7",
-    options: { aspects: COMMON_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(2, 15), maxImages: 2, maxPromptLength: 5000 },
+    options: { aspects: COMMON_ASPECTS, resolutions: ["720p", "1080p"], durations: secondsBetween(2, 15), maxImages: 5, maxPromptLength: 5000 },
     costUsd: (req) => perSecond({ "720p": .08, "1080p": .12 }, "720p")(req, 2, 15, 5),
     buildTask: (req) => {
       const common = { prompt: req.prompt, resolution: hd(req), duration: clampDuration(req, 2, 15, 5) };
-      return firstImage(req)
+      return (req.imageUrls?.length ?? 0) > 2
+        ? { model: "wan/2-7-r2v", input: { ...common, reference_image: req.imageUrls!.slice(0, 5), aspect_ratio: option(req.aspectRatio, COMMON_ASPECTS, "16:9") } }
+        : firstImage(req)
         ? { model: "wan/2-7-image-to-video", input: { ...common, first_frame_url: firstImage(req), ...(req.imageUrls?.[1] ? { last_frame_url: req.imageUrls[1] } : {}) } }
         : { model: "wan/2-7-text-to-video", input: { ...common, ratio: option(req.aspectRatio, COMMON_ASPECTS, "16:9") } };
     },
@@ -698,11 +720,13 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "pixverse/text-to-video", kind: "video", name: "PixVerse V6",
-    options: { aspects: [...MAGI_2_ASPECTS, "2:3", "3:2"], resolutions: Object.keys(PIXVERSE_V6_USD), durations: secondsBetween(1, 15), maxImages: 1, audioToggle: true, minPromptLength: 3, maxPromptLength: 5000 },
+    options: { aspects: [...MAGI_2_ASPECTS, "2:3", "3:2"], resolutions: Object.keys(PIXVERSE_V6_USD), durations: secondsBetween(1, 15), maxImages: 7, audioToggle: true, minPromptLength: 3, maxPromptLength: 5000 },
     costUsd: (req) => perSecond(req.audio === false ? PIXVERSE_V6_USD : PIXVERSE_V6_AUDIO_USD, "720p")(req, 1, 15, 5),
     buildTask: (req) => {
       const common = { prompt: req.prompt, duration: clampDuration(req, 1, 15, 5), quality: option(req.resolution, Object.keys(PIXVERSE_V6_USD), "720p"), generate_audio_switch: req.audio ?? true };
-      return firstImage(req)
+      return (req.imageUrls?.length ?? 0) > 1
+        ? { model: "pixverse-v6/reference-to-video", input: { ...common, prompt: bindImageTags(req.prompt, Math.min(req.imageUrls!.length, 7), (index) => `@ref_${index}`), image_references: req.imageUrls!.slice(0, 7).map((image_url, index) => ({ image_url, type: "subject", ref_name: `ref_${index + 1}` })), aspect_ratio: option(req.aspectRatio, [...MAGI_2_ASPECTS, "2:3", "3:2"], "16:9") } }
+        : firstImage(req)
         ? { model: "pixverse-v6/image-to-video", input: { ...common, image_urls: refs(req, 1) } }
         : { model: "pixverse-v6/text-to-video", input: { ...common, aspect_ratio: option(req.aspectRatio, [...MAGI_2_ASPECTS, "2:3", "3:2"], "16:9") } };
     },

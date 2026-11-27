@@ -182,10 +182,6 @@ describe("video model requests from the November 26 KIE catalogue", () => {
       common: { duration: "10" }, noImages: { aspect_ratio: aspect }, withImages: { image_url: images[0], tail_image_url: images[1] }, usd: .63,
     },
     {
-      id: "pixverse/text-to-video", text: "pixverse-v6/text-to-video", edit: "pixverse-v6/image-to-video",
-      common: { duration: 10, quality: "1080p", generate_audio_switch: false }, noImages: { aspect_ratio: aspect }, withImages: { image_urls: [images[0]] }, usd: .72,
-    },
-    {
       id: "gemini-omni-video", text: "gemini-omni-video", edit: "gemini-omni-video",
       common: { duration: "10", resolution: "1080p", aspect_ratio: aspect }, noImages: {}, withImages: { image_urls: images }, usd: .63,
     },
@@ -194,6 +190,53 @@ describe("video model requests from the November 26 KIE catalogue", () => {
     expect(model.buildTask(input)).toEqual({ model: text, input: { prompt: input.prompt, ...common, ...noImages } });
     expect(model.buildTask({ ...input, imageUrls: images })).toEqual({ model: edit, input: { prompt: input.prompt, ...common, ...withImages } });
     for (const imageUrls of [[], images]) expect(model.costUsd({ ...input, imageUrls })).toBeCloseTo(usd);
+  });
+
+  it.each([
+    ["kling/v4-reference-to-video", 10, "kling-4.0/reference-to-video", "image_urls"],
+    ["kling/v4-flash-reference-to-video", 10, "kling-4.0/flash-reference-to-video", "image_urls"],
+    ["gemini-omni-flash-1-2", 6, "google/gemini-omni-flash-1-2", "image_urls"],
+    ["google/gemini-omni-flash-1-1", 7, "google/gemini-omni-flash-1-1", "image_urls"],
+    ["minimax-h3/text-to-video", 9, "minimax-h3/reference-to-video", "reference_image_urls"],
+    ["happyhorse-1-1", 9, "happyhorse-1-1/reference-to-video", "reference_image"],
+    ["happyhorse/text-to-video", 9, "happyhorse/reference-to-video", "reference_image"],
+    ["wan/3-0-video", 10, "wan/3-0-video", "reference_image_urls"],
+    ["wan/3-0-video-prime", 10, "wan/3-0-video-prime", "reference_image_urls"],
+    ["wan/2-7-text-to-video", 5, "wan/2-7-r2v", "reference_image"],
+    ["pixverse/text-to-video", 7, "pixverse-v6/reference-to-video", "image_references"],
+  ] as const)("%s passes the provider's multi-image reference limit", (id, limit, taskId, field) => {
+    const model = getMarketModel(id)!;
+    const imageUrls = Array.from({ length: limit }, (_, i) => `https://x/${i + 1}.png`);
+    expect(model.options.maxImages).toBe(limit);
+    const task = model.buildTask(req({ imageUrls, aspectRatio: "9:16" }));
+    expect(task.model).toBe(taskId);
+    expect(task.input[field]).toHaveLength(limit);
+    if (field === "image_references") {
+      expect((task.input.image_references as Array<Record<string, string>>)[0]).toMatchObject({ image_url: imageUrls[0], ref_name: "ref_1" });
+    } else {
+      expect(task.input[field]).toEqual(imageUrls);
+    }
+  });
+
+  it("keeps PixVerse's single image as a first frame", () => {
+    const model = getMarketModel("pixverse/text-to-video")!;
+    expect(model.buildTask(req({ imageUrls: [images[0]] })).model).toBe("pixverse-v6/image-to-video");
+    expect(model.buildTask(req({ imageUrls: [images[0]] })).input.image_urls).toEqual([images[0]]);
+  });
+
+  it("uses Kling 3.0's two image slots as first and last frames", () => {
+    const model = getMarketModel("kling/kling-3-0")!;
+    expect(model.options.maxImages).toBe(2);
+    expect(model.buildTask(req({ imageUrls: images })).input.image_urls).toEqual(images);
+  });
+
+  it("translates numbered image mentions into each reference model's KIE syntax", () => {
+    const imageUrls = images;
+    const prompt = "让 image 2 跟随 image 1";
+    expect(getMarketModel("kling/v4-reference-to-video")!.buildTask(req({ imageUrls, prompt })).input.prompt).toBe("让 @image_2 跟随 @image_1");
+    expect(getMarketModel("wan/3-0-video")!.buildTask(req({ imageUrls, prompt })).input.prompt).toBe("让 Image2 跟随 Image1");
+    expect(getMarketModel("happyhorse-1-1")!.buildTask(req({ imageUrls, prompt })).input.prompt).toBe("让 [Image 2] 跟随 [Image 1]");
+    expect(getMarketModel("pixverse/text-to-video")!.buildTask(req({ imageUrls, prompt })).input.prompt).toBe("让 @ref_2 跟随 @ref_1");
   });
 
   it.each([
