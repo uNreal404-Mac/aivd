@@ -739,6 +739,11 @@ export class VideoService {
       }
     }
     const maxImages = model.options.maxImages ?? 0;
+    if ((params.imageUrls?.length ?? 0) > maxImages) {
+      throw new ApiError(`Too many image references for ${model.name}`, 400, {
+        code: "TOO_MANY_IMAGE_REFS", max: maxImages,
+      });
+    }
     const imageInputs = character ? [character.key] : (params.imageUrls ?? []).slice(0, maxImages);
     if (model.options.requiresImage && imageInputs.length === 0) {
       throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });

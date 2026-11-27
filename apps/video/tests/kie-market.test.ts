@@ -60,6 +60,30 @@ describe("KIE market registry", () => {
     expect(getMarketModel("seedance-2-5-flash")!.buildTask(req({ imageUrls: ["https://x/a.png"] })).input.aspect_ratio).toBe("adaptive");
   });
 
+  it.each([
+    ["bytedance/seedance-2-5", 12, true],
+    ["seedance-2-5-flash", 10, true],
+    ["bytedance/seedance-2-5-draft", 12, true],
+    ["bytedance/seedance-2", 9, false],
+    ["bytedance/seedance-2-fast", 9, false],
+    ["bytedance/seedance-2-mini", 9, false],
+  ] as const)("%s sends every selected reference in KIE's multimodal mode", (id, limit, omni) => {
+    const model = getMarketModel(id)!;
+    const images = Array.from({ length: limit }, (_, index) => `https://x/reference-${index + 1}.png`);
+    expect(model.options.maxImages).toBe(limit);
+
+    const single = model.buildTask(req({ imageUrls: images.slice(0, 1), aspectRatio: "9:16" })).input;
+    expect(single.first_frame_url).toBe(images[0]);
+    expect(single.reference_image_urls).toBeUndefined();
+    expect(single.aspect_ratio).toBe("adaptive");
+
+    const multiple = model.buildTask(req({ imageUrls: images, aspectRatio: "9:16" })).input;
+    expect(multiple.first_frame_url).toBeUndefined();
+    expect(multiple.reference_image_urls).toEqual(images);
+    expect(multiple.aspect_ratio).toBe("9:16");
+    expect(multiple.omni_reference_task_type).toBe(omni ? "reference" : undefined);
+  });
+
   it("routes MAGI-2 to text, first-frame or reference input and prices it per second", () => {
     const magi = getMarketModel("magi-2")!;
     const text = magi.buildTask(req({ duration: 12, aspectRatio: "21:9", audio: false }));
@@ -131,7 +155,7 @@ describe("video model requests from the November 26 KIE catalogue", () => {
     {
       id: "bytedance/seedance-2-5-draft", text: "bytedance/seedance-2-5", edit: "bytedance/seedance-2-5",
       common: { duration: 10, resolution: "480p", draft: true, generate_audio: false },
-      noImages: { aspect_ratio: aspect }, withImages: { first_frame_url: images[0], aspect_ratio: "adaptive" }, usd: 1.4,
+      noImages: { aspect_ratio: aspect }, withImages: { reference_image_urls: images, omni_reference_task_type: "reference", aspect_ratio: aspect }, usd: 1.4,
     },
     {
       id: "bytedance/v1-pro-text-to-video", text: "bytedance/v1-pro-text-to-video", edit: "bytedance/v1-pro-image-to-video",

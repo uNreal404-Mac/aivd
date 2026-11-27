@@ -503,7 +503,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       setNotice(zh ? "同一段参考视频只能添加一次，请移除重复项。" : "Remove duplicate clips before submitting.");
       return;
     }
-    const preparedPrompt = prepareVideoReferencePrompt(prompt.trim(), activeRefs.length, clipMode ? "video" : "image");
+    const preparedPrompt = prepareVideoReferencePrompt(prompt.trim(), activeRefs.length, clipMode ? "video" : "image", modelId);
     if (!preparedPrompt.ok) { setNotice(zh ? `找不到 @${clipMode ? "视频" : "图片"}${preparedPrompt.index} 对应的素材，请补传或删掉这个引用` : `No reference for @${clipMode ? "Video" : "Image"}${preparedPrompt.index}. Add one or remove it from the prompt.`); return; }
     const videoInputNotice = marketInputNotice(modelId, { prompt: preparedPrompt.prompt, imageCount: activeRefs.length }, zh);
     if (videoInputNotice) { setNotice(videoInputNotice); promptRef.current?.focus({ preventScroll: true }); return; }

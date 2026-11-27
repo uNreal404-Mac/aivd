@@ -6,12 +6,19 @@ describe("homepage video references", () => {
   it("uses the selected model's reference limit", () => {
     expect(maxVideoReferences("veo-3.1")).toBe(1);
     expect(maxVideoReferences("kling/v4-reference-to-video")).toBe(4);
+    expect(maxVideoReferences("bytedance/seedance-2-5")).toBe(12);
+    expect(maxVideoReferences("seedance-2-5-flash")).toBe(10);
+    expect(maxVideoReferences("bytedance/seedance-2")).toBe(9);
   });
 
   it("maps Chinese and English @ references to the uploaded image order", () => {
     expect(prepareVideoReferencePrompt("让 @图片2 跟随 @Image1", 2)).toEqual({
       ok: true,
       prompt: "让 image 2 跟随 image 1",
+    });
+    expect(prepareVideoReferencePrompt("让 @图片2 跟随 @Image1", 2, "image", "seedance-2-5-flash")).toEqual({
+      ok: true,
+      prompt: "让 @Image2 跟随 @Image1",
     });
   });
 

@@ -19,6 +19,8 @@ describe("canvas inspector", () => {
   });
   it("identifies first-image aspect behavior using each connected model's actual mapping", () => {
     expect(followsReferenceAspect("bytedance/seedance-2-5")).toBe(true);
+    expect(followsReferenceAspect("bytedance/seedance-2-5", 3)).toBe(false);
+    expect(followsReferenceAspect("seedance-2-5-flash", 3)).toBe(false);
     expect(followsReferenceAspect("kling/v4-reference-to-video")).toBe(true);
     expect(followsReferenceAspect("minimax-h3/text-to-video")).toBe(true);
     expect(followsReferenceAspect("gemini-omni-flash-1-2")).toBe(false);

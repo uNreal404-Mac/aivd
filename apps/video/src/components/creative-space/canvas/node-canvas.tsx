@@ -1116,7 +1116,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
 
   /** Reference images for a node: stable ids (for the request signature) and sendable values. */
   const prepareImages = useCallback(
-    async (id: string, max: number, prompt: string): Promise<{ stable: string[]; values: string[]; prompt: string }> => {
+    async (id: string, max: number, prompt: string, modelId?: string): Promise<{ stable: string[]; values: string[]; prompt: string }> => {
       const connected = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current)
         .filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
       const allImages = nodesRef.current.filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
@@ -1130,9 +1130,11 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       }
       if (prioritized.length > max) throw new Error(L(`当前模型最多支持 ${max} 张参考图，请减少 @ 引用`, `This model accepts ${max} reference images. Remove some @ mentions.`));
       const inputs = [...prioritized, ...connected.filter((node) => !prioritized.some((item) => item.id === node.id))].slice(0, max);
+      const seedanceTags = inputs.length > 1 && (modelId?.startsWith("bytedance/seedance-2") || modelId === "seedance-2-5-flash");
       const preparedPrompt = prompt.replace(/@(?:图片|image)(\d+)(?!\d)/gi, (_, number: string) => {
         const source = allImages[Number(number) - 1];
-        return `reference image ${inputs.findIndex((node) => node.id === source?.id) + 1}`;
+        const position = inputs.findIndex((node) => node.id === source?.id) + 1;
+        return seedanceTags ? `@Image${position}` : `reference image ${position}`;
       });
       const stable: string[] = [];
       const values: string[] = [];
@@ -1191,7 +1193,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       }
       patch(id, { status: "submitting", error: null } as Partial<GenerateData>);
       try {
-        const images = data.kind === "audio" ? { stable: [], values: [], prompt } : await prepareImages(id, choices.maxImages, prompt);
+        const images = data.kind === "audio" ? { stable: [], values: [], prompt } : await prepareImages(id, choices.maxImages, prompt, data.modelId);
         if (data.maskKey) {
           images.stable.push(data.maskKey);
           images.values.push(data.maskKey);

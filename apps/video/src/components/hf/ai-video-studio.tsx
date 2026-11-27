@@ -688,7 +688,7 @@ function AiVideoStudioForm({
       return;
     }
     const preparedPrompt = keyframeMode ? prepareKeyframePrompt(settings.prompt, frames)
-      : prepareVideoReferencePrompt(settings.prompt, homeReferences.length || (imageKey ? 1 : 0), videoInput ? "video" : "image");
+      : prepareVideoReferencePrompt(settings.prompt, homeReferences.length || (imageKey ? 1 : 0), videoInput ? "video" : "image", catalogModelId);
     if (!preparedPrompt.ok) {
       setNotice(isChinese ? `第 ${preparedPrompt.index} 个引用与当前素材不匹配，请重新选择引用` : `Reference ${preparedPrompt.index} does not match your selected media. Select the reference again.`);
       return;

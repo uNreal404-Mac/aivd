@@ -62,10 +62,11 @@ export function choicesFor(kind: GenKind, modelId: string): ModelChoices {
 }
 
 /** The provider mappings for image-conditioned videos specify when the source fixes the aspect. */
-export function followsReferenceAspect(modelId: string): boolean {
+export function followsReferenceAspect(modelId: string, imageCount = 1): boolean {
   const model = getMarketModel(modelId);
   if (model?.kind !== "video" || !model.options.maxImages) return false;
-  const probe = model.buildTask({ prompt: "preview", aspectRatio: "9:16", imageUrls: ["reference"] });
+  const imageUrls = Array.from({ length: Math.max(1, Math.min(imageCount, model.options.maxImages)) }, (_, index) => `reference-${index + 1}`);
+  const probe = model.buildTask({ prompt: "preview", aspectRatio: "9:16", imageUrls });
   return probe.input.aspect_ratio !== "9:16";
 }
 

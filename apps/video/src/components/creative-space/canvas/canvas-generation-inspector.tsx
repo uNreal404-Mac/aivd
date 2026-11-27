@@ -49,7 +49,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
   const attached = refs.filter(ref => ref.connected);
   const choices = choicesFor(data.kind, data.modelId);
   const referenceMode = Boolean(inputs.images || selectReference || choices.requiresImage);
-  const autoAspect = isVideo && inputs.images > 0 && followsReferenceAspect(data.modelId);
+  const autoAspect = isVideo && inputs.images > 0 && followsReferenceAspect(data.modelId, inputs.images);
   const pending = actions.pendingSeconds[id];
   const busy = data.status === "submitting" || data.status === "running";
   const credits = actions.quoteOf(id);

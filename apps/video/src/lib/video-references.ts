@@ -5,7 +5,7 @@ export const MAX_HOME_REFERENCES = 12;
 export type UploadedVideoReference = { key: string; name: string; url: string; mimeType?: string; sourceId?: string };
 
 // The two legacy video models accept a single start image. Market models
-// declare their own limit, which is currently at most four for video.
+// declare their own reference-image limit, subject to the site's 12-item UI cap.
 export function maxVideoReferences(modelId: string): number {
   const marketModel = getMarketModel(modelId);
   return marketModel ? (marketModel.options.maxImages ?? 0) : 1;
@@ -13,15 +13,16 @@ export function maxVideoReferences(modelId: string): number {
 
 const REFERENCE_TOKEN = /@(图片|image|视频|video)(\d+)(?!\d)/gi;
 
-export function prepareVideoReferencePrompt(prompt: string, count: number, kind: "image" | "video" = "image"):
+export function prepareVideoReferencePrompt(prompt: string, count: number, kind: "image" | "video" = "image", modelId?: string):
   | { ok: true; prompt: string }
   | { ok: false; index: number } {
   let invalidIndex: number | null = null;
+  const seedanceTags = kind === "image" && count > 1 && (modelId?.startsWith("bytedance/seedance-2") || modelId === "seedance-2-5-flash");
   const prepared = prompt.replace(REFERENCE_TOKEN, (_token, label: string, number: string) => {
     const index = Number(number);
     const tokenKind = /^(video|视频)$/i.test(label) ? "video" : "image";
     if ((index < 1 || index > count || tokenKind !== kind) && invalidIndex === null) invalidIndex = index;
-    return `${kind} ${index}`;
+    return seedanceTags ? `@Image${index}` : `${kind} ${index}`;
   });
   return invalidIndex !== null ? { ok: false, index: invalidIndex } : { ok: true, prompt: prepared };
 }

@@ -212,6 +212,19 @@ export function klingLongImagePrompt(prompt: string, count: number): string {
 
 const JPEG_PNG = ["image/jpeg", "image/png"];
 const VIDEO_ASPECTS = ["16:9", "9:16", "1:1"];
+// Seedance treats a start frame and multimodal references as exclusive modes.
+// A single image keeps the existing start-frame behavior; multiple images use
+// the reference field so every selected image reaches KIE in its original order.
+const seedanceImages = (req: MarketRequest, max: number, omni = false) => {
+  const images = req.imageUrls?.slice(0, max) ?? [];
+  if (images.length === 1) return { first_frame_url: images[0] };
+  if (images.length > 1) return {
+    reference_image_urls: images,
+    ...(omni ? { omni_reference_task_type: "reference" } : {}),
+  };
+  return {};
+};
+const seedanceAspect = (req: MarketRequest) => req.imageUrls?.length === 1 ? "adaptive" : (req.aspectRatio ?? "16:9");
 const SEEDANCE_1_USD = { "480p": .014, "720p": .03, "1080p": .07 };
 const VIDU_Q4_USD = { "540p": .036, "720p": .076, "1080p": .096, "2k": .152, "4k": .312 };
 const KLING_OMNI_USD = { "720p": .0755, "1080p": .101, "4k": .3775 };
@@ -224,18 +237,17 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "bytedance/seedance-2-5",
     kind: "video",
     name: "Seedance 2.5",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(4, 30), maxImages: 12, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5",
       input: {
         prompt: req.prompt,
         resolution: req.resolution ?? "720p",
-        // With a first frame the model keeps the image's own shape.
-        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        aspect_ratio: seedanceAspect(req),
         duration: clampDuration(req, 4, 30, 5),
         generate_audio: req.audio ?? true,
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...seedanceImages(req, 12, true),
       },
     }),
   },
@@ -243,19 +255,18 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "seedance-2-5-flash",
     kind: "video",
     name: "Seedance 2.5 Flash",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], durations: secondsBetween(4, 30), maxImages: 10, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_FLASH_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5-flash",
       input: {
         prompt: req.prompt,
         resolution: req.resolution ?? "720p",
-        // Flash requires "adaptive" with a first frame.
-        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        aspect_ratio: seedanceAspect(req),
         // Always send a length: without one Flash picks it and bills the actual length.
         duration: clampDuration(req, 4, 30, 5),
         generate_audio: req.audio ?? true,
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...seedanceImages(req, 10, true),
       },
     }),
   },
@@ -410,17 +421,17 @@ const VIDEO_MODELS: MarketModel[] = [
     id,
     kind: "video",
     name,
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: [...resolutions], durations: secondsBetween(4, 15), maxImages: 1, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: [...resolutions], durations: secondsBetween(4, 15), maxImages: 9, audioToggle: true },
     costUsd: (req) => perSecond(table, "720p")(req, 4, 15, 5),
     buildTask: (req) => ({
       model: id,
       input: {
         prompt: req.prompt,
         resolution: req.resolution && (resolutions as readonly string[]).includes(req.resolution) ? req.resolution : "720p",
-        aspect_ratio: firstImage(req) ? "adaptive" : (req.aspectRatio ?? "16:9"),
+        aspect_ratio: seedanceAspect(req),
         duration: clampDuration(req, 4, 15, 5),
         generate_audio: req.audio ?? true,
-        ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        ...seedanceImages(req, 9),
       },
     }),
   })),
@@ -546,15 +557,15 @@ const VIDEO_MODELS: MarketModel[] = [
   },
   {
     id: "bytedance/seedance-2-5-draft", kind: "video", name: "Seedance 2.5 Draft",
-    options: { aspects: MAGI_2_ASPECTS, resolutions: ["480p"], durations: secondsBetween(4, 30), maxImages: 1, audioToggle: true, maxPromptLength: 20480 },
+    options: { aspects: MAGI_2_ASPECTS, resolutions: ["480p"], durations: secondsBetween(4, 30), maxImages: 12, audioToggle: true, maxPromptLength: 20480 },
     // Assumption: no separate draft tariff is published. Use Seedance 2.5's no-video-input 480p rate.
     costUsd: (req) => SEEDANCE_25_USD["480p"] * clampDuration(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5",
       input: {
         prompt: req.prompt, draft: true, resolution: "480p", duration: clampDuration(req, 4, 30, 5),
-        aspect_ratio: firstImage(req) ? "adaptive" : option(req.aspectRatio, MAGI_2_ASPECTS, "16:9"),
-        generate_audio: req.audio ?? true, ...(firstImage(req) ? { first_frame_url: firstImage(req) } : {}),
+        aspect_ratio: req.imageUrls?.length === 1 ? "adaptive" : option(req.aspectRatio, MAGI_2_ASPECTS, "16:9"),
+        generate_audio: req.audio ?? true, ...seedanceImages(req, 12, true),
       },
     }),
   },
