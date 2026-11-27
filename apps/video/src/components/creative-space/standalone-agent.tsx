@@ -195,7 +195,7 @@ export function StandaloneAgent({ lang }: { lang: string }) {
       {sidebarOpen && <button type="button" className="agent-scrim" onClick={() => setSidebarOpen(false)} aria-label={zh ? "关闭侧栏" : "Close sidebar"} />}
       <section className="agent-main" aria-label={zh ? "AGENT 对话" : "AGENT chat"}>
         <header className="agent-toolbar">
-          <div className="agent-toolbar-title"><button type="button" className="agent-mobile-menu" onClick={() => setSidebarOpen(true)} aria-label={zh ? "打开历史记录" : "Open history"}><Menu size={21} /></button><span className="agent-toolbar-icon"><Bot size={18} /></span><strong>AGENT</strong><span className="agent-model">DeepSeek Flash</span></div>
+          <div className="agent-toolbar-title"><button type="button" className="agent-mobile-menu" onClick={() => setSidebarOpen(true)} aria-label={zh ? "打开历史记录" : "Open history"}><Menu size={21} /></button><span className="agent-toolbar-icon"><Bot size={18} /></span><strong>AGENT</strong></div>
           <Link href={localizedHref(lang, "/creative-space/canvas")} className="agent-canvas-link">{zh ? "前往画布" : "Open canvas"}<ChevronLeft size={14} /></Link>
         </header>
 
@@ -219,7 +219,7 @@ export function StandaloneAgent({ lang }: { lang: string }) {
 
         <div className="agent-bottom"><form className="agent-composer" onSubmit={(event) => void send(event)}>
           <textarea ref={inputRef} value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={3500} rows={2} placeholder={zh ? "向 AGENT 发送消息…" : "Message AGENT…"} aria-label={zh ? "向 AGENT 发送消息" : "Message AGENT"} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
-          <div className="agent-composer-bottom"><span>{zh ? "用语言开启创作" : "Create through conversation"}</span><button type="submit" disabled={!draft.trim() || busy || loadedKey !== storageKey} aria-label={zh ? "发送消息" : "Send message"}><ArrowUp size={19} /></button></div>
+          <div className="agent-composer-bottom"><button type="submit" disabled={!draft.trim() || busy || loadedKey !== storageKey} aria-label={zh ? "发送消息" : "Send message"}><ArrowUp size={19} /></button></div>
         </form>{error && <p className="agent-error" role="alert">{error}</p>}<p className="agent-disclaimer">{zh ? "AGENT 的建议请在生成前确认。" : "Review AGENT's suggestions before generating."}</p></div>
       </section>
     </div>
