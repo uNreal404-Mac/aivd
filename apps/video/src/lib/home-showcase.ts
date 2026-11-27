@@ -161,10 +161,20 @@ export const HOW_STEPS: { title: Bi; body: Bi }[] = [
  * something in the same spirit, offered on the walls. They describe the
  * picture; they are not the record of how each sample was made.
  */
+// What each sample actually shows, written from the picture. The one place
+// such text lives: presets below and the gallery examples point here.
 export const SAMPLE_PROMPTS: Record<string, Bi> = {
   "/home/hero-marina-loop.mp4": { zh: "一群朋友在码头边的船屋甲板上举杯庆祝，香槟飞溅，阴天柔光，手持跟拍", en: "Friends toasting on a houseboat deck by the marina, champagne spraying, soft overcast light, handheld follow shot" },
   "/home/hero-showcase-02.mp4": { zh: "公园树下一对情侣相视而笑、牵起手，男生脸颊上慢慢浮现发光的红色裂纹，变身特效，自然光", en: "A couple in a park smile at each other and hold hands as glowing red cracks slowly spread across his cheek, transformation effect, natural light" },
   "/home/hero-showcase-03.mp4": { zh: "林荫公园里的一对情侣牵着手，皮肤逐渐裂开、泛出绿色荧光，从微笑的普通人变身成丧尸，变身特效", en: "A couple holding hands in a leafy park as their skin cracks and glows green, turning from smiling people into zombies, transformation effect" },
+  // The six clips below also have their original prompts in
+  // home-example-prompts.json; these are short descriptions of the cut shown.
+  "/home/example-dragon-full.mp4": { zh: "金发女孩骑着绿色飞龙穿过发光的雨林，掠过瀑布，飞向悬浮的群山，一镜到底", en: "A blonde girl rides a green dragon through a glowing jungle, skims a waterfall and soars out over floating mountains, one continuous take" },
+  "/home/example-samurai-cat-7s.mp4": { zh: "戴斗笠、背武士刀的橘猫蹲在芦苇荡的青苔巨石上，黑衣刺客冲来，它压低身子躲过刀锋", en: "A ginger cat in a straw hat with a katana on its back sits on a mossy boulder in a reed field, then ducks under the blades of black-clad attackers" },
+  "/home/example-whale-origami-7s.mp4": { zh: "纸艺立体场景：折纸巨鲸从纸片村庄上空游过，山坡上的小纸人放着风筝，镜头推到鲸眼", en: "Papercraft diorama: a giant origami whale glides over a paper village, tiny paper villagers fly kites on a hill, push in to the whale's eye" },
+  "/home/example-dress-10-20.mp4": { zh: "真人娃娃换装：明亮房间里穿粉色碎花裙的女孩站在画面中央，一双大手为她戴上项链、递上手包", en: "Doll-style dress-up: a girl in a pink floral dress stands centre frame in a bright room while giant hands add a necklace and a handbag" },
+  "/home/example-japan-6s.mp4": { zh: "东京夜游：穿皮夹克的女孩走过雨后的霓虹路口，在便利店举着饭团微笑，在自动贩卖机前买饮料", en: "A night out in Tokyo: a woman in a leather jacket crosses a wet neon intersection, smiles with an onigiri in a convenience store, buys a drink at a vending machine" },
+  "/home/example-fried-chicken-22-29.mp4": { zh: "韩式炸鸡特写：金黄鸡块在锅里裹上红色酱汁，装盘后撒上芝麻和葱花", en: "Korean glazed chicken close-ups: golden pieces tossed in red sauce in the pan, then plated with sesame and scallions" },
   "/home/samples/boy-and-dog.webp": { zh: "雾气弥漫的老街，穿呢子大衣的小男孩和一只小狗站在石板路上，路灯昏黄，电影感", en: "A misty old street, a small boy in a wool coat and a scruffy dog on wet cobblestones, amber streetlamps, cinematic" },
   "/home/samples/autumn-walk.webp": { zh: "一对白发老人在红枫林小路上并肩散步，落叶铺地，柔和自然光", en: "A white-haired couple walking side by side down a red maple path, fallen leaves, soft natural light" },
   "/home/samples/rain-couple.webp": { zh: "大雨中的一对情侣额头相抵，浑身湿透，背后霓虹虚化，电影感特写", en: "A couple forehead to forehead in heavy rain, soaked, neon bokeh behind, cinematic close-up" },
@@ -205,7 +215,7 @@ export const VIRAL_TEMPLATES: {
   {
     id: "marina-toast",
     media: MEDIA.marina,
-    title: { zh: "游艇日落香槟大片", en: "Sunset Marina Toast" },
+    title: { zh: "船屋甲板香槟庆祝", en: "Houseboat Champagne Toast" },
     prompt: SAMPLE_PROMPTS["/home/hero-marina-loop.mp4"],
     aspect: "16:9",
     tag: { zh: "热门", en: "Viral" },
@@ -213,18 +223,15 @@ export const VIRAL_TEMPLATES: {
   {
     id: "samurai-katana",
     media: MEDIA.samuraiCat,
-    title: { zh: "武士猫樱花拔刀", en: "Samurai Cat Katana" },
-    prompt: {
-      zh: "浅景深近景特写，身穿精致甲胄的武士猫站在飘落的樱花雨中缓缓拔刀，微风吹动披风，电影级布光",
-      en: "Shallow DOF close-up of an armored samurai cat in drifting cherry blossoms slowly drawing its katana, cinematic lighting",
-    },
+    title: { zh: "武士猫芦苇荡对决", en: "Samurai Cat Standoff" },
+    prompt: SAMPLE_PROMPTS["/home/example-samurai-cat-7s.mp4"],
     aspect: "16:9",
     tag: { zh: "电影感", en: "Cinema" },
   },
   {
     id: "crimson-transform",
     media: MEDIA.showcase2,
-    title: { zh: "霓虹裂纹变身特效", en: "Crimson Crack VFX" },
+    title: { zh: "红色裂纹变身特效", en: "Crimson Crack VFX" },
     prompt: SAMPLE_PROMPTS["/home/hero-showcase-02.mp4"],
     aspect: "16:9",
     tag: { zh: "特效", en: "VFX" },
@@ -232,11 +239,8 @@ export const VIRAL_TEMPLATES: {
   {
     id: "fried-chicken-ad",
     media: MEDIA.friedChicken,
-    title: { zh: "高速微距美食广告", en: "Macro Food Commercial" },
-    prompt: {
-      zh: "高速升格微距商业广告镜头，金黄酥脆炸鸡热气升腾，辣椒粉与香料颗粒在慢动作中凌空洒落，诱人高光",
-      en: "High-speed macro commercial shot of crispy fried chicken with rising steam and spices falling in slow motion",
-    },
+    title: { zh: "韩式炸鸡美食特写", en: "Glazed Chicken Close-Up" },
+    prompt: SAMPLE_PROMPTS["/home/example-fried-chicken-22-29.mp4"],
     aspect: "16:9",
     tag: { zh: "商业广告", en: "Commercial" },
   },
@@ -259,28 +263,22 @@ export const SHORTS_PRESETS: {
     image: "/home/example-dress-10-20-poster.webp",
     video: "/home/example-dress-10-20.mp4",
     pip: "/home/samples/red-carpet.webp",
-    title: { zh: "高定流光丝绸", en: "Couture Silk Flow" },
+    title: { zh: "真人娃娃换装", en: "Doll Dress-Up" },
     views: { zh: "18.4万", en: "184K" },
     likes: "9.2K",
     href: "/effects",
-    prompt: {
-      zh: "高级时装棚拍慢动作，流光丝绸礼服随风舒展飘动，暗调极简背景，轮廓光勾勒织物质感",
-      en: "High-fashion slow-motion editorial of flowing iridescent silk couture against an obsidian studio backdrop",
-    },
+    prompt: SAMPLE_PROMPTS["/home/example-dress-10-20.mp4"],
   },
   {
     id: "short-dragon",
     image: "/home/example-dragon-full-poster.webp",
     video: "/home/example-dragon-full.mp4",
     pip: "/home/samples/storm-sea.webp",
-    title: { zh: "苍穹巨龙破云", en: "Sky Dragon Ascent" },
+    title: { zh: "丛林飞龙一镜到底", en: "Jungle Dragon Flight" },
     views: { zh: "26.1万", en: "261K" },
     likes: "14.5K",
     href: "/effects",
-    prompt: {
-      zh: "史诗级航拍环绕镜头，东方巨龙破开金色云海翱翔，鳞片在逆光中折射金属光泽，气势磅礴",
-      en: "Epic aerial orbiting shot of a dragon soaring through golden storm clouds, sunlight catching iridescent scales",
-    },
+    prompt: SAMPLE_PROMPTS["/home/example-dragon-full.mp4"],
   },
   {
     id: "short-rain",

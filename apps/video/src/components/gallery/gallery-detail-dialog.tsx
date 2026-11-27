@@ -120,7 +120,7 @@ export function GalleryDetailDialog({
                 {t("publishDialog.promptLabel")}
               </p>
               {item.publicPrompt ? (
-                <p className="whitespace-pre-wrap text-sm text-[var(--du-text-muted)]">
+                <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-sm text-[var(--du-text-muted)]">
                   {item.publicPrompt}
                 </p>
               ) : (
