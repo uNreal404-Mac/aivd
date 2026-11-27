@@ -40,8 +40,11 @@ type ImageRef = { url?: string | null; mimeType?: string | null; name?: string |
 
 const EXTENSION_TYPES: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
 
+const REAL_TYPES = new Set([...Object.values(EXTENSION_TYPES), "image/bmp", "image/avif", "image/heic", "image/heif", "image/tiff"]);
+
 function imageType(ref: ImageRef): string | undefined {
-  const known = ref.mimeType || ref.file?.type;
+  // Library entries may carry a placeholder such as "image/generated".
+  const known = [ref.mimeType, ref.file?.type].find((type) => type && REAL_TYPES.has(type));
   if (known) return known;
   const extension = (ref.name || ref.url || "").split(/[?#]/)[0].split(".").pop()?.toLowerCase();
   return extension ? EXTENSION_TYPES[extension] : undefined;

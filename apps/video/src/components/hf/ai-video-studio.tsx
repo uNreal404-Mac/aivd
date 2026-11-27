@@ -49,6 +49,7 @@ import { getMarketModel } from "@/ai/kie-market";
 import { findNavModel } from "@/lib/nav-models";
 import { findVideoPreset } from "@/lib/video-presets";
 import { marketImageNotice, marketInputNotice } from "@/lib/market-input-check";
+import { promptWithPreset } from "@/lib/video-presets";
 import { MAX_HOME_REFERENCES, maxVideoReferences, prepareVideoReferencePrompt, removeVideoReferenceToken, type UploadedVideoReference } from "@/lib/video-references";
 import { MediaViewer, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
 import { PresetCard, PresetLibrary } from "@/components/hf/video-studio/presets";
@@ -693,7 +694,8 @@ function AiVideoStudioForm({
       return;
     }
     const inputNotice = keyframeMode || videoInput ? null
-      : marketInputNotice(catalogModelId, { prompt: preparedPrompt.prompt, imageCount: startImageCount }, isChinese);
+      : // Checked as sent: a camera preset adds its own sentence.
+      marketInputNotice(catalogModelId, { prompt: promptWithPreset(preparedPrompt.prompt, settings.preset), imageCount: startImageCount }, isChinese);
     if (inputNotice) {
       setNotice(inputNotice);
       promptRef.current?.focus();

@@ -186,6 +186,28 @@ const hd = (req: MarketRequest) => req.resolution === "1080p" ? "1080p" : "720p"
 const option = (value: string | undefined, allowed: string[], fallback: string) =>
   value && allowed.includes(value) ? value : fallback;
 
+// Studios turn "@图片2" into "image 2"; the canvas sends "@图片2" as typed.
+// Models that bind a reference by their own tag get that tag instead, for
+// pictures that were actually sent. A tag directly followed by a letter or
+// digit gets a space so that word is not read as part of it.
+const IMAGE_REFERENCE = /@(?:图片|image)_?(\d+)(?!\d)|\bimage (\d+)(?!\d)/gi;
+export function bindImageTags(prompt: string, count: number, tag: (index: number) => string): string {
+  return prompt.replace(IMAGE_REFERENCE, (token, tagged: string | undefined, plain: string | undefined, offset: number, whole: string) => {
+    const index = Number(tagged ?? plain);
+    if (index < 1 || index > count) return token;
+    const next = whole[offset + token.length];
+    return next !== undefined && /[\p{L}\p{N}_]/u.test(next) ? `${tag(index)} ` : tag(index);
+  });
+}
+
+// KIE reads every "@" in a Kling Long Image prompt as an image tag and rejects
+// ones it was not sent, so an e-mail address or a stray "@" goes out full-width.
+export function klingLongImagePrompt(prompt: string, count: number): string {
+  const bound = bindImageTags(prompt, count, (index) => `@image_${index}`);
+  return bound.replace(/@(?!image_(\d+)(?!\d))|@image_(\d+)(?!\d)/g, (token, _a, index: string | undefined) =>
+    index && Number(index) >= 1 && Number(index) <= count ? token : `＠${token.slice(1)}`);
+}
+
 const JPEG_PNG = ["image/jpeg", "image/png"];
 const VIDEO_ASPECTS = ["16:9", "9:16", "1:1"];
 const SEEDANCE_1_USD = { "480p": .014, "720p": .03, "1080p": .07 };
@@ -1022,7 +1044,7 @@ const IMAGE_MODELS: MarketModel[] = [
   },
   {
     id: "kling-4-0/long-image", kind: "image", name: "Kling Long Image 4.0",
-    options: { aspects: [], resolutions: ["1K", "2K"], defaultResolution: "2K", maxCount: 1, maxImages: 3, maxPromptLength: 20000 },
+    options: { aspects: [], resolutions: ["1K", "2K"], defaultResolution: "2K", maxCount: 1, maxImages: 3, maxPromptLength: 20000, imageTypes: JPEG_PNG },
     costUsd: (req) => {
       const images = refs(req, 3);
       const oneK = req.resolution === "1K";
@@ -1034,9 +1056,7 @@ const IMAGE_MODELS: MarketModel[] = [
       return {
         model: "kling-4-0/long-image",
         input: {
-          // KIE reads every "@" as an image tag and rejects unknown ones, so an
-          // e-mail address or a stray "@" goes out as a full-width "＠".
-          prompt: req.prompt.replace(/@(?!image_[1-3](?!\d))/g, "＠"), resolution: req.resolution === "1K" ? "1k" : "2k",
+          prompt: klingLongImagePrompt(req.prompt, images.length), resolution: req.resolution === "1K" ? "1k" : "2k",
           ...(images.length ? { skill: "ecommerce", length: "medium", image_urls: images } : { skill: "webpage" }),
         },
       };
@@ -1175,7 +1195,7 @@ const IMAGE_MODELS: MarketModel[] = [
     buildTask: (req) => {
       const images = refs(req, 5);
       return images.length
-        ? { model: "grok-imagine/image-to-image", input: { prompt: req.prompt, image_urls: images } }
+        ? { model: "grok-imagine/image-to-image", input: { prompt: bindImageTags(req.prompt, images.length, (index) => `@image${index}`), image_urls: images } }
         : { model: "grok-imagine/text-to-image", input: { prompt: req.prompt, aspect_ratio: option(req.aspectRatio, ["1:1", "2:3", "3:2", "16:9", "9:16"], "1:1"), enable_pro: false } };
     },
   },

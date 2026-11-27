@@ -55,14 +55,41 @@ describe("marketImageNotice", () => {
 });
 
 describe("model image tags", () => {
-  it("writes each model's own reference tag", () => {
-    expect(prepareVideoReferencePrompt("put @图片2 on the left", 2, "image", "kling-4-0/long-image")).toEqual({ ok: true, prompt: "put @image_2 on the left" });
-    expect(prepareVideoReferencePrompt("put @图片2 on the left", 2, "image", "grok-imagine/text-to-image")).toEqual({ ok: true, prompt: "put @image2 on the left" });
-    expect(prepareVideoReferencePrompt("put @图片2 on the left", 2, "image", "seedream-5-5")).toEqual({ ok: true, prompt: "put image 2 on the left" });
+  const long = getMarketModel("kling-4-0/long-image")!;
+  const grok = getMarketModel("grok-imagine/text-to-image")!;
+  const prompt = (model: typeof long, text: string, images: number) =>
+    model.buildTask({ prompt: text, imageUrls: Array.from({ length: images }, (_, i) => `https://x/${i}.png`) }).input.prompt;
+
+  it("keeps the studio's plain wording for other models", () => {
+    expect(prepareVideoReferencePrompt("put @图片2 on the left", 2)).toEqual({ ok: true, prompt: "put image 2 on the left" });
   });
 
-  it("keeps Kling Long Image tags and sends any other @ as a full-width one", () => {
-    const task = getMarketModel("kling-4-0/long-image")!.buildTask({ prompt: "logo from @image_1, mail hi@aivd.ai", imageUrls: ["https://x/a.png"] });
-    expect(task.input.prompt).toBe("logo from @image_1, mail hi＠aivd.ai");
+  it("writes each model's own tag for pictures that were sent", () => {
+    expect(prompt(long, "put image 2 on the left", 2)).toBe("put @image_2 on the left");
+    expect(prompt(long, "左边用@图片2，右边用@图片1", 2)).toBe("左边用@image_2，右边用@image_1");
+    expect(prompt(grok, "用@图片1做海报", 1)).toBe("用@image1 做海报");
+    expect(prompt(grok, "a poster from image 1", 1)).toBe("a poster from @image1");
+    expect(prompt(grok, "image 3 is missing", 1)).toBe("image 3 is missing");
+  });
+
+  it("sends any other @ to Kling Long Image as a full-width one", () => {
+    expect(prompt(long, "logo from image 1, mail hi@aivd.ai", 1)).toBe("logo from @image_1, mail hi＠aivd.ai");
+    expect(prompt(long, "contact me@image_1.com", 0)).toBe("contact me＠image_1.com");
+    expect(prompt(long, "use @image_3", 1)).toBe("use ＠image_3");
+  });
+
+  it("does not trust a placeholder file type", async () => {
+    const work = [{ url: "https://x/work.png", name: "a cat", mimeType: "image/generated" }];
+    expect(await marketImageNotice("kling/v3-turbo-text-to-video", work, true)).toBeNull();
+  });
+});
+
+describe("quotes use the length the server bills", () => {
+  it("prices a saved 6 s Wan 2.5 node at 5 s", async () => {
+    const { estimateCredits } = await import("@/lib/ai-video-studio");
+    const { calculateModelCredits } = await import("@/config/credits");
+    const five = estimateCredits({ modelId: "wan/2-5-text-to-video", duration: 5, resolution: "720p" }, { images: 0 });
+    expect(estimateCredits({ modelId: "wan/2-5-text-to-video", duration: 6, resolution: "720p" }, { images: 0 })).toBe(five);
+    expect(calculateModelCredits("wan/2-5-text-to-video", { duration: 6, quality: "720p" })).toBe(five);
   });
 });

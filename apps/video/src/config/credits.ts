@@ -57,7 +57,7 @@ export interface ModelConfig {
 // 所有的价格和积分配置都在 pricing-user.ts 中
 // 用户只需要修改那个文件即可
 import { kieVideoCostUsd, videoCreditsFromCost } from "./kie-pricing";
-import { getMarketModel, marketCredits } from "@/ai/kie-market";
+import { allowedDuration, getMarketModel, marketCredits } from "@/ai/kie-market";
 import { secondsBetween } from "@/lib/video-durations";
 import {
   NEW_USER_GIFT,
@@ -331,7 +331,7 @@ export function calculateModelCredits(
   params: { duration: number; quality?: string }
 ): number {
   const market = getMarketModel(modelId);
-  if (market) return marketCredits(market, { prompt: "", duration: params.duration, resolution: params.quality });
+  if (market) return marketCredits(market, { prompt: "", duration: allowedDuration(market, params.duration), resolution: params.quality });
   if (!getModelConfig(modelId)) return 0;
   const cost = kieVideoCostUsd(modelId, params);
   return cost === null ? 0 : videoCreditsFromCost(cost);

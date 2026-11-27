@@ -2,7 +2,7 @@ import { KLING_KEYFRAME_MODEL, type KlingKeyframes } from "./kling-keyframes";
 import { validFrameCount } from "./studio-keyframes";
 import { WAN_REFERENCE_MAX_FILES } from "./wan-video-references";
 import { calculateModelCredits } from "@/config/credits";
-import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { allowedDuration, getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
 import examplePrompts from "@/lib/home-example-prompts.json";
 import { secondsBetween } from "@/lib/video-durations";
@@ -241,7 +241,8 @@ export function estimateCredits(
   if (market) {
     return marketCredits(market, {
       prompt: "",
-      duration: settings.duration,
+      // The server bills the nearest length the model makes.
+      duration: allowedDuration(market, settings.duration),
       resolution: settings.resolution,
       audio: market.options.audioToggle ? (extras?.audio ?? true) : undefined,
       imageUrls: Array.from({ length: extras?.images ?? 0 }, (_, index) => `reference-${index}`),
