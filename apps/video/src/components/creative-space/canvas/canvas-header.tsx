@@ -220,7 +220,7 @@ export function CanvasHeader(p: Props) {
             </button>
             <button type="button" onClick={() => act(p.onImport)}>
               <FolderOpen size={16} />
-              {l("导入站内素材与生成结果", "Import site media and results")}
+              {l("导入站内素材", "Import site media")}
             </button>
             {p.account && (
               <Link href={p.creditsHref}>
