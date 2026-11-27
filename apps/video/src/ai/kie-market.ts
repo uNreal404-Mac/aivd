@@ -18,6 +18,7 @@ export type MarketKind = "video" | "image" | "audio";
 /** What the studio sends for one generation. Each model reads what it needs. */
 export interface MarketRequest {
   prompt: string;
+  mode?: string;
   aspectRatio?: string;
   resolution?: string;
   duration?: number;
@@ -615,7 +616,7 @@ const VIDEO_MODELS: MarketModel[] = [
     costUsd: (req) => perSecond({ "720p": .08, "1080p": .12 }, "720p")(req, 2, 15, 5),
     buildTask: (req) => {
       const common = { prompt: req.prompt, resolution: hd(req), duration: clampDuration(req, 2, 15, 5) };
-      return (req.imageUrls?.length ?? 0) > 2
+      return (req.imageUrls?.length ?? 0) > 2 || (req.mode === "reference-to-video" && (req.imageUrls?.length ?? 0) > 0)
         ? { model: "wan/2-7-r2v", input: { ...common, reference_image: req.imageUrls!.slice(0, 5), aspect_ratio: option(req.aspectRatio, COMMON_ASPECTS, "16:9") } }
         : firstImage(req)
         ? { model: "wan/2-7-image-to-video", input: { ...common, first_frame_url: firstImage(req), ...(req.imageUrls?.[1] ? { last_frame_url: req.imageUrls[1] } : {}) } }

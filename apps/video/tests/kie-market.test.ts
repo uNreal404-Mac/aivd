@@ -230,6 +230,13 @@ describe("video model requests from the November 26 KIE catalogue", () => {
     expect(model.buildTask(req({ imageUrls: images })).input.image_urls).toEqual(images);
   });
 
+  it("uses Wan 2.7 reference mode for two images selected as references", () => {
+    const task = getMarketModel("wan/2-7-text-to-video")!.buildTask(req({ imageUrls: images, mode: "reference-to-video" }));
+    expect(task.model).toBe("wan/2-7-r2v");
+    expect(task.input.reference_image).toEqual(images);
+    expect(task.input.first_frame_url).toBeUndefined();
+  });
+
   it("translates numbered image mentions into each reference model's KIE syntax", () => {
     const imageUrls = images;
     const prompt = "让 image 2 跟随 image 1";

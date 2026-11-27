@@ -765,6 +765,7 @@ export class VideoService {
       value && (!allowed || allowed.length === 0 || allowed.includes(value)) ? value : undefined;
     const request: MarketRequest = {
       prompt: params.prompt,
+      mode: params.mode,
       // A ratio the model ignores is not saved, so history shows what was made.
       aspectRatio: params.keyframes || (model.options.aspectFollowsSingleImage && imageInputs.length === 1)
         ? undefined : pick(params.aspectRatio, model.options.aspects),
