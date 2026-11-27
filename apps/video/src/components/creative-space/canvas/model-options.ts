@@ -1,7 +1,7 @@
 // Per-node model choices, live quotes and request bodies for the node canvas.
 // Quotes use the same pricing functions the server freezes credits with, and
 // are passed the reference-image count and sound so they match.
-import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { allowedDuration, getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { estimateCredits, STUDIO_MODELS } from "@/lib/ai-video-studio";
 import { maxVideoReferences } from "@/lib/video-references";
 import type { GenerateData } from "@/lib/creative-space/canvas-graph";
@@ -120,6 +120,18 @@ export function withModel(data: GenerateData, modelId: string): GenerateData {
 /** Credits this node will freeze with `images` reference images. */
 export function quote(data: GenerateData, prompt: string, images: number): number {
   if (data.kind === "video") {
+    // Quote exactly what buildRequest sends: a node saved without a length or
+    // resolution leaves them to the server's default, and sound is on only when set.
+    const market = getMarketModel(data.modelId);
+    if (market) {
+      return marketCredits(market, {
+        prompt: "",
+        duration: allowedDuration(market, data.duration),
+        resolution: data.resolution && market.options.resolutions?.includes(data.resolution) ? data.resolution : undefined,
+        audio: market.options.audioToggle ? Boolean(data.audio) : undefined,
+        imageUrls: Array.from({ length: images }, (_, index) => `reference-${index}`),
+      });
+    }
     return estimateCredits(
       { modelId: data.modelId, duration: data.duration ?? 5, resolution: data.resolution ?? "720p" },
       { images, audio: data.audio },

@@ -46,8 +46,12 @@ function imageType(ref: ImageRef): string | undefined {
   // Library entries may carry a placeholder such as "image/generated".
   const known = [ref.mimeType, ref.file?.type].find((type) => type && REAL_TYPES.has(type));
   if (known) return known;
-  const extension = (ref.name || ref.url || "").split(/[?#]/)[0].split(".").pop()?.toLowerCase();
-  return extension ? EXTENSION_TYPES[extension] : undefined;
+  // The address names the stored file; a library name can be a prompt.
+  for (const source of [ref.url, ref.name]) {
+    const extension = source?.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+    if (extension && EXTENSION_TYPES[extension]) return EXTENSION_TYPES[extension];
+  }
+  return undefined;
 }
 
 function imageSize(ref: ImageRef): Promise<{ width: number; height: number } | null> {

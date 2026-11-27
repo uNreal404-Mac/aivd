@@ -70,6 +70,8 @@ describe("model image tags", () => {
     expect(prompt(grok, "用@图片1做海报", 1)).toBe("用@image1 做海报");
     expect(prompt(grok, "a poster from image 1", 1)).toBe("a poster from @image1");
     expect(prompt(grok, "image 3 is missing", 1)).toBe("image 3 is missing");
+    expect(prompt(long, "Blend image 1image 2", 2)).toBe("Blend @image_1 @image_2");
+    expect(prompt(long, "Make this image 1:1", 1)).toBe("Make this image 1:1");
   });
 
   it("sends any other @ to Kling Long Image as a full-width one", () => {
@@ -81,6 +83,8 @@ describe("model image tags", () => {
   it("does not trust a placeholder file type", async () => {
     const work = [{ url: "https://x/work.png", name: "a cat", mimeType: "image/generated" }];
     expect(await marketImageNotice("kling/v3-turbo-text-to-video", work, true)).toBeNull();
+    const named = [{ url: "https://x/work.png", name: "Create an icon for logo.webp", mimeType: "image/generated" }];
+    expect(await marketImageNotice("kling-4-0/long-image", named, true)).toBeNull();
   });
 });
 
@@ -91,5 +95,13 @@ describe("quotes use the length the server bills", () => {
     const five = estimateCredits({ modelId: "wan/2-5-text-to-video", duration: 5, resolution: "720p" }, { images: 0 });
     expect(estimateCredits({ modelId: "wan/2-5-text-to-video", duration: 6, resolution: "720p" }, { images: 0 })).toBe(five);
     expect(calculateModelCredits("wan/2-5-text-to-video", { duration: 6, quality: "720p" })).toBe(five);
+  });
+
+  it("quotes a canvas node the way its request is billed", async () => {
+    const { quote } = await import("@/components/creative-space/canvas/model-options");
+    const { marketCredits } = await import("@/ai/kie-market");
+    const model = getMarketModel("google/gemini-omni-flash-1-1")!;
+    const node = { kind: "video", modelId: model.id, resolution: "720p" } as never;
+    expect(quote(node, "", 0)).toBe(marketCredits(model, { prompt: "", resolution: "720p" }));
   });
 });

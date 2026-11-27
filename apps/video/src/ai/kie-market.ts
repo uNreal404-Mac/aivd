@@ -190,7 +190,9 @@ const option = (value: string | undefined, allowed: string[], fallback: string) 
 // Models that bind a reference by their own tag get that tag instead, for
 // pictures that were actually sent. A tag directly followed by a letter or
 // digit gets a space so that word is not read as part of it.
-const IMAGE_REFERENCE = /@(?:图片|image)_?(\d+)(?!\d)|\bimage (\d+)(?!\d)/gi;
+// "image 2" is what the studio wrote for "@图片2" (two in a row run together
+// as "image 1image 2"); "image 1:1" is a ratio, not a reference.
+const IMAGE_REFERENCE = /@(?:图片|image)_?(\d+)(?!\d)|(?<![A-Za-z])image (\d+)(?!\d|[:：x×/]\d)/gi;
 export function bindImageTags(prompt: string, count: number, tag: (index: number) => string): string {
   return prompt.replace(IMAGE_REFERENCE, (token, tagged: string | undefined, plain: string | undefined, offset: number, whole: string) => {
     const index = Number(tagged ?? plain);
