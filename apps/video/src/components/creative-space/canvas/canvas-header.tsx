@@ -8,6 +8,7 @@ import {
   CloudCheck,
   Coins,
   Ellipsis,
+  FolderOpen,
   Layers,
   LayoutGrid,
   Link2,
@@ -44,6 +45,7 @@ interface Props {
   onDelete: () => void;
   onDeleteCanvas: (id: string) => void;
   onHome: () => void;
+  onImport: () => void;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -215,6 +217,10 @@ export function CanvasHeader(p: Props) {
               <Map size={16} />
               {l("小地图", "Minimap")}
               {p.mapOn && <Check size={14} />}
+            </button>
+            <button type="button" onClick={() => act(p.onImport)}>
+              <FolderOpen size={16} />
+              {l("导入站内素材与生成结果", "Import site media and results")}
             </button>
             {p.account && (
               <Link href={p.creditsHref}>

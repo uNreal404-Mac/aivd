@@ -31,7 +31,7 @@ export async function buildCanvasAgentForm({ instruction, locale, userId, inputs
   const form = new FormData();
   form.set("action", "plan"); form.set("instruction", instruction); form.set("locale", locale);
   const guests = assets.some(({ data }) => data.kind === "media" && data.localId)
-    ? await listGuestAssets(userId).catch(() => [] as PickerAsset[]) : [];
+    ? await listGuestAssets(userId, "all").catch(() => [] as PickerAsset[]) : [];
   const described = [];
   for (const [index, { id, data }] of assets.entries()) {
     const label = String.fromCharCode(65 + index);

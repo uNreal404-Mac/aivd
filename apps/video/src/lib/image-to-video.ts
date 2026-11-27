@@ -305,9 +305,11 @@ export async function uploadImage(
   file: File,
   fetchFn: FetchLike = fetch,
   expectedAccount?: string,
+  scope?: "canvas",
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
+  if (scope) form.set("scope", scope);
 
   try {
     const response = await fetchFn(UPLOAD_ENDPOINT, {

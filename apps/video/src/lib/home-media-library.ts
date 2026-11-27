@@ -13,7 +13,7 @@ export type PickerAsset = {
   key?: string;
 };
 
-type StoredFile = { owner?: string; id: string; name: string; mimeType: string; file: File };
+type StoredFile = { owner?: string; scope?: "canvas"; id: string; name: string; mimeType: string; file: File };
 const DB_NAME = "aivd-home-library";
 const STORE = "files";
 const previewUrls = new Map<string, string>();
@@ -32,7 +32,7 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function listGuestAssets(owner?: string | null): Promise<PickerAsset[]> {
+export async function listGuestAssets(owner?: string | null, scope: "global" | "canvas" | "all" = "global"): Promise<PickerAsset[]> {
   const db = await openDb();
   try {
     const rows = await new Promise<StoredFile[]>((resolve, reject) => {
@@ -40,12 +40,12 @@ export async function listGuestAssets(owner?: string | null): Promise<PickerAsse
       request.onsuccess = () => resolve(request.result as StoredFile[]);
       request.onerror = () => reject(request.error);
     });
-    return rows.filter((row) => !row.owner || row.owner === owner).map((row) => ({ ...row, url: previewFor(row) }));
+    return rows.filter((row) => (!row.owner || row.owner === owner) && (scope === "all" || (row.scope ?? "global") === scope)).map((row) => ({ ...row, url: previewFor(row) }));
   } finally { db.close(); }
 }
 
-export async function saveGuestAsset(file: File, owner?: string | null): Promise<PickerAsset> {
-  const row: StoredFile = { ...(owner ? { owner } : {}), id: crypto.randomUUID(), name: file.name, mimeType: file.type, file };
+export async function saveGuestAsset(file: File, owner?: string | null, scope: "global" | "canvas" = "global"): Promise<PickerAsset> {
+  const row: StoredFile = { ...(owner ? { owner } : {}), ...(scope === "canvas" ? { scope } : {}), id: crypto.randomUUID(), name: file.name, mimeType: file.type, file };
   const db = await openDb();
   try {
     await new Promise<void>((resolve, reject) => {

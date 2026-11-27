@@ -47,10 +47,10 @@ function saved<T extends { id: string }>(key: string): T[] {
   } catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention }: {
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention, libraryScope = "global", canvasItems = [] }: {
   lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string; acceptedTypes?: MediaType[];
-  /** The shelf it opens on each time (an "@" button opens it on the elements). Without it, the last shelf stays. */
+  /** The shelf it opens on each time (an "@" button opens it on the elements). */
   initialTab?: Tab;
   homepage?: boolean;
   wanVideoOnly?: boolean;
@@ -59,6 +59,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   uploadsAndWorksOnly?: boolean;
   mentionAnchor?: HTMLButtonElement | null;
   onMention?: (item: PickerAsset) => void;
+  libraryScope?: "global" | "canvas";
+  /** Assets already present on this canvas, including imported works. */
+  canvasItems?: PickerAsset[];
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const allowVideo = acceptedTypes.includes("video");
@@ -133,9 +136,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     setAssets([]);
     setWorks([]);
     setLoadingAssets(true);
-    const local = listGuestAssets().catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return [] as PickerAsset[]; });
+    const local = listGuestAssets(userId, libraryScope).catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return [] as PickerAsset[]; });
     const remote = userId
-      ? fetch("/api/v1/library", { cache: "no-store" }).then((response) => response.json()).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : []).catch(() => [] as PickerAsset[])
+      ? fetch(`/api/v1/library?scope=${libraryScope}`, { cache: "no-store" }).then((response) => response.json()).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : []).catch(() => [] as PickerAsset[])
       : Promise.resolve([] as PickerAsset[]);
     const libraryLoaded = Promise.all([local, remote]).then(([localAssets, remoteAssets]) => {
       if (live) setAssets((current) => {
@@ -144,7 +147,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       });
     });
     let worksLoaded: Promise<unknown> = Promise.resolve();
-    if (userId && !wanVideoOnly) {
+    if (userId && !wanVideoOnly && libraryScope === "global") {
       // Only ask for the kinds of creations this caller can use.
       worksLoaded = Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
         if (!live) return;
@@ -157,7 +160,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     }
     void Promise.allSettled([libraryLoaded, worksLoaded]).then(() => { if (live) setLoadingAssets(false); });
     return () => { live = false; };
-  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey, wanVideoOnly]);
+  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey, wanVideoOnly, libraryScope]);
 
   useEffect(() => {
     if (!open) return;
@@ -221,8 +224,11 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // Each opening starts on the shelf the caller asked for (only on opening,
   // not when the selection changes while it is open).
   useEffect(() => {
-    if (open && (initialTab || wanVideoOnly)) { setTab(wanVideoOnly ? "upload" : initialTab!); setCreate(null); setCategory("all"); }
-  }, [open, initialTab, wanVideoOnly]);
+    if (!open) return;
+    setTab(wanVideoOnly ? "upload" : initialTab ?? "upload");
+    setCreate(null);
+    setCategory("all");
+  }, [open, initialTab, wanVideoOnly, libraryScope]);
 
   // Closing the library, or moving to another source, cancels a half-done
   // delete: the library never reopens with a bin already armed. (Above the
@@ -253,8 +259,12 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   };
   const elementAssets = elements.map((item) => ({ ...assets.find((asset) => asset.id === item.assetId), id: `element:${item.id}`, name: item.name } as PickerAsset));
   const brandAssets = brands.map((item) => ({ ...assets.find((asset) => asset.id === item.logoId), id: `brand:${item.id}`, name: item.name } as PickerAsset));
-  const source = tab === "works" ? works : tab === "upload" ? assets : tab === "elements" ? elementAssets : brandAssets;
-  const choices = [...assets, ...works, ...elementAssets, ...brandAssets];
+  const canvasUploads = libraryScope === "canvas" ? canvasItems.filter((item) => !item.id.startsWith("work:")) : [];
+  const canvasWorks = libraryScope === "canvas" ? canvasItems.filter((item) => item.id.startsWith("work:")) : [];
+  const uploads = [...assets, ...canvasUploads].filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index);
+  const generated = [...works, ...canvasWorks].filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index);
+  const source = tab === "works" ? generated : tab === "upload" ? uploads : tab === "elements" ? elementAssets : brandAssets;
+  const choices = [...uploads, ...generated, ...elementAssets, ...brandAssets];
   // Items this caller cannot take are not listed, and a type filter only
   // appears when there is more than one type to choose between.
   const filters: Filter[] = tab === "upload" && homepage ? ["all", "image", "video", "audio"] : acceptedTypes.length > 1 ? ["all", ...(["video", "image", "audio"] as const).filter((type) => acceptedTypes.includes(type))] : [];
@@ -327,12 +337,12 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         if (userId) {
           const isVideo = file.type.startsWith("video/");
           const isAudio = file.type.startsWith("audio/");
-          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId).then((result) => ({ ok: true as const, key: result.key, url: result.url }))
-            : isAudio ? await fetch("/api/v1/creative-space/audio-assets", { method: "POST", headers: { "X-Media-Account": userId }, body: (() => { const form = new FormData(); form.set("file", file); return form; })() }).then(async (response) => {
+          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined).then((result) => ({ ok: true as const, key: result.key, url: result.url }))
+            : isAudio ? await fetch("/api/v1/creative-space/audio-assets", { method: "POST", headers: { "X-Media-Account": userId }, body: (() => { const form = new FormData(); form.set("file", file); if (libraryScope === "canvas") form.set("scope", "canvas"); return form; })() }).then(async (response) => {
               const body = await response.json();
               if (!response.ok || !body?.data?.key || !body?.data?.signedUrl) throw new Error("audio upload failed");
               return { ok: true as const, key: body.data.key as string, url: body.data.signedUrl as string };
-            }) : await uploadImage(file, fetch, userId);
+            }) : await uploadImage(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined);
           if (revision !== uploadRevision.current) return;
           if (uploaded.ok) {
             const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, size: file.size, key: uploaded.key, url: uploaded.url };
@@ -340,7 +350,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
             if (batch.length === 1 && acceptable(remote)) toggle(remote.id, true);
           } else { setError(`${file.name}: ${uploadErrorText(uploaded, zh)}`); failures++; }
         } else {
-          const local = await saveGuestAsset(file);
+          const local = await saveGuestAsset(file, userId, libraryScope);
           if (revision !== uploadRevision.current) return;
           setAssets((current) => [local, ...current]);
           if (batch.length === 1 && acceptable(local)) toggle(local.id, true);
@@ -366,7 +376,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     setDeleting(item.id); setError("");
     try {
       if (item.id.startsWith("upload:") && userId) {
-        const response = await fetch("/api/v1/library", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: item.key }) });
+        const response = await fetch(`/api/v1/library?scope=${libraryScope}`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: item.key }) });
         if (!response.ok) throw new Error("delete failed");
       } else {
         await removeGuestAsset(item.id);
@@ -397,7 +407,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     try {
       const remote = targets.filter((asset) => asset.id.startsWith("upload:") && asset.key && userId);
       if (userId && (confirmDelete === "all" || remote.length)) {
-        const response = await fetch("/api/v1/library", {
+        const response = await fetch(`/api/v1/library?scope=${libraryScope}`, {
           method: "DELETE", headers: { "content-type": "application/json" },
           body: JSON.stringify(confirmDelete === "all" ? { all: true } : { keys: remote.map((asset) => asset.key) }),
         });
@@ -473,7 +483,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     ? (zh ? `图片 ${mb(MAX_BYTES)} MB 内 · 视频 ${mb(MAX_VIDEO_BYTES)} MB 内（MP4/WebM/MOV）` : `Images up to ${mb(MAX_BYTES)} MB · videos up to ${mb(MAX_VIDEO_BYTES)} MB`)
     : (zh ? `图片 ${mb(MAX_BYTES)} MB 内` : `Images up to ${mb(MAX_BYTES)} MB`);
   const status = uploading ? "" : error || (limitNote ? limitText : "");
-  const tabNames: Record<Tab, string> = { upload: zh ? "上传" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "作品" : "Creations" };
+  const tabNames: Record<Tab, string> = { upload: zh ? "上传素材" : "Uploads", elements: zh ? "元素" : "Elements", brand: zh ? "品牌工具箱" : "Brand kit", works: zh ? "生成结果" : "Generated" };
   // The upload tile opens the file chooser; it leads the uploads grid, even
   // when there is nothing uploaded yet.
   const addTile = <button type="button" className="hmp-add" title={limits} disabled={uploading || deletingMany} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{homepage ? (zh ? "批量上传文件" : "Upload files") : (zh ? "上传文件" : "Upload file")}</button>;
@@ -495,10 +505,10 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }} aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" style={mentionAnchor ? position : undefined} data-presence="dialog" data-state={state}>
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
-        {((videoToolAsset || uploadsAndWorksOnly ? ["upload","works"] : wanVideoOnly ? ["upload"] : keyframeOnly ? ["upload", "elements", "works"] : ["upload", "elements", "brand", "works"]) as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
+        {((libraryScope === "canvas" || videoToolAsset || uploadsAndWorksOnly ? ["upload","works"] : wanVideoOnly ? ["upload"] : keyframeOnly ? ["upload", "elements", "works"] : ["upload", "elements", "brand", "works"]) as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
       </nav><button type="button" className="hmp-close" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={16} /></button></header>
       <section className="hmp-shelf" aria-label={tabNames[tab]}>
-      <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : tabNames[tab]}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image", audio: zh ? "音频" : "Audio" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{tab === "upload" && homepage ? <div className="hmp-manage-actions"><button type="button" className={manageMode ? "active" : ""} disabled={uploading || deletingMany || !assets.length} onClick={() => { setManageMode((current) => !current); setManaged([]); }}>{manageMode ? (zh ? "取消管理" : "Done") : (zh ? "批量删除" : "Select to delete")}</button>{manageMode ? <button type="button" disabled={!managed.length || deletingMany} onClick={() => setConfirmDelete("selected")}><Trash2 size={14} />{zh ? `删除所选 (${managed.length})` : `Delete selected (${managed.length})`}</button> : null}<button type="button" className="hmp-clear-all" disabled={!assets.length || uploading || deletingMany} onClick={() => setConfirmDelete("all")}><Trash2 size={14} />{zh ? "一键清空" : "Clear all"}</button></div> : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
+      <div className="hmp-toolbar"><span className="hmp-shelf-title">{create ? (create === "element" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")) : `${libraryScope === "canvas" ? (zh ? "画布 · " : "Canvas · ") : ""}${tabNames[tab]}`}</span>{create ? null : (tab === "upload" || tab === "works") ? filters.map((item) => <button type="button" key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{({ all: zh ? "全部" : "All", video: zh ? "视频" : "Video", image: zh ? "图片" : "Image", audio: zh ? "音频" : "Audio" })[item]}</button>) : tab === "elements" ? ELEMENT_CATEGORIES.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)}>{zh ? item.zh : item.en}</button>) : null}{tab === "upload" && homepage ? <div className="hmp-manage-actions"><button type="button" className={manageMode ? "active" : ""} disabled={uploading || deletingMany || !assets.length} onClick={() => { setManageMode((current) => !current); setManaged([]); }}>{manageMode ? (zh ? "取消管理" : "Done") : (zh ? "批量删除" : "Select to delete")}</button>{manageMode ? <button type="button" disabled={!managed.length || deletingMany} onClick={() => setConfirmDelete("selected")}><Trash2 size={14} />{zh ? `删除所选 (${managed.length})` : `Delete selected (${managed.length})`}</button> : null}<button type="button" className="hmp-clear-all" disabled={!assets.length || uploading || deletingMany} onClick={() => setConfirmDelete("all")}><Trash2 size={14} />{zh ? "一键清空" : "Clear all"}</button></div> : null}{(tab === "elements" || tab === "brand") && !create ? <button type="button" className="hmp-toolbar-create" onClick={() => { setCreate(tab === "elements" ? "element" : "brand"); setError(""); }}><Plus size={15} />{tab === "elements" ? (zh ? "创建元素" : "Create element") : (zh ? "创建品牌工具箱" : "Create brand kit")}</button> : null}</div>
       <main className="hmp-body">
         {create ? <div className="hmp-create">
           <label>{zh ? "名称" : "Name"}<input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></label>
@@ -516,7 +526,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
               previewOpener.current = event.currentTarget; setPreview(item);
               requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLButtonElement>(".hmp-preview-close")?.focus());
             }}><Expand size={14} /></button> : null}
-            {tab === "upload" && !manageMode ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting || deletingMany)} onClick={() => pressDelete(item)}
+            {tab === "upload" && !manageMode && (libraryScope === "global" || !item.key || item.key.includes("/canvas/")) ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting || deletingMany)} onClick={() => pressDelete(item)}
               aria-label={isArmed ? (zh ? `再按一次删除 ${item.name}${note ? `，${note}` : ""}` : `Press again to delete ${item.name}${note ? `. ${note}` : ""}`) : (zh ? `删除 ${item.name}` : `Delete ${item.name}`)}
               title={isArmed ? undefined : (zh ? "删除这个素材" : "Delete this file")}>
               {deleting === item.id ? <Loader2 className="hmp-spin" size={14} aria-hidden="true" /> : isArmed ? <span key="confirm" data-swap className="hmp-delete-confirm"><strong>{zh ? "确认删除" : "Confirm delete"}</strong>{note ? <small>{note}</small> : null}</span> : <Trash2 key="bin" size={14} aria-hidden="true" />}

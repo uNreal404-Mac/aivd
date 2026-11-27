@@ -22,10 +22,11 @@ export async function POST(request: Request) {
     assertMediaAccount(request, user.id);
     const form = await request.formData();
     const file = form.get("file");
+    const canvasUpload = form.get("scope") === "canvas";
     if (!(file instanceof File) || !AUDIO_TYPES.has(file.type) || !file.size || file.size > MAX_AUDIO_SIZE) {
       throw new ApiError("Use an MP3, WAV, M4A, or WebM audio file up to 25 MB.", 400);
     }
-    const key = `uploads/${user.id}/${nanoid()}.${AUDIO_TYPES.get(file.type)}`;
+    const key = `uploads/${user.id}/${canvasUpload ? "canvas/" : ""}${nanoid()}.${AUDIO_TYPES.get(file.type)}`;
     const storage = getStorage();
     await storage.uploadFile({ key, body: Buffer.from(await file.arrayBuffer()), contentType: file.type });
     await db.insert(mediaAssets).values({ id: nanoid(), userId: user.id, key, name: file.name, mimeType: file.type, size: file.size });

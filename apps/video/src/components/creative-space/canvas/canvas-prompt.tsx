@@ -22,22 +22,26 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
   change: (value: string) => void;
   insert?: { text: string; nonce: number } | null;
 }) {
+  const [draft, setDraft] = useState(value);
+  const composing = useRef(false);
   const [caret, setCaret] = useState<number | null>(null);
   const [active, setActive] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
   const listId = useId();
   const lastInsert = useRef<number | null>(insert?.nonce ?? null);
+  useEffect(() => { if (!composing.current) setDraft(value); }, [value]);
   useEffect(() => {
     if (!insert || lastInsert.current === insert.nonce) return;
     lastInsert.current = insert.nonce;
-    const next = [value.trim(), insert.text].filter(Boolean).join("\n");
+    const next = [draft.trim(), insert.text].filter(Boolean).join("\n");
     if (next.length > 5000) return;
+    setDraft(next);
     change(next);
     requestAnimationFrame(() => input.current?.focus());
     // Only a new explicit click should insert text; value changes are handled by the parent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insert?.nonce]);
-  const before = caret === null ? "" : value.slice(0, caret);
+  const before = caret === null || composing.current ? "" : draft.slice(0, caret);
   const match = /@([^@\s]*)$/u.exec(before);
   const candidates = caret === null || !before.trim() ? [] : list();
   const named = !match && candidates.filter((item) => !item.connected && before.endsWith(item.name)).sort((a, b) => b.name.length - a.name.length)[0];
@@ -48,8 +52,9 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
     if (caret === null) return;
     const start = caret - (match ? match[0].length : item.name.length);
     const insert = `@${item.token} `;
-    const next = value.slice(0, start) + insert + value.slice(caret);
+    const next = draft.slice(0, start) + insert + draft.slice(caret);
     if (next.length > 5000 || !attach(item)) return;
+    setDraft(next);
     change(next);
     setCaret(null);
     requestAnimationFrame(() => {
@@ -63,14 +68,16 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
   };
   return (
     <div className="nc-reference-prompt">
-      <textarea className="nc-prompt" ref={input} value={value} maxLength={5000} placeholder={placeholder} aria-label={label}
+      <textarea className="nc-prompt" ref={input} value={draft} maxLength={5000} placeholder={placeholder} aria-label={label}
         aria-controls={choices.length ? listId : undefined}
         aria-describedby={choices[active] ? `${listId}-${active}` : undefined}
-        onClick={(e) => cursor(e.currentTarget)} onBlur={() => setCaret(null)}
-        onChange={(e) => { change(e.currentTarget.value); cursor(e.currentTarget); }}
+        onClick={(e) => { if (!composing.current) cursor(e.currentTarget); }} onBlur={(e) => { if (composing.current) { composing.current = false; change(e.currentTarget.value); } setCaret(null); }}
+        onCompositionStart={() => { composing.current = true; setCaret(null); }}
+        onCompositionEnd={(e) => { composing.current = false; setDraft(e.currentTarget.value); change(e.currentTarget.value); cursor(e.currentTarget); }}
+        onChange={(e) => { setDraft(e.currentTarget.value); if (!composing.current) { change(e.currentTarget.value); cursor(e.currentTarget); } }}
         onKeyUp={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) cursor(e.currentTarget); }}
         onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing || !choices.length) return;
+          if (composing.current || e.nativeEvent.isComposing || e.keyCode === 229 || !choices.length) return;
           if (e.key === "Escape") { e.stopPropagation(); setCaret(null); }
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             e.preventDefault();

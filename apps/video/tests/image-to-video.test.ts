@@ -277,6 +277,14 @@ describe("parseUploadResponse", () => {
 });
 
 describe("uploadImage", () => {
+  it("tags canvas uploads so they stay out of the site-wide library", async () => {
+    const fetchFn = vi.fn(async () => stubResponse(200, { success: true, data: { key: "uploads/u/canvas/a.png", signedUrl: "signed" } }));
+    await uploadImage(stubFile(), fetchFn as FetchLike, "u", "canvas");
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.body as FormData).get("scope")).toBe("canvas");
+    expect(new Headers(init.headers).get("X-Media-Account")).toBe("u");
+  });
+
   it("posts multipart form data and parses the response", async () => {
     const fetchFn = vi.fn(async () =>
       stubResponse(200, {

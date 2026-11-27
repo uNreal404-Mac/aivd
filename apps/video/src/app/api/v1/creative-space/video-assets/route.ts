@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     const frame = form.get("frame");
+    const canvasUpload = form.get("scope") === "canvas";
     if (!(file instanceof File) || !VIDEO_TYPES.has(file.type) || file.size > MAX_VIDEO_SIZE || file.size === 0) {
       throw new ApiError("Use an MP4, WebM, or MOV video up to 25 MB.", 400);
     }
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     });
     if (!isSafetyApproved(safety)) throw new ApiError(safetyMessage(safety, request.headers.get("accept-language") ?? "en"), 422);
     const ext = file.type === "video/webm" ? "webm" : file.type === "video/quicktime" ? "mov" : "mp4";
-    const key = `uploads/${user.id}/${nanoid()}.${ext}`;
+    const key = `uploads/${user.id}/${canvasUpload ? "canvas/" : ""}${nanoid()}.${ext}`;
     const storage = getStorage();
     await storage.uploadFile({ key, body: Buffer.from(await file.arrayBuffer()), contentType: file.type });
     await db.insert(mediaAssets).values({ id: nanoid(), userId: user.id, key, name: file.name, mimeType: file.type, size: file.size });

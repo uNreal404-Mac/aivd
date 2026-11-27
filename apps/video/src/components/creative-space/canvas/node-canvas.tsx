@@ -245,8 +245,8 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     return fetch(input, { ...init, headers, signal: lifetime.current.signal });
   }, [lifetime, userId]);
   const uploadCanvasFile = useCallback(async (file: File) => {
-    if (file.type.startsWith("video/")) return uploadWorkflowVideo(file, canvasFetch);
-    const result = await uploadImage(file, canvasFetch);
+    if (file.type.startsWith("video/")) return uploadWorkflowVideo(file, canvasFetch, undefined, "canvas");
+    const result = await uploadImage(file, canvasFetch, undefined, "canvas");
     if (!result.ok) throw new UploadError(result.code);
     return result;
   }, [canvasFetch]);
@@ -280,11 +280,14 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   const [menu, setMenu] = useState<Menu | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerScope, setPickerScope] = useState<"canvas" | "global">("canvas");
+  const openPicker = (scope: "canvas" | "global" = "canvas") => { setPickerScope(scope); setPickerOpen(true); };
   const [editEntry, setEditEntry] = useState<CanvasEditEntry | null>(null);
   const [chooseToolFor, setChooseToolFor] = useState<string | null>(null);
   useEffect(() => {
     if (!hydrated || !initialEdit || new URL(window.location.href).searchParams.get("edit") !== initialEdit) return;
     setEditEntry(initialEdit);
+    setPickerScope("canvas");
     setPickerOpen(true);
   }, [hydrated, initialEdit]);
   const closePicker = () => {
@@ -558,7 +561,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   const uploadLocalAssets = useCallback(async () => {
     const pending = nodesRef.current.filter((node) => node.data.kind === "media" && node.data.localId && !node.data.assetKey);
     if (!pending.length) return;
-    const guests = await listGuestAssets(userId).catch(() => [] as PickerAsset[]);
+    const guests = await listGuestAssets(userId, "all").catch(() => [] as PickerAsset[]);
     for (const node of pending) {
       const data = node.data as MediaData;
       const asset = guests.find((item) => item.id === data.localId);
@@ -688,7 +691,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   /** Resolves display URLs for everything that has a stable reference. */
   const resolveAll = useCallback(async () => {
     const list = nodesRef.current;
-    const guests = list.some((node) => node.data.kind === "media" && node.data.localId) ? await listGuestAssets(userId).catch(() => [] as PickerAsset[]) : [];
+    const guests = list.some((node) => node.data.kind === "media" && node.data.localId) ? await listGuestAssets(userId, "all").catch(() => [] as PickerAsset[]) : [];
     for (const node of list) {
       if (node.data.kind === "media" && node.data.localId && !node.data.url) {
         const asset = guests.find((item) => item.id === (node.data as MediaData).localId);
@@ -1407,7 +1410,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       addNodes(sources, wires, !referenceTarget);
       // Every file is kept in this browser before any upload starts, so a
       // reload mid-upload keeps them all (saving uploads what is still local).
-      const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file, userId).catch(() => null)));
+      const kept = await Promise.all(created.map(({ file }) => saveGuestAsset(file, userId, "canvas").catch(() => null)));
       if (lifetime.current.signal.aborted) return;
       created.forEach(({ node }, index) => {
         const asset = kept[index];
@@ -1449,7 +1452,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     try {
       const source = userId
         ? await uploadCanvasFile(file)
-        : await saveGuestAsset(file);
+        : await saveGuestAsset(file, undefined, "canvas");
       if (generation !== canvasGeneration.current || !nodesRef.current.some((node) => node.id === id)) return;
       // Swap the reference only once the new file is usable. The same node ID
       // keeps every downstream wire intact, including after a failed upload.
@@ -1467,11 +1470,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     (picked: PickerAsset[]) => {
       if (editEntry && (picked.length !== 1 || !picked[0].mimeType.startsWith("image/"))) return;
       const origin = viewCenter();
-      // Elements and brand items made from a local upload carry a picker alias,
-      // not the stored file's id: add their file like a fresh upload instead.
-      const aliased = picked.filter((asset) => !asset.key && !/^work:/.test(asset.id) && asset.file && !/^[0-9a-f-]{36}$/i.test(asset.id));
-      if (aliased.length) void addFiles(aliased.map((asset) => asset.file as File), origin);
-      const assets = picked.filter((asset) => !aliased.includes(asset) && (asset.key || /^work:/.test(asset.id) || asset.file));
+      // Local files imported from the site library become canvas-scoped files.
+      // Element and brand aliases also need a fresh canvas copy.
+      const needsCopy = picked.filter((asset) => !asset.key && !/^work:/.test(asset.id) && asset.file
+        && (pickerScope === "global" || !/^[0-9a-f-]{36}$/i.test(asset.id)));
+      if (needsCopy.length) void addFiles(needsCopy.map((asset) => asset.file as File), origin);
+      const assets = picked.filter((asset) => !needsCopy.includes(asset) && (asset.key || /^work:/.test(asset.id) || asset.file));
       const added = assets.map((asset, index) => {
         const media = asset.mimeType.startsWith("video/") ? "video" : "image";
         const work = /^work:([^:]+):(\d+)$/.exec(asset.id);
@@ -1492,7 +1496,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       }
       setPickerOpen(false);
     },
-    [addFiles, addNodes, editEntry, makeNode, viewCenter],
+    [addFiles, addNodes, editEntry, makeNode, pickerScope, viewCenter],
   );
 
   /* ------------------------------------------------------ edit and shots */
@@ -1606,7 +1610,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       try {
         let blob: Blob | null = null;
         if (node.data.kind === "media" && node.data.localId) {
-          blob = (await listGuestAssets(userId)).find((asset) => asset.id === (node.data as MediaData).localId)?.file ?? null;
+          blob = (await listGuestAssets(userId, "all")).find((asset) => asset.id === (node.data as MediaData).localId)?.file ?? null;
         } else {
           const source = sameOriginUrl(node.data);
           if (!source) throw new Error();
@@ -2330,6 +2334,21 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   };
   const shotsSource = shotsFor ? nodeById(shotsFor) : undefined;
   const editImage = editTarget ? { label: editTarget.data.title || "A", name: editTarget.data.title || "image", url: outputUrl(editTarget.data) ?? "", aspectRatio: isGen(editTarget.data) ? editTarget.data.aspect : undefined } : null;
+  const canvasLibraryItems: PickerAsset[] = nodes.flatMap((node) => {
+    const data = node.data;
+    if (data.kind === "media" && data.media !== "audio") {
+      const url = outputUrl(data);
+      if (!url) return [];
+      if (data.resultUuid) return [{ id: `work:${data.resultUuid}:${data.resultIndex ?? 0}`, name: data.title, mimeType: `${data.media}/generated`, url }];
+      if (data.assetKey) return [{ id: `upload:${data.assetKey}`, name: data.title, mimeType: data.mime, key: data.assetKey, url }];
+      return [];
+    }
+    if (isGen(data) && data.status === "done" && data.resultUuid && data.kind !== "audio") {
+      const urls = data.urls?.length ? data.urls : [outputUrl(data)].filter((url): url is string => Boolean(url));
+      return urls.map((url, index) => ({ id: `work:${data.resultUuid}:${index}`, name: data.title || data.prompt, mimeType: `${data.kind}/generated`, url }));
+    }
+    return [];
+  });
   const askCanvasAgent = async (question: string, history: { role: "user" | "agent"; text: string }[]) => {
     if (!userId) {
       requireLogin();
@@ -2377,7 +2396,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
         <CanvasHeader zh={zh} title={title} onTitle={setTitle} back={localizedHref(locale,"/creative-space")} creditsHref={localizedHref(locale,"/credits")} contactHref={localizedHref(locale,"/contact")}
           save={saveLabel[saveState]} saveState={saveState} account={!!userId} balance={balance} signIn={requireLogin}
           canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => { if (canvasId) void deleteCanvasById(canvasId); }} onDeleteCanvas={id => void deleteCanvasById(id)}
-          onHome={() => void goHome()}
+          onHome={() => void goHome()} onImport={() => openPicker("global")}
           canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
           edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
@@ -2567,7 +2586,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
               onAction={(action) => {
                 if (action === "add") { setMenu({ ...menu, palette: !menu.palette }); return; }
                 setMenu(null);
-                if (action === "asset") setPickerOpen(true);
+                if (action === "asset") openPicker();
                 if (action === "paste") pasteSelection(menu.flow);
                 if (action === "undo") restore(-1);
                 if (action === "redo") restore(1);
@@ -2603,7 +2622,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
                 {!menu.from ? (
                   <>
                     <button type="button" role="menuitem" onClick={() => { setMenu(null); fileInput.current?.click(); }}><Upload className="h-4 w-4" />{L("上传素材", "Upload")}</button>
-                    <button type="button" role="menuitem" onClick={() => { setMenu(null); setPickerOpen(true); }}><ImageIcon className="h-4 w-4" />{L("从素材库添加", "From library")}</button>
+                    <button type="button" role="menuitem" onClick={() => { setMenu(null); openPicker(); }}><ImageIcon className="h-4 w-4" />{L("从画布素材库添加", "From canvas library")}</button>
                   </>
                 ) : null}
               </div>
@@ -2639,6 +2658,8 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
           selectedIds={[]}
           userId={userId ?? undefined}
           acceptedTypes={editEntry ? ["image"] : ["image", "video"]}
+          libraryScope={pickerScope}
+          canvasItems={canvasLibraryItems}
         />
         {chooseToolFor && (
           <CanvasDialog title={L("编辑图像", "Edit image")} onClose={() => setChooseToolFor(null)}>
@@ -2653,7 +2674,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
           </CanvasDialog>
         )}
         {(panel === "history" || panel === "assets" || panel === "sounds") && <CanvasResources key={panel} section={panel} zh={zh} nodes={nodes} canvasFetch={canvasFetch}
-          onClose={() => setPanel(null)} onLibrary={() => { setPanel(null); setPickerOpen(true); }} onTemplates={() => { setPanel(null); setTemplatesOpen(true); }}
+          onClose={() => setPanel(null)} onLibrary={() => { setPanel(null); openPicker(); }} onTemplates={() => { setPanel(null); setTemplatesOpen(true); }}
           onFocus={node => { setPanel(null); focusNode(node); }}
           onSound={id => {
             const sound = getCanvasSound(id);

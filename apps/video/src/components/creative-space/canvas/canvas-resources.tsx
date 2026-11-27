@@ -314,7 +314,7 @@ export function CanvasResources({ section, zh, nodes, canvasFetch, onClose, onLi
           {section === "history" && <p>{zh ? `仅显示当前画布现存节点的生成记录。每个生成节点保留当前任务和最近 ${MAX_PAST_GENERATIONS} 个历史任务。` : `History covers nodes still on this canvas. Each generation node keeps its current job and up to ${MAX_PAST_GENERATIONS} previous jobs.`}</p>}
         </header>
         {section === "assets" && <nav className="ncr-nav" aria-label={SECTION.assets[lang]}>
-          <button type="button" onClick={() => { onClose(); onLibrary(); }}><FolderOpen aria-hidden="true" />{zh ? "素材库" : "Media library"}<ArrowUpRight aria-hidden="true" /></button>
+          <button type="button" onClick={() => { onClose(); onLibrary(); }}><FolderOpen aria-hidden="true" />{zh ? "画布素材库" : "Canvas media library"}<ArrowUpRight aria-hidden="true" /></button>
           <span aria-current="page"><Images aria-hidden="true" />{zh ? "当前画布资产" : "Canvas assets"}</span>
           <button type="button" onClick={() => { onClose(); onTemplates(); }}><Bookmark aria-hidden="true" />{zh ? "我的模板" : "My templates"}<ArrowUpRight aria-hidden="true" /></button>
         </nav>}
