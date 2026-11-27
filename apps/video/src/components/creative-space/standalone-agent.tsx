@@ -150,8 +150,12 @@ export function StandaloneAgent({ lang }: { lang: string }) {
       const agentMessage: Message = { id: newId(), role: "agent", text: result.reply, prompt: typeof result.generationPrompt === "string" ? result.generationPrompt : undefined };
       setConversations((current) => current.map((item) => item.id === threadId ? { ...item, messages: [...item.messages, agentMessage], updatedAt: Date.now() } : item));
     } catch (cause) {
+      setConversations((current) => current.flatMap((item) => {
+        if (item.id !== threadId) return [item];
+        const remaining = item.messages.filter((message) => message.id !== userMessage.id);
+        return remaining.length ? [{ ...item, messages: remaining }] : [];
+      }));
       if (!controller.signal.aborted) {
-        setConversations((current) => current.map((item) => item.id === threadId ? { ...item, messages: item.messages.filter((message) => message.id !== userMessage.id) } : item));
         setDraft(question);
         setError(cause instanceof Error ? cause.message : zh ? "发送失败，请重试。" : "Could not send. Please try again.");
       }
