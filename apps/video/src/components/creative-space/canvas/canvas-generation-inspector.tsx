@@ -9,6 +9,7 @@ import { CanvasPrompt } from "./canvas-prompt";
 import { InspectorReferences } from "./inspector-references";
 import { InspectorFrame, InspectorMenu, InspectorOptions } from "./inspector-controls";
 import { choicesFor, followsReferenceAspect, modelsFor, withModel } from "./model-options";
+import { VIDEO_CATALOG } from "@/lib/kie-model-catalog";
 
 function modelFamily(name: string) {
   if (/^nano banana/i.test(name)) return "Nano Banana";
@@ -18,7 +19,8 @@ function modelFamily(name: string) {
 }
 
 function ModelMenu({ data, set, zh }: { data: GenerateData; set: (id: string) => void; zh: boolean }) {
-  const models = modelsFor(data.kind);
+  const models = data.kind === "video" ? VIDEO_CATALOG : modelsFor(data.kind);
+  const available = new Set(modelsFor(data.kind).map(row => row.id));
   const model = models.find(row => row.id === data.modelId);
   const groups = Array.from(new Set(models.map(row => modelFamily(row.name))));
   const [group, setGroup] = useState(modelFamily(model?.name ?? ""));
@@ -29,8 +31,8 @@ function ModelMenu({ data, set, zh }: { data: GenerateData; set: (id: string) =>
         onFocus={() => setGroup(family)} onPointerEnter={e => { if (e.pointerType === "mouse") setGroup(family); }} onClick={() => setGroup(family)}>
         {family}<ChevronRight size={12}/></button>)}</div>
       <div className="nci-models">{models.filter(row => modelFamily(row.name) === group).map(row =>
-        <button type="button" key={row.id} aria-pressed={row.id === data.modelId} onClick={() => { set(row.id); close(); }}>
-          {row.name}{row.id === data.modelId && <Check size={14}/>}</button>)}</div>
+        <button type="button" key={row.id} disabled={!available.has(row.id)} aria-pressed={row.id === data.modelId} onClick={() => { set(row.id); close(); }}>
+          {row.name}{!available.has(row.id) && <small>{zh ? "暂不可用" : "Coming soon"}</small>}{row.id === data.modelId && <Check size={14}/>}</button>)}</div>
     </div>}
   </InspectorMenu>;
 }
@@ -41,6 +43,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
   const [selectReference, setSelectReference] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [mention, setMention] = useState<{ text: string; nonce: number } | null>(null);
   const inputs = actions.inputsOf(id);
   const refs = actions.referencesFor(id);
   const attached = refs.filter(ref => ref.connected);
@@ -75,7 +78,8 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
         {close => VIDEO_PRESETS.map(preset => <button type="button" className="nci-row" key={preset.id} onClick={() => { addPrompt(preset.prompt); close(); }}>{zh ? preset.zh : preset.en}</button>)}
       </InspectorMenu>
     </div>}
-    {(!isVideo || referenceMode) && <InspectorReferences id={id} actions={actions} limit={choices.maxImages} busy={busy} onBusy={setUploading} onAttach={() => setSelectReference(true)}/>}
+    {(!isVideo || referenceMode) && <InspectorReferences id={id} actions={actions} limit={12} busy={busy} onBusy={setUploading} onAttach={() => setSelectReference(true)}
+      onMention={(ref, role) => setMention({ text: `${role} @${ref.token}${zh ? "。" : "."}`, nonce: Date.now() })}/>}
     {!isVideo && <div className="nci-styles">
       <InspectorMenu label={zh ? "风格转绘" : "Restyle reference"} triggerClass="nci-small" disabled={!attached.length} button={<>{zh ? "风格转绘" : "Restyle"}<WandSparkles/></>}>
         {close => (zh ? ["水彩画", "电影写实", "铅笔素描", "剪纸"] : ["Watercolor", "Cinematic realism", "Pencil sketch", "Paper cutout"]).map(style =>
@@ -88,7 +92,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
     </div>}
     <CanvasPrompt value={data.prompt} label={zh ? "提示词" : "Prompt"} zh={zh}
       placeholder={isVideo ? zh ? "请输入视频描述…" : "Describe the video…" : zh ? "请输入图片描述…" : "Describe the image…"}
-      list={() => actions.referencesFor(id)} attach={ref => actions.attachReference(id, ref)} change={prompt => patch({ prompt })}/>
+      list={() => actions.referencesFor(id)} attach={ref => actions.attachReference(id, ref)} change={prompt => patch({ prompt })} insert={mention}/>
     {(inputs.texts > 0 || inputs.images > choices.maxImages || (choices.requiresImage && !inputs.images)) && <p className="nci-info">
       {inputs.texts ? zh ? `已连接 ${inputs.texts} 段文本` : `${inputs.texts} text inputs connected` : ""}
       {inputs.images > choices.maxImages ? zh ? ` · 使用前 ${choices.maxImages} 张参考图` : ` · Using first ${choices.maxImages} images` : ""}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 export interface CanvasReference {
   id: string;
@@ -9,9 +9,10 @@ export interface CanvasReference {
   connected: boolean;
   url?: string;
   media?: "image" | "video";
+  attachable?: boolean;
 }
 
-export function CanvasPrompt({ value, label, placeholder, zh, list, attach, change }: {
+export function CanvasPrompt({ value, label, placeholder, zh, list, attach, change, insert }: {
   value: string;
   label: string;
   placeholder: string;
@@ -19,11 +20,23 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
   list: () => CanvasReference[];
   attach: (ref: CanvasReference) => boolean;
   change: (value: string) => void;
+  insert?: { text: string; nonce: number } | null;
 }) {
   const [caret, setCaret] = useState<number | null>(null);
   const [active, setActive] = useState(0);
   const input = useRef<HTMLTextAreaElement>(null);
   const listId = useId();
+  const lastInsert = useRef<number | null>(insert?.nonce ?? null);
+  useEffect(() => {
+    if (!insert || lastInsert.current === insert.nonce) return;
+    lastInsert.current = insert.nonce;
+    const next = [value.trim(), insert.text].filter(Boolean).join("\n");
+    if (next.length > 5000) return;
+    change(next);
+    requestAnimationFrame(() => input.current?.focus());
+    // Only a new explicit click should insert text; value changes are handled by the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insert?.nonce]);
   const before = caret === null ? "" : value.slice(0, caret);
   const match = /@([^@\s]*)$/u.exec(before);
   const candidates = caret === null || !before.trim() ? [] : list();

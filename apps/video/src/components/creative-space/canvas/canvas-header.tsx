@@ -14,6 +14,7 @@ import {
   LoaderCircle,
   Map,
   Mail,
+  MessageCircle,
   Pencil,
   Plus,
   Redo2,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { PreviewBadge } from "@/components/layout/preview-badge";
 
 interface Props {
   zh: boolean;
@@ -41,6 +43,10 @@ interface Props {
   onChoose: (id: string) => void;
   onNew: () => void;
   onDelete: () => void;
+  onDeleteCanvas: (id: string) => void;
+  onHome: () => void;
+  agentOpen: boolean;
+  toggleAgent: () => void;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -86,6 +92,11 @@ export function CanvasHeader(p: Props) {
   const Status = p.saveState === "error" ? CircleAlert : p.saveState === "saving" ? LoaderCircle : CloudCheck;
   return (
     <header ref={root} className="nc-glass-header">
+      <button type="button" className="nc-home-brand" onClick={p.onHome} title={l("保存并返回首页", "Save and return home")}>
+        <img src="/logo.svg" alt="" width={28} height={28} />
+        <strong>aivd.ai</strong>
+        <PreviewBadge lang={p.zh ? "zh" : "en"} />
+      </button>
       <div className="nc-project-chip">
         <Link
           aria-label={l("返回创作空间", "Back to Creative Space")}
@@ -142,11 +153,13 @@ export function CanvasHeader(p: Props) {
             {p.canvases
               .filter((x) => x.name.toLowerCase().includes(filter.toLowerCase()))
               .map((c) => (
-                <button type="button" key={c.id} onClick={() => act(() => p.onChoose(c.id))}>
-                  <Layers size={15} />
-                  {c.name}
-                  {p.canvasId === c.id && <Check size={14} />}
-                </button>
+                <div className="nc-canvas-list-row" key={c.id}>
+                  <button type="button" onClick={() => act(() => p.onChoose(c.id))}>
+                    <Layers size={15} /><span>{c.name}</span>{p.canvasId === c.id && <Check size={14} />}
+                  </button>
+                  <button type="button" className="nc-canvas-row-delete" aria-label={`${l("删除", "Delete")} ${c.name}`} title={l("删除画布", "Delete canvas")}
+                    onClick={() => act(() => p.onDeleteCanvas(c.id))}><Trash2 size={15} /></button>
+                </div>
               ))}
             <button type="button" onClick={() => act(p.account ? p.onNew : p.signIn)}>
               <Plus size={15} />
@@ -162,6 +175,8 @@ export function CanvasHeader(p: Props) {
         )}
       </div>
       <div className="nc-session-tools">
+        <button className="nc-round" type="button" aria-pressed={p.agentOpen} aria-label={l("切换 Agent 对话", "Toggle Agent chat")}
+          title={l("Agent 对话", "Agent chat")} onClick={p.toggleAgent}><MessageCircle size={18} /></button>
         <button
           className="nc-round"
           type="button"

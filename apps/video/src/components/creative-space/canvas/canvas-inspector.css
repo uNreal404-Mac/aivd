@@ -45,6 +45,8 @@
 .nci-expand { width: 23px; height: 23px; position: absolute; right: 6px; top: 6px; padding: 0; color: var(--nci-muted); }
 .nci-add { width: 40px; height: 40px; border-style: dashed; border-color: var(--ds-line-2); background: transparent; border-radius: var(--ds-r-md); }
 .nci-thumb { flex: none; width: 40px; height: 40px; background: var(--nci-chip); border: 1px solid var(--nci-line); display: grid; place-items: center; border-radius: var(--ds-r-sm); overflow: hidden; }
+.nci-thumb-button { padding: 0; cursor: pointer; }
+.nci-thumb-button:hover { border-color: var(--du-accent); }
 .nci-thumb img, .nci-reference-option img { width: 100%; height: 100%; object-fit: cover; }
 .nci-assets { flex-wrap: wrap; }
 .nci-small { font-size: var(--ds-fs-2xs); height: 24px; padding: 0 7px; }

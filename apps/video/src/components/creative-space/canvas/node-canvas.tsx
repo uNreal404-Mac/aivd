@@ -114,6 +114,7 @@ import { PinRail } from "./canvas-pins";
 import { buildRequest, choicesFor, defaultsFor, IMAGE_MODELS, quote, withModel } from "./model-options";
 import { CanvasDock, type CanvasPanel } from "./canvas-dock";
 import { CanvasHeader } from "./canvas-header";
+import { CanvasAgentSidebar } from "./canvas-agent-sidebar";
 import { CanvasResources } from "./canvas-resources";
 import { getCanvasSound } from "@/lib/creative-space/canvas-sounds";
 import "./node-canvas.css";
@@ -263,6 +264,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   const canvasIdRef = useRef<string | null>(null);
   const [canvases, setCanvases] = useState<CanvasSummary[]>([]);
   const [panel, setPanel] = useState<CanvasPanel | null>(null);
+  const [agentOpen, setAgentOpen] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [balance, setBalance] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -661,8 +663,10 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: titleRef.current, graph }));
       lastSaved.current = contentKey(graph, titleRef.current);
       setSaveState("local");
+      return true;
     } catch {
       setSaveState("error");
+      return false;
     }
   }, [storedNow]);
 
@@ -765,7 +769,8 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       say(L("这个画布和另一个窗口有冲突，请先刷新页面，免得丢掉改动", "This canvas conflicts with another window; reload first so nothing is lost"), true);
       return false;
     }
-    const dirty = contentKey(storedNow(), titleRef.current) !== lastSaved.current && (Boolean(canvasIdRef.current) || nodesRef.current.length > 0);
+    const dirty = contentKey(storedNow(), titleRef.current) !== lastSaved.current &&
+      (Boolean(canvasIdRef.current) || nodesRef.current.length > 0 || titleRef.current !== L("未命名画布", "Untitled canvas"));
     if (userId && dirty && !(await persistNow())) {
       say(L("当前画布还没保存成功，先不切换", "This canvas has not saved yet; staying here"), true);
       return false;
@@ -808,17 +813,26 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     setSaveState(userId ? "idle" : "local");
   }, [L, currentPath, lifetime, loadGraph, readyToLeave, userId]);
 
-  const deleteCanvas = useCallback(async () => {
-    const id = canvasIdRef.current;
-    if (!id) return;
+  const goHome = useCallback(async () => {
+    if (!(await readyToLeave())) return;
+    if (!userId && !saveLocalDraft()) {
+      say(L("当前画布未能保存，请重试", "Could not save this canvas. Try again."), true);
+      return;
+    }
+    window.location.assign(localizedHref(locale, "/"));
+  }, [L, locale, readyToLeave, saveLocalDraft, say, userId]);
+
+  const deleteCanvasById = useCallback(async (id: string) => {
     if (!window.confirm(L("删除这个画布？画布里的生成结果仍保留在「我的作品」。", "Delete this canvas? Its results stay in My creations."))) return;
     try {
       const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!response.ok) throw new Error();
-      canvasIdRef.current = null;
-      setCanvasId(null);
       await syncList();
-      await newCanvas(true);
+      if (canvasIdRef.current === id) {
+        canvasIdRef.current = null;
+        setCanvasId(null);
+        await newCanvas(true);
+      }
       say(L("画布已删除", "Canvas deleted"));
     } catch {
       say(L("删除失败，请重试", "Could not delete"), true);
@@ -1097,10 +1111,24 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
 
   /** Reference images for a node: stable ids (for the request signature) and sendable values. */
   const prepareImages = useCallback(
-    async (id: string, max: number): Promise<{ stable: string[]; values: string[] }> => {
-      const inputs = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current)
-        .filter((node) => outputType(node.data) === "image" && hasOutput(node.data))
-        .slice(0, max);
+    async (id: string, max: number, prompt: string): Promise<{ stable: string[]; values: string[]; prompt: string }> => {
+      const connected = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current)
+        .filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
+      const allImages = nodesRef.current.filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
+      const mentions = Array.from(prompt.matchAll(/@(?:图片|image)(\d+)(?!\d)/gi));
+      const prioritized: GraphNode[] = [];
+      for (const mention of mentions) {
+        const source = allImages[Number(mention[1]) - 1];
+        const linked = connected.find((node) => node.id === source?.id);
+        if (!linked) throw new Error(L(`请先连接 @图片${mention[1]} 到当前节点`, `Connect @image${mention[1]} to this node first`));
+        if (!prioritized.some((node) => node.id === linked.id)) prioritized.push(linked);
+      }
+      if (prioritized.length > max) throw new Error(L(`当前模型最多支持 ${max} 张参考图，请减少 @ 引用`, `This model accepts ${max} reference images. Remove some @ mentions.`));
+      const inputs = [...prioritized, ...connected.filter((node) => !prioritized.some((item) => item.id === node.id))].slice(0, max);
+      const preparedPrompt = prompt.replace(/@(?:图片|image)(\d+)(?!\d)/gi, (_, number: string) => {
+        const source = allImages[Number(number) - 1];
+        return `reference image ${inputs.findIndex((node) => node.id === source?.id) + 1}`;
+      });
       const stable: string[] = [];
       const values: string[] = [];
       const uuids: string[] = [];
@@ -1131,7 +1159,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
           values[index] = url;
         }
       }
-      return { stable, values };
+      return { stable, values, prompt: preparedPrompt };
     },
     [L, canvasFetch, uploadLocalAssets],
   );
@@ -1158,14 +1186,14 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       }
       patch(id, { status: "submitting", error: null } as Partial<GenerateData>);
       try {
-        const images = data.kind === "audio" ? { stable: [], values: [] } : await prepareImages(id, choices.maxImages);
+        const images = data.kind === "audio" ? { stable: [], values: [], prompt } : await prepareImages(id, choices.maxImages, prompt);
         if (data.maskKey) {
           images.stable.push(data.maskKey);
           images.values.push(data.maskKey);
         }
-        const request = buildRequest(data, prompt, images.values);
-        const signature = JSON.stringify({ endpoint: request.endpoint, body: buildRequest(data, prompt, images.stable).body });
-        const credits = quote(data, prompt, images.values.length);
+        const request = buildRequest(data, images.prompt, images.values);
+        const signature = JSON.stringify({ endpoint: request.endpoint, body: buildRequest(data, images.prompt, images.stable).body });
+        const credits = quote(data, images.prompt, images.values.length);
         const current = nodesRef.current.find((item) => item.id === id)?.data as GenerateData | undefined;
         const { key, reused } = submitKey(current?.pending, signature, newId);
         // Retrying an unanswered request must reach the server even if its
@@ -1967,22 +1995,24 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     const target = nodesRef.current.find((node) => node.id === targetId)?.data;
     if (!target || !(target.kind === "text" || target.kind === "agent" || target.kind === "image" || target.kind === "video")) return [];
     const agent = target.kind === "agent" || target.kind === "text";
-    const limit = agent ? 8 : choicesFor(target.kind, target.modelId).maxImages;
-    if (!limit) return [];
+    const limit = agent ? 8 : 12;
     const allowed = (data: CanvasData) => hasOutput(data) && (outputType(data) === "image" || (agent && outputType(data) === "video"));
     const wired = directInputs(targetId, nodesRef.current as GraphNode[], edgesRef.current).filter(({ data }) => allowed(data));
+    const allImages = nodesRef.current.filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
     return nodesRef.current.flatMap((node) => {
       if (!allowed(node.data)) return [];
       const index = wired.findIndex((input) => input.id === node.id);
-      if (index >= limit || (index < 0 && (wired.length >= limit || !checkConnection(node.id, targetId, nodesRef.current as GraphNode[], edgesRef.current).ok))) return [];
+      const canConnect = checkConnection(node.id, targetId, nodesRef.current as GraphNode[], edgesRef.current).ok;
+      if (index < 0 && !canConnect) return [];
       const name = node.data.title || KIND_LABEL[node.data.kind][zh ? "zh" : "en"];
-      return [{ id: node.id, name, url: outputUrl(node.data), media: outputType(node.data) === "video" ? "video" as const : "image" as const, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : name, connected: index >= 0 }];
+      const imageIndex = allImages.findIndex((item) => item.id === node.id);
+      return [{ id: node.id, name, url: outputUrl(node.data), media: outputType(node.data) === "video" ? "video" as const : "image" as const, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : `${zh ? "图片" : "image"}${imageIndex + 1}`, connected: index >= 0, attachable: index >= 0 || wired.length < limit }];
     });
   }, [zh]);
 
   const attachReference = useCallback((target: string, ref: CanvasReference) => {
     const current = referencesFor(target).find((item) => item.id === ref.id);
-    if (!current || ref.token !== current.token) return false;
+    if (!current || ref.token !== current.token || !current.attachable) return false;
     if (!current.connected) onConnect({ source: ref.id, target, sourceHandle: "out", targetHandle: "in" });
     return true;
   }, [onConnect, referencesFor]);
@@ -1997,7 +2027,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     const node = nodesRef.current.find((item) => item.id === id);
     if (!node || !(node.data.kind === "text" || node.data.kind === "image" || node.data.kind === "video")) return;
     const forText = node.data.kind === "text";
-    const cap = node.data.kind === "text" ? 8 : choicesFor(node.data.kind, node.data.modelId).maxImages;
+    const cap = node.data.kind === "text" ? 8 : 12;
     const linked = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current).filter((source) => outputType(source.data) === "image" || (forText && outputType(source.data) === "video")).length;
     if (!cap || linked >= cap) { say(L(`当前模型最多可用 ${cap} 张参考图`, `This model accepts up to ${cap} reference images`), true); return; }
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { say(L("请选择 PNG、JPEG 或 WebP 图片", "Choose a PNG, JPEG or WebP image"), true); return; }
@@ -2298,16 +2328,58 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   };
   const shotsSource = shotsFor ? nodeById(shotsFor) : undefined;
   const editImage = editTarget ? { label: editTarget.data.title || "A", name: editTarget.data.title || "image", url: outputUrl(editTarget.data) ?? "", aspectRatio: isGen(editTarget.data) ? editTarget.data.aspect : undefined } : null;
+  const askCanvasAgent = async (question: string, history: { role: "user" | "agent"; text: string }[]) => {
+    if (!userId) {
+      requireLogin();
+      throw new Error(L("登录后即可和 Agent 对话", "Sign in to chat with Agent"));
+    }
+    const canvasContext = nodesRef.current.slice(0, 30).map((node, index) => {
+      const data = node.data;
+      const description = data.kind === "text" ? data.text : data.kind === "agent" ? data.prompt : isGen(data) ? data.prompt : "";
+      return `${index + 1}. ${data.kind}: ${data.title}${description ? ` — ${description.slice(0, 180)}` : ""}`;
+    }).join("\n");
+    const conversation = history.slice(-6).map(message => `${message.role === "user" ? "User" : "Agent"}: ${message.text.slice(0, 500)}`).join("\n");
+    const instruction = [
+      zh ? "请以创作助手身份回答用户的问题，并在合适时给出可直接用于生成的提示词。" : "Answer as a creative assistant and provide a usable generation prompt when appropriate.",
+      `${zh ? "画布" : "Canvas"}: ${titleRef.current}\n${canvasContext || "(empty)"}`,
+      conversation,
+      `${zh ? "用户" : "User"}: ${question}`,
+    ].filter(Boolean).join("\n\n").slice(0, 5000);
+    const form = await buildCanvasAgentForm({ instruction, locale, userId, inputs: nodesRef.current as GraphNode[], sourceFor: sameOriginUrl, fetchAsset: canvasFetch })
+      .catch(() => {
+        // An inaccessible media preview should not prevent a text conversation.
+        const fallback = new FormData();
+        fallback.set("action", "plan"); fallback.set("instruction", instruction); fallback.set("locale", locale);
+        return fallback;
+      });
+    const response = await canvasFetch("/api/v1/creative-space/agent", { method: "POST", body: form });
+    if (response.status === 401) requireLogin();
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.success) throw new Error(body?.error?.message ?? L("Agent 暂时不可用", "Agent is unavailable"));
+    return { reply: String(body.data.reply ?? ""), prompt: String(body.data.generationPrompt ?? "") };
+  };
+  const applyAgentPrompt = (prompt: string) => {
+    const target = nodesRef.current.find(node => node.selected && isGen(node.data));
+    if (target && isGen(target.data)) {
+      patch(target.id, { prompt: [target.data.prompt.trim(), prompt].filter(Boolean).join("\n").slice(0, 5000) });
+      say(L("已添加到选中的生成节点", "Added to the selected generator"));
+    } else {
+      createKind("text", viewCenter(), undefined, prompt.slice(0, 5000));
+      say(L("已在画布创建文本节点", "Added a text node to the canvas"));
+    }
+  };
 
   return (
     <CanvasActionsContext.Provider value={actions}>
       <div className="nc-shell">
         <CanvasHeader zh={zh} title={title} onTitle={setTitle} back={localizedHref(locale,"/creative-space")} creditsHref={localizedHref(locale,"/credits")} contactHref={localizedHref(locale,"/contact")}
           save={saveLabel[saveState]} saveState={saveState} account={!!userId} balance={balance} signIn={requireLogin}
-          canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => void deleteCanvas()}
+          canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => { if (canvasId) void deleteCanvasById(canvasId); }} onDeleteCanvas={id => void deleteCanvasById(id)}
+          onHome={() => void goHome()} agentOpen={agentOpen} toggleAgent={() => setAgentOpen(open => !open)}
           canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
           edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
+          <CanvasAgentSidebar key={canvasGeneration.current} zh={zh} hidden={!agentOpen} onClose={() => setAgentOpen(false)} onSend={askCanvasAgent} onApply={applyAgentPrompt} />
             <input
               ref={fileInput}
               type="file"
