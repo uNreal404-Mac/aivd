@@ -34,6 +34,29 @@ const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 /** How long a pressed delete waits for its second press. */
 const CONFIRM_MS = 3000;
 const DOUBLE_PRESS_MS = 400;
+const LIBRARY_CACHE_MS = 5 * 60 * 1000;
+type LibrarySnapshot = { assets: PickerAsset[]; works: PickerAsset[]; at: number };
+const librarySnapshots = new Map<string, LibrarySnapshot>();
+
+function reusableUrl(url: string, now = Date.now()): boolean {
+  if (!url) return false;
+  if (url.startsWith("/")) return true;
+  try {
+    const parsed = new URL(url);
+    const issued = parsed.searchParams.get("X-Amz-Date");
+    const seconds = Number(parsed.searchParams.get("X-Amz-Expires"));
+    if (!issued) return true;
+    const timestamp = Date.parse(issued.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, "$1-$2-$3T$4:$5:$6Z"));
+    return Number.isFinite(timestamp) && Number.isFinite(seconds) && timestamp + seconds * 1000 > now + 2 * 60 * 1000;
+  } catch {
+    return url.startsWith("blob:");
+  }
+}
+
+function keepLoadedUrl(item: PickerAsset, previous: PickerAsset[]): PickerAsset {
+  const old = previous.find((asset) => asset.id === item.id);
+  return old && reusableUrl(old.url) ? { ...item, url: old.url } : item;
+}
 const mb = (bytes: number) => Math.round(bytes / 1024 / 1024);
 
 function categoryId(value: string): string {
@@ -94,6 +117,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [confirmDelete, setConfirmDelete] = useState<"selected" | "all" | null>(null);
   const [deletingMany, setDeletingMany] = useState(false);
   const uploadRevision = useRef(0);
+  const assetMutationRevision = useRef(0);
   useEffect(() => {
     setUploading(false);
     return () => { uploadRevision.current++; };
@@ -113,6 +137,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const scope = userId || "guest";
   const elementKey = `aivd:elements:${scope}`;
   const brandKey = `aivd:brands:${scope}`;
+  const libraryKey = `${scope}:${libraryScope}:${typesKey}:${wanVideoOnly}:${zh}`;
+  const [snapshotKey, setSnapshotKey] = useState<string | null>(null);
 
   // selectedIds and acceptedTypes are compared by value, so a parent passing
   // a new array on every render does not reload the library.
@@ -133,34 +159,54 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       localStorage.removeItem("aivd:elements:guest"); localStorage.removeItem("aivd:brands:guest");
     }
     setError("");
-    setAssets([]);
-    setWorks([]);
-    setLoadingAssets(true);
-    const local = listGuestAssets(userId, libraryScope).catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return [] as PickerAsset[]; });
+    const snapshot = librarySnapshots.get(libraryKey);
+    const useSnapshot = Boolean(snapshot && Date.now() - snapshot.at < LIBRARY_CACHE_MS &&
+      [...snapshot.assets, ...snapshot.works].every((item) => reusableUrl(item.url)));
+    if (useSnapshot && snapshot) {
+      setAssets(snapshot.assets);
+      setWorks(snapshot.works);
+      setSnapshotKey(libraryKey);
+    } else {
+      setAssets([]);
+      setWorks([]);
+      setSnapshotKey(null);
+    }
+    setLoadingAssets(!useSnapshot);
+    const loadRevision = assetMutationRevision.current;
+    const local = listGuestAssets(userId, libraryScope).catch(() => { if (live) setError(zh ? "暂时读取不到保存在这台设备上的素材，请刷新或重新上传" : "Couldn't load uploads saved on this device. Refresh or upload again."); return null; });
     const remote = userId
-      ? fetch(`/api/v1/library?scope=${libraryScope}`, { cache: "no-store" }).then((response) => response.json()).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : []).catch(() => [] as PickerAsset[])
+      ? fetch(`/api/v1/library?scope=${libraryScope}`, { cache: "no-store" }).then((response) => response.ok ? response.json() : null).then((body) => Array.isArray(body?.data?.assets) ? body.data.assets as PickerAsset[] : null).catch(() => null)
       : Promise.resolve([] as PickerAsset[]);
     const libraryLoaded = Promise.all([local, remote]).then(([localAssets, remoteAssets]) => {
       if (live) setAssets((current) => {
-        const merged = [...current, ...localAssets, ...remoteAssets];
-        return merged.filter((asset, index) => merged.findIndex((item) => item.id === asset.id) === index);
+        const merged = [...(localAssets ?? current.filter((item) => !item.key)), ...(remoteAssets ?? current.filter((item) => item.key))];
+        if (assetMutationRevision.current !== loadRevision) {
+          const fetchedIds = new Set(merged.map((item) => item.id));
+          merged.push(...current.filter((item) => !fetchedIds.has(item.id)));
+        }
+        return merged.filter((asset, index) => merged.findIndex((item) => item.id === asset.id) === index).map((item) => keepLoadedUrl(item, current));
       });
     });
     let worksLoaded: Promise<unknown> = Promise.resolve();
     if (userId && !wanVideoOnly && libraryScope === "global") {
       // Only ask for the kinds of creations this caller can use.
-      worksLoaded = Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.json()).catch(() => null))).then((bodies) => {
+      worksLoaded = Promise.all(typesKey.split("|").filter(Boolean).map((type) => fetch(`/api/v1/video/list?type=${type}&limit=60`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null))).then((bodies) => {
         if (!live) return;
+        if (bodies.every((body) => body === null)) return;
         const rows: any[] = bodies.flatMap((body) => Array.isArray(body?.data?.videos) ? body.data.videos : []);
-        setWorks(rows.flatMap((row) => {
+        setWorks((current) => rows.flatMap((row) => {
           const urls = Array.isArray(row.mediaUrls) ? row.mediaUrls : row.videoUrl ? [row.videoUrl] : [];
           return urls.map((url: string, index: number) => ({ id: `work:${row.uuid}:${index}`, name: row.prompt || row.model || (zh ? "作品" : "Creation"), mimeType: `${row.mediaType || "video"}/generated`, url, key: url }));
-        }));
+        }).map((item) => keepLoadedUrl(item, current)));
       }).catch(() => {});
     }
-    void Promise.allSettled([libraryLoaded, worksLoaded]).then(() => { if (live) setLoadingAssets(false); });
+    void Promise.allSettled([libraryLoaded, worksLoaded]).then(() => { if (live) { setLoadingAssets(false); setSnapshotKey(libraryKey); } });
     return () => { live = false; };
-  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey, wanVideoOnly, libraryScope]);
+  }, [open, userId, elementKey, brandKey, zh, selectedIds.join("|"), typesKey, wanVideoOnly, libraryScope, libraryKey]);
+
+  useEffect(() => {
+    if (snapshotKey === libraryKey) librarySnapshots.set(libraryKey, { assets, works, at: Date.now() });
+  }, [snapshotKey, libraryKey, assets, works]);
 
   useEffect(() => {
     if (!open) return;
@@ -347,12 +393,14 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           if (revision !== uploadRevision.current) return;
           if (uploaded.ok) {
             const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, size: file.size, key: uploaded.key, url: uploaded.url };
+            assetMutationRevision.current++;
             setAssets((current) => [remote, ...current]);
             if (batch.length === 1 && acceptable(remote)) toggle(remote.id, true);
           } else { setError(`${file.name}: ${uploadErrorText(uploaded, zh)}`); failures++; }
         } else {
           const local = await saveGuestAsset(file, userId, libraryScope);
           if (revision !== uploadRevision.current) return;
+          assetMutationRevision.current++;
           setAssets((current) => [local, ...current]);
           if (batch.length === 1 && acceptable(local)) toggle(local.id, true);
         }
@@ -390,6 +438,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       localStorage.setItem(elementKey, JSON.stringify(nextElements));
       localStorage.setItem(brandKey, JSON.stringify(nextBrands));
       onDelete?.(item.id);
+      assetMutationRevision.current++;
       // The card fades out before it leaves the grid.
       setLeaving((current) => [...current, item.id]);
       setTimeout(() => {
@@ -424,6 +473,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         catch { failed++; }
       }
       if (deleted.size) {
+        assetMutationRevision.current++;
         commitSelected(selectedRef.current.filter((id) => !deleted.has(id)));
         setInitial((current) => current.filter((id) => !deleted.has(id)));
         setManaged((current) => current.filter((id) => !deleted.has(id)));
