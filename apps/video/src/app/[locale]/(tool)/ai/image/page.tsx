@@ -21,6 +21,7 @@ export default async function AiImagePage({ params, searchParams }: { params: Pr
   const modelParam = typeof query.model === "string" ? query.model : "";
   const countParam = typeof query.count === "string" ? query.count : "";
   const handoffParam = typeof query.handoff === "string" ? query.handoff : "";
+  const expectedReferences = typeof query.references === "string" ? Math.max(0, Number.parseInt(query.references, 10) || 0) : -1;
   // Switching a model or an explicit output count applies the incoming selection.
-  return <AiImageStudio key={`${modelParam || "default"}:${countParam}:${handoffParam}`} homeHandoffToken={handoffParam} initialCount={countParam} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} initialResolution={typeof query.resolution === "string" ? query.resolution : ""} />;
+  return <AiImageStudio key={`${modelParam || "default"}:${countParam}:${handoffParam}`} homeHandoffToken={handoffParam} expectedReferences={expectedReferences} initialCount={countParam} locale={locale} initialPrompt={typeof query.prompt === "string" ? query.prompt.slice(0, 2000) : ""} initialModel={typeof query.model === "string" ? query.model : ""} initialAspect={typeof query.aspect === "string" ? query.aspect : ""} initialResolution={typeof query.resolution === "string" ? query.resolution : ""} />;
 }

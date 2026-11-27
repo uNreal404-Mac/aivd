@@ -459,6 +459,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       if (homepage) params.set("count", String(imageCount));
       params.set("aspect", aspect);
       params.set("resolution", resolution);
+      params.set("references", String(referenceImages.length));
       setSubmitting(true);
       try {
         const uploaded = [];
@@ -568,6 +569,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       params.set("duration", String(duration));
       if (!clipMode && !useKeys) { params.set("aspect", aspect); params.set("audio", String(sound)); }
       params.set("resolution", resolution);
+      params.set("references", String(useKeys ? keyframeImages.length : videoReferences.length));
       // The studio starts this generation on arrival, once: it needs this
       // one-time token from storage, deletes it, and uses it as the request's
       // idempotency key, so a reload, Back or a second tab never charges twice.

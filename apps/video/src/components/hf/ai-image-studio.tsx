@@ -6,10 +6,9 @@ import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
 import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
 import { imageOutputCount } from "@/lib/image-output-count";
-import { currentUploadUrls } from "@/lib/home-media-library";
 import { clearSubmittedHomePrompt } from "@/lib/home-draft";
 import { AUTOSTART_STORAGE_KEY, claimAutostart } from "@/lib/autostart";
-import { readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
+import { currentUploadUrls, readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
@@ -61,6 +60,7 @@ function AiImageStudioForm({
   initialResolution = "",
   initialCount = 1,
   homeHandoffToken = "",
+  expectedReferences = -1,
 }: {
   locale: string;
   initialPrompt?: string;
@@ -70,6 +70,7 @@ function AiImageStudioForm({
   /** Resolution chosen on the homepage, used when this model offers it. */
   initialResolution?: string;
   homeHandoffToken?: string;
+  expectedReferences?: number;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
@@ -94,6 +95,8 @@ function AiImageStudioForm({
   const [view, setView] = useImageView();
   const [historyFilter, setHistoryFilter] = useState(INITIAL_FILTER);
   const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
+  const [mediaDraftReady, setMediaDraftReady] = useState(false);
+  const mediaDraftKey = `aivd:image-media-draft:${draftScope}`;
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   // Which shelf of the library opens: "@" can open it on the saved elements.
   const [pickerTab, setPickerTab] = useState<"upload" | "elements">("upload");
@@ -113,19 +116,40 @@ function AiImageStudioForm({
     const handoff = sessionStorage.getItem("aivd:home-image-references");
     const owner = sessionStorage.getItem("aivd:home-image-reference-owner");
     sessionStorage.removeItem("aivd:home-image-reference-owner");
-    if (!handoff) { setHandoffRefsStatus(owner ? "invalid" : "ready"); return; }
+    if (!handoff) { setHandoffRefsStatus(owner || expectedReferences > 0 ? "invalid" : "ready"); return; }
     sessionStorage.removeItem("aivd:home-image-references");
     if (owner && owner !== session?.user?.id) { setHandoffRefsStatus("invalid"); return; }
     try {
       const rows: unknown = JSON.parse(handoff);
-      if (!Array.isArray(rows) || rows.length > maxImages || !rows.every((row): row is { key: string; name: string; url: string } =>
+      if (!Array.isArray(rows) || (expectedReferences >= 0 && rows.length !== expectedReferences) || rows.length > maxImages || !rows.every((row): row is { key: string; name: string; url: string } =>
         typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string" &&
         (!row.key.startsWith("uploads/") || row.key.startsWith(`uploads/${session?.user?.id}/`))
       )) { setHandoffRefsStatus("invalid"); return; }
       setRefs(rows.map((row) => ({ key: row.key, name: row.name, preview: row.url })));
       setHandoffRefsStatus("ready");
     } catch { setHandoffRefsStatus("invalid"); }
-  }, [sessionLoading, session?.user?.id, sessionWaited, homeHandoffToken]);
+  }, [sessionLoading, session?.user?.id, sessionWaited, homeHandoffToken, expectedReferences]);
+  useEffect(() => {
+    if (sessionLoading || handoffRefsStatus === "loading") return;
+    if (!homeHandoffToken) {
+      try {
+        const saved: unknown = JSON.parse(sessionStorage.getItem(mediaDraftKey) || "null");
+        if (Array.isArray(saved)) setRefs(saved.filter((item): item is { key: string; name: string; preview: string; sourceId?: string } =>
+          typeof item?.key === "string" && typeof item?.name === "string" && typeof item?.preview === "string" &&
+          (!item.key.startsWith("uploads/") || item.key.startsWith(`uploads/${session?.user?.id}/`))
+        ).slice(0, maxImages));
+        if (Array.isArray(saved)) void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
+      } catch { /* An unavailable draft does not block the studio. */ }
+    }
+    setMediaDraftReady(true);
+  }, [sessionLoading, handoffRefsStatus, homeHandoffToken, mediaDraftKey]);
+  useEffect(() => {
+    if (!mediaDraftReady) return;
+    try {
+      if (refs.length) sessionStorage.setItem(mediaDraftKey, JSON.stringify(refs));
+      else sessionStorage.removeItem(mediaDraftKey);
+    } catch { /* Storage is optional. */ }
+  }, [mediaDraftReady, mediaDraftKey, refs]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -247,6 +271,7 @@ function AiImageStudioForm({
           const result = await uploadImage(file, fetch, session?.user?.id);
           if (result.ok) {
             setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
+            setHandoffRefsStatus("ready");
           } else {
             setNotice(uploadErrorText(result, zh));
           }
@@ -265,6 +290,7 @@ function AiImageStudioForm({
     try {
       const selected = await Promise.all(items.map(item => readyPickerImage(item, session?.user?.id)));
       setRefs([...new Map(selected.map(item => [item.key, item])).values()].map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
+      setHandoffRefsStatus("ready");
     } catch (error) { setNotice(uploadErrorText(error, zh)); }
     finally { setUploading(false); }
   };
@@ -304,6 +330,10 @@ function AiImageStudioForm({
     if (inFlight.current || submitting || uploading) return;
     if (homeHandoffToken && handoffRefsStatus === "loading") {
       setNotice(zh ? "正在准备参考素材，请稍候。" : "Preparing your reference images. Please wait.");
+      return;
+    }
+    if (homeHandoffToken && handoffRefsStatus === "invalid") {
+      setNotice(zh ? "参考素材未能完整恢复，请重新选择后再生成。" : "The reference images could not be restored. Select them again before generating.");
       return;
     }
     inFlight.current = true;

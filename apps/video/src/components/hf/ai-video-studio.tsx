@@ -96,6 +96,7 @@ function AiVideoStudioForm({
   initialCatalogModelId,
   upcomingModel,
   homeHandoffToken = "",
+  expectedReferences = 0,
 }: {
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
@@ -106,6 +107,7 @@ function AiVideoStudioForm({
   availableModelIds: string[];
   initialCatalogModelId?: string;
   homeHandoffToken?: string;
+  expectedReferences?: number;
   /** A model picked from the nav that is not connected or catalogued yet. */
   upcomingModel?: { name: string; desc: string };
 }) {
@@ -262,6 +264,9 @@ function AiVideoStudioForm({
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const [imageKey, setImageKey] = useState<string | null>(null);
   const [homeReferences, setHomeReferences] = useState<UploadedVideoReference[]>([]);
+  const [handoffReady, setHandoffReady] = useState(!homeHandoffToken);
+  const [mediaDraftReady, setMediaDraftReady] = useState(false);
+  const mediaDraftKey = `aivd:video-media-draft:${draftScope}`;
   const [videoInput, setVideoInput] = useState(false);
   const [keyframeMode, setKeyframeMode] = useState(initialKeyframes);
   const promptMaxLength = keyframeMode ? 8000 : Math.max(PROMPT_MAX_LENGTH, initialSettings?.prompt.length ?? 0);
@@ -453,8 +458,10 @@ function AiVideoStudioForm({
   const promptEmpty = !check.ok && check.reason === "empty-prompt";
 
   const handoffChecked = useRef(false);
+  const incomingMedia = useRef(false);
+  const [sessionWaited, setSessionWaited] = useState(false);
   useEffect(() => {
-    if (sessionLoading || !optionsReady || handoffChecked.current) return;
+    if (sessionLoading || !optionsReady || handoffChecked.current || (homeHandoffToken && !session && !sessionWaited)) return;
     handoffChecked.current = true;
     const owner = sessionStorage.getItem("aivd:home-video-reference-owner");
     const references = sessionStorage.getItem("aivd:home-video-references");
@@ -471,16 +478,19 @@ function AiVideoStudioForm({
         window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
       }
       setNotice(isChinese ? "请重新选择当前账户的参考素材。" : "Choose reference media from your current account.");
+      setHandoffReady(true);
     };
     if (initialKeyframes) {
+      incomingMedia.current = true;
       const raw = sessionStorage.getItem(STUDIO_KEYFRAME_STORAGE);
       const next = raw ? parseStudioFrames(raw, session?.user?.id ?? "") : {};
-      if (next) setFrames(next);
+      if (next && (!expectedReferences || frameReferences(next).length === expectedReferences)) setFrames(next);
       else {
         sessionStorage.removeItem(STUDIO_KEYFRAME_STORAGE);
         rejectHandoff();
       }
       setFramesReady(true);
+      setHandoffReady(true);
       return;
     }
     if (references) {
@@ -491,6 +501,7 @@ function AiVideoStudioForm({
             typeof item?.key === "string" && typeof item?.name === "string" && typeof item?.url === "string");
           const hasVideos = valid.some(item => item.mimeType?.startsWith("video/"));
           if ((owner && owner !== session?.user?.id) || valid.length !== parsed.length ||
+            (homeHandoffToken && expectedReferences > 0 && valid.length !== expectedReferences) ||
             new Set(valid.map(item => item.key)).size !== valid.length ||
             valid.some(item => item.key.startsWith("uploads/") && !item.key.startsWith(`uploads/${session?.user?.id}/`)) ||
             (hasVideos && (catalogModelId !== "wan2.6" || valid.length > WAN_REFERENCE_MAX_FILES ||
@@ -499,19 +510,27 @@ function AiVideoStudioForm({
             return;
           }
           if (valid.length) {
+            incomingMedia.current = true;
             setHomeReferences(valid);
             const video = valid.some(item => item.mimeType?.startsWith("video/"));
             setVideoInput(video);
             setImageKey(video ? null : valid[0].key);
             setFileName(valid[0].name);
             setPreview(valid[0].url);
+            sessionStorage.removeItem("aivd:home-video-references");
+            sessionStorage.removeItem("aivd:home-video-reference-owner");
+            setHandoffReady(true);
             return;
           }
         }
       } catch { rejectHandoff(); return; }
     }
     const key = sessionStorage.getItem("aivd:home-start-image");
-    if (!key) return;
+    if (!key) {
+      if (homeHandoffToken && expectedReferences > 0) rejectHandoff();
+      else setHandoffReady(true);
+      return;
+    }
     const startOwner = sessionStorage.getItem("aivd:home-start-image-owner");
     sessionStorage.removeItem("aivd:home-start-image-owner");
     if (startOwner && startOwner !== session?.user?.id) {
@@ -520,12 +539,41 @@ function AiVideoStudioForm({
       return;
     }
     setImageKey(key);
+    incomingMedia.current = true;
     setFileName(sessionStorage.getItem("aivd:home-start-image-name"));
     setPreview(sessionStorage.getItem("aivd:home-start-image-preview"));
     sessionStorage.removeItem("aivd:home-start-image");
     sessionStorage.removeItem("aivd:home-start-image-name");
     sessionStorage.removeItem("aivd:home-start-image-preview");
-  }, [sessionLoading, session?.user?.id, initialKeyframes, optionsReady, catalogModelId]);
+    setHandoffReady(true);
+  }, [sessionLoading, session?.user?.id, sessionWaited, initialKeyframes, optionsReady, catalogModelId, homeHandoffToken, expectedReferences]);
+
+  useEffect(() => {
+    if (sessionLoading || !optionsReady || !handoffReady) return;
+    if (!homeHandoffToken && !incomingMedia.current) {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(mediaDraftKey) || "null");
+        if (saved && Array.isArray(saved.references)) {
+          const references = saved.references.filter((item: UploadedVideoReference) =>
+            typeof item?.key === "string" && typeof item?.name === "string" && typeof item?.url === "string" &&
+            (!item.key.startsWith("uploads/") || item.key.startsWith(`uploads/${session?.user?.id}/`))
+          );
+          if (references.length) {
+            setHomeReferences(references);
+            setVideoInput(Boolean(saved.videoInput));
+            setImageKey(saved.videoInput ? null : (saved.imageKey ?? references[0].key));
+            setFileName(saved.fileName ?? references[0].name);
+            setPreview(saved.preview ?? references[0].url);
+            void currentUploadUrls().then((urls) => {
+              setHomeReferences((items) => items.map((item) => ({ ...item, url: urls.get(item.key) ?? item.url })));
+              setPreview((current) => current === (saved.preview ?? references[0].url) ? (urls.get(saved.imageKey ?? references[0].key) ?? current) : current);
+            });
+          }
+        }
+      } catch { /* An unavailable draft does not block the studio. */ }
+    }
+    setMediaDraftReady(true);
+  }, [sessionLoading, optionsReady, handoffReady, homeHandoffToken, mediaDraftKey]);
 
   useCreditReturnDraft(draftScope, () => ({ settings, catalogModelId, imageKey, fileName, preview, homeReferences, videoInput, keyframeMode, frames }), (saved) => {
     if (initialKeyframes && !saved.keyframeMode) return;
@@ -549,6 +597,14 @@ function AiVideoStudioForm({
     try { return JSON.parse(sessionStorage.getItem(AUTOSTART_STORAGE_KEY) || "null")?.token === homeHandoffToken; }
     catch { return false; }
   });
+
+  useEffect(() => {
+    if (!mediaDraftReady) return;
+    try {
+      if (homeReferences.length) sessionStorage.setItem(mediaDraftKey, JSON.stringify({ references: homeReferences, videoInput, imageKey, fileName, preview }));
+      else sessionStorage.removeItem(mediaDraftKey);
+    } catch { /* Storage is optional. */ }
+  }, [mediaDraftReady, mediaDraftKey, homeReferences, videoInput, imageKey, fileName, preview]);
 
   // Show earlier generations only when signed in (avoids 401 noise for guests).
   useEffect(() => {
@@ -904,7 +960,6 @@ function AiVideoStudioForm({
   // tab has none); drops it from the address; and uses it as the idempotency
   // key. Every check in handleGenerate still applies.
   const [autostartWaited, setAutostartWaited] = useState(false);
-  const [sessionWaited, setSessionWaited] = useState(false);
   useEffect(() => {
     const short = setTimeout(() => setAutostartWaited(true), 2000);
     const long = setTimeout(() => setSessionWaited(true), 8000);
@@ -924,16 +979,15 @@ function AiVideoStudioForm({
     }
     // Right after a client-side navigation the session can read "not signed
     // in" for a moment: wait for it (or the short timeout) before deciding.
-    if (sessionLoading || (!session && !sessionWaited)) return;
+    if (sessionLoading || (!session && !sessionWaited) || !handoffReady) return;
     if (keyframeMode && !framesReady) return;
-    if (!keyframeMode && sessionStorage.getItem("aivd:home-video-references") && homeReferences.length === 0 && !autostartWaited) return;
     if (session && !balance && !autostartWaited) return;
     autostartDone.current = true;
     url.searchParams.delete("autostart");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
     if (session && claimAutostart(token, sessionStorage)) void handleGenerate(`autostart:${token}`);
     else setPendingSubmission(null);
-  }, [sessionLoading, session, balance, homeReferences, keyframeMode, framesReady, autostartWaited, sessionWaited]);
+  }, [sessionLoading, session, balance, homeReferences, keyframeMode, framesReady, handoffReady, autostartWaited, sessionWaited]);
 
   const coverModelId = selectedModelConnected ? catalogModelId : "";
   const bannerName = upcoming?.name ?? (selectedModelConnected ? model.name : (catalogEntry?.name ?? model.name));

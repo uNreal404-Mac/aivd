@@ -24,6 +24,7 @@ export function VideoStudioPage({
 }) {
   const requestedTool = searchParams.tool ?? searchParams.mode;
   const homeHandoffToken = typeof searchParams.autostart === "string" ? searchParams.autostart : "";
+  const expectedReferences = typeof searchParams.references === "string" ? Math.max(0, Number.parseInt(searchParams.references, 10) || 0) : 0;
   const rawModel = (Array.isArray(searchParams.model) ? searchParams.model[0] : searchParams.model) ?? defaultModel;
   const modelParam = rawModel === "kling-4.0" ? KLING_KEYFRAME_MODEL : rawModel === "seedance_2_5" ? "bytedance/seedance-2-5" : rawModel;
   const keyframes = searchParams.input === "keyframes" && modelParam === KLING_KEYFRAME_MODEL;
@@ -53,6 +54,7 @@ export function VideoStudioPage({
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={initialSettings}
       homeHandoffToken={homeHandoffToken}
+      expectedReferences={expectedReferences}
       initialCatalogModelId={modelParam}
       locale={locale}
       availableModelIds={availableModelIds}
