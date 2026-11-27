@@ -319,8 +319,11 @@ export function isStorageKey(value: string): boolean {
   return trimmed.length > 0 && !/^https?:\/\//i.test(trimmed);
 }
 
-/** Shape of a client-submitted image reference backed by an upload key. */
-export const IMAGE_REF_PATTERN = /^uploads\/[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+$/;
+/**
+ * Shape of a client-submitted image reference backed by an upload key.
+ * Canvas uploads live one level down, under uploads/<user>/canvas/.
+ */
+export const IMAGE_REF_PATTERN = /^uploads\/[A-Za-z0-9_-]+\/(?:canvas\/)?[A-Za-z0-9_.-]+$/;
 
 /**
  * Resolve a stored media reference into a URL the browser can fetch.
