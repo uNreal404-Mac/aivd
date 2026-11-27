@@ -103,7 +103,7 @@ export const FEATURE_SLIDES: {
 export const PRODUCT_TILES: { title: string | Bi; badge?: Bi; tag?: string; body: Bi; href: string; icon: "film" | "spark" | "image" | "wave" | "layers" | "orbit" }[] = [
   { title: "Seedance 2.5", tag: "1080P", body: { zh: "新一代视频模型", en: "The new video model" }, href: navModelHref("video", "bytedance/seedance-2-5"), icon: "film" },
   { title: "Kling 4.0", badge: { zh: "新", en: "New" }, body: { zh: "参考图生成，人物一致", en: "Reference-driven, consistent characters" }, href: navModelHref("video", "kling/v4-reference-to-video"), icon: "orbit" },
-  { title: { zh: "创作空间 Agent", en: "Creative Space Agent" }, badge: { zh: "新", en: "New" }, body: { zh: "一句话拆成分镜并生成", en: "One line becomes a shot plan" }, href: "/creative-space", icon: "spark" },
+  { title: "AGENT", badge: { zh: "新", en: "New" }, body: { zh: "对话构思创意与分镜", en: "Chat through ideas and storyboards" }, href: "/creative-space", icon: "spark" },
   { title: "Nano Banana Pro", badge: { zh: "热门", en: "Hot" }, body: { zh: "出色的 4K 图像模型", en: "An excellent 4K image model" }, href: navModelHref("image", "nano-banana-pro"), icon: "image" },
   { title: "Eleven v3", badge: { zh: "新", en: "New" }, body: { zh: "富有表现力的 AI 配音", en: "Expressive AI voiceover" }, href: navModelHref("audio", "elevenlabs-v3"), icon: "wave" },
   { title: "GPT Image 2.6", badge: { zh: "新", en: "New" }, body: { zh: "品质出众，编辑精准", en: "Outstanding quality, precise edits" }, href: navModelHref("image", "gpt-image-2-6-sunburst"), icon: "layers" },
@@ -375,7 +375,7 @@ export const AI_CAPABILITY_PILLS: { label: Bi; href: string }[] = [
   { label: { zh: "Eleven v3 智能配音", en: "Eleven v3 Voiceover" }, href: navModelHref("audio", "elevenlabs-v3") },
   { label: { zh: "Suno v6 AI 作曲", en: "Suno v6 AI Music" }, href: "/audio?voiceMode=music" },
   { label: { zh: "无限画布 Canvas", en: "Infinite Canvas" }, href: "/creative-space/canvas" },
-  { label: { zh: "节点工作流", en: "Node Workflow" }, href: "/creative-space" },
+  { label: { zh: "节点工作流", en: "Node Workflow" }, href: "/creative-space/canvas" },
   { label: { zh: "AI 导演分镜 Agent", en: "Director Storyboard Agent" }, href: "/creative-space" },
   { label: { zh: "文字生成视频", en: "Text to Video" }, href: "/ai/video" },
   { label: { zh: "图片生成视频", en: "Image to Video" }, href: "/ai/video" },

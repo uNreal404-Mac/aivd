@@ -163,14 +163,14 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
     },
     {
       id: "creative",
-      label: zh ? "创作空间" : "Creative Space",
+      label: "AGENT",
       path: "/creative-space",
       routes: ["/creative-space"],
       columns: [
         {
           title: zh ? "功能" : "Features",
           items: [
-            { title: zh ? "创作空间" : "Creative Space", desc: zh ? "说出想法，Agent 拆成镜头再生成" : "Say the idea; the agent plans the shots", icon: Sparkles, href: "/creative-space", badge: "new" },
+            { title: "AGENT", desc: zh ? "对话构思创意、分镜与提示词" : "Chat through ideas, shots, and prompts", icon: Sparkles, href: "/creative-space", badge: "new" },
             { title: zh ? "画布" : "Canvas", desc: zh ? "在画布上整理素材，用 @ 交给 Agent" : "Arrange assets and @-mention them to the agent", icon: LayoutGrid, href: "/creative-space/canvas" },
             { title: zh ? "视频工作室" : "Video studio", desc: zh ? "选模型、调参数、批量生成" : "Pick a model, tune settings, generate", icon: Film, href: "/ai/video" },
             { title: zh ? "我的作品" : "My creations", desc: zh ? "查看和下载生成的视频" : "Find and download your videos", icon: Folder, href: "/my-creations" },

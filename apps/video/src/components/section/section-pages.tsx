@@ -408,7 +408,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
             {/* 4. Banner: templates are a starting point */}
             <section className="hs-banner hs-banner-canvas" aria-labelledby="tpl-agent-title">
               <div className="hs-banner-text">
-                <span className="hs-banner-kicker">{zh ? "创作空间" : "CREATIVE SPACE"}</span>
+                <span className="hs-banner-kicker">AGENT</span>
                 <h2 id="tpl-agent-title" className="hs-banner-title">
                   {zh ? <>模板只是起点。<br />想法才是主角。</> : <>Templates are a start.<br />Your idea leads.</>}
                 </h2>
@@ -417,7 +417,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                 </p>
                 <Link href={localizedHref(lang, "/creative-space")} className="hs-btn hs-btn-light">
                   <Sparkles className="h-4 w-4" aria-hidden="true" />
-                  {zh ? "进入创作空间" : "Open Creative Space"}
+                  {zh ? "与 AGENT 对话" : "Chat with AGENT"}
                 </Link>
               </div>
               <div className="hs-banner-art" aria-hidden="true">

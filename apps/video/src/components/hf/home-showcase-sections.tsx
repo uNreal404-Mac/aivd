@@ -23,7 +23,7 @@ const CREATIVE_COPY = {
     plan: "Agent 分镜计划",
     composer: "描述你的想法，或用 @ 引用素材…",
     send: "发送给 Agent",
-    open: "进入创作空间",
+    open: "与 AGENT 对话",
     tabs: { idea: "描述想法", storyboard: "规划分镜", assets: "组合素材" },
     examples: {
       idea: { prompt: "我想做一支有电影氛围的短片。", reply: "先确定场景、情绪和镜头运动，再选择适合的模型。" },
@@ -43,7 +43,7 @@ const CREATIVE_COPY = {
     plan: "Agent storyboard",
     composer: "Describe your idea or reference @assets…",
     send: "Send to Agent",
-    open: "Open Creative Space",
+    open: "Chat with AGENT",
     tabs: { idea: "Describe an idea", storyboard: "Plan shots", assets: "Combine assets" },
     examples: {
       idea: { prompt: "I want to make a short film with a cinematic mood.", reply: "Let's define the scene, mood and camera movement, then choose a suitable model." },

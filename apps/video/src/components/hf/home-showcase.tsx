@@ -344,7 +344,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
 
           <div className="hs-spot">
             <div className="hs-spot-copy">
-              <span className="hs-spot-kicker">{zh ? "导演 AGENT · 创作空间" : "DIRECTOR AGENT"}</span>
+              <span className="hs-spot-kicker">AGENT</span>
               <h2 className="hs-spot-title">
                 {zh ? (
                   <>
@@ -367,7 +367,7 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
               </p>
               <div className="hs-spot-actions">
                 <Link href={href("/creative-space")} className="hs-btn hs-btn-accent">
-                  {zh ? "进入创作空间" : "Launch Agent"}
+                  {zh ? "与 AGENT 对话" : "Chat with AGENT"}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link href={href("/templates")} className="hs-btn hs-btn-ghost">

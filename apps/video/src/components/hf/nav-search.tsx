@@ -148,7 +148,7 @@ function buildIndex(zh: boolean): Entry[] {
 const POPULAR: { title: string; zh: string; en: string; href: string; image: string }[] = [
   { title: "Seedance 2.5", zh: "电影级画面和同步声音", en: "Cinematic video with synced sound", href: "/ai/video?model=bytedance%2Fseedance-2-5", image: S("rain-couple") },
   { title: "Nano Banana Pro", zh: "出色的 4K 图像模型", en: "An excellent 4K image model", href: "/ai/image?model=nano-banana-pro", image: S("red-carpet") },
-  { title: "Creative Space", zh: "一句话拆成分镜再生成", en: "One line becomes a shot plan", href: "/creative-space", image: S("cosmic-bloom") },
+  { title: "AGENT", zh: "对话构思创意与分镜", en: "Chat through ideas and storyboards", href: "/creative-space", image: S("cosmic-bloom") },
   { title: "Veo 3.1", zh: "画面和声音一起生成", en: "Picture and sound together", href: "/ai/video?model=veo-3.1", image: S("mountain-valley") },
 ];
 
@@ -392,7 +392,7 @@ export function NavSearch({
                       <span className="ns-card-media">
                         <img src={card.image} alt="" loading="lazy" />
                       </span>
-                      <span className="ns-card-title">{card.title === "Creative Space" && zh ? "创作空间" : card.title}</span>
+                      <span className="ns-card-title">{card.title}</span>
                       <span className="ns-card-desc">{zh ? card.zh : card.en}</span>
                     </button>
                   ))}

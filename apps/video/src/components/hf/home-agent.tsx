@@ -150,8 +150,8 @@ export function HomeAgent({
             <>
               <header className="ha-heading">
                 <strong>{skillsTitle}</strong>
-                <Link href={`${localizedHref(lang, '/creative-space')}#cs-cat-${category}`}>
-                  {zh ? '更多' : 'More'}
+                <Link href={localizedHref(lang, '/creative-space')}>
+                  {zh ? '与 AGENT 对话' : 'Chat with AGENT'}
                   <ChevronRight size={12} />
                 </Link>
               </header>
@@ -230,7 +230,7 @@ export function HomeAgent({
       />
       <Link className="ha-workspace" href={localizedHref(lang, '/creative-space')}>
         <FolderOpen size={13} />
-        {zh ? '创作空间' : 'Creative space'}
+        AGENT
         <ChevronRight size={11} />
       </Link>
       <nav className="ha-shortcuts" aria-label={zh ? '常用技能' : 'Popular skills'}>
