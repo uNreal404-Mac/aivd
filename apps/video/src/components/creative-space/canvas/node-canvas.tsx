@@ -9,7 +9,6 @@ import {
   AlignVerticalJustifyStart,
   Bookmark,
   ChevronDown,
-  ChevronRight,
   Play,
   Download,
   Film,
@@ -98,6 +97,7 @@ import {
 } from "@/lib/creative-space/canvas-graph";
 import { jobStatus, postGeneration, resolveMedia } from "@/lib/creative-space/canvas-submit";
 import { buildCanvasAgentForm } from "@/lib/creative-space/agent-form";
+import { AGENT_CANVAS_HANDOFF, type AgentCanvasHandoff, type AgentCanvasMessage } from "@/lib/creative-space/agent-canvas-handoff";
 import { uploadWorkflowVideo } from "@/lib/creative-space/upload-video";
 import { listGuestAssets, type PickerAsset, removeGuestAsset, saveGuestAsset } from "@/lib/home-media-library";
 import { UploadError, uploadErrorText, uploadImage } from "@/lib/image-to-video";
@@ -139,6 +139,8 @@ const LEGACY_DONE_KEY = "aivd:node-canvas:legacy-imported";
 const LEGACY_FLOW_KEY = "aivd:creative-workflow-draft";
 const TEMPLATES_PREFIX = "aivd:node-canvas-templates:v1";
 const HANDOFF_KEY = "aivd:canvas-handoff";
+const LAST_CANVAS_PREFIX = "aivd:node-canvas:last:";
+const CANVAS_NUMBER_PREFIX = "aivd:node-canvas:next-number:";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 const HISTORY_LIMIT = 100;
@@ -234,7 +236,7 @@ const BUILTIN_TEMPLATES = (zh: boolean): CanvasTemplate[] => {
   ];
 };
 
-function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { locale: string; initialPrompt: string; initialEdit?: CanvasEditEntry; userId: string | null }) {
+function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalFree }: { locale: string; initialPrompt: string; initialEdit?: CanvasEditEntry; userId: string | null; internalFree: boolean }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const L = useCallback((cn: string, en: string) => (zh ? cn : en), [zh]);
   const flow = useReactFlow<CanvasData>();
@@ -265,6 +267,9 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   const [canvasId, setCanvasId] = useState<string | null>(null);
   const canvasIdRef = useRef<string | null>(null);
   const [canvases, setCanvases] = useState<CanvasSummary[]>([]);
+  const [agentMessages, setAgentMessages] = useState<AgentCanvasMessage[]>([]);
+  const agentMessagesRef = useRef(agentMessages);
+  agentMessagesRef.current = agentMessages;
   const [panel, setPanel] = useState<CanvasPanel | null>(null);
   const [agentOpen, setAgentOpen] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -346,6 +351,20 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     "The page closed before the request was answered. Generating again reuses the same request and cannot charge twice.",
   );
   const currentPath = localizedHref(locale, "/creative-space/canvas");
+  const ownerKey = userId ?? "guest";
+  const lastCanvasKey = `${LAST_CANVAS_PREFIX}${ownerKey}`;
+  const canvasNumberKey = `${CANVAS_NUMBER_PREFIX}${ownerKey}`;
+  const nextCanvasTitle = useCallback((existing: CanvasSummary[] = canvases) => {
+    let number = 0;
+    try { number = Number(localStorage.getItem(canvasNumberKey)) || 0; } catch { /* storage may be disabled */ }
+    for (const item of existing) {
+      const match = item.name.match(/^(?:画布|Canvas\s+)(\d+)$/i);
+      if (match) number = Math.max(number, Number(match[1]));
+    }
+    number += 1;
+    try { localStorage.setItem(canvasNumberKey, String(number)); } catch { /* use the current list */ }
+    return zh ? `画布${number}` : `Canvas ${number}`;
+  }, [canvasNumberKey, canvases, zh]);
   // Saved templates belong to one account (or to signed-out use) on a shared browser.
   const templatesKey = `${TEMPLATES_PREFIX}:${userId ?? "guest"}`;
 
@@ -528,20 +547,25 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
   /* ----------------------------------------------------------- persistence */
 
   const storedNow = useCallback(
-    () => toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, flow.getViewport()),
+    () => ({ ...toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, flow.getViewport()), ...(agentMessagesRef.current.length ? { agentHistory: agentMessagesRef.current.slice(-60) } : {}) }),
     [flow],
   );
-  const contentKey = (graph: ReturnType<typeof toStoredGraph>, name: string) => JSON.stringify({ name, nodes: graph.nodes, edges: graph.edges, viewport: graph.viewport });
+  const contentKey = (graph: ReturnType<typeof toStoredGraph>, name: string) => JSON.stringify({ name, nodes: graph.nodes, edges: graph.edges, viewport: graph.viewport, agentHistory: graph.agentHistory });
 
   const syncList = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) return [] as CanvasSummary[];
     try {
       const response = await canvasFetch("/api/v1/creative-space/workflows", { cache: "no-store" });
       const body = await response.json();
-      if (body?.success) setCanvases(body.data.workflows);
+      if (body?.success && Array.isArray(body.data.workflows)) {
+        const list = body.data.workflows as CanvasSummary[];
+        setCanvases(list);
+        return list;
+      }
     } catch {
       /* the list is optional */
     }
+    return [] as CanvasSummary[];
   }, [canvasFetch, userId]);
 
   const refreshBalance = useCallback(async (): Promise<number | null> => {
@@ -627,6 +651,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
           try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
           void syncList();
         }
+        try { localStorage.setItem(lastCanvasKey, savedId); } catch { /* storage may be disabled */ }
         setSaveState("saved");
         return savedId;
       } catch (error) {
@@ -647,7 +672,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
         void saveRemote();
       }
     }
-  }, [L, canvasFetch, currentPath, lifetime, say, storedNow, syncList, uploadLocalAssets, userId]);
+  }, [L, canvasFetch, currentPath, lastCanvasKey, lifetime, say, storedNow, syncList, uploadLocalAssets, userId]);
 
   /** Saves, and resolves true only once a save taken after this call has succeeded. */
   const persistNow = useCallback(async (): Promise<boolean> => {
@@ -735,18 +760,24 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       );
       setTitle(name);
       titleRef.current = name;
+      const rawHistory = graph && typeof graph === "object" && "agentHistory" in graph ? graph.agentHistory : null;
+      const history = Array.isArray(rawHistory) ? rawHistory.slice(-60).filter((item): item is AgentCanvasMessage =>
+        item && (item.role === "user" || item.role === "agent") && typeof item.text === "string") : [];
+      agentMessagesRef.current = history;
+      setAgentMessages(history);
       canvasIdRef.current = id;
       setCanvasId(id);
+      if (id) try { localStorage.setItem(lastCanvasKey, id); } catch { /* storage may be disabled */ }
       canvasGeneration.current += 1;
       conflict.current = false;
       const stored = (graph && typeof graph === "object" ? (graph as { revision?: unknown }).revision : undefined);
       revision.current = typeof stored === "number" ? stored : 0;
       setWaitingMedia(new Set());
-      lastSaved.current = contentKey(toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, restored.viewport), name);
+      lastSaved.current = contentKey({ ...toStoredGraph(nodesRef.current as GraphNode[], edgesRef.current, restored.viewport), ...(history.length ? { agentHistory: history } : {}) }, name);
       setRestoredView({ viewport: restored.viewport, hasNodes: restored.nodes.length > 0 });
       resetHistory();
     },
-    [replaceGraph, resetHistory, unknownRequest],
+    [lastCanvasKey, replaceGraph, resetHistory, unknownRequest],
   );
   useEffect(() => {
     // The first React Flow instance provides placeholder camera methods until
@@ -813,10 +844,11 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     setPanel(null);
     if (!force && !(await readyToLeave())) return;
     if (lifetime.current.signal.aborted) return;
-    loadGraph({ version: 2, nodes: [], edges: [] }, L("未命名画布", "Untitled canvas"), null);
+    loadGraph({ version: 2, nodes: [], edges: [] }, nextCanvasTitle(), null);
     window.history.replaceState(null, "", currentPath);
     setSaveState(userId ? "idle" : "local");
-  }, [L, currentPath, lifetime, loadGraph, readyToLeave, userId]);
+    if (userId) void saveRemote();
+  }, [currentPath, lifetime, loadGraph, nextCanvasTitle, readyToLeave, saveRemote, userId]);
 
   const goHome = useCallback(async () => {
     if (!(await readyToLeave())) return;
@@ -834,6 +866,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       if (!response.ok) throw new Error();
       await syncList();
       if (canvasIdRef.current === id) {
+        try { localStorage.removeItem(lastCanvasKey); } catch { /* ignore */ }
         canvasIdRef.current = null;
         setCanvasId(null);
         await newCanvas(true);
@@ -842,7 +875,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     } catch {
       say(L("删除失败，请重试", "Could not delete"), true);
     }
-  }, [L, canvasFetch, newCanvas, say, syncList]);
+  }, [L, canvasFetch, lastCanvasKey, newCanvas, say, syncList]);
 
   // First load: saved canvas (?id), else this browser's draft; then studio
   // hand-off and ?prompt=.
@@ -851,15 +884,43 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     booted.current = true;
     const owner = lifetime.current.signal;
     void (async () => {
-      const id = new URLSearchParams(window.location.search).get("id");
-      let loaded = false;
-      if (id && userId) {
+      const search = new URLSearchParams(window.location.search);
+      const id = search.get("id");
+      const handoffToken = search.get("agentHandoff");
+      let agentHandoff: AgentCanvasHandoff | null = null;
+      if (handoffToken) {
         try {
-          const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(id)}`, { cache: "no-store" });
+          const raw = sessionStorage.getItem(`${AGENT_CANVAS_HANDOFF}${handoffToken}`);
+          const item = raw ? JSON.parse(raw) as AgentCanvasHandoff : null;
+          if (item?.ownerId === userId && Array.isArray(item.messages) && typeof item.prompt === "string" && typeof item.title === "string") {
+            agentHandoff = item;
+          }
+        } catch { /* invalid handoff */ }
+      }
+      let loaded = false;
+      if (agentHandoff) {
+        const history = agentHandoff.messages.slice(-60).filter((item): item is AgentCanvasMessage =>
+          item && (item.role === "user" || item.role === "agent") && typeof item.text === "string");
+        loadGraph({ version: 2, nodes: [], edges: [], agentHistory: history }, agentHandoff.title.trim().slice(0, 100) || nextCanvasTitle(), null);
+        window.history.replaceState(null, "", currentPath);
+        createKind("agent", viewCenter(), undefined, agentHandoff.prompt.trim());
+        setSaveState(userId ? "idle" : "local");
+        loaded = true;
+      }
+      let list: CanvasSummary[] = [];
+      if (!loaded && userId && !id && !initialPrompt.trim()) list = await syncList();
+      const lastId = !id && !agentHandoff && userId && !initialPrompt.trim() ? (() => {
+        try { return localStorage.getItem(lastCanvasKey); } catch { return null; }
+      })() : null;
+      const openId = id || (lastId && list.some((item) => item.id === lastId) ? lastId : list[0]?.id);
+      if (!loaded && openId && userId) {
+        try {
+          const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(openId)}`, { cache: "no-store" });
           const body = await response.json();
           if (owner.aborted) return;
           if (body?.success) {
-            loadGraph(body.data.workflow.graph, body.data.workflow.name, id);
+            loadGraph(body.data.workflow.graph, body.data.workflow.name, openId);
+            window.history.replaceState(null, "", `${currentPath}?id=${encodeURIComponent(openId)}`);
             setSaveState("saved");
             loaded = true;
           }
@@ -870,13 +931,13 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       if (owner.aborted) return;
       if (!loaded) {
         try {
-          const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as { title?: string; graph?: unknown } | null;
-          if (draft?.graph) loadGraph(draft.graph, draft.title || L("未命名画布", "Untitled canvas"), null);
-          else resetHistory();
+          const draft = userId ? null : JSON.parse(localStorage.getItem(DRAFT_KEY) || "null") as { title?: string; graph?: unknown } | null;
+          if (draft?.graph) loadGraph(draft.graph, draft.title || nextCanvasTitle(list), null);
+          else loadGraph({ version: 2, nodes: [], edges: [] }, nextCanvasTitle(list), null);
         } catch {
-          resetHistory();
+          loadGraph({ version: 2, nodes: [], edges: [] }, nextCanvasTitle(list), null);
         }
-        if (id) window.history.replaceState(null, "", currentPath);
+        if (id || handoffToken) window.history.replaceState(null, "", currentPath);
         setSaveState(userId ? "idle" : "local");
       }
       try {
@@ -919,7 +980,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       } catch {
         /* ignore a broken hand-off */
       }
-      if (initialPrompt.trim()) createKind("agent", viewCenter(), undefined, initialPrompt.trim());
+      if (!agentHandoff && initialPrompt.trim()) createKind("agent", viewCenter(), undefined, initialPrompt.trim());
       try {
         const legacy = JSON.parse(localStorage.getItem(LEGACY_CANVAS_KEY) || "null") as { nodes?: unknown[] } | null;
         const flowDraft = JSON.parse(localStorage.getItem(LEGACY_FLOW_KEY) || "null") as { graph?: { nodes?: unknown[] } } | null;
@@ -931,9 +992,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       }
       graphReady.current = true;
       setHydrated(true);
+      if (agentHandoff && handoffToken) {
+        try { sessionStorage.removeItem(`${AGENT_CANVAS_HANDOFF}${handoffToken}`); } catch { /* ignore */ }
+      }
       void resolveAll();
     })();
-  }, [L, addNodes, canvasFetch, createKind, currentPath, initialPrompt, lifetime, loadGraph, makeNode, resetHistory, resolveAll, say, userId, viewCenter]);
+  }, [L, addNodes, canvasFetch, createKind, currentPath, initialPrompt, lastCanvasKey, lifetime, loadGraph, makeNode, nextCanvasTitle, resolveAll, say, syncList, userId, viewCenter]);
 
   useEffect(() => {
     if (!userId) return;
@@ -968,7 +1032,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
     setSaveState("dirty");
     const timer = setTimeout(() => void saveRemote(), 1500);
     return () => clearTimeout(timer);
-  }, [edges, flow.viewportInitialized, hydrated, nodes, restoredView, saveLocalDraft, saveRemote, storedNow, title, userId, viewportRevision]);
+  }, [agentMessages, edges, flow.viewportInitialized, hydrated, nodes, restoredView, saveLocalDraft, saveRemote, storedNow, title, userId, viewportRevision]);
 
   // Leaving with unsaved changes: send them along with page unload or in-app navigation.
   const flushStateRef = useRef({ hydrated, restoredView, userId, saveLocalDraft, saveRemote, storedNow, canvasFetch });
@@ -1109,9 +1173,9 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
       if (!node || !isGen(node.data)) return null;
       const choices = choicesFor(node.data.kind, node.data.modelId);
       const images = node.data.kind === "audio" ? 0 : Math.min(inputsOf(id).images, choices.maxImages) + (node.data.maskKey ? 1 : 0);
-      return quote(node.data, mergedPrompt(id, node.data.prompt), images);
+      return internalFree ? 0 : quote(node.data, mergedPrompt(id, node.data.prompt), images);
     },
-    [inputsOf, mergedPrompt],
+    [inputsOf, internalFree, mergedPrompt],
   );
 
   /** Reference images for a node: stable ids (for the request signature) and sendable values. */
@@ -1200,12 +1264,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
         }
         const request = buildRequest(data, images.prompt, images.values);
         const signature = JSON.stringify({ endpoint: request.endpoint, body: buildRequest(data, images.prompt, images.stable).body });
-        const credits = quote(data, images.prompt, images.values.length);
+        const credits = internalFree ? 0 : quote(data, images.prompt, images.values.length);
         const current = nodesRef.current.find((item) => item.id === id)?.data as GenerateData | undefined;
         const { key, reused } = submitKey(current?.pending, signature, newId);
         // Retrying an unanswered request must reach the server even if its
         // first attempt already froze the credits: it returns that job.
-        const available = reused ? null : await refreshBalance();
+        const available = reused || internalFree ? null : await refreshBalance();
         if (available !== null && available < credits) {
           const message = errorMessage("INSUFFICIENT_CREDITS", "", zh);
           fail(`${message}（${L("需要", "needs")} ${credits}，${L("剩余", "left")} ${available}）`);
@@ -1252,7 +1316,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
         void saveRemote();
       }
     },
-    [L, canvasFetch, inputsOf, lifetime, mergedPrompt, patch, persistNow, prepareImages, refreshBalance, requireLogin, saveRemote, say, shortfall, zh],
+    [L, canvasFetch, inputsOf, internalFree, lifetime, mergedPrompt, patch, persistNow, prepareImages, refreshBalance, requireLogin, saveRemote, say, shortfall, zh],
   );
 
   const agentForm = useCallback((id: string, instruction: string) => buildCanvasAgentForm({
@@ -2402,10 +2466,10 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId }: { local
           canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
           edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
-          <CanvasAgentSidebar key={canvasGeneration.current} zh={zh} hidden={!agentOpen} onClose={() => setAgentOpen(false)} onSend={askCanvasAgent} onApply={applyAgentPrompt} />
+          <CanvasAgentSidebar key={canvasGeneration.current} zh={zh} hidden={!agentOpen} messages={agentMessages} onMessages={(history) => { agentMessagesRef.current = history.slice(-60); setAgentMessages(agentMessagesRef.current); }} onClose={() => setAgentOpen(false)} onSend={askCanvasAgent} onApply={applyAgentPrompt} />
           <button type="button" className="nc-agent-reopen" hidden={agentOpen} onClick={() => setAgentOpen(true)}
             aria-label={L("展开 Agent 对话栏", "Expand Agent sidebar")} title={L("展开 Agent 对话栏", "Expand Agent sidebar")}>
-            <MessageCircle size={17}/><span>Agent</span><ChevronRight size={15}/>
+            <MessageCircle size={18}/>
           </button>
             <input
               ref={fileInput}
@@ -2741,9 +2805,10 @@ export function NodeCanvas({ locale, initialPrompt = "", initialEdit }: { locale
   const { data: session, isPending } = useSession();
   if (isPending) return <div className="nc-shell" aria-busy="true" />;
   const userId = session?.user?.id ?? null;
+  const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" && session?.user?.isAdmin === true && session.user.isSuperAccount === true;
   return (
     <ReactFlowProvider key={userId ? `account:${userId}` : "guest"}>
-      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} initialEdit={initialEdit} userId={userId} />
+      <NodeCanvasInner locale={locale} initialPrompt={initialPrompt} initialEdit={initialEdit} userId={userId} internalFree={internalFree} />
     </ReactFlowProvider>
   );
 }

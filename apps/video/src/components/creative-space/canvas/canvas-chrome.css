@@ -90,15 +90,14 @@
   z-index: 10;
   top: 50%;
   left: 0;
-  min-height: 92px;
-  padding: 8px 7px;
+  min-height: 48px;
+  padding: 8px;
   flex-direction: column;
   transform: translateY(-50%);
   border-left: 0;
   border-radius: 0 14px 14px 0;
 }
 .nc-agent-reopen[hidden] { display: none; }
-.nc-agent-reopen span { writing-mode: vertical-rl; letter-spacing: 1px; }
 .nc-agent-sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--ds-line-1); }
 .nc-agent-sidebar-head > span { display: flex; align-items: center; gap: 8px; font-weight: 650; }
 .nc-agent-sidebar-head small { color: var(--ds-text-3); font-size: 11px; font-weight: 400; }
@@ -171,12 +170,15 @@
   padding: 2px 6px;
 }
 .nc-project-chip > a,
+.nc-rename-canvas,
 .nc-round {
   justify-content: center;
   width: 34px;
   height: 34px;
   flex: none;
 }
+.nc-rename-canvas { color: var(--ds-text-3); border-radius: var(--ds-r-full); }
+.nc-rename-canvas:hover { color: var(--du-accent); background: var(--ds-fill-2); }
 .nc-project-name {
   min-width: 0;
   gap: 5px;

@@ -13,7 +13,7 @@ import {
   LayoutGrid,
   Link2,
   LoaderCircle,
-  Map,
+  Map as MapIcon,
   Mail,
   Pencil,
   Plus,
@@ -63,12 +63,14 @@ export function CanvasHeader(p: Props) {
   const [renaming, setRenaming] = useState(false);
   const root = useRef<HTMLElement>(null);
   const name = useRef<HTMLInputElement>(null);
+  const filterInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (renaming) {
       name.current?.focus();
       name.current?.select();
     }
   }, [renaming]);
+  useEffect(() => { if (open === "list") filterInput.current?.focus(); }, [open]);
   useEffect(() => {
     if (!open) return;
     const close = (e: PointerEvent) => {
@@ -130,25 +132,22 @@ export function CanvasHeader(p: Props) {
             <ChevronDown size={14} />
           </button>
         )}
-        <span className="nc-status-icon" role="status" aria-label={p.save} title={p.save}>
+        <button type="button" className="nc-rename-canvas" onClick={() => { setOpen(null); setRenaming(true); }} aria-label={l("重命名画布", "Rename canvas")} title={l("重命名画布", "Rename canvas")}><Pencil size={15} /></button>
+        <output className="nc-status-icon" aria-label={p.save} title={p.save}>
           <Status size={15} />
-        </span>
+        </output>
         {open === "list" && (
           <section className="nc-chip-pop nc-project-list">
             <label>
               <Search size={15} />
               <input
-                autoFocus
+                ref={filterInput}
                 aria-label={l("搜索画布", "Search canvases")}
                 placeholder={l("搜索画布", "Search canvases")}
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
             </label>
-            <button type="button" onClick={() => act(() => setRenaming(true))}>
-              <Pencil size={15} />
-              {l("重命名当前画布", "Rename canvas")}
-            </button>
             {p.canvases
               .filter((x) => x.name.toLowerCase().includes(filter.toLowerCase()))
               .map((c) => (
@@ -214,7 +213,7 @@ export function CanvasHeader(p: Props) {
               {p.edgesOn && <Check size={14} />}
             </button>
             <button type="button" aria-pressed={p.mapOn} onClick={p.toggleMap}>
-              <Map size={16} />
+              <MapIcon size={16} />
               {l("小地图", "Minimap")}
               {p.mapOn && <Check size={14} />}
             </button>

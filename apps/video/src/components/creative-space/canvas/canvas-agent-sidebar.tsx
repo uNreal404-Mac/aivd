@@ -2,17 +2,19 @@
 
 import { ArrowUp, Bot, ChevronLeft, Loader2, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import type { AgentCanvasMessage } from "@/lib/creative-space/agent-canvas-handoff";
 
-type Message = { role: "user" | "agent"; text: string; prompt?: string };
+type Message = AgentCanvasMessage;
 
-export function CanvasAgentSidebar({ zh, hidden, onClose, onSend, onApply }: {
+export function CanvasAgentSidebar({ zh, hidden, messages, onMessages, onClose, onSend, onApply }: {
   zh: boolean;
   hidden: boolean;
+  messages: Message[];
+  onMessages: (messages: Message[]) => void;
   onClose: () => void;
   onSend: (question: string, history: Message[]) => Promise<{ reply: string; prompt: string }>;
   onApply: (prompt: string) => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -22,11 +24,13 @@ export function CanvasAgentSidebar({ zh, hidden, onClose, onSend, onApply }: {
     if (!text || busy) return;
     const previous = messages;
     setQuestion(""); setError(""); setBusy(true);
-    setMessages([...previous, { role: "user", text }]);
+    onMessages([...previous, { role: "user", text }]);
     try {
       const result = await onSend(text, previous);
-      setMessages(current => [...current, { role: "agent", text: result.reply, prompt: result.prompt }]);
+      onMessages([...previous, { role: "user", text }, { role: "agent", text: result.reply, prompt: result.prompt }]);
     } catch (cause) {
+      onMessages(previous);
+      setQuestion(text);
       setError(cause instanceof Error ? cause.message : zh ? "Agent 暂时不可用，请重试" : "Agent is unavailable. Try again.");
     } finally { setBusy(false); }
   };

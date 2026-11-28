@@ -35,6 +35,11 @@ export const workflowGraphSchema = z.object({
   nodes: z.array(node).max(MAX_CANVAS_NODES),
   edges: z.array(edge).max(MAX_CANVAS_EDGES),
   viewport: z.object({ x: z.number().finite(), y: z.number().finite(), zoom: z.number().min(0.1).max(4) }).optional(),
+  agentHistory: z.array(z.object({
+    role: z.enum(["user", "agent"]),
+    text: z.string().max(5000),
+    prompt: z.string().max(5000).optional(),
+  })).max(60).optional(),
 });
 
 export const workflowPayloadSchema = z.object({

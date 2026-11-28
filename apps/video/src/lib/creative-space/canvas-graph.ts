@@ -151,6 +151,7 @@ export interface StoredGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
   viewport?: Viewport;
+  agentHistory?: { role: "user" | "agent"; text: string; prompt?: string }[];
 }
 
 /* -------------------------------------------------------------------------- */

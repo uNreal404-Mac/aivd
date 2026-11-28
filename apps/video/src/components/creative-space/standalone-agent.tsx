@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useSession } from "@/lib/auth/client";
 import { localizedHref } from "@/lib/du-home";
+import { AGENT_CANVAS_HANDOFF, agentCanvasTitle } from "@/lib/creative-space/agent-canvas-handoff";
 import "./standalone-agent.css";
 
 type Message = { id: string; role: "user" | "agent"; text: string; prompt?: string };
@@ -172,6 +173,23 @@ export function StandaloneAgent({ lang }: { lang: string }) {
     } catch { /* Clipboard may be blocked by the browser. */ }
   };
 
+  const continueOnCanvas = (prompt: string) => {
+    const path = localizedHref(lang, "/creative-space/canvas");
+    const token = newId();
+    const history = messages.map(({ role, text, prompt: suggestion }) => ({ role, text, ...(suggestion ? { prompt: suggestion } : {}) }));
+    try {
+      sessionStorage.setItem(`${AGENT_CANVAS_HANDOFF}${token}`, JSON.stringify({
+        ownerId: owner,
+        title: agentCanvasTitle(history, active?.title ?? (zh ? "创意画布" : "Creative canvas")),
+        prompt,
+        messages: history,
+      }));
+      window.location.assign(`${path}?agentHandoff=${encodeURIComponent(token)}`);
+    } catch {
+      window.location.assign(`${path}?prompt=${encodeURIComponent(prompt)}`);
+    }
+  };
+
   const suggestions = zh
     ? ["帮我构思一支产品短片", "把一个故事拆成分镜", "优化我的视频生成提示词"]
     : ["Help me plan a product film", "Turn a story into shots", "Improve my video prompt"];
@@ -209,7 +227,7 @@ export function StandaloneAgent({ lang }: { lang: string }) {
           </div> : <div className="agent-messages">{messages.map((message) => <article key={message.id} className={`agent-message is-${message.role}`}>
             <div className="agent-message-avatar">{message.role === "agent" ? <Bot size={17} /> : (session?.user?.name?.slice(0, 1) || "U").toUpperCase()}</div>
             <div className="agent-message-body"><div className="agent-message-name">{message.role === "agent" ? "AGENT" : zh ? "你" : "You"}</div><p>{message.text}</p>
-              {message.role === "agent" && <div className="agent-message-actions"><button type="button" onClick={() => void copyText(message)}>{copiedId === message.id ? <Check size={14} /> : <Copy size={14} />}{copiedId === message.id ? (zh ? "已复制" : "Copied") : (zh ? "复制" : "Copy")}</button>{message.prompt && <Link href={`${localizedHref(lang, "/creative-space/canvas")}?prompt=${encodeURIComponent(message.prompt)}`}>{zh ? "在画布中继续" : "Continue on canvas"}<ArrowUp size={13} /></Link>}</div>}
+              {message.role === "agent" && <div className="agent-message-actions"><button type="button" onClick={() => void copyText(message)}>{copiedId === message.id ? <Check size={14} /> : <Copy size={14} />}{copiedId === message.id ? (zh ? "已复制" : "Copied") : (zh ? "复制" : "Copy")}</button>{message.prompt && <button type="button" onClick={() => continueOnCanvas(message.prompt!)}>{zh ? "在画布中继续" : "Continue on canvas"}<ArrowUp size={13} /></button>}</div>}
             </div>
           </article>)}
           {busy && <div className="agent-thinking"><span className="agent-thinking-dots"><i /><i /><i /></span>{zh ? "AGENT 正在思考" : "AGENT is thinking"}</div>}

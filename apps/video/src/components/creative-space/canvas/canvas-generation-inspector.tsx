@@ -113,7 +113,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
             {autoAspect ? <p className="nci-info">{zh ? "画幅跟随参考图片" : "The video follows the reference image’s aspect ratio"}</p> : choices.aspects.length > 0 && <><small>{zh ? "宽高比" : "Aspect ratio"}</small><InspectorOptions grid label={zh ? "宽高比" : "Aspect ratio"} options={choices.aspects} value={data.aspect} set={v => patch({ aspect: v })}/></>}
           </>}
         </InspectorMenu>
-        {choices.audio && <button type="button" className="nci-chip" aria-pressed={Boolean(data.audio)} onClick={() => patch({ audio: !data.audio })}>{zh ? "音频" : "Sound"}<span className="nci-toggle" aria-hidden="true"/></button>}
+        {choices.audio && <button type="button" className="nci-chip" aria-pressed={Boolean(data.audio)} onClick={() => patch({ audio: !data.audio })}>{data.audio ? (zh ? "音频开" : "Audio on") : (zh ? "音频关" : "Audio off")}<span className="nci-toggle" aria-hidden="true"/></button>}
       </> : <>{dimensions("aspect")}{dimensions("resolution")}
         {<InspectorMenu disabled={choices.maxCount === 1} label={choices.maxCount === 1 ? zh ? "当前模型每次生成一张" : "This model generates one image at a time" : zh ? "批量张数" : "Batch size"} triggerClass="nci-batch" button={<><Files/>{zh ? "批量" : "Batch"}{(data.count ?? 1) > 1 ? ` ×${data.count}` : ""}</>}>
           {close => <InspectorOptions label={zh ? "张数" : "Count"} options={Array.from({ length: choices.maxCount }, (_, index) => String(index + 1))} value={String(data.count ?? 1)} set={count => { patch({ count: Number(count) }); close(); }}/>}

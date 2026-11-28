@@ -231,7 +231,7 @@ function Shell({
 
 function MediaPreview({ media, url, id, alt }: { media: "image" | "video" | "audio"; url?: string; id: string; alt: string }) {
   if (!url) return null;
-  if (media === "video") return <video className="nc-media nodrag" src={url} controls muted playsInline preload="metadata" data-node-id={id} />;
+  if (media === "video") return <video className="nc-media" src={url} controls muted playsInline preload="metadata" draggable={false} data-node-id={id} />;
   if (media === "audio") return <audio className="nc-audio nodrag" src={url} controls preload="none" />;
   return <img className="nc-media" src={url} alt={alt} draggable={false} />;
 }
@@ -404,7 +404,7 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
         {data.kind === "video" && choices.audio ? (
           <label className="nc-check">
             <input type="checkbox" checked={Boolean(data.audio)} onChange={(event) => patch(id, { audio: event.target.checked })} />
-            <span>{zh ? "带声音" : "Sound"}</span>
+            <span>{data.audio ? (zh ? "音频开" : "Audio on") : (zh ? "音频关" : "Audio off")}</span>
           </label>
         ) : null}
       </div>
