@@ -90,7 +90,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
           onChange={e => { addPrompt(zh ? `以 ${e.target.value} 为画面主色。` : `Use ${e.target.value} as the dominant color.`); close(); }}/></label>}
       </InspectorMenu>
     </div>}
-    <CanvasPrompt value={data.prompt} label={zh ? "提示词" : "Prompt"} zh={zh}
+    <CanvasPrompt value={data.prompt} label={zh ? "提示词" : "Prompt"} zh={zh} onSubmit={actions.shiftEnterSubmit ? () => actions.run(id) : undefined}
       placeholder={isVideo ? zh ? "请输入视频描述…" : "Describe the video…" : zh ? "请输入图片描述…" : "Describe the image…"}
       list={() => actions.referencesFor(id)} attach={ref => actions.attachReference(id, ref)} change={prompt => patch({ prompt })} insert={mention}/>
     {(inputs.texts > 0 || inputs.images > choices.maxImages || (choices.requiresImage && !inputs.images)) && <p className="nci-info">

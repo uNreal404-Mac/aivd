@@ -51,8 +51,9 @@
 
 .nc-flow .nc-floating-selection { bottom: auto; left: auto; width: max-content; max-width: min(92vw, 760px); overflow-x: auto; }
 
-.nc-flow .react-flow__edge:not([class*="nc-wire-"]) .react-flow__edge-path { stroke: var(--ds-text-3); }
-.nc-flow .react-flow__edge:not([class*="nc-wire-"]):is(.selected, :hover) .react-flow__edge-path,
+.nc-flow .react-flow__edge:not([class*="nc-wire-"]) .react-flow__edge-path { stroke: var(--nc-wire-color, var(--ds-text-3)); }
+.nc-flow .react-flow__edge:not([class*="nc-wire-"]).selected .react-flow__edge-path,
+.nc-flow[data-wire-hover="true"] .react-flow__edge:not([class*="nc-wire-"]):hover .react-flow__edge-path,
 .nc-flow .react-flow__connection-path { stroke: var(--ds-text-1); }
 
 .nc-flow .nc-floating-selection { overflow: visible; padding: 3px 7px; font-size: var(--ds-fs-xs); }
@@ -64,6 +65,7 @@
 .nc-flow .nc-selection-dropdown > fieldset:has(.nc-swatch) { display: flex; }
 
 .nc-flow .nc-group.is-selected { border-color: var(--ds-line-3); }
+.nc-flow[data-group-cover-wires="true"] .react-flow__node-group { z-index: 5 !important; }
 .nc-flow .nc-floating-selection > .nc-danger { font-size: 0; }
 
 .nc-flow .nc-group-progress { position: absolute; z-index: 10; top: 60px; right: 12px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-lg); background: var(--ds-surface-2); font-size: var(--ds-fs-xs); }

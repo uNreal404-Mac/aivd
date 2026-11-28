@@ -53,6 +53,9 @@ export interface NodeInputsSummary {
 
 export interface CanvasActions {
   zh: boolean;
+  shiftEnterSubmit: boolean;
+  videoHoverPlay: boolean;
+  previewCanvasAssets: boolean;
   patch: (id: string, partial: Partial<CanvasData>) => void;
   commit: () => void;
   run: (id: string) => void;
@@ -230,8 +233,12 @@ function Shell({
 }
 
 function MediaPreview({ media, url, id, alt }: { media: "image" | "video" | "audio"; url?: string; id: string; alt: string }) {
+  const { videoHoverPlay, previewCanvasAssets, zh } = useActions();
   if (!url) return null;
-  if (media === "video") return <video className="nc-media" src={url} controls muted playsInline preload="metadata" draggable={false} data-node-id={id} />;
+  if (!previewCanvasAssets && media !== "audio") return <div className="nc-media nc-preview-disabled">{zh ? "素材预览已关闭" : "Asset preview is off"}</div>;
+  if (media === "video") return <video className="nc-media" src={url} controls muted playsInline preload="metadata" draggable={false} data-node-id={id}
+    onMouseEnter={(event) => { if (videoHoverPlay) void event.currentTarget.play().catch(() => {}); }}
+    onMouseLeave={(event) => { if (videoHoverPlay) event.currentTarget.pause(); }} />;
   if (media === "audio") return <audio className="nc-audio nodrag" src={url} controls preload="none" />;
   return <img className="nc-media" src={url} alt={alt} draggable={false} />;
 }
@@ -373,7 +380,7 @@ function GeneratePanel({ id, data }: { id: string; data: GenerateData }) {
     <div className="nc-panel nodrag nowheel" onKeyDown={(event) => event.stopPropagation()}>
       <CanvasPrompt value={data.prompt} label={zh ? "提示词" : "Prompt"} zh={zh}
         placeholder={data.kind === "audio" ? (zh ? "要说的台词，或音乐的描述" : "Lines to speak, or the music to make") : (zh ? "描述画面，输入 @ 引用画布素材" : "Describe the shot; type @ for canvas references")}
-        list={() => actions.referencesFor(id)} attach={(ref) => actions.attachReference(id, ref)} change={(prompt) => patch(id, { prompt })} />
+        list={() => actions.referencesFor(id)} attach={(ref) => actions.attachReference(id, ref)} change={(prompt) => patch(id, { prompt })} onSubmit={actions.shiftEnterSubmit ? () => actions.run(id) : undefined} />
       <p className="nc-linked">
         {linked.length ? `${zh ? "已连接" : "Wired"}：${linked.join(zh ? "，" : ", ")}` : zh ? "从左侧端口连入文字或图片" : "Wire text or images into the left port"}
         {overLimit ? ` · ${zh ? `这个模型最多用 ${choices.maxImages} 张，多出的不会发送` : `this model uses ${choices.maxImages} at most`}` : ""}

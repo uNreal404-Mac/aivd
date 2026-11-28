@@ -3,8 +3,8 @@
 import { ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, useStore } from "reactflow";
-import { CanvasFloatingPanel } from "./canvas-floating-panel";
-import { CanvasAppearance, type MiniColors, readMiniColors } from "./canvas-appearance";
+import { type MiniColors, readMiniColors } from "./canvas-appearance";
+import { CanvasCustomize } from "./canvas-customize";
 
 export interface CanvasViewOptions {
   grid: boolean;
@@ -22,9 +22,46 @@ export interface CanvasViewOptions {
   simple: boolean;
   speed: number;
   boost: number;
+  panSensitivity: number;
+  focusAnimationLimit: number;
+  submitDelaySeconds: number;
+  touchRadius: number;
+  blankAction: "context" | "double";
+  mentionNaming: "name" | "number";
+  blurAfterSubmit: boolean;
+  shiftEnterSubmit: boolean;
+  previewCanvasAssets: boolean;
+  videoHoverPlay: boolean;
+  notifyCompleted: boolean;
+  notifyBrowser: boolean;
+  notifySound: boolean;
+  notifyTiming: "hidden" | "always";
+  notifyFailed: boolean;
+  notifyOnlyMine: boolean;
+  successSound: string;
+  failureSound: string;
+  wireWidth: number;
+  wireFocusRadius: number;
+  wireHoverHighlight: boolean;
+  wireAnimate: boolean;
+  gridDotSize: number;
+  gridGlow: boolean;
+  horizontalGap: number;
+  verticalGap: number;
+  groupPadding: number;
+  groupLabelScale: number;
+  topToolbarScale: number;
+  groupCoverWires: boolean;
+  backgroundEnabled: boolean;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  backgroundMode: "cover" | "contain" | "repeat";
+  backgroundTileScale: number;
+  themeColor: string;
+  wireColor: string;
 }
 
-const defaults: CanvasViewOptions = {
+export const canvasViewDefaults: CanvasViewOptions = {
   grid: true,
   gridSize: 20,
   delaySubmit: false,
@@ -40,15 +77,52 @@ const defaults: CanvasViewOptions = {
   simple: true,
   speed: 1,
   boost: 2.5,
+  panSensitivity: 1.2,
+  focusAnimationLimit: 100,
+  submitDelaySeconds: 0,
+  touchRadius: 150,
+  blankAction: "context",
+  mentionNaming: "name",
+  blurAfterSubmit: false,
+  shiftEnterSubmit: false,
+  previewCanvasAssets: true,
+  videoHoverPlay: true,
+  notifyCompleted: true,
+  notifyBrowser: false,
+  notifySound: false,
+  notifyTiming: "hidden",
+  notifyFailed: true,
+  notifyOnlyMine: true,
+  successSound: "clear",
+  failureSound: "descending",
+  wireWidth: 2,
+  wireFocusRadius: 12,
+  wireHoverHighlight: true,
+  wireAnimate: false,
+  gridDotSize: 2,
+  gridGlow: false,
+  horizontalGap: 100,
+  verticalGap: 110,
+  groupPadding: 80,
+  groupLabelScale: 1,
+  topToolbarScale: 1,
+  groupCoverWires: false,
+  backgroundEnabled: true,
+  backgroundOpacity: 0.25,
+  backgroundBlur: 8,
+  backgroundMode: "cover",
+  backgroundTileScale: 1,
+  themeColor: "",
+  wireColor: "#9ca3af",
 };
 const preferenceKey = "aivd:canvas:view-options:v1";
 export function useCanvasViewOptions() {
-  const [options, setOptions] = useState(defaults);
+  const [options, setOptions] = useState(canvasViewDefaults);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(preferenceKey) ?? "{}");
-      const next = { ...defaults };
+      const next = { ...canvasViewDefaults };
       for (const key of [
         "grid",
         "delaySubmit",
@@ -59,15 +133,36 @@ export function useCanvasViewOptions() {
         "alignGuides",
         "dragSelect",
         "colorWires",
+        "blurAfterSubmit", "shiftEnterSubmit", "previewCanvasAssets", "videoHoverPlay",
+        "notifyCompleted", "notifyBrowser", "notifySound", "notifyFailed", "notifyOnlyMine",
+        "wireHoverHighlight", "wireAnimate", "gridGlow", "groupCoverWires", "backgroundEnabled",
       ] as const) {
         if (typeof raw?.[key] === "boolean") next[key] = raw[key];
       }
-      if ([12, 16, 20, 24, 32].includes(raw?.gridSize)) next.gridSize = raw.gridSize;
+      if (Number.isFinite(raw?.gridSize)) next.gridSize = Math.max(10, Math.min(60, raw.gridSize));
       next.miniColors = readMiniColors(raw?.miniColors);
       if (["dark", "slate", "graphite"].includes(raw?.backdrop)) next.backdrop = raw.backdrop;
       if (Number.isFinite(raw?.toolbarScale)) next.toolbarScale = Math.max(0.75, Math.min(1.25, raw.toolbarScale));
       if (Number.isFinite(raw?.speed)) next.speed = Math.max(0.25, Math.min(3, raw.speed));
       if (Number.isFinite(raw?.boost)) next.boost = Math.max(1, Math.min(5, raw.boost));
+      const numeric = {
+        panSensitivity: [0.25, 3], focusAnimationLimit: [0, 200], submitDelaySeconds: [0, 5], touchRadius: [40, 250],
+        wireWidth: [1, 6], wireFocusRadius: [4, 30], gridDotSize: [1, 5], horizontalGap: [20, 250], verticalGap: [20, 250],
+        groupPadding: [30, 200], groupLabelScale: [0.7, 1.6], topToolbarScale: [0.75, 1.4], backgroundOpacity: [0, 1],
+        backgroundBlur: [0, 24], backgroundTileScale: [0.5, 2],
+      } as const;
+      for (const [key, [min, max]] of Object.entries(numeric)) {
+        if (Number.isFinite(raw?.[key])) (next as unknown as Record<string, unknown>)[key] = Math.max(min, Math.min(max, raw[key]));
+      }
+      if (raw?.delaySubmit && !Number.isFinite(raw?.submitDelaySeconds)) next.submitDelaySeconds = 3;
+      if (["context", "double"].includes(raw?.blankAction)) next.blankAction = raw.blankAction;
+      if (["name", "number"].includes(raw?.mentionNaming)) next.mentionNaming = raw.mentionNaming;
+      if (["hidden", "always"].includes(raw?.notifyTiming)) next.notifyTiming = raw.notifyTiming;
+      if (["cover", "contain", "repeat"].includes(raw?.backgroundMode)) next.backgroundMode = raw.backgroundMode;
+      if (typeof raw?.successSound === "string") next.successSound = raw.successSound.slice(0, 30);
+      if (typeof raw?.failureSound === "string") next.failureSound = raw.failureSound.slice(0, 30);
+      if (typeof raw?.themeColor === "string" && /^#[\da-f]{6}$/i.test(raw.themeColor)) next.themeColor = raw.themeColor;
+      if (typeof raw?.wireColor === "string" && /^#[\da-f]{6}$/i.test(raw.wireColor)) next.wireColor = raw.wireColor;
       setOptions(next);
     } catch {
       /* Defaults also work with storage disabled. */
@@ -94,6 +189,9 @@ export function CanvasViewMenu({
   saveBackground,
   settingsOpen,
   closeSettings,
+  showMinimap,
+  setShowMinimap,
+  images,
 }: {
   settingsOpen: boolean;
   closeSettings: () => void;
@@ -102,15 +200,16 @@ export function CanvasViewMenu({
   change: (partial: Partial<CanvasViewOptions>) => void;
   background: string;
   saveBackground: (value: string) => void;
+  showMinimap: boolean;
+  setShowMinimap: (value: boolean) => void;
+  images: { name: string; url: string }[];
 }) {
   const flow = useReactFlow();
   const zoom = useStore((state) => Math.round(state.transform[2] * 100));
   const [open, setOpen] = useState<"zoom" | null>(null);
-  const [section, setSection] = useState("interaction");
   useEffect(() => {
     if (settingsOpen) {
       setOpen(null);
-      setSection("interaction");
     }
   }, [settingsOpen]);
   const ref = useRef<HTMLDivElement>(null);
@@ -186,149 +285,7 @@ export function CanvasViewMenu({
           </div>
         )}
       </div>
-      {settingsOpen && (
-        <CanvasFloatingPanel title={label("自定义画布", "Canvas settings")} onClose={closeSettings} className="nc-settings-floating" width={620}>
-          <div className="nc-settings">
-            <nav aria-label={label("设置分类", "Settings categories")}>
-              {(
-                [
-                  ["interaction", "交互操作", "Interaction"],
-                  ["wires", "连线设置", "Connections"],
-                  ["grid", "网格与显示", "Grid & display"],
-                  ["layout", "节点与布局", "Nodes & layout"],
-                  ["appearance", "背景与配色", "Background & colours"],
-                ] as const
-              ).map(([id, cn, en]) => (
-                <button type="button" key={id} aria-pressed={id === section} onClick={() => setSection(id)}>
-                  {label(cn, en)}
-                </button>
-              ))}
-            </nav>
-            <section className="nc-preferences">
-              {section === "interaction" && (
-                <>
-                  <label>
-                    {label("滚轮操作", "Mouse wheel")}
-                    <select
-                      value={options.wheelPan ? "pan" : "zoom"}
-                      onChange={(e) => change({ wheelPan: e.target.value === "pan" })}
-                    >
-                      <option value="pan">{label("平移", "Pan")}</option>
-                      <option value="zoom">{label("缩放", "Zoom")}</option>
-                    </select>
-                  </label>
-                  {(
-                    [
-                      ["snap", label("拖拽吸附网格", "Snap to grid")],
-                      ["alignGuides", label("对齐辅助线", "Alignment guides")],
-                      ["dragSelect", label("拖动节点获取焦点", "Select nodes when dragging")],
-                      ["delaySubmit", label("图像和视频延迟 3 秒提交", "Delay image/video submission by 3s")],
-                    ] as const
-                  ).map(([key, title]) => (
-                    <label key={key}>
-                      {title}
-                      <input
-                        type="checkbox"
-                        checked={options[key]}
-                        onChange={(e) => change({ [key]: e.target.checked })}
-                      />
-                    </label>
-                  ))}
-                </>
-              )}
-              {section === "wires" && (
-                <>
-                  <label>
-                    {label("按素材类型区分线色", "Colour by media type")}
-                    <input
-                      type="checkbox"
-                      checked={options.colorWires}
-                      onChange={(e) => change({ colorWires: e.target.checked })}
-                    />
-                  </label>
-                  <label>
-                    {label("仅显示焦点连线", "Show selected nodes’ wires")}
-                    <input
-                      type="checkbox"
-                      checked={options.focusWires}
-                      onChange={(e) => change({ focusWires: e.target.checked })}
-                    />
-                  </label>
-                </>
-              )}
-              {section === "grid" && (
-                <>
-                  <label>
-                    {label("显示点阵", "Show dot grid")}
-                    <input
-                      type="checkbox"
-                      checked={options.grid}
-                      onChange={(e) => change({ grid: e.target.checked })}
-                    />
-                  </label>
-                  <label>
-                    {label("网格间距", "Grid spacing")}
-                    <select
-                      value={options.gridSize}
-                      onChange={(e) => change({ gridSize: Number(e.target.value) })}
-                    >
-                      {[12, 16, 20, 24, 32].map((n) => (
-                        <option key={n} value={n}>
-                          {n} px
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {label("画布底色", "Canvas colour")}
-                    <select
-                      value={options.backdrop}
-                      onChange={(e) => change({ backdrop: e.target.value as CanvasViewOptions["backdrop"] })}
-                    >
-                      <option value="dark">{label("深黑", "Dark")}</option>
-                      <option value="slate">{label("石板", "Slate")}</option>
-                      <option value="graphite">{label("石墨", "Graphite")}</option>
-                    </select>
-                  </label>
-                </>
-              )}
-              {section === "layout" && (
-                <>
-                  <label>
-                    {label("低于 14% 使用极简视图", "Simplify below 14%")}
-                    <input
-                      type="checkbox"
-                      checked={options.simple}
-                      onChange={(e) => change({ simple: e.target.checked })}
-                    />
-                  </label>
-                  <label>
-                    {label("节点下方工具栏大小", "Node toolbar size")}
-                    <output>{Math.round(options.toolbarScale * 100)}%</output>
-                    <input
-                      type="range"
-                      min={0.75}
-                      max={1.25}
-                      step={0.05}
-                      value={options.toolbarScale}
-                      onChange={(e) => change({ toolbarScale: Number(e.target.value) })}
-                    />
-                  </label>
-                </>
-              )}
-              {section === "appearance" && (
-                <CanvasAppearance
-                  zh={zh}
-                  colors={options.miniColors}
-                  setColors={(miniColors) => change({ miniColors })}
-                  background={background}
-                  save={saveBackground}
-                />
-              )}
-            </section>
-          </div>
-        </CanvasFloatingPanel>
-      )}
+      {settingsOpen && <CanvasCustomize zh={zh} options={options} change={change} background={background} saveBackground={saveBackground} onClose={closeSettings} showMinimap={showMinimap} setShowMinimap={setShowMinimap} images={images} />}
     </>
   );
 }

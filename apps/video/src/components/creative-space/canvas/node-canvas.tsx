@@ -109,6 +109,7 @@ import { CanvasActionsContext, type CanvasActions, KIND_LABEL, kindIcon, NODE_TY
 import { CanvasDialog, CompareOverlay, NodeSearch, ShortcutsDialog, ShotsDialog, TemplatesDialog, type CanvasTemplate } from "./canvas-overlays";
 import type { CanvasReference } from "./canvas-prompt";
 import { CanvasViewMenu, useCanvasViewOptions } from "./canvas-view";
+import { playCanvasNoticeSound } from "./canvas-customize";
 import { CANVAS_IMAGE_TOOLS, type CanvasEditEntry, type CanvasImageTool } from "@/lib/creative-space/canvas-edit-entry";
 import { submissionDelay } from "@/lib/creative-space/submission-delay";
 import { appearanceStyle, useCanvasBackground } from "./canvas-appearance";
@@ -314,9 +315,15 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
   const [selectMode, setSelectMode] = useState(false);
   const [showEdges, setShowEdges] = useState(true);
   const [showMinimap, setShowMinimap] = useState(false);
+  useEffect(() => {
+    try { setShowMinimap(localStorage.getItem("aivd:canvas:minimap:v1") === "true"); } catch { /* Keep the session default. */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("aivd:canvas:minimap:v1", String(showMinimap)); } catch { /* Keep the session value. */ }
+  }, [showMinimap]);
   const [viewOptions, setViewOptions] = useCanvasViewOptions();
   const [background, saveBackground] = useCanvasBackground();
-  const appearance = useMemo(() => appearanceStyle(viewOptions.miniColors, background), [viewOptions.miniColors, background]);
+  const appearance = useMemo(() => appearanceStyle(viewOptions.miniColors), [viewOptions.miniColors]);
   const [pendingSeconds, setPendingSeconds] = useState<Record<string, number>>({});
   const pendingRuns = useRef(new Map<string, { signature: string; stop: () => void }>());
   const [farOut, setFarOut] = useState(false);
@@ -331,6 +338,8 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
   const flowBox = useRef<HTMLDivElement>(null);
   const dragGuides = useRef<{ x: number[]; y: number[] } | null>(null);
   const runLocks = useRef(new Set<string>());
+  const startedJobs = useRef(new Set<string>());
+  const notifiedStatuses = useRef(new Map<string, string>());
   const clipboard = useRef<{ nodes: FlowNode[]; edges: Edge[] } | null>(null);
   const lastSaved = useRef("");
   const saving = useRef<Promise<string | null> | null>(null);
@@ -394,9 +403,28 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       document.removeEventListener("visibilitychange", hidden);
       cancelAllPending();
     };
-  }, [cancelAllPending, userId, viewOptions.delaySubmit]);
+  }, [cancelAllPending, userId]);
 
   const say = useCallback((text: string, error = false) => setToast({ text, error }), []);
+  useEffect(() => {
+    if (!hydrated) return;
+    for (const node of nodes) {
+      if (!isGen(node.data)) continue;
+      const previous = notifiedStatuses.current.get(node.id);
+      const status = node.data.status;
+      notifiedStatuses.current.set(node.id, status);
+      const failed = status === "failed";
+      if (!previous || previous === status || (status !== "done" && !failed)) continue;
+      if ((!failed && !viewOptions.notifyCompleted) || (failed && !viewOptions.notifyFailed) || (viewOptions.notifyOnlyMine && !startedJobs.current.has(node.id))) continue;
+      if (viewOptions.notifyTiming === "hidden" && !document.hidden) continue;
+      const message = failed ? L("生成失败", "Generation failed") : L("生成完成", "Generation complete");
+      if (viewOptions.notifyBrowser && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        try { new Notification(message, { body: node.data.title }); } catch { /* Notifications may be blocked by the browser. */ }
+      }
+      if (viewOptions.notifySound) playCanvasNoticeSound(failed ? viewOptions.failureSound : viewOptions.successSound, failed);
+      if (!document.hidden) say(`${node.data.title} · ${message}`, failed);
+    }
+  }, [L, hydrated, nodes, say, viewOptions]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), toast.error || toast.undoKey ? 7000 : 3200);
@@ -1096,7 +1124,6 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
     if (!runningKey || !userId) return;
     let live = true;
     const tick = async () => {
-      if (document.hidden) return;
       let changed = false;
       for (const node of nodesRef.current) {
         const data = node.data;
@@ -1184,19 +1211,32 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       const connected = directInputs(id, nodesRef.current as GraphNode[], edgesRef.current)
         .filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
       const allImages = nodesRef.current.filter((node) => outputType(node.data) === "image" && hasOutput(node.data));
-      const mentions = Array.from(prompt.matchAll(/@(?:图片|image)(\d+)(?!\d)/gi));
-      const prioritized: GraphNode[] = [];
+      const alias = (node: FlowNode, index: number) => {
+        const base = node.data.title.trim().replace(/\s+/g, "_").replace(/[@，。,.!?；;]/g, "").slice(0, 32) || `图片${index + 1}`;
+        const duplicate = allImages.slice(0, index).filter((item) => item.data.title.trim().replace(/\s+/g, "_").replace(/[@，。,.!?；;]/g, "").slice(0, 32) === base).length;
+        return duplicate ? `${base}_${duplicate + 1}` : base;
+      };
+      const imageTokens = new Map<string, FlowNode>();
+      allImages.forEach((node, index) => {
+        imageTokens.set(`图片${index + 1}`, node);
+        imageTokens.set(`image${index + 1}`, node);
+        imageTokens.set(alias(node, index), node);
+      });
+      const tokens = [...imageTokens.keys()].sort((a, b) => b.length - a.length);
+      const tokenPattern = new RegExp(tokens.length ? `@(${tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})(?=$|\\s|[，。,.!?；;])` : "(?!)", "gi");
+      const mentions = Array.from(prompt.matchAll(tokenPattern));
+      const prioritized: FlowNode[] = [];
       for (const mention of mentions) {
-        const source = allImages[Number(mention[1]) - 1];
+        const source = imageTokens.get(mention[1]) ?? imageTokens.get(mention[1].toLowerCase());
         const linked = connected.find((node) => node.id === source?.id);
-        if (!linked) throw new Error(L(`请先连接 @图片${mention[1]} 到当前节点`, `Connect @image${mention[1]} to this node first`));
+        if (!linked) throw new Error(L(`请先连接 @${mention[1]} 到当前节点`, `Connect @${mention[1]} to this node first`));
         if (!prioritized.some((node) => node.id === linked.id)) prioritized.push(linked);
       }
       if (prioritized.length > max) throw new Error(L(`当前模型最多支持 ${max} 张参考图，请减少 @ 引用`, `This model accepts ${max} reference images. Remove some @ mentions.`));
       const inputs = [...prioritized, ...connected.filter((node) => !prioritized.some((item) => item.id === node.id))].slice(0, max);
       const seedanceTags = inputs.length > 1 && (modelId?.startsWith("bytedance/seedance-2") || modelId === "seedance-2-5-flash");
-      const preparedPrompt = prompt.replace(/@(?:图片|image)(\d+)(?!\d)/gi, (_, number: string) => {
-        const source = allImages[Number(number) - 1];
+      const preparedPrompt = prompt.replace(tokenPattern, (_, token: string) => {
+        const source = imageTokens.get(token) ?? imageTokens.get(token.toLowerCase());
         const position = inputs.findIndex((node) => node.id === source?.id) + 1;
         return seedanceTags ? `@Image${position}` : `reference image ${position}`;
       });
@@ -1367,10 +1407,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       const status = (node.data as { status?: string }).status;
       if (status === "submitting" || status === "running") return;
       runLocks.current.add(id);
+      startedJobs.current.add(id);
+      if (viewOptions.blurAfterSubmit) setNodes((list) => list.map((item) => item.id === id ? { ...item, selected: false } : item));
       const task = node.data.kind === "agent" ? runAgent(id) : runGenerate(id);
       void task.finally(() => runLocks.current.delete(id));
     },
-    [requireLogin, runAgent, runGenerate],
+    [requireLogin, runAgent, runGenerate, setNodes, viewOptions.blurAfterSubmit],
   );
 
   const submissionSignature = useCallback((id: string) => {
@@ -1385,7 +1427,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
   const run = useCallback((id: string) => {
     if (pendingRuns.current.has(id)) { cancelPending(id); return; }
     const data = nodesRef.current.find((node) => node.id === id)?.data;
-    if (!viewOptions.delaySubmit || (data?.kind !== "image" && data?.kind !== "video")) {
+    if (viewOptions.submitDelaySeconds <= 0 || (data?.kind !== "image" && data?.kind !== "video")) {
       dispatchRun(id);
       return;
     }
@@ -1397,10 +1439,10 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       const valid = !document.hidden && submissionSignature(id) === signature;
       cancelPending(id);
       if (valid) dispatchRun(id);
-    });
+    }, viewOptions.submitDelaySeconds);
     pendingRuns.current.set(id, { signature, stop });
-    tick(3);
-  }, [cancelPending, dispatchRun, requireLogin, submissionSignature, viewOptions.delaySubmit]);
+    tick(viewOptions.submitDelaySeconds);
+  }, [cancelPending, dispatchRun, requireLogin, submissionSignature, viewOptions.submitDelaySeconds]);
 
   useEffect(() => {
     for (const [id, item] of pendingRuns.current) {
@@ -1748,17 +1790,17 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
   const focusNode = (node: FlowNode) => {
     setNodes((list) => list.map((item) => ({ ...item, selected: item.id === node.id })));
     const abs = flow.getNode(node.id)?.positionAbsolute ?? absolute(node);
-    flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: prefersReducedMotion() ? 0 : 250 });
+    flow.setCenter(abs.x + (node.width ?? 280) / 2, abs.y + (node.height ?? 200) / 2, { zoom: 1, duration: prefersReducedMotion() || nodesRef.current.length > viewOptions.focusAnimationLimit ? 0 : 250 });
   };
 
   const groupSelected = useCallback(() => {
     const members = nodesRef.current.filter((node) => node.selected && node.data.kind !== "group");
     if (members.length < 1) return;
     const boxes = members.map((node) => ({ ...absolute(node), w: node.width ?? 280, h: node.height ?? 200 }));
-    const minX = Math.min(...boxes.map((box) => box.x)) - 80;
-    const minY = Math.min(...boxes.map((box) => box.y)) - 80;
-    const maxX = Math.max(...boxes.map((box) => box.x + box.w)) + 80;
-    const maxY = Math.max(...boxes.map((box) => box.y + box.h)) + 80;
+    const minX = Math.min(...boxes.map((box) => box.x)) - viewOptions.groupPadding;
+    const minY = Math.min(...boxes.map((box) => box.y)) - viewOptions.groupPadding;
+    const maxX = Math.max(...boxes.map((box) => box.x + box.w)) + viewOptions.groupPadding;
+    const maxY = Math.max(...boxes.map((box) => box.y + box.h)) + viewOptions.groupPadding;
     const group = makeNode({ kind: "group", title: L("分组", "Group") }, { x: minX, y: minY });
     group.style = { width: maxX - minX, height: maxY - minY };
     const ids = new Set(members.map((node) => node.id));
@@ -1767,7 +1809,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
     );
     replaceGraph([{ ...group, selected: true }, ...next], edgesRef.current);
     commit();
-  }, [L, commit, makeNode, replaceGraph]);
+  }, [L, commit, makeNode, replaceGraph, viewOptions.groupPadding]);
 
   const ungroup = useCallback(
     (groupId: string) => {
@@ -1860,12 +1902,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       const picked = nodesRef.current.filter((node) => group ? node.parentNode === group.id : node.selected && !node.parentNode);
       if (picked.length < 2) return;
       const sorted = [...picked].sort((a, b) => (mode === "column" ? a.position.y - b.position.y : a.position.x - b.position.x || a.position.y - b.position.y));
-      const start = group ? { x: 80, y: 80 } : { x: Math.min(...picked.map((node) => node.position.x)), y: Math.min(...picked.map((node) => node.position.y)) };
+      const start = group ? { x: viewOptions.groupPadding, y: viewOptions.groupPadding } : { x: Math.min(...picked.map((node) => node.position.x)), y: Math.min(...picked.map((node) => node.position.y)) };
       const positions = new Map<string, { x: number; y: number }>();
       let x = start.x;
       let y = start.y;
-      const cellWidth = Math.max(...picked.map((node) => node.width ?? 280)) + 40;
-      const cellHeight = Math.max(...picked.map((node) => node.height ?? 280)) + 60;
+      const cellWidth = Math.max(...picked.map((node) => node.width ?? 280)) + viewOptions.horizontalGap;
+      const cellHeight = Math.max(...picked.map((node) => node.height ?? 280)) + viewOptions.verticalGap;
       sorted.forEach((node, index) => {
         if (mode === "grid") {
           const col = index % 3;
@@ -1873,13 +1915,13 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
           positions.set(node.id, { x: start.x + col * cellWidth, y: start.y + row * cellHeight });
         } else {
           positions.set(node.id, { x, y });
-          if (mode === "row") x += (node.width ?? 280) + 40;
-          else y += (node.height ?? 200) + 40;
+          if (mode === "row") x += (node.width ?? 280) + viewOptions.horizontalGap;
+          else y += (node.height ?? 200) + viewOptions.verticalGap;
         }
       });
       const frame = group ? {
-        width: Math.max(...picked.map((node) => positions.get(node.id)!.x + (node.width ?? 280))) + 80,
-        height: Math.max(...picked.map((node) => positions.get(node.id)!.y + (node.height ?? 280))) + 80,
+        width: Math.max(...picked.map((node) => positions.get(node.id)!.x + (node.width ?? 280))) + viewOptions.groupPadding,
+        height: Math.max(...picked.map((node) => positions.get(node.id)!.y + (node.height ?? 280))) + viewOptions.groupPadding,
       } : null;
       replaceGraph(nodesRef.current.map((node) => {
         if (frame && node.id === group?.id) return { ...node, style: { ...node.style, ...frame } };
@@ -1887,7 +1929,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       }), edgesRef.current);
       commit();
     },
-    [commit, replaceGraph],
+    [commit, replaceGraph, viewOptions.groupPadding, viewOptions.horizontalGap, viewOptions.verticalGap],
   );
 
   const arrange = useCallback(() => {
@@ -2078,9 +2120,12 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       if (index < 0 && !canConnect) return [];
       const name = node.data.title || KIND_LABEL[node.data.kind][zh ? "zh" : "en"];
       const imageIndex = allImages.findIndex((item) => item.id === node.id);
-      return [{ id: node.id, name, url: outputUrl(node.data), media: outputType(node.data) === "video" ? "video" as const : "image" as const, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : `${zh ? "图片" : "image"}${imageIndex + 1}`, connected: index >= 0, attachable: index >= 0 || wired.length < limit }];
+      const base = name.trim().replace(/\s+/g, "_").replace(/[@，。,.!?；;]/g, "").slice(0, 32) || `${zh ? "图片" : "image"}${imageIndex + 1}`;
+      const duplicate = allImages.slice(0, imageIndex).filter((item) => (item.data.title || KIND_LABEL[item.data.kind][zh ? "zh" : "en"]).trim().replace(/\s+/g, "_").replace(/[@，。,.!?；;]/g, "").slice(0, 32) === base).length;
+      const namedToken = duplicate ? `${base}_${duplicate + 1}` : base;
+      return [{ id: node.id, name, url: outputUrl(node.data), media: outputType(node.data) === "video" ? "video" as const : "image" as const, token: agent ? String.fromCharCode(65 + (index < 0 ? wired.length : index)) : viewOptions.mentionNaming === "name" ? namedToken : `${zh ? "图片" : "image"}${imageIndex + 1}`, connected: index >= 0, attachable: index >= 0 || wired.length < limit }];
     });
-  }, [zh]);
+  }, [viewOptions.mentionNaming, zh]);
 
   const attachReference = useCallback((target: string, ref: CanvasReference) => {
     const current = referencesFor(target).find((item) => item.id === ref.id);
@@ -2315,6 +2360,9 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
   const actions = useMemo<CanvasActions>(
     () => ({
       zh,
+      shiftEnterSubmit: viewOptions.shiftEnterSubmit,
+      videoHoverPlay: viewOptions.videoHoverPlay,
+      previewCanvasAssets: viewOptions.previewCanvasAssets,
       patch,
       commit,
       run,
@@ -2347,7 +2395,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       agentToVideo,
       singleSelection: selected.length === 1,
     }),
-    [agentForm, agentToVideo, attachReference, referencesFor, captureFrame, commit, compareSource, detachImageReferences, editingField, uploadImageReference, inputsOf, patch, pendingSeconds, quoteOf, replaceMedia, requireLogin, run, selected.length, spreadSteps, zh],
+    [agentForm, agentToVideo, attachReference, referencesFor, captureFrame, commit, compareSource, detachImageReferences, editingField, uploadImageReference, inputsOf, patch, pendingSeconds, quoteOf, replaceMedia, requireLogin, run, selected.length, spreadSteps, viewOptions.shiftEnterSubmit, viewOptions.videoHoverPlay, viewOptions.previewCanvasAssets, zh],
   );
 
   /** Screen point → position inside the canvas area (menus are placed there, clamped to stay visible). */
@@ -2377,15 +2425,15 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
     setMenu({ ...point, flow: flow.screenToFlowPosition(point), panel: id ? "node" : "pane", id });
   };
   const visibleEdges = useMemo(() => {
-    if (!viewOptions.focusWires && !viewOptions.colorWires) return edges;
     const selectedIds = new Set(nodes.filter((node) => node.selected).map((node) => node.id));
     const kindById = new Map(nodes.map((node) => [node.id, outputType(node.data)]));
     return edges.map((edge) => {
-      if (viewOptions.focusWires && selectedIds.size && !selectedIds.has(edge.source) && !selectedIds.has(edge.target)) return { ...edge, hidden: true };
-      if (viewOptions.colorWires) return { ...edge, className: `nc-wire-${kindById.get(edge.source)}` };
-      return edge;
+      const current = { ...edge, animated: viewOptions.wireAnimate, interactionWidth: viewOptions.wireFocusRadius * 2 };
+      if (viewOptions.focusWires && selectedIds.size && !selectedIds.has(edge.source) && !selectedIds.has(edge.target)) return { ...current, hidden: true };
+      if (viewOptions.colorWires) return { ...current, className: `nc-wire-${kindById.get(edge.source)}` };
+      return { ...current, className: "" };
     });
-  }, [edges, nodes, viewOptions.colorWires, viewOptions.focusWires]);
+  }, [edges, nodes, viewOptions.colorWires, viewOptions.focusWires, viewOptions.wireAnimate, viewOptions.wireFocusRadius]);
   const onlyGroup = selected.length === 1 && selected[0].data.kind === "group" ? selected[0] : null;
   const groupPlan = onlyGroup ? canvasGroupPlan(onlyGroup.id, nodes as GraphNode[], edges) : [];
   const groupCost = groupPlan.reduce((sum, node) => sum + (isGen(node.data) && !["running", "submitting"].includes(node.data.status) ? quoteOf(node.id) ?? 0 : 0), 0);
@@ -2488,9 +2536,14 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
             tabIndex={-1}
             onPointerMove={(event) => { cursor.current = { x: event.clientX, y: event.clientY }; }}
             data-backdrop={viewOptions.backdrop}
-            style={{ ...appearance, "--du-canvas-toolbar-scale": viewOptions.toolbarScale } as CSSProperties}
+            data-wire-hover={viewOptions.wireHoverHighlight}
+            data-grid-glow={viewOptions.gridGlow}
+            data-group-cover-wires={viewOptions.groupCoverWires}
+            data-preview-assets={viewOptions.previewCanvasAssets}
+            style={{ ...appearance, backgroundColor: viewOptions.themeColor || undefined, "--du-canvas-toolbar-scale": viewOptions.toolbarScale, "--nc-top-toolbar-scale": viewOptions.topToolbarScale, "--nc-group-label-scale": viewOptions.groupLabelScale, "--nc-wire-width": `${viewOptions.wireWidth}px`, "--nc-wire-color": viewOptions.wireColor } as CSSProperties}
             className={`nc-flow${showEdges ? "" : " edges-hidden"}${viewOptions.simple && farOut ? " is-far-out" : ""}`}
             onDoubleClick={(event) => {
+              if (viewOptions.blankAction !== "double") return;
               if (!(event.target as HTMLElement).classList.contains("react-flow__pane")) return;
               setMenu({ x: event.clientX, y: event.clientY, flow: flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }) });
             }}
@@ -2500,6 +2553,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
               if (event.dataTransfer.files.length) void addFiles(Array.from(event.dataTransfer.files), flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }));
             }}
           >
+            {viewOptions.backgroundEnabled && background && <div className="nc-wallpaper" aria-hidden="true" style={{ backgroundImage: `url("${background}")`, opacity: viewOptions.backgroundOpacity, filter: `blur(${viewOptions.backgroundBlur}px)`, backgroundSize: viewOptions.backgroundMode === "cover" ? "cover" : viewOptions.backgroundMode === "contain" ? "contain" : `${Math.round(viewOptions.backgroundTileScale * 100)}% auto`, backgroundRepeat: viewOptions.backgroundMode === "repeat" ? "repeat" : "no-repeat" }} />}
             <ReactFlow
               nodes={nodes}
               edges={visibleEdges}
@@ -2513,7 +2567,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
               onConnectEnd={onConnectEnd}
               onNodeContextMenu={(event, node) => openContext(event, node.id)}
               onSelectionContextMenu={(event, picked) => openContext(event, picked[0]?.id)}
-              onPaneContextMenu={(event) => openContext(event)}
+              onPaneContextMenu={(event) => { if (viewOptions.blankAction === "context") openContext(event); else event.preventDefault(); }}
               nodeDragThreshold={3}
               onNodeDragStart={onNodeDragStart}
               onNodeDrag={showAlignment}
@@ -2537,7 +2591,9 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
               selectionMode={SelectionMode.Partial}
               zoomOnDoubleClick={false}
               panOnScroll={viewOptions.wheelPan}
+              panOnScrollSpeed={viewOptions.panSensitivity}
               zoomOnScroll={!viewOptions.wheelPan}
+              connectionRadius={viewOptions.touchRadius}
               snapToGrid={viewOptions.snap}
               snapGrid={[viewOptions.gridSize, viewOptions.gridSize]}
               minZoom={0.1}
@@ -2545,7 +2601,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
               proOptions={{ hideAttribution: true }}
               defaultEdgeOptions={{ type: "canvas" }}
             >
-              {viewOptions.grid && <Background variant={BackgroundVariant.Dots} gap={viewOptions.gridSize} size={1} className="nc-bg" />}
+              {viewOptions.grid && <Background variant={BackgroundVariant.Dots} gap={viewOptions.gridSize} size={viewOptions.gridDotSize} className="nc-bg" />}
               {showMinimap ? <MiniMap pannable zoomable position="bottom-right" className="nc-minimap" /> : null}
             </ReactFlow>
 
@@ -2559,7 +2615,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
               <output>{L("即将提交", "Submitting")} · {Object.keys(pendingSeconds).length} {L("项", "queued")}</output>
               <button type="button" onClick={cancelAllPending}>{L("全部撤回", "Cancel queued")}</button>
             </div>}
-            <CanvasViewMenu settingsOpen={panel === "settings"} closeSettings={() => setPanel(null)} background={background} saveBackground={saveBackground} zh={zh} options={viewOptions} change={(partial) => setViewOptions((current) => ({ ...current, ...partial }))} />
+            <CanvasViewMenu settingsOpen={panel === "settings"} closeSettings={() => setPanel(null)} background={background} saveBackground={saveBackground} zh={zh} options={viewOptions} change={(partial) => setViewOptions((current) => ({ ...current, ...partial }))} showMinimap={showMinimap} setShowMinimap={setShowMinimap} images={canvasLibraryItems.filter((item) => item.mimeType.startsWith("image/")).map((item) => ({ name: item.name, url: item.url }))} />
             <PinRail
               nodes={nodes}
               zh={zh}

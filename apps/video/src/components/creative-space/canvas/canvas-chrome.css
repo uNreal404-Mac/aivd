@@ -19,6 +19,8 @@
   justify-content: space-between;
   gap: 12px;
   pointer-events: none;
+  scale: var(--nc-top-toolbar-scale, 1);
+  transform-origin: top center;
 }
 .nc-glass-header > * {
   pointer-events: auto;

@@ -132,8 +132,8 @@
 .nc-flow .react-flow { width: 100%; height: 100%; }
 .nc-flow .nc-bg { color: var(--ds-line-3); }
 .nc-flow .react-flow__pane.selection { cursor: crosshair; }
-.nc-flow .react-flow__edge-path { stroke: color-mix(in srgb, var(--du-accent) 70%, var(--ds-text-3)); stroke-width: 2px; }
-.nc-flow .react-flow__edge.selected .react-flow__edge-path, .nc-flow .react-flow__edge:hover .react-flow__edge-path { stroke: var(--du-accent); stroke-width: 3px; }
+.nc-flow .react-flow__edge-path { stroke: var(--nc-wire-color, var(--du-accent)); stroke-width: var(--nc-wire-width, 2px); }
+.nc-flow .react-flow__edge.selected .react-flow__edge-path, .nc-flow[data-wire-hover="true"] .react-flow__edge:hover .react-flow__edge-path { stroke: var(--nc-wire-color, var(--du-accent)); stroke-width: calc(var(--nc-wire-width, 2px) + 1px); filter: drop-shadow(0 0 5px var(--nc-wire-color, var(--du-accent))); }
 .nc-flow .react-flow__connection-path { stroke: var(--du-accent); stroke-width: 2px; }
 .nc-flow.edges-hidden .react-flow__edges { opacity: 0; }
 .nc-flow .react-flow__controls {
@@ -365,7 +365,7 @@
 .nc-group-accent { background: color-mix(in srgb, var(--du-accent) 7%, transparent); }
 .nc-group-warm { background: color-mix(in srgb, var(--du-warning) 7%, transparent); }
 .nc-group-cool { background: color-mix(in srgb, var(--du-success) 7%, transparent); }
-.nc-group-head { display: flex; align-items: center; gap: var(--ds-space-2); padding: var(--ds-space-3) var(--ds-space-4); color: var(--ds-text-3); text-align: left; }
+.nc-group-head { display: flex; align-items: center; gap: var(--ds-space-2); padding: var(--ds-space-3) var(--ds-space-4); color: var(--ds-text-3); text-align: left; font-size: calc(1em * var(--nc-group-label-scale, 1)); }
 
 /* Overlays on the canvas */
 .nc-view-tools {

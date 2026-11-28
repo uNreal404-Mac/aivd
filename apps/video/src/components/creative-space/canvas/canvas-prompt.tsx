@@ -12,7 +12,7 @@ export interface CanvasReference {
   attachable?: boolean;
 }
 
-export function CanvasPrompt({ value, label, placeholder, zh, list, attach, change, insert }: {
+export function CanvasPrompt({ value, label, placeholder, zh, list, attach, change, insert, onSubmit }: {
   value: string;
   label: string;
   placeholder: string;
@@ -21,6 +21,7 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
   attach: (ref: CanvasReference) => boolean;
   change: (value: string) => void;
   insert?: { text: string; nonce: number } | null;
+  onSubmit?: () => void;
 }) {
   const [draft, setDraft] = useState(value);
   const composing = useRef(false);
@@ -80,6 +81,9 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
         onChange={(e) => { setDraft(e.currentTarget.value); if (!composing.current) { change(e.currentTarget.value); cursor(e.currentTarget); } }}
         onKeyUp={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) cursor(e.currentTarget); }}
         onKeyDown={(e) => {
+          if (onSubmit && e.key === "Enter" && e.shiftKey && !composing.current && !e.nativeEvent.isComposing) {
+            e.preventDefault(); onSubmit(); return;
+          }
           if (composing.current || e.nativeEvent.isComposing || e.keyCode === 229 || !choices.length) return;
           if (e.key === "Escape") { e.stopPropagation(); setCaret(null); }
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {

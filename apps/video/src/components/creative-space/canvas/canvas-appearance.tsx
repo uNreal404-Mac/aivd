@@ -27,10 +27,10 @@ export function readMiniColors(raw: unknown): MiniColors {
   }
   return result;
 }
-export function appearanceStyle(colors: MiniColors, background: string): CSSProperties {
+export function appearanceStyle(colors: MiniColors): CSSProperties {
   const variables: Record<string, string> = {};
   for (const kind of kinds) variables[`--du-canvas-mini-${kind}`] = colors[kind] || `var(${palette[kind][2]})`;
-  return { ...variables, backgroundImage: background ? `url("${background}")` : undefined };
+  return variables as CSSProperties;
 }
 
 const backgroundKey = "aivd:canvas:background:v1";
@@ -53,30 +53,23 @@ export function useCanvasBackground() {
   return [value, save] as const;
 }
 
-export function CanvasAppearance({ zh, background, save, colors, setColors }: {
+export function CanvasAppearance({ zh, background, save, options, change, images }: {
   zh: boolean;
   background: string;
   save: (data: string) => void;
-  colors: MiniColors;
-  setColors: (value: MiniColors) => void;
+  options: import("./canvas-view").CanvasViewOptions;
+  change: (partial: Partial<import("./canvas-view").CanvasViewOptions>) => void;
+  images: { name: string; url: string }[];
 }) {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [theme, setTheme] = useState<MiniColors>({});
-  const element = useRef<HTMLFieldSetElement>(null);
   const file = useRef<HTMLInputElement>(null);
   const revision = useRef(0);
-  useEffect(() => {
-    if (element.current) {
-      const computed = getComputedStyle(element.current);
-      setTheme(Object.fromEntries(kinds.map((kind) => [kind, computed.getPropertyValue(palette[kind][2]).trim()])));
-    }
-    return () => { revision.current += 1; };
-  }, []);
-  async function pick(image: File) {
+  useEffect(() => () => { revision.current += 1; }, []);
+  async function pick(image: Blob) {
     const version = ++revision.current;
     setError("");
-    if (!["image/png", "image/jpeg", "image/webp"].includes(image.type) || image.size > maxFileBytes) {
+    if (![ "image/png", "image/jpeg", "image/webp" ].includes(image.type) || image.size > maxFileBytes) {
       setError(zh ? "请选择 5 MB 以内的 PNG、JPG 或 WebP。" : "Choose a PNG, JPG or WebP of 5 MB or less.");
       return;
     }
@@ -98,35 +91,40 @@ export function CanvasAppearance({ zh, background, save, colors, setColors }: {
       let data = encode(0.78);
       if (data.length > maxDataLength) data = encode(0.45);
       if (!validBackground(data)) throw Error();
-      if (revision.current === version) save(data);
+      if (revision.current === version) { save(data); change({ backgroundEnabled: true }); }
     } catch {
-      if (revision.current === version) setError(zh ? "无法保存这张背景图，请换用更小的图片或检查浏览器存储空间。" : "Could not save this background. Try a smaller image or check browser storage.");
+      if (revision.current === version) setError(zh ? "无法保存这张背景图，请换用更小的图片。" : "Could not save this background. Try a smaller image.");
     } finally {
       bitmap?.close();
       if (revision.current === version) setProcessing(false);
     }
   }
-  return <>
-    <label>{zh ? "自定义背景" : "Background image"}
-      <button type="button" disabled={processing} onClick={() => file.current?.click()}>{processing ? (zh ? "处理中…" : "Processing…") : background ? (zh ? "更换图片" : "Replace image") : (zh ? "选择图片" : "Choose image")}</button>
-      <input type="file" hidden ref={file} accept="image/png,image/jpeg,image/webp" onChange={(e) => {
-        const selected = e.target.files?.[0];
-        e.target.value = "";
-        if (selected) void pick(selected);
-      }} />
-    </label>
-    {processing ? <output aria-live="polite">{zh ? "正在读取并保存背景图片…" : "Reading and saving the background image…"}</output> : null}
-    {background && <button type="button" onClick={() => {
-      revision.current += 1;
-      try { save(""); setError(""); } catch { setError(zh ? "无法清除浏览器保存的背景" : "Could not clear the saved background"); }
-    }}>{zh ? "恢复默认背景" : "Restore default background"}</button>}
-    {error && <p role="alert">{error}</p>}
-    <fieldset ref={element} className="nc-mini-colors">
-      <legend>{zh ? "极简模式节点配色" : "Simple view node colours"}</legend>
-      {kinds.filter((kind) => theme[kind]).map((kind) => <label key={kind}>{palette[kind][zh ? 0 : 1]}
-        <input type="color" aria-label={zh ? `${palette[kind][0]}节点颜色` : `${palette[kind][1]} node colour`} value={colors[kind] || theme[kind]} onChange={(e) => setColors({ ...colors, [kind]: e.target.value })} />
-      </label>)}
-      {Object.keys(colors).length > 0 && <button type="button" onClick={() => setColors({})}>{zh ? "恢复默认配色" : "Restore default colours"}</button>}
-    </fieldset>
-  </>;
+  const fromCanvas = async (url: string) => {
+    setProcessing(true); setError("");
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw Error();
+      await pick(await response.blob());
+    } catch { setError(zh ? "无法读取这张画布图片，请稍后重试。" : "Could not read this canvas image."); }
+    finally { setProcessing(false); }
+  };
+  const l = (cn: string, en: string) => zh ? cn : en;
+  return <div className="ncc-background">
+    <label className="ncc-control ncc-toggle"><span>{l("启用背景图", "Enable background image")}</span><input type="checkbox" checked={options.backgroundEnabled && Boolean(background)} disabled={!background} onChange={(event) => change({ backgroundEnabled: event.target.checked })} /></label>
+    <div className="ncc-control"><span>{l("背景图片", "Background image")}</span><div className="ncc-background-pick">
+      <button type="button" disabled={processing} onClick={() => file.current?.click()}>{processing ? l("处理中…", "Processing…") : l("上传图片", "Upload image")}</button>
+      <select aria-label={l("从画布选择图片", "Choose an image from canvas")} value="" disabled={processing || !images.length} onChange={(event) => { if (event.target.value) void fromCanvas(event.target.value); }}>
+        <option value="">{l("从画布选择", "Choose from canvas")}</option>
+        {images.map((item, index) => <option key={index} value={item.url}>{item.name}</option>)}
+      </select>
+      <input type="file" hidden ref={file} accept="image/png,image/jpeg,image/webp" onChange={(event) => { const selected = event.target.files?.[0]; event.target.value = ""; if (selected) void pick(selected); }} />
+    </div></div>
+    {background && <button type="button" className="ncc-background-remove" onClick={() => { revision.current += 1; save(""); change({ backgroundEnabled: false }); }}>{l("移除背景图片", "Remove background image")}</button>}
+    <label className="ncc-control ncc-slider"><span>{l("不透明度", "Opacity")}</span><input type="range" min="0" max="1" step="0.05" value={options.backgroundOpacity} onChange={(event) => change({ backgroundOpacity: Number(event.target.value) })} /><output>{Math.round(options.backgroundOpacity * 100)}%</output></label>
+    <label className="ncc-control ncc-slider"><span>{l("模糊度", "Blur")}</span><input type="range" min="0" max="24" value={options.backgroundBlur} onChange={(event) => change({ backgroundBlur: Number(event.target.value) })} /><output>{options.backgroundBlur}px</output></label>
+    <div className="ncc-control"><span>{l("显示方式", "Display mode")}</span><div className="ncc-segments">{(["cover", "contain", "repeat"] as const).map((mode, index) =>
+      <button type="button" key={mode} aria-pressed={options.backgroundMode === mode} onClick={() => change({ backgroundMode: mode })}>{[l("铺满", "Cover"), l("适应", "Fit"), l("平铺", "Tile")][index]}</button>)}</div></div>
+    <label className="ncc-control ncc-slider"><span>{l("平铺大小", "Tile size")}</span><input type="range" min="0.5" max="2" step="0.1" value={options.backgroundTileScale} disabled={options.backgroundMode !== "repeat"} onChange={(event) => change({ backgroundTileScale: Number(event.target.value) })} /><output>{Math.round(options.backgroundTileScale * 100)}%</output></label>
+    {error && <p className="ncc-error" role="alert">{error}</p>}
+  </div>;
 }
