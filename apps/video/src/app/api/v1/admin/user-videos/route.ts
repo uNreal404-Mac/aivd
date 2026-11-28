@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserVideos, getUserVideoStats } from "@/lib/admin/user-videos";
+import { requireAdmin } from "@/lib/api/auth";
+import { handleApiError } from "@/lib/api/response";
 
 export async function GET(request: NextRequest) {
+  // Other users' prompts and media: administrators only, like every other
+  // admin route. Not signed in is 401, signed in without admin rights is 403.
+  try {
+    await requireAdmin(request);
+  } catch (error) {
+    return handleApiError(error);
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get("userId");
