@@ -406,8 +406,10 @@
 .nc-native.nc-dialog[data-placement="locator"]::backdrop {
   background: transparent;
 }
+.nc-settings-floating { height: min(520px, calc(100dvh - 24px)); }
 .nc-settings-floating .nc-floating-body { padding: 14px; }
 .nc-settings-floating .nc-settings { grid-template-columns: minmax(115px, 30%) minmax(0, 1fr); }
+.nc-locator-floating { height: min(420px, calc(100dvh - 24px)); }
 .nc-locator-floating .nc-floating-body { gap: 10px; padding: 12px; }
 .nc-locator-floating .nc-type-tabs { flex-wrap: wrap; }
 .nc-add-floating .nc-floating-body { display: grid; gap: 3px; padding: 8px; }
