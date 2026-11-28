@@ -70,7 +70,7 @@ function saved<T extends { id: string }>(key: string): T[] {
   } catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention, libraryScope = "global", canvasItems = [] }: {
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention, libraryScope = "global", canvasItems = [], queuedFiles, onQueuedFilesHandled }: {
   lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string; acceptedTypes?: MediaType[];
   /** The shelf it opens on each time (an "@" button opens it on the elements). */
@@ -85,6 +85,9 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   libraryScope?: "global" | "canvas";
   /** Assets already present on this canvas, including imported works. */
   canvasItems?: PickerAsset[];
+  /** Files dropped onto the homepage composer before the library opened. */
+  queuedFiles?: { id: string; files: File[] } | null;
+  onQueuedFilesHandled?: () => void;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const allowVideo = acceptedTypes.includes("video");
@@ -289,7 +292,6 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     setManaged([]);
   }, [open, tab]);
 
-  if (!mounted) return null;
   const acceptable = (item: PickerAsset) => {
     if (!item.url || !acceptedTypes.some((type) => item.mimeType?.startsWith(`${type}/`))) return false;
     if (videoToolAsset) {
@@ -412,6 +414,13 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       if (!failures && batch.length > 1) setError(zh ? `已上传 ${batch.length} 个文件` : `${batch.length} files uploaded`);
     }
   };
+  const handledBatch = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open || !mounted || uploading || !queuedFiles || handledBatch.current === queuedFiles.id) return;
+    handledBatch.current = queuedFiles.id;
+    void addFiles(queuedFiles.files);
+    onQueuedFilesHandled?.();
+  }, [open, mounted, uploading, queuedFiles?.id]);
   /** Elements and brand kits built on an upload go with it. */
   const usageNote = (id: string): string => {
     const inElements = elements.filter((element) => element.assetId === id).length;
@@ -546,6 +555,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // tabs with a round close button, then one inset shelf whose header names
   // what it shows (with its filters on the right) above a grid of square
   // tiles. Our footer stays: several files can be chosen, then confirmed.
+  if (!mounted) return null;
   return createPortal(<div className="hmp-backdrop" inert={state === "closed"} data-home-library={homepage || undefined} data-mention={Boolean(mentionAnchor) || undefined} data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <dialog ref={dialogRef} open aria-modal="true" onKeyDown={(event) => {
       if (event.key !== "Tab") return;

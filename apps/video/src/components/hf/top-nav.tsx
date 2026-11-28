@@ -477,29 +477,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link href={href("/")} className="hf-item" data-active={pathname === "/" || undefined}>
               {t.home}
             </Link>
-            {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map((menu) => (
-              <Link
-                key={menu.id}
-                href={href(menu.path)}
-                aria-expanded={open === menu.id}
-                aria-haspopup="true"
-                onFocus={(event) => openNow(menu.id, event.currentTarget)}
-                {...triggerKeys(menu.id)}
-                className="hf-item"
-                data-open={open === menu.id || undefined}
-                data-active={activeSection?.id === menu.id || undefined}
-                {...hover(menu.id)}
-              >
-                {menu.label}
-              </Link>
-            ))}
-            <Link href={href("/creative-space")} className="hf-item" data-active={pathname === "/creative-space" || undefined}>
-              AGENT <span className="hf-beta">BETA</span>
-            </Link>
-            <Link href={href("/creative-space/canvas")} className="hf-item" data-active={isActive("/creative-space/canvas") || undefined}>
-              {zh ? "画布" : "Canvas"} <span className="hf-beta">BETA</span>
-            </Link>
-            {primaryDropdowns.filter((menu) => menu.id === "templates").map((menu) => (
+            {primaryDropdowns.filter((menu) => menu.id === "image").map((menu) => (
               <Link
                 key={menu.id}
                 href={href(menu.path)}
@@ -518,9 +496,34 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             <Link href={href("/ai/video")} className="hf-item" data-active={isActive("/ai/video") || undefined}>
               {zh ? "视频工作室" : "Video Studio"}
             </Link>
+            <Link href={href("/creative-space")} className="hf-item" data-active={pathname === "/creative-space" || undefined}>
+              AGENT <span className="hf-beta">BETA</span>
+            </Link>
+            <Link href={href("/creative-space/canvas")} className="hf-item" data-active={isActive("/creative-space/canvas") || undefined}>
+              {zh ? "画布" : "Canvas"} <span className="hf-beta">BETA</span>
+            </Link>
+            {primaryDropdowns.filter((menu) => menu.id === "video").map((menu) => (
+              <Link
+                key={menu.id}
+                href={href(menu.path)}
+                aria-expanded={open === menu.id}
+                aria-haspopup="true"
+                onFocus={(event) => openNow(menu.id, event.currentTarget)}
+                {...triggerKeys(menu.id)}
+                className="hf-item"
+                data-open={open === menu.id || undefined}
+                data-active={activeSection?.id === menu.id || undefined}
+                {...hover(menu.id)}
+              >
+                {menu.label}
+              </Link>
+            ))}
             <Link href={href("/my-creations")} className="hf-item" data-active={isActive("/my-creations") || undefined}>
               {t.creations}
             </Link>
+            <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
+              {zh ? "模板" : "Templates"}<span className="hf-tag">Coming Soon</span>
+            </span>
             <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
               {zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span>
             </span>
@@ -746,12 +749,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               >
                 <button type="button" className="hf-mm-search" onClick={() => setOverlay("search")}><Search aria-hidden="true" />{zh ? "搜索" : "Search"}</button>
                 <Link href={href("/")} className="hf-mm-direct" data-active={pathname === "/" || undefined}><Compass aria-hidden="true" />{t.home}</Link>
-                {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map(mobileSection)}
+                {primaryDropdowns.filter((menu) => menu.id === "image").map(mobileSection)}
+                <Link href={href("/ai/video")} className="hf-mm-direct" data-active={isActive("/ai/video") || undefined}><Film aria-hidden="true" />{zh ? "视频工作室" : "Video Studio"}</Link>
                 <Link href={href("/creative-space")} className="hf-mm-direct" data-active={pathname === "/creative-space" || undefined}><Bot aria-hidden="true" />AGENT<span className="hf-beta">BETA</span></Link>
                 <Link href={href("/creative-space/canvas")} className="hf-mm-direct" data-active={isActive("/creative-space/canvas") || undefined}><LayoutGrid aria-hidden="true" />{zh ? "画布" : "Canvas"}<span className="hf-beta">BETA</span></Link>
-                {primaryDropdowns.filter((menu) => menu.id === "templates").map(mobileSection)}
-                <Link href={href("/ai/video")} className="hf-mm-direct" data-active={isActive("/ai/video") || undefined}><Film aria-hidden="true" />{zh ? "视频工作室" : "Video Studio"}</Link>
+                {primaryDropdowns.filter((menu) => menu.id === "video").map(mobileSection)}
                 <Link href={href("/my-creations")} className="hf-mm-direct" data-active={isActive("/my-creations") || undefined}><Folder aria-hidden="true" />{t.creations}</Link>
+                <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><LayoutGrid aria-hidden="true" />{zh ? "模板" : "Templates"}<span className="hf-tag">Coming Soon</span></span>
                 <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><AudioLines aria-hidden="true" />{zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span></span>
                 <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><Users aria-hidden="true" />{t.community}<span className="hf-tag">Coming Soon</span></span>
                 {mobileSection(moreMenu)}

@@ -7,7 +7,7 @@ import { failureReason } from "@/lib/failure-reason";
 import { generationDetails } from "@/lib/generation-details";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import "./studio-results.css";
 
 /** Result media fades in once it has something to show, instead of popping
@@ -169,6 +169,7 @@ export type ViewerItem = {
   kind: "image" | "video";
   prompt: string;
   model?: string;
+  modelId?: string;
   parameters?: import("@/lib/generation-details").GenerationParameters | null;
 };
 
@@ -179,6 +180,7 @@ export function MediaViewer({
   onIndex,
   onClose,
   onReuse,
+  onReuseParameters,
   onToVideo,
 }: {
   items: ViewerItem[];
@@ -187,6 +189,7 @@ export function MediaViewer({
   onIndex: (index: number) => void;
   onClose: () => void;
   onReuse?: (item: ViewerItem) => void;
+  onReuseParameters?: (item: ViewerItem) => void;
   onToVideo?: (item: ViewerItem) => void;
 }) {
   const item = items[index];
@@ -267,6 +270,20 @@ export function MediaViewer({
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               {zh ? "复用提示词" : "Reuse prompt"}
+            </button>
+          ) : null}
+          {onReuseParameters && (item.modelId || (item.parameters && Object.keys(item.parameters).length > 0)) ? (
+            <button
+              type="button"
+              className="sr-pill"
+              title={zh ? "复用模型与生成设置" : "Reuse model and generation settings"}
+              onClick={() => {
+                onReuseParameters(item);
+                onClose();
+              }}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              {zh ? "复用参数" : "Reuse settings"}
             </button>
           ) : null}
           {onToVideo && item.kind === "image" ? (

@@ -125,6 +125,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
   const videoReferencesRef = useRef(videoReferences);
   videoReferencesRef.current = videoReferences;
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [queuedFiles, setQueuedFiles] = useState<{ id: string; files: File[] } | null>(null);
+  const [draggingFiles, setDraggingFiles] = useState(false);
+  const dragDepth = useRef(0);
   const [draftReady, setDraftReady] = useState(false);
   const draftStore = useRef<Storage | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -704,7 +707,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       </div> : null;
 
   return <div id="home-generator" data-function-menu-open={functionMenuOpen || undefined} className="relative z-20 w-full max-w-[1060px] scroll-mt-24" style={homepage ? { "--du-editor-width": editorSize.width + "px", "--du-editor-height": editorSize.height + "px" } as React.CSSProperties : undefined}>
-    <HomeMediaPicker lang={lang} homepage={homepage} wanVideoOnly={clipMode} acceptedTypes={clipMode ? ["video"] : ["image"]} mentionAnchor={mentionAnchor} initialTab={mentionAnchor ? "elements" : undefined} open={pickerOpen} onClose={() => { setPickerOpen(false); setMentionAnchor(null); }} onMention={mentionAnchor ? (item) => {
+    <HomeMediaPicker lang={lang} homepage={homepage} wanVideoOnly={clipMode} acceptedTypes={clipMode ? ["video"] : ["image"]} mentionAnchor={mentionAnchor} initialTab={mentionAnchor ? "elements" : undefined} open={pickerOpen} queuedFiles={queuedFiles} onQueuedFilesHandled={() => setQueuedFiles(null)} onClose={() => { setPickerOpen(false); setMentionAnchor(null); }} onMention={mentionAnchor ? (item) => {
       const index = references.findIndex((asset) => asset.id === item.id);
       if (index < 0 && references.length >= referenceLimit) return;
       if (index < 0) { const updated = [...references, item]; if (kind === "video") setVideoReferences(updated); else setReferenceImages(updated); }
@@ -731,7 +734,29 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       </figure>
     </div> : null}
     {homepage && kind === "video" && speechMode ? <HomeSpeech lang={lang} modeControl={modeControl} onResize={setEditorSize} /> : kind === "video" || kind === "image" ?
-    <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
+    <form ref={formRef} onSubmit={submit} className={`du-composer${nudge ? " du-composer-nudge" : ""}`} data-file-drag={draggingFiles || undefined} onDragEnter={(event) => {
+      if (!homepage || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      dragDepth.current++;
+      setDraggingFiles(true);
+    }} onDragLeave={(event) => {
+      if (!homepage || !event.dataTransfer.types.includes("Files")) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (!dragDepth.current) setDraggingFiles(false);
+    }} onDragOver={(event) => {
+      if (!homepage || !event.dataTransfer.types.includes("Files")) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    }} onDrop={(event) => {
+      if (!homepage || !event.dataTransfer.files.length) return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragDepth.current = 0;
+      setDraggingFiles(false);
+      setMentionAnchor(null);
+      setQueuedFiles({ id: crypto.randomUUID(), files: Array.from(event.dataTransfer.files) });
+      setPickerOpen(true);
+    }} onAnimationEnd={(event) => { if (event.target === event.currentTarget) setNudge(0); }}>
     {homepage ? <HomeComposerResize zh={zh} onResize={setEditorSize} /> : null}
     <div className="du-composer-prompt-row flex min-h-[84px] items-start gap-3.5">
       {useKeys ? <HomeKeyframes frames={keyframes} lang={lang} duration={duration} userId={owner} onChange={next => {

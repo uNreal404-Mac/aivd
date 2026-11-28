@@ -2,6 +2,7 @@
 
 .du-hero {
   position: relative;
+  isolation: isolate;
   overflow-x: clip;
   padding: 52px 24px 44px;
 }
@@ -9,6 +10,7 @@
 /* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
 .du-hero-glow {
   position: absolute;
+  z-index: 0;
   inset: -64px 0 auto;
   height: 900px;
   /* A wide soft light behind the title and composer, and a faint 11px dot
@@ -36,7 +38,7 @@
 }
 
 .du-hero-glow::after {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='2' height='2' fill='white' fill-opacity='.7'/%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='2' height='2' fill='white' fill-opacity='.35'/%3E%3C/svg%3E");
   mask-image: radial-gradient(circle 280px at var(--du-pointer-x, 50%) var(--du-pointer-y, 38%), black 4%, transparent 92%);
 }
 
@@ -50,6 +52,7 @@
 
 .du-hero-inner {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -179,6 +182,11 @@
 
 .du-hero .du-composer:focus-within {
   border-color: color-mix(in srgb, white 7%, transparent);
+}
+
+.du-hero .du-composer[data-file-drag] {
+  border-color: var(--du-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--du-accent) 20%, transparent), 0 0 42px color-mix(in srgb, var(--du-accent) 23%, transparent);
 }
 
 .du-hero .du-composer-prompt-row {

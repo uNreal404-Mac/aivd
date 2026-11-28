@@ -211,6 +211,7 @@ function AiImageStudioForm({
               kind: "image" as const,
               prompt: job.prompt,
               model: getMarketModel(job.model ?? "")?.name ?? job.model,
+              modelId: job.model,
               parameters: job.parameters,
             }))
           : [],
@@ -223,6 +224,18 @@ function AiImageStudioForm({
     setPrompt(text);
     setNotice(null);
     promptRef.current?.focus();
+    promptRef.current?.scrollIntoView({ block: "center", behavior: scrollMotion() });
+  };
+  const reuseParameters = (item: ViewerItem) => {
+    const params = item.parameters ?? {};
+    const next = getMarketModel(item.modelId ?? (typeof params.model === "string" ? params.model : ""));
+    if (!next || next.kind !== "image") return;
+    chooseModel(next.id);
+    if (typeof params.aspectRatio === "string" && next.options.aspects?.includes(params.aspectRatio)) setAspect(params.aspectRatio);
+    if (typeof params.resolution === "string" && next.options.resolutions?.includes(params.resolution)) setResolution(params.resolution);
+    if (params.count !== undefined) setCount(imageOutputCount(params.count, next.options.maxCount));
+    setMobileComposer(true);
+    setNotice(null);
     promptRef.current?.scrollIntoView({ block: "center", behavior: scrollMotion() });
   };
   const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image", session?.user?.id);
@@ -650,6 +663,7 @@ function AiImageStudioForm({
           onIndex={setViewing}
           onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
+          onReuseParameters={reuseParameters}
           onToVideo={(item) => toVideo(item.url)}
         />
       ) : null}

@@ -1097,6 +1097,40 @@ function AiVideoStudioForm({
     setSettings((previous) => ({ ...previous, prompt: text }));
     promptRef.current?.focus();
   };
+  const reuseParameters = (item: ViewerItem) => {
+    const params = item.parameters ?? {};
+    const id = item.modelId ?? (typeof params.model === "string" ? params.model : "");
+    const next = STUDIO_MODELS.find((entry) => entry.id === id && entry.available && availableModelIds.includes(id));
+    if (!next) {
+      setNotice(isChinese ? "该模型已不可用，无法复用参数。" : "This model is no longer available, so its settings can't be reused.");
+      return;
+    }
+    if (keyframeMode && id !== KLING_KEYFRAME_MODEL) {
+      setKeyframeMode(false);
+      setFrames({});
+      setCatalogModelId(id);
+      setUpcoming(undefined);
+      setDurationOpen(false);
+    } else switchModel(id);
+    setSettings((previous) => {
+      const selected = selectModel(previous, id);
+      const duration = typeof params.duration === "number" ? params.duration : Number(params.duration);
+      const aspect = params.aspectRatio;
+      const resolution = params.resolution ?? params.quality;
+      const audio = params.audio ?? params.generateAudio;
+      return {
+        ...selected,
+        duration: next.durations.includes(duration) ? duration : selected.duration,
+        aspect: typeof aspect === "string" && next.aspects.includes(aspect) ? aspect : selected.aspect,
+        resolution: typeof resolution === "string" && next.resolutions.includes(resolution) ? resolution : selected.resolution,
+        audio: next.audio && typeof audio === "boolean" ? audio : selected.audio,
+        preset: typeof params.preset === "string" ? params.preset : undefined,
+      };
+    });
+    setNotice(null);
+    setActiveTab("History");
+    promptRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
 
   const gallery = useMemo<ViewerItem[]>(
     () =>
@@ -1105,6 +1139,7 @@ function AiVideoStudioForm({
         .map((item) => ({
           key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "",
           model: VIDEO_CATALOG.find(model => model.id === item.model)?.name ?? getMarketModel(item.model ?? "")?.name ?? item.model,
+          modelId: item.model,
           parameters: item.parameters,
         })),
     [results],
@@ -1530,6 +1565,7 @@ function AiVideoStudioForm({
           onIndex={setViewing}
           onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
+          onReuseParameters={reuseParameters}
         />
       ) : null}
     </div>
