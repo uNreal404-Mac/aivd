@@ -97,13 +97,9 @@ export function CanvasHeader(p: Props) {
         <PreviewBadge lang={p.zh ? "zh" : "en"} />
       </button>
       <div className="nc-project-chip">
-        <Link
-          aria-label={l("返回创作空间", "Back to Creative Space")}
-          title={l("返回创作空间", "Back to Creative Space")}
-          href={p.back}
-        >
+        <span className="nc-project-mark" aria-hidden="true">
           <Layers size={18} />
-        </Link>
+        </span>
         {renaming ? (
           <input
             ref={name}

@@ -141,7 +141,7 @@
 .nc-project-chip,
 .nc-session-tools,
 .nc-account-chip,
-.nc-project-chip > a,
+.nc-project-mark,
 .nc-project-name,
 .nc-status-icon,
 .nc-round,
@@ -169,7 +169,7 @@
   min-height: 38px;
   padding: 2px 6px;
 }
-.nc-project-chip > a,
+.nc-project-mark,
 .nc-round {
   justify-content: center;
   width: 34px;
