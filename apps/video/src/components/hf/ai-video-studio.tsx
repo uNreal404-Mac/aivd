@@ -101,7 +101,7 @@ function AiVideoStudioForm({
   generationEnabled: boolean;
   initialSettings?: StudioSettings;
   initialExtend?: boolean;
-  initialTool?: "create" | "edit" | "motion";
+  initialTool?: "create" | "edit";
   initialKeyframes?: boolean;
   locale: string;
   availableModelIds: string[];
@@ -319,14 +319,24 @@ function AiVideoStudioForm({
     if (url.href !== window.location.href) window.history.pushState(null, "", url);
   }
   useEffect(() => {
+    const currentSearch = () => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tool") === "motion" || url.searchParams.get("mode") === "motion") {
+        url.searchParams.delete("tool");
+        url.searchParams.delete("mode");
+        window.history.replaceState(null, "", url);
+      }
+      return url.searchParams;
+    };
     const restoreMode = () => {
-      const search = new URL(window.location.href).searchParams;
+      const search = currentSearch();
       const mode = search.get("tool") ?? search.get("mode");
-      visit(mode === "edit" || mode === "motion" ? mode : "create");
-      if (mode !== "edit" && mode !== "motion") setExtendMode(mode === "extend");
+      visit(mode === "edit" ? mode : "create");
+      if (mode !== "edit") setExtendMode(mode === "extend");
       setPresetsOpen(false);
       setMediaPickerOpen(false);
     };
+    currentSearch();
     window.addEventListener("popstate", restoreMode);
     return () => window.removeEventListener("popstate", restoreMode);
   }, []);
@@ -1215,7 +1225,6 @@ function AiVideoStudioForm({
             {([
               ["create", isChinese ? "创建视频" : "Create video"],
               ["edit", isChinese ? "编辑视频" : "Edit video"],
-              ["motion", "Motion Control"],
             ] as const).map(([mode, label]) => (
               <button type="button" key={mode} aria-pressed={tool === mode} onClick={() => chooseMode(mode)}>
                 {label}
@@ -1224,7 +1233,7 @@ function AiVideoStudioForm({
           </div>
         </div>
         <div className="vst-panel-scroll">
-          {(["edit", "motion"] as const).filter((item) => visitedTools.includes(item)).map((item) => (
+          {(["edit"] as const).filter((item) => visitedTools.includes(item)).map((item) => (
             <div key={item} className="vtool-mode-pane" hidden={tool !== item}>
               <VideoToolPanel
                 kind={item}

@@ -25,7 +25,7 @@ import { generationDetails } from "@/lib/generation-details";
 import { defaultExtendResolution, EXTEND_MAX_SECONDS, EXTEND_MIN_SECONDS } from "@/lib/video-extend";
 import { EXTEND_MODEL_ID } from "@/ai/kie-market";
 import { useSession } from "@/lib/auth/client";
-import { isMeasuredVideoTool, VIDEO_MOTION_MODEL, type VideoTool } from "@/lib/video-tool";
+import { VIDEO_EDIT_MODEL } from "@/lib/video-tool";
 import { ExtendDialog, type ExtendSource } from "@/components/hf/extend-dialog";
 import { toast } from "sonner";
 import { failureReason } from "@/lib/failure-reason";
@@ -414,38 +414,31 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
     return () => repeatRequest.current?.abort();
   }, [activeId]);
   function repeatMeasuredTool(video: Video) {
-    const tool: VideoTool = video.model === VIDEO_MOTION_MODEL ? "motion" : "edit";
     const owner = session?.user?.id;
     const params = video.parameters ?? {};
     const sourceVideoKey = typeof params.sourceVideoKey === "string" ? params.sourceVideoKey : undefined;
     const sourceVideoUuid = typeof params.sourceVideoUuid === "string" ? params.sourceVideoUuid : undefined;
-    const characterKey = typeof params.characterKey === "string" ? params.characterKey : undefined;
     const resolution = params.resolution ?? params.quality ?? video.resolution;
     const source = sourceVideoKey
       ? { sourceVideoKey, name: sourceVideoKey.split("/").pop() || (zh ? "原视频" : "Source video"), id: `upload:${sourceVideoKey}` }
       : sourceVideoUuid
         ? { sourceVideoUuid, name: zh ? "原视频" : "Source video", id: `work:${sourceVideoUuid}:0` }
         : null;
-    const character = tool === "motion" && characterKey
-      ? { key: characterKey, name: characterKey.split("/").pop() || (zh ? "角色图" : "Character image"), id: characterKey }
-      : null;
     if (owner) {
       try {
         sessionStorage.setItem(
-          `aivd:video-tool:${owner}:${tool}`,
+          `aivd:video-tool:${owner}:edit`,
           JSON.stringify({
             prompt: video.prompt ?? "",
             quality: resolution === "1080p" ? "1080p" : "720p",
-            orientation: params.orientation === "image" ? "image" : "video",
             source,
-            character,
           }),
         );
       } catch {
         /* Still open the requested video tool directly. */
       }
     }
-    window.location.assign(localizedHref(locale, `/ai/video?tool=${tool}`));
+    window.location.assign(localizedHref(locale, "/ai/video?tool=edit"));
   }
   async function repeatExtension(video: Video) {
     const original = video.parameters?.sourceVideoUuid;
@@ -878,7 +871,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                     <Sparkles aria-hidden="true" />{zh ? "重新续写" : "Repeat extension"}
                   </button>
                 ) : null}
-                {shownVideo.model && isMeasuredVideoTool(shownVideo.model) && !isPending(shownTag) ? (
+                {shownVideo.model === VIDEO_EDIT_MODEL && !isPending(shownTag) ? (
                   <button type="button" className="cr-button cr-button--ghost" onClick={() => repeatMeasuredTool(shownVideo)}>
                     <Sparkles aria-hidden="true" />
                     {t("actions.regenerate")}

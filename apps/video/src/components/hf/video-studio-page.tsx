@@ -49,7 +49,7 @@ export function VideoStudioPage({
       key={`${modelParam ?? "default"}:${requestedTool ?? (keyframes ? "keyframes" : "create")}`}
       initialKeyframes={keyframes}
       initialExtend={requestedTool === "extend"}
-      initialTool={requestedTool === "motion" || requestedTool === "edit" ? requestedTool : "create"}
+      initialTool={requestedTool === "edit" ? requestedTool : "create"}
       upcomingModel={upcoming ? { name: upcoming.name, desc: locale === "zh" ? upcoming.desc.zh : upcoming.desc.en } : undefined}
       generationEnabled={process.env.VIDEO_GENERATION_ENABLED === "true"}
       initialSettings={initialSettings}

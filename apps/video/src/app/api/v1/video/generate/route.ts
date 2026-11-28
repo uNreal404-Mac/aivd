@@ -64,6 +64,11 @@ export async function POST(request: NextRequest) {
     const idempotencyKey = generationRequestKey(request, data.idempotencyKey);
     const replay = await readGenerationReplay(user.id, idempotencyKey);
     if (replay) return apiSuccess(replay);
+    if (data.model === VIDEO_MOTION_MODEL) {
+      return apiError("Motion Control is no longer available.", 410, {
+        code: "VIDEO_TOOL_REMOVED",
+      });
+    }
     if (!canGenerateInPreview(user)) {
       return apiError(
         "Video generation is coming soon — this preview does not run real video generation. No credits were used.",
