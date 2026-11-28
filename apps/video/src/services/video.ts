@@ -121,6 +121,12 @@ export function mediaExtension(url: string, fallback: string): string {
 
 const SUBMIT_SAVE_MAX_ATTEMPTS = 3;
 const SUBMIT_SAVE_RETRY_DELAY_MS = 200;
+/**
+ * A delivery that has held its claim this long without finishing was cut off
+ * (the Worker ended or the transfer hung), so another delivery may take over.
+ * Longer than a download's own timeout plus the upload of its parts.
+ */
+export const STALE_UPLOAD_CLAIM_MS = 30 * 60 * 1000;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1188,7 +1194,13 @@ export class VideoService {
       .where(
         and(
           eq(videos.uuid, videoUuid),
-          inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING])
+          or(
+            inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING]),
+            and(
+              eq(videos.status, VideoStatus.UPLOADING),
+              lt(videos.updatedAt, new Date(Date.now() - STALE_UPLOAD_CLAIM_MS)),
+            ),
+          ),
         )
       )
       .returning();
@@ -1246,19 +1258,32 @@ export class VideoService {
       } catch {
         return this.tryFailGeneration(videoUuid, "Failed to store the generated images", true);
       }
-    } else if (claimed.mediaType === "audio") {
-      uploaded = await getStorage().downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
-      });
     } else {
-      const storedVideo = await getStorage().downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `videos/${videoUuid}/${stamp}.mp4`,
-        contentType: "video/mp4",
-      });
-      uploaded = storedVideo;
-      videoFileSize = storedVideo.fileSize;
+      try {
+        if (claimed.mediaType === "audio") {
+          uploaded = await getStorage().downloadAndUpload({
+            sourceUrl: sources[0],
+            key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
+          });
+        } else {
+          const storedVideo = await getStorage().downloadAndUpload({
+            sourceUrl: sources[0],
+            key: `videos/${videoUuid}/${stamp}.mp4`,
+            contentType: "video/mp4",
+          });
+          uploaded = storedVideo;
+          videoFileSize = storedVideo.fileSize;
+        }
+      } catch (error) {
+        // Give the claim back so the next callback or status check retries the
+        // transfer; the credits stay reserved until it completes or fails.
+        await db
+          .update(videos)
+          .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
+          .where(and(eq(videos.uuid, videoUuid), eq(videos.status, VideoStatus.UPLOADING)))
+          .catch((resetError: unknown) => console.error(`Failed to release the upload claim for ${videoUuid}:`, resetError));
+        throw error;
+      }
     }
 
     if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);
