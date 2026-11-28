@@ -11,6 +11,9 @@ import {
   WEBHOOK_URL_ENV,
   WEBHOOK_SECRET_ENV,
   attachSignature,
+  buildActivityCard,
+  resolveActivityContext,
+  summarizeBody,
   buildAcceptanceCard,
   buildDeployCard,
   buildFeishuSign,
@@ -306,6 +309,41 @@ function jsonResponse(body, status = 200) {
   check(!String(skip.stdout + skip.stderr).includes("bot/v2/hook"), "real CLI skip does not print webhook URLs");
   const help = spawnSync(process.execPath, [script, "--help"], { encoding: "utf8", env, timeout: 10_000 });
   check(help.status === 0 && String(help.stdout).includes("FEISHU_WEBHOOK_URL"), "real CLI --help exits 0");
+}
+
+{
+  const hookEnv = { [WEBHOOK_URL_ENV]: "https://open.feishu.cn/open-apis/bot/v2/hook/unit-test-id" };
+  const prEvent = {
+    action: "opened",
+    pull_request: {
+      title: "修复视频转存卡住",
+      draft: false,
+      html_url: "https://github.com/o/r/pull/9",
+      user: { login: "alice" },
+      body: "<!-- attribution -->\n_Requested by **x**_\n## Summary\n生成的视频直接写入存储，中断后自动重试。",
+    },
+  };
+  const ctx = resolveActivityContext({ env: { GITHUB_EVENT_NAME: "pull_request_target" }, event: prEvent });
+  check(ctx.kind === "pr_opened" && ctx.author === "alice", "PR opened resolves to pr_opened");
+  check(ctx.summary.startsWith("Summary 生成的视频") && !ctx.summary.includes("Requested"), "PR summary drops comments and attribution");
+  const card = buildActivityCard(ctx);
+  check(card.card.header.title.content === "新的改动待审核", "PR card header is Chinese");
+  check(card.card.elements[1].actions[0].url === "https://github.com/o/r/pull/9", "PR card button links to PR");
+
+  check(resolveActivityContext({ env: { GITHUB_EVENT_NAME: "pull_request" }, event: { ...prEvent, pull_request: { ...prEvent.pull_request, draft: true } } }).skipped, "draft PR is skipped");
+  check(resolveActivityContext({ env: { GITHUB_EVENT_NAME: "pull_request" }, event: { ...prEvent, action: "synchronize" } }).skipped, "PR synchronize is skipped");
+
+  const issueEvent = { action: "opened", issue: { title: "全仓审查报告", html_url: "https://github.com/o/r/issues/3", user: { login: "bob" }, body: "发现 3 个问题" } };
+  const ictx = resolveActivityContext({ env: { GITHUB_EVENT_NAME: "issues" }, event: issueEvent });
+  check(ictx.kind === "issue_opened" && buildActivityCard(ictx).card.header.title.content === "新的问题 / 报告", "issue opened card");
+  check(resolveActivityContext({ env: { GITHUB_EVENT_NAME: "issues" }, event: { ...issueEvent, action: "closed" } }).skipped, "issue closed is skipped");
+  check(summarizeBody("x".repeat(300)).length === 161, "summary is truncated");
+
+  const { calls, fetchImpl } = mockFetch(() => jsonResponse({ code: 0 }));
+  const sent = await notify("activity", { env: { ...hookEnv, GITHUB_EVENT_NAME: "issues" }, event: issueEvent, fetchImpl });
+  check(sent.skipped === false && calls.length === 1, "activity posts one webhook call");
+  const skipped = await notify("activity", { env: { GITHUB_EVENT_NAME: "issues" }, event: issueEvent, fetchImpl });
+  check(skipped.skipped === true && calls.length === 1, "activity skips without webhook URL");
 }
 
 if (fail.length) {
