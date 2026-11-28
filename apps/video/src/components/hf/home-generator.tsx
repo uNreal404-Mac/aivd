@@ -229,7 +229,9 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         if (draft) {
           const { saved } = draft;
           const hasLocalFiles = homeDraftReferences(saved).some(item => item.id && !(item.key && item.url));
-          const local = hasLocalFiles ? await listGuestAssets(owner) : [];
+          // Device storage can be unavailable (some Firefox private or privacy
+          // modes): keep restoring the text and every server upload regardless.
+          const local = hasLocalFiles ? await listGuestAssets(owner).catch(() => []) : [];
           const restore = (items: unknown): PickerAsset[] => Array.isArray(items) ? items.flatMap((item) => {
             if (!item || typeof item.id !== "string") return [];
             const guest = local.find((asset) => asset.id === item.id);
@@ -430,6 +432,22 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
     if (owner) sessionStorage.removeItem(`aivd:credit-draft:${target}:${owner}`);
   };
 
+  // A file kept only on this device is uploaded on Generate. Record its
+  // server copy in the draft so coming back restores it from the account,
+  // not from browser storage that some browsers clear or never keep.
+  const rememberUploads = (field: "videoReferences" | "referenceImages", uploads: Map<string, { key: string; url: string }>) => {
+    if (!uploads.size) return;
+    const merge = (item: PickerAsset) => { const done = uploads.get(item.id); return done ? { ...item, key: done.key, url: done.url, size: item.file?.size ?? item.size } : item; };
+    (field === "videoReferences" ? setVideoReferences : setReferenceImages)((current) => current.map(merge));
+    try {
+      const saved = JSON.parse(draftStore.current?.getItem(scopedDraftKey) || "null");
+      if (saved?.owner === owner && Array.isArray(saved[field])) {
+        saved[field] = saved[field].map((ref: PickerAsset) => { const done = uploads.get(ref.id); return done ? { ...ref, key: done.key, url: done.url } : ref; });
+        draftStore.current?.setItem(scopedDraftKey, JSON.stringify(saved));
+      }
+    } catch { /* Draft storage is optional. */ }
+  };
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
@@ -463,13 +481,16 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
       setSubmitting(true);
       try {
         const uploaded = [];
+        const fresh = new Map<string, { key: string; url: string }>();
         for (const item of referenceImages) {
           if (!alive.current) return;
           const result = item.key ? { ok: true as const, key: item.key, url: item.url } : item.file ? await uploadImage(item.file, fetch, session.user.id) : null;
-          if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); setSubmitting(false); return; }
+          if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); rememberUploads("referenceImages", fresh); setSubmitting(false); return; }
+          if (!item.key) fresh.set(item.id, { key: result.key, url: result.url });
           uploaded.push({ key: result.key, name: item.name, url: result.url });
         }
         if (!alive.current) return;
+        rememberUploads("referenceImages", fresh);
         clearHandoff("image");
         if (uploaded.length) {
           sessionStorage.setItem("aivd:home-image-reference-owner", session.user.id);
@@ -528,6 +549,7 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
         params.set("input", "keyframes");
       } else if (videoReferences.length) {
         const uploaded: Array<{key: string; name: string; url: string; sourceId?: string; mimeType?: string}> = [];
+        const fresh = new Map<string, { key: string; url: string }>();
         for (const item of videoReferences) {
           if (!alive.current) return;
           if (clipMode) {
@@ -553,9 +575,11 @@ function HomeGeneratorForm({ homepage = false, lang, models: serverModels, onMod
             continue;
           }
           const result = item.key ? { ok: true as const, key: item.key, url: item.url } : item.file ? await uploadImage(item.file, fetch, session.user.id) : null;
-          if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); setSubmitting(false); return; }
+          if (!result?.ok) { setNotice(uploadErrorText(result ?? "missing_item", zh)); rememberUploads("videoReferences", fresh); setSubmitting(false); return; }
+          if (!item.key) fresh.set(item.id, { key: result.key, url: result.url });
           uploaded.push({ key: result.key, name: item.name, url: result.url });
         }
+        rememberUploads("videoReferences", fresh);
         // Uploads done: only now does this task replace what an earlier
         // handoff left in the tab (a failed upload keeps everything as it was).
         if (!alive.current) return;
