@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Outbound Feishu / Lark custom-bot (群自定义机器人) webhook helper.
- * Sends deploy or acceptance cards. Credentials come only from env.
+ * Sends deploy, acceptance, or PR / issue activity cards. Credentials come only from env.
  *
  *   FEISHU_WEBHOOK_URL      required to send; if unset the process exits 0
  *   FEISHU_WEBHOOK_SECRET   optional custom-bot 签名校验 secret
@@ -288,6 +288,87 @@ export function buildAcceptanceCard(ctx) {
   };
 }
 
+const ACTIVITY_KINDS = {
+  pr_opened: { header: "新的改动待审核", template: "blue", action: "有人提交了一项新改动，等待审核合并", button: "查看改动" },
+  issue_opened: { header: "新的问题 / 报告", template: "orange", action: "仓库里新开了一个问题或报告", button: "查看详情" },
+};
+
+export function summarizeBody(text, max = 160) {
+  const cleaned = String(text || "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[#>*\-\s_]+/, "").replace(/[*_`]+/g, "").trim())
+    .filter((line) => line && !/^(requested by|🤖|https?:\/\/\S+$|---)/i.test(line))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "";
+  return cleaned.length > max ? `${cleaned.slice(0, max)}…` : cleaned;
+}
+
+export function resolveActivityContext({ env = process.env, event = undefined } = {}) {
+  const githubEvent = readGithubEvent(env, event);
+  const eventName = env?.GITHUB_EVENT_NAME || "";
+  if (!githubEvent) return { skipped: true, reason: "没有 GitHub 事件数据，跳过通知" };
+
+  const pr = githubEvent.pull_request;
+  if (pr && (eventName.startsWith("pull_request") || !eventName)) {
+    const action = githubEvent.action;
+    if (!["opened", "reopened", "ready_for_review"].includes(action)) {
+      return { skipped: true, reason: `PR 事件 ${action} 不需要通知` };
+    }
+    if (pr.draft === true) return { skipped: true, reason: "草稿 PR，等转为正式后再通知" };
+    return {
+      skipped: false,
+      kind: "pr_opened",
+      title: String(pr.title || "").trim(),
+      author: pr.user?.login || "",
+      summary: summarizeBody(pr.body),
+      link: pr.html_url || "",
+    };
+  }
+
+  const issue = githubEvent.issue;
+  if (issue && (eventName === "issues" || !eventName)) {
+    if (githubEvent.action !== "opened") return { skipped: true, reason: `Issue 事件 ${githubEvent.action} 不需要通知` };
+    if (issue.pull_request) return { skipped: true, reason: "这是 PR 不是 Issue，跳过" };
+    return {
+      skipped: false,
+      kind: "issue_opened",
+      title: String(issue.title || "").trim(),
+      author: issue.user?.login || "",
+      summary: summarizeBody(issue.body),
+      link: issue.html_url || "",
+    };
+  }
+
+  return { skipped: true, reason: `事件 ${eventName || "未知"} 不需要通知` };
+}
+
+export function buildActivityCard(ctx) {
+  const meta = ACTIVITY_KINDS[ctx.kind] || ACTIVITY_KINDS.issue_opened;
+  const lines = [meta.action];
+  if (ctx.title) lines.push(`**${ctx.title}**`);
+  if (ctx.author) lines.push(`提交人：${ctx.author}`);
+  if (ctx.summary) lines.push(`说明：${ctx.summary}`);
+  if (ctx.kind === "pr_opened") lines.push("合并上线后会再发一条「网站进度」。");
+  const elements = [{ tag: "div", text: { tag: "lark_md", content: lines.join("\n") } }];
+  if (ctx.link) {
+    elements.push({
+      tag: "action",
+      actions: [{ tag: "button", text: { tag: "plain_text", content: meta.button }, type: "primary", url: ctx.link }],
+    });
+  }
+  return {
+    msg_type: "interactive",
+    card: {
+      config: { wide_screen_mode: true },
+      header: { template: meta.template, title: { tag: "plain_text", content: meta.header } },
+      elements: [...elements, signatureNote()],
+    },
+  };
+}
+
 export function attachSignature(payload, { secret, now } = {}) {
   if (!secret) return { ...payload };
   const timestamp = String(typeof now === "function" ? now() : now ?? Math.floor(Date.now() / 1000));
@@ -393,13 +474,22 @@ export async function notify(kind, options = {}) {
     return { ...result, kind, ctx };
   }
 
-  throw new Error(`未知通知类型：${kind}（应为 deploy 或 acceptance）`);
+  if (kind === "activity") {
+    const ctx = resolveActivityContext({ env, event });
+    if (ctx.skipped) return ctx;
+    const payload = buildActivityCard(ctx);
+    const result = await postFeishuWebhook(payload, { env, fetchImpl, now });
+    return { ...result, kind, ctx };
+  }
+
+  throw new Error(`未知通知类型：${kind}（应为 deploy、acceptance 或 activity）`);
 }
 
 export function usage() {
   return `用法:
   node scripts/feishu-notify.mjs deploy [--pr N] [--title 标题] [--sha sha] [--link URL]
   node scripts/feishu-notify.mjs acceptance --title 标题 --status pass|fail [--summary 摘要] [--link URL]
+  node scripts/feishu-notify.mjs activity   （在 GitHub Actions 里读取 PR / Issue 事件）
 
 凭据只从环境变量读取：${WEBHOOK_URL_ENV}（必填才能发送）、${WEBHOOK_SECRET_ENV}（可选签名）。
 未设置 ${WEBHOOK_URL_ENV} 时以成功状态跳过，不发送请求。`;
@@ -428,7 +518,7 @@ async function main(argv = process.argv.slice(2), runtime = {}) {
     log(result.reason || "已跳过飞书通知");
     return result;
   }
-  log(kind === "acceptance" ? "飞书验收通知已发送" : "飞书生产更新通知已发送");
+  log(kind === "acceptance" ? "飞书验收通知已发送" : kind === "activity" ? "飞书动态通知已发送" : "飞书生产更新通知已发送");
   return result;
 }
 

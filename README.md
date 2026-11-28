@@ -90,7 +90,7 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
    `https://open.feishu.cn/open-apis/bot/v2/hook/<token>`
    **不要**把完整地址写入仓库、Issue、PR 或日志。
 3. 安全设置建议启用 **签名校验**（不要用 IP 白名单：GitHub Actions 出口 IP 会变）。保存签名密钥。
-4. 若改用 **自定义关键词**，请包含消息里会出现的词，例如「生产」或「验收」。
+4. 若改用 **自定义关键词**，请包含消息里会出现的词，例如「网站进度」「改动」「问题」或「验收」。
 
 ### 把密钥放到 GitHub Actions
 
@@ -102,6 +102,13 @@ Cloudflare 资源名为 Pages `dreamutopia-clone`、D1 `dreamutopia-db`、R2 `dr
 | `FEISHU_WEBHOOK_SECRET` | 可选 | 签名校验密钥；未设置则不带 `timestamp` / `sign` |
 
 工作流 [`.github/workflows/feishu-notify.yml`](.github/workflows/feishu-notify.yml) 在 **push 到 `main`**（含 PR 合并进 main、Pages 生产部署）时运行 `node scripts/feishu-notify.mjs deploy`。卡片标题为「网站进度」，用规则（改动文件路径 / 标题 / 标签，不用模型）写成用户能在站点上看到的中文变化，并带「还没做」待办；正文不含 PR 号、提交 SHA 或分支名，最多一个「详情」指向生产站。页脚署名为 `Grok Bot · AI视频项目专属机器人 三儿`。
+
+同一个工作流还会在以下情况发一张简短卡片（`node scripts/feishu-notify.mjs activity`），方便合伙人跟进：
+
+- **有人新开或重新打开 PR、草稿 PR 转为正式**：「新的改动待审核」，写明标题、提交人、一句说明和「查看改动」按钮。
+- **新开 Issue**（例如审查报告、问题反馈）：「新的问题 / 报告」，同样带标题、提交人和链接。
+
+PR 通知使用 `pull_request_target`，这样从 fork 提的 PR 也能读到密钥；工作流只检出默认分支、只读取事件里的标题和链接，从不运行 PR 里的代码。
 
 **未配置 `FEISHU_WEBHOOK_URL` 时步骤会跳过并以成功结束，不会让 CI 失败。** 本地或 CI 都不会打印 webhook 或签名密钥。
 
