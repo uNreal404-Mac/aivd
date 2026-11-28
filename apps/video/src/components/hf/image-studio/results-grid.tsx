@@ -74,7 +74,7 @@ export function ResultsGrid({
                 <CanvasImportAction source={{ type: "generation", uuid: job.uuid, index }} locale={zh ? "zh" : "en"} userId={userId} />
                 <CopyPromptButton prompt={job.prompt} zh={zh} />
                 <CopyImageButton uuid={job.uuid} index={index} zh={zh} />
-                <DownloadLink url={url} zh={zh} />
+                <DownloadLink url={url} zh={zh} sourceUuid={job.uuid} sourceIndex={index} />
               </span>
               <span className="sr-card-bottom">
                 <span className="sr-card-text">

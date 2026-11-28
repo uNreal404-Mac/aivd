@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Video } from "@/lib/types/dashboard";
+import { generatedDownloadUrl } from "@/lib/generated-download";
 
 interface CreationCardProps {
   video: Video;
@@ -104,7 +105,7 @@ export function CreationCard({
   const handleDownload = () => {
     if (video.videoUrl) {
       const link = document.createElement("a");
-      link.href = video.videoUrl;
+      link.href = generatedDownloadUrl(video.uuid);
       link.download = `dreamutopia-${video.uuid}.mp4`;
       document.body.appendChild(link);
       link.click();

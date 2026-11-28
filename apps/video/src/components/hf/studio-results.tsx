@@ -5,6 +5,7 @@
 // drag-and-drop / paste hook for uploads.
 import { failureReason } from "@/lib/failure-reason";
 import { generationDetails } from "@/lib/generation-details";
+import { generatedDownloadUrl } from "@/lib/generated-download";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Images, Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
@@ -184,13 +185,12 @@ export function CopyImageButton({ uuid, index, zh, className = "sr-icon" }: {
   </button>;
 }
 
-export function DownloadLink({ url, zh, className = "sr-icon", label = false }: { url: string; zh: boolean; className?: string; label?: boolean }) {
+export function DownloadLink({ url, zh, className = "sr-icon", label = false, sourceUuid, sourceIndex = 0 }: { url: string; zh: boolean; className?: string; label?: boolean; sourceUuid?: string; sourceIndex?: number }) {
+  const href = sourceUuid ? generatedDownloadUrl(sourceUuid, sourceIndex) : url;
   return (
     <a
-      href={url}
+      href={href}
       download
-      target="_blank"
-      rel="noreferrer"
       className={className}
       title={zh ? "下载" : "Download"}
       aria-label={zh ? "下载" : "Download"}
@@ -342,7 +342,7 @@ export function MediaViewer({
           ) : null}
           {item.prompt ? <CopyPromptButton prompt={item.prompt} zh={zh} className="sr-pill" /> : null}
           {item.kind === "image" && item.sourceUuid !== undefined ? <CopyImageButton uuid={item.sourceUuid} index={item.sourceIndex ?? 0} zh={zh} className="sr-pill" /> : null}
-          <DownloadLink url={item.url} zh={zh} className="sr-pill" label />
+          <DownloadLink url={item.url} zh={zh} className="sr-pill" label sourceUuid={item.sourceUuid} sourceIndex={item.sourceIndex} />
         </div>
         <p className="sr-viewer-keys">{zh ? "← → 切换 · Esc 关闭" : "← → to browse · Esc to close"}</p>
       </aside>

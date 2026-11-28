@@ -7,6 +7,12 @@
   padding: 52px 24px 44px;
 }
 
+/* The open composer menu must clear the gallery that follows the hero. */
+.du-hero:has(#home-generator[data-function-menu-open]) {
+  z-index: 2;
+  overflow: visible;
+}
+
 /* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
 .du-hero-glow {
   position: absolute;

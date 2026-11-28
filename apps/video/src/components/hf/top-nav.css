@@ -17,6 +17,16 @@
   border-bottom-color: var(--ds-line-2);
 }
 
+/* Keep the expanded desktop menu readable over the page beneath it. */
+body:has(.hf-nav .hf-dd[data-state="open"])::before {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgb(0 0 0 / 56%);
+  content: "";
+  pointer-events: none;
+}
+
 /* Three columns: brand, the links centred in the space between, then
    actions. The side columns take only their own width, so the wide actions
    group no longer pushes "More" up against the search button. */

@@ -63,7 +63,7 @@ export interface CanvasViewOptions {
 
 export const canvasViewDefaults: CanvasViewOptions = {
   grid: true,
-  gridSize: 20,
+  gridSize: 34,
   delaySubmit: false,
   miniColors: {},
   wheelPan: true,
@@ -99,7 +99,7 @@ export const canvasViewDefaults: CanvasViewOptions = {
   wireFocusRadius: 12,
   wireHoverHighlight: true,
   wireAnimate: false,
-  gridDotSize: 2,
+  gridDotSize: 1.5,
   gridGlow: false,
   horizontalGap: 100,
   verticalGap: 110,
@@ -115,13 +115,16 @@ export const canvasViewDefaults: CanvasViewOptions = {
   themeColor: "",
   wireColor: "#9ca3af",
 };
-const preferenceKey = "aivd:canvas:view-options:v1";
+const preferenceKey = "aivd:canvas:view-options:v2";
+const legacyPreferenceKey = "aivd:canvas:view-options:v1";
 export function useCanvasViewOptions() {
   const [options, setOptions] = useState(canvasViewDefaults);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem(preferenceKey) ?? "{}");
+      const saved = localStorage.getItem(preferenceKey);
+      const raw = JSON.parse(saved ?? localStorage.getItem(legacyPreferenceKey) ?? "{}");
+      const migrateGrid = saved === null;
       const next = { ...canvasViewDefaults };
       for (const key of [
         "grid",
@@ -139,7 +142,7 @@ export function useCanvasViewOptions() {
       ] as const) {
         if (typeof raw?.[key] === "boolean") next[key] = raw[key];
       }
-      if (Number.isFinite(raw?.gridSize)) next.gridSize = Math.max(10, Math.min(60, raw.gridSize));
+      if (Number.isFinite(raw?.gridSize) && !(migrateGrid && raw.gridSize === 20)) next.gridSize = Math.max(10, Math.min(60, raw.gridSize));
       next.miniColors = readMiniColors(raw?.miniColors);
       if (["dark", "slate", "graphite"].includes(raw?.backdrop)) next.backdrop = raw.backdrop;
       if (Number.isFinite(raw?.toolbarScale)) next.toolbarScale = Math.max(0.75, Math.min(1.25, raw.toolbarScale));
@@ -152,7 +155,7 @@ export function useCanvasViewOptions() {
         backgroundBlur: [0, 24], backgroundTileScale: [0.5, 2],
       } as const;
       for (const [key, [min, max]] of Object.entries(numeric)) {
-        if (Number.isFinite(raw?.[key])) (next as unknown as Record<string, unknown>)[key] = Math.max(min, Math.min(max, raw[key]));
+        if (Number.isFinite(raw?.[key]) && !(migrateGrid && key === "gridDotSize" && raw[key] === 2)) (next as unknown as Record<string, unknown>)[key] = Math.max(min, Math.min(max, raw[key]));
       }
       if (raw?.delaySubmit && !Number.isFinite(raw?.submitDelaySeconds)) next.submitDelaySeconds = 3;
       if (["context", "double"].includes(raw?.blankAction)) next.blankAction = raw.blankAction;

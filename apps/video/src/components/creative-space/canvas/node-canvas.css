@@ -130,7 +130,6 @@
 
 .nc-flow { position: relative; min-width: 0; flex: 1; overflow: hidden; background: var(--du-bg); }
 .nc-flow .react-flow { width: 100%; height: 100%; }
-.nc-flow .nc-bg { color: var(--ds-line-3); }
 .nc-flow .react-flow__pane.selection { cursor: crosshair; }
 .nc-flow .react-flow__edge-path { stroke: var(--nc-wire-color, var(--du-accent)); stroke-width: var(--nc-wire-width, 2px); }
 .nc-flow .react-flow__edge.selected .react-flow__edge-path, .nc-flow[data-wire-hover="true"] .react-flow__edge:hover .react-flow__edge-path { stroke: var(--nc-wire-color, var(--du-accent)); stroke-width: calc(var(--nc-wire-width, 2px) + 1px); filter: drop-shadow(0 0 5px var(--nc-wire-color, var(--du-accent))); }

@@ -4,7 +4,7 @@ import { db, mediaAssets, videos } from "@/db";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { handleApiError } from "@/lib/api/response";
-import { getStorage } from "@/lib/storage";
+import { signMediaRef } from "@/lib/storage";
 
 /** Same-origin read for Agent visual samples; storage URLs remain private. */
 export async function GET(request: Request) {
@@ -32,8 +32,20 @@ export async function GET(request: Request) {
       }
     }
     if (!key) throw new ApiError("Asset not found.", 404);
-    const response = await fetch(getStorage().getSignedUrl(key));
+    const sourceUrl = signMediaRef(key);
+    if (!sourceUrl) throw new ApiError("Asset not found.", 404);
+    const response = await fetch(sourceUrl);
     if (!response.ok) throw new ApiError("Could not read asset.", 502);
-    return new Response(response.body, { headers: { "content-type": response.headers.get("content-type") ?? mimeType, "cache-control": "private, no-store" } });
+    const headers: Record<string, string> = {
+      "content-type": response.headers.get("content-type") ?? mimeType,
+      "cache-control": "private, no-store",
+    };
+    if (url.searchParams.get("download") === "1") {
+      const type = headers["content-type"].split(";")[0].toLowerCase();
+      const extension = type === "video/mp4" ? "mp4" : type === "video/quicktime" ? "mov" : type === "image/jpeg" ? "jpg" : type === "image/webp" ? "webp" : type === "image/png" ? "png" : type === "audio/mpeg" ? "mp3" : type === "audio/wav" ? "wav" : "bin";
+      const safeId = (uuid ?? "asset").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+      headers["content-disposition"] = `attachment; filename="aivd-${safeId}-${index}.${extension}"`;
+    }
+    return new Response(response.body, { headers });
   } catch (error) { return handleApiError(error); }
 }

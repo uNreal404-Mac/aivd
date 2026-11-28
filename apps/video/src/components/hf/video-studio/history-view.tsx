@@ -71,7 +71,7 @@ export function ResultsGrid({
               <span className="sr-card-top">
                 {result.videoUuid && <CanvasImportAction source={{ type: "generation", uuid: result.videoUuid, index: 0 }} locale={zh ? "zh" : "en"} userId={userId} />}
                 {result.prompt ? <CopyPromptButton prompt={result.prompt} zh={zh} /> : null}
-                <DownloadLink url={result.videoUrl} zh={zh} />
+                <DownloadLink url={result.videoUrl} zh={zh} sourceUuid={result.videoUuid ?? undefined} />
               </span>
               <span className="sr-card-bottom">
                 <span className="sr-card-text">

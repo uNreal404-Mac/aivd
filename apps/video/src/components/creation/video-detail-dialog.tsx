@@ -31,6 +31,7 @@ import {
 import type { Video } from "@/lib/types/dashboard";
 import { PublishDialog } from "@/components/gallery/publish-dialog";
 import { localizedHref } from "@/lib/du-home";
+import { generatedDownloadUrl } from "@/lib/generated-download";
 
 /** A work is public only when the API says so; anything else counts as private. */
 function isPublicVideo(video: Video | null): boolean {
@@ -104,7 +105,7 @@ export function VideoDetailDialog({
   const handleDownload = () => {
     if (video.videoUrl) {
       const link = document.createElement("a");
-      link.href = video.videoUrl;
+      link.href = generatedDownloadUrl(video.uuid);
       link.download = `dreamutopia-${video.uuid}.mp4`;
       document.body.appendChild(link);
       link.click();

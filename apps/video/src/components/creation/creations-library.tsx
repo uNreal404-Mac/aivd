@@ -33,6 +33,7 @@ import { prefersReducedMotion } from "@/lib/reduced-motion";
 import type { CreationMediaType } from "@/lib/types/dashboard";
 import { PRESENCE_EXIT_MS, usePresence } from "@/hooks/use-presence";
 import { useDownloadVideo, useRefreshProcessingVideos, useVideos } from "@/hooks/use-videos";
+import { generatedDownloadUrl } from "@/lib/generated-download";
 import {
   DEFAULT_KIND,
   DEFAULT_VIEW_MODE,
@@ -696,7 +697,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 </button>
                 {url || canDelete ? (
                   <div className="cr-card-tools">
-                    {url ? <DownloadButton variant="card" url={url} filename={downloadName(video, kind)} /> : null}
+                    {url ? <DownloadButton variant="card" url={generatedDownloadUrl(video.uuid)} filename={downloadName(video, kind)} /> : null}
                     {canDelete ? <DeleteButton variant="card" onConfirm={() => removeVideo(video.uuid)} /> : null}
                   </div>
                 ) : null}
@@ -731,7 +732,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                 </button>
                 <div className="cr-row-actions">
                   <StatusPill tag={tag} label={t(TAG_KEYS[tag])} />
-                  {url ? <DownloadButton variant="row" url={url} filename={downloadName(video, kind)} /> : null}
+                  {url ? <DownloadButton variant="row" url={generatedDownloadUrl(video.uuid)} filename={downloadName(video, kind)} /> : null}
                   {isPending(tag) ? null : <DeleteButton variant="row" onConfirm={() => removeVideo(video.uuid)} />}
                 </div>
               </div>
@@ -910,7 +911,7 @@ export function CreationsLibrary({ locale }: CreationsLibraryProps) {
                   <DownloadButton
                     key={`download-${shownVideo.uuid}`}
                     variant="detail"
-                    url={shownUrl}
+                    url={generatedDownloadUrl(shownVideo.uuid)}
                     filename={downloadName(shownVideo, kind)}
                   />
                 ) : null}

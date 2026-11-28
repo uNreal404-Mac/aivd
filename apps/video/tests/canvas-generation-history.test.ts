@@ -139,10 +139,12 @@ describe("per-node generation history", () => {
     const rows = [
       { uuid: "img_owned", status: "COMPLETED" }, { uuid: "img_running", status: "GENERATING" },
       { uuid: "img_failed", status: "FAILED" }, { uuid: "img_other_user", status: "COMPLETED" },
+      { uuid: "vid_owned", status: "COMPLETED" },
     ] as const;
     await db.insert(videos).values(rows.map(({ uuid, status }) => ({
       uuid, status, userId: uuid === "img_other_user" ? "another-user" : owner,
-      mediaType: "image" as const, prompt: "sample", model: settings.modelId, videoUrl: `images/${uuid}.png`,
+      mediaType: uuid === "vid_owned" ? "video" as const : "image" as const,
+      prompt: "sample", model: settings.modelId, videoUrl: uuid === "vid_owned" ? "videos/vid_owned.mp4" : `images/${uuid}.png`,
     })));
     const response = await resolve(post("POST", { uuids: rows.map((row) => row.uuid) }));
     expect(response.status).toBe(200);
@@ -152,11 +154,17 @@ describe("per-node generation history", () => {
     expect(results.img_failed).toMatchObject({ status: "FAILED", urls: [] });
     expect(results.img_other_user).toBeUndefined();
     const read = (uuid: string) => asset(new Request(`https://canvas.invalid/api/v1/creative-space/asset?uuid=${uuid}&index=0`));
-    const storage = vi.fn(async () => new Response("preview bytes"));
+    const storage = vi.fn(async (url: string) => new Response("preview bytes", { headers: { "content-type": url.includes("vid_owned") ? "video/mp4" : "image/png" } }));
     vi.stubGlobal("fetch", storage);
     for (const uuid of ["img_running", "img_failed", "img_other_user"]) expect((await read(uuid)).status).toBe(404);
     expect(storage).not.toHaveBeenCalled();
     expect(await (await read("img_owned")).text()).toBe("preview bytes");
-    expect(storage).toHaveBeenCalledTimes(1);
+    for (const [uuid, extension] of [["img_owned", "png"], ["vid_owned", "mp4"]]) {
+      const file = await asset(new Request(`https://canvas.invalid/api/v1/creative-space/asset?uuid=${uuid}&index=0&download=1`));
+      expect(file.status).toBe(200);
+      expect(file.headers.get("content-disposition")).toBe(`attachment; filename="aivd-${uuid}-0.${extension}"`);
+      expect(await file.text()).toBe("preview bytes");
+    }
+    expect(storage).toHaveBeenCalledTimes(3);
   });
 });
