@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Coins, Film, ImagePlus, Loader2, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Coins, Film, ImagePlus, Loader2, X } from "lucide-react";
 import { getMarketModel, marketCredits } from "@/ai/kie-market";
 import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
@@ -33,6 +33,14 @@ const blank: Draft = {
   source: null,
   character: null,
 };
+const EDIT_TOOLS = [
+  { zh: "编辑视频", en: "Edit video", descZh: "精确修改视频中的区域", descEn: "Refine a selected part of a video" },
+  { zh: "延长视频", en: "Extend video", descZh: "为片段生成后续画面", descEn: "Continue a clip with new footage" },
+  { zh: "重构画幅", en: "Reframe", descZh: "调整尺寸与画面位置", descEn: "Adapt a clip to another aspect ratio" },
+  { zh: "高清放大", en: "Upscale", descZh: "提高输出分辨率", descEn: "Increase output resolution" },
+  { zh: "移除背景", en: "Remove background", descZh: "分离主体与背景", descEn: "Separate subject from background" },
+  { zh: "帧率增强", en: "FPS boost", descZh: "提升播放流畅度", descEn: "Increase playback smoothness" },
+] as const;
 function restore(slot: string): Draft {
   try {
     const value = JSON.parse(sessionStorage.getItem(slot) ?? "null");
@@ -104,7 +112,7 @@ export function VideoToolPanel({
   const slot = `aivd:video-tool:${owner ?? "guest"}:${kind}`;
   const [draft, setDraft] = useState<Draft>(blank);
   const [loaded, setLoaded] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [editView, setEditView] = useState<"list" | "form">("list");
   const [picker, setPicker] = useState<"video" | "image" | null>(null);
   const [progress, setProgress] = useState(false),
     [sending, setSending] = useState(false);
@@ -177,7 +185,7 @@ export function VideoToolPanel({
   useEffect(() => {
     if (!active) {
       setPicker(null);
-      setToolsOpen(false);
+      setEditView("list");
     }
   }, [active]);
   function update(patch: Partial<Draft>) {
@@ -334,33 +342,40 @@ export function VideoToolPanel({
   const sourceLabel = motion
     ? label("添加要复制的动作", "Add motion to copy")
     : label("添加要编辑的视频", "Add a video to edit");
+  if (!motion && editView === "list") {
+    return (
+      <div className="vtool-catalog">
+        <p className="vtool-catalog-intro">
+          {label("选择编辑工具开始创作，更多功能即将上线。", "Choose an editing tool to get started. More tools are coming soon.")}
+        </p>
+        {EDIT_TOOLS.map((item, index) => {
+          const available = index < 2;
+          return (
+            <button
+              key={item.en}
+              type="button"
+              disabled={!available}
+              className={`vtool-catalog-card${index === 0 ? " vtool-catalog-featured" : ""}`}
+              onClick={index === 0 ? () => setEditView("form") : onExtend}
+            >
+              <span className="vtool-catalog-copy">
+                <strong>{zh ? item.zh : item.en}</strong>
+                <small>{zh ? item.descZh : item.descEn}</small>
+              </span>
+              {available ? <ChevronRight aria-hidden="true" /> : <span className="vtool-catalog-soon">{label("即将上线", "Coming soon")}</span>}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="vtool-panel">
       {!motion && (
-        <div className="vtool-edit-menu">
-          <button
-            type="button"
-            aria-expanded={toolsOpen}
-            onClick={() => setToolsOpen(!toolsOpen)}
-          >
-            {label("编辑工具", "Editing tools")}
-            <ChevronDown />
-          </button>
-          {toolsOpen && (
-            <div>
-              <button type="button" onClick={() => setToolsOpen(false)}>
-                {label("编辑视频", "Edit video")}
-                <small>{label("精准修改", "Make a precise edit")}</small>
-              </button>
-              <button type="button" onClick={onExtend}>
-                {label("延长视频", "Extend video")}
-                <small>
-                  {label("生成后续片段", "Generate the next segment")}
-                </small>
-              </button>
-            </div>
-          )}
-        </div>
+        <button type="button" className="vtool-catalog-back" onClick={() => setEditView("list")}>
+          <ArrowLeft aria-hidden="true" />
+          {label("编辑工具", "Editing tools")}
+        </button>
       )}
       <div className="vtool-cover">
         <img

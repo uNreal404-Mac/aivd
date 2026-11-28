@@ -192,27 +192,87 @@
 .vtool-mode-pane[hidden] {
   display: none;
 }
-.vtool-edit-menu button {
+.vtool-catalog {
+  display: grid;
+  gap: var(--ds-space-2);
+  padding-bottom: var(--ds-space-3);
+}
+.vtool-catalog-intro {
+  margin: 0 0 var(--ds-space-1);
+  padding: var(--ds-space-3);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.6;
+}
+.vtool-catalog-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--ds-space-2);
   width: 100%;
-  padding: var(--ds-space-2);
-  border-radius: var(--ds-r-sm);
-  font-size: var(--ds-fs-sm);
+  min-height: 70px;
+  padding: var(--ds-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
+  text-align: left;
 }
-.vtool-edit-menu svg {
+.vtool-catalog-card:not(:disabled):hover,
+.vtool-catalog-card:not(:disabled):focus-visible {
+  border-color: var(--du-accent);
+  background: var(--ds-surface-3);
+}
+.vtool-catalog-featured {
+  border-color: var(--du-accent);
+}
+.vtool-catalog-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.vtool-catalog-copy strong {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+.vtool-catalog-copy small {
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.4;
+}
+.vtool-catalog-card > svg {
+  flex: none;
   width: 16px;
   height: 16px;
-}
-.vtool-edit-menu > div {
-  padding: var(--ds-space-1);
-  background: var(--ds-surface-2);
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-lg);
-}
-.vtool-edit-menu small {
   color: var(--ds-text-3);
+}
+.vtool-catalog-card:disabled {
+  cursor: default;
+}
+.vtool-catalog-soon {
+  flex: none;
+  padding: 3px 6px;
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+}
+.vtool-catalog-back {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  justify-self: start;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+}
+.vtool-catalog-back:hover {
+  color: var(--ds-text-1);
+}
+.vtool-catalog-back svg {
+  width: 16px;
+  height: 16px;
 }
 
 .vtool-cover > div {
