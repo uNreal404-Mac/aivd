@@ -62,6 +62,16 @@ describe("IMAGE_REF_PATTERN", () => {
     expect(IMAGE_REF_PATTERN.test("uploads/u_1/abc.png")).toBe(true);
   });
 
+  it("accepts a canvas upload key", () => {
+    expect(IMAGE_REF_PATTERN.test("uploads/u_1/canvas/abc.png")).toBe(true);
+  });
+
+  it("rejects other nested folders and traversal through canvas", () => {
+    expect(IMAGE_REF_PATTERN.test("uploads/u_1/other/abc.png")).toBe(false);
+    expect(IMAGE_REF_PATTERN.test("uploads/u_1/canvas/../abc.png")).toBe(false);
+    expect(IMAGE_REF_PATTERN.test("uploads/u_1/canvas/x/abc.png")).toBe(false);
+  });
+
   it("rejects traversal and malformed references", () => {
     expect(IMAGE_REF_PATTERN.test("../x")).toBe(false);
     expect(IMAGE_REF_PATTERN.test("uploads/u1/../../etc")).toBe(false);
