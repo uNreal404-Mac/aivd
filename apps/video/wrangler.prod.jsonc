@@ -14,9 +14,13 @@
   // GOOGLE_CLIENT_SECRET, RESEND_API_KEY, RESEND_FROM). Never commit them here.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "REPLACE_production_worker_name",
-  "main": ".open-next/worker.js",
+  // custom-worker.ts wraps .open-next/worker.js and adds the cron below.
+  "main": "custom-worker.ts",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Every 10 minutes: finish, fail or refund generations that callbacks and
+  // polling left open. Needs the RECONCILE_SECRET secret (wrangler secret put).
+  "triggers": { "crons": ["*/10 * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

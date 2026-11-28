@@ -4,9 +4,13 @@
   // `wrangler secret put <NAME>` and must never be committed to this file.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dreamutopia-video-preview",
-  "main": ".open-next/worker.js",
+  // custom-worker.ts wraps .open-next/worker.js and adds the cron below.
+  "main": "custom-worker.ts",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Every 10 minutes: finish, fail or refund generations that callbacks and
+  // polling left open. Needs the RECONCILE_SECRET secret (wrangler secret put).
+  "triggers": { "crons": ["*/10 * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
