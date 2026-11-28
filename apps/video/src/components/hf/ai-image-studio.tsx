@@ -485,6 +485,7 @@ function AiImageStudioForm({
             onReuse={reuse}
             onCanvas={openInCanvas}
             onVideo={toVideo}
+            userId={session?.user?.id}
           />
         ) : (
           <StudioHero zh={zh} modelName={model.name} />
@@ -666,6 +667,7 @@ function AiImageStudioForm({
           onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
           onReuseParameters={reuseParameters}
+          userId={session?.user?.id}
           onToVideo={(item) => toVideo(item.url)}
         />
       ) : null}

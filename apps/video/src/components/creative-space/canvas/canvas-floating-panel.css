@@ -1,0 +1,11 @@
+.nc-floating { position: fixed; z-index: 800; display: flex; flex-direction: column; width: min(var(--nc-floating-width), calc(100vw - 16px)); max-width: none; max-height: min(690px, calc(100dvh - 24px)); min-height: 0; margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--ds-line-2); border-radius: 18px; background: color-mix(in srgb, var(--ds-surface-2) 97%, transparent); color: var(--ds-text-1); box-shadow: var(--ds-shadow-float); backdrop-filter: blur(20px); }
+.nc-floating-head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--ds-line-1); cursor: grab; touch-action: none; user-select: none; }
+.nc-floating-head:active { cursor: grabbing; }
+.nc-floating-head > div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.nc-floating-head strong { overflow: hidden; font-size: 14px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.nc-floating-head svg { flex: none; color: var(--ds-text-3); }
+.nc-floating-head button { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: var(--ds-fill-2); color: var(--ds-text-2); cursor: pointer; }
+.nc-floating-head button:hover { color: var(--ds-text-1); background: var(--ds-fill-3); }
+.nc-floating-body { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: auto; }
+.nc-floating :is(button, input, select):focus-visible { outline: 2px solid var(--du-accent); outline-offset: 2px; }
+@media (max-width: 640px) { .nc-floating { width: calc(100vw - 16px); max-height: min(75dvh, 650px); } }

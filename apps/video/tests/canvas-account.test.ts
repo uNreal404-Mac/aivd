@@ -3,6 +3,7 @@ import { POST as resolve } from "@/app/api/v1/creative-space/resolve/route";
 import { POST as upload } from "@/app/api/v1/creative-space/video-assets/route";
 import { POST as create } from "@/app/api/v1/creative-space/workflows/route";
 import { PUT as save } from "@/app/api/v1/creative-space/workflows/[id]/route";
+import { POST as importAsset } from "@/app/api/v1/creative-space/import/route";
 
 vi.mock("@/lib/api/auth", () => ({ requireAuth: async () => ({ id: "current-user" }) }));
 
@@ -13,6 +14,7 @@ describe("canvas requests after the browser changes accounts", () => {
     ["save a workflow", (request: Request) => save(request, ctx)],
     ["upload a clip", upload],
     ["resolve private previews", resolve],
+    ["import media into a canvas", importAsset],
   ] as const)("rejects the previous account before reading the body to %s", async (_name, handle) => {
     const request = new Request("https://example.test/api", {
       method: "POST",

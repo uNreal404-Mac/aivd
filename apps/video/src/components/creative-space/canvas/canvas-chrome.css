@@ -406,6 +406,14 @@
 .nc-native.nc-dialog[data-placement="locator"]::backdrop {
   background: transparent;
 }
+.nc-settings-floating .nc-floating-body { padding: 14px; }
+.nc-settings-floating .nc-settings { grid-template-columns: minmax(115px, 30%) minmax(0, 1fr); }
+.nc-locator-floating .nc-floating-body { gap: 10px; padding: 12px; }
+.nc-locator-floating .nc-type-tabs { flex-wrap: wrap; }
+.nc-add-floating .nc-floating-body { display: grid; gap: 3px; padding: 8px; }
+.nc-add-floating .nc-floating-body > button { display: flex; align-items: center; gap: 10px; min-height: 37px; padding: 0 10px; border-radius: 9px; color: var(--ds-text-2); font-size: var(--ds-fs-sm); text-align: left; }
+.nc-add-floating .nc-floating-body > button:hover { background: var(--ds-fill-2); color: var(--ds-text-1); }
+.nc-add-floating .nc-floating-body > hr { width: 100%; margin: 5px 0; border: 0; border-top: 1px solid var(--ds-line-1); }
 .nc-type-tabs {
   display: flex;
   gap: 4px;

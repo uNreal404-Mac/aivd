@@ -49,6 +49,7 @@ export function InspectorReferences({ id, actions, limit, busy, onAttach, onBusy
         triggerClass="nci-thumb nci-thumb-button" button={<ReferenceImage item={ref}/>}>
         {close => <>
           <strong>@{ref.token}</strong>
+          <button type="button" className="nci-row" onClick={() => { onMention(ref, ""); close(); }}>{zh ? `仅插入 @${ref.token}` : `Insert @${ref.token} only`}</button>
           {(zh ? ["作为参考素材", "作为首帧", "作为尾帧", "参考主体、构图和风格"]
             : ["Use as reference", "Use as first frame", "Use as last frame", "Match subject, composition and style"]).map(role =>
             <button type="button" className="nci-row" key={role} onClick={() => { onMention(ref, role); close(); }}>{role}</button>)}

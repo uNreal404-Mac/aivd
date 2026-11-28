@@ -6,6 +6,7 @@ import { Clapperboard, Paintbrush, RotateCcw } from "lucide-react";
 import type { MediaJob } from "@/lib/media-studio";
 import { generationDetails } from "@/lib/generation-details";
 import { CopyImageButton, CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef } from "@/components/hf/studio-results";
+import { CanvasImportAction } from "@/components/creative-space/canvas-import-action";
 import type { ImageView } from "./view-menu";
 
 function dayLabel(at: number | undefined, zh: boolean): string {
@@ -32,6 +33,7 @@ export function ResultsGrid({
   onReuse,
   onCanvas,
   onVideo,
+  userId,
 }: {
   jobs: MediaJob[];
   view: ImageView;
@@ -42,6 +44,7 @@ export function ResultsGrid({
   onReuse: (prompt: string) => void;
   onCanvas: (url: string, prompt: string, model: string, uuid?: string, index?: number) => void;
   onVideo: (url: string) => void;
+  userId?: string;
 }) {
   const groups: { label: string; jobs: MediaJob[] }[] = [];
   if (view.byDate) {
@@ -68,6 +71,7 @@ export function ResultsGrid({
               <button type="button" className="sr-card-open" aria-label={zh ? "查看大图" : "Open image"} onClick={() => onOpen(key)} />
               <span className="sr-card-shade" aria-hidden="true" />
               <span className="sr-card-top">
+                <CanvasImportAction source={{ type: "generation", uuid: job.uuid, index }} locale={zh ? "zh" : "en"} userId={userId} />
                 <CopyPromptButton prompt={job.prompt} zh={zh} />
                 <CopyImageButton uuid={job.uuid} index={index} zh={zh} />
                 <DownloadLink url={url} zh={zh} />

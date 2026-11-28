@@ -115,6 +115,21 @@
   padding: 0;
   list-style: none;
 }
+.help-contact { margin: 0 0 28px; padding: 22px; border: 1px solid var(--lg-border); border-radius: 18px; background: var(--lg-surface); }
+.help-contact-intro { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+.help-contact-icon { display: grid; flex: none; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: color-mix(in srgb, var(--lg-accent) 14%, transparent); color: var(--lg-accent); }
+.help-contact h2 { margin: 0 0 4px; color: var(--lg-text); font-size: var(--ds-fs-lg); }
+.help-contact-intro p { margin: 0; color: var(--lg-muted); font-size: var(--ds-fs-sm); line-height: 1.5; }
+.help-contact form { display: grid; gap: 9px; }
+.help-contact label { color: var(--lg-text); font-size: var(--ds-fs-sm); font-weight: 600; }
+.help-contact textarea { width: 100%; min-height: 112px; resize: vertical; padding: 12px 14px; border: 1px solid var(--lg-border); border-radius: 11px; outline: none; background: var(--lg-bg); color: var(--lg-text); font: inherit; font-size: var(--ds-fs-sm); line-height: 1.6; }
+.help-contact textarea:focus { border-color: var(--lg-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--lg-accent) 16%, transparent); }
+.help-contact-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.help-contact-actions small { color: var(--lg-muted); font-size: var(--ds-fs-xs); line-height: 1.4; }
+.help-contact-actions button { display: inline-flex; flex: none; align-items: center; justify-content: center; gap: 7px; min-width: 88px; min-height: 36px; padding: 0 13px; border-radius: 9px; background: var(--lg-accent); color: #071116; font-size: var(--ds-fs-sm); font-weight: 700; }
+.help-contact-actions button:disabled { opacity: .42; cursor: not-allowed; }
+.help-contact-status { margin: 0; color: var(--lg-accent); font-size: var(--ds-fs-xs); }
+@media (max-width: 560px) { .help-contact { padding: 16px; } .help-contact-actions { align-items: flex-start; flex-direction: column-reverse; } .help-contact-actions button { align-self: flex-end; } }
 
 .help-list li {
   margin: 0 0 12px;

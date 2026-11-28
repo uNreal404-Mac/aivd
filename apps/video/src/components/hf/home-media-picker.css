@@ -18,6 +18,10 @@
   -webkit-backdrop-filter: blur(40px); backdrop-filter: blur(40px);
   color: var(--du-text); box-shadow: var(--ds-shadow-2);
 }
+.hmp-backdrop[data-canvas-floating] { display: block; padding: 0; background: transparent; pointer-events: none; }
+.hmp-backdrop[data-canvas-floating] .hmp-dialog { position: fixed; width: min(560px, calc(100vw - 16px)); height: min(540px, calc(100dvh - 24px)); border-radius: 18px; pointer-events: auto; box-shadow: var(--ds-shadow-float); }
+.hmp-floating-handle { display: flex; flex: none; align-items: center; gap: 8px; min-height: 29px; padding: 0 10px; border-bottom: 1px solid var(--ds-line-1); color: var(--ds-text-3); cursor: grab; touch-action: none; user-select: none; font-size: var(--ds-fs-xs); font-weight: 600; }
+.hmp-floating-handle:active { cursor: grabbing; }
 
 /* Tabs: 32px pills, 12px semibold; the open one is a white pill. */
 .hmp-header { display: flex; flex: 0 0 32px; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
@@ -59,6 +63,10 @@
 /* Square tiles, four to a row. */
 .hmp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .hmp-card-wrap { position: relative; min-width: 0; }
+.hmp-import-canvas { position: absolute; z-index: 2; left: 7px; bottom: 7px; display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid var(--ds-line-2); border-radius: 9px; background: color-mix(in srgb, var(--ds-surface-2) 92%, transparent); color: var(--ds-text-1); opacity: 0; transition: opacity var(--m-instant) var(--m-ease-out); }
+.hmp-card-wrap:is(:hover, :focus-within) .hmp-import-canvas { opacity: 1; }
+.hmp-import-canvas:hover { color: var(--du-accent); border-color: var(--du-accent); }
+@media (hover: none) { .hmp-import-canvas { opacity: 1; } }
 .hmp-card-wrap .hmp-card { display: block; width: 100%; }
 .hmp-card, .hmp-add { position: relative; min-width: 0; overflow: hidden; border: 0; border-radius: var(--ds-r-lg); background: var(--ds-fill-1); color: var(--du-text); text-align: left; }
 .hmp-card { transition: transform var(--m-instant) var(--m-ease-out); }
@@ -242,3 +250,6 @@
 .hmp-preview-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; }
 .hmp-preview :is(img, video) { min-height: 0; max-height: calc(100% - 2rem); max-width: 100%; object-fit: contain; }
 .hmp-preview p { font-size: var(--ds-fs-ui); overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .hmp-backdrop[data-canvas-floating] .hmp-dialog { width: calc(100vw - 16px); height: min(75dvh, 560px); padding-bottom: 8px; border: 1px solid var(--ds-line-1); border-radius: 18px; }
+}

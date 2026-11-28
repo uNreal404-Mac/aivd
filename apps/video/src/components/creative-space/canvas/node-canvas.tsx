@@ -2462,7 +2462,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
         <CanvasHeader zh={zh} title={title} onTitle={setTitle} back={localizedHref(locale,"/creative-space")} creditsHref={localizedHref(locale,"/credits")} contactHref={localizedHref(locale,"/contact")}
           save={saveLabel[saveState]} saveState={saveState} account={!!userId} balance={balance} signIn={requireLogin}
           canvases={canvases} canvasId={canvasId} onChoose={id => void openCanvas(id)} onNew={() => void newCanvas()} onDelete={() => { if (canvasId) void deleteCanvasById(canvasId); }} onDeleteCanvas={id => void deleteCanvasById(id)}
-          onHome={() => void goHome()} onImport={() => openPicker("global")}
+          onHome={() => void goHome()}
           canUndo={canUndo} canRedo={canRedo} undo={() => restore(-1)} redo={() => restore(1)} arrange={arrange}
           edgesOn={showEdges} toggleEdges={() => setShowEdges(v => !v)} mapOn={showMinimap} toggleMap={() => setShowMinimap(v => !v)} />
         <div className="nc-body">
@@ -2580,7 +2580,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
             </div>
             <button className="nc-help-button nc-round" type="button" aria-label={L("快捷键","Keyboard shortcuts")} title={L("快捷键","Keyboard shortcuts")} onClick={() => setShortcutsOpen(true)}><Keyboard size={16}/></button>
             <CanvasDock zh={zh} open={panel} onPanel={setPanel} snap={viewOptions.snap} onSnap={() => setViewOptions(v => ({ ...v, snap: !v.snap }))}
-              onCreate={kind => createKind(kind, viewCenter())} onUpload={() => fileInput.current?.click()} onTemplates={() => setTemplatesOpen(true)} />
+              onCreate={kind => createKind(kind, viewCenter())} onUpload={() => fileInput.current?.click()} onTemplates={() => setTemplatesOpen(true)} onImport={() => openPicker("global")} />
             {selected.length > 0 && <button className="nc-round nc-touch-actions" type="button"
               aria-label={L("选中节点操作", "Selected node actions")} aria-haspopup="menu" aria-expanded={menu?.panel === "node"}
               onClick={(event) => {
@@ -2726,6 +2726,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
           acceptedTypes={editEntry ? ["image"] : ["image", "video"]}
           libraryScope={pickerScope}
           canvasItems={canvasLibraryItems}
+          canvasFloating
         />
         {chooseToolFor && (
           <CanvasDialog title={L("编辑图像", "Edit image")} onClose={() => setChooseToolFor(null)}>

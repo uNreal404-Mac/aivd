@@ -6,6 +6,7 @@ import type { StudioResult } from "@/lib/ai-video-studio";
 import { generationDetails } from "@/lib/generation-details";
 import type { HistoryView } from "./history-tools";
 import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef, type ViewerItem } from "@/components/hf/studio-results";
+import { CanvasImportAction } from "@/components/creative-space/canvas-import-action";
 
 /** Generated clips, newest first: playing on hover, open full screen on click,
  * with copy, download, reuse and "open in the canvas" on each. Laid out as
@@ -19,6 +20,7 @@ export function ResultsGrid({
   onReuse,
   onCanvas,
   onExtend,
+  userId,
 }: {
   zh: boolean;
   results: StudioResult[];
@@ -28,6 +30,7 @@ export function ResultsGrid({
   onReuse: (prompt: string | null | undefined) => void;
   onCanvas: (result: StudioResult) => void;
   onExtend: (result: StudioResult) => void;
+  userId?: string;
 }) {
   return (
     <div className="vst-results du-fade-swap" data-layout={view.layout} data-size={view.size} data-fit={view.fill ? undefined : true}>
@@ -66,6 +69,7 @@ export function ResultsGrid({
                 </figcaption>
               ) : null}
               <span className="sr-card-top">
+                {result.videoUuid && <CanvasImportAction source={{ type: "generation", uuid: result.videoUuid, index: 0 }} locale={zh ? "zh" : "en"} userId={userId} />}
                 {result.prompt ? <CopyPromptButton prompt={result.prompt} zh={zh} /> : null}
                 <DownloadLink url={result.videoUrl} zh={zh} />
               </span>

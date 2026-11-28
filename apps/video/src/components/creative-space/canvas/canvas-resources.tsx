@@ -4,11 +4,11 @@ import { ArrowUpRight, AudioLines, Bookmark, Crosshair, FolderOpen, Grid2X2, Gri
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Node } from "reactflow";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { hasOutput, isGenerationUuid, MAX_PAST_GENERATIONS, outputType, textOf, type CanvasData, type PortType, type RunStatus } from "@/lib/creative-space/canvas-graph";
 import { resolveMedia } from "@/lib/creative-space/canvas-submit";
 import { CANVAS_SOUNDS, getCanvasSound, SOUND_CATEGORIES, type SoundCategory } from "@/lib/creative-space/canvas-sounds";
 import { kindIcon } from "./canvas-nodes";
+import { CanvasFloatingPanel } from "./canvas-floating-panel";
 import "./canvas-resources.css";
 
 type CanvasNode = Node<CanvasData>;
@@ -302,17 +302,9 @@ function SoundLibrary({ lang, onSound }: { lang: Language; onSound: (id: string)
 
 export function CanvasResources({ section, zh, nodes, canvasFetch, onClose, onLibrary, onTemplates, onFocus, onSound }: CanvasResourcesProps) {
   const lang = zh ? "zh" : "en";
-  const heading = useRef<HTMLHeadingElement>(null);
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="ncr-panel" aria-modal="true" aria-describedby={undefined} onOpenAutoFocus={(event) => {
-        event.preventDefault();
-        heading.current?.focus({ preventScroll: true });
-      }}>
-        <header className="ncr-head">
-          <DialogTitle ref={heading} tabIndex={-1}>{SECTION[section][lang]}</DialogTitle>
-          {section === "history" && <p>{zh ? `仅显示当前画布现存节点的生成记录。每个生成节点保留当前任务和最近 ${MAX_PAST_GENERATIONS} 个历史任务。` : `History covers nodes still on this canvas. Each generation node keeps its current job and up to ${MAX_PAST_GENERATIONS} previous jobs.`}</p>}
-        </header>
+    <CanvasFloatingPanel title={SECTION[section][lang]} onClose={onClose} className="ncr-panel" width={section === "sounds" ? 620 : 560}>
+        {section === "history" && <p className="ncr-description">{zh ? `仅显示当前画布现存节点的生成记录。每个生成节点保留当前任务和最近 ${MAX_PAST_GENERATIONS} 个历史任务。` : `History covers nodes still on this canvas. Each generation node keeps its current job and up to ${MAX_PAST_GENERATIONS} previous jobs.`}</p>}
         {section === "assets" && <nav className="ncr-nav" aria-label={SECTION.assets[lang]}>
           <button type="button" onClick={() => { onClose(); onLibrary(); }}><FolderOpen aria-hidden="true" />{zh ? "画布素材库" : "Canvas media library"}<ArrowUpRight aria-hidden="true" /></button>
           <span aria-current="page"><Images aria-hidden="true" />{zh ? "当前画布资产" : "Canvas assets"}</span>
@@ -320,7 +312,6 @@ export function CanvasResources({ section, zh, nodes, canvasFetch, onClose, onLi
         </nav>}
         {section === "sounds" ? <SoundLibrary lang={lang} onSound={(id) => { onClose(); onSound(id); }} /> :
           <NodeResults key={section} nodes={nodes} history={section === "history"} lang={lang} canvasFetch={canvasFetch} onFocus={(node) => { onClose(); onFocus(node); }} />}
-      </DialogContent>
-    </Dialog>
+    </CanvasFloatingPanel>
   );
 }

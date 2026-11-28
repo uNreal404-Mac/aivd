@@ -1137,7 +1137,7 @@ function AiVideoStudioForm({
       results
         .filter((item) => item.status === "completed" && item.videoUrl)
         .map((item) => ({
-          key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "",
+          key: item.id, url: item.videoUrl as string, kind: "video" as const, prompt: item.prompt ?? "", sourceUuid: item.videoUuid ?? undefined,
           model: VIDEO_CATALOG.find(model => model.id === item.model)?.name ?? getMarketModel(item.model ?? "")?.name ?? item.model,
           modelId: item.model,
           parameters: item.parameters,
@@ -1524,6 +1524,7 @@ function AiVideoStudioForm({
               view={historyView}
               onView={openViewer}
               onReuse={reuse}
+              userId={session?.user?.id}
               onExtend={result => {
                 const source = asExtendSource(result);
                 if (!source) return;
@@ -1566,6 +1567,7 @@ function AiVideoStudioForm({
           onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
           onReuseParameters={reuseParameters}
+          userId={session?.user?.id}
         />
       ) : null}
     </div>

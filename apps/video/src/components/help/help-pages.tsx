@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatUpdated } from "@/config/content-dates";
 import type { HelpArticle } from "@/lib/help-articles";
 import { localizedHref } from "@/lib/locale-path";
+import { HelpContact } from "./help-contact";
 import "@/styles/legal-tokens.css";
 import "./help.css";
 
@@ -79,6 +80,7 @@ export function HelpIndexView({ articles, lang, updated }: { articles: HelpArtic
           {zh ? "最后更新：" : "Last updated: "}
           <time dateTime={updated}>{formatUpdated(updated, zh)}</time>
         </p>
+        <HelpContact lang={lang} />
         <ul className="help-list">
           {articles.map((article) => (
             <li key={article.slug}>

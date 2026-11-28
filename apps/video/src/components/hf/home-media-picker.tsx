@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { Check, Expand, Image as ImageIcon, Loader2, Music2, Plus, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { Check, Expand, Grip, Image as ImageIcon, Loader2, Music2, Plus, Square, Trash2, UploadCloud, X } from "lucide-react";
+import { CanvasImportAction, type CanvasImportSource } from "@/components/creative-space/canvas-import-action";
 import { isWanVideoMime, WAN_REFERENCE_MAX_BYTES } from "@/lib/wan-video-references";
 import { canUseHomeKeyframe } from "@/lib/home-keyframes";
 import { MAX_BYTES, uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
@@ -70,7 +71,7 @@ function saved<T extends { id: string }>(key: string): T[] {
   } catch { return []; }
 }
 
-export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention, libraryScope = "global", canvasItems = [], queuedFiles, onQueuedFilesHandled }: {
+export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSelected, selectedIds, userId, acceptedTypes = ["image"], initialTab, wanVideoOnly = false, keyframeOnly = false, videoToolAsset, uploadsAndWorksOnly = false, homepage = false, mentionAnchor, onMention, libraryScope = "global", canvasItems = [], queuedFiles, onQueuedFilesHandled, canvasFloating = false }: {
   lang: string; open: boolean; onClose: () => void; onSelect: (assets: PickerAsset[]) => void; onDelete?: (id: string) => void;
   maxSelected: number; selectedIds: string[]; userId?: string; acceptedTypes?: MediaType[];
   /** The shelf it opens on each time (an "@" button opens it on the elements). */
@@ -88,6 +89,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   /** Files dropped onto the homepage composer before the library opened. */
   queuedFiles?: { id: string; files: File[] } | null;
   onQueuedFilesHandled?: () => void;
+  /** Canvas toolbar uses a compact, draggable library instead of a modal sheet. */
+  canvasFloating?: boolean;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const allowVideo = acceptedTypes.includes("video");
@@ -132,6 +135,22 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [floatingPosition, setFloatingPosition] = useState(() => ({ x: typeof window === "undefined" ? 24 : Math.max(8, Math.round((window.innerWidth - 560) / 2)), y: 92 }));
+  const floatingDrag = useRef<{ pointer: number; x: number; y: number; startX: number; startY: number } | null>(null);
+  const startFloatingDrag = (event: PointerEvent<HTMLDivElement>) => {
+    floatingDrag.current = { pointer: event.pointerId, x: floatingPosition.x, y: floatingPosition.y, startX: event.clientX, startY: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+  const moveFloatingDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const current = floatingDrag.current;
+    if (!current || current.pointer !== event.pointerId) return;
+    const box = dialogRef.current?.getBoundingClientRect();
+    setFloatingPosition({
+      x: Math.max(8, Math.min(window.innerWidth - (box?.width ?? 560) - 8, current.x + event.clientX - current.startX)),
+      y: Math.max(8, Math.min(window.innerHeight - 72, current.y + event.clientY - current.startY)),
+    });
+  };
   // Focus moves into the library when it opens (onto the open tab) and goes
   // back to whatever opened it when it closes.
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -568,16 +587,17 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // what it shows (with its filters on the right) above a grid of square
   // tiles. Our footer stays: several files can be chosen, then confirmed.
   if (!mounted) return null;
-  return createPortal(<div className="hmp-backdrop" inert={state === "closed"} data-home-library={homepage || undefined} data-mention={Boolean(mentionAnchor) || undefined} data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <dialog ref={dialogRef} open aria-modal="true" onKeyDown={(event) => {
-      if (event.key !== "Tab") return;
+  return createPortal(<div className="hmp-backdrop" inert={state === "closed"} data-home-library={homepage || undefined} data-mention={Boolean(mentionAnchor) || undefined} data-canvas-floating={canvasFloating || undefined} data-presence="fade" data-state={state} onDragOver={acceptDrop} onDrop={handleDrop} onPointerDown={(event) => { if (!canvasFloating && event.target === event.currentTarget) onClose(); }}>
+    <dialog ref={dialogRef} open aria-modal={canvasFloating ? undefined : "true"} onKeyDown={(event) => {
+      if (event.key !== "Tab" || canvasFloating) return;
       const focusRoot = confirmDelete ? event.currentTarget.querySelector(".hmp-confirm") ?? event.currentTarget : preview ? event.currentTarget.querySelector(".hmp-preview") ?? event.currentTarget : event.currentTarget;
       const targets = Array.from(focusRoot.querySelectorAll<HTMLElement>("button:not(:disabled), input:not([hidden]), select, a[href], video[controls]")).filter((el) => el.getClientRects().length);
       const first = targets[0];
       const last = targets.at(-1);
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-    }} aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" style={mentionAnchor ? position : undefined} data-presence="dialog" data-state={state}>
+    }} aria-label={zh ? "选择参考素材" : "Choose reference media"} className="hmp-dialog" style={canvasFloating ? { left: floatingPosition.x, top: floatingPosition.y } : mentionAnchor ? position : undefined} data-presence="dialog" data-state={state}>
+      {canvasFloating && <div className="hmp-floating-handle" onPointerDown={startFloatingDrag} onPointerMove={moveFloatingDrag} onPointerUp={() => { floatingDrag.current = null; }} onLostPointerCapture={() => { floatingDrag.current = null; }}><Grip size={14} aria-hidden="true" /><span>{libraryScope === "global" ? zh ? "导入站内素材" : "Import site media" : zh ? "画布素材库" : "Canvas media library"}</span></div>}
       <header className="hmp-header"><nav aria-label={zh ? "素材来源" : "Media sources"}>
         {((libraryScope === "canvas" || videoToolAsset || uploadsAndWorksOnly ? ["upload","works"] : wanVideoOnly ? ["upload"] : keyframeOnly ? ["upload", "elements", "works"] : ["upload", "elements", "brand", "works"]) as Tab[]).map((item) => <button type="button" key={item} data-tab={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setCreate(null); setFilter("all"); setCategory("all"); }} aria-current={tab === item ? "page" : undefined}>{tabNames[item]}</button>)}
       </nav><button type="button" className="hmp-close" onClick={onClose} aria-label={zh ? "关闭" : "Close"}><X size={16} /></button></header>
@@ -594,12 +614,17 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           const isSelected = manageMode && tab === "upload" ? managed.includes(item.id) : selected.includes(item.id);
           const isArmed = armed === item.id;
           const note = isArmed ? usageNote(item.id) : "";
+          const work = /^work:([^:]+):(\d+)$/.exec(item.id);
+          const importSource: CanvasImportSource | null = libraryScope === "global" && (item.mimeType.startsWith("image/") || item.mimeType.startsWith("video/"))
+            ? work ? { type: "generation", uuid: work[1], index: Number(work[2]) } : item.key ? { type: "upload", key: item.key } : item.file ? { type: "local", file: item.file } : null
+            : null;
           return <div key={item.id} className="hmp-card-wrap" data-leaving={leaving.includes(item.id) || undefined}>
             <button type="button" className={`hmp-card ${isSelected ? "selected" : ""}`} aria-pressed={isSelected} aria-label={manageMode && tab === "upload" ? (zh ? `选择删除 ${item.name}` : `Select ${item.name} for deletion`) : item.name} onClick={() => { if (manageMode && tab === "upload") setManaged((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id]); else if (acceptable(item)) selectAsset(item); else setError(zh ? "此素材已保存在库中，但当前生成器不能使用" : "Saved to your library, but unavailable in this generator."); }}><span className="hmp-thumb">{item.mimeType.startsWith("image/") ? <img src={item.url} alt="" /> : item.mimeType.startsWith("video/") ? <video src={item.url} muted playsInline preload="metadata" /> : <Music2 size={32} aria-hidden="true" />}</span><span className="hmp-card-name">{item.name}</span><span className="hmp-check" aria-hidden="true"><Check size={14} strokeWidth={3} /></span></button>
             {homepage && !onMention ? <button type="button" className="hmp-preview-button" aria-label={zh ? `预览 ${item.name}` : `Preview ${item.name}`} onClick={(event) => {
               previewOpener.current = event.currentTarget; setPreview(item);
               requestAnimationFrame(() => dialogRef.current?.querySelector<HTMLButtonElement>(".hmp-preview-close")?.focus());
             }}><Expand size={14} /></button> : null}
+            {importSource && (tab === "upload" || tab === "works") && !manageMode ? <CanvasImportAction source={importSource} locale={lang} userId={userId} className="hmp-import-canvas" /> : null}
             {tab === "upload" && !manageMode && (libraryScope === "global" || !item.key || item.key.includes("/canvas/")) ? <button type="button" className="hmp-delete" onKeyDown={(event) => { if (event.repeat) event.preventDefault(); }} data-armed={isArmed || undefined} data-busy={deleting === item.id || undefined} disabled={Boolean(deleting || deletingMany)} onClick={() => pressDelete(item)}
               aria-label={isArmed ? (zh ? `再按一次删除 ${item.name}${note ? `，${note}` : ""}` : `Press again to delete ${item.name}${note ? `. ${note}` : ""}`) : (zh ? `删除 ${item.name}` : `Delete ${item.name}`)}
               title={isArmed ? undefined : (zh ? "删除这个素材" : "Delete this file")}>

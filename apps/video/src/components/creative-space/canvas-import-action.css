@@ -1,0 +1,25 @@
+.cim-backdrop { position: fixed; inset: 0; z-index: 1400; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #050608 68%, transparent); backdrop-filter: blur(8px); }
+.cim-dialog { position: relative; width: min(440px, 100%); max-width: none; max-height: min(610px, calc(100dvh - 32px)); display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 22px; border: 1px solid var(--ds-line-2); border-radius: 22px; background: var(--ds-surface-2); color: var(--ds-text-1); box-shadow: var(--ds-shadow-float); }
+.cim-dialog header, .cim-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cim-dialog header small { color: var(--du-accent); font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.cim-dialog h2 { margin: 3px 0 0; font-size: 19px; font-weight: 650; }
+.cim-dialog header > button { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ds-fill-2); }
+.cim-note, .cim-empty, .cim-loading, .cim-success span { margin: 0; color: var(--ds-text-3); font-size: 13px; line-height: 1.55; }
+.cim-list { display: grid; gap: 6px; min-height: 72px; max-height: 300px; overflow: auto; }
+.cim-list label { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; border: 1px solid var(--ds-line-2); border-radius: 11px; cursor: pointer; }
+.cim-list label.is-selected { border-color: var(--du-accent); background: color-mix(in srgb, var(--du-accent) 10%, var(--ds-surface-2)); }
+.cim-list label input { accent-color: var(--du-accent); }
+.cim-list label span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.cim-list label svg { color: var(--du-accent); }
+.cim-empty, .cim-loading { align-self: center; padding: 20px 4px; }
+.cim-loading { display: flex; align-items: center; gap: 8px; }
+.cim-error { margin: 0; color: var(--du-danger); font-size: 12px; }
+.cim-dialog footer { justify-content: flex-end; margin-top: auto; }
+.cim-dialog footer button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 15px; border-radius: 9px; color: var(--ds-text-2); background: var(--ds-fill-2); font-size: 13px; font-weight: 600; }
+.cim-dialog footer .cim-primary { color: #071116; background: var(--du-accent); }
+.cim-dialog button:disabled { opacity: .45; cursor: not-allowed; }
+.cim-dialog :is(button, input):focus-visible { outline: 2px solid var(--du-accent); outline-offset: 2px; }
+.cim-success { display: grid; justify-items: center; gap: 8px; padding: 24px 8px; text-align: center; }
+.cim-success svg { color: var(--du-accent); }
+.cim-spin { animation: cim-spin 1s linear infinite; }
+@keyframes cim-spin { to { transform: rotate(360deg); } }

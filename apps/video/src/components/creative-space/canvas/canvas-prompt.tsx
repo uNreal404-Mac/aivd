@@ -37,7 +37,10 @@ export function CanvasPrompt({ value, label, placeholder, zh, list, attach, chan
     if (next.length > 5000) return;
     setDraft(next);
     change(next);
-    requestAnimationFrame(() => input.current?.focus());
+    requestAnimationFrame(() => {
+      input.current?.focus();
+      input.current?.setSelectionRange(next.length, next.length);
+    });
     // Only a new explicit click should insert text; value changes are handled by the parent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insert?.nonce]);

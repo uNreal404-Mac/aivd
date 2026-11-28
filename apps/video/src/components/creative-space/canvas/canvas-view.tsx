@@ -3,7 +3,7 @@
 import { ZoomIn } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useReactFlow, useStore } from "reactflow";
-import { CanvasDialog } from "./canvas-overlays";
+import { CanvasFloatingPanel } from "./canvas-floating-panel";
 import { CanvasAppearance, type MiniColors, readMiniColors } from "./canvas-appearance";
 
 export interface CanvasViewOptions {
@@ -187,7 +187,7 @@ export function CanvasViewMenu({
         )}
       </div>
       {settingsOpen && (
-        <CanvasDialog title={label("自定义画布", "Canvas settings")} onClose={closeSettings} wide>
+        <CanvasFloatingPanel title={label("自定义画布", "Canvas settings")} onClose={closeSettings} className="nc-settings-floating" width={620}>
           <div className="nc-settings">
             <nav aria-label={label("设置分类", "Settings categories")}>
               {(
@@ -327,7 +327,7 @@ export function CanvasViewMenu({
               )}
             </section>
           </div>
-        </CanvasDialog>
+        </CanvasFloatingPanel>
       )}
     </>
   );

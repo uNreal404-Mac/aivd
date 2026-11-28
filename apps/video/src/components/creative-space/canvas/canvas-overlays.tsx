@@ -7,6 +7,7 @@ import type { Node } from "reactflow";
 import { marketCredits, type MarketModel } from "@/ai/kie-market";
 import type { CanvasData, StoredGraph } from "@/lib/creative-space/canvas-graph";
 import { KIND_LABEL, kindIcon } from "./canvas-nodes";
+import { CanvasFloatingPanel } from "./canvas-floating-panel";
 
 export interface CanvasTemplate {
   id: string;
@@ -64,7 +65,7 @@ export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes:
       .slice(0, 30);
   }, [nodes, query, zh, kind]);
   return (
-    <CanvasDialog placement="locator" title={zh ? "节点定位" : "Find a node"} onClose={onClose}>
+    <CanvasFloatingPanel title={zh ? "节点定位" : "Find a node"} onClose={onClose} className="nc-locator-floating" width={370}>
       <label className="nc-search">
         <Search className="h-4 w-4" aria-hidden="true" />
         <input
@@ -94,7 +95,7 @@ export function NodeSearch({ zh, nodes, onClose, onPick }: { zh: boolean; nodes:
           );
         }) : <p className="nc-muted">{zh ? "没有匹配的节点" : "No matching nodes"}</p>}
       </div>
-    </CanvasDialog>
+    </CanvasFloatingPanel>
   );
 }
 

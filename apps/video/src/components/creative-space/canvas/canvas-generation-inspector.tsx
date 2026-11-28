@@ -79,7 +79,7 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
       </InspectorMenu>
     </div>}
     {(!isVideo || referenceMode) && <InspectorReferences id={id} actions={actions} limit={12} busy={busy} onBusy={setUploading} onAttach={() => setSelectReference(true)}
-      onMention={(ref, role) => setMention({ text: `${role} @${ref.token}${zh ? "。" : "."}`, nonce: Date.now() })}/>}
+      onMention={(ref, role) => setMention({ text: role ? `${role} @${ref.token}${zh ? "。" : "."}` : `@${ref.token} `, nonce: Date.now() })}/>}
     {!isVideo && <div className="nci-styles">
       <InspectorMenu label={zh ? "风格转绘" : "Restyle reference"} triggerClass="nci-small" disabled={!attached.length} button={<>{zh ? "风格转绘" : "Restyle"}<WandSparkles/></>}>
         {close => (zh ? ["水彩画", "电影写实", "铅笔素描", "剪纸"] : ["Watercolor", "Cinematic realism", "Pencil sketch", "Paper cutout"]).map(style =>

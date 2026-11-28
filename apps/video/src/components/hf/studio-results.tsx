@@ -8,6 +8,7 @@ import { generationDetails } from "@/lib/generation-details";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Images, Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { CanvasImportAction } from "@/components/creative-space/canvas-import-action";
 import "./studio-results.css";
 
 /** Result media fades in once it has something to show, instead of popping
@@ -226,6 +227,7 @@ export function MediaViewer({
   onReuse,
   onReuseParameters,
   onToVideo,
+  userId,
 }: {
   items: ViewerItem[];
   index: number;
@@ -235,6 +237,7 @@ export function MediaViewer({
   onReuse?: (item: ViewerItem) => void;
   onReuseParameters?: (item: ViewerItem) => void;
   onToVideo?: (item: ViewerItem) => void;
+  userId?: string;
 }) {
   const item = items[index];
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -303,6 +306,7 @@ export function MediaViewer({
           </section>
         ) : null}
         <div className="sr-viewer-actions">
+          {item.sourceUuid && <CanvasImportAction source={{ type: "generation", uuid: item.sourceUuid, index: item.sourceIndex ?? 0 }} locale={zh ? "zh" : "en"} userId={userId} className="sr-pill" label />}
           {onReuse ? (
             <button
               type="button"
