@@ -73,10 +73,12 @@
 .nci-option-grid { display: flex; flex-wrap: wrap; gap: 5px; }
 .nci-option-grid button { min-height: 29px; min-width: 45px; flex: 1; padding: 3px 7px; border: 1px solid var(--nci-line); border-radius: var(--ds-r-sm); background: transparent; }
 .nci-option-grid button[aria-pressed="true"] { border-color: var(--ds-text-2); }
+.nci-option-grid button:disabled { opacity: .42; cursor: not-allowed; }
+.nci-option-grid button:disabled:hover { background: transparent; }
 .nci-cascade { display: grid; grid-template-columns: minmax(90px,.8fr) minmax(145px,1.2fr); width: min(345px, calc(100vw - 45px)); }
 .nci-families { border-right: 1px solid var(--nci-line); padding-right: 4px; }
 .nci-models { padding-left: 4px; }
-.nci-video-pop { width: min(315px, calc(100vw - 28px)); padding: 14px; }
+.nci-video-pop { width: min(315px, calc(100vw - 28px)); max-height: min(620px, var(--radix-popover-content-available-height, calc(100dvh - 24px))); padding: 14px; }
 .nci-video-pop small, .nci-reference-pop small { display: block; font-size: var(--ds-fs-xs); color: var(--nci-muted); margin: 12px 0 5px; }
 .nci-duration { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
 .nci-duration input { width: 100%; accent-color: var(--ds-text-1); }

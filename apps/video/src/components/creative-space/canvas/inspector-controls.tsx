@@ -37,10 +37,10 @@ export function InspectorMenu({ label, button, children, className = "", trigger
   </Popover>;
 }
 
-export function InspectorOptions({ options, value, label, set, grid = false }: {
-  options: string[]; value?: string; label: string; set: (value: string) => void; grid?: boolean;
+export function InspectorOptions({ options, value, label, set, grid = false, disabledOptions = [] }: {
+  options: string[]; value?: string; label: string; set: (value: string) => void; grid?: boolean; disabledOptions?: string[];
 }) {
   return <fieldset aria-label={label} className={grid ? "nci-option-grid" : "nci-options"}>
-    {options.map(option => <button type="button" key={option} aria-pressed={option === value} onClick={() => set(option)}>{option}</button>)}
+    {options.map(option => <button type="button" key={option} disabled={disabledOptions.includes(option)} aria-pressed={option === value} onClick={() => set(option)}>{option}</button>)}
   </fieldset>;
 }

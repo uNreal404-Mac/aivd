@@ -22,6 +22,8 @@ export interface MarketRequest {
   aspectRatio?: string;
   resolution?: string;
   duration?: number;
+  /** Provider-selected container for video models that offer this choice. */
+  outputFormat?: "mp4" | "mov";
   /** Images per request (image models). */
   count?: number;
   /** Signed URLs of reference / start images. */
@@ -53,6 +55,7 @@ export interface MarketOptions {
   /** Image models whose default is not their first (smallest) size. */
   defaultResolution?: string;
   durations?: number[];
+  outputFormats?: ("mp4" | "mov")[];
   /** Highest `count` the model accepts. */
   maxCount?: number;
   /** Most reference images the model accepts; 0 or undefined means none. */
@@ -238,7 +241,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "bytedance/seedance-2-5",
     kind: "video",
     name: "Seedance 2.5",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], durations: secondsBetween(4, 30), maxImages: 12, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p", "1080p"], outputFormats: ["mp4", "mov"], durations: secondsBetween(4, 30), maxImages: 12, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5",
@@ -247,6 +250,7 @@ const VIDEO_MODELS: MarketModel[] = [
         resolution: req.resolution ?? "720p",
         aspect_ratio: seedanceAspect(req),
         duration: clampDuration(req, 4, 30, 5),
+        output_format: req.outputFormat ?? "mp4",
         generate_audio: req.audio ?? true,
         ...seedanceImages(req, 12, true),
       },
@@ -256,7 +260,7 @@ const VIDEO_MODELS: MarketModel[] = [
     id: "seedance-2-5-flash",
     kind: "video",
     name: "Seedance 2.5 Flash",
-    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], durations: secondsBetween(4, 30), maxImages: 10, audioToggle: true },
+    options: { aspects: [...COMMON_ASPECTS, "21:9"], resolutions: ["480p", "720p"], outputFormats: ["mp4", "mov"], durations: secondsBetween(4, 30), maxImages: 10, audioToggle: true },
     costUsd: (req) => perSecond(SEEDANCE_25_FLASH_USD, "720p")(req, 4, 30, 5),
     buildTask: (req) => ({
       model: "bytedance/seedance-2-5-flash",
@@ -266,6 +270,7 @@ const VIDEO_MODELS: MarketModel[] = [
         aspect_ratio: seedanceAspect(req),
         // Always send a length: without one Flash picks it and bills the actual length.
         duration: clampDuration(req, 4, 30, 5),
+        output_format: req.outputFormat ?? "mp4",
         generate_audio: req.audio ?? true,
         ...seedanceImages(req, 10, true),
       },

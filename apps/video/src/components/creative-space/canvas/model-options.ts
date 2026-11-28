@@ -22,6 +22,7 @@ export interface ModelChoices {
   aspects: string[];
   resolutions: string[];
   durations: number[];
+  outputFormats: ("mp4" | "mov")[];
   maxCount: number;
   maxImages: number;
   audio: boolean;
@@ -38,6 +39,7 @@ export function choicesFor(kind: GenKind, modelId: string): ModelChoices {
       aspects: (model?.aspects ?? ["16:9"]).filter((aspect) => aspect !== "Auto"),
       resolutions: model?.resolutions ?? ["720p"],
       durations: model?.durations ?? [5],
+      outputFormats: market?.options.outputFormats ?? [],
       maxCount: 1,
       maxImages: model ? maxVideoReferences(model.id) : 1,
       audio: Boolean(model?.audio),
@@ -52,6 +54,7 @@ export function choicesFor(kind: GenKind, modelId: string): ModelChoices {
     aspects: options.aspects ?? [],
     resolutions: options.resolutions ?? [],
     durations: [],
+    outputFormats: [],
     maxCount: Math.max(1, Math.min(9, options.maxCount ?? 1)),
     maxImages: options.maxImages ?? 0,
     audio: false,
@@ -83,6 +86,7 @@ export function defaultsFor(kind: GenKind, title: string, prompt = ""): Generate
       aspect: choices.aspects.includes("16:9") ? "16:9" : choices.aspects[0],
       resolution: choices.resolutions.includes("480p") ? "480p" : choices.resolutions[0],
       duration: choices.durations.includes(4) ? 4 : choices.durations[0],
+      outputFormat: choices.outputFormats[0],
       audio: choices.audio,
       status: "idle",
     };
@@ -112,6 +116,7 @@ export function withModel(data: GenerateData, modelId: string): GenerateData {
     aspect: choices.aspects.length ? pick(data.aspect, choices.aspects) : undefined,
     resolution: choices.resolutions.length ? pick(data.resolution, choices.resolutions) : undefined,
     duration: data.kind === "video" ? pick(data.duration, choices.durations) : undefined,
+    outputFormat: choices.outputFormats.length ? pick(data.outputFormat, choices.outputFormats) : undefined,
     count: data.kind === "image" ? Math.min(data.count ?? 1, choices.maxCount) : undefined,
     audio: data.kind === "video" ? (choices.audio ? (data.audio ?? true) : false) : undefined,
     voice: choices.voices.length ? pick(data.voice, choices.voices.map((voice) => voice.id)) : undefined,
@@ -169,6 +174,7 @@ export function buildRequest(data: GenerateData, prompt: string, images: string[
         aspectRatio: data.aspect,
         quality: data.resolution,
         generateAudio: Boolean(data.audio),
+        ...(choicesFor("video", data.modelId).outputFormats.includes(data.outputFormat ?? "mp4") ? { outputFormat: data.outputFormat ?? "mp4" } : {}),
         ...(images.length === 1 ? { imageUrl: images[0], mode: "image-to-video" } : {}),
         ...(images.length > 1 ? { imageUrls: images, mode: "reference-to-video" } : {}),
       },

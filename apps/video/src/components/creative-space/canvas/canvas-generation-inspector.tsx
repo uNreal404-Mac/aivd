@@ -48,6 +48,9 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
   const refs = actions.referencesFor(id);
   const attached = refs.filter(ref => ref.connected);
   const choices = choicesFor(data.kind, data.modelId);
+  const durationMarks = choices.durations.length > 8
+    ? choices.durations.filter((duration, index) => index === 0 || index === choices.durations.length - 1 || duration % 4 === 0)
+    : choices.durations;
   const referenceMode = Boolean(inputs.images || selectReference || choices.requiresImage);
   const autoAspect = isVideo && inputs.images > 0 && followsReferenceAspect(data.modelId, inputs.images);
   const pending = actions.pendingSeconds[id];
@@ -108,9 +111,19 @@ export function CanvasGenerationInspector({ id, data, actions }: { id: string; d
             <label className="nci-duration">{zh ? "时长" : "Duration"} <output>{data.duration}s</output>
               <input type="range" min={0} max={Math.max(0, choices.durations.length - 1)} value={Math.max(0, choices.durations.indexOf(data.duration ?? 0))}
                 aria-label={zh ? "时长" : "Duration"} aria-valuetext={`${data.duration}s`} disabled={choices.durations.length < 2} onChange={e => patch({ duration: choices.durations[Number(e.target.value)] })}/></label>
-            <div className="nci-range-marks"><span>{choices.durations[0]}s</span><span>{choices.durations.at(-1)}s</span></div>
-            {choices.resolutions.length > 0 && <><small>{zh ? "分辨率" : "Resolution"}</small><InspectorOptions grid label={zh ? "分辨率" : "Resolution"} options={choices.resolutions} value={data.resolution} set={v => patch({ resolution: v })}/></>}
+            <div className="nci-range-marks">{durationMarks.map(duration => <span key={duration}>{duration}s</span>)}</div>
+            {choices.resolutions.length > 0 && <><small>{zh ? "分辨率" : "Resolution"}</small><InspectorOptions grid label={zh ? "分辨率" : "Resolution"} options={choices.resolutions.includes("4k") ? choices.resolutions : [...choices.resolutions, "4k"]} disabledOptions={choices.resolutions.includes("4k") ? [] : ["4k"]} value={data.resolution} set={v => patch({ resolution: v })}/></>}
             {autoAspect ? <p className="nci-info">{zh ? "画幅跟随参考图片" : "The video follows the reference image’s aspect ratio"}</p> : choices.aspects.length > 0 && <><small>{zh ? "宽高比" : "Aspect ratio"}</small><InspectorOptions grid label={zh ? "宽高比" : "Aspect ratio"} options={choices.aspects} value={data.aspect} set={v => patch({ aspect: v })}/></>}
+            <small>{zh ? "输出格式" : "Output format"}</small>
+            <fieldset className="nci-option-grid nci-format-grid" aria-label={zh ? "输出格式" : "Output format"}>
+              {(["mp4", "mov"] as const).map(format => <button type="button" key={format} disabled={!choices.outputFormats.includes(format)} aria-pressed={format === (data.outputFormat ?? "mp4")} onClick={() => patch({ outputFormat: format })}>{format.toUpperCase()}</button>)}
+            </fieldset>
+            {!choices.outputFormats.length && <p className="nci-info">{zh ? "当前模型暂不支持选择输出格式" : "This model does not offer a format choice"}</p>}
+            <small>{zh ? "码率档位" : "Bitrate tier"}</small>
+            <fieldset className="nci-option-grid nci-format-grid" aria-label={zh ? "码率档位" : "Bitrate tier"}>
+              <button type="button" aria-pressed="true">{zh ? "标准" : "Standard"}</button>
+              <button type="button" disabled>{zh ? "高码率 · 暂不可用" : "High · Unavailable"}</button>
+            </fieldset>
           </>}
         </InspectorMenu>
         {choices.audio && <button type="button" className="nci-chip" aria-pressed={Boolean(data.audio)} onClick={() => patch({ audio: !data.audio })}>{data.audio ? (zh ? "音频开" : "Audio on") : (zh ? "音频关" : "Audio off")}<span className="nci-toggle" aria-hidden="true"/></button>}

@@ -2543,9 +2543,9 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
             style={{ ...appearance, backgroundColor: viewOptions.themeColor || undefined, "--du-canvas-toolbar-scale": viewOptions.toolbarScale, "--nc-top-toolbar-scale": viewOptions.topToolbarScale, "--nc-group-label-scale": viewOptions.groupLabelScale, "--nc-wire-width": `${viewOptions.wireWidth}px`, "--nc-wire-color": viewOptions.wireColor } as CSSProperties}
             className={`nc-flow${showEdges ? "" : " edges-hidden"}${viewOptions.simple && farOut ? " is-far-out" : ""}`}
             onDoubleClick={(event) => {
-              if (viewOptions.blankAction !== "double") return;
-              if (!(event.target as HTMLElement).classList.contains("react-flow__pane")) return;
-              setMenu({ x: event.clientX, y: event.clientY, flow: flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }) });
+              if (!(event.target as Element).closest(".react-flow__pane, .react-flow__background")) return;
+              setMenu(null);
+              setPanel("add");
             }}
             onDragOver={(event: DragEvent) => event.preventDefault()}
             onDrop={(event: DragEvent) => {

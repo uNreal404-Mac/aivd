@@ -71,6 +71,7 @@ export interface GenerateData extends Pinnable {
   aspect?: string;
   resolution?: string;
   duration?: number;
+  outputFormat?: "mp4" | "mov";
   count?: number;
   audio?: boolean;
   voice?: string;
@@ -526,6 +527,7 @@ export function normalizeData(raw: Record<string, unknown>, unknownRequest: stri
       ...(typeof raw.aspect === "string" ? { aspect: raw.aspect } : {}),
       ...(typeof raw.resolution === "string" ? { resolution: raw.resolution } : {}),
       ...(num(raw.duration) !== undefined ? { duration: num(raw.duration) } : {}),
+      ...(raw.outputFormat === "mp4" || raw.outputFormat === "mov" ? { outputFormat: raw.outputFormat } : {}),
       ...(num(raw.count) !== undefined ? { count: num(raw.count) } : {}),
       ...(typeof raw.audio === "boolean" ? { audio: raw.audio } : {}),
       ...(typeof raw.voice === "string" ? { voice: raw.voice } : {}),
@@ -581,6 +583,7 @@ function migrateV1(raw: Record<string, unknown>): CanvasData | null {
       ...(typeof raw.aspect === "string" ? { aspect: raw.aspect } : {}),
       ...(typeof raw.resolution === "string" ? { resolution: raw.resolution } : {}),
       ...(num(raw.duration) !== undefined ? { duration: num(raw.duration) } : {}),
+      ...(raw.outputFormat === "mp4" || raw.outputFormat === "mov" ? { outputFormat: raw.outputFormat } : {}),
       ...(typeof raw.audio === "boolean" ? { audio: raw.audio } : {}),
       status: resultUuid ? (status === "idle" ? "running" : status) : status === "failed" ? "failed" : "idle",
       ...(resultUuid ? { resultUuid, resultIndex: num(raw.resultIndex) ?? 0 } : {}),

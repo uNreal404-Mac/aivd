@@ -42,6 +42,7 @@ export interface GenerateVideoParams {
   prompt: string;
   model: string; // "sora-2"
   duration?: number;
+  outputFormat?: "mp4" | "mov";
   aspectRatio?: string; // "16:9" | "9:16"
   quality?: string; // "standard" | "high"
   imageUrl?: string; // image-to-video
@@ -74,6 +75,7 @@ export interface GenerateMediaParams {
   aspectRatio?: string;
   resolution?: string;
   duration?: number;
+  outputFormat?: "mp4" | "mov";
   count?: number;
   /** Uploaded reference / start images: storage keys or allowed URLs. */
   imageUrls?: string[];
@@ -265,6 +267,7 @@ export class VideoService {
         aspectRatio: params.aspectRatio,
         resolution: params.quality,
         duration: params.duration,
+        outputFormat: params.outputFormat,
         imageUrls: [...(params.imageUrl ? [params.imageUrl] : []), ...(params.imageUrls ?? [])],
         keyframes: params.keyframes,
         locale: params.locale,
@@ -686,6 +689,9 @@ export class VideoService {
     if (!model) {
       throw new ApiError(`Unsupported model: ${params.model}`, 400, { code: "UNSUPPORTED_MODEL", model: params.model });
     }
+    if (params.outputFormat && !model.options.outputFormats?.includes(params.outputFormat)) {
+      throw new ApiError("This model does not support the selected output format.", 400, { code: "INVALID_VIDEO_OPTIONS" });
+    }
     const apiKey = process.env.KIE_API_KEY;
     if (!apiKey) {
       throw new ApiError("Generation is not configured", 503, { code: "PROVIDER_NOT_CONFIGURED" });
@@ -787,6 +793,7 @@ export class VideoService {
       resolution: model.kind === "image" ? imageResolution(model, params.resolution) :
         pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
       duration: measured?.seconds ?? (params.keyframes ? params.duration ?? 10 : allowedDuration(model, params.duration)),
+      ...(params.outputFormat ? { outputFormat: params.outputFormat } : {}),
       ...(model.id === VIDEO_MOTION_MODEL ? { orientation:params.orientation ?? "video" } : {}),
       ...(params.keyframes ? { keyframes: params.keyframes } : {}),
       count: imageOutputCount(params.count, model.options.maxCount),
