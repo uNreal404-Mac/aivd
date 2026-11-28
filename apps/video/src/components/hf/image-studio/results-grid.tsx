@@ -5,7 +5,7 @@
 import { Clapperboard, Paintbrush, RotateCcw } from "lucide-react";
 import type { MediaJob } from "@/lib/media-studio";
 import { generationDetails } from "@/lib/generation-details";
-import { CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef } from "@/components/hf/studio-results";
+import { CopyImageButton, CopyPromptButton, DownloadLink, PendingCard, markReady, readyRef } from "@/components/hf/studio-results";
 import type { ImageView } from "./view-menu";
 
 function dayLabel(at: number | undefined, zh: boolean): string {
@@ -69,6 +69,7 @@ export function ResultsGrid({
               <span className="sr-card-shade" aria-hidden="true" />
               <span className="sr-card-top">
                 <CopyPromptButton prompt={job.prompt} zh={zh} />
+                <CopyImageButton uuid={job.uuid} index={index} zh={zh} />
                 <DownloadLink url={url} zh={zh} />
               </span>
               <span className="sr-card-bottom">

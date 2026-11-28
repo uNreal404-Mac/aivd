@@ -90,6 +90,8 @@
   font-size: var(--ds-fs-sm);
 }
 .hmp-uploading small { color: var(--ds-text-3); font-size: var(--ds-fs-xs); }
+.hmp-stop-upload { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--ds-line-3); border-radius: var(--ds-r-full); background: var(--ds-fill-1); color: var(--du-text); font-size: var(--ds-fs-xs); cursor: pointer; }
+.hmp-stop-upload:hover { background: var(--ds-fill-3); }
 
 /* Delete is a bin that shows on hover or focus (always on touch screens).
    The first press turns it into a red "Delete?" for a few seconds; only a

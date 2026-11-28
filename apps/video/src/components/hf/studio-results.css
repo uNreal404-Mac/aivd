@@ -145,6 +145,8 @@
   transform: scale(0.94);
 }
 
+.sr-icon[data-error], .sr-pill[data-error] { color: var(--du-danger); }
+
 .sr-pill {
   display: inline-flex;
   width: fit-content;

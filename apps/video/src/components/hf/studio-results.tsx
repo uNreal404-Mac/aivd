@@ -7,7 +7,7 @@ import { failureReason } from "@/lib/failure-reason";
 import { generationDetails } from "@/lib/generation-details";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Images, Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import "./studio-results.css";
 
 /** Result media fades in once it has something to show, instead of popping
@@ -141,6 +141,48 @@ export function CopyPromptButton({
   );
 }
 
+/** Copy the actual generated pixels, so pasting into the image composer adds a reference. */
+export function CopyImageButton({ uuid, index, zh, className = "sr-icon" }: {
+  uuid: string; index: number; zh: boolean; className?: string;
+}) {
+  const [state, setState] = useState<"idle" | "copying" | "copied" | "failed">("idle");
+  const name = zh ? "复制图片，粘贴到下方生成器" : "Copy image to paste into the composer";
+  const feedback = state === "copied" ? (zh ? "图片已复制" : "Image copied") : state === "failed" ? (zh ? "复制失败，请检查浏览器剪贴板权限" : "Copy failed. Check clipboard permission.") : name;
+  const copy = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (state === "copying") return;
+    setState("copying");
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") throw new Error("Image clipboard unavailable");
+      // Start the clipboard write in the click's user activation. Safari can
+      // then await the image bytes without losing permission to write.
+      const png = (async () => {
+        const response = await fetch(`/api/v1/creative-space/asset?uuid=${encodeURIComponent(uuid)}&index=${index}`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Image unavailable");
+        const source = await response.blob();
+        if (source.type === "image/png") return source;
+        const bitmap = await createImageBitmap(source);
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("Canvas unavailable");
+          context.drawImage(bitmap, 0, 0);
+          return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG conversion failed")), "image/png"));
+        } finally { bitmap.close(); }
+      })();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+      setState("copied");
+    } catch { setState("failed"); }
+    window.setTimeout(() => setState("idle"), 2200);
+  };
+  return <button type="button" className={className} title={feedback} aria-label={feedback} data-error={state === "failed" || undefined} onClick={copy}>
+    {state === "copied" ? <Check className="h-4 w-4" aria-hidden="true" /> : state === "failed" ? <X className="h-4 w-4" aria-hidden="true" /> : <Images className="h-4 w-4" aria-hidden="true" />}
+    {className.includes("sr-pill") ? (state === "copied" ? (zh ? "图片已复制" : "Image copied") : zh ? "复制图片" : "Copy image") : null}
+  </button>;
+}
+
 export function DownloadLink({ url, zh, className = "sr-icon", label = false }: { url: string; zh: boolean; className?: string; label?: boolean }) {
   return (
     <a
@@ -170,6 +212,8 @@ export type ViewerItem = {
   prompt: string;
   model?: string;
   modelId?: string;
+  sourceUuid?: string;
+  sourceIndex?: number;
   parameters?: import("@/lib/generation-details").GenerationParameters | null;
 };
 
@@ -293,6 +337,7 @@ export function MediaViewer({
             </button>
           ) : null}
           {item.prompt ? <CopyPromptButton prompt={item.prompt} zh={zh} className="sr-pill" /> : null}
+          {item.kind === "image" && item.sourceUuid !== undefined ? <CopyImageButton uuid={item.sourceUuid} index={item.sourceIndex ?? 0} zh={zh} className="sr-pill" /> : null}
           <DownloadLink url={item.url} zh={zh} className="sr-pill" label />
         </div>
         <p className="sr-viewer-keys">{zh ? "← → 切换 · Esc 关闭" : "← → to browse · Esc to close"}</p>

@@ -306,6 +306,7 @@ export async function uploadImage(
   fetchFn: FetchLike = fetch,
   expectedAccount?: string,
   scope?: "canvas",
+  signal?: AbortSignal,
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append("file", file);
@@ -316,6 +317,7 @@ export async function uploadImage(
       method: "POST",
       ...(expectedAccount ? { headers: { "X-Media-Account": expectedAccount } } : {}),
       body: form,
+      signal,
     });
 
     return parseUploadResponse(response.status, await readJson(response));

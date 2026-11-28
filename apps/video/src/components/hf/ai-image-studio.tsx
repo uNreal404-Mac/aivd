@@ -207,6 +207,8 @@ function AiImageStudioForm({
         job.status === "completed"
           ? job.urls.map((url, index) => ({
               key: `${job.uuid}-${index}`,
+              sourceUuid: job.uuid,
+              sourceIndex: index,
               url,
               kind: "image" as const,
               prompt: job.prompt,

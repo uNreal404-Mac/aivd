@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Expand, Image as ImageIcon, Loader2, Music2, Plus, Trash2, UploadCloud, X } from "lucide-react";
+import { Check, Expand, Image as ImageIcon, Loader2, Music2, Plus, Square, Trash2, UploadCloud, X } from "lucide-react";
 import { isWanVideoMime, WAN_REFERENCE_MAX_BYTES } from "@/lib/wan-video-references";
 import { canUseHomeKeyframe } from "@/lib/home-keyframes";
 import { MAX_BYTES, uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
@@ -120,10 +120,11 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   const [confirmDelete, setConfirmDelete] = useState<"selected" | "all" | null>(null);
   const [deletingMany, setDeletingMany] = useState(false);
   const uploadRevision = useRef(0);
+  const uploadController = useRef<AbortController | null>(null);
   const assetMutationRevision = useRef(0);
   useEffect(() => {
     setUploading(false);
-    return () => { uploadRevision.current++; };
+    return () => { uploadRevision.current++; uploadController.current?.abort(); uploadController.current = null; };
   }, [userId]);
   const [armed, setArmed] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -369,6 +370,8 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
     if (!files.length || uploading) return;
     const batch = Array.from(files);
     const revision = uploadRevision.current;
+    const controller = new AbortController();
+    uploadController.current = controller;
     setTab("upload");
     setUploading(true); setError(""); setUploadProgress({ done: 0, total: batch.length });
     let failures = 0;
@@ -386,12 +389,12 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
         if (userId) {
           const isVideo = file.type.startsWith("video/");
           const isAudio = file.type.startsWith("audio/");
-          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined).then((result) => ({ ok: true as const, key: result.key, url: result.url }))
-            : isAudio ? await fetch("/api/v1/creative-space/audio-assets", { method: "POST", headers: { "X-Media-Account": userId }, body: (() => { const form = new FormData(); form.set("file", file); if (libraryScope === "canvas") form.set("scope", "canvas"); return form; })() }).then(async (response) => {
+          const uploaded = isVideo ? await uploadWorkflowVideo(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined, controller.signal).then((result) => ({ ok: true as const, key: result.key, url: result.url }))
+            : isAudio ? await fetch("/api/v1/creative-space/audio-assets", { method: "POST", signal: controller.signal, headers: { "X-Media-Account": userId }, body: (() => { const form = new FormData(); form.set("file", file); if (libraryScope === "canvas") form.set("scope", "canvas"); return form; })() }).then(async (response) => {
               const body = await response.json();
               if (!response.ok || !body?.data?.key || !body?.data?.signedUrl) throw new Error("audio upload failed");
               return { ok: true as const, key: body.data.key as string, url: body.data.signedUrl as string };
-            }) : await uploadImage(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined);
+            }) : await uploadImage(file, fetch, userId, libraryScope === "canvas" ? "canvas" : undefined, controller.signal);
           if (revision !== uploadRevision.current) return;
           if (uploaded.ok) {
             const remote: PickerAsset = { id: `upload:${uploaded.key}`, name: file.name, mimeType: file.type, size: file.size, key: uploaded.key, url: uploaded.url };
@@ -401,7 +404,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
           } else { setError(`${file.name}: ${uploadErrorText(uploaded, zh)}`); failures++; }
         } else {
           const local = await saveGuestAsset(file, userId, libraryScope);
-          if (revision !== uploadRevision.current) return;
+          if (revision !== uploadRevision.current) { await removeGuestAsset(local.id).catch(() => undefined); return; }
           assetMutationRevision.current++;
           setAssets((current) => [local, ...current]);
           if (batch.length === 1 && acceptable(local)) toggle(local.id, true);
@@ -410,9 +413,18 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
       setUploadProgress({ done: index + 1, total: batch.length });
     }
     if (revision === uploadRevision.current) {
+      uploadController.current = null;
       setUploading(false);
       if (!failures && batch.length > 1) setError(zh ? `已上传 ${batch.length} 个文件` : `${batch.length} files uploaded`);
     }
+  };
+  const stopUpload = () => {
+    uploadRevision.current++;
+    uploadController.current?.abort();
+    uploadController.current = null;
+    setUploading(false);
+    setUploadProgress({ done: 0, total: 0 });
+    setError(zh ? "已停止上传，已完成的文件会保留。" : "Upload stopped. Completed files were kept.");
   };
   const handledBatch = useRef<string | null>(null);
   useEffect(() => {
@@ -547,7 +559,7 @@ export function HomeMediaPicker({ lang, open, onClose, onSelect, onDelete, maxSe
   // The upload tile opens the file chooser; it leads the uploads grid, even
   // when there is nothing uploaded yet.
   const addTile = <button type="button" className="hmp-add" title={limits} disabled={uploading || deletingMany} onClick={() => fileInput.current?.click()}><span className="hmp-add-icon"><UploadCloud size={20} aria-hidden="true" /></span>{homepage ? (zh ? "批量上传文件" : "Upload files") : (zh ? "上传文件" : "Upload file")}</button>;
-  const uploadingTile = uploading ? <output className="hmp-uploading" aria-live="polite"><Loader2 className="hmp-spin" size={24} aria-hidden="true" /><strong>{zh ? "上传中" : "Uploading"}</strong>{uploadProgress.total > 1 ? <small>{uploadProgress.done}/{uploadProgress.total}</small> : null}</output> : null;
+  const uploadingTile = uploading ? <output className="hmp-uploading" aria-live="polite"><Loader2 className="hmp-spin" size={24} aria-hidden="true" /><strong>{zh ? "上传中" : "Uploading"}</strong>{uploadProgress.total > 1 ? <small>{uploadProgress.done}/{uploadProgress.total}</small> : null}<button type="button" className="hmp-stop-upload" onClick={stopUpload}><Square size={12} fill="currentColor" aria-hidden="true" />{zh ? "停止上传" : "Stop upload"}</button></output> : null;
   const deleteTargets = confirmDelete === "all" ? assets : assets.filter((asset) => managed.includes(asset.id));
   const linkedCount = elements.filter((element) => deleteTargets.some((asset) => asset.id === element.assetId)).length + brands.filter((brand) => deleteTargets.some((asset) => asset.id === brand.logoId)).length;
 

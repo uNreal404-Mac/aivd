@@ -311,6 +311,17 @@ describe("uploadImage", () => {
     expect(init?.body).toBeInstanceOf(FormData);
   });
 
+  it("passes the batch abort signal to the upload request", async () => {
+    const controller = new AbortController();
+    const fetchFn = vi.fn(async (_input: string, init?: RequestInit) => {
+      expect(init?.signal).toBe(controller.signal);
+      controller.abort();
+      throw new DOMException("Stopped", "AbortError");
+    });
+    await expect(uploadImage(stubFile(), fetchFn as FetchLike, "u", undefined, controller.signal)).resolves.toMatchObject({ ok: false, code: "upload_failed" });
+    expect(controller.signal.aborted).toBe(true);
+  });
+
   it("never rejects when the network call throws", async () => {
     const fetchFn = vi.fn(async () => {
       throw new Error("offline");
