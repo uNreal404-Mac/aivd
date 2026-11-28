@@ -6,7 +6,8 @@ import { z } from "zod";
 
 export const MAX_CANVAS_NODES = 200;
 export const MAX_CANVAS_EDGES = 400;
-export const MAX_CANVAS_BYTES = 400_000;
+// A canvas can carry up to 60 Agent turns, including their generated prompts.
+export const MAX_CANVAS_BYTES = 1_000_000;
 
 const point = z.object({ x: z.number().finite(), y: z.number().finite() });
 const size = z.number().finite().min(40).max(8000);

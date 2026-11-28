@@ -912,7 +912,7 @@ function NodeCanvasInner({ locale, initialPrompt, initialEdit, userId, internalF
       const lastId = !id && !agentHandoff && userId && !initialPrompt.trim() ? (() => {
         try { return localStorage.getItem(lastCanvasKey); } catch { return null; }
       })() : null;
-      const openId = id || (lastId && list.some((item) => item.id === lastId) ? lastId : list[0]?.id);
+      const openId = id || (lastId && (!list.length || list.some((item) => item.id === lastId)) ? lastId : list[0]?.id);
       if (!loaded && openId && userId) {
         try {
           const response = await canvasFetch(`/api/v1/creative-space/workflows/${encodeURIComponent(openId)}`, { cache: "no-store" });
