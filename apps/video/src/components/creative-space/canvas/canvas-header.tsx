@@ -132,7 +132,7 @@ export function CanvasHeader(p: Props) {
             <ChevronDown size={14} />
           </button>
         )}
-        <button type="button" className="nc-rename-canvas" onClick={() => { setOpen(null); setRenaming(true); }} aria-label={l("重命名画布", "Rename canvas")} title={l("重命名画布", "Rename canvas")}><Pencil size={15} /></button>
+        <button type="button" className="nc-rename-canvas" onClick={() => { setOpen(null); setRenaming(true); }} aria-label={l("重命名画布", "Rename canvas")} title={l("重命名画布", "Rename canvas")}><Pencil size={14} /></button>
         <output className="nc-status-icon" aria-label={p.save} title={p.save}>
           <Status size={15} />
         </output>
