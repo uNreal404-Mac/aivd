@@ -44,7 +44,7 @@ export function CanvasDock({
   return (
     <div className="nc-dock-wrap">
       {open === "add" && (
-        <CanvasFloatingPanel id="nc-add-elements" title={zh ? "添加元素" : "Add elements"} onClose={() => onPanel(null)} className="nc-add-floating" width={240}>
+        <CanvasFloatingPanel id="nc-add-elements" title={zh ? "添加元素" : "Add elements"} onClose={() => onPanel(null)} className="nc-add-floating" width={280}>
           {(["text", "image", "video", "audio", "agent", "group"] as const).map((kind) => {
             const Icon = kindIcon(kind);
             return (
