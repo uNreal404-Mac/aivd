@@ -275,7 +275,7 @@ function TabButton({ active, children, onClick, showBadge }: TabButtonProps) {
     >
       {children}
       {showBadge && (
-        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-bold text-white">
           40%
         </span>
       )}

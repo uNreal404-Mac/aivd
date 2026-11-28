@@ -2,21 +2,44 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUp, AudioLines, ChevronLeft, ChevronRight, Clapperboard, Film, Image as ImageIcon, Layers, Orbit, Sparkles, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  ArrowRight,
+  ArrowUp,
+  ArrowUpRight,
+  AudioLines,
+  ChevronLeft,
+  ChevronRight,
+  Film,
+  Image as ImageIcon,
+  Layers,
+  Orbit,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 
 import { GallerySection } from "@/components/gallery/gallery-section";
 import { NEW_USER_GIFT } from "@/config/pricing-user";
-import { CREATIVE_SKILLS, CREATIVE_SKILL_CATEGORIES } from "@/lib/creative-skills";
+import { CREATIVE_SKILLS } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
-import { FEATURE_SLIDES, HOW_STEPS, MEDIA, MODEL_GALLERIES, PRODUCT_TILES, SAMPLE_PROMPTS, withExamplePrompt, withPrompt, type Bi, type ShowMedia } from "@/lib/home-showcase";
+import {
+  AI_CAPABILITY_PILLS,
+  FEATURE_SLIDES,
+  HOW_STEPS,
+  MEDIA,
+  MODEL_GALLERIES,
+  PRODUCT_TILES,
+  SAMPLE_PROMPTS,
+  withExamplePrompt,
+  withPrompt,
+  type Bi,
+  type ShowMedia,
+} from "@/lib/home-showcase";
 import { WallCard } from "@/components/hf/wall-card";
-import { SlideCover } from "@/components/hf/slide-cover";
 import { InViewVideo } from "@/components/hf/in-view-video";
-import { VideoPlayToggle } from "@/components/hf/video-play-toggle";
 import { useCarousel } from "@/components/hf/use-carousel";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { HOME_TEMPLATES, type HomeTemplate } from "@/lib/home-templates";
+import type { HomeTemplate } from "@/lib/home-templates";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "./home-showcase.css";
 
@@ -29,29 +52,73 @@ const TILE_ICONS: Record<(typeof PRODUCT_TILES)[number]["icon"], LucideIcon> = {
   orbit: Orbit,
 };
 
-// Aspect ratios cycled through the masonry walls so columns stagger.
-const WALL_RATIOS = ["3 / 4", "4 / 3", "1 / 1", "16 / 10", "4 / 5", "16 / 9", "3 / 4", "1 / 1"];
-// Native ratios of the six Seedance examples, in gallery order.
-const VIDEO_WALL_RATIOS = ["16 / 9", "16 / 9", "16 / 9", "9 / 16", "9 / 16", "16 / 9"];
+type DiscoverTab = "all" | "video" | "image" | "effects";
+
+type DiscoverItem = {
+  id: string;
+  tab: Exclude<DiscoverTab, "all">;
+  media: ShowMedia;
+  href: string;
+  prompt?: Bi;
+  promptId?: string;
+};
+
+function buildDiscoverItems(): DiscoverItem[] {
+  const videoGallery = MODEL_GALLERIES[0];
+  const imageGallery = MODEL_GALLERIES[1];
+
+  return [
+    { id: "d-dragon", tab: "video", media: MEDIA.dragon, href: videoGallery.href, promptId: MEDIA.dragon.promptId },
+    { id: "d-japan", tab: "video", media: MEDIA.japan, href: videoGallery.href, promptId: MEDIA.japan.promptId },
+    { id: "d-carpet", tab: "image", media: MEDIA.carpet, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.carpet.src] },
+    { id: "d-whale", tab: "video", media: MEDIA.whaleOrigami, href: videoGallery.href, promptId: MEDIA.whaleOrigami.promptId },
+    { id: "d-rain", tab: "image", media: MEDIA.rain, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.rain.src] },
+    { id: "d-dress", tab: "video", media: MEDIA.dress, href: videoGallery.href, promptId: MEDIA.dress.promptId },
+    { id: "d-bloom", tab: "effects", media: MEDIA.bloom, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.bloom.src] },
+    { id: "d-samurai", tab: "video", media: MEDIA.samuraiCat, href: videoGallery.href, promptId: MEDIA.samuraiCat.promptId },
+    { id: "d-autumn", tab: "image", media: MEDIA.autumn, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.autumn.src] },
+    { id: "d-fried", tab: "video", media: MEDIA.friedChicken, href: videoGallery.href, promptId: MEDIA.friedChicken.promptId },
+    { id: "d-mech", tab: "effects", media: MEDIA.mech, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.mech.src] },
+    { id: "d-marina", tab: "video", media: MEDIA.marina, href: videoGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.marina.src] },
+    { id: "d-boy", tab: "image", media: MEDIA.boyDog, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.boyDog.src] },
+    { id: "d-wind", tab: "effects", media: MEDIA.wind, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.wind.src] },
+    { id: "d-tomb", tab: "effects", media: MEDIA.tomb, href: "/effects", prompt: SAMPLE_PROMPTS[MEDIA.tomb.src] },
+    { id: "d-dancer", tab: "image", media: MEDIA.dancer, href: imageGallery.href, prompt: SAMPLE_PROMPTS[MEDIA.dancer.src] },
+  ];
+}
+
+const DISCOVER_ITEMS = buildDiscoverItems();
+
+function mediaColumns<T extends { media: ShowMedia }>(items: readonly T[], count: number) {
+  const columns: T[][] = Array.from({ length: count }, () => []);
+  const heights = Array<number>(count).fill(0);
+  for (const item of items) {
+    const index = heights.indexOf(Math.min(...heights));
+    columns[index].push(item);
+    heights[index] += 1 / (item.media.aspectRatio ?? 1);
+  }
+  return columns;
+}
 
 function Media({ media, className, eager }: { media: ShowMedia; className?: string; eager?: boolean }) {
   return media.video ? (
-    <InViewVideo className={className} src={media.src} poster={media.poster} />
+    <InViewVideo className={className} src={media.src} poster={media.poster} documentGallery />
   ) : (
-    <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} />
+    <img className={className} src={media.src} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
   );
 }
 
-/** Picture, lettering and caption of one carousel slide. */
+/** The release caption follows the frame so it never covers the subject. */
 function SlideContent({ slide, eager, t }: { slide: (typeof FEATURE_SLIDES)[number]; eager: boolean; t: (value: Bi) => string }) {
   return (
     <>
       <span className="hs-slide-media">
         <Media media={slide.media} eager={eager} />
-        <SlideCover main={slide.cover.main} sub={t(slide.cover.sub)} />
       </span>
-      <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
-      <span className="hs-slide-body">{t(slide.body)}</span>
+      <span className="hs-slide-caption">
+        <span className={slide.accent ? "hs-slide-title hs-accent" : "hs-slide-title"}>{t(slide.title)}</span>
+        <span className="hs-slide-body">{t(slide.body)}</span>
+      </span>
     </>
   );
 }
@@ -60,241 +127,307 @@ export function HomeShowcase({ lang, onUseTemplate }: { lang: string; onUseTempl
   const zh = lang.toLowerCase().startsWith("zh");
   const t = (value: Bi) => (zh ? value.zh : value.en);
   const href = (path: string) => localizedHref(lang, path);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const carousel = useCarousel(trackRef);
-  const skills = CREATIVE_SKILLS.slice(0, 8);
-  const categoryName = (id: string) => {
-    const category = CREATIVE_SKILL_CATEGORIES.find((item) => item.id === id);
-    return category ? (zh ? category.zh : category.en) : "";
-  };
+  const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("all");
+  const releaseTrackRef = useRef<HTMLDivElement>(null);
+  const releaseCarousel = useCarousel(releaseTrackRef);
+  const [discoveryColumns, setDiscoveryColumns] = useState(4);
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const tablet = window.matchMedia("(max-width: 1199px)");
+    const update = () => setDiscoveryColumns(mobile.matches ? 2 : tablet.matches ? 3 : 4);
+    update();
+    const queries = [mobile, tablet];
+    queries.forEach(query => query.addEventListener("change", update));
+    return () => queries.forEach(query => query.removeEventListener("change", update));
+  }, []);
+  const visibleDiscover =
+    discoverTab === "all"
+      ? DISCOVER_ITEMS
+      : DISCOVER_ITEMS.filter((item) => item.tab === discoverTab);
+
+  const agentCases = CREATIVE_SKILLS.slice(0, 4);
 
   return (
     <div className="hs">
       <ScrollReveal />
-      {/* 1. Feature carousel */}
-      <section className="hs-carousel" aria-label={zh ? "最新功能" : "What's new"}>
-        <div ref={trackRef} className="hs-carousel-track">
-          {FEATURE_SLIDES.map((slide, index) =>
-            // A slide with a clip is a card that holds the link and, beside
-            // it, the play button shown under reduced motion (a button may
-            // not sit inside a link).
-            slide.media.video ? (
-              <div key={slide.href} className="hs-slide" data-video-scope>
-                <Link href={href(slide.href)} className="hs-slide-link">
-                  <SlideContent slide={slide} eager={index < 3} t={t} />
+
+      <section className="hs-shell hs-releases" aria-label={zh ? "最新功能" : "Featured releases"}>
+        <div className="hs-release-rail">
+          <div className="hs-release-grid" ref={releaseTrackRef}>
+            {FEATURE_SLIDES.map((slide, index) =>
+              slide.media.video ? (
+                <div key={slide.href} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties} data-video-scope>
+                  <Link href={href(slide.href)} className="hs-slide-link">
+                    <SlideContent slide={slide} eager={index === 0} t={t} />
+                  </Link>
+                </div>
+              ) : (
+                <Link key={slide.href} href={href(slide.href)} className="hs-slide" style={{ "--hs-media-ratio": slide.media.aspectRatio } as CSSProperties}>
+                  <SlideContent slide={slide} eager={index === 0} t={t} />
                 </Link>
-                <VideoPlayToggle zh={zh} className="hs-slide-play" />
-              </div>
-            ) : (
-              <Link key={slide.href} href={href(slide.href)} className="hs-slide">
-                <SlideContent slide={slide} eager={index < 3} t={t} />
-              </Link>
-            ),
-          )}
-        </div>
-        <CarouselArrows zh={zh} {...carousel} />
-      </section>
-
-      {/* How it works: three steps, straight under the first screen */}
-      <section className="hs-section" aria-labelledby="hs-how-title">
-        <div className="hs-head">
-          <div>
-            <h2 id="hs-how-title" className="hs-title">{zh ? "怎么用 AI 生成视频" : "How to make an AI video"}</h2>
-            <p className="hs-sub">{zh ? "从一个想法到一条成片，三步。" : "Three steps from an idea to a finished clip."}</p>
+              ),
+            )}
           </div>
-        </div>
-        <ol className="hs-steps">
-          {HOW_STEPS.map((step, index) => (
-            <li key={step.title.en} className="hs-step">
-              <span className="hs-step-num" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <h3 className="hs-step-title">{t(step.title)}</h3>
-              <p className="hs-step-body">{t(step.body)}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* 2. Offer card and product tiles */}
-      <section className="hs-offer-grid" aria-label={zh ? "热门产品" : "Popular tools"}>
-        <Link href={href("/pricing")} className="hs-offer">
-          <span className="hs-offer-glow" aria-hidden="true" />
-          <span className="hs-offer-kicker">{zh ? "新用户福利" : "New account offer"}</span>
-          <span className="hs-offer-title">{zh ? `注册即送 ${NEW_USER_GIFT.credits} 积分` : `${NEW_USER_GIFT.credits} free credits`}</span>
-          <span className="hs-offer-body">{zh ? "可免费生成第一条视频" : "Enough for your first video"}</span>
-          <span className="hs-offer-cta">{zh ? "免费开始" : "Start free"}</span>
-        </Link>
-        <div className="hs-tiles">
-          {PRODUCT_TILES.map((tile) => {
-            const Icon = TILE_ICONS[tile.icon];
-            return (
-              <Link key={tile.href} href={href(tile.href)} className="hs-tile" data-tilt>
-                <Icon className="hs-tile-icon" aria-hidden="true" />
-                <span className="hs-tile-title">
-                  {typeof tile.title === "string" ? tile.title : t(tile.title)}
-                  {tile.badge ? <span className="hs-badge">{t(tile.badge)}</span> : null}
-                  {tile.tag ? <span className="hs-badge hs-badge-tag">{tile.tag}</span> : null}
-                </span>
-                <span className="hs-tile-body">{t(tile.body)}</span>
-              </Link>
-            );
-          })}
+          <CarouselArrows zh={zh} {...releaseCarousel} />
         </div>
       </section>
 
-      {/* 3. Agent banner and use cases */}
-      <section className="hs-chrome" aria-labelledby="hs-agent-title">
-        <span className="hs-chrome-edge hs-chrome-edge-a" aria-hidden="true" />
-        <span className="hs-chrome-edge hs-chrome-edge-b" aria-hidden="true" />
-        {/* The heading says what this is; the slogan is the display line. */}
-        <h2 id="hs-agent-title" className="hs-chrome-kicker">{zh ? "AI 视频 Agent · 创作空间" : "AI Video Agent · Creative Space"}</h2>
-        <p className="hs-chrome-title">{zh ? "一句话，一整条视频" : "ONE LINE. ONE FILM."}</p>
-        <p className="hs-chrome-body">
-          {zh ? "说出你的想法，Agent 先拆成分镜和提示词，你确认后再生成。" : "Say the idea. The agent plans shots and prompts, and generates once you approve."}
-        </p>
-        <div className="hs-chrome-actions">
-          <Link href={href("/creative-space")} className="hs-btn hs-btn-light">
-            {zh ? "开始创作" : "Start creating"}
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Link href={href("/creative-space/canvas")} className="hs-btn hs-btn-dark">
-            {zh ? "打开画布" : "Open the canvas"}
-          </Link>
-        </div>
-      </section>
-      <section className="hs-usecases" aria-label={zh ? "创作案例" : "Use cases"}>
-        <div className="hs-usecase-grid">
-          {skills.map((skill, index) => (
-            <Link
-              key={skill.id}
-              href={href(`/creative-space/canvas?prompt=${encodeURIComponent(zh ? skill.brief.zh : skill.brief.en)}`)}
-              className={index >= 4 ? "hs-usecase hs-usecase-faded" : "hs-usecase"}
-              tabIndex={index >= 4 ? -1 : undefined}
-              aria-hidden={index >= 4 || undefined}
-            >
-              <img src={skill.image} alt="" loading="lazy" />
-              <span className="hs-usecase-shade" aria-hidden="true" />
-              <span className="hs-usecase-title">{zh ? skill.title.zh : skill.title.en}</span>
-              <span className="hs-usecase-tags">
-                <span className="hs-chip">{categoryName(skill.category)}</span>
-                <span className="hs-chip">{zh ? "Agent 分镜" : "Agent plan"}</span>
+      <div className="hs-shell hs-stack">
+        {/* 2. Pure Frameless Edge-to-Edge Discovery Gallery (Jimeng × Higgsfield Visual Immersion) */}
+        <section className="hs-section" aria-labelledby="hs-discover-title">
+          <div className="hs-head">
+            <div>
+              <h2 id="hs-discover-title" className="hs-title">
+                {zh ? "精选灵感" : "Explore Creations"}
+              </h2>
+              <p className="hs-sub">
+                {zh ? "选择作品，可在生成器中打开同款提示词。" : "Choose a creation to open its prompt in the studio."}
+              </p>
+            </div>
+            <div className="hs-tabs" role="tablist" aria-label={zh ? "作品分类" : "Category filter"}>
+              {(
+                [
+                  ["all", zh ? "全部精选" : "All"],
+                  ["video", zh ? "动态视频" : "Video"],
+                  ["image", zh ? "图像" : "Image"],
+                  ["effects", zh ? "视觉特效" : "VFX"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={discoverTab === key}
+                  onClick={() => setDiscoverTab(key)}
+                  className={discoverTab === key ? "hs-tab hs-tab-active" : "hs-tab"}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="hs-discover-masonry">
+            {mediaColumns(visibleDiscover, discoveryColumns).map((column, columnIndex) => (
+              <div className="hs-discover-column" key={columnIndex}>
+                {column.map((item, index) => {
+                  const promptText = item.prompt ? t(item.prompt) : undefined;
+                  const target = item.promptId ? withExamplePrompt(item.href, item.promptId) : withPrompt(item.href, promptText);
+                  return (
+                    <WallCard
+                      key={item.id}
+                      media={item.media}
+                      href={localizedHref(lang, target)}
+                      prompt={promptText}
+                      cta={zh ? "做同款" : "Recreate"}
+                      ratio={String(item.media.aspectRatio ?? 1)}
+                      position={index}
+                      zh={zh}
+                      showPlayToggle={false}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          <div className="hs-more-row">
+            <Link href={href("/gallery")} className="hs-quiet-link">
+              {zh ? "探索全部社区作品" : "Explore full community gallery"}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+
+        {/* 3. Quiet Matte Studio Suite (Linear × Krea Restraint — zero cartoon arcs or glowing borders) */}
+        <section className="hs-section" aria-labelledby="hs-suite-title">
+          <div className="hs-head">
+            <div>
+              <h2 id="hs-suite-title" className="hs-title">
+                {zh ? "核心创作引擎" : "Core Creative Engines"}
+              </h2>
+              <p className="hs-sub">
+                {zh ? "聚合全球一线视频、图像、音频模型，按次透明计费，失败自动退积分。" : "Frontier video, image, and audio models in one workspace with transparent per-run credits."}
+              </p>
+            </div>
+            <Link href={href("/pricing")} className="hs-quiet-link">
+              {zh ? "查看积分定价" : "View pricing"}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="hs-suite-grid">
+            <Link href={href("/pricing")} className="hs-welcome-card">
+              <span className="hs-welcome-kicker">{zh ? "新用户礼遇" : "WELCOME GIFT"}</span>
+              <span className="hs-welcome-num">+{NEW_USER_GIFT.credits}</span>
+              <span className="hs-welcome-title">{zh ? `注册即送 ${NEW_USER_GIFT.credits} 积分` : `${NEW_USER_GIFT.credits} free credits`}</span>
+              <span className="hs-welcome-body">{zh ? "可免费体验第一条 1080P 有声视频" : "Generate your first 1080p audio clip free"}</span>
+              <span className="hs-welcome-cta">
+                {zh ? "免费开始" : "Start free"}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </span>
             </Link>
-          ))}
-        </div>
-        <Link href={href("/creative-space")} className="hs-see-all">
-          {zh ? "查看全部" : "See all"}
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-      </section>
 
-      {/* 4. Templates row */}
-      <section className="hs-section" aria-labelledby="hs-templates-title">
-        <div className="hs-head">
-          <div>
-            <h2 id="hs-templates-title" className="hs-title">{zh ? "AI 视频模板" : "AI Video Templates"}</h2>
-            <p className="hs-sub">{zh ? "挑一个模板，提示词直接填进上方的生成器，改几个词就能生成。" : "Pick a template and its prompt drops into the generator above."}</p>
+            <div className="hs-tiles">
+              {PRODUCT_TILES.map((tile) => {
+                const Icon = TILE_ICONS[tile.icon];
+                return (
+                  <Link key={tile.href} href={href(tile.href)} className="hs-tile">
+                    <span className="hs-tile-top">
+                      <span className="hs-tile-icon-box" aria-hidden="true">
+                        <Icon className="hs-tile-icon" />
+                      </span>
+                      <ArrowUpRight className="hs-tile-arrow" aria-hidden="true" />
+                    </span>
+                    <span className="hs-tile-copy">
+                      <span className="hs-tile-title">
+                        {typeof tile.title === "string" ? tile.title : t(tile.title)}
+                        {tile.tag ? <span className="hs-tile-tag">{tile.tag}</span> : null}
+                      </span>
+                      <span className="hs-tile-body">{t(tile.body)}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          <Link href={href("/templates")} className="hs-btn hs-btn-dark">
-            {zh ? "查看全部模板" : "All templates"}
-          </Link>
-        </div>
-        <div className="hs-tall-row">
-          {HOME_TEMPLATES.slice(0, 5).map((template) => (
-            <button key={template.id} type="button" className="hs-tall" onClick={() => onUseTemplate(template)}>
-              <img src={template.image} alt="" loading="lazy" />
-              <span className="hs-usecase-shade" aria-hidden="true" />
-              <span className="hs-tall-title">{zh ? template.title.zh : template.title.en}</span>
-              <span className="hs-tall-use">{zh ? "使用模板" : "Use template"}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+        </section>
 
-      {/* 5. Community (renders only when there are published works) */}
-      <GallerySection variant="home" />
+        {/* 4. Two Clean Architectural Spotlights: Infinite Canvas & Director Agent */}
+        <section className="hs-spotlights" aria-label={zh ? "核心工作流" : "Core workflows"}>
+          <div className="hs-spot">
+            <div className="hs-spot-copy">
+              <span className="hs-spot-kicker">{zh ? "无限画布 · CANVAS" : "INFINITE CANVAS"}</span>
+              <h2 className="hs-spot-title">
+                {zh ? (
+                  <>
+                    一块画布，
+                    <br />
+                    串联所有工作流
+                  </>
+                ) : (
+                  <>
+                    One canvas,
+                    <br />
+                    every workflow
+                  </>
+                )}
+              </h2>
+              <p className="hs-spot-body">
+                {zh
+                  ? "在同一块无界画布上整理参考图、拼接视频与 4K 修图节点，用 @ 随时召唤 Agent 协同创作。"
+                  : "Organize references, connect video and 4K image nodes, and @mention the Agent in one continuous space."}
+              </p>
+              <div className="hs-spot-actions">
+                <Link href={href("/creative-space/canvas")} className="hs-btn hs-btn-light">
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  {zh ? "打开无限画布" : "Open Canvas"}
+                </Link>
+              </div>
+            </div>
+            <div className="hs-spot-visual hs-spot-canvas-visual" aria-hidden="true">
+              <div className="hs-spot-pair">
+                <figure className="hs-spot-frame">
+                  <img src="/canvas/templates/character.webp" alt="" loading="lazy" />
+                </figure>
+                <figure className="hs-spot-frame">
+                  <img src="/canvas/templates/three-act.webp" alt="" loading="lazy" />
+                </figure>
+              </div>
+              <span className="hs-spot-prompt-pill">
+                <span className="hs-accent">@画布</span> {zh ? "将这两张参考图合成为 8 秒电影运镜视频" : "Blend these references into an 8s cinema shot"}
+              </span>
+            </div>
+          </div>
 
-      {/* 6. Model walls with feature banners between them */}
-      <ModelWall lang={lang} index={0} />
+          <div className="hs-spot">
+            <div className="hs-spot-copy">
+              <span className="hs-spot-kicker">AGENT</span>
+              <h2 className="hs-spot-title">
+                {zh ? (
+                  <>
+                    一句话，
+                    <br />
+                    自动拆解分镜成片
+                  </>
+                ) : (
+                  <>
+                    One prompt,
+                    <br />
+                    a full storyboard
+                  </>
+                )}
+              </h2>
+              <p className="hs-spot-body">
+                {zh
+                  ? "只需描述你的故事想法，导演 Agent 自动规划镜头脚本、分镜画面与运镜提示词，确认后一键生成。"
+                  : "Describe your story once. The agent drafts shot lists, keyframes, and camera prompts before rendering."}
+              </p>
+              <div className="hs-spot-actions">
+                <Link href={href("/creative-space")} className="hs-btn hs-btn-accent">
+                  {zh ? "与 AGENT 对话" : "Chat with AGENT"}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link href={href("/templates")} className="hs-btn hs-btn-ghost">
+                  {zh ? "浏览模板" : "Templates"}
+                </Link>
+              </div>
+            </div>
+            <div className="hs-spot-quad">
+              {agentCases.map((skill) => (
+                <Link
+                  key={skill.id}
+                  href={href(`/creative-space/canvas?prompt=${encodeURIComponent(zh ? skill.brief.zh : skill.brief.en)}`)}
+                  className="hs-spot-quad-item"
+                >
+                  <img src={skill.image} alt="" loading="lazy" />
+                  <span className="hs-spot-quad-shade" aria-hidden="true" />
+                  <span className="hs-spot-quad-label">{zh ? skill.title.zh : skill.title.en}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
-      <section className="hs-banner hs-banner-canvas" aria-labelledby="hs-canvas-title">
-        <div className="hs-banner-text">
-          <h2 id="hs-canvas-title" className="hs-banner-kicker">{zh ? "AI 视频画布" : "AI video canvas"}</h2>
-          <p className="hs-banner-title">
-            {zh ? <>一块画布。<br />所有工作流。</> : <>One canvas.{" "}<br />Every workflow.</>}
-          </p>
-          <p className="hs-banner-body">{zh ? "整理素材、用 @ 交给 Agent、生成并管理成片，都在一块画布上" : "Arrange assets, hand them to the agent with @, generate and keep it all in one place"}</p>
-          <Link href={href("/creative-space/canvas")} className="hs-btn hs-btn-light">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            {zh ? "体验画布" : "Try the canvas"}
-          </Link>
-        </div>
-        <div className="hs-banner-art" aria-hidden="true">
-          <img src={MEDIA.carpet.src} alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
-          <img src={MEDIA.dancer.src} alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
-          <span className="hs-banner-bubble">{zh ? "@画布 把这张图做成 8 秒视频" : "@canvas make this an 8s clip"}</span>
-        </div>
-      </section>
+        {/* 5. Community Showcase (renders when user-published works exist) */}
+        <GallerySection variant="home" />
 
-      <ModelWall lang={lang} index={1} />
+        {/* 6. Quiet 3-Step Horizontal Guide (clean typographic rhythm, zero boxes) */}
+        <section className="hs-how-section" aria-labelledby="hs-how-title">
+          <div className="hs-head">
+            <h2 id="hs-how-title" className="hs-title">
+              {zh ? "三步完成创作" : "Three steps to your clip"}
+            </h2>
+            <p className="hs-sub">{zh ? "从一个想法到一条成片，无需复杂参数。" : "From a single line to a finished video."}</p>
+          </div>
+          <ol className="hs-steps">
+            {HOW_STEPS.map((step, index) => (
+              <li key={step.title.en} className="hs-step">
+                <span className="hs-step-num" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="hs-step-title">{t(step.title)}</h3>
+                <p className="hs-step-body">{t(step.body)}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-      <section className="hs-banner hs-banner-photo" aria-labelledby="hs-photo-title">
-        <div className="hs-banner-text">
-          <span className="hs-banner-tag">KLING IMAGE 4.0</span>
-          <h2 id="hs-photo-title" className="hs-banner-title">
-            {zh ? <>不同场景<br />同一主角</> : <>Consistent characters,{" "}<br />new scenes</>}
+        {/* 7. Quiet Capabilities Index */}
+        <section className="hs-cloud-section" aria-labelledby="hs-cloud-title">
+          <h2 id="hs-cloud-title" className="hs-cloud-title">
+            {zh ? "更多创作能力" : "Explore capabilities"}
           </h2>
-          <p className="hs-banner-body">{zh ? "上传角色参考图，一次生成整组画面" : "Upload a character reference and get a whole set at once"}</p>
-          <Link href={href("/ai/image?model=kling-image-4")} className="hs-btn hs-btn-light">
-            {zh ? "试试 Kling Image 4.0" : "Try Kling Image 4.0"}
-          </Link>
-        </div>
-        <div className="hs-banner-fan" aria-hidden="true">
-          {[MEDIA.rain, MEDIA.carpet, MEDIA.autumn, MEDIA.dreaming, MEDIA.dancer].map((media, index) => (
-            <img key={media.src} src={media.src} alt="" loading="lazy" style={{ ["--i" as string]: index }} />
-          ))}
-        </div>
-      </section>
-
+          <div className="hs-cloud-list">
+            {AI_CAPABILITY_PILLS.map((pill) => (
+              <Link key={`${pill.href}-${pill.label.en}`} href={href(pill.href)} className="hs-cloud-pill">
+                {t(pill.label)}
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
-  );
-}
-
-function ModelWall({ lang, index }: { lang: string; index: number }) {
-  const zh = lang.toLowerCase().startsWith("zh");
-  const gallery = MODEL_GALLERIES[index];
-  if (!gallery) return null;
-  return (
-    <section className="hs-section" aria-labelledby={`hs-wall-${gallery.id}`}>
-      <div className="hs-head">
-        <div>
-          <p className="hs-kicker">{gallery.title}</p>
-          <h2 id={`hs-wall-${gallery.id}`} className="hs-title">{zh ? gallery.heading.zh : gallery.heading.en}</h2>
-          <p className="hs-sub">{zh ? gallery.body.zh : gallery.body.en}</p>
-        </div>
-        <Link href={localizedHref(lang, gallery.href)} className="hs-btn hs-btn-accent">
-          {zh ? gallery.cta.zh : gallery.cta.en}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-      </div>
-      <div className={index === 0 ? "hs-wall hs-wall-video" : "hs-wall"}>
-        {gallery.media.map((media, position) => {
-          const prompt = SAMPLE_PROMPTS[media.src];
-          const text = prompt ? (zh ? prompt.zh : prompt.en) : undefined;
-          return (
-            <WallCard
-              key={`${gallery.id}-${position}`}
-              media={media}
-              href={localizedHref(lang, index === 0 ? withExamplePrompt(gallery.href, media.promptId) : withPrompt(gallery.href, text))}
-              prompt={index === 0 ? undefined : text}
-              cta={zh ? "做同款" : "Make one like this"}
-              ratio={index === 0 ? VIDEO_WALL_RATIOS[position] : WALL_RATIOS[(position + index) % WALL_RATIOS.length]}
-              position={position + index}
-              zh={zh}
-            />
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
@@ -306,7 +439,6 @@ export function MiniComposer({
 }: {
   lang: string;
   anchorId: string;
-  /** Page the prompt opens in; it arrives as ?prompt=. */
   targetPath?: string;
 }) {
   const zh = lang.toLowerCase().startsWith("zh");
@@ -314,9 +446,6 @@ export function MiniComposer({
   const [visible, setVisible] = useState(false);
   const [prompt, setPrompt] = useState("");
 
-  // Show once the main generator has scrolled above the viewport, and hide
-  // again while the footer is on screen. A passive scroll listener keeps this
-  // working even when the page is not painting (background tabs).
   useEffect(() => {
     const update = () => {
       const anchor = document.getElementById(anchorId);
@@ -401,12 +530,7 @@ export function CarouselArrows({
   );
 }
 
-/**
- * A small round button in the bottom-right corner that takes the visitor back
- * up to the generator. It replaces the full-width bottom composer on the
- * homepage, which covered headings and cards while scrolling. It shows once
- * the generator is off screen and hides while the footer is in view.
- */
+/** Quiet corner button taking the visitor smoothly back to the Hero generator. */
 export function BackToCreate({ lang, anchorId }: { lang: string; anchorId: string }) {
   const zh = lang.toLowerCase().startsWith("zh");
   const [visible, setVisible] = useState(false);

@@ -10,7 +10,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Clapperboard, LayoutTemplate, Loader2, Lock, Play, RotateCcw, WifiOff } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Lock, Play, RotateCcw, Sparkles, WifiOff } from "lucide-react";
 import { StateBlock } from "@/components/states/state-block";
 import { GridSkeleton } from "@/components/states/skeletons";
 
@@ -37,6 +37,256 @@ const HOME_SAMPLES = [
   { image: "/home/samples/tomb-light.webp", zh: "古墓之光", en: "Light in the Tomb" },
 ] as const;
 
+type GalleryFilter = "all" | "video" | "cinema" | "commercial";
+
+interface CuratedGalleryEntry extends GalleryItem {
+  category: Exclude<GalleryFilter, "all">;
+}
+
+function buildCuratedGallery(zh: boolean): CuratedGalleryEntry[] {
+  return [
+    {
+      uuid: "curated-dragon",
+      category: "video",
+      title: zh ? "苍穹巨龙穿云航拍" : "Sky Dragon Aerial",
+      description: zh ? "Seedance 2.5 1080p 航拍环绕大片" : "Seedance 2.5 1080p epic aerial shot",
+      authorName: "Aivd Studio",
+      model: "bytedance/seedance-2-5",
+      modelLabel: "Seedance 2.5",
+      thumbnailUrl: "/home/example-dragon-full-poster.webp",
+      videoUrl: "/home/example-dragon-full.mp4",
+      publicPrompt: zh ? "史诗级航拍环绕镜头，东方巨龙破开金色云海翱翔，鳞片在逆光中折射金属光泽，气势磅礴" : "Epic aerial orbiting shot of a dragon soaring through golden storm clouds, sunlight catching iridescent scales",
+      promptProtected: false,
+      aspectRatio: "16:9",
+      duration: 8,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-samurai-cat",
+      category: "video",
+      title: zh ? "武士猫樱花电影特写" : "Samurai Cat Cinema",
+      description: zh ? "浅景深电影级近景拔刀运镜" : "Shallow DOF cinematic katana draw",
+      authorName: "Aivd Studio",
+      model: "veo-3.1",
+      modelLabel: "Veo 3.1",
+      thumbnailUrl: "/home/example-samurai-cat-7s-poster.webp",
+      videoUrl: "/home/example-samurai-cat-7s.mp4",
+      publicPrompt: zh ? "浅景深近景特写，身穿精致甲胄的武士猫站在飘落的樱花雨中缓缓拔刀，微风吹动披风，电影级布光" : "Shallow depth-of-field close-up of an armored samurai cat in drifting cherry blossoms slowly drawing its katana",
+      promptProtected: false,
+      aspectRatio: "9:16",
+      duration: 7,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-whale-origami",
+      category: "video",
+      title: zh ? "折纸鲸鱼云海奇境" : "Origami Whale Dream",
+      description: zh ? "发光折纸鲸鱼穿梭深蓝云海" : "Luminous origami whale in cobalt cloud sea",
+      authorName: "Aivd Studio",
+      model: "bytedance/seedance-2-5",
+      modelLabel: "Seedance 2.5",
+      thumbnailUrl: "/home/example-whale-origami-7s-poster.webp",
+      videoUrl: "/home/example-whale-origami-7s.mp4",
+      publicPrompt: zh ? "梦幻微距跟拍，一只由发光折纸折成的巨鲸在深蓝云海中优雅游动，纸张纹理清晰，柔和体积光" : "Dreamlike tracking shot of a luminous origami whale gliding through a cobalt cloud sea, crisp paper folds",
+      promptProtected: false,
+      aspectRatio: "16:9",
+      duration: 7,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-couture-dress",
+      category: "commercial",
+      title: zh ? "高定流光丝绸时装大片" : "Couture Silk Editorial",
+      description: zh ? "高速升格棚拍高定布料飘动" : "Slow-motion studio couture fabric flow",
+      authorName: "Aivd Studio",
+      model: "kling/v4-reference-to-video",
+      modelLabel: "Kling 4.0",
+      thumbnailUrl: "/home/example-dress-10-20-poster.webp",
+      videoUrl: "/home/example-dress-10-20.mp4",
+      publicPrompt: zh ? "高级时装棚拍慢动作，流光丝绸礼服随风舒展飘动，暗调极简背景，轮廓光勾勒织物质感" : "High-fashion slow-motion editorial of flowing iridescent silk couture against an obsidian studio backdrop",
+      promptProtected: false,
+      aspectRatio: "9:16",
+      duration: 5,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-japan",
+      category: "video",
+      title: zh ? "东京深夜街头食光" : "Tokyo Late-Night Konbini",
+      description: zh ? "35mm 胶片手持慢推日系都市氛围" : "35mm handheld slow push-in Tokyo night",
+      authorName: "Aivd Studio",
+      model: "bytedance/seedance-2-5",
+      modelLabel: "Seedance 2.5",
+      thumbnailUrl: "/home/example-japan-6s-poster.webp",
+      videoUrl: "/home/example-japan-6s.mp4",
+      publicPrompt: zh ? "电影级手持慢推镜头，东京深夜便利店暖光与街头霓虹交织，近景呈现日系美食与温馨都市氛围，35mm 胶片质感" : "Cinematic handheld push-in through a warm late-night Tokyo convenience store glowing against neon streets",
+      promptProtected: false,
+      aspectRatio: "16:9",
+      duration: 6,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-marina",
+      category: "cinema",
+      title: zh ? "黄金时刻海岸游艇航拍" : "Golden Hour Marina Aerial",
+      description: zh ? "日落余晖与海面波光电影感运镜" : "Sunset golden hour yacht glide",
+      authorName: "Aivd Studio",
+      model: "veo-3.1",
+      modelLabel: "Veo 3.1",
+      thumbnailUrl: "/home/hero-marina-poster.webp",
+      videoUrl: "/home/hero-marina-loop.mp4",
+      publicPrompt: zh ? "电影级航拍缓推，日落黄金时刻地中海游艇码头波光粼粼，海风轻拂，柔和胶片暖色调" : "Cinematic aerial glide over a Mediterranean marina at golden hour sunset, warm shimmering water",
+      promptProtected: false,
+      aspectRatio: "16:9",
+      duration: 8,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-food",
+      category: "commercial",
+      title: zh ? "电影级美食升格微距广告" : "Macro Food Commercial",
+      description: zh ? "高速升格香料洒落与热气质感" : "High-speed macro commercial spice fall",
+      authorName: "Aivd Studio",
+      model: "veo-3.1",
+      modelLabel: "Veo 3.1",
+      thumbnailUrl: "/home/example-fried-chicken-22-29-poster.webp",
+      videoUrl: "/home/example-fried-chicken-22-29.mp4",
+      publicPrompt: zh ? "高速升格微距商业广告镜头，金黄酥脆炸鸡热气升腾，辣椒粉与香料颗粒在慢动作中凌空洒落，诱人高光" : "High-speed macro commercial shot of crispy fried chicken with rising steam and spices falling in slow motion",
+      promptProtected: false,
+      aspectRatio: "16:9",
+      duration: 5,
+      resolution: "1080p",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-rain-couple",
+      category: "cinema",
+      title: zh ? "霓虹雨夜双人电影剧照" : "Neon Rain Cinema Still",
+      description: zh ? "Nano Banana Pro 4K 电影级氛围光影" : "Nano Banana Pro 4K atmospheric film still",
+      authorName: "Aivd Studio",
+      model: "nano-banana-pro",
+      modelLabel: "Nano Banana Pro",
+      thumbnailUrl: "/home/samples/rain-couple.webp",
+      videoUrl: null,
+      publicPrompt: zh ? "霓虹雨夜东京街头电影感中景，湿润反光柏油路面，青蓝与洋红霓虹光斑，35mm 胶片颗粒，浅景深" : "Neon Tokyo rain street cinematic medium shot, wet asphalt reflections in cyan and magenta, 35mm film grain",
+      promptProtected: false,
+      aspectRatio: "3:4",
+      duration: null,
+      resolution: "4K",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-red-carpet",
+      category: "commercial",
+      title: zh ? "星光红毯高定肖像大片" : "Red Carpet Haute Portrait",
+      description: zh ? "Kling Image 4.0 杂志级闪光灯人像" : "Kling Image 4.0 editorial flash portrait",
+      authorName: "Aivd Studio",
+      model: "kling-image-4",
+      modelLabel: "Kling Image 4.0",
+      thumbnailUrl: "/home/samples/red-carpet.webp",
+      videoUrl: null,
+      publicPrompt: zh ? "国际电影节红毯高定晚礼服人像，闪光灯与散景交错，高级时尚杂志封面质感，4K 皮肤与织物细节" : "International film festival red carpet couture portrait, flash photography bokeh, luxury editorial 4K",
+      promptProtected: false,
+      aspectRatio: "4:5",
+      duration: null,
+      resolution: "4K",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-cosmic-bloom",
+      category: "cinema",
+      title: zh ? "星云水晶花超现实视觉" : "Cosmic Crystal Bloom",
+      description: zh ? "青蓝体积光与玻璃折射艺术大片" : "Cyan volumetric light & crystal refraction art",
+      authorName: "Aivd Studio",
+      model: "nano-banana-pro",
+      modelLabel: "Nano Banana Pro",
+      thumbnailUrl: "/home/samples/cosmic-bloom.webp",
+      videoUrl: null,
+      publicPrompt: zh ? "超现实微距艺术摄影，深邃暗夜中一朵透明水晶花绽放出青蓝色星云光晕，丁达尔体积光，8K 细节" : "Surreal macro fine-art photography of a translucent crystal flower glowing with cyan-blue nebula light in deep dark space",
+      promptProtected: false,
+      aspectRatio: "1:1",
+      duration: null,
+      resolution: "4K",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-mech",
+      category: "cinema",
+      title: zh ? "赛博机甲战士概念视觉" : "Cyber Mech Concept Art",
+      description: zh ? "科幻硬表面金属磨损与电影布光" : "Sci-fi hard-surface armor & cinema lighting",
+      authorName: "Aivd Studio",
+      model: "gpt-image-2-6-sunburst",
+      modelLabel: "GPT Image 2.6",
+      thumbnailUrl: "/home/samples/mech-warrior.webp",
+      videoUrl: null,
+      publicPrompt: zh ? "科幻电影概念设定，身披战损钛合金机甲的未来战士立于烟雾之中，青蓝能量核心微光，史诗级硬光质感" : "Sci-fi film concept art of a battle-worn titanium mech warrior standing in atmospheric mist with glowing cyan core",
+      promptProtected: false,
+      aspectRatio: "3:4",
+      duration: null,
+      resolution: "4K",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+    {
+      uuid: "curated-studio",
+      category: "commercial",
+      title: zh ? "极简光影建筑商业空间" : "Minimal Architectural Space",
+      description: zh ? "高端空间摄影与柔光质感" : "High-end architectural daylight study",
+      authorName: "Aivd Studio",
+      model: "nano-banana-pro",
+      modelLabel: "Nano Banana Pro",
+      thumbnailUrl: "/home/samples/studio-room.webp",
+      videoUrl: null,
+      publicPrompt: zh ? "极简现代主义摄影棚空间，落地窗自然侧光洒在微水泥墙面，建筑感几何光影，高端商业杂志视觉" : "Minimalist architectural studio room bathed in natural side-window daylight, crisp geometric shadows, editorial 4K",
+      promptProtected: false,
+      aspectRatio: "4:3",
+      duration: null,
+      resolution: "4K",
+      publishedAt: null,
+      assetsReusable: true,
+      hasStartImage: false,
+      startImageUrl: null,
+    },
+  ];
+}
 interface GalleryListResponse {
   items: GalleryItem[];
   nextCursor: string | null;
@@ -125,6 +375,7 @@ export function GallerySection({
   const [activeItem, setActiveItem] = useState<GalleryItem | null>(null);
   const [pendingUuid, setPendingUuid] = useState<string | null>(null);
   const [actionFailed, setActionFailed] = useState(false);
+  const [filter, setFilter] = useState<GalleryFilter>("all");
   const railRef = useRef<HTMLDivElement | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(true);
@@ -279,7 +530,7 @@ export function GallerySection({
                     <article key={sample.image} className="home-gallery-card overflow-hidden rounded-[20px] border border-[var(--du-border-strong)] bg-[var(--du-surface)]">
                       <div className="relative aspect-[16/9] overflow-hidden">
                         <img src={sample.image} alt="" loading={index < 3 ? "eager" : "lazy"} className="h-full w-full object-cover" />
-                        <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[10px] font-semibold text-[var(--du-accent-text)]">
+                        <span className="absolute left-3 top-3 rounded-full border border-[var(--du-border-strong)] bg-[var(--du-bg-elev)]/90 px-2.5 py-1 text-[11px] font-semibold text-[var(--du-accent-text)]">
                           {isChinese ? "示例" : "Example"}
                         </span>
                       </div>
@@ -329,9 +580,50 @@ export function GallerySection({
   }
 
   const zh = locale.toLowerCase().startsWith("zh");
+  const isCuratedFallback = status === "ready" && items.length === 0;
+  const curatedAll = isCuratedFallback ? buildCuratedGallery(zh) : [];
+  const displayedItems: GalleryItem[] = isCuratedFallback
+    ? filter === "all"
+      ? curatedAll
+      : curatedAll.filter((entry) => entry.category === filter)
+    : items;
+
+  const handleRemix = (item: GalleryItem, event: MouseEvent<HTMLButtonElement>) => {
+    if (item.uuid.startsWith("curated-")) {
+      event.stopPropagation();
+      const target = item.videoUrl ? "/ai/video" : "/ai/image";
+      const qs = new URLSearchParams();
+      if (item.publicPrompt) qs.set("prompt", item.publicPrompt);
+      if (item.model) qs.set("model", item.model);
+      router.push(`${localizedHref(locale, target)}?${qs.toString()}`);
+      return;
+    }
+    void handleUseTemplate(item.uuid, event);
+  };
 
   return (
     <section className="gl" aria-label={t("subtitle")}>
+      {isCuratedFallback ? (
+        <fieldset className="gl-chips" aria-label={zh ? "作品分类" : "Gallery category"}>
+          {([
+            ["all", zh ? "全部精选" : "All Featured"],
+            ["video", zh ? "动态视频" : "Motion Video"],
+            ["cinema", zh ? "电影大片" : "Cinema & Art"],
+            ["commercial", zh ? "商业广告" : "Commercial"],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filter === key}
+              className={filter === key ? "gl-chip gl-chip-on" : "gl-chip"}
+              onClick={() => setFilter(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </fieldset>
+      ) : null}
+
       {status === "loading" ? <GridSkeleton count={5} height={320} /> : null}
 
       {status === "error" ? (
@@ -345,26 +637,9 @@ export function GallerySection({
         />
       ) : null}
 
-      {status === "ready" && items.length === 0 ? (
-        <StateBlock
-          framed
-          art={["/home/samples/rain-couple.webp", "/home/samples/red-carpet.webp", "/home/samples/autumn-walk.webp"]}
-          title={zh ? "社区还没有公开作品" : "No published work yet"}
-          body={
-            zh
-              ? "在「我的作品」里把满意的视频设为公开，它就会出现在这里，别人还能一键做同款。"
-              : "Publish a video from My creations and it shows up here, where others can remix it in one click."
-          }
-          actions={[
-            { label: zh ? "生成第一条视频" : "Make the first video", href: localizedHref(locale, "/ai/video"), icon: Clapperboard, primary: true },
-            { label: zh ? "看看模板" : "Browse templates", href: localizedHref(locale, "/templates"), icon: LayoutTemplate },
-          ]}
-        />
-      ) : null}
-
-      {items.length > 0 ? (
+      {displayedItems.length > 0 ? (
         <ul className="gl-grid">
-          {items.map((item) => (
+          {displayedItems.map((item) => (
             <li key={item.uuid} className="gl-item">
               <article
                 className="gl-card"
@@ -383,25 +658,29 @@ export function GallerySection({
                     <Lock aria-hidden="true" />
                     {t("protectedPromptBadge")}
                   </span>
+                ) : (
+                  <span className="gl-tag">{item.modelLabel}</span>
+                )}
+                {item.videoUrl ? (
+                  <span className="gl-play" aria-hidden="true">
+                    <Play />
+                  </span>
                 ) : null}
-                <span className="gl-play" aria-hidden="true">
-                  <Play />
-                </span>
                 <div className="gl-over">
                   <div className="gl-text">
                     <h3 className="gl-name">{item.title}</h3>
                     <p className="gl-meta">
-                      {item.authorName} · {item.modelLabel}
+                      {item.authorName} · {item.resolution ?? item.modelLabel}
                     </p>
                   </div>
                   <button
                     type="button"
                     className="gl-use"
-                    onClick={(event) => void handleUseTemplate(item.uuid, event)}
+                    onClick={(event) => handleRemix(item, event)}
                     disabled={pendingUuid === item.uuid}
                   >
-                    {pendingUuid === item.uuid ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-                    {t("useTemplate")}
+                    {pendingUuid === item.uuid ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
+                    {zh ? "做同款" : "Remix"}
                   </button>
                 </div>
               </article>

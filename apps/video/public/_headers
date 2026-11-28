@@ -1,2 +1,41 @@
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable
+
+/home/*
+  Cache-Control: public,max-age=604800,stale-while-revalidate=2592000
+
+/canvas/*
+  Cache-Control: public,max-age=604800,stale-while-revalidate=2592000
+
+/images/*
+  Cache-Control: public,max-age=604800,stale-while-revalidate=2592000
+
+/effects/*
+  Cache-Control: public,max-age=604800,stale-while-revalidate=2592000
+
+/explore/*
+  Cache-Control: public,max-age=604800,stale-while-revalidate=2592000
+
+/favicon.ico
+  Cache-Control: public,max-age=604800
+
+/favicon.svg
+  Cache-Control: public,max-age=604800
+
+/logo.svg
+  Cache-Control: public,max-age=604800
+
+/icon-192.png
+  Cache-Control: public,max-age=604800
+
+/icon-512.png
+  Cache-Control: public,max-age=604800
+
+/apple-touch-icon.png
+  Cache-Control: public,max-age=604800
+
+/og.png
+  Cache-Control: public,max-age=604800
+
+/site.webmanifest
+  Cache-Control: public,max-age=86400

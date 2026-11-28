@@ -1,7 +1,12 @@
+import { KLING_KEYFRAME_MODEL, type KlingKeyframes } from "./kling-keyframes";
+import { validFrameCount } from "./studio-keyframes";
+import { WAN_REFERENCE_MAX_FILES } from "./wan-video-references";
 import { calculateModelCredits } from "@/config/credits";
-import { marketModelsOf } from "@/ai/kie-market";
+import { allowedDuration, getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { promptWithPreset } from "@/lib/video-presets";
 import examplePrompts from "@/lib/home-example-prompts.json";
+import { secondsBetween } from "@/lib/video-durations";
+import type { GenerationParameters } from "@/lib/generation-details";
 
 export type StudioModel = {
   id: string;
@@ -44,7 +49,7 @@ export const STUDIO_MODELS: StudioModel[] = [
     id: "seedance-1.5-pro",
     name: "Seedance 1.5 Pro",
     tagline: "Fast, expressive motion for everyday clips.",
-    durations: [4, 5, 6, 8, 10, 12],
+    durations: secondsBetween(4, 12),
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     resolutions: ["480p", "720p", "1080p"],
     audio: false,
@@ -65,7 +70,7 @@ export const STUDIO_MODELS: StudioModel[] = [
     name: "Kling 3.0",
     tagline: "Cinematic detail with steady, natural movement.",
     badge: "New",
-    durations: [5, 8, 10],
+    durations: secondsBetween(3, 15),
     aspects: ["Auto", "16:9", "9:16", "1:1"],
     resolutions: ["720p", "1080p"],
     audio: true,
@@ -222,9 +227,27 @@ export function settingsFromSearchParams(
  * shown in the UI is the number frozen on submit. Audio does not change the
  * price; resolution is passed as the server's `quality`.
  */
+/**
+ * Credits a clip will take. Pass `images` (reference images sent with it) and
+ * `audio` where they are known: some models charge for an input image or for
+ * sound, and the quote shown before Generate must be what the server freezes
+ * (services/video.ts prices market models the same way).
+ */
 export function estimateCredits(
   settings: Pick<StudioSettings, "modelId" | "duration" | "resolution">,
+  extras?: { images?: number; audio?: boolean },
 ): number {
+  const market = extras ? getMarketModel(settings.modelId) : undefined;
+  if (market) {
+    return marketCredits(market, {
+      prompt: "",
+      // The server bills the nearest length the model makes.
+      duration: allowedDuration(market, settings.duration),
+      resolution: settings.resolution,
+      audio: market.options.audioToggle ? (extras?.audio ?? true) : undefined,
+      imageUrls: Array.from({ length: extras?.images ?? 0 }, (_, index) => `reference-${index}`),
+    });
+  }
   return calculateModelCredits(settings.modelId, {
     duration: settings.duration,
     quality: settings.resolution,
@@ -262,23 +285,28 @@ export type GenerateRequestBody = {
   prompt: string;
   model: string;
   duration: number;
-  aspectRatio: string;
+  aspectRatio?: string;
   quality: string;
-  generateAudio: boolean;
+  generateAudio?: boolean;
   idempotencyKey: string;
   imageUrl?: string;
   imageUrls?: string[];
+  videoKeys?: string[];
+  keyframes?: KlingKeyframes;
   mode?: "text-to-video" | "image-to-video" | "reference-to-video";
+  preset?: string;
 };
 
 export type BuildGenerateRequestResult =
   | { ok: true; body: GenerateRequestBody }
-  | { ok: false; reason: "empty-prompt" | "unsupported-model" };
+  | { ok: false; reason: "empty-prompt" | "unsupported-model" | "invalid-video-references" | "invalid-keyframes" };
 
 export function buildGenerateRequest(
   settings: StudioSettings,
   idempotencyKey: string,
   imageKey?: string | string[] | null,
+  videoKeys: string[] = [],
+  keyframes?: KlingKeyframes,
 ): BuildGenerateRequestResult {
   const prompt = settings.prompt.trim();
 
@@ -294,16 +322,26 @@ export function buildGenerateRequest(
 
   const imageKeys = Array.isArray(imageKey) ? imageKey : imageKey ? [imageKey] : [];
 
+  if (keyframes && (model.id !== KLING_KEYFRAME_MODEL || imageKeys.length || videoKeys.length || !validFrameCount(keyframes, settings.duration))) {
+    return { ok: false, reason: "invalid-keyframes" };
+  }
+  if (videoKeys.length && (settings.modelId !== "wan2.6" || imageKeys.length > 0 || videoKeys.length > WAN_REFERENCE_MAX_FILES || videoKeys.some(key => !key.startsWith("uploads/")))) {
+    return { ok: false, reason: "invalid-video-references" };
+  }
+
   return {
     ok: true,
     body: {
       prompt: promptWithPreset(prompt, settings.preset),
       model: settings.modelId,
       duration: settings.duration,
-      aspectRatio: settings.aspect,
+      ...(!videoKeys.length && !keyframes ? { aspectRatio: settings.aspect } : {}),
       quality: settings.resolution,
-      generateAudio: settings.audio,
+      ...(!videoKeys.length && !keyframes ? { generateAudio: settings.audio } : {}),
       idempotencyKey,
+      ...(settings.preset ? { preset: settings.preset } : {}),
+      ...(keyframes ? { keyframes, mode: "reference-to-video" as const } : {}),
+      ...(videoKeys.length ? { videoKeys, mode: "reference-to-video" as const } : {}),
       ...(imageKeys.length === 1 ? { imageUrl: imageKeys[0], mode: "image-to-video" as const } : {}),
       ...(imageKeys.length > 1 ? { imageUrls: imageKeys, mode: "reference-to-video" as const } : {}),
     },
@@ -315,10 +353,12 @@ type GenerateResponsePayload = {
   data?: {
     videoUuid?: string | null;
     taskId?: string | null;
+    status?: string | null;
+    errorMessage?: string | null;
   } | null;
   error?: {
     message?: string;
-    details?: { code?: string; requiredCredits?: number } | null;
+    details?: { code?: string; requiredCredits?: number; videoUuid?: string } | null;
   } | null;
 };
 
@@ -331,8 +371,11 @@ export async function submitGeneration(
   idempotencyKey: string,
   fetchImpl: typeof fetch = fetch,
   imageKey?: string | string[] | null,
+  videoKeys: string[] = [],
+  expectedAccount?: string,
+  keyframes?: KlingKeyframes,
 ): Promise<SubmitGenerationResult> {
-  const request = buildGenerateRequest(settings, idempotencyKey, imageKey);
+  const request = buildGenerateRequest(settings, idempotencyKey, imageKey, videoKeys, keyframes);
 
   if (!request.ok) {
     return {
@@ -340,7 +383,8 @@ export async function submitGeneration(
       message:
         request.reason === "empty-prompt"
           ? "Please enter a prompt."
-          : "This model is not available yet.",
+          : request.reason === "invalid-keyframes" ? "Select keyframes for Kling 4.0 within the limit for this duration."
+          : request.reason === "invalid-video-references" ? "Wan 2.6 accepts up to three uploaded video references without any images." : "This model is not available yet.",
     };
   }
 
@@ -352,6 +396,7 @@ export async function submitGeneration(
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
+        ...(expectedAccount ? { "X-Media-Account": expectedAccount } : {}),
       },
       body: JSON.stringify(request.body),
     });
@@ -371,7 +416,30 @@ export async function submitGeneration(
     payload = null;
   }
 
+  if (response.status === 202 && payload?.error?.details?.videoUuid) {
+    return { ok: true, videoUuid: payload.error.details.videoUuid, taskId: null };
+  }
+  if (!payload) {
+    return { ok: false, message: "No response yet. Retry the same request.", code: "NETWORK" };
+  }
   if (payload?.success) {
+    if (payload.data?.status === "FAILED") {
+      const rawError = typeof payload.data.errorMessage === "string" ? payload.data.errorMessage : "";
+      const creditMatch = /\bInsufficient credits\.\s*Required:\s*(\d+)/i.exec(rawError);
+      if (creditMatch || /insufficient credits/i.test(rawError)) {
+        return {
+          ok: false,
+          message: rawError || "Insufficient credits.",
+          code: "INSUFFICIENT_CREDITS",
+          requiredCredits: creditMatch ? Number(creditMatch[1]) : undefined,
+        };
+      }
+      return {
+        ok: false,
+        message: "The previous submission failed and no credits were kept. Try again.",
+        code: "GENERATION_FAILED",
+      };
+    }
     return {
       ok: true,
       videoUuid: payload.data?.videoUuid ?? null,
@@ -394,6 +462,7 @@ export async function submitGeneration(
 /* -------------------------------------------------------------------------- */
 
 export type StudioResultStatus =
+  | "submitting"
   | "queued"
   | "generating"
   | "completed"
@@ -406,6 +475,10 @@ export type StudioResult = {
   videoUrl?: string | null;
   prompt?: string | null;
   message?: string | null;
+  model?: string;
+  parameters?: GenerationParameters | null;
+  resolution?: string;
+  audio?: boolean;
   /** When the clip was submitted (ms), for the elapsed timer. */
   createdAt?: number;
 };
@@ -437,7 +510,7 @@ export function isResultPending(result: StudioResult): boolean {
 
 type StatusPayload = {
   success?: boolean;
-  data?: { status?: string; videoUrl?: string; error?: string } | null;
+  data?: { status?: string; videoUrl?: string; error?: string; model?: string; parameters?: GenerationParameters | null; duration?: number | null; aspectRatio?: string | null; resolution?: string | null } | null;
 };
 
 export type FetchResultStatus =
@@ -446,6 +519,8 @@ export type FetchResultStatus =
       status: StudioResultStatus;
       videoUrl: string | null;
       message: string | null;
+      model?: string;
+      parameters?: GenerationParameters | null;
     }
   | { ok: false };
 
@@ -471,11 +546,19 @@ export async function fetchResultStatus(
     if (!payload?.success || !payload.data) {
       return { ok: false };
     }
+    const parameters = {
+      ...(payload.data.parameters ?? {}),
+      ...(!payload.data.parameters?.duration && payload.data.duration ? { duration: payload.data.duration } : {}),
+      ...(!payload.data.parameters?.aspectRatio && payload.data.aspectRatio ? { aspectRatio: payload.data.aspectRatio } : {}),
+      ...(!payload.data.parameters?.resolution && !payload.data.parameters?.quality && payload.data.resolution ? { resolution: payload.data.resolution } : {}),
+    };
     return {
       ok: true,
       status: toStudioStatus(payload.data.status),
       videoUrl: payload.data.videoUrl ?? null,
       message: payload.data.error ?? null,
+      ...(payload.data.model ? { model: payload.data.model } : {}),
+      ...(Object.keys(parameters).length ? { parameters } : {}),
     };
   } catch {
     return { ok: false };
@@ -491,6 +574,11 @@ type ListPayload = {
       videoUrl?: string | null;
       prompt?: string | null;
       errorMessage?: string | null;
+      model?: string;
+      resolution?: string | null;
+      parameters?: GenerationParameters | null;
+      duration?: number | null;
+      aspectRatio?: string | null;
       createdAt?: string | number | null;
     }>;
   } | null;
@@ -504,21 +592,31 @@ type ListPayload = {
 export async function fetchRecentResults(
   fetchImpl: typeof fetch = fetch,
   limit: number = RESULT_HISTORY_LIMIT,
+  options?: { completedOnly?: boolean; onError?: () => void },
 ): Promise<StudioResult[]> {
   try {
-    const response = await fetchImpl(`/api/v1/video/list?limit=${limit}`, {
+    const filter = options?.completedOnly ? "&status=COMPLETED" : "";
+    const response = await fetchImpl(`/api/v1/video/list?type=video&limit=${limit}${filter}`, {
       cache: "no-store",
     });
     if (response.status !== 200) {
+      options?.onError?.();
       return [];
     }
     const payload = (await response.json()) as ListPayload;
     if (!payload?.success || !Array.isArray(payload.data?.videos)) {
+      options?.onError?.();
       return [];
     }
     const results: StudioResult[] = [];
     for (const video of payload.data.videos) {
       if (!video?.uuid) continue;
+      const parameters = {
+        ...(video.parameters ?? {}),
+        ...(!video.parameters?.duration && video.duration ? { duration: video.duration } : {}),
+        ...(!video.parameters?.aspectRatio && video.aspectRatio ? { aspectRatio: video.aspectRatio } : {}),
+        ...(!video.parameters?.resolution && !video.parameters?.quality && video.resolution ? { resolution: video.resolution } : {}),
+      };
       results.push({
         id: video.uuid,
         videoUuid: video.uuid,
@@ -526,11 +624,16 @@ export async function fetchRecentResults(
         videoUrl: video.videoUrl ?? null,
         prompt: video.prompt ?? null,
         message: video.errorMessage ?? null,
+        model: video.model,
+        resolution: (video.parameters?.resolution ?? video.parameters?.quality ?? video.resolution ?? undefined) as string | undefined,
+        audio: (video.parameters?.audio ?? video.parameters?.generateAudio) as boolean | undefined,
+        ...(Object.keys(parameters).length ? { parameters } : {}),
         createdAt: toMillis(video.createdAt),
       });
     }
     return results;
   } catch {
+    options?.onError?.();
     return [];
   }
 }
@@ -563,6 +666,8 @@ export function applyResultStatus(
           status: update.status,
           videoUrl: update.videoUrl ?? item.videoUrl ?? null,
           message: update.message ?? item.message ?? null,
+          model: update.model ?? item.model,
+          parameters: update.parameters ?? item.parameters,
         }
       : item,
   );
@@ -582,11 +687,13 @@ export type ModelOption = { id: string; name: string; credits: number };
  * ratio, quality and sound where the model offers them (the same switch the
  * model picker makes).
  */
-export function modelOptions(settings: StudioSettings, modelIds: string[]): ModelOption[] {
+export function modelOptions(settings: StudioSettings, modelIds: string[], images = 0): ModelOption[] {
   return modelIds.flatMap((id) => {
     const model = STUDIO_MODELS.find((item) => item.id === id && item.available);
     if (!model) return [];
-    const credits = estimateCredits(selectModel(settings, id));
+    // Priced with this clip's reference images and sound, as it would be frozen.
+    const switched = selectModel(settings, id);
+    const credits = estimateCredits(switched, { images, audio: switched.audio });
     return credits > 0 ? [{ id, name: model.name, credits }] : [];
   });
 }

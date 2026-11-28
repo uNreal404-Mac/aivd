@@ -4,10 +4,25 @@
 // while a job runs, the full-screen viewer, the waveform player and the
 // drag-and-drop / paste hook for uploads.
 import { failureReason } from "@/lib/failure-reason";
+import { generationDetails } from "@/lib/generation-details";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Clapperboard, Copy, Download, Pause, Play, RotateCcw, X } from "lucide-react";
 import "./studio-results.css";
+
+/** Result media fades in once it has something to show, instead of popping
+ * in over an empty box. `readyRef` covers media already loaded (from cache)
+ * before React attached the handler; an error also counts as ready, so a
+ * broken file is visible rather than invisible. */
+export function markReady(event: { currentTarget: HTMLElement }) {
+  event.currentTarget.dataset.ready = "";
+}
+
+export function readyRef(element: HTMLImageElement | HTMLVideoElement | null) {
+  if (!element) return;
+  const ready = element instanceof HTMLImageElement ? element.complete : element.readyState >= 1;
+  if (ready) element.dataset.ready = "";
+}
 
 /* -------------------------------------------------------------------------- */
 /* Elapsed time and the card shown while a job runs                           */
@@ -38,7 +53,7 @@ export function PendingCard({
   className = "",
   onReuse,
 }: {
-  status: "queued" | "generating" | "failed" | "completed";
+  status: "submitting" | "queued" | "generating" | "failed" | "completed";
   since?: number;
   prompt?: string | null;
   message?: string | null;
@@ -52,13 +67,17 @@ export function PendingCard({
     ? zh
       ? "生成失败，积分已退回"
       : "Failed, credits returned"
+    : status === "submitting"
+      ? zh
+        ? "生成中 · 正在提交"
+        : "Generating · Submitting"
     : status === "generating"
       ? zh
         ? "生成中"
         : "Generating"
       : zh
-        ? "排队中"
-        : "Queued";
+        ? "生成中 · 排队中"
+        : "Generating · Queued";
   return (
     <div className={`sr-pending ${failed ? "sr-pending-failed" : ""} ${className}`} title={prompt ?? undefined}>
       {failed ? null : <span className="sr-shimmer" aria-hidden="true" />}
@@ -116,7 +135,7 @@ export function CopyPromptButton({
         }
       }}
     >
-      {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+      {copied ? <Check key="done" data-swap className="h-4 w-4" aria-hidden="true" /> : <Copy key="copy" data-swap className="h-4 w-4" aria-hidden="true" />}
       {className.includes("sr-pill") ? (copied ? (zh ? "已复制" : "Copied") : zh ? "复制提示词" : "Copy prompt") : null}
     </button>
   );
@@ -150,6 +169,7 @@ export type ViewerItem = {
   kind: "image" | "video";
   prompt: string;
   model?: string;
+  parameters?: import("@/lib/generation-details").GenerationParameters | null;
 };
 
 export function MediaViewer({
@@ -223,9 +243,18 @@ export function MediaViewer({
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-        {item.model ? <span className="sr-viewer-model">{item.model}</span> : null}
         <span className="sr-viewer-label">{zh ? "提示词" : "Prompt"}</span>
         <p className="sr-viewer-prompt">{item.prompt || (zh ? "（无提示词）" : "(no prompt)")}</p>
+        {generationDetails(item.kind, item.model, item.parameters, zh).length ? (
+          <section className="sr-viewer-settings" aria-label={zh ? "生成参数" : "Generation settings"}>
+            <span className="sr-viewer-label">{zh ? "生成参数" : "Generation settings"}</span>
+            <dl>
+              {generationDetails(item.kind, item.model, item.parameters, zh).map(({ label, value }) => (
+                <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
         <div className="sr-viewer-actions">
           {onReuse ? (
             <button
@@ -373,7 +402,7 @@ export function WaveformPlayer({ url, zh }: { url: string; zh: boolean }) {
           <span
             key={index}
             className={index / BARS < progress ? "sr-bar sr-bar-on" : "sr-bar"}
-            style={{ height: `${Math.round(height * 100)}%` }}
+            style={{ transform: `scaleY(${Math.max(0.06, height).toFixed(3)})` }}
           />
         ))}
       </div>
@@ -389,7 +418,7 @@ export function WaveformPlayer({ url, zh }: { url: string; zh: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 /** Accept image files dropped on an element or pasted while it has focus. */
-export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
+export function useImageDrop(onFiles: (files: File[]) => void, enabled = true, accept = (type: string) => type.startsWith("image/")) {
   const [over, setOver] = useState(false);
   const depth = useRef(0);
   const pick = (list: FileList | DataTransferItemList | null | undefined): File[] => {
@@ -397,7 +426,7 @@ export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
     const files: File[] = [];
     for (const entry of Array.from(list as ArrayLike<File | DataTransferItem>)) {
       const file = entry instanceof File ? entry : entry.kind === "file" ? entry.getAsFile() : null;
-      if (file?.type.startsWith("image/")) files.push(file);
+      if (file && accept(file.type)) files.push(file);
     }
     return files;
   };
@@ -442,7 +471,9 @@ export function useImageDrop(onFiles: (files: File[]) => void, enabled = true) {
 }
 
 /** Hand an image result to the video studio as its start frame. */
-export function sendImageToVideo(url: string, href: string, name: string) {
+export function sendImageToVideo(url: string, href: string, name: string, userId?: string) {
+  if (userId) sessionStorage.setItem("aivd:home-start-image-owner", userId);
+  else sessionStorage.removeItem("aivd:home-start-image-owner");
   sessionStorage.setItem("aivd:home-start-image", url);
   sessionStorage.setItem("aivd:home-start-image-name", name);
   sessionStorage.setItem("aivd:home-start-image-preview", url);

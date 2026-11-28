@@ -1,29 +1,80 @@
-/* Homepage sections below the generator, laid out after the reference
-   site's homepage. Colours stay on the theme tokens. */
+/* Unified Frameless Gallery Design System (Jimeng × Pollo × Higgsfield × Linear).
+   Pure obsidian void canvas, zero decorative CSS gimmicks, zero filmstrip checker bars,
+   zero neon outlines, generous breathing room, and pure media-first hierarchy.
+   Strict design-scale variables (--ds-*) and theme tokens (--du-*) only. */
 
 .hs {
-  --hs-card: var(--ds-surface-2);
-  --hs-card-hover: var(--ds-surface-3);
-  --hs-muted: color-mix(in srgb, white 55%, transparent);
+  --hs-card: var(--ds-surface-1);
+  --hs-muted: color-mix(in srgb, white 52%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  padding: 24px 16px 96px;
+  gap: 72px;
+  padding: 8px 0 84px;
   color: white;
 }
 
-/* 1. Carousel */
+.hs-shell {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.hs-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 84px;
+}
+
+/* A single rail keeps every frame at its source ratio and lets the rest scroll. */
+.hs-release-rail {
+  --hs-release-height: clamp(166px, 15vw, 220px);
+  position: relative;
+}
+.hs-release-grid {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.hs-release-grid::-webkit-scrollbar { display: none; }
+.hs-release-grid .hs-slide { flex: 0 0 calc(var(--hs-media-ratio, 1) * var(--hs-release-height)); }
+.hs-release-grid .hs-slide-media { aspect-ratio: var(--hs-media-ratio, 1); }
+.hs-release-rail .hs-arrow { top: calc(var(--hs-release-height) / 2 - 19px); }
+.hs-release-grid .hs-slide-media :is(img, video) { object-fit: contain; object-position: center; }
+.hs-release-grid .hs-slide:hover .hs-slide-media :is(img, video),
+.hs-discover-masonry .wc-video:hover video { transform: none; }
+.hs-release-grid .hs-slide,
+.hs-release-grid .hs-slide-link { gap: 8px; }
+.hs-release-grid .hs-slide-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+.hs-release-grid .vpt,
+.hs-discover-masonry .vpt {
+  display: inline-flex;
+  opacity: 1;
+}
+
+.hs-accent {
+  color: var(--du-accent-text);
+}
+
+/* ============================================================================
+   1. Frameless 16:9 Cinema Rail — zero outer borders, zero filmstrip bars
+   ============================================================================ */
 .hs-carousel {
   position: relative;
 }
 
-/* Whole cards only: three per view on desktop (two on narrower windows), so
-   no card is left half-cut under the arrow; the arrows page through the rest. */
 .hs-carousel-track {
   display: grid;
-  grid-auto-columns: calc((100% - 2 * 24px) / 3);
+  grid-auto-columns: calc((100% - 2 * 20px) / 3);
   grid-auto-flow: column;
-  gap: 24px;
+  gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -38,21 +89,19 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
   scroll-snap-align: start;
 }
 
-/* A slide with a clip is a card: the link, and the play button beside it. */
 .hs-slide-link {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
 }
 
 .hs-slide-play {
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
 }
 
 .hs-slide-media {
@@ -60,9 +109,8 @@
   display: block;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  margin-bottom: 12px;
-  border-radius: var(--ds-r-lg);
-  background: var(--hs-card);
+  border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev);
 }
 
 .hs-slide-media img,
@@ -70,396 +118,83 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 400ms ease;
+  object-position: center 22%;
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .hs-slide:hover .hs-slide-media img,
 .hs-slide:hover .hs-slide-media video {
-  transform: scale(1.03);
+  transform: scale(1.045);
+}
+
+.hs-slide-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 2px;
 }
 
 .hs-slide-title {
   color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 800;
+  font-family: var(--du-font-display, inherit);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
   letter-spacing: -0.01em;
-  text-transform: uppercase;
-}
-
-.hs-accent {
-  color: var(--du-accent-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hs-slide-body {
   color: var(--hs-muted);
-  font-size: var(--ds-fs-sm);
+  font-size: var(--ds-fs-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hs-arrow {
   position: absolute;
-  top: calc(50% - 40px);
-  right: -6px;
+  top: calc(50% - 42px);
+  right: 12px;
+  z-index: 4;
   display: flex;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 75%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
+  background: color-mix(in srgb, var(--du-bg) 78%, transparent);
   color: white;
-  backdrop-filter: blur(10px);
-  transition:
-    opacity 200ms ease,
-    background-color 150ms ease;
+  backdrop-filter: blur(12px);
+  transition: opacity var(--m-fast) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
 }
 
 .hs-arrow:hover {
-  background: color-mix(in srgb, var(--du-bg) 90%, transparent);
+  border-color: var(--ds-line-3);
+  background: color-mix(in srgb, var(--du-surface-2) 92%, transparent);
 }
 
 .hs-arrow-prev {
   right: auto;
-  left: -6px;
+  left: 12px;
 }
 
-/* At either end of the row the arrow fades out and stops taking clicks. */
 .hs-arrow[data-hidden] {
   opacity: 0;
   pointer-events: none;
 }
 
-/* 2. Offer and tiles */
-.hs-offer-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
-  gap: 24px;
-}
-
-.hs-offer {
-  position: relative;
-  display: flex;
-  min-height: 312px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  overflow: hidden;
-  padding: 28px;
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(80% 70% at 50% 40%, color-mix(in srgb, var(--du-accent) 30%, transparent), transparent 70%),
-    repeating-linear-gradient(90deg, color-mix(in srgb, white 4%, transparent) 0 1px, transparent 1px 72px),
-    repeating-linear-gradient(0deg, color-mix(in srgb, white 4%, transparent) 0 1px, transparent 1px 72px),
-    var(--du-bg-elev);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--du-accent) 25%, transparent);
-  text-align: center;
-}
-
-.hs-offer-kicker {
-  padding: 3px 10px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-3);
-  color: white;
-  font-size: var(--ds-fs-sm);
-}
-
-.hs-offer-title {
-  color: var(--du-accent-text);
-  font-size: clamp(22px, 2.1vw, 34px);
-  white-space: nowrap;
-  font-weight: 900;
-  line-height: 1.1;
-  text-shadow: 0 0 24px color-mix(in srgb, var(--du-accent) 50%, transparent);
-}
-
-.hs-offer-body {
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-sm);
-}
-
-.hs-offer-cta {
-  margin-top: 8px;
-  padding: 10px 22px;
-  border-radius: var(--ds-r-md);
-  background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-}
-
-.hs-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 16px;
-}
-
-.hs-tile {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 18px;
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 5%, transparent);
-  transition: background-color 150ms ease;
-}
-
-.hs-tile:hover {
-  background: var(--hs-card-hover);
-}
-
-.hs-tile-icon {
-  width: 22px;
-  height: 22px;
-  margin-bottom: auto;
-  color: white;
-}
-
-.hs-tile-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 28px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-}
-
-.hs-tile-body {
-  color: var(--hs-muted);
-  font-size: var(--ds-fs-sm);
-}
-
-.hs-badge {
-  padding: 1px 7px;
-  border-radius: var(--ds-r-xs);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-xs);
-  font-style: italic;
-  font-weight: 800;
-  transform: skewX(-10deg);
-}
-
-.hs-badge-tag {
-  background: linear-gradient(90deg, var(--du-accent-hover), var(--du-accent));
-}
-
-/* 3. Chrome banner and use cases */
-.hs-chrome {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-  padding: 64px 24px;
-  border-radius: var(--ds-r-2xl);
-  background:
-    radial-gradient(60% 90% at 20% 30%, color-mix(in srgb, white 9%, transparent), transparent 60%),
-    radial-gradient(50% 80% at 85% 70%, color-mix(in srgb, white 7%, transparent), transparent 60%),
-    linear-gradient(160deg, var(--du-bg-elev), var(--du-bg));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 7%, transparent);
-  text-align: center;
-}
-
-.hs-chrome-edge {
-  position: absolute;
-  width: 34%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, white 70%, transparent), transparent);
-}
-
-.hs-chrome-edge-a {
-  top: 0;
-  left: 0;
-}
-
-.hs-chrome-edge-b {
-  right: 0;
-  bottom: 0;
-}
-
-/* The section's heading, set small: it names the block for search and for
-   screen readers, and the slogan below is the display line. */
-.hs-chrome-kicker {
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-md);
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hs-chrome-title {
-  margin-top: 6px;
-  background: linear-gradient(180deg, white 10%, color-mix(in srgb, white 55%, transparent) 60%, white 95%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(32px, 3.4vw, 48px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.hs-chrome-body {
-  max-width: 540px;
-  margin-top: 16px;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-md);
-  line-height: 1.6;
-}
-
-.hs-chrome-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 26px;
-}
-
-.hs-btn {
-  display: inline-flex;
-  height: 44px;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 0 20px;
-  border-radius: var(--ds-r-lg);
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-  white-space: nowrap;
-  transition: filter 150ms ease;
-}
-
-.hs-btn:hover {
-  filter: brightness(0.9);
-}
-
-.hs-btn-light {
-  background: white;
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-bg) 18%, transparent);
-  color: var(--du-bg);
-}
-
-.hs-btn-dark {
-  background: var(--ds-fill-2);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 12%, transparent);
-  color: white;
-}
-
-.hs-btn-accent {
-  background: var(--du-accent);
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
-  color: var(--du-on-accent);
-}
-
-.hs-usecases {
-  position: relative;
-  margin-top: -48px;
-}
-
-.hs-usecase-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
-}
-
-.hs-usecase {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 3 / 2;
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-}
-
-.hs-usecase img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 400ms ease;
-}
-
-.hs-usecase:hover img {
-  transform: scale(1.04);
-}
-
-.hs-usecase-faded {
-  aspect-ratio: 3 / 1;
-  opacity: 0.35;
-  pointer-events: none;
-  mask-image: linear-gradient(to bottom, black, transparent);
-}
-
-/* Dark fade under the white titles on use-case and template cards, deep
-   enough that the text stays readable on a bright picture. */
-.hs-usecase-shade {
-  position: absolute;
-  inset: 30% 0 0 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 92%, transparent),
-    color-mix(in srgb, var(--du-bg) 55%, transparent) 45%,
-    transparent
-  );
-}
-
-.hs-usecase-title {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 52px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-}
-
-.hs-usecase-faded .hs-usecase-title,
-.hs-usecase-faded .hs-usecase-tags {
-  display: none;
-}
-
-.hs-usecase-tags {
-  position: absolute;
-  left: 18px;
-  bottom: 16px;
-  display: flex;
-  gap: 6px;
-}
-
-.hs-chip {
-  padding: 4px 10px;
-  border-radius: var(--ds-r-sm);
-  background: var(--ds-fill-3);
-  color: white;
-  font-size: var(--ds-fs-xs);
-  backdrop-filter: blur(8px);
-}
-
-.hs-see-all {
-  position: absolute;
-  left: 50%;
-  bottom: 18%;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-  transform: translateX(-50%);
-}
-
-/* Sections with a title row */
+/* ============================================================================
+   2. Section Headers & Quiet Filter Tabs
+   ============================================================================ */
 .hs-section {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-/* The button drops under the heading when the two do not fit side by side,
-   so a narrow screen is not pushed wider than it is. */
 .hs-head {
   display: flex;
   flex-wrap: wrap;
@@ -468,32 +203,474 @@
   gap: 16px 24px;
 }
 
-/* The model a wall shows, as a small label over its heading. */
-.hs-kicker {
-  margin-bottom: 6px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .hs-title {
   color: white;
-  font-size: var(--ds-fs-2xl);
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-  text-transform: uppercase;
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(1.375rem, 1.9vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .hs-sub {
   margin-top: 6px;
   color: var(--hs-muted);
-  font-size: var(--ds-fs-md);
+  font-size: var(--ds-fs-sm);
 }
 
-/* How it works: three numbered steps on a rule, no boxes. */
+.hs-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--du-bg-elev);
+}
+
+.hs-tab {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.hs-tab:hover {
+  color: white;
+}
+
+.hs-tab-active {
+  background: var(--ds-fill-2);
+  color: white;
+}
+
+.hs-quiet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.hs-quiet-link:hover {
+  color: white;
+}
+
+.hs-more-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+/* ============================================================================
+   3. Frameless Edge-to-Edge Balanced Discovery Masonry (Pure Moving Cinema & 4K Art)
+   ============================================================================ */
+.hs-discover-masonry {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.hs-discover-column {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.hs-wall-item {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--ds-r-lg);
+  background: var(--du-bg-elev);
+}
+
+/* Preserve vertical spacing & break-inside for sub-page CSS-column walls (.hs-wall) */
+.hs-wall > .hs-wall-item {
+  margin-bottom: 12px;
+  break-inside: avoid;
+}
+
+.hs-wall-item img,
+.hs-wall-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--m-slow) var(--m-ease-out);
+}
+
+.hs-wall-item:hover img,
+.hs-wall-item:hover video {
+  transform: scale(1.03);
+}
+
+/* ============================================================================
+   4. Quiet Matte Studio Suite (Linear × Krea Restraint)
+   ============================================================================ */
+.hs-suite-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr);
+  gap: 14px;
+}
+
+.hs-welcome-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 26px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background:
+    radial-gradient(90% 80% at 100% 100%, color-mix(in srgb, var(--du-accent) 11%, transparent), transparent 68%),
+    var(--du-bg-elev);
+  transition: border-color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out);
+}
+
+.hs-welcome-card:hover {
+  border-color: var(--ds-line-2);
+}
+
+.hs-welcome-kicker {
+  color: var(--du-accent-text);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.hs-welcome-num {
+  margin-top: 8px;
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(2.4rem, 3.2vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.hs-welcome-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.hs-welcome-body {
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+.hs-welcome-cta {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin-top: 14px;
+  padding: 0 18px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-gradient);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  transition: filter var(--m-instant) var(--m-ease-out);
+}
+
+.hs-welcome-card:hover .hs-welcome-cta {
+  filter: brightness(1.06);
+}
+
+.hs-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 14px;
+}
+
+.hs-tile {
+  display: flex;
+  min-height: 132px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+  transition: border-color var(--m-fast) var(--m-ease-out), background-color var(--m-fast) var(--m-ease-out);
+}
+
+.hs-tile:hover {
+  border-color: var(--ds-line-2);
+  background: var(--du-surface);
+}
+
+.hs-tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hs-tile-icon-box {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+}
+
+.hs-tile-icon {
+  width: 17px;
+  height: 17px;
+  color: var(--ds-text-2);
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.hs-tile:hover .hs-tile-icon {
+  color: var(--du-accent-text);
+}
+
+.hs-tile-arrow {
+  width: 15px;
+  height: 15px;
+  color: var(--ds-text-4);
+  transition: color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+}
+
+.hs-tile:hover .hs-tile-arrow {
+  color: white;
+  transform: translate(2px, -2px);
+}
+
+.hs-tile-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hs-tile-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+}
+
+.hs-tile-tag {
+  padding: 1px 6px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xs);
+  color: var(--ds-text-3);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+}
+
+.hs-tile-body {
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.45;
+}
+
+/* ============================================================================
+   5. Two Calm Editorial Spotlights (Infinite Canvas & Director Agent)
+   ============================================================================ */
+.hs-spotlights {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hs-spot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 32px;
+  align-items: center;
+  padding: 36px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-bg-elev);
+}
+
+.hs-spot-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hs-spot-kicker {
+  color: var(--du-accent-text);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.hs-spot-title {
+  color: white;
+  font-family: var(--du-font-display, inherit);
+  font-size: clamp(1.6rem, 2.4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.hs-spot-body {
+  max-width: 420px;
+  color: var(--hs-muted);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.65;
+}
+
+.hs-spot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hs-btn {
+  display: inline-flex;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border-radius: var(--ds-r-full);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: filter var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out);
+}
+
+.hs-btn-light {
+  background: white;
+  color: var(--du-bg);
+}
+
+.hs-btn-light:hover {
+  filter: brightness(0.92);
+}
+
+.hs-btn-accent {
+  background: var(--du-gradient);
+  color: var(--du-on-accent);
+}
+
+.hs-btn-accent:hover {
+  filter: brightness(1.06);
+}
+
+.hs-btn-ghost {
+  border: 1px solid var(--ds-line-2);
+  background: transparent;
+  color: var(--ds-text-2);
+}
+
+.hs-btn-ghost:hover {
+  border-color: var(--ds-line-3);
+  color: white;
+}
+
+.hs-spot-canvas-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hs-spot-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hs-spot-frame {
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface);
+}
+
+.hs-spot-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.hs-spot-prompt-pill {
+  align-self: center;
+  padding: 9px 18px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+}
+
+.hs-spot-quad {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hs-spot-quad-item {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface);
+}
+
+.hs-spot-quad-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--m-slow) var(--m-ease-out);
+}
+
+.hs-spot-quad-item:hover img {
+  transform: scale(1.04);
+}
+
+.hs-spot-quad-shade {
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 86%, transparent), transparent);
+}
+
+.hs-spot-quad-label {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  left: 12px;
+  color: white;
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+}
+
+/* ============================================================================
+   6. Quiet 3-Step Guide & Minimal Capabilities Index
+   ============================================================================ */
+.hs-how-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
 .hs-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -505,42 +682,88 @@
   flex-direction: column;
   gap: 8px;
   padding-top: 20px;
-  border-top: 1px solid var(--ds-line-2);
+  border-top: 1px solid var(--ds-line-1);
 }
 
 .hs-step-num {
-  color: color-mix(in srgb, var(--du-accent) 60%, transparent);
-  font-size: var(--ds-fs-4xl);
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  color: var(--ds-text-4);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
 }
 
 .hs-step-title {
-  margin-top: 4px;
   color: white;
-  font-size: var(--ds-fs-lg);
-  font-weight: 700;
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
 }
 
 .hs-step-body {
-  max-width: 44ch;
+  max-width: 42ch;
   color: var(--hs-muted);
-  font-size: var(--ds-fs-md);
-  line-height: 1.6;
+  font-size: var(--ds-fs-sm);
+  line-height: 1.65;
 }
 
-/* Questions: the heading on the left, the answers in a column beside it. */
+.hs-cloud-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding-top: 40px;
+  border-top: 1px solid var(--ds-line-1);
+  text-align: center;
+}
+
+.hs-cloud-title {
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.hs-cloud-list {
+  display: flex;
+  max-width: 1040px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hs-cloud-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: transparent;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  transition: border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out);
+}
+
+.hs-cloud-pill:hover {
+  border-color: var(--ds-line-2);
+  background: var(--ds-fill-1);
+  color: white;
+}
+
+/* ============================================================================
+   7. Shared FAQ, Mini Composer, Back-To-Create, Living Wall Cards & Slide Cover
+   ============================================================================ */
 .hs-faq {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 48px;
+  width: min(100%, 1240px);
+  margin-inline: auto;
+  padding-inline: 24px;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.65fr);
+  gap: clamp(24px, 4vw, 56px);
   align-items: start;
 }
 
 .hs-faq-list {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   border-top: 1px solid var(--ds-line-2);
 }
@@ -571,7 +794,7 @@
   height: 18px;
   flex-shrink: 0;
   color: var(--hs-muted);
-  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+  transition: transform var(--m-base) var(--m-ease-out);
 }
 
 .hs-faq-list details[open] summary svg {
@@ -590,273 +813,6 @@
   line-height: 1.7;
 }
 
-@media (max-width: 899px) {
-  .hs-steps {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-  }
-
-  .hs-faq {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-  }
-}
-
-.hs-tall-row {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.hs-tall {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 3 / 4;
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-  text-align: left;
-}
-
-.hs-tall img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 400ms ease;
-}
-
-.hs-tall:hover img {
-  transform: scale(1.04);
-}
-
-.hs-tall-title {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 600;
-}
-
-.hs-tall-use {
-  position: absolute;
-  left: 50%;
-  bottom: 52px;
-  padding: 10px 24px;
-  border-radius: var(--ds-r-lg);
-  background: white;
-  color: var(--du-bg);
-  font-size: var(--ds-fs-sm);
-  font-weight: 600;
-  opacity: 0;
-  transform: translate(-50%, 8px);
-  transition: opacity 200ms ease, transform 200ms ease;
-}
-
-.hs-tall:hover .hs-tall-use,
-.hs-tall:focus-visible .hs-tall-use {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-/* Model walls */
-.hs-wall {
-  columns: 4;
-  column-gap: 12px;
-}
-
-.hs-wall.hs-wall-video {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
-  grid-template-areas:
-    "japan japan whale whale"
-    "dragon fried fried dress"
-    "dragon samurai samurai dress";
-  gap: 12px;
-  columns: auto;
-}
-
-.hs-wall-video > .hs-wall-item {
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-.hs-wall-video .hs-wall-item video {
-  object-fit: contain;
-}
-
-.hs-wall-video > :nth-child(1) { grid-area: japan; }
-.hs-wall-video > :nth-child(2) { grid-area: whale; }
-.hs-wall-video > :nth-child(3) { grid-area: fried; }
-.hs-wall-video > :nth-child(4) { grid-area: dragon; }
-.hs-wall-video > :nth-child(5) { grid-area: dress; }
-.hs-wall-video > :nth-child(6) { grid-area: samurai; }
-
-.hs-wall-item {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  margin-bottom: 12px;
-  break-inside: avoid;
-  border-radius: var(--ds-r-xl);
-  background: var(--hs-card);
-}
-
-.hs-wall-item img,
-.hs-wall-item video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 400ms ease;
-}
-
-.hs-wall-item:hover img,
-.hs-wall-item:hover video {
-  transform: scale(1.03);
-}
-
-.hs-wall-hover {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 65%, transparent);
-  color: white;
-  font-size: var(--ds-fs-sm);
-  white-space: nowrap;
-  opacity: 0;
-  backdrop-filter: blur(10px);
-  transform: translateX(-50%);
-  transition: opacity 200ms ease;
-}
-
-.hs-wall-item:hover .hs-wall-hover {
-  opacity: 1;
-}
-
-/* Feature banners */
-.hs-banner {
-  position: relative;
-  display: grid;
-  min-height: 330px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-  align-items: center;
-  overflow: hidden;
-  border-radius: var(--ds-r-2xl);
-}
-
-.hs-banner-canvas {
-  background:
-    radial-gradient(70% 120% at 0% 0%, color-mix(in srgb, var(--du-accent) 45%, transparent), transparent 60%),
-    linear-gradient(120deg, var(--du-accent-hover), var(--du-surface-2) 70%);
-}
-
-.hs-banner-photo {
-  background: linear-gradient(110deg, var(--du-surface-2), color-mix(in srgb, white 25%, var(--du-surface-2)));
-}
-
-.hs-banner-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 36px 40px;
-  z-index: 1;
-}
-
-.hs-banner-kicker {
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hs-banner-tag {
-  padding: 4px 12px;
-  border-radius: var(--ds-r-sm);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-sm);
-  font-style: italic;
-  font-weight: 800;
-}
-
-.hs-banner-title {
-  color: white;
-  font-size: clamp(28px, 2.8vw, 40px);
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.hs-banner-body {
-  margin-bottom: 10px;
-  color: var(--ds-text-2);
-  font-size: var(--ds-fs-md);
-}
-
-.hs-banner-art {
-  position: relative;
-  height: 100%;
-}
-
-.hs-banner-card {
-  position: absolute;
-  border: 4px solid color-mix(in srgb, var(--du-accent) 60%, white);
-  border-radius: var(--ds-r-2xl);
-  object-fit: cover;
-  box-shadow: 0 20px 40px color-mix(in srgb, var(--du-bg) 50%, transparent);
-}
-
-.hs-banner-card-a {
-  top: 36px;
-  left: 18%;
-  width: 34%;
-  height: 120%;
-}
-
-.hs-banner-card-b {
-  top: 72px;
-  right: 6%;
-  width: 34%;
-  height: 62%;
-}
-
-.hs-banner-bubble {
-  position: absolute;
-  top: 60px;
-  left: 2%;
-  max-width: 220px;
-  padding: 10px 14px;
-  border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, white 88%, transparent);
-  color: var(--du-bg);
-  font-size: var(--ds-fs-sm);
-  transform: rotate(-4deg);
-}
-
-.hs-banner-fan {
-  position: relative;
-  height: 100%;
-  min-height: 330px;
-}
-
-.hs-banner-fan img {
-  position: absolute;
-  top: calc(18% + var(--i) * 3%);
-  left: calc(4% + var(--i) * 18%);
-  width: 30%;
-  aspect-ratio: 4 / 5;
-  border-radius: var(--ds-r-2xl);
-  object-fit: cover;
-  box-shadow: 0 18px 36px color-mix(in srgb, var(--du-bg) 45%, transparent);
-  transform: rotate(calc(-14deg + var(--i) * 6deg));
-}
-
-/* Mini composer pinned to the bottom */
 .hs-mini {
   position: fixed;
   left: 50%;
@@ -876,7 +832,7 @@
   pointer-events: none;
   backdrop-filter: blur(16px);
   transform: translate(-50%, 24px);
-  transition: opacity 250ms ease, transform 250ms ease;
+  transition: opacity var(--m-base) var(--m-ease-out), transform var(--m-base) var(--m-ease-out);
 }
 
 .hs-mini-on {
@@ -909,7 +865,7 @@
   border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  transition: opacity 150ms ease;
+  transition: opacity var(--m-instant) var(--m-ease-out);
 }
 
 .hs-mini button:disabled {
@@ -917,26 +873,25 @@
   color: var(--ds-text-4);
 }
 
-/* Homepage: a 44×44 corner button back to the generator, in place of the
-   full-width bottom composer. Small enough not to sit over headings or cards. */
 .hs-back-to-create {
   position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 30;
   display: flex;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--du-bg) 60%, transparent);
+  background: color-mix(in srgb, var(--du-surface) 90%, transparent);
+  color: var(--ds-text-2);
+  backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity 200ms ease, transform 200ms ease, background 160ms ease;
+  transition: opacity var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
 }
 
 .hs-back-to-create-on {
@@ -946,7 +901,8 @@
 }
 
 .hs-back-to-create:hover {
-  background: var(--du-accent-hover);
+  border-color: var(--ds-line-3);
+  color: white;
 }
 
 .hs-back-to-create:focus-visible {
@@ -954,78 +910,7 @@
   outline-offset: 3px;
 }
 
-/* Narrower desktop windows: fewer columns so cards keep their text clear. */
-@media (max-width: 1199px) {
-  .hs-carousel-track {
-    grid-auto-columns: calc((100% - 24px) / 2);
-  }
-
-  .hs-offer-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hs-usecase-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-tall-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hs-tall-row > :nth-child(n + 4) {
-    display: none;
-  }
-
-  .hs-wall {
-    columns: 3;
-  }
-
-  .hs-banner {
-    grid-template-columns: 1fr;
-  }
-
-  .hs-banner-art,
-  .hs-banner-fan {
-    display: none;
-  }
-}
-
-@media (max-width: 767px) {
-  .hs-tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hs-wall {
-    columns: 2;
-  }
-}
-
-@media (max-width: 1023px) {
-  .hs-wall.hs-wall-video {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "japan whale"
-      "dragon dress"
-      "fried samurai";
-  }
-}
-
-@media (max-width: 767px) {
-  .hs-wall.hs-wall-video {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "japan"
-      "whale"
-      "fried"
-      "dragon"
-      "dress"
-      "samurai";
-  }
-}
-
-/* ---------- Living wall cards ---------- */
-/* The card holds a link that fills it and, on clips, a play button beside
-   the link (shown under reduced motion). */
+/* Living wall cards — pure imagery at rest; hover unveils prompt + Recreate pill */
 .wc-link {
   position: absolute;
   inset: 0;
@@ -1035,11 +920,18 @@
 .wc-play {
   top: 10px;
   right: 10px;
+  opacity: 0;
+  transition: opacity var(--m-fast) var(--m-ease-out);
+}
+
+.wc:hover .wc-play {
+  opacity: 1;
 }
 
 @media (hover: none) {
   .wc-video .wc-play {
     display: inline-flex;
+    opacity: 1;
   }
 
   .wc-video .wc-info {
@@ -1052,50 +944,19 @@
 .wc video {
   display: block;
   transform-origin: center;
-  transition: transform 700ms var(--du-ease, ease);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
-/* Stills: a slow camera move while hovered. */
-.wc-move-push:hover img { transform: scale(1.12); transition-duration: 6s; }
-.wc-move-left:hover img { transform: scale(1.12) translateX(-4%); transition-duration: 6s; }
-.wc-move-right:hover img { transform: scale(1.12) translateX(4%); transition-duration: 6s; }
-.wc-move-rise:hover img { transform: scale(1.12) translateY(-4%); transition-duration: 6s; }
-.wc-video:hover video { transform: scale(1.02); }
+.wc-move-push:hover img { transform: scale(1.06); }
+.wc-move-left:hover img { transform: scale(1.06) translateX(-2%); }
+.wc-move-right:hover img { transform: scale(1.06) translateX(2%); }
+.wc-move-rise:hover img { transform: scale(1.06) translateY(-2%); }
+.wc-video:hover video { transform: scale(1.03); }
 
-/* A light sweep across the card as the pointer arrives. */
-.wc-sheen {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 35%, color-mix(in srgb, white 14%, transparent) 50%, transparent 65%);
-  background-position: 160% 0;
-  background-size: 250% 100%;
-  pointer-events: none;
-}
-
-.wc:hover .wc-sheen {
-  background-position: -60% 0;
-  transition: background-position 900ms var(--du-ease, ease);
-}
-
+/* Quiet: hide permanent video badge & shiny sweep so images feel like a museum gallery */
+.wc-sheen,
 .wc-kind {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 60%, transparent);
-  color: white;
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-  transition: opacity 300ms ease;
-}
-
-.wc-video:hover .wc-kind {
-  opacity: 0;
+  display: none;
 }
 
 .wc-info {
@@ -1105,13 +966,11 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 40px 14px 14px;
-  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 85%, transparent), transparent);
+  padding: 44px 14px 14px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 88%, transparent), transparent);
   opacity: 0;
-  transform: translateY(8px);
-  transition:
-    opacity var(--du-dur, 400ms) var(--du-ease, ease),
-    transform var(--du-dur, 400ms) var(--du-ease, ease);
+  transform: translateY(6px);
+  transition: opacity var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .wc:hover .wc-info,
@@ -1127,55 +986,45 @@
   font-size: var(--ds-fs-xs);
   line-height: 1.5;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .wc-cta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
+  gap: 5px;
+  padding: 6px 13px;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
-  color: var(--du-on-accent);
+  background: white;
+  color: var(--du-bg);
   font-size: var(--ds-fs-xs);
   font-weight: 600;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .wc:hover img,
-  .wc:hover video {
-    transform: none;
-  }
-
-  .wc:hover .wc-sheen {
-    background-position: 160% 0;
-  }
-}
-
-/* Carousel covers: big lettering on the picture, after the reference. */
-/* Bottom fade behind the cover lettering, so white words stay readable on
-   bright pictures such as the Veo sky or the Seedance park. */
+/* Kept for sub-pages importing SlideCover */
 .hs-slide-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--du-bg) 90%, transparent),
-    color-mix(in srgb, var(--du-bg) 60%, transparent) 32%,
-    transparent 68%
-  );
+  background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 82%, transparent) 0%, transparent 55%);
   pointer-events: none;
+}
+
+.hs-slide-subtag {
+  color: var(--ds-text-2);
+  font-family: var(--du-font-mono, inherit);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
 }
 
 .hs-slide-cover {
   position: absolute;
-  right: 18px;
-  bottom: 16px;
-  left: 18px;
+  right: 16px;
+  bottom: 14px;
+  left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   pointer-events: none;
 }
 
@@ -1183,27 +1032,76 @@
   overflow: hidden;
   color: white;
   font-family: var(--du-font-display, inherit);
-  font-size: clamp(28px, 2.6vw, 40px);
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
+  font-size: clamp(var(--ds-fs-lg), 1.6vw, var(--ds-fs-xl));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   text-overflow: ellipsis;
-  text-shadow: 0 4px 24px color-mix(in srgb, var(--du-bg) 70%, transparent);
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
-.hs-slide-cover-sub {
-  color: var(--du-accent-text);
-  font-family: var(--du-font-display, inherit);
-  font-size: var(--ds-fs-sm);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* ============================================================================
+   8. Responsive Breakpoints
+   ============================================================================ */
+@media (max-width: 1199px) {
+  .hs-carousel-track {
+    grid-auto-columns: calc((100% - 20px) / 2);
+  }
+
+  .hs-discover-masonry { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .hs-suite-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hs-spot {
+    grid-template-columns: 1fr;
+    padding: 26px;
+  }
 }
 
-.hs-slide-cover-cjk .hs-slide-cover-main {
-  font-style: normal;
-  letter-spacing: 0;
+@media (max-width: 899px) {
+  .hs-steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .hs-faq {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hs-shell {
+    padding: 0 14px;
+  }
+
+  .hs-faq { padding-inline: 14px; }
+
+  .hs-stack {
+    gap: 56px;
+  }
+
+  .hs-discover-masonry {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hs-discover-column { gap: 8px; }
+
+  .hs-wall > .hs-wall-item {
+    margin-bottom: 8px;
+  }
+
+  .hs-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc:hover img,
+  .wc:hover video {
+    transform: none;
+  }
 }

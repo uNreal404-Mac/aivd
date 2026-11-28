@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Stripe from "stripe";
 import type { CreditPackageConfig } from "@/config/credits";
+import { safeReturnTo } from "@/lib/credit-return";
 import {
   CHECKOUT_SITE_ID,
   STATEMENT_DESCRIPTOR_SUFFIX,
@@ -212,6 +213,19 @@ describe("statement descriptor suffix", () => {
 });
 
 describe("buildCheckoutSessionParams", () => {
+  it("returns a Chinese image draft after checkout", () => {
+    const returnTo = safeReturnTo("/zh/ai/image");
+    const params = buildCheckoutSessionParams({ product: creditPack, userId: "user-1", origin: "https://example.com", returnTo });
+    expect(params.success_url).toBe("https://example.com/zh/checkout/success?session_id={CHECKOUT_SESSION_ID}&returnTo=%2Fzh%2Fai%2Fimage");
+    expect(params.cancel_url).toBe("https://example.com/zh/checkout/cancel?returnTo=%2Fzh%2Fai%2Fimage");
+  });
+
+  it("rejects external checkout return paths", () => {
+    expect(safeReturnTo("//evil.example/path")).toBeNull();
+    expect(safeReturnTo("https://evil.example/path")).toBeNull();
+    expect(safeReturnTo("/\\evil.example/path")).toBeNull();
+  });
+
   it("builds subscription mode params", () => {
     const params = buildCheckoutSessionParams({
       product: subscriptionProduct,

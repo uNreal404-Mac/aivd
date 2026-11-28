@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
-import { ArrowUp, AtSign, Coins, Film, ImagePlus, ListChecks, MessageSquareText, Sparkles, Wand2, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AtSign, Bot, Film, Image as ImageIcon, ImagePlus, ListChecks, MessageSquareText, Sparkles, Wand2, type LucideIcon } from "lucide-react";
 
 import { estimateCredits } from "@/lib/ai-video-studio";
-import { MiniComposer } from "@/components/hf/home-showcase";
+import { useSession } from "@/lib/auth/client";
+import { CarouselArrows, MiniComposer } from "@/components/hf/home-showcase";
+import { useCarousel } from "@/components/hf/use-carousel";
+import { HomeGenerator, type HomeGeneratorPreset } from "@/components/hf/home-generator";
+import { CreativeAgentComposer } from "./creative-agent-composer";
 import { CREATIVE_SKILL_CATEGORIES, skillsFor, type CreativeSkillCategory } from "@/lib/creative-skills";
 import { localizedHref } from "@/lib/du-home";
 import { HOME_TEMPLATES } from "@/lib/home-templates";
@@ -20,29 +23,58 @@ import { ScrollReveal } from "@/components/scroll-reveal";
 const CANVAS_PATH = "/creative-space/canvas";
 const VEO_CREDITS = estimateCredits({ modelId: "veo-3.1", duration: 8, resolution: "720p" });
 
-export function CreativeSpaceHome({ lang }: { lang: string }) {
+type Model = { id: string; name: string; durations: number[]; aspects: string[] };
+type CreativeMode = "video" | "image" | "agent";
+
+export function CreativeSpaceHome({ lang, models }: { lang: string; models: Model[] }) {
   const zh = lang.toLowerCase().startsWith("zh");
-  const router = useRouter();
+  const { data: session, isPending: sessionLoading } = useSession();
+  const accountScope = session?.user?.id ?? "guest";
+  const modeStorageKey = `aivd:creative-mode:${accountScope}`;
+  const briefStorageKey = `aivd:creative-agent-brief:${accountScope}`;
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const categoryTrackRef = useRef<HTMLDivElement>(null);
+  const categoryCarousel = useCarousel(categoryTrackRef);
   const [brief, setBrief] = useState("");
+  const [mode, setMode] = useState<CreativeMode>("video");
+  const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
+  const [readyScope, setReadyScope] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sessionLoading) return;
+    let nextMode: CreativeMode = "video";
+    let nextBrief = "";
+    try {
+      const savedMode = localStorage.getItem(modeStorageKey);
+      if (savedMode === "video" || savedMode === "image" || savedMode === "agent") nextMode = savedMode;
+      nextBrief = (localStorage.getItem(briefStorageKey) ?? "").slice(0, 2000);
+      // Drop unscoped legacy keys so one account's brief can never leak into another.
+      localStorage.removeItem("aivd:creative-agent-brief");
+      localStorage.removeItem("aivd:creative-mode");
+    } catch { /* Storage can be unavailable in private browsing. */ }
+    setMode(nextMode);
+    setBrief(nextBrief);
+    setReadyScope(accountScope);
+  }, [accountScope, briefStorageKey, modeStorageKey, sessionLoading]);
+
+  useEffect(() => {
+    if (sessionLoading || readyScope !== accountScope) return;
+    try {
+      localStorage.setItem(modeStorageKey, mode);
+      if (brief) localStorage.setItem(briefStorageKey, brief);
+      else localStorage.removeItem(briefStorageKey);
+    } catch { /* The composer still works without local storage. */ }
+  }, [accountScope, brief, briefStorageKey, mode, modeStorageKey, readyScope, sessionLoading]);
 
   const canvasHref = (text?: string) =>
     localizedHref(lang, text ? `${CANVAS_PATH}?prompt=${encodeURIComponent(text)}` : CANVAS_PATH);
 
-  const applyBrief = (text: string) => {
-    setBrief(text);
+  const applyBrief = (text: string, target: CreativeMode = "agent") => {
+    setMode(target);
+    if (target === "agent") setBrief(text);
+    else setPreset((previous) => ({ prompt: text, nonce: (previous?.nonce ?? 0) + 1 }));
     window.scrollTo({ top: 0, behavior: scrollMotion() });
-    inputRef.current?.focus({ preventScroll: true });
-  };
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const text = brief.trim();
-    if (!text) {
-      inputRef.current?.focus();
-      return;
-    }
-    router.push(canvasHref(text));
+    if (target === "agent") requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   };
 
   const quickSkills = CREATIVE_SKILL_CATEGORIES.flatMap((item) => skillsFor(item.id).slice(0, 2));
@@ -52,49 +84,43 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
       <div className="cs-glow" aria-hidden="true" />
 
       <section className="cs-hero">
-        <h1 className="cs-title">{zh ? "说出你的想法，Agent 帮你拆成镜头再生成视频" : "Describe the idea. The agent plans the shots, then makes the video."}</h1>
+        <h1 className="cs-title">{zh ? "一个创作空间，生成视频、图片和创意计划" : "One creative space for video, images, and ideas"}</h1>
         <p className="cs-sub">
           {zh
-            ? "写一句目标，或上传图片和视频作参考。Agent 先给出分镜和提示词，你确认后再用 Veo 3.1 生成。"
-            : "Write a goal, or add images and video as references. The agent drafts the shots and prompt first, and Veo 3.1 generates once you approve."}
+            ? "选择视频、图片或 Agent，或直接进入无限画布进行局部重绘、扩图、消除、抠图、超清与多模态连线创作。"
+            : "Choose Video, Image, or Agent — or open the Infinite Canvas for Inpaint, Outpaint, Cutout, Upscale, and multimodal workflows."}
         </p>
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
+          <Link href={canvasHref()} className="hs-btn hs-btn-light">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            {zh ? "打开无限画布（生图 · 编辑 · 生视频 · Agent）" : "Open Infinite Canvas (Image · Edit · Video · Agent)"}
+          </Link>
+        </div>
 
-        <form id="cs-composer-anchor" className="cs-composer" onSubmit={submit}>
-          <textarea
-            ref={inputRef}
-            value={brief}
-            onChange={(event) => setBrief(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) submit(event);
-            }}
-            rows={3}
-            maxLength={2000}
-            placeholder={zh ? "例如：用我上传的产品图做一条 8 秒的发布短片，影棚灯光，镜头推近到细节……" : "e.g. Make an 8-second launch clip from my product photo: studio light, push in to the details…"}
-            aria-label={zh ? "创作目标" : "Creative goal"}
-            className="cs-input"
-          />
-          <div className="cs-composer-bar">
-            <Link href={canvasHref(brief.trim() || undefined)} className="cs-chip-btn" title={zh ? "在画布里上传参考素材" : "Upload references on the canvas"}>
-              <ImagePlus className="h-4 w-4" aria-hidden="true" />
-              {zh ? "添加素材" : "Add assets"}
-            </Link>
-            <span className="cs-meta">
-              <Film className="h-3.5 w-3.5" aria-hidden="true" />
-              Veo 3.1 · 8s · {zh ? "有声" : "with sound"}
-            </span>
-            <span className="cs-meta">
-              <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
-              {zh ? "先出计划，确认后生成" : "Plan first, generate on approval"}
-            </span>
-            <span className="cs-cost" title={zh ? "生成一条视频消耗的积分，出计划不扣积分" : "Credits per video; planning is free"}>
-              <Coins className="h-3.5 w-3.5" aria-hidden="true" />
-              {VEO_CREDITS}
-            </span>
-            <button type="submit" className="cs-send" disabled={!brief.trim()} aria-label={zh ? "开始创作" : "Start"}>
-              <ArrowUp className="h-4 w-4" aria-hidden="true" />
-            </button>
+        <div id="cs-composer-anchor" className="cs-generator-shell">
+          <nav className="cs-mode-rail" aria-label={zh ? "创作类型" : "Creation type"}>
+            {([ ["video", Film, zh ? "视频" : "Video"], ["image", ImageIcon, zh ? "图片" : "Image"], ["agent", Bot, "Agent"] ] as const).map(([item, Icon, label]) => (
+              <button key={item} type="button" className={`cs-mode-button${mode === item ? " cs-mode-button-active" : ""}`} aria-pressed={mode === item} onClick={() => { setPreset(null); setMode(item); }}>
+                <Icon className="h-5 w-5" aria-hidden="true" />{label}
+              </button>
+            ))}
+          </nav>
+          <div className="cs-generator-main">
+            {mode !== "agent" ? <HomeGenerator
+              key={mode}
+              lang={lang}
+              models={models}
+              onModelChange={() => {}}
+              preset={mode === "video" ? preset : null}
+              initialKind={mode}
+              initialPrompt={mode === "video" ? preset?.prompt : undefined}
+              hideKindTabs
+              draftStorageKey={`aivd:creative-${mode}-draft`}
+              showSuggestions={false}
+            /> : null}
+            <CreativeAgentComposer lang={lang} active={mode === "agent"} brief={brief} onBriefChange={setBrief} inputRef={inputRef} />
           </div>
-        </form>
+        </div>
 
         <div className="cs-quick" aria-label={zh ? "常用技能" : "Popular skills"}>
           {quickSkills.map((item) => (
@@ -110,7 +136,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
         <ScrollReveal />
         {/* 1. Category carousel */}
         <section className="hs-carousel" aria-label={zh ? "技能分类" : "Skill categories"}>
-          <div className="hs-carousel-track">
+          <div ref={categoryTrackRef} className="hs-carousel-track">
             {CREATIVE_SKILL_CATEGORIES.map((item) => {
               const first = skillsFor(item.id)[0];
               return (
@@ -131,6 +157,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
               );
             })}
           </div>
+          <CarouselArrows zh={zh} {...categoryCarousel} />
         </section>
 
         {/* 2. How the agent works: offer card and feature tiles */}
@@ -206,8 +233,8 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
             </Link>
           </div>
           <div className="hs-banner-art" aria-hidden="true">
-            <img src="/home/samples/studio-room.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
-            <img src="/home/samples/red-carpet.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
+            <img src="/canvas/templates/ecom.webp" alt="" className="hs-banner-card hs-banner-card-a" loading="lazy" />
+            <img src="/canvas/templates/character.webp" alt="" className="hs-banner-card hs-banner-card-b" loading="lazy" />
             <span className="hs-banner-bubble">{zh ? "@产品图 做一条 8 秒发布短片" : "@product make an 8s launch clip"}</span>
           </div>
         </section>
@@ -246,7 +273,7 @@ export function CreativeSpaceHome({ lang }: { lang: string }) {
           </div>
           <div className="hs-tall-row">
             {HOME_TEMPLATES.slice(0, 5).map((template) => (
-              <button key={template.id} type="button" className="hs-tall" onClick={() => applyBrief(zh ? template.prompt.zh : template.prompt.en)}>
+              <button key={template.id} type="button" className="hs-tall" onClick={() => applyBrief(zh ? template.prompt.zh : template.prompt.en, "video")}>
                 <img src={template.image} alt="" loading="lazy" />
                 <span className="hs-usecase-shade" aria-hidden="true" />
                 <span className="hs-tall-title">{zh ? template.title.zh : template.title.en}</span>

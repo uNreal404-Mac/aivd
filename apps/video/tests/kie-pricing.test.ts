@@ -16,18 +16,18 @@ import { CREDIT_PACKAGES, NEW_USER_GIFT, SUBSCRIPTION_PRODUCTS } from "@/config/
 
 describe("credit formula", () => {
   it("rounds video prices up to a multiple of 5", () => {
-    expect(videoCreditsFromCost(0.06)).toBe(25); // Grok Imagine 480p 5s
-    expect(videoCreditsFromCost(0.205)).toBe(50); // Seedance 2.0 Mini 720p 5s
-    expect(videoCreditsFromCost(0.3)).toBe(65); // Veo 3.1 Fast
-    expect(videoCreditsFromCost(0.35)).toBe(70); // Wan 2.6 5s 720p
-    expect(videoCreditsFromCost(1.025)).toBe(175); // Seedance 2.5 Flash 720p 5s
-    expect(videoCreditsFromCost(1.575)).toBe(260); // Seedance 2.5 720p 5s
+    expect(videoCreditsFromCost(0.06)).toBe(30); // Grok Imagine 480p 5s
+    expect(videoCreditsFromCost(0.205)).toBe(55); // Seedance 2.0 Mini 720p 5s
+    expect(videoCreditsFromCost(0.3)).toBe(75); // Veo 3.1 Fast
+    expect(videoCreditsFromCost(0.35)).toBe(85); // Wan 2.6 5s 720p
+    expect(videoCreditsFromCost(1.025)).toBe(215); // Seedance 2.5 Flash 720p 5s
+    expect(videoCreditsFromCost(1.575)).toBe(325); // Seedance 2.5 720p 5s
   });
 
   it("marks cheap clips up more than dear ones", () => {
     const multiple = (cost: number) => (videoCreditsFromCost(cost) * CREDIT_LIST_USD) / cost;
     expect(multiple(0.06)).toBeGreaterThan(4);
-    expect(multiple(3.95)).toBeLessThan(1.7);
+    expect(multiple(3.95)).toBeLessThan(2.1);
     expect(multiple(0.3)).toBeGreaterThan(multiple(1.575));
   });
 
@@ -74,10 +74,10 @@ describe("charging what KIE will be asked for", () => {
   });
 
   it("charges Veo 3.1 Quality when the request selects it", () => {
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" })).toBe(65);
-    expect(calculateModelCredits("veo-3.1", { duration: 8 })).toBe(65);
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "1080p" })).toBe(215);
-    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "high" })).toBe(215);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "720p" })).toBe(75);
+    expect(calculateModelCredits("veo-3.1", { duration: 8 })).toBe(75);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "1080p" })).toBe(265);
+    expect(calculateModelCredits("veo-3.1", { duration: 8, quality: "high" })).toBe(265);
   });
 
   it("has no price for models without a verified KIE cost", () => {

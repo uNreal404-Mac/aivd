@@ -1,5 +1,6 @@
-import { VideoStatus, db, videos } from "@/db";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import type { VoiceSettings } from "@/lib/audio-voice-settings";
+import { VideoStatus, db, mediaAssets, videos, type Video } from "@/db";
+import { and, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   getStorage,
@@ -24,9 +25,17 @@ import { generateSignedCallbackUrl } from "@/ai/utils/callback-signature";
 import { emitVideoEvent } from "@/lib/video-events";
 import { ApiError } from "@/lib/api/error";
 import { getConfiguredAIProvider } from "@/ai/provider-config";
-import { createMarketTask, getMarketModel, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { allowedDuration, createMarketTask, getMarketModel, imageResolution, marketCredits, type MarketRequest } from "@/ai/kie-market";
+import { imageOutputCount } from "@/lib/image-output-count";
+import { WAN_REFERENCE_MAX_BYTES, WAN_REFERENCE_MAX_FILES, isWanVideoMime } from "@/lib/wan-video-references";
 import { assertWithinConcurrencyLimit } from "@/lib/plan-limits";
 import { isFreeInternalAccount } from "@/lib/internal-test-account";
+import { KLING_KEYFRAME_MODEL, mapKlingFrames, orderedKlingFrames, type KlingKeyframes } from "@/lib/kling-keyframes";
+import { invalidKeyframes, resolveKlingKeyframes, validateKlingKeyframes } from "./kling-keyframes";
+import { isSafetyApproved, moderateContent, safetyMessage } from "@/lib/content-safety";
+
+import { isMeasuredVideoTool, VIDEO_MOTION_MODEL, type VideoToolOrientation } from "@/lib/video-tool";
+import { measuredVideoSource, ownedExtendUpload, validateCharacterImage } from "./video-tool-source";
 
 export interface GenerateVideoParams {
   userId: string;
@@ -37,26 +46,53 @@ export interface GenerateVideoParams {
   quality?: string; // "standard" | "high"
   imageUrl?: string; // image-to-video
   imageUrls?: string[]; // image-to-video (multi-image)
+  videoKeys?: string[]; // private uploaded Wan reference clips
+  keyframes?: KlingKeyframes;
+  locale?: string;
   mode?: string;
+  preset?: string;
   outputNumber?: number;
   generateAudio?: boolean;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
+  sourceVideoKey?: string;
+  orientation?: VideoToolOrientation;
+  expectedCredits?: number;
+  characterKey?: string;
 }
+
+/** KIE takes at most 50 MB of video for PixVerse extend (kie.ai/pixverse-v6). */
+export const MAX_SOURCE_VIDEO_BYTES = 50 * 1024 * 1024;
 
 export interface GenerateMediaParams {
   userId: string;
   model: string;
   prompt: string;
+  preset?: string;
+  mode?: string;
   aspectRatio?: string;
   resolution?: string;
   duration?: number;
   count?: number;
   /** Uploaded reference / start images: storage keys or allowed URLs. */
   imageUrls?: string[];
+  keyframes?: KlingKeyframes;
+  locale?: string;
   audio?: boolean;
   voice?: string;
   style?: string;
+  instrumental?: boolean;
+  customMode?: boolean;
+  speed?: number;
+  voiceSettings?: VoiceSettings;
   idempotencyKey?: string;
+  /** For tools that work on a video (extend): one of the user's own videos. */
+  sourceVideoUuid?: string;
+  sourceVideoKey?: string;
+  orientation?: VideoToolOrientation;
+  expectedCredits?: number;
+  characterKey?: string;
 }
 
 export interface VideoGenerationResult {
@@ -66,6 +102,13 @@ export interface VideoGenerationResult {
   status: string;
   estimatedTime?: number;
   creditsUsed: number;
+}
+
+/** A seed in KIE's range (0 to 2^31 - 1). */
+function randomSeed(): number {
+  const value = new Uint32Array(1);
+  crypto.getRandomValues(value);
+  return value[0] % 2147483648;
 }
 
 /** File extension from a provider URL, falling back when it has none. */
@@ -78,6 +121,21 @@ export function mediaExtension(url: string, fallback: string): string {
 
 const SUBMIT_SAVE_MAX_ATTEMPTS = 3;
 const SUBMIT_SAVE_RETRY_DELAY_MS = 200;
+/**
+ * A delivery that has held its claim this long without finishing was cut off
+ * (the Worker ended or the transfer hung), so another delivery may take over.
+ * Longer than a download's own timeout plus the upload of its parts.
+ */
+export const STALE_UPLOAD_CLAIM_MS = 30 * 60 * 1000;
+
+/** Reconciliation leaves a generation alone until it has been quiet this long. */
+export const RECONCILE_QUIET_MS = 10 * 60 * 1000;
+/** A submission that never recorded a provider task is given up after this. */
+export const RECONCILE_NO_TASK_MS = 30 * 60 * 1000;
+/** No generation takes this long; one still open is failed and refunded. */
+export const RECONCILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export type ReconcileAction = "synced" | "still_running" | "failed_no_task" | "failed_timeout" | "error";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -153,6 +211,48 @@ export class VideoService {
    * Create video generation task
    */
   async generate(params: GenerateVideoParams): Promise<VideoGenerationResult> {
+    const videoKeys = params.videoKeys ?? [];
+    if (
+      isMeasuredVideoTool(params.model) &&
+      ((params.outputNumber ?? 1) !== 1 ||
+        params.generateAudio ||
+        params.aspectRatio ||
+        params.mode ||
+        params.keyframes ||
+        videoKeys.length)
+    ) {
+      throw new ApiError("Invalid video tool options.", 400, { code: "INVALID_VIDEO_OPTIONS" });
+    }
+    if (
+      !isMeasuredVideoTool(params.model) &&
+      ((params.sourceVideoKey && getMarketModel(params.model)?.tool !== "extend") ||
+        params.orientation ||
+        params.characterKey)
+    ) {
+      throw new ApiError("This model does not support those inputs.", 400, {
+        code: "INVALID_VIDEO_OPTIONS",
+      });
+    }
+
+    if (params.keyframes && (params.model !== KLING_KEYFRAME_MODEL || videoKeys.length || (params.outputNumber ?? 1) !== 1)) throw invalidKeyframes();
+    if (params.mode === "keyframes" && !params.keyframes) throw invalidKeyframes();
+    if (videoKeys.length) {
+      const invalidSelection =
+        params.model !== "wan2.6" ||
+        params.mode !== "reference-to-video" ||
+        params.imageUrl || params.imageUrls?.length ||
+        videoKeys.length > WAN_REFERENCE_MAX_FILES ||
+        new Set(videoKeys).size !== videoKeys.length ||
+        videoKeys.some((key) => !key.startsWith(`uploads/${params.userId}/`));
+      if (invalidSelection) {
+        throw new ApiError("Use up to three of your uploaded videos with Wan 2.6.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+      }
+      if ((params.duration !== undefined && ![5, 10, 15].includes(params.duration)) ||
+          (params.quality !== undefined && !["standard", "high", "720p", "1080p"].includes(params.quality)) ||
+          (params.outputNumber ?? 1) !== 1) {
+        throw new ApiError("Choose one Wan clip at 5, 10 or 15 seconds in 720p or 1080p.", 400, { code: "INVALID_VIDEO_OPTIONS" });
+      }
+    }
     // Market models (everything beyond the two legacy KIE video models) share
     // one generic path with image and audio generation.
     if (getMarketModel(params.model)) {
@@ -160,12 +260,21 @@ export class VideoService {
         userId: params.userId,
         model: params.model,
         prompt: params.prompt,
+        preset: params.preset,
+        mode: params.mode,
         aspectRatio: params.aspectRatio,
         resolution: params.quality,
         duration: params.duration,
         imageUrls: [...(params.imageUrl ? [params.imageUrl] : []), ...(params.imageUrls ?? [])],
+        keyframes: params.keyframes,
+        locale: params.locale,
         audio: params.generateAudio,
         idempotencyKey: params.idempotencyKey,
+        sourceVideoUuid: params.sourceVideoUuid,
+        sourceVideoKey: params.sourceVideoKey,
+        orientation: params.orientation,
+        expectedCredits: params.expectedCredits,
+        characterKey: params.characterKey,
       });
     }
 
@@ -222,7 +331,7 @@ export class VideoService {
       (resolvedMode === "image-to-video" ||
         resolvedMode === "reference-to-video" ||
         resolvedMode === "frames-to-video") &&
-      !hasImageInput
+      !hasImageInput && !videoKeys.length
     ) {
       throw new ApiError(
         `Mode ${resolvedMode} requires uploaded input media`,
@@ -260,6 +369,9 @@ export class VideoService {
     }
 
     const actualProvider = configuredProvider || modelConfig.provider;
+    if (videoKeys.length && actualProvider !== "kie") {
+      throw new ApiError("Video reference inputs require the KIE Wan 2.6 model.", 400, { code: "MODE_NOT_SUPPORTED" });
+    }
     if (!isModelModeSupported(params.model, actualProvider, resolvedMode)) {
       throw new ApiError(
         `Mode ${resolvedMode} is not supported for model ${params.model} on provider ${actualProvider}`,
@@ -294,6 +406,17 @@ export class VideoService {
       }
     }
 
+    // Replays return their existing job even if an attachment was removed later.
+    // Only sign keys issued for this user's validated uploads, never a client URL.
+    if (videoKeys.length) {
+      const assets = await db.select({ size: mediaAssets.size, mimeType: mediaAssets.mimeType }).from(mediaAssets)
+        .where(and(eq(mediaAssets.userId, params.userId), inArray(mediaAssets.key, videoKeys)));
+      if (assets.length !== videoKeys.length || assets.some((asset) => !isWanVideoMime(asset.mimeType) ||
+          asset.size <= 0 || asset.size > WAN_REFERENCE_MAX_BYTES)) {
+        throw new ApiError("Use uploaded MP4 or MOV clips up to 10 MB each.", 400, { code: "INVALID_VIDEO_REFERENCE" });
+      }
+    }
+
     // Plan limit on videos in progress. After the idempotency lookup, so a
     // retried submit gets its existing job back; before the row is created
     // and credits are frozen.
@@ -302,15 +425,19 @@ export class VideoService {
     const provider = getProvider(actualProvider);
     const videoUuid = `vid_${nanoid(21)}`;
 
+    const aspectRatio = videoKeys.length ? undefined : params.aspectRatio;
+    const generateAudio = videoKeys.length ? true : params.generateAudio;
     const parameters: Record<string, unknown> = {
       duration: params.duration,
-      aspectRatio: params.aspectRatio,
+      aspectRatio,
       quality: params.quality,
       outputNumber,
       mode: resolvedMode,
+      ...(params.preset ? { preset: params.preset } : {}),
       imageUrl: params.imageUrl,
       imageUrls: params.imageUrls,
-      generateAudio: params.generateAudio,
+      ...(videoKeys.length ? { videoKeys } : {}),
+      generateAudio,
     };
     if (idempotencyKey) {
       parameters.idempotencyKey = idempotencyKey;
@@ -329,7 +456,7 @@ export class VideoService {
       startImageUrl: params.imageUrls?.[0] || params.imageUrl || null,
       creditsUsed: billedCredits,
       duration: effectiveDuration,
-      aspectRatio: params.aspectRatio || null,
+      aspectRatio: aspectRatio || null,
       provider: actualProvider,
       updatedAt: new Date(),
     });
@@ -443,13 +570,14 @@ export class VideoService {
         model: params.model,
         prompt: params.prompt,
         duration: effectiveDuration,  // ✅ 使用计算后的时长
-        aspectRatio: params.aspectRatio,
+        aspectRatio,
         quality: params.quality,
         imageUrl: signedImageUrl,
         imageUrls: signedImageUrls,
+        ...(videoKeys.length ? { videoUrls: videoKeys.map((key) => getStorage().getSignedUrl(key, 3600)) } : {}),
         mode: resolvedMode,
         outputNumber,
-        generateAudio: params.generateAudio,
+        generateAudio,
         callbackUrl,
       });
     } catch (error) {
@@ -563,45 +691,6 @@ export class VideoService {
       throw new ApiError("Generation is not configured", 503, { code: "PROVIDER_NOT_CONFIGURED" });
     }
 
-    for (const imageInput of params.imageUrls ?? []) {
-      if (isStorageKey(imageInput) && !imageInput.startsWith(`uploads/${params.userId}/`)) {
-        throw new ApiError("Invalid image reference", 400, { code: "INVALID_IMAGE_REF" });
-      }
-    }
-    const maxImages = model.options.maxImages ?? 0;
-    const imageInputs = (params.imageUrls ?? []).slice(0, maxImages);
-    if (model.options.requiresImage && imageInputs.length === 0) {
-      throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });
-    }
-    const maxPrompt = model.options.maxPromptLength;
-    if (maxPrompt && params.prompt.length > maxPrompt) {
-      throw new ApiError(`Prompt is longer than ${maxPrompt} characters`, 400, { code: "PROMPT_TOO_LONG", max: maxPrompt });
-    }
-    if (model.options.voices?.length && params.voice && !model.options.voices.some((voice) => voice.id === params.voice)) {
-      throw new ApiError("Unknown voice", 400, { code: "INVALID_VOICE" });
-    }
-
-    // Only offer what the model accepts; anything else falls back to defaults.
-    const pick = (value: string | undefined, allowed?: string[]) =>
-      value && (!allowed || allowed.length === 0 || allowed.includes(value)) ? value : undefined;
-    const request: MarketRequest = {
-      prompt: params.prompt,
-      aspectRatio: pick(params.aspectRatio, model.options.aspects),
-      resolution: pick(params.resolution, model.options.resolutions),
-      duration: params.duration,
-      count: Math.min(model.options.maxCount ?? 1, Math.max(1, params.count ?? 1)),
-      audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
-      voice: params.voice,
-      style: params.style?.slice(0, 1000),
-    };
-
-    const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
-    if (!(creditsRequired > 0)) {
-      throw new ApiError(`Model ${model.id} has no price`, 400, { code: "MODEL_NOT_PRICED", model: model.id });
-    }
-    const freeInternal = await isFreeInternalAccount(params.userId);
-    const billedCredits = freeInternal ? 0 : creditsRequired;
-
     const idempotencyKey = params.idempotencyKey;
     if (idempotencyKey) {
       const existing = await this.findByIdempotencyKey(params.userId, idempotencyKey);
@@ -616,6 +705,134 @@ export class VideoService {
       }
     }
 
+    let measured: Awaited<ReturnType<typeof measuredVideoSource>> | null = null;
+    let character: Awaited<ReturnType<typeof validateCharacterImage>> | undefined;
+    if (isMeasuredVideoTool(model.id)) {
+      const motion = model.id === VIDEO_MOTION_MODEL;
+      if (
+        !model.options.resolutions?.includes(params.resolution ?? "") ||
+        (params.imageUrls?.length ?? 0) !== 0 ||
+        motion !== Boolean(params.characterKey) ||
+        (!motion && params.orientation) ||
+        params.keyframes ||
+        (params.count ?? 1) !== 1
+      ) {
+        throw new ApiError("Choose the inputs shown for this video tool.", 400, {
+          code: "INVALID_VIDEO_OPTIONS",
+        });
+      }
+      measured = await measuredVideoSource(params.userId, model.id, params);
+      if (measured.seconds !== params.duration)
+        throw new ApiError("Review the measured duration before submitting.", 409, {
+          code: "VIDEO_QUOTE_CHANGED",
+        });
+      if (motion) {
+        character = await validateCharacterImage(params.userId, params.characterKey);
+        const safety = await moderateContent({
+          text: params.prompt,
+          images: [{ url: character.signedUrl, label: "character" }],
+          context: "generation",
+        });
+        if (!isSafetyApproved(safety))
+          throw new ApiError(safetyMessage(safety, params.locale), 422, {
+            code: "CONTENT_BLOCKED",
+            decision: safety.decision,
+            categories: safety.categories,
+          });
+      }
+    }
+
+    if (params.keyframes) {
+      validateKlingKeyframes({
+        ...params, keyframes: params.keyframes,
+        hasOtherInputs: Boolean(params.imageUrls?.length || params.sourceVideoUuid),
+      });
+    }
+    for (const imageInput of params.imageUrls ?? []) {
+      if (isStorageKey(imageInput) && !imageInput.startsWith(`uploads/${params.userId}/`)) {
+        throw new ApiError("Invalid image reference", 400, { code: "INVALID_IMAGE_REF" });
+      }
+    }
+    const maxImages = model.options.maxImages ?? 0;
+    if ((params.imageUrls?.length ?? 0) > maxImages) {
+      throw new ApiError(`Too many image references for ${model.name}`, 400, {
+        code: "TOO_MANY_IMAGE_REFS", max: maxImages,
+      });
+    }
+    const imageInputs = character ? [character.key] : (params.imageUrls ?? []).slice(0, maxImages);
+    if (model.options.requiresImage && imageInputs.length === 0) {
+      throw new ApiError(`${model.name} needs a start image`, 400, { code: "MISSING_INPUT_MEDIA", model: model.id });
+    }
+    const minPrompt = model.options.minPromptLength;
+    if (minPrompt && params.prompt.trim().length < minPrompt) {
+      throw new ApiError(`Prompt is shorter than ${minPrompt} characters`, 400, { code: "PROMPT_TOO_SHORT", min: minPrompt });
+    }
+    const maxPrompt = model.options.maxPromptLength;
+    if (maxPrompt && params.prompt.length > maxPrompt) {
+      throw new ApiError(`Prompt is longer than ${maxPrompt} characters`, 400, { code: "PROMPT_TOO_LONG", max: maxPrompt });
+    }
+    if (model.options.voices?.length && params.voice && !model.options.voices.some((voice) => voice.id === params.voice)) {
+      throw new ApiError("Unknown voice", 400, { code: "INVALID_VOICE" });
+    }
+
+    // Only offer what the model accepts; anything else falls back to defaults.
+    const pick = (value: string | undefined, allowed?: string[]) =>
+      value && (!allowed || allowed.length === 0 || allowed.includes(value)) ? value : undefined;
+    const request: MarketRequest = {
+      prompt: params.prompt,
+      mode: params.mode,
+      // A ratio the model ignores is not saved, so history shows what was made.
+      aspectRatio: params.keyframes || (model.options.aspectFollowsSingleImage && imageInputs.length === 1)
+        ? undefined : pick(params.aspectRatio, model.options.aspects),
+      resolution: model.kind === "image" ? imageResolution(model, params.resolution) :
+        pick(params.resolution, model.options.resolutions) ?? (params.keyframes ? "1080p" : undefined),
+      duration: measured?.seconds ?? (params.keyframes ? params.duration ?? 10 : allowedDuration(model, params.duration)),
+      ...(model.id === VIDEO_MOTION_MODEL ? { orientation:params.orientation ?? "video" } : {}),
+      ...(params.keyframes ? { keyframes: params.keyframes } : {}),
+      count: imageOutputCount(params.count, model.options.maxCount),
+      audio: model.options.audioToggle ? (params.audio ?? true) : undefined,
+      voice: params.voice,
+      style: params.style?.slice(0, 1000),
+      instrumental: params.instrumental,
+      customMode: params.customMode,
+      speed: params.speed,
+      ...(model.kind === "audio" && params.voiceSettings ? { voiceSettings: params.voiceSettings } : {}),
+      // Models that require a seed get a random one.
+      ...(model.options.requiresVideo ? { seed: randomSeed() } : {}),
+    };
+
+    const creditsRequired = marketCredits(model, { ...request, imageUrls: imageInputs });
+    if (measured && creditsRequired !== params.expectedCredits)
+      throw new ApiError("The quote changed. Review it before generating.", 409, {
+        code: "VIDEO_QUOTE_CHANGED",
+      });
+
+    if (!(creditsRequired > 0)) {
+      throw new ApiError(`Model ${model.id} has no price`, 400, { code: "MODEL_NOT_PRICED", model: model.id });
+    }
+    const freeInternal = await isFreeInternalAccount(params.userId);
+    const billedCredits = freeInternal ? 0 : creditsRequired;
+
+    const sourceVideo = measured ?? (model.options.requiresVideo
+      ? await this.resolveExtendSource(params.userId, params.sourceVideoUuid, params.sourceVideoKey)
+      : null);
+
+    let providerFrames: KlingKeyframes | undefined;
+    let startFrame: string | undefined;
+    if (params.keyframes) {
+      const storedFrames = await resolveKlingKeyframes(params.userId, params.keyframes);
+      startFrame = orderedKlingFrames(storedFrames)[0];
+      providerFrames = mapKlingFrames(storedFrames, (value) => this.signImageInput(value));
+      const safety = await moderateContent({
+        text: params.prompt,
+        images: orderedKlingFrames(providerFrames).map((url, index) => ({ url, label: `keyframe-${index + 1}` })),
+        context: "generation",
+      });
+      if (!isSafetyApproved(safety)) {
+        throw new ApiError(safetyMessage(safety, params.locale), 422, { code: "CONTENT_BLOCKED", decision: safety.decision, categories: safety.categories });
+      }
+    }
+
     // Only videos count against the plan's concurrency; images and audio are quick.
     if (model.kind === "video") {
       if (!freeInternal) await assertWithinConcurrencyLimit(params.userId);
@@ -623,6 +840,15 @@ export class VideoService {
 
     const prefix = model.kind === "image" ? "img" : model.kind === "audio" ? "aud" : "vid";
     const uuid = `${prefix}_${nanoid(21)}`;
+    // Signing can fail locally before a task exists. Only reserve credits once
+    // the complete provider request is ready.
+    const callbackUrl = this.callbackBaseUrl ? generateSignedCallbackUrl(`${this.callbackBaseUrl}/kie`, uuid) : undefined;
+    const providerRequest = {
+      ...request,
+      imageUrls: imageInputs.map((value) => this.signImageInput(value)),
+      ...(providerFrames ? { keyframes: providerFrames } : {}),
+      ...(sourceVideo ? { videoUrl: sourceVideo.signedUrl } : {}),
+    };
     const insert = db.insert(videos).values({
       uuid,
       userId: params.userId,
@@ -631,12 +857,18 @@ export class VideoService {
       mediaType: model.kind,
       parameters: {
         ...request,
+        ...(params.preset ? { preset: params.preset } : {}),
+        ...(params.mode ? { mode: params.mode } : {}),
         imageUrls: imageInputs,
+        // The source is kept by its id; a signed URL would expire.
+        ...(sourceVideo?.uuid ? { sourceVideoUuid: sourceVideo.uuid } : {}),
+        ...(params.sourceVideoKey && sourceVideo ? { sourceVideoKey: params.sourceVideoKey } : {}),
+        ...(character ? {characterKey:params.characterKey} : {}),
         ...(idempotencyKey ? { idempotencyKey } : {}),
       },
       idempotencyKey: idempotencyKey ?? null,
       status: VideoStatus.PENDING,
-      startImageUrl: imageInputs[0] ?? null,
+      startImageUrl: startFrame ?? imageInputs[0] ?? null,
       creditsUsed: billedCredits,
       duration: model.kind === "video" ? (request.duration ?? null) : null,
       resolution: request.resolution ?? null,
@@ -661,36 +893,46 @@ export class VideoService {
       throw new Error("Failed to create generation record");
     }
 
+    const failedCharge = model.kind === "image" ? { creditsUsed: 0 } : {};
     let frozen: { success: boolean };
     try {
       frozen = freeInternal
         ? { success: true }
         : await creditService.freeze({ userId: params.userId, credits: creditsRequired, videoUuid: uuid });
     } catch (error) {
-      await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+      await db.update(videos).set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
       throw this.toInsufficientCreditsApiError(error, creditsRequired) ?? error;
     }
     if (!frozen.success) {
       await db
         .update(videos)
-        .set({ status: VideoStatus.FAILED, errorMessage: `Insufficient credits. Required: ${creditsRequired}`, updatedAt: new Date() })
+        .set({ status: VideoStatus.FAILED, ...failedCharge, errorMessage: `Insufficient credits. Required: ${creditsRequired}`, updatedAt: new Date() })
         .where(eq(videos.uuid, uuid));
       throw new ApiError("Insufficient credits", 402, { code: "INSUFFICIENT_CREDITS", requiredCredits: creditsRequired });
     }
 
-    const callbackUrl = this.callbackBaseUrl ? generateSignedCallbackUrl(`${this.callbackBaseUrl}/kie`, uuid) : undefined;
     let taskId: string;
     try {
-      taskId = await createMarketTask(
-        model,
-        { ...request, imageUrls: imageInputs.map((value) => this.signImageInput(value)) },
-        callbackUrl,
-        apiKey,
-      );
+      taskId = await createMarketTask(model, providerRequest, callbackUrl, apiKey);
     } catch (error) {
       if (error instanceof ProviderRejectedError) {
-        if (!freeInternal) await creditService.release(uuid);
-        await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        if (model.kind === "image") {
+          await this.tryFailGeneration(uuid, String(error));
+        } else {
+          if (!freeInternal) await creditService.release(uuid);
+          await db.update(videos).set({ status: VideoStatus.FAILED, errorMessage: String(error), updatedAt: new Date() }).where(eq(videos.uuid, uuid));
+        }
+        if (isMeasuredVideoTool(model.id)) {
+          throw new ApiError(
+            "The provider declined the source or options. Reserved credits were released.",
+            422,
+            { code: "TOOL_PROVIDER_REJECTED" },
+          );
+        }
+
+        if (model.tool === "extend") {
+          throw new ApiError("The provider rejected the source or options", 422, { code: "EXTEND_REJECTED" });
+        }
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
@@ -702,13 +944,21 @@ export class VideoService {
       throw new ApiError("Submission result unknown; it will be reconciled", 202, { code: "SUBMIT_RESULT_UNKNOWN", videoUuid: uuid });
     }
 
-    for (let attempt = 1; attempt <= SUBMIT_SAVE_MAX_ATTEMPTS; attempt++) {
+    for (let attempt = 1; ; attempt++) {
       try {
-        await db
+        const [saved] = await db
           .update(videos)
-          .set({ status: VideoStatus.GENERATING, externalTaskId: taskId, updatedAt: new Date() })
-          .where(eq(videos.uuid, uuid));
-        break;
+          .set({
+            // A fast image callback may have already delivered or released the hold.
+            status: model.kind === "image"
+              ? sql`case when ${videos.status} = 'PENDING' then 'GENERATING' else ${videos.status} end`
+              : VideoStatus.GENERATING,
+            externalTaskId: taskId, updatedAt: new Date(),
+          })
+          .where(eq(videos.uuid, uuid))
+          .returning({ status: videos.status, creditsUsed: videos.creditsUsed });
+        if (!saved) throw new Error("Generation record was not found");
+        return { videoUuid: uuid, taskId, provider: "kie", ...saved };
       } catch (error) {
         if (attempt === SUBMIT_SAVE_MAX_ATTEMPTS) {
           console.error(`Submitted but local save failed; needs reconciliation. uuid=${uuid} taskId=${taskId}`, error);
@@ -721,8 +971,52 @@ export class VideoService {
         await delay(SUBMIT_SAVE_RETRY_DELAY_MS * attempt);
       }
     }
+  }
 
-    return { videoUuid: uuid, taskId, provider: "kie", status: "GENERATING", creditsUsed: billedCredits };
+  private async resolveExtendSource(userId: string, sourceVideoUuid?: string, sourceVideoKey?:string) {
+    if (sourceVideoKey) {
+      if (sourceVideoUuid)
+        throw new ApiError("Choose one video to extend.", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+      const { signedUrl } = await ownedExtendUpload(userId, sourceVideoKey);
+      return { uuid: undefined, signedUrl };
+    }
+    if (!sourceVideoUuid) {
+      throw new ApiError("Choose a video to work on", 400, { code: "MISSING_SOURCE_VIDEO" });
+    }
+    const [source] = await db
+      .select({ uuid: videos.uuid, key: videos.videoUrl, size: videos.fileSize })
+      .from(videos)
+      .where(and(
+        eq(videos.userId, userId),
+        eq(videos.uuid, sourceVideoUuid),
+        eq(videos.isDeleted, false),
+        eq(videos.status, VideoStatus.COMPLETED),
+        or(eq(videos.mediaType, "video"), isNull(videos.mediaType)),
+      ))
+      .limit(1);
+    // Only sign an output in this creation's own directory. Legacy external
+    // URLs, upload keys and arbitrary paths cannot be verified as our output.
+    if (!source?.key || !source.key.startsWith(`videos/${source.uuid}/`) ||
+        !/^videos\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(mp4|mov|mkv|avi|webm)$/i.test(source.key)) {
+      throw new ApiError("This video cannot be used", 400, { code: "SOURCE_VIDEO_UNAVAILABLE" });
+    }
+
+    // New completions record the uploaded byte count. Older rows need an
+    // authenticated HEAD on the same immutable key we will sign for KIE.
+    try {
+      const storage = getStorage();
+      const size = source.size ?? await storage.getObjectSize(source.key);
+      if (!Number.isSafeInteger(size) || size <= 0) {
+        throw new Error("Invalid source object size");
+      }
+      if (size > MAX_SOURCE_VIDEO_BYTES) {
+        throw new ApiError("The video is larger than 50 MB", 400, { code: "SOURCE_VIDEO_TOO_LARGE" });
+      }
+      return { uuid: source.uuid, signedUrl: storage.getSignedUrl(source.key, 3600) };
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError("Unable to verify the source video", 503, { code: "SOURCE_VIDEO_UNVERIFIED" });
+    }
   }
 
   /**
@@ -776,7 +1070,7 @@ export class VideoService {
       return;
     }
 
-    if (result.status === "completed" && result.videoUrl) {
+    if (result.status === "completed" && (result.videoUrl || video.mediaType === "image")) {
       await this.tryCompleteGeneration(video.uuid, result);
     } else if (result.status === "failed") {
       await this.tryFailGeneration(video.uuid, result.error?.message);
@@ -808,6 +1102,7 @@ export class VideoService {
     }
 
     if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
+      await this.refundFailedImage(video);
       return {
         status: video.status,
         videoUrl: signMediaRef(video.videoUrl) || undefined,
@@ -822,7 +1117,7 @@ export class VideoService {
         const provider = getProvider(video.provider as ProviderType);
         const result = await provider.getTaskStatus(video.externalTaskId);
 
-        if (result.status === "completed" && result.videoUrl) {
+        if (result.status === "completed" && (result.videoUrl || video.mediaType === "image")) {
           const updated = await this.tryCompleteGeneration(video.uuid, result);
           const [fresh] = await db.select().from(videos).where(eq(videos.uuid, video.uuid)).limit(1);
           return {
@@ -830,6 +1125,7 @@ export class VideoService {
             videoUrl: updated.videoUrl || undefined,
             mediaUrls: fresh && fresh.status === VideoStatus.COMPLETED ? this.mediaUrlsOf(fresh) : undefined,
             mediaType: video.mediaType,
+            ...(fresh?.status === VideoStatus.FAILED ? { error: fresh.errorMessage ?? undefined } : {}),
           };
         }
 
@@ -844,14 +1140,17 @@ export class VideoService {
           };
         }
         if (result.status === "processing" && video.status === VideoStatus.PENDING) {
-          await db
+          const [updated] = await db
             .update(videos)
             .set({
               status: VideoStatus.GENERATING,
               updatedAt: new Date(),
             })
-            .where(eq(videos.uuid, video.uuid));
-          return { status: VideoStatus.GENERATING };
+            .where(and(eq(videos.uuid, video.uuid), eq(videos.status, VideoStatus.PENDING)))
+            .returning({ status: videos.status });
+          if (updated) return updated;
+          const [current] = await db.select({ status: videos.status }).from(videos).where(eq(videos.uuid, video.uuid));
+          if (current) return current;
         }
       } catch (error) {
         console.error("Failed to refresh status from provider:", error);
@@ -873,6 +1172,65 @@ export class VideoService {
   /**
    * Refresh status by external task id
    */
+  /**
+   * Settles generations nobody is watching. Callbacks and the studio's polling
+   * normally finish every task, but a lost callback, a closed tab or a
+   * submission whose outcome was unknown (SUBMIT_UNKNOWN) would otherwise keep
+   * the row open and its credits reserved forever. Run on a schedule.
+   */
+  async reconcileStuckGenerations(
+    { now = new Date(), limit = 25 }: { now?: Date; limit?: number } = {},
+  ): Promise<Array<{ uuid: string; action: ReconcileAction; status?: string }>> {
+    const quietSince = new Date(now.getTime() - RECONCILE_QUIET_MS);
+    const rows = await db
+      .select()
+      .from(videos)
+      .where(
+        and(
+          inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING, VideoStatus.UPLOADING]),
+          lt(videos.updatedAt, quietSince),
+        ),
+      )
+      .orderBy(videos.updatedAt)
+      .limit(limit);
+
+    const results: Array<{ uuid: string; action: ReconcileAction; status?: string }> = [];
+    for (const video of rows) {
+      try {
+        const age = now.getTime() - video.createdAt.getTime();
+        if (age > RECONCILE_MAX_AGE_MS) {
+          const failed = await this.tryFailGeneration(video.uuid, "Generation timed out. Reserved credits were returned.");
+          results.push({ uuid: video.uuid, action: "failed_timeout", status: failed.status });
+          continue;
+        }
+        if (!video.externalTaskId) {
+          if (age > RECONCILE_NO_TASK_MS) {
+            const failed = await this.tryFailGeneration(video.uuid, "The provider did not confirm this task. Reserved credits were returned.");
+            results.push({ uuid: video.uuid, action: "failed_no_task", status: failed.status });
+          } else {
+            results.push({ uuid: video.uuid, action: "still_running", status: video.status });
+          }
+          continue;
+        }
+        const synced = await this.refreshStatus(video.uuid, video.userId);
+        if (synced.status === VideoStatus.PENDING || synced.status === VideoStatus.GENERATING) {
+          // Still running: move it to the back of the queue so other rows get checked.
+          await db
+            .update(videos)
+            .set({ updatedAt: now })
+            .where(and(eq(videos.uuid, video.uuid), inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING])));
+          results.push({ uuid: video.uuid, action: "still_running", status: synced.status });
+        } else {
+          results.push({ uuid: video.uuid, action: "synced", status: synced.status });
+        }
+      } catch (error) {
+        console.error(`[reconcile] ${video.uuid} failed:`, error);
+        results.push({ uuid: video.uuid, action: "error" });
+      }
+    }
+    return results;
+  }
+
   async refreshStatusByTaskId(taskId: string, userId: string) {
     const [video] = await db
       .select()
@@ -904,7 +1262,13 @@ export class VideoService {
       .where(
         and(
           eq(videos.uuid, videoUuid),
-          inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING])
+          or(
+            inArray(videos.status, [VideoStatus.PENDING, VideoStatus.GENERATING]),
+            and(
+              eq(videos.status, VideoStatus.UPLOADING),
+              lt(videos.updatedAt, new Date(Date.now() - STALE_UPLOAD_CLAIM_MS)),
+            ),
+          ),
         )
       )
       .returning();
@@ -916,6 +1280,7 @@ export class VideoService {
         .where(eq(videos.uuid, videoUuid))
         .limit(1);
       if (!current) throw new Error("Video not found");
+      await this.refundFailedImage(current);
       return {
         status: current.status,
         videoUrl:
@@ -925,34 +1290,68 @@ export class VideoService {
       };
     }
 
-    const storage = getStorage();
     const stamp = Date.now();
-    const sources = result.resultUrls?.length ? result.resultUrls : [result.videoUrl!];
+    const sources = result.resultUrls?.length ? result.resultUrls : result.videoUrl ? [result.videoUrl] : [];
     let uploaded: { key: string };
+    let videoFileSize: number | undefined;
     let extraKeys: string[] = [];
     if (claimed.mediaType === "image") {
       // Image sets: keep every output. The first is the cover; the rest are
       // stored in parameters.extraKeys. The source decides the content type.
-      const keys = await Promise.all(
-        sources.map((sourceUrl, index) =>
-          storage
-            .downloadAndUpload({ sourceUrl, key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}` })
-            .then((item) => item.key),
-        ),
-      );
-      uploaded = { key: keys[0] };
-      extraKeys = keys.slice(1);
-    } else if (claimed.mediaType === "audio") {
-      uploaded = await storage.downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
-      });
+      const outputs = [...new Set(sources)];
+      const expected = claimed.parameters?.count;
+      if (outputs.length < (typeof expected === "number" ? expected : 1)) {
+        return this.tryFailGeneration(videoUuid, "The provider returned an incomplete image batch", true);
+      }
+      try {
+        const storage = getStorage();
+        const transfers = await Promise.allSettled(
+          outputs.map((sourceUrl, index) =>
+            storage.downloadAndUpload({
+              sourceUrl,
+              key: `images/${videoUuid}/${stamp}-${index}.${mediaExtension(sourceUrl, "png")}`,
+              requireNonEmpty: true,
+            }),
+          ),
+        );
+        const stored = transfers.flatMap(item => item.status === "fulfilled" ? [item.value] : []);
+        if (stored.length !== outputs.length || !stored.every(file => file.fileSize > 0)) {
+          // Even a zero-byte receipt can refer to an object we must remove.
+          // A cleanup failure must not keep the user's credits frozen.
+          await Promise.allSettled(stored.map(file => storage.deleteFile(file.key)));
+          throw new Error("Incomplete image transfer");
+        }
+        uploaded = stored[0];
+        extraKeys = stored.slice(1).map(file => file.key);
+      } catch {
+        return this.tryFailGeneration(videoUuid, "Failed to store the generated images", true);
+      }
     } else {
-      uploaded = await storage.downloadAndUpload({
-        sourceUrl: sources[0],
-        key: `videos/${videoUuid}/${stamp}.mp4`,
-        contentType: "video/mp4",
-      });
+      try {
+        if (claimed.mediaType === "audio") {
+          uploaded = await getStorage().downloadAndUpload({
+            sourceUrl: sources[0],
+            key: `audio/${videoUuid}/${stamp}.${mediaExtension(sources[0], "mp3")}`,
+          });
+        } else {
+          const storedVideo = await getStorage().downloadAndUpload({
+            sourceUrl: sources[0],
+            key: `videos/${videoUuid}/${stamp}.mp4`,
+            contentType: "video/mp4",
+          });
+          uploaded = storedVideo;
+          videoFileSize = storedVideo.fileSize;
+        }
+      } catch (error) {
+        // Give the claim back so the next callback or status check retries the
+        // transfer; the credits stay reserved until it completes or fails.
+        await db
+          .update(videos)
+          .set({ status: VideoStatus.GENERATING, updatedAt: new Date() })
+          .where(and(eq(videos.uuid, videoUuid), eq(videos.status, VideoStatus.UPLOADING)))
+          .catch((resetError: unknown) => console.error(`Failed to release the upload claim for ${videoUuid}:`, resetError));
+        throw error;
+      }
     }
 
     if (claimed.creditsUsed > 0) await creditService.settle(videoUuid);
@@ -962,6 +1361,7 @@ export class VideoService {
       .set({
         status: VideoStatus.COMPLETED,
         videoUrl: uploaded.key,
+        fileSize: videoFileSize,
         ...(extraKeys.length > 0
           ? { parameters: { ...(claimed.parameters ?? {}), extraKeys } }
           : {}),
@@ -1002,12 +1402,21 @@ export class VideoService {
     return { status: VideoStatus.COMPLETED, videoUrl: signedUrl };
   }
 
-  /**
-   * Try to mark as failed (transaction + row lock)
-   */
+  private async refundFailedImage(video: Video): Promise<void> {
+    if (video.mediaType !== "image" || video.status !== VideoStatus.FAILED) return;
+    // Older failed rows can still carry the original quote.
+    if (video.creditsUsed !== 0) {
+      await db.update(videos).set({ creditsUsed: 0 })
+        .where(and(eq(videos.uuid, video.uuid), eq(videos.status, VideoStatus.FAILED)));
+    }
+    // The hold records what is left to refund even when the displayed charge is zero.
+    await creditService.release(video.uuid, { ifHolding: true });
+  }
+
   private async tryFailGeneration(
     videoUuid: string,
-    errorMessage?: string
+    errorMessage?: string,
+    imageDeliveryFailed = false,
   ): Promise<{ status: string; errorMessage?: string | null }> {
     const [video] = await db
       .select()
@@ -1016,31 +1425,30 @@ export class VideoService {
       .limit(1);
 
     if (!video) throw new Error("Video not found");
-    if (
-      video.status === VideoStatus.COMPLETED ||
-      video.status === VideoStatus.FAILED
-    ) {
+    if (video.status === VideoStatus.COMPLETED || video.status === VideoStatus.FAILED) {
+      await this.refundFailedImage(video);
       return { status: video.status, errorMessage: video.errorMessage };
     }
-
-    if (video.creditsUsed > 0) await creditService.release(videoUuid);
+    const failFrom: VideoStatus[] = [VideoStatus.PENDING, VideoStatus.GENERATING];
+    if (video.mediaType !== "image") {
+      if (video.creditsUsed > 0) await creditService.release(videoUuid);
+      failFrom.push(VideoStatus.UPLOADING);
+    }
 
     const message = errorMessage || "Generation failed";
     const [failed] = await db
       .update(videos)
       .set({
         status: VideoStatus.FAILED,
+        ...(video.mediaType === "image" ? { creditsUsed: 0 } : {}),
         errorMessage: message,
         updatedAt: new Date(),
       })
       .where(
         and(
           eq(videos.uuid, videoUuid),
-          inArray(videos.status, [
-            VideoStatus.PENDING,
-            VideoStatus.GENERATING,
-            VideoStatus.UPLOADING,
-          ])
+          // Only the image uploader can surrender its claim after a delivery failure.
+          imageDeliveryFailed ? eq(videos.status, VideoStatus.UPLOADING) : inArray(videos.status, failFrom)
         )
       )
       .returning();
@@ -1052,6 +1460,7 @@ export class VideoService {
         .where(eq(videos.uuid, videoUuid))
         .limit(1);
       if (!current) throw new Error("Video not found");
+      await this.refundFailedImage(current);
       return { status: current.status, errorMessage: current.errorMessage };
     }
 
@@ -1061,7 +1470,7 @@ export class VideoService {
       status: "FAILED",
       error: message,
     });
-
+    await this.refundFailedImage(failed);
     return { status: VideoStatus.FAILED, errorMessage: message };
   }
 
@@ -1142,12 +1551,27 @@ export class VideoService {
   /**
    * Delete video (soft delete)
    */
-  async deleteVideo(uuid: string, userId: string): Promise<void> {
-    await db
-      .update(videos)
-      .set({ isDeleted: true, updatedAt: new Date() })
-      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)));
+  async deleteVideo(uuid: string, userId: string): Promise<string | null> {
+    const [row] = await db.update(videos)
+      .set({
+        isDeleted: true,
+        // A lost DELETE response can be retried without invalidating its undo.
+        deletionToken: sql`CASE WHEN ${videos.isDeleted} THEN ${videos.deletionToken} ELSE ${crypto.randomUUID()} END`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId)))
+      .returning({ token: videos.deletionToken });
+    return row?.token ?? null;
   }
+
+  async restoreVideo(uuid: string, userId: string, undoToken: string): Promise<boolean> {
+    const [restored] = await db.update(videos)
+      .set({ isDeleted: false })
+      .where(and(eq(videos.uuid, uuid), eq(videos.userId, userId), eq(videos.deletionToken, undoToken)))
+      .returning({ uuid: videos.uuid });
+    return Boolean(restored);
+  }
+
 }
 
 export const videoService = new VideoService();

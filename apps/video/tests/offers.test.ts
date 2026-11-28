@@ -48,11 +48,11 @@ describe("what the pricing page says about each plan", () => {
     }
   });
 
-  it("discounts the dearest plan least, yet keeps it the cheapest per credit", () => {
+  it("gives every yearly tier 30% off and keeps bigger plans cheaper per credit", () => {
     const [basic, pro, ultimate] = offers;
-    expect(basic.yearlySavingPercent).toBe(20);
-    expect(pro.yearlySavingPercent).toBe(20);
-    expect(ultimate.yearlySavingPercent).toBeLessThan(pro.yearlySavingPercent);
+    expect(basic.yearlySavingPercent).toBe(30);
+    expect(pro.yearlySavingPercent).toBe(30);
+    expect(ultimate.yearlySavingPercent).toBe(30);
     for (const period of ["month", "year"] as const) {
       expect(creditPriceUsd(pro, period), period).toBeLessThan(creditPriceUsd(basic, period));
       expect(creditPriceUsd(ultimate, period), period).toBeLessThan(creditPriceUsd(pro, period));

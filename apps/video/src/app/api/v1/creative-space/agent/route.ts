@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { requireAuth } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/error";
 import { apiSuccess, handleApiError } from "@/lib/api/response";
@@ -63,6 +64,7 @@ async function readVisuals(formData: FormData) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
     const rateLimit = agentLimiter.check(user.id);
     if (!rateLimit.allowed) {
       throw new ApiError("Too many Agent requests. Please wait a moment.", 429, {

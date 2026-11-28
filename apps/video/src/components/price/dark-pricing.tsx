@@ -187,7 +187,7 @@ export function DarkPricing({
           >
             {t("yearly")}
             {yearlySavePct > 0 && (
-              <span className="ml-1.5 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--du-on-accent)]">
+              <span className="ml-1.5 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[11px] font-bold uppercase text-[var(--du-on-accent)]">
                 {t("save_percent", { percent: yearlySavePct })}
               </span>
             )}
@@ -241,7 +241,7 @@ export function DarkPricing({
           })}
           {activeTab !== "onetime" && (
             <div className="relative flex flex-col rounded-2xl border border-[var(--du-border)] bg-[var(--du-surface)] p-4">
-              <p className="text-2xl font-black uppercase tracking-tight">
+              <p className="text-2xl font-bold uppercase tracking-tight">
                 {t("business_title")}
               </p>
               <p className="mt-1 text-sm text-[var(--du-text-muted)]">{t("business_desc")}</p>
@@ -349,11 +349,11 @@ function PricingCard({
       )}
     >
       <div className="flex items-center">
-        <p className="text-2xl font-black uppercase tracking-tight">
+        <p className="text-2xl font-bold uppercase tracking-tight">
           {product.displayName}
         </p>
         {isRecommended && (
-          <span className="ml-2 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--du-on-accent)]">
+          <span className="ml-2 rounded bg-[var(--du-accent)] px-1.5 py-0.5 text-[11px] font-bold uppercase text-[var(--du-on-accent)]">
             {t("popular")}
           </span>
         )}

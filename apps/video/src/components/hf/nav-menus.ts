@@ -85,9 +85,8 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
       soon: !LIVE_MODEL_IDS.includes(model.id),
     }));
 
-  // Only pages that exist get a link. Everything else is listed so visitors
-  // can see what is coming, but it is greyed out and not clickable.
-  return [
+  // Navigation and search expose only tools that can be used.
+  const menus: Dropdown[] = [
     {
       id: "image",
       label: zh ? "图像" : "Image",
@@ -99,12 +98,12 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           items: [
             { title: zh ? "创建图像" : "Create image", desc: zh ? "用文字生成 AI 图像" : "Generate AI images from text", icon: ImageIcon, href: "/ai/image" },
             { title: zh ? "图片转视频" : "Image to video", desc: zh ? "让一张静态图片动起来" : "Bring a still image to life", icon: ImagePlus, href: "/image-to-video", badge: "hot" },
-            { title: zh ? "编辑图像" : "Edit image", desc: zh ? "用一句话修改图片内容" : "Change an image with one sentence", icon: Layers },
-            { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "选中区域，描述修改内容" : "Select an area and describe the change", icon: Brush },
+            { title: zh ? "编辑图像" : "Edit image", desc: zh ? "在无限画布中用一句话修改画面" : "Edit any image inside Infinite Canvas", icon: Layers, href: "/creative-space/canvas?edit=image" },
+            { title: zh ? "局部重绘" : "Inpaint", desc: zh ? "涂抹选区，精准重绘局部细节" : "Paint a mask and regenerate details", icon: Brush, href: "/creative-space/canvas?edit=inpaint", badge: "new" },
             { title: zh ? "重新打光" : "Relight", desc: zh ? "调整光源位置、颜色和亮度" : "Move the light, change its colour and strength", icon: SunMedium },
-            { title: zh ? "背景去除" : "Remove background", desc: zh ? "一键抠出主体" : "Cut out the subject in one click", icon: Eraser },
-            { title: zh ? "图像高清放大" : "Upscale image", desc: zh ? "提升图像清晰度" : "Sharpen and enlarge images", icon: ZoomIn },
-            { title: zh ? "图片扩展" : "Expand image", desc: zh ? "向画面外延展内容" : "Extend the picture beyond its edges", icon: Expand },
+            { title: zh ? "背景去除" : "Remove background", desc: zh ? "一键透明 PNG 抠出主体" : "One-click transparent cutout on canvas", icon: Eraser, href: "/creative-space/canvas?edit=cutout" },
+            { title: zh ? "图像高清放大" : "Upscale image", desc: zh ? "4K 超清放大与前后对比滑块" : "4K upscale with Before/After slider", icon: ZoomIn, href: "/creative-space/canvas?edit=upscale" },
+            { title: zh ? "图片扩展" : "Expand image", desc: zh ? "向四周无缝延展画面构图" : "Extend the picture beyond its edges", icon: Expand, href: "/creative-space/canvas?edit=outpaint" },
           ],
         },
         {
@@ -116,8 +115,8 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
     {
       id: "video",
       label: zh ? "视频" : "Video",
-      path: "/ai/video",
-      routes: ["/ai/video", "/video", "/text-to-video", "/image-to-video", "/reference-to-video"],
+      path: "/video",
+      routes: ["/video", "/text-to-video", "/image-to-video", "/reference-to-video"],
       columns: [
         {
           title: zh ? "功能" : "Features",
@@ -128,8 +127,9 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
             { title: zh ? "参考生视频" : "Reference to video", desc: zh ? "用多张参考图锁定人物和风格" : "Lock characters and style with references", icon: Layers, href: "/reference-to-video" },
             { title: zh ? "AI 视频特效" : "AI video effects", desc: zh ? "热门特效模板，一键套用" : "Trending effect templates in one click", icon: Wand2, href: "/effects" },
             { title: zh ? "AI 数字人" : "AI avatar", desc: zh ? "让数字人开口说话" : "Make an avatar talk", icon: UserRound },
-            { title: zh ? "动作模仿" : "Motion mimic", desc: zh ? "把参考视频的动作迁移到人物上" : "Copy motion from a reference clip", icon: ScanFace },
-            { title: zh ? "视频延长" : "Extend video", desc: zh ? "让视频继续往下播" : "Continue a clip past its end", icon: FastForward },
+            { title: zh ? "动作控制" : "Motion Control", desc: zh ? "用参考视频驱动角色图片" : "Animate a character using a reference clip", icon: ScanFace, href: "/ai/video?tool=motion" },
+            { title: zh ? "编辑视频" : "Edit video", desc: zh ? "上传片段并描述要修改的内容" : "Upload a clip and describe your edit", icon: Wand2, href: "/ai/video?tool=edit" },
+            { title: zh ? "视频延长" : "Extend video", desc: zh ? "让视频继续往下播" : "Continue a clip past its end", icon: FastForward, href: "/ai/video?tool=extend" },
             { title: zh ? "视频画质提升" : "Upscale video", desc: zh ? "提升视频清晰度" : "Sharpen and enlarge video", icon: ZoomIn },
           ],
         },
@@ -149,9 +149,10 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           title: zh ? "功能" : "Features",
           items: [
             { title: zh ? "文本转语音" : "Text to speech", desc: zh ? "把脚本读成自然的人声" : "Turn a script into a natural voice", icon: AudioLines, href: "/audio?voiceMode=voiceover", badge: "new" },
-            { title: zh ? "音乐与音效" : "Music & sound", desc: zh ? "一句话生成歌曲和音效" : "Songs and sound effects from one line", icon: Music, href: "/audio?voiceMode=music", badge: "new" },
-            { title: zh ? "变声" : "Voice changer", desc: zh ? "把一段声音换成另一种音色" : "Swap a recording into another voice", icon: Mic, href: "/audio?voiceMode=change-voice", soon: true },
-            { title: zh ? "翻译" : "Translate", desc: zh ? "把配音翻译成其他语言" : "Translate a voiceover into other languages", icon: Languages, href: "/audio?voiceMode=translate", soon: true },
+            { title: zh ? "生成音乐" : "Create music", desc: zh ? "描述一首歌或填入歌词" : "Describe a song or add lyrics", icon: Music, href: "/audio?voiceMode=music" },
+            { title: zh ? "生成音效" : "Create sound effects", desc: zh ? "描述需要的声音" : "Describe the sound you need", icon: AudioLines, href: "/audio?voiceMode=effects" },
+            { title: zh ? "变声" : "Voice changer", desc: zh ? "为录音换音色或添加声音效果" : "Revoice a recording or apply a voice effect", icon: Mic, href: "/audio?voiceMode=change" },
+            { title: zh ? "翻译" : "Translate audio", desc: zh ? "翻译台词并制作配音" : "Translate dialogue and generate a voiceover", icon: Languages, href: "/audio?voiceMode=translate" },
             { title: zh ? "视频原生音效" : "Native video sound", desc: zh ? "Veo 3.1 生成画面时同步生成声音" : "Veo 3.1 renders sound with the picture", icon: Volume2, href: "/models/veo-3-1", badge: "hot" },
           ],
         },
@@ -163,14 +164,14 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
     },
     {
       id: "creative",
-      label: zh ? "创作空间" : "Creative Space",
+      label: "AGENT",
       path: "/creative-space",
       routes: ["/creative-space", "/ai-canvas"],
       columns: [
         {
           title: zh ? "功能" : "Features",
           items: [
-            { title: zh ? "创作空间" : "Creative Space", desc: zh ? "说出想法，Agent 拆成镜头再生成" : "Say the idea; the agent plans the shots", icon: Sparkles, href: "/creative-space", badge: "new" },
+            { title: "AGENT", desc: zh ? "对话构思创意、分镜与提示词" : "Chat through ideas, shots, and prompts", icon: Sparkles, href: "/creative-space", badge: "new" },
             { title: zh ? "AI 画布" : "AI canvas", desc: zh ? "节点连线，串联文本、图片、视频和音频生成" : "Wire nodes to chain text, image, video and audio", icon: Workflow, href: "/ai-canvas", badge: "new" },
             { title: zh ? "画布" : "Canvas", desc: zh ? "在画布上整理素材，用 @ 交给 Agent" : "Arrange assets and @-mention them to the agent", icon: LayoutGrid, href: "/creative-space/canvas" },
             { title: zh ? "视频工作室" : "Video studio", desc: zh ? "选模型、调参数、批量生成" : "Pick a model, tune settings, generate", icon: Film, href: "/ai/video" },
@@ -206,10 +207,15 @@ export function buildDropdowns(zh: boolean): Dropdown[] {
           title: zh ? "灵感" : "Inspiration",
           items: [
             { title: zh ? "特效模板" : "Effect templates", desc: zh ? "热门视频特效" : "Trending video effects", icon: Sparkles, href: "/effects", badge: "hot" },
-            { title: zh ? "社区画廊" : "Community gallery", desc: zh ? "看看大家都在做什么" : "See what others are making", icon: Users, href: "/gallery" },
           ],
         },
       ],
     },
   ];
+  return menus.map((menu) => ({
+    ...menu,
+    columns: menu.columns
+      .map((column) => ({ ...column, items: column.items.filter((item) => item.href && !item.soon) }))
+      .filter((column) => column.items.length > 0),
+  }));
 }

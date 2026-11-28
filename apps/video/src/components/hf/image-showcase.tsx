@@ -12,6 +12,10 @@ import { ScrollReveal } from "@/components/scroll-reveal";
 import "./home-showcase.css";
 import "./home-pricing.css";
 import "./image-showcase.css";
+import { marketModelsOf } from "@/ai/kie-market";
+
+/** Shown on the offer card; follows the registry so it never goes stale. */
+const IMAGE_MODEL_COUNT = marketModelsOf("image").length;
 
 const S = (name: string) => `/home/samples/${name}.webp`;
 
@@ -79,7 +83,7 @@ export function ImageShowcase({ lang }: { lang: string }) {
       <section className="hs-offer-grid" aria-label={zh ? "图片功能" : "Image features"}>
         <Link href={href("/ai/image")} className="hs-offer">
           <span className="hs-offer-glow" aria-hidden="true" />
-          <span className="hs-offer-kicker">{zh ? "9 个图片模型" : "9 image models"}</span>
+          <span className="hs-offer-kicker">{zh ? `${IMAGE_MODEL_COUNT} 个图片模型` : `${IMAGE_MODEL_COUNT} image models`}</span>
           <span className="hs-offer-title">{zh ? `${cheapest} 积分起一张` : `From ${cheapest} credits`}</span>
           <span className="hs-offer-body">{zh ? "生成前就能看到积分，失败自动退回" : "See the cost first; failed runs are refunded"}</span>
           <span className="hs-offer-cta">{zh ? "开始生成图片" : "Start making images"}</span>

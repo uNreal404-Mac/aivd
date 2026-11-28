@@ -45,6 +45,7 @@ function makeVideo(overrides: Partial<Video> = {}): Video {
     completedAt: new Date("2024-01-01T00:00:00.000Z"),
     generationTime: 30,
     isDeleted: false,
+    deletionToken: null,
     visibility: "private",
     publishedAt: null,
     galleryTitle: null,

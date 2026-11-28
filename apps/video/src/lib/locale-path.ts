@@ -19,3 +19,12 @@ export function localizedHref(lang: string, href: string): string {
   if (prefix && (href.startsWith("/#") || href.startsWith("/?"))) return `${prefix}${href.slice(1)}`;
   return `${prefix}${href}`;
 }
+
+/** Preserve the current tool and its settings across a language change. A
+ * one-time generation command belongs only to the navigation that created it. */
+export function languageSwitchSuffix(search: string, hash: string): string {
+  const query = new URLSearchParams(search);
+  query.delete("autostart");
+  const value = query.toString();
+  return (value ? `?${value}` : "") + hash;
+}

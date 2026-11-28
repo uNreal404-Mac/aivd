@@ -7,6 +7,7 @@ import {
   estimateCredits,
   modelOptions,
   selectModel,
+  settingsFromSearchParams,
 } from "@/lib/ai-video-studio";
 
 const option = (id: string, credits: number) => ({ id, name: id.toUpperCase(), credits });
@@ -25,6 +26,21 @@ describe("bestAffordableModel", () => {
 
   it("offers nothing when no model fits", () => {
     expect(bestAffordableModel(options, "veo", 30)).toBeUndefined();
+  });
+});
+
+describe("homepage video settings handoff", () => {
+  it("keeps the chosen model, prompt, timing, resolution, aspect and sound-off state", () => {
+    const model = STUDIO_MODELS.find((item) => item.id === "bytedance/seedance-2-5");
+    expect(model).toBeDefined();
+    const duration = model!.durations.at(-1)!;
+    const resolution = model!.resolutions.at(-1)!;
+    const aspect = model!.aspects.at(-1)!;
+    const settings = settingsFromSearchParams({
+      model: model!.id, prompt: "A quiet seaside scene", duration: String(duration),
+      resolution, aspect, audio: "false",
+    });
+    expect(settings).toMatchObject({ modelId: model!.id, prompt: "A quiet seaside scene", duration, resolution, aspect, audio: false });
   });
 });
 

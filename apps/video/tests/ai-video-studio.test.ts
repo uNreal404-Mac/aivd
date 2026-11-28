@@ -152,11 +152,11 @@ describe("estimateCredits", () => {
     const price = (modelId: string, duration: number, resolution: string) =>
       estimateCredits({ modelId, duration, resolution });
 
-    expect(price("veo-3.1", 8, "720p")).toBe(65);
-    expect(price("wan2.6", 5, "720p")).toBe(70);
-    expect(price("wan2.6", 5, "1080p")).toBe(100);
-    expect(price("wan2.6", 10, "720p")).toBe(125);
-    expect(price("wan2.6", 15, "1080p")).toBe(260);
+    expect(price("veo-3.1", 8, "720p")).toBe(75);
+    expect(price("wan2.6", 5, "720p")).toBe(85);
+    expect(price("wan2.6", 5, "1080p")).toBe(120);
+    expect(price("wan2.6", 10, "720p")).toBe(155);
+    expect(price("wan2.6", 15, "1080p")).toBe(325);
   });
 
   it("prices models that are off sale at zero", () => {
@@ -270,6 +270,21 @@ describe("buildGenerateRequest", () => {
         idempotencyKey: "key-1",
       },
     });
+  });
+
+  it("submits Wan video references without any image fields and refuses incompatible combinations", () => {
+    const settings = { ...defaultSettings(WAN), prompt: "camera pans" };
+    const keys = ["uploads/u/first.mp4", "uploads/u/second.mov"];
+    const request = buildGenerateRequest(settings, "key", undefined, keys);
+    expect(request.ok && request.body).toMatchObject({ mode: "reference-to-video", videoKeys: keys });
+    expect(request.ok && request.body).not.toHaveProperty("imageUrls");
+    expect(request.ok && request.body).not.toHaveProperty("imageUrl");
+    expect(request.ok && request.body).not.toHaveProperty("generateAudio");
+    expect(request.ok && request.body).not.toHaveProperty("aspectRatio");
+    expect(buildGenerateRequest(settings, "key", "uploads/u/image.png", keys).ok).toBe(false);
+    expect(buildGenerateRequest({ ...settings, modelId: "veo-3.1" }, "key", null, keys).ok).toBe(false);
+    expect(buildGenerateRequest(settings, "key", null, [...keys, ...keys]).ok).toBe(false);
+    expect(buildGenerateRequest(settings, "key", null, ["https://example.test/a.mp4"]).ok).toBe(false);
   });
 
   it("trims surrounding whitespace from the prompt", () => {
@@ -549,7 +564,7 @@ describe("settingsFromSearchParams", () => {
     expect(settingsFromSearchParams({})).toEqual(defaultSettings());
   });
 
-  it("never adds a preset key to the generate request body", () => {
+  it("passes the selected preset so history can display it", () => {
     const result = buildGenerateRequest(
       { ...defaultSettings(), prompt: "a cat", preset: "slow-zoom" },
       "key-1",
@@ -558,7 +573,7 @@ describe("settingsFromSearchParams", () => {
     expect(result.ok).toBe(true);
 
     if (result.ok) {
-      expect("preset" in result.body).toBe(false);
+      expect(result.body.preset).toBe("slow-zoom");
     }
   });
 });

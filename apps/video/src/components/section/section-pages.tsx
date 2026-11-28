@@ -13,7 +13,7 @@ import { modelIcon } from "@/components/hf/nav-menus";
 import { useCatalogDetail } from "@/components/hf/use-catalog-detail";
 import { STUDIO_MODELS, estimateCredits } from "@/lib/ai-video-studio";
 import { localizedHref } from "@/lib/du-home";
-import { EFFECT_TEMPLATES, labelFor, useHref as effectHref } from "@/lib/effects-data";
+import { EFFECT_TEMPLATES, labelFor, presetHref as effectHref } from "@/lib/effects-data";
 import {
   HOME_TEMPLATE_CATEGORIES,
   HOME_TEMPLATES,
@@ -21,6 +21,7 @@ import {
   type HomeTemplate,
 } from "@/lib/home-templates";
 import { IMAGE_CATALOG, VIDEO_CATALOG, type CatalogModel } from "@/lib/kie-model-catalog";
+import { navModelHref } from "@/lib/nav-models";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "@/components/hf/home-showcase.css";
 import "@/components/hf/home-pricing.css";
@@ -110,7 +111,20 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
   const zh = isZh(lang);
   const catalog: CatalogModel[] = kind === "video" ? VIDEO_CATALOG : IMAGE_CATALOG;
   const ordered = [...catalog].sort((a, b) => Number(connectedIds.includes(b.id)) - Number(connectedIds.includes(a.id)));
-  const pageFor: Record<string, string> = { "veo-3.1": "/models/veo-3-1", "wan2.6": "/models/wan-2-6" };
+  const pageFor: Record<string, string> = {
+    "veo-3.1": "/models/veo-3-1",
+    "wan2.6": "/models/wan-2-6",
+    "bytedance/seedance-2-5": "/models/seedance-2-5",
+    "seedance-2-5-flash": "/models/seedance-2-5-flash",
+    "kling/v4-reference-to-video": "/models/kling-4-0",
+    "kling/v4-flash-reference-to-video": "/models/kling-4-0-flash",
+    "wan/3-0-video": "/models/wan-3-0",
+    "minimax-h3/text-to-video": "/models/minimax-h3",
+    "grok-imagine/text-to-video": "/models/grok-imagine",
+    "grok-imagine-1-5": "/models/grok-imagine-1-5",
+    "happyhorse-1-1": "/models/happyhorse-1-1",
+    "gemini-omni-flash-1-2": "/models/gemini-omni-flash-1-2",
+  };
   return (
     <section className="sp-models" aria-labelledby={`sp-models-${kind}`}>
       <h2 id={`sp-models-${kind}`} className="sp-h2">{zh ? "模型" : "Models"}</h2>
@@ -119,12 +133,13 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
           const live = connectedIds.includes(item.id);
           const credits = kind === "video" ? startingCredits(item.id) : null;
           const body = <ModelCardBody key={item.id} zh={zh} kind={kind} item={item} live={live} credits={credits} />;
-          return live && pageFor[item.id] ? (
-            <Link key={item.id} href={localizedHref(lang, pageFor[item.id])} className="sp-model sp-model-live">
+          const targetHref = pageFor[item.id] ?? navModelHref(kind, item.id);
+          return live ? (
+            <Link key={item.id} href={localizedHref(lang, targetHref)} className="sp-model sp-model-live">
               {body}
             </Link>
           ) : (
-            <div key={item.id} className={live ? "sp-model sp-model-live" : "sp-model"} aria-disabled={!live}>
+            <div key={item.id} className="sp-model" aria-disabled>
               {body}
             </div>
           );
@@ -136,7 +151,7 @@ function ModelGrid({ lang, kind, connectedIds }: { lang: string; kind: "video" |
 
 function useComposerPreset(lang: string) {
   const [preset, setPreset] = useState<HomeGeneratorPreset | null>(null);
-  const useTemplate = (template: HomeTemplate) => {
+  const applyTemplate = (template: HomeTemplate) => {
     setPreset((previous) => ({
       prompt: isZh(lang) ? template.prompt.zh : template.prompt.en,
       aspect: template.aspect,
@@ -144,12 +159,12 @@ function useComposerPreset(lang: string) {
     }));
     document.getElementById("home-generator")?.scrollIntoView({ behavior: scrollMotion(), block: "center" });
   };
-  return { preset, useTemplate };
+  return { preset, applyTemplate };
 }
 
 export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string; models: ComposerModel[]; initialPrompt: string }) {
   const zh = isZh(lang);
-  const { preset, useTemplate } = useComposerPreset(lang);
+  const { preset, applyTemplate } = useComposerPreset(lang);
   const showcases = [
     { title: "VEO 3.1", body: zh ? "8 秒短片，带同步声音与空间层次。" : "8-second clips with synchronized sound and depth.", href: "/models/veo-3-1", images: ["mountain-valley", "storm-sea", "planet-impact"] },
     { title: "WAN 2.6", body: zh ? "5 到 15 秒，720p 与 1080p，成本更低。" : "5 to 15 seconds in 720p and 1080p at a lower cost.", href: "/models/wan-2-6", images: ["autumn-walk", "rain-couple", "mountain-wind"] },
@@ -161,7 +176,7 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
         <h1 className="sp-title">{zh ? "用 AI 将任何视频创意变为现实" : "Turn any video idea into reality with AI"}</h1>
         <HomeGenerator lang={lang} models={models} onModelChange={noop} preset={preset} initialKind="video" initialPrompt={initialPrompt} hideKindTabs />
       </section>
-      <TemplateRow lang={lang} onUse={useTemplate} />
+      <TemplateRow lang={lang} onUse={applyTemplate} />
       {showcases.map((item) => (
         <section key={item.title} className="sp-showcase">
           <div className="sp-showcase-head">
@@ -181,7 +196,16 @@ export function VideoSectionPage({ lang, models, initialPrompt }: { lang: string
           </div>
         </section>
       ))}
-      <ModelGrid lang={lang} kind="video" connectedIds={models.map((model) => model.id)} />
+      <ModelGrid
+        lang={lang}
+        kind="video"
+        connectedIds={Array.from(
+          new Set([
+            ...models.map((model) => model.id),
+            ...STUDIO_MODELS.filter((model) => model.available).map((model) => model.id),
+          ]),
+        )}
+      />
     </div>
   );
 }
@@ -238,11 +262,11 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
       [item.name.zh, item.name.en, item.description.zh, item.description.en].some((text) => text.toLowerCase().includes(needle)),
     );
   }, [query]);
-  const useHref = (item: HomeTemplate) =>
+  const templateHref = (item: HomeTemplate) =>
     `${localizedHref(lang, "/video")}?prompt=${encodeURIComponent(zh ? item.prompt.zh : item.prompt.en)}`;
   // Tall photo card from the homepage; hover shows "use template".
   const card = (item: HomeTemplate) => (
-    <Link key={item.id} href={useHref(item)} className="hs-tall" title={zh ? item.prompt.zh : item.prompt.en}>
+    <Link key={item.id} href={templateHref(item)} className="hs-tall" title={zh ? item.prompt.zh : item.prompt.en}>
       <img src={item.image} alt="" loading="lazy" />
       <span className="hs-usecase-shade" aria-hidden="true" />
       <span className="hs-tall-title">{zh ? item.title.zh : item.title.en}</span>
@@ -384,7 +408,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
             {/* 4. Banner: templates are a starting point */}
             <section className="hs-banner hs-banner-canvas" aria-labelledby="tpl-agent-title">
               <div className="hs-banner-text">
-                <span className="hs-banner-kicker">{zh ? "创作空间" : "CREATIVE SPACE"}</span>
+                <span className="hs-banner-kicker">AGENT</span>
                 <h2 id="tpl-agent-title" className="hs-banner-title">
                   {zh ? <>模板只是起点。<br />想法才是主角。</> : <>Templates are a start.<br />Your idea leads.</>}
                 </h2>
@@ -393,7 +417,7 @@ export function TemplatesSectionPage({ lang }: { lang: string }) {
                 </p>
                 <Link href={localizedHref(lang, "/creative-space")} className="hs-btn hs-btn-light">
                   <Sparkles className="h-4 w-4" aria-hidden="true" />
-                  {zh ? "进入创作空间" : "Open Creative Space"}
+                  {zh ? "与 AGENT 对话" : "Chat with AGENT"}
                 </Link>
               </div>
               <div className="hs-banner-art" aria-hidden="true">

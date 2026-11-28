@@ -1,0 +1,91 @@
+.du-keyframes {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.du-keyframe-slots,
+.du-keyframe-order,
+.du-keyframe-order > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.du-keyframe-slot {
+  position: relative;
+}
+.du-keyframe-choose {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 54px;
+  place-content: center;
+  justify-items: center;
+  gap: 3px;
+  overflow: hidden;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-2xs);
+}
+.du-keyframe-choose:disabled,
+.du-keyframe-order button:disabled {
+  opacity: 0.35;
+}
+.du-keyframe-choose img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+}
+.du-keyframe-choose:has(img) span {
+  position: absolute;
+  inset: auto 0 0;
+  background: var(--du-agent-close-bg);
+  color: var(--du-text);
+}
+.du-keyframe-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface-2);
+}
+.du-keyframe-order {
+  max-width: 192px;
+  overflow: auto;
+  gap: 4px;
+  margin-top: 6px;
+}
+.du-keyframe-order > div {
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--ds-r-xs);
+  background: var(--ds-fill-1);
+  font-size: var(--ds-fs-2xs);
+}
+.du-keyframe-order img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: var(--ds-r-xs);
+}
+.du-keyframe-order button {
+  padding: 2px;
+}
+@media (max-width: 767px) {
+  .du-keyframes {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid var(--ds-line-1);
+    border-radius: var(--ds-r-lg);
+  }
+  .du-keyframe-order {
+    max-width: 100%;
+  }
+}

@@ -1,5 +1,8 @@
-/* Image studio, laid out after the reference site's image page: a photo
-   stack and big title in the middle, a composer docked at the bottom. */
+/* Image studio, measured against the reference image page: a fanned photo
+   stack over the model's name, and one creation bar pinned to the bottom of
+   the screen (880 x 124 on a 1440 screen: prompt on top, controls along the
+   bottom, the generate button on the right). Results fill the space above
+   the bar once there are any. */
 .is-root {
   position: relative;
   display: flex;
@@ -8,11 +11,9 @@
   flex: 1;
   flex-direction: column;
   align-items: center;
-  padding: 24px 24px 28px;
-  background:
-    radial-gradient(520px 320px at 50% 38%, color-mix(in srgb, var(--du-accent) 7%, transparent), transparent 70%),
-    var(--du-bg);
-  color: white;
+  padding: 0 var(--ds-space-4);
+  background: var(--du-bg);
+  color: var(--ds-text-1);
 }
 
 @media (min-width: 1024px) {
@@ -22,85 +23,103 @@
   }
 }
 
+/* First screen: the hero (or the results) and the bar, one screen tall. The
+   bar sticks to the bottom of it while results scroll underneath. */
+.is-first {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: calc(100svh - var(--hf-header-h, 52px));
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------- Empty state ---------- */
 .is-hero {
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 0 32px;
+  /* Sits a little above the middle of the space over the bar, as on the
+     reference (stack top 230, title 408 on a 1440 x 900 screen). */
+  padding: var(--ds-space-5) 0 56px;
   text-align: center;
 }
 
-.is-collage {
-  position: relative;
+/* Four pictures, each tucked under the one on its left (as on the reference:
+   the first lies on top), sized and overlapped with the screen exactly like
+   the reference: 144px on a 1440 x 900 screen, 64px on a phone. The stack
+   stays still under the pointer; it is a picture, not a control. */
+.is-stack {
+  --is-card: clamp(64px, min(12vw, 16vh), 172px);
   display: flex;
-  height: 190px;
+  height: calc(var(--is-card) + 24px);
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
 }
 
-.is-photo {
+.is-card {
   position: relative;
-  width: 160px;
-  height: 172px;
-  margin-left: -22px;
-  border: 3px solid color-mix(in srgb, white 70%, transparent);
+  display: block;
+  width: var(--is-card);
+  height: var(--is-card);
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 3px solid color-mix(in srgb, white 30%, transparent);
   border-radius: var(--ds-r-lg);
+  margin-right: calc(-1 * clamp(16px, min(1.5vw, 2vh), 36px));
+  background: var(--ds-surface-2);
+  box-shadow: var(--ds-shadow-1);
+}
+
+@media (min-width: 1280px) {
+  .is-card {
+    border-width: 4px;
+  }
+}
+
+.is-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  box-shadow: 0 18px 40px color-mix(in srgb, var(--du-bg) 70%, transparent);
-  transition: transform 300ms ease;
 }
 
-.is-photo:first-child {
-  margin-left: 0;
+.is-card-1 {
+  z-index: 4;
+  transform: rotate(-10deg);
 }
 
-.is-1 {
-  transform: rotate(-9deg) translateY(6px);
+/* The second picture has no frame. */
+.is-card-2 {
+  z-index: 3;
+  border-width: 0;
+  transform: rotate(4deg);
 }
 
-.is-2 {
-  transform: rotate(-3deg) translateY(-4px);
-}
-
-.is-3 {
-  width: 150px;
-  height: 150px;
+.is-card-3 {
+  z-index: 2;
   border-radius: var(--ds-r-full);
-  transform: translateY(8px);
+}
+
+.is-card-4 {
   z-index: 1;
-}
-
-.is-4 {
-  transform: rotate(7deg) translateY(2px);
-}
-
-.is-collage:hover .is-1 {
-  transform: rotate(-12deg) translate(-10px, 4px);
-}
-
-.is-collage:hover .is-4 {
-  transform: rotate(10deg) translate(10px, 0);
+  margin-right: 0;
+  transform: rotate(-4deg);
 }
 
 .is-title {
   display: flex;
+  margin-top: 11px;
   flex-direction: column;
   align-items: center;
-  color: white;
-  font-size: var(--ds-fs-4xl);
-  font-weight: 800;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-3xl);
+  font-weight: 700;
   letter-spacing: -0.01em;
-  line-height: 1.12;
-}
-
-/* Chinese reads as one line: 用 MODEL 开始创作. */
-.is-title-inline {
-  flex-flow: row wrap;
-  justify-content: center;
-  gap: 0 0.35em;
+  line-height: 1.06;
 }
 
 .is-title-model {
@@ -109,201 +128,105 @@
 }
 
 .is-sub {
-  margin-top: 12px;
+  margin-top: var(--ds-space-2);
   color: var(--ds-text-3);
   font-size: var(--ds-fs-md);
+  line-height: 1.5;
 }
 
-/* Composer */
-.is-composer {
-  display: flex;
-  width: min(1030px, 100%);
+/* ---------- Results ---------- */
+.is-first-results {
   align-items: stretch;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--ds-line-1);
-  border-radius: var(--ds-r-2xl);
-  background: var(--ds-surface-1);
-  box-shadow: 0 24px 60px color-mix(in srgb, var(--du-bg) 60%, transparent);
 }
 
-.is-composer-main {
+/* "View": 8px under the header, at the right edge of the page. */
+.is-topbar {
+  z-index: 30;
   display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: flex-end;
+  padding: var(--ds-space-2) 0 var(--ds-space-3);
 }
 
-.is-composer textarea {
-  min-height: 58px;
-  resize: none;
-  border: 0;
-  background: transparent;
-  padding: 6px 8px;
-  color: white;
-  font-size: var(--ds-fs-md);
-  line-height: 1.6;
-  outline: none;
+/* Before any results it floats in the corner, so the hero keeps its place. */
+.is-first:not(.is-first-results) > .is-topbar {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
-.is-composer textarea::placeholder {
-  color: var(--ds-text-4);
-}
-
-.is-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.is-chip-group,
-.is-chip,
-.is-stepper,
-.is-model {
-  display: inline-flex;
-  height: 38px;
-  align-items: center;
-  border-radius: var(--ds-r-md);
-  background: var(--ds-fill-1);
-}
-
-.is-chip {
-  gap: 6px;
-  padding: 0 12px;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
-  white-space: nowrap;
-  transition: background-color 150ms ease;
-}
-
-button.is-chip:hover:not(:disabled) {
-  background: var(--ds-fill-3);
-}
-
-.is-chip-group {
-  padding: 0;
-}
-
-.is-chip-group .is-chip {
-  background: transparent;
-}
-
-.is-chip-icon {
-  width: 38px;
-  justify-content: center;
-  padding: 0;
-}
-
-.is-chip-icon:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.is-chip-sep {
-  width: 1px;
-  height: 16px;
-  background: var(--ds-fill-3);
-}
-
-.is-model {
+.is-view {
   position: relative;
-  padding: 0 8px 0 10px;
 }
 
-.is-model > div > button {
-  height: 38px;
-  color: white;
+.is-view-btn {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 8px;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
   font-weight: 500;
+  transition: background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
-.is-model > div > button svg:last-child {
-  display: none;
+.is-view-btn:hover,
+.is-view-btn[aria-expanded="true"] {
+  background: var(--ds-fill-4);
 }
 
-.is-model-chevron {
-  width: 16px;
-  height: 16px;
-  color: var(--ds-text-3);
-  pointer-events: none;
+.is-view-btn:active {
+  transform: scale(0.97);
 }
 
-.is-stepper {
-  gap: 10px;
-  padding: 0 10px;
-  color: white;
-  font-size: var(--ds-fs-sm);
-  font-weight: 500;
-}
-
-.is-stepper button {
-  display: inline-flex;
-  color: var(--ds-text-3);
-}
-
-.is-stepper button:disabled {
-  opacity: 0.35;
-}
-
-.is-generate {
-  display: flex;
-  width: 140px;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border-radius: var(--ds-r-lg);
-  background: var(--du-accent);
-  box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--du-accent-hover) 80%, transparent);
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-md);
-  font-weight: 700;
-  transition: filter 150ms ease;
-}
-
-.is-generate:hover {
-  filter: brightness(1.05);
-}
-
-.is-generate-sub {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.is-notice {
-  margin-top: 10px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-}
-
-.is-generate:disabled {
-  cursor: not-allowed;
-  background: var(--ds-fill-2);
-  box-shadow: none;
-  color: var(--ds-text-3);
-}
-
-/* Results above the composer once something was generated: a masonry wall
-   that keeps each image's own shape. */
+/* Card sizes 0-4 (five stops on the size slider): the narrowest a column may
+   get. */
 .is-results {
-  width: min(1400px, 100%);
+  --card-min: 300px;
+  width: 100%;
   flex: 1;
-  padding: 8px 0 20px;
-  column-gap: 12px;
-  columns: 4 240px;
+  padding-bottom: var(--ds-space-5);
+}
+
+.is-results[data-size="0"] {
+  --card-min: 140px;
+}
+
+.is-results[data-size="1"] {
+  --card-min: 180px;
+}
+
+.is-results[data-size="2"] {
+  --card-min: 220px;
+}
+
+.is-results[data-size="4"] {
+  --card-min: 360px;
+}
+
+.is-group + .is-group {
+  margin-top: var(--ds-space-5);
+}
+
+.is-group-title {
+  margin: 0 0 10px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-ui);
+  font-weight: 600;
+}
+
+/* Masonry: each picture keeps its own shape. */
+.is-wall {
+  column-gap: var(--ds-space-2);
+  columns: var(--card-min);
 }
 
 .is-result {
-  margin: 0 0 12px;
+  margin: 0 0 var(--ds-space-2);
   break-inside: avoid;
+  border-radius: var(--ds-r-lg);
 }
 
 .is-result.sr-card > img {
@@ -314,58 +237,150 @@ button.is-chip:hover:not(:disabled) {
   aspect-ratio: 1;
 }
 
-.is-refs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 6px;
+/* Grid: even square tiles. */
+.is-results[data-layout="grid"] .is-wall {
+  display: grid;
+  gap: var(--ds-space-2);
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
 }
 
-.is-ref {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  overflow: hidden;
-  border-radius: var(--ds-r-md);
+.is-results[data-layout="grid"] .is-result {
+  margin: 0;
+  aspect-ratio: 1;
 }
 
-.is-ref img {
-  width: 100%;
+.is-results[data-layout="grid"] .is-result.sr-card > img {
   height: 100%;
-  object-fit: cover;
 }
 
-.is-ref button {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  display: flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--ds-r-full);
-  background: color-mix(in srgb, var(--du-bg) 70%, transparent);
-  color: white;
-}
-
-/* First screen: photo stack (or results) and the composer, one screen tall. */
-.is-first {
+/* ---------- Creation bar ---------- */
+.is-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   display: flex;
   width: 100%;
-  min-height: calc(100svh - var(--hf-header-h, 52px) - 52px);
-  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
+  padding-bottom: var(--ds-space-4);
+  pointer-events: none;
 }
 
-/* Showcase under the studio's first screen. The first screen keeps its full
-   height so the photo stack and composer look exactly as before. */
-.is-below {
+.is-dock > * {
+  pointer-events: auto;
+}
+
+/* Messages float 8px above the bar (the reference's slot over its composer),
+   so showing one never moves the hero or the results. */
+.is-notice {
+  position: absolute;
+  bottom: calc(100% + var(--ds-space-2));
+  left: 50%;
+  width: max-content;
+  max-width: min(880px, 100%);
+  padding: 8px 14px;
+  transform: translateX(-50%);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, var(--du-surface-2) 92%, transparent);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-ui);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.is-bar {
+  width: min(880px, 100%);
+  padding: 4px;
+  border-radius: var(--ds-r-2xl);
+  background: var(--du-surface);
+  /* A hairline drawn inside, so the bar keeps the reference's 880 x 124. */
+  box-shadow: inset 0 0 0 1px var(--ds-line-1);
+}
+
+.is-bar-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  border-radius: var(--ds-r-xl);
+  background: color-mix(in srgb, white 7%, var(--du-surface));
+}
+
+.is-bar-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+}
+
+.is-bar textarea {
+  display: block;
   width: 100%;
-  margin-top: 56px;
-  padding-top: 40px;
-  border-top: 1px solid var(--ds-line-1);
+  min-height: 48px;
+  max-height: 168px;
+  resize: none;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  line-height: 20px;
+  outline: none;
+  field-sizing: content;
+}
+
+.is-bar textarea::placeholder {
+  color: var(--ds-text-4);
+}
+
+.is-bar .draft-note {
+  margin: 0 4px -6px;
+}
+
+.is-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Chips: 32 tall, flat fills, 8px corners. */
+.is-chip,
+.is-icon-group,
+.is-model,
+.is-stepper {
+  position: relative;
+  display: inline-flex;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+}
+
+.is-chip {
+  gap: 6px;
+  padding: 0 10px 0 8px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+button.is-chip:hover,
+button.is-chip[aria-expanded="true"] {
+  background: var(--ds-fill-2);
+}
+
+.is-chip svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ds-text-2);
 }
 
 /* A value the model fixes: reads like a chip, does nothing. */
@@ -374,79 +389,873 @@ button.is-chip:hover:not(:disabled) {
   color: var(--ds-text-2);
 }
 
-/* Options menu above a toolbar chip (ratio, resolution). */
-.is-menu-wrap {
+.is-icon-group {
+  padding: 0;
+}
+
+.is-icon-btn {
+  position: relative;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
+  transition: background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+}
+
+.is-icon-btn:hover:not(:disabled),
+.is-icon-btn[aria-expanded="true"] {
+  background: var(--ds-fill-3);
+}
+
+.is-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.is-icon-btn:disabled {
+  cursor: not-allowed;
+  color: var(--ds-text-4);
+}
+
+.is-icon-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--ds-fill-3);
+}
+
+.is-model {
+  max-width: 260px;
+  gap: 2px;
+  padding: 0 8px 0 4px;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.is-model:hover,
+.is-model:has([aria-expanded="true"]) {
+  background: var(--ds-fill-2);
+}
+
+.is-model [data-model-trigger] {
+  height: 32px;
+  gap: 8px;
+  padding: 0 4px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+}
+
+.is-model [data-model-trigger] .du-caret {
+  display: none;
+}
+
+.is-model [data-model-trigger] svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The open model picker marks its trigger with the brand accent. */
+.is-model-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ds-text-3);
+  pointer-events: none;
+  transition: color var(--m-instant) var(--m-ease-out);
+}
+
+.is-model:has([aria-expanded="true"]) .is-model-chevron {
+  color: var(--du-accent-text);
+}
+
+/* Batch stepper, as on the reference: 16px glyphs either side of "1/4", the
+   whole pill lightens on hover, a glyph at its limit fades to 40%. */
+.is-stepper {
+  gap: 4px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.is-stepper:hover {
+  background: var(--ds-fill-2);
+}
+
+.is-stepper button {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-text-3);
+  transition: color var(--m-instant) var(--m-ease-out), opacity var(--m-instant) var(--m-ease-out);
+}
+
+.is-stepper button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.is-stepper button:hover:not(:disabled) {
+  color: var(--ds-text-1);
+}
+
+.is-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.is-stepper-value {
+  width: 32px;
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.is-stepper-value span {
+  color: var(--ds-text-3);
+}
+
+/* ---------- Hover labels (+, @, batch, fixed values) ---------- */
+.is-tipped {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.is-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 45;
+  padding: 4px 8px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-sm);
+  background: var(--du-bg-elev);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 2px);
+  transition: opacity var(--m-instant) var(--m-ease-exit), transform var(--m-instant) var(--m-ease-exit);
+}
+
+/* Hover: after a short pause, like a system tooltip. Keyboard focus: at once. */
+@media (hover: hover) and (pointer: fine) {
+  .is-tipped:hover > .is-tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition: opacity var(--m-fast) var(--m-ease-out) var(--m-base), transform var(--m-fast) var(--m-ease-out) var(--m-base);
+  }
+}
+
+.is-tipped:has(:focus-visible) > .is-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Never over the control's own menu. */
+.is-tipped:has([aria-expanded="true"]) > .is-tip {
+  opacity: 0;
+  transition: none;
+}
+
+/* Generate: 120 x 80 inside the bar, on the right, with the cost under it. */
+.is-generate {
+  display: flex;
+  width: 120px;
+  height: 80px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--ds-r-lg);
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+  font-size: var(--ds-fs-ui);
+  font-weight: 600;
+  transition: background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+}
+
+.is-generate:hover:not(:disabled) {
+  background: var(--du-accent-hover);
+}
+
+.is-generate-cost {
+  display: inline-flex;
+  height: 16px;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--ds-fs-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  opacity: 0.78;
+}
+
+.is-generate:disabled {
+  cursor: not-allowed;
+  background: var(--ds-fill-2);
+  color: var(--ds-text-3);
+}
+
+/* Attached references: tap one to mention it in the prompt. */
+.is-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.is-ref {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+.is-ref-uploading {
+  display: flex; min-height: 44px; align-items: center; gap: 7px; padding: 0 12px;
+  border-radius: var(--ds-r-sm); background: var(--ds-fill-2); color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+}
+
+.is-ref-mention {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--ds-r-sm);
+}
+
+.is-ref-mention img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.is-ref-index {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: var(--ds-r-xs);
+  background: color-mix(in srgb, black 62%, transparent);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+
+.is-ref-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-surface-3);
+  color: var(--ds-text-1);
+}
+
+/* ---------- Popovers above the bar (ratio, resolution, @) ---------- */
+.is-pop-wrap {
   position: relative;
   display: inline-flex;
 }
 
-.is-menu {
-  margin: 0;
+.is-pop {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 4px);
   left: 0;
-  z-index: 30;
+  z-index: 40;
   display: flex;
-  min-width: 200px;
+  width: 200px;
+  max-height: min(60vh, 480px);
   flex-direction: column;
-  gap: var(--ds-space-2);
-  padding: var(--ds-space-3);
-  border: 1px solid var(--ds-line-2);
-  border-radius: var(--ds-r-xl);
-  background: var(--du-bg-elev);
-  box-shadow: var(--ds-shadow-2);
+  gap: 2px;
+  overflow-y: auto;
+  padding: var(--ds-space-2);
+  border-radius: var(--ds-r-lg);
+  /* The reference's frosted 75% panel, a shade lighter than the bar. */
+  background: color-mix(in srgb, color-mix(in srgb, white 5%, var(--du-surface-2)) 75%, transparent);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 0 0 1px var(--ds-line-1), var(--ds-shadow-float);
+  transform-origin: bottom left;
 }
 
-.is-menu-title {
-  float: left;
-  padding: 0;
-  color: var(--ds-text-3);
+.is-pop-wide {
+  width: 300px;
+}
+
+/* Beside the chip, bottom edges level (the reference's resolution menu). */
+.is-pop-right {
+  bottom: 0;
+  left: calc(100% + 4px);
+}
+
+.is-mention-pop {
+  width: 260px;
+}
+
+.is-pop-title {
+  padding: 0 8px;
+  color: var(--ds-text-4);
   font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 32px;
 }
 
-.is-menu-grid {
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.is-menu-item {
-  height: 34px;
-  padding: 0 10px;
-  border-radius: var(--ds-r-md);
-  background: var(--ds-fill-1);
-  color: var(--ds-text-2);
+.is-pop-item {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
   font-weight: 500;
+  text-align: left;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+/* Hover, keyboard focus and the chosen row share one light fill, as on the
+   reference. */
+.is-pop-item:hover,
+.is-pop-item:focus-visible,
+.is-pop-item[aria-checked="true"] {
+  background: var(--ds-fill-1);
+}
+
+.is-pop-item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--du-accent-text);
+}
+
+.is-pop-item-two {
+  min-height: 54px;
+}
+
+.is-pop-item-ref {
+  min-height: 44px;
+}
+
+.is-pop-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-text-2);
+}
+
+.is-pop-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.is-pop-label {
+  font-variant-numeric: tabular-nums;
+}
+
+.is-pop-sub {
+  overflow: hidden;
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.is-menu-item:hover {
+.is-pop-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--du-accent-text);
+}
+
+.is-pop-empty {
+  padding: 2px 8px 8px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+  line-height: 1.5;
+}
+
+.is-pop-sep {
+  height: 1px;
+  flex-shrink: 0;
+  margin: 4px 0;
+  background: var(--ds-line-1);
+}
+
+.is-mention-thumb {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-xs);
+  object-fit: cover;
+}
+
+/* An aspect ratio drawn to scale. */
+.is-ratio {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.is-ratio > span {
+  display: block;
+  border: 1.5px solid currentColor;
+  border-radius: var(--ds-r-xs);
+}
+
+.is-chip .is-ratio {
+  width: 16px;
+  height: 16px;
+  color: var(--ds-text-2);
+  transform: scale(0.85);
+}
+
+/* ---------- View menu (above the results, top right) ---------- */
+/* A solid panel (the reference's view menu is not frosted). Here the chosen
+   layout shows only its check; rows light up under the pointer. */
+.is-view-pop {
+  top: calc(100% + 8px);
+  right: 0;
+  bottom: auto;
+  left: auto;
+  width: 188px;
+  background: var(--du-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform-origin: top right;
+}
+
+.is-view-pop .is-pop-item[aria-checked="true"]:not(:hover, :focus-visible) {
+  background: transparent;
+}
+
+.is-view-pop .is-pop-check {
+  width: 20px;
+  height: 20px;
+}
+
+.is-view-pop .is-pop-sep {
+  margin: 2px 0;
+}
+
+/* The system's green for "on", like the reference's and Apple's switches. */
+.is-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-4);
+  transition: background-color var(--m-fast) var(--m-ease-in-out);
+}
+
+.is-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-text-1);
+  content: "";
+  transition: transform var(--m-fast) var(--m-ease-in-out);
+}
+
+.is-switch-on {
+  background: var(--du-success);
+}
+
+.is-switch-on::after {
+  transform: translateX(12px);
+}
+
+/* Card size: a 32px track filled up to the chosen stop, a hairline thumb
+   there and faint 6px ticks at the stops in between. */
+.is-size {
+  position: relative;
+  display: block;
+  height: 32px;
+  margin: 0 4px 4px;
+}
+
+.is-size-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+}
+
+.is-size-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   background: var(--ds-fill-2);
-  color: var(--ds-text-1);
+  transform: scaleX(var(--size-at));
+  transform-origin: left;
+  transition: transform var(--m-fast) var(--m-ease-out);
 }
 
-.is-menu-item[aria-pressed="true"] {
-  background: var(--du-accent);
-  color: var(--du-on-accent);
+.is-size-track > i {
+  position: absolute;
+  top: 13px;
+  width: 1px;
+  height: 6px;
+  background: var(--ds-text-4);
+  opacity: 0.4;
 }
 
-/* Phones: the four overlapping photos were 560px across and pushed the page
-   36px past a 390px screen. Smaller, they fit with room for their tilt. */
+/* A track-wide layer slid along by the chosen share of its own width; the
+   hairline is its left edge. */
+.is-size-thumb {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(var(--size-at) * 100% - 1px));
+  transition: transform var(--m-fast) var(--m-ease-out);
+}
+
+.is-size-thumb::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--ds-text-4);
+  content: "";
+  opacity: 0.6;
+}
+
+.is-size input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.is-size:has(input:focus-visible) .is-size-track {
+  outline: 2px solid var(--du-accent-text);
+  outline-offset: 2px;
+}
+
+/* ---------- Below the first screen ---------- */
+.is-below {
+  width: 100%;
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: 1px solid var(--ds-line-1);
+}
+
+/* ---------- Phones ---------- */
 @media (max-width: 640px) {
-  .is-collage {
-    height: 130px;
+  .is-root {
+    padding: 0 var(--ds-space-3);
   }
 
-  .is-photo {
-    width: 96px;
-    height: 104px;
-    margin-left: -16px;
+  .is-stack {
+    height: calc(var(--is-card) + 12px);
   }
 
-  .is-3 {
-    width: 92px;
-    height: 92px;
+  .is-title {
+    margin-top: 14px;
+    font-size: var(--ds-fs-lg);
+    line-height: 1;
+  }
+
+  .is-dock {
+    padding-bottom: calc(var(--ds-space-3) + env(safe-area-inset-bottom));
+  }
+
+  /* Prompt across the top; controls wrap into two rows on the left and the
+     generate button stands beside them on the right. */
+  .is-bar {
+    position: relative;
+  }
+
+  .is-bar-inner {
+    display: grid;
+    align-items: end;
+    gap: var(--ds-space-2);
+    padding: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .is-bar-main {
+    display: contents;
+  }
+
+  .is-refs,
+  .is-bar .draft-note,
+  .is-bar textarea {
+    grid-column: 1 / -1;
+  }
+
+  .is-bar textarea {
+    font-size: var(--ds-fs-md);
+    line-height: 22px;
+  }
+
+  .is-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .is-chip,
+  .is-icon-group,
+  .is-model,
+  .is-stepper {
+    height: 36px;
+  }
+
+  .is-icon-btn {
+    width: 40px;
+    height: 36px;
+  }
+
+  .is-model {
+    max-width: 100%;
+  }
+
+  .is-model [data-model-trigger] {
+    height: 36px;
+  }
+
+  /* 44px tall touch targets around the 36px chips. */
+  .is-chip::after,
+  .is-icon-btn::after,
+  .is-model [data-model-trigger]::after {
+    position: absolute;
+    inset: -4px 0;
+    content: "";
+  }
+
+  .is-model [data-model-trigger] {
+    position: relative;
+  }
+
+  .is-stepper button {
+    width: 32px;
+    height: 36px;
+  }
+
+  .is-generate {
+    width: 76px;
+    height: 78px;
+  }
+
+  /* Menus open as a full-width card above the bar instead of beside a chip
+     that may sit near the screen edge: nothing between a menu and the bar
+     may be its anchor. Hover labels are a pointer thing; phones skip them. */
+  .is-pop-wrap,
+  .is-tipped,
+  .is-icon-group {
+    position: static;
+  }
+
+  .is-tip {
+    display: none;
+  }
+
+  .is-pop-item {
+    min-height: 44px;
+  }
+
+  .is-pop,
+  .is-pop-wide,
+  .is-mention-pop {
+    right: 0;
+    left: 0;
+    width: auto;
+    transform-origin: bottom center;
+  }
+
+  .is-pop-right {
+    bottom: calc(100% + 4px);
+  }
+
+  .is-view-pop {
+    right: 0;
+    left: auto;
+    width: 188px;
+  }
+
+  .is-results {
+    --card-min: 160px;
+  }
+
+  .is-results[data-size="0"] {
+    --card-min: 76px;
+  }
+
+  .is-results[data-size="1"] {
+    --card-min: 96px;
+  }
+
+  .is-results[data-size="2"] {
+    --card-min: 120px;
+  }
+
+  .is-results[data-size="4"] {
+    --card-min: 300px;
+  }
+
+  .is-below {
+    margin-top: var(--ds-space-6);
+    padding-top: var(--ds-space-5);
   }
 }
+
+/* ---------- Loading (image-studio/studio-skeleton) ---------- */
+.is-skel-title {
+  width: 260px;
+  height: 28px;
+  margin-top: 20px;
+}
+
+.is-skel-sub {
+  width: 340px;
+  max-width: 90%;
+  margin-top: 14px;
+}
+
+.is-skel-bar {
+  display: block;
+  height: 124px;
+}
+
+@media (max-width: 640px) {
+  .is-skel-bar {
+    height: 152px;
+  }
+}
+
+.is-mobile-nav { display: none; }
+.is-guide {
+  position: absolute;
+  z-index: 2;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  gap: var(--ds-space-2);
+  padding: 4px 8px 4px 12px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
+  font-size: var(--ds-fs-sm);
+}
+.is-guide svg { width: 16px; height: 16px; }
+.is-guide > svg { color: var(--ds-text-3); }
+.is-guide a, .is-guide button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; }
+.is-guide button { padding: 0 6px; color: var(--ds-text-3); }
+.is-guide button:hover, .is-guide a:hover { color: var(--ds-text-1); }
+@media (max-width: 640px) {
+  .is-root { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .is-first { min-height: calc(100svh - var(--hf-header-h, 52px) - 56px); }
+  .is-root:not([data-composer-open]) .is-dock { display: none; }
+  .is-mobile-nav {
+    position: fixed;
+    z-index: 42;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--ds-line-1);
+    background: var(--du-bg-elev);
+  }
+  .is-mobile-nav a, .is-mobile-nav button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .is-mobile-nav a { flex-direction: column; gap: 2px; color: var(--ds-text-3); font-size: var(--ds-fs-2xs); }
+  .is-mobile-nav svg { width: 18px; height: 18px; }
+  .is-mobile-nav button {
+    justify-self: center;
+    width: min(64px, 100%);
+    border-radius: var(--ds-r-lg);
+    background: var(--du-accent);
+    color: var(--du-on-accent);
+  }
+  .is-dock {
+    position: fixed;
+    z-index: 43;
+    right: 8px;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    left: 8px;
+    width: auto;
+    padding-bottom: 4px;
+  }
+}
+.is-draw-dialog.du-dialog {
+  inset: 16px;
+  margin: auto;
+  display: flex;
+  width: min(1280px, calc(100% - 32px));
+  height: calc(100svh - 32px);
+  max-height: none;
+  max-width: none;
+  align-items: center;
+  flex-direction: column;
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-color: var(--ds-line-1);
+  border-radius: var(--ds-r-3xl);
+  background: var(--du-surface-2);
+}
+.is-draw-modes { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--ds-line-1); border-radius: var(--ds-r-full); }
+.is-draw-modes button, .is-draw-upload { display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+.is-draw-modes button { min-height: 40px; padding: 0 16px; border-radius: var(--ds-r-full); color: var(--ds-text-3); font-size: var(--ds-fs-sm); }
+.is-draw-modes button[aria-pressed="true"] { color: var(--ds-text-1); background: var(--ds-fill-2); }
+.is-draw-modes button[aria-pressed="true"] svg { color: var(--du-accent); }
+.is-draw-dialog svg { width: 16px; height: 16px; }
+.is-draw-body { display: flex; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: var(--ds-space-3); text-align: center; }
+.is-draw-body img { width: min(426px, 100%); max-height: 34svh; aspect-ratio: 17 / 10; object-fit: cover; border-radius: var(--ds-r-xl); margin-bottom: var(--ds-space-5); }
+.is-draw-body h2 { font-size: var(--ds-fs-2xl); color: var(--ds-text-1); }
+.is-draw-body p { color: var(--ds-text-3); }
+.is-draw-upload { min-width: 208px; min-height: 46px; margin-top: var(--ds-space-5); border-radius: var(--ds-r-lg); background: var(--du-accent); color: var(--du-on-accent); font-weight: 600; }
+
+.is-topbar { align-items: center; gap: 8px; }
+.is-topbar .vst-bar-button { height: 32px; color: var(--ds-text-1); }
+.is-clear-filter { color: var(--du-accent-text); font-size: var(--ds-fs-sm); }
+.is-filter-empty { flex: 1; display: grid; place-items: center; color: var(--ds-text-3); }
+
+.is-root:has(.is-first-results) { padding-inline: 0; }
+.is-first-results > .is-topbar { padding-inline: var(--ds-space-3); padding-bottom: 4px; }

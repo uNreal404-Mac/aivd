@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { localizedHref } from "@/lib/locale-path";
+import * as Dialog from "@radix-ui/react-dialog";
+import { usePresence } from "@/hooks/use-presence";
+import { languageSwitchSuffix, localizedHref } from "@/lib/locale-path";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AudioLines,
+  Bot,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   Code2,
   Compass,
   CreditCard,
   Crown,
   Folder,
+  Film,
   Languages,
   LogOut,
   Megaphone,
@@ -55,10 +61,14 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const router = useRouter();
   const signInModal = useSigninModal();
   const zh = lang.toLowerCase().startsWith("zh");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [overlay, setOverlay] = useState<"menu" | "search" | null>(null);
+  const menuOpen = overlay === "menu";
+  const searchOpen = overlay === "search";
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const searchTrigger = useRef<HTMLButtonElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   // Section expanded in the narrow-screen menu; null until the menu first opens.
   const [menuSection, setMenuSection] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   // Left edge of the open dropdown, taken from the trigger that opened it.
@@ -69,6 +79,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState({ start: false, end: false });
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedAtRef = useRef<number>(0);
   const balance = useCreditsStore((state) => state.balance);
   const fetchBalance = useCreditsStore((state) => state.fetchBalance);
 
@@ -97,32 +108,34 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     };
   }, [open]);
 
-  // Close menus when the route changes.
+  const previousPath = useRef(pathname);
   useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
     setOpen(null);
-    setMenuOpen(false);
-    setSearchOpen(false);
+    setOverlay(null);
   }, [pathname]);
 
   // ⌘K / Ctrl+K anywhere, or "/" when not typing, opens site search.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      const typing = target?.closest("input, textarea, select, [contenteditable='true']");
+      if (event.defaultPrevented || event.isComposing || (target?.closest('[role="dialog"], dialog[open]') && !target.closest(".hf-nav-layer"))) return;
+      const typing = (target instanceof HTMLElement && target.isContentEditable) || target?.closest("input, textarea, select");
       if ((event.key === "k" || event.key === "K") && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen(null);
-        setSearchOpen((value) => !value);
+        setOverlay((value) => value === "search" ? null : "search");
       } else if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
         setOpen(null);
-        setSearchOpen(true);
+        setOverlay("search");
       }
     };
     // Other parts of the page (e.g. the 404 page) can ask for search too.
     const onRequest = () => {
       setOpen(null);
-      setSearchOpen(true);
+      setOverlay("search");
     };
     document.addEventListener("keydown", onKey);
     window.addEventListener("aivd:open-search", onRequest);
@@ -140,7 +153,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
   const soonLabel = zh ? "即将上线" : "Soon";
   const t = zh
     ? {
-        explore: "探索",
+        home: "首页",
         community: "社区",
         pricing: "定价",
         offer: "特别优惠",
@@ -170,7 +183,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         plans: { free: "免费套餐", basic: "基础版", pro: "专业版", ultimate: "旗舰版" },
       }
     : {
-        explore: "Explore",
+        home: "Home",
         community: "Community",
         pricing: "Pricing",
         offer: "Special offer",
@@ -201,25 +214,19 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       };
 
   const dropdowns = buildDropdowns(zh);
+  const primaryDropdowns = dropdowns.filter((menu) => ["image", "video", "templates"].includes(menu.id));
 
-  // Top-level products that are not built yet, shown the way the reference
-  // site shows its upcoming products: in the bar, with a small badge.
-  // Products that are not built yet sit under "More", as the reference keeps
-  // its secondary items, instead of crowding the bar.
   const moreMenu = {
     id: "more",
     label: zh ? "更多" : "More",
     path: "",
     routes: [] as string[],
     columns: [
-      // Shown only when the bar folds its secondary links into "More"
-      // (English pages, or windows 1280px and narrower; see top-nav.css).
       {
-        title: zh ? "浏览" : "Browse",
-        secondary: true,
+        title: zh ? "更多页面" : "More pages",
         items: [
-          { title: zh ? "模板" : "Templates", desc: zh ? "挑一个模板，提示词一键带入" : "Pick one and its prompt loads for you", icon: LayoutGrid, href: "/templates" },
-          { title: t.community, desc: zh ? "看看大家生成的作品" : "See what people are making", icon: Users, href: "/gallery" },
+          { title: t.pricing, desc: zh ? "查看套餐和积分" : "Explore plans and credits", icon: Crown, href: "/pricing" },
+          { title: zh ? "帮助中心" : "Help center", desc: zh ? "查找使用指南和常见问题" : "Guides and common questions", icon: Compass, href: "/help" },
         ] as DropItem[],
       },
       {
@@ -236,22 +243,27 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
 
   const href = (path: string) => localizedHref(lang, path);
   const inRoutes = (routes: string[]) => routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  const activeSection = dropdowns.find((menu) => inRoutes(menu.routes));
+  const activeSection = primaryDropdowns.find((menu) => inRoutes(menu.routes));
   const headerRef = useRef<HTMLElement>(null);
   // Tool layouts size their workspace to the space under the header.
   useEffect(() => {
-    const height = headerRef.current?.offsetHeight ?? 52;
-    document.documentElement.style.setProperty("--hf-header-h", `${height}px`);
+    const header = headerRef.current;
+    if (!header) return;
+    const measure = () => document.documentElement.style.setProperty("--hf-header-h", `${header.offsetHeight}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
   }, []);
 
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
   const openNow = (id: string, trigger?: HTMLElement | null) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
-    if (trigger) {
-      setPanelLeft(trigger.getBoundingClientRect().left - 4);
-      triggerRef.current = trigger;
-    }
-    setOpen(id);
+    if (trigger) triggerRef.current = trigger;
+    setOpen((current) => {
+      if (current !== id) openedAtRef.current = Date.now();
+      return id;
+    });
   };
   // Only close the menu that was left; moving straight onto another menu
   // must not be undone by the previous menu's timer.
@@ -290,7 +302,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
       setOpen((current) => (current === id ? null : current));
     },
   });
-  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links .hf-item")].filter((item) => item.offsetParent !== null);
+  const navStops = () => [...document.querySelectorAll<HTMLElement>(".hf-nav-links a.hf-item, .hf-nav-links button.hf-item")].filter((item) => item.offsetParent !== null);
   const panelKeys = {
     onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
       const rows = panelRows();
@@ -352,21 +364,48 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     );
   };
 
+  const mobileSection = (menu: { id: string; label: string; path: string; columns: { title: string; items: DropItem[] }[] }) => {
+    const expanded = menuSection === menu.id;
+    const current = activeSection?.id === menu.id;
+    return <section key={menu.id} className="hf-mm-sec" data-open={expanded || undefined}>
+      <button type="button" className="hf-mm-head" aria-expanded={expanded} onClick={() => setMenuSection(expanded ? null : menu.id)}>
+        <span className="hf-mm-label">{menu.label}{current ? <span className="hf-mm-here">{zh ? "当前" : "Here"}</span> : null}</span>
+        <ChevronDown className="hf-mm-chev" aria-hidden="true" />
+      </button>
+      <div className="hf-mm-collapse" inert={!expanded}>
+        <div className="hf-mm-body">
+          {menu.columns.map((column) => <div key={column.title} className="hf-mm-col">
+            <p className="hf-dd-col-title">{column.title}</p>
+            {column.items.map(row)}
+          </div>)}
+          {menu.path && <Link href={href(menu.path)} className="hf-mm-all">{zh ? `打开${menu.label}` : `Open ${menu.label}`}<ChevronRight aria-hidden="true" /></Link>}
+        </div>
+      </div>
+    </section>;
+  };
+
   // Keep the dropdown inside the window when its trigger sits near the right.
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!panel) return;
-    const clamp = () => {
-      const maxLeft = window.innerWidth - panel.offsetWidth - 16;
-      if (panelLeft > maxLeft) setPanelLeft(Math.max(16, maxLeft));
+    const trigger = triggerRef.current;
+    const strip = listRef.current;
+    if (!open || !panel || !trigger || open === "account") return;
+    const reposition = () => {
+      const left = trigger.getBoundingClientRect().left - 4;
+      const rightLimit = document.documentElement.clientWidth - panel.offsetWidth - 16;
+      setPanelLeft(Math.max(16, Math.min(left, rightLimit)));
     };
-    clamp();
-    // The panel can still widen after the first measure (web fonts, the
-    // folded "Browse" column in "More"), so check again when it resizes.
-    const observer = new ResizeObserver(clamp);
+    reposition();
+    const observer = new ResizeObserver(reposition);
     observer.observe(panel);
-    return () => observer.disconnect();
-  }, [open, panelLeft]);
+    window.addEventListener("resize", reposition);
+    strip?.addEventListener("scroll", reposition, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", reposition);
+      strip?.removeEventListener("scroll", reposition);
+    };
+  }, [open]);
 
   // Fade the ends of the link row when it scrolls sideways, like the reference.
   useEffect(() => {
@@ -389,40 +428,46 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
     router.refresh();
   };
 
-  // The narrow-screen menu opens on the current section (on a page outside
-  // every section, on Video: this is a video site, and Image comes first in
-  // the list), closes on Escape and holds the page still underneath.
+  // The narrow-screen menu opens on the current section when there is one.
   useEffect(() => {
     if (!menuOpen) return;
-    setMenuSection((current) => current ?? activeSection?.id ?? dropdowns.find((menu) => menu.id === "video")?.id ?? dropdowns[0]?.id ?? null);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = overflow;
-      window.removeEventListener("keydown", onKey);
-    };
+    setMenuSection((current) => current ?? activeSection?.id ?? null);
+    const wide = window.matchMedia("(min-width: 1080px)");
+    const closeOnWide = () => { if (wide.matches) setOverlay(null); };
+    wide.addEventListener("change", closeOnWide);
+    return () => wide.removeEventListener("change", closeOnWide);
   }, [menuOpen]);
 
   const otherLang = zh ? "en" : "zh";
+  const [languageSuffix, setLanguageSuffix] = useState("");
+  useEffect(() => {
+    if (menuOpen || open === "account") setLanguageSuffix(languageSwitchSuffix(window.location.search, window.location.hash));
+  }, [menuOpen, open, pathname]);
   const accountLinks: { label: string; href: string; icon: LucideIcon }[] = [
     { label: t.creations, href: "/my-creations", icon: Folder },
     { label: t.billing, href: "/credits", icon: CreditCard },
     { label: t.account, href: "/account", icon: UserRound },
   ];
-  const openMenu = open === "more" ? moreMenu : dropdowns.find((menu) => menu.id === open);
+  const openMenu = open === "more" ? moreMenu : primaryDropdowns.find((menu) => menu.id === open);
+  // Menus stay mounted long enough to leave (hooks/use-presence); the panel
+  // keeps showing the last menu while it fades out.
+  const lastMenu = useRef(openMenu);
+  if (openMenu) lastMenu.current = openMenu;
+  const shownMenu = openMenu ?? lastMenu.current;
+  const panel = usePresence(Boolean(openMenu));
+  const account = usePresence(open === "account");
+  const lastOverlay = useRef(overlay);
+  if (overlay) lastOverlay.current = overlay;
+  const showingSearch = (overlay ?? lastOverlay.current) === "search";
   const dots = 30;
   const filledDots =
     balance && balance.totalCredits > 0 ? Math.round((Math.max(0, balance.availableCredits) / balance.totalCredits) * dots) : 0;
 
   return (
-    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")} data-compact-nav={!zh || undefined}>
+    <header ref={headerRef} className={cn("hf-nav", scrolled && "hf-nav-scrolled")}>
       <div className="hf-nav-inner">
         <Link href={href("/")} className="hf-brand">
-          <img src="/logo.svg" alt="" width={28} height={28} className="hf-brand-logo" />
+          <img src="/logo.svg" alt="" width={26} height={26} className="hf-brand-logo" />
           <span className="hf-brand-word">aivd.ai</span>
           <PreviewBadge lang={lang} />
         </Link>
@@ -430,9 +475,9 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div ref={listRef} className="hf-nav-scroll" data-fade-start={fade.start || undefined} data-fade-end={fade.end || undefined}>
           <nav className="hf-nav-links" aria-label={zh ? "主导航" : "Main"}>
             <Link href={href("/")} className="hf-item" data-active={pathname === "/" || undefined}>
-              {t.explore}
+              {t.home}
             </Link>
-            {dropdowns.map((menu) => (
+            {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map((menu) => (
               <Link
                 key={menu.id}
                 href={href(menu.path)}
@@ -440,7 +485,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 aria-haspopup="true"
                 onFocus={(event) => openNow(menu.id, event.currentTarget)}
                 {...triggerKeys(menu.id)}
-                className={cn("hf-item", menu.id === "templates" && "hf-item-secondary")}
+                className="hf-item"
                 data-open={open === menu.id || undefined}
                 data-active={activeSection?.id === menu.id || undefined}
                 {...hover(menu.id)}
@@ -448,9 +493,40 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                 {menu.label}
               </Link>
             ))}
-            <Link href={href("/gallery")} className="hf-item hf-item-secondary" data-active={isActive("/gallery") || undefined}>
-              {t.community}
+            <Link href={href("/creative-space")} className="hf-item" data-active={pathname === "/creative-space" || undefined}>
+              AGENT <span className="hf-beta">BETA</span>
             </Link>
+            <Link href={href("/creative-space/canvas")} className="hf-item" data-active={isActive("/creative-space/canvas") || undefined}>
+              {zh ? "画布" : "Canvas"} <span className="hf-beta">BETA</span>
+            </Link>
+            {primaryDropdowns.filter((menu) => menu.id === "templates").map((menu) => (
+              <Link
+                key={menu.id}
+                href={href(menu.path)}
+                aria-expanded={open === menu.id}
+                aria-haspopup="true"
+                onFocus={(event) => openNow(menu.id, event.currentTarget)}
+                {...triggerKeys(menu.id)}
+                className="hf-item"
+                data-open={open === menu.id || undefined}
+                data-active={activeSection?.id === menu.id || undefined}
+                {...hover(menu.id)}
+              >
+                {menu.label}
+              </Link>
+            ))}
+            <Link href={href("/ai/video")} className="hf-item" data-active={isActive("/ai/video") || undefined}>
+              {zh ? "视频工作室" : "Video Studio"}
+            </Link>
+            <Link href={href("/my-creations")} className="hf-item" data-active={isActive("/my-creations") || undefined}>
+              {t.creations}
+            </Link>
+            <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
+              {zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span>
+            </span>
+            <span className="hf-item hf-item-off hf-item-coming" aria-disabled="true">
+              {t.community}<span className="hf-tag">Coming Soon</span>
+            </span>
             <button
               type="button"
               className="hf-item"
@@ -459,7 +535,13 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               data-open={open === "more" || undefined}
               onFocus={(event) => openNow("more", event.currentTarget)}
               {...triggerKeys("more")}
-              onClick={(event) => (open === "more" ? setOpen(null) : openNow("more", event.currentTarget))}
+              onClick={(event) => {
+                if (open === "more" && Date.now() - openedAtRef.current > 260) {
+                  setOpen(null);
+                } else {
+                  openNow("more", event.currentTarget);
+                }
+              }}
               {...hover("more")}
             >
               {moreMenu.label}
@@ -471,6 +553,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         <div className="hf-actions">
           <button
             type="button"
+            ref={searchTrigger}
+            aria-haspopup="dialog"
             aria-label={t.search}
             title={t.search}
             aria-expanded={searchOpen}
@@ -478,7 +562,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
             data-open={searchOpen || undefined}
             onClick={() => {
               setOpen(null);
-              setSearchOpen((value) => !value);
+              setOverlay((value) => value === "search" ? null : "search");
             }}
           >
             <Search aria-hidden="true" />
@@ -488,15 +572,16 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               <Folder aria-hidden="true" />
             </Link>
           ) : null}
-          <Link href={href("/pricing")} title={t.offerTitle} className="hf-act hf-act-accent">
-            <Tag aria-hidden="true" />
-            {t.offer}
-            <span className="hf-act-dot" aria-hidden="true" />
-          </Link>
-          <Link href={href("/pricing")} className="hf-act hf-act-pricing">
+          <Link href={href("/pricing")} title={user ? undefined : t.offerTitle} className="hf-act hf-act-pricing">
             <Crown aria-hidden="true" />
             {t.pricing}
-            <span className="hf-act-discount">{t.offerTag}</span>
+            {/* The sign-up gift only means something to someone not signed in yet. */}
+            {user ? null : <span className="hf-act-discount">{t.offerTag}</span>}
+          </Link>
+          <Link href={href("/help")} className="hf-act hf-act-help" aria-label={zh ? "帮助中心" : "Help center"} title={zh ? "帮助中心" : "Help center"}>
+            <CircleHelp aria-hidden="true" />
+            <span className="hf-help-full">{zh ? "帮助中心" : "Help center"}</span>
+            <span className="hf-help-short">{zh ? "帮助" : "Help"}</span>
           </Link>
           <span className="hf-lang">
             <LocaleChange />
@@ -513,8 +598,8 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
               >
                 <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-7 w-7" />
               </button>
-              {open === "account" ? (
-                <div className="hf-acct">
+              {account.mounted ? (
+                <div className="hf-acct" data-state={account.state}>
                   <Link href={href("/account")} className="hf-acct-profile">
                     <UserAvatar user={{ name: user.name ?? null, image: user.image ?? null }} className="h-[30px] w-[30px]" />
                     <span className="min-w-0 flex-1">
@@ -564,7 +649,7 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
                         </Link>
                       );
                     })}
-                    <Link href={localizedHref(otherLang, pathname)} className="hf-acct-row hf-acct-row-split">
+                    <Link href={localizedHref(otherLang, pathname + languageSuffix)} className="hf-acct-row hf-acct-row-split">
                       <span className="flex items-center gap-1.5">
                         <span className="hf-acct-ico">
                           <Languages aria-hidden="true" />
@@ -595,19 +680,33 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
           )}
           <button
             type="button"
+            ref={menuTrigger}
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
             aria-label={menuOpen ? t.closeMenu : t.openMenu}
-            onClick={() => setMenuOpen((value) => !value)}
+            onClick={() => setOverlay((value) => value === "menu" ? null : "menu")}
             className="hf-act hf-act-icon hf-burger"
           >
-            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            {menuOpen ? <X key="close" data-swap aria-hidden="true" /> : <Menu key="open" data-swap aria-hidden="true" />}
           </button>
         </div>
       </div>
 
-      {openMenu ? (
-        <div ref={panelRef} className="hf-dd" style={{ left: panelLeft }} {...keepOpen(openMenu.id)} {...panelKeys}>
-          {openMenu.columns.map((column) => (
-            <div key={column.title} className={cn("hf-dd-col", "secondary" in column && column.secondary === true && "hf-dd-col-secondary")}>
+      {panel.mounted && shownMenu ? (
+        <div
+          ref={panelRef}
+          inert={!openMenu}
+          className="hf-dd"
+          data-state={panel.state}
+          style={{ ["--dd-x" as string]: `${panelLeft}px` }}
+          {...keepOpen(shownMenu.id)}
+          {...panelKeys}
+        >
+          {shownMenu.columns.map((column) => (
+            <div
+              key={`${shownMenu.id}:${column.title}`}
+              className={cn("hf-dd-col", "secondary" in column && column.secondary === true && "hf-dd-col-secondary")}
+            >
               <p className="hf-dd-col-title">{column.title}</p>
               {column.items.map(row)}
             </div>
@@ -615,110 +714,80 @@ export function HfTopNav({ user, lang }: HfTopNavProps) {
         </div>
       ) : null}
 
-      {searchOpen ? <NavSearch lang={lang} localize={href} onClose={() => setSearchOpen(false)} /> : null}
-
-      {menuOpen ? (
-        <div className="hf-nav-mobile">
-          <button type="button" className="hf-mm-backdrop" aria-label={t.closeMenu} onClick={() => setMenuOpen(false)} />
-          <nav
-            className="hf-mm"
-            aria-label={zh ? "全部页面" : "All pages"}
-            onClick={(event) => {
-              if ((event.target as HTMLElement).closest("a")) setMenuOpen(false);
+      <Dialog.Root open={overlay !== null} onOpenChange={(next) => { if (!next) setOverlay(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="hf-layer-scrim" />
+          <Dialog.Content
+            className={cn("hf-nav-layer", showingSearch ? "hf-search-layer" : "hf-menu-layer")}
+            aria-describedby={undefined}
+            onEscapeKeyDown={(event) => { if (event.isComposing || event.keyCode === 229) event.preventDefault(); }}
+            onOpenAutoFocus={() => { returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              const prior = returnFocus.current;
+              const fallback = showingSearch ? searchTrigger.current : menuTrigger.current;
+              if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+              (prior?.isConnected && prior.offsetParent && prior !== document.body ? prior : fallback)?.focus({ preventScroll: true });
             }}
           >
-            <div className="hf-mm-quick">
-              <Link href={href("/")} className="hf-mm-quick-item" data-active={pathname === "/" || undefined}>
-                <Compass aria-hidden="true" />
-                {t.explore}
-              </Link>
-              <button
-                type="button"
-                className="hf-mm-quick-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setSearchOpen(true);
+            <Dialog.Title className={showingSearch ? "sr-only" : "hf-mm-title"}>
+              {showingSearch ? (zh ? "全站搜索" : "Site search") : (zh ? "导航" : "Navigation")}
+            </Dialog.Title>
+            {showingSearch ? <NavSearch lang={lang} localize={href} onClose={() => setOverlay(null)} /> : <>
+              <Dialog.Close className="hf-mm-close" aria-label={t.closeMenu}>
+                <X aria-hidden="true" />
+              </Dialog.Close>
+              <nav
+                className="hf-mm"
+                aria-label={zh ? "全部页面" : "All pages"}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("a")) setOverlay(null);
                 }}
               >
-                <Search aria-hidden="true" />
-                {zh ? "搜索" : "Search"}
-              </button>
-              <Link href={href("/gallery")} className="hf-mm-quick-item" data-active={isActive("/gallery") || undefined}>
-                <Users aria-hidden="true" />
-                {t.community}
-              </Link>
-              <Link href={href("/pricing")} className="hf-mm-quick-item" data-active={isActive("/pricing") || undefined}>
-                <Crown aria-hidden="true" />
-                {t.pricing}
-              </Link>
-            </div>
+                <button type="button" className="hf-mm-search" onClick={() => setOverlay("search")}><Search aria-hidden="true" />{zh ? "搜索" : "Search"}</button>
+                <Link href={href("/")} className="hf-mm-direct" data-active={pathname === "/" || undefined}><Compass aria-hidden="true" />{t.home}</Link>
+                {primaryDropdowns.filter((menu) => menu.id === "image" || menu.id === "video").map(mobileSection)}
+                <Link href={href("/creative-space")} className="hf-mm-direct" data-active={pathname === "/creative-space" || undefined}><Bot aria-hidden="true" />AGENT<span className="hf-beta">BETA</span></Link>
+                <Link href={href("/creative-space/canvas")} className="hf-mm-direct" data-active={isActive("/creative-space/canvas") || undefined}><LayoutGrid aria-hidden="true" />{zh ? "画布" : "Canvas"}<span className="hf-beta">BETA</span></Link>
+                {primaryDropdowns.filter((menu) => menu.id === "templates").map(mobileSection)}
+                <Link href={href("/ai/video")} className="hf-mm-direct" data-active={isActive("/ai/video") || undefined}><Film aria-hidden="true" />{zh ? "视频工作室" : "Video Studio"}</Link>
+                <Link href={href("/my-creations")} className="hf-mm-direct" data-active={isActive("/my-creations") || undefined}><Folder aria-hidden="true" />{t.creations}</Link>
+                <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><AudioLines aria-hidden="true" />{zh ? "音频" : "Audio"}<span className="hf-tag">Coming Soon</span></span>
+                <span className="hf-mm-direct hf-mm-direct-off" aria-disabled="true"><Users aria-hidden="true" />{t.community}<span className="hf-tag">Coming Soon</span></span>
+                {mobileSection(moreMenu)}
 
-            {[...dropdowns, moreMenu].map((menu) => {
-              const expanded = menuSection === menu.id;
-              const current = activeSection?.id === menu.id;
-              return (
-                <section key={menu.id} className="hf-mm-sec" data-open={expanded || undefined}>
-                  <button
-                    type="button"
-                    className="hf-mm-head"
-                    aria-expanded={expanded}
-                    onClick={() => setMenuSection(expanded ? null : menu.id)}
-                  >
-                    <span className="hf-mm-label">
-                      {menu.label}
-                      {current ? <span className="hf-mm-here">{zh ? "当前" : "Here"}</span> : null}
+                <div className="hf-mm-foot">
+                  <Link href={href("/pricing")} className="hf-mm-offer">
+                    <Tag aria-hidden="true" />
+                    <span>
+                      {t.offer}
+                      <small>{t.offerTitle}</small>
                     </span>
-                    <ChevronDown className="hf-mm-chev" aria-hidden="true" />
-                  </button>
-                  {expanded ? (
-                    <div className="hf-mm-body">
-                      {menu.columns.map((column) => (
-                        <div key={column.title} className="hf-mm-col">
-                          <p className="hf-dd-col-title">{column.title}</p>
-                          {column.items.map(row)}
-                        </div>
-                      ))}
-                      {menu.path ? (
-                        <Link href={href(menu.path)} className="hf-mm-all">
-                          {zh ? `打开${menu.label}` : `Open ${menu.label}`}
-                          <ChevronRight aria-hidden="true" />
-                        </Link>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </section>
-              );
-            })}
-
-            <div className="hf-mm-foot">
-              <Link href={href("/pricing")} className="hf-mm-offer">
-                <Tag aria-hidden="true" />
-                <span>
-                  {t.offer}
-                  <small>{t.offerTitle}</small>
-                </span>
-                <ChevronRight aria-hidden="true" />
-              </Link>
-              <Link href={localizedHref(otherLang, pathname)} className="hf-mm-lang">
-                <Languages aria-hidden="true" />
-                {zh ? "English" : "简体中文"}
-              </Link>
-              {user ? null : (
-                <button
-                  type="button"
-                  className="hf-mm-login"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    signInModal.onOpen();
-                  }}
-                >
-                  {t.login}
-                </button>
-              )}
-            </div>
-          </nav>
-        </div>
-      ) : null}
+                    <ChevronRight aria-hidden="true" />
+                  </Link>
+                  <Link href={href("/help")} className="hf-mm-lang"><CircleHelp aria-hidden="true" />{zh ? "帮助中心" : "Help center"}</Link>
+                  <Link href={localizedHref(otherLang, pathname + languageSuffix)} className="hf-mm-lang">
+                    <Languages aria-hidden="true" />
+                    {zh ? "English" : "简体中文"}
+                  </Link>
+                  {user ? null : (
+                    <button
+                      type="button"
+                      className="hf-mm-login"
+                      onClick={() => {
+                        setOverlay(null);
+                        signInModal.onOpen();
+                      }}
+                    >
+                      {t.login}
+                    </button>
+                  )}
+                </div>
+              </nav>
+            </>}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </header>
   );
 }

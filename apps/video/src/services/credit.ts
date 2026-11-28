@@ -278,8 +278,10 @@ export class CreditService {
   /**
    * 释放积分（任务失败时调用）
    */
-  async release(videoUuid: string): Promise<void> {
+  async release(videoUuid: string, { ifHolding = false } = {}): Promise<void> {
     const hold = await this.findHold(videoUuid);
+    // A failed image can be replayed after a refund or without a hold (free or insufficient credit).
+    if (ifHolding && hold?.status !== "HOLDING") return;
     if (!hold) throw new Error(`Hold not found for video: ${videoUuid}`);
     if (hold.status === "RELEASED") return;
     if (hold.status !== "HOLDING") {

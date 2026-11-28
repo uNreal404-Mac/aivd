@@ -1,4 +1,4 @@
-import { CreativeSpaceHome } from "@/components/creative-space/creative-space-home";
+import { StandaloneAgent } from "@/components/creative-space/standalone-agent";
 import { buildAlternates } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -8,15 +8,15 @@ export async function generateMetadata({ params }: Props) {
   const zh = locale.startsWith("zh");
   const alternates = buildAlternates("/creative-space", locale as never);
   return {
-    title: zh ? "AI 视频创作 Agent - 说出想法自动拆分镜生成视频" : "AI Video Agent - Turn an Idea into Shots and Video",
+    title: zh ? "AGENT - AI 创作助手" : "AGENT - AI Creative Assistant",
     description: zh
-      ? "在创作空间里写下目标或上传素材，Agent 先拆分镜、写提示词，确认后用 Veo 3.1 生成有声视频。"
-      : "Write a goal or add assets in Creative Space. The agent plans the shots and prompt, then Veo 3.1 generates a video with sound once you approve.",
+      ? "与 AGENT 对话，梳理创意、分镜和生成提示词。"
+      : "Chat with AGENT to develop ideas, storyboards, and generation prompts.",
     alternates: { canonical: alternates.canonical, languages: alternates.languages },
   };
 }
 
 export default async function CreativeSpacePage({ params }: Props) {
   const { locale } = await params;
-  return <CreativeSpaceHome lang={locale} />;
+  return <StandaloneAgent lang={locale} />;
 }

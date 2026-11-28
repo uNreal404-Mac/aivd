@@ -10,6 +10,7 @@ import { GridSkeleton } from "@/components/states/skeletons";
 import { StateBlock } from "@/components/states/state-block";
 import { useBilling } from "@/hooks/use-billing";
 import { useCreditBalance, useCreditHistory } from "@/hooks/use-credits";
+import { FREE_VIDEO_UNIT_ID, pricingUnit } from "@/lib/pricing-offers";
 import { creditKind, creditKindLabel, describeRemark, type CreditKind } from "@/lib/credit-labels";
 
 const KIND_ICON: Record<CreditKind, LucideIcon> = {
@@ -31,6 +32,9 @@ function useDateFormat(zh: boolean) {
 }
 
 /** Credits & billing: balance, the credit ledger and purchases. */
+// One Veo 3.1 clip at the price the pricing page quotes.
+const veoClip = pricingUnit(FREE_VIDEO_UNIT_ID);
+
 export function CreditsPage({ locale }: { locale: string }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const router = useRouter();
@@ -76,7 +80,8 @@ export function CreditsPage({ locale }: { locale: string }) {
             <span className="db-stat-label">{zh ? "可用积分" : "Available"}</span>
             <span className="db-stat-value">{n(balance?.availableCredits)}</span>
             <span className="db-stat-note">
-              {zh ? `约可生成 ${Math.floor((balance?.availableCredits ?? 0) / 90)} 条 Veo 3.1 视频` : `About ${Math.floor((balance?.availableCredits ?? 0) / 90)} Veo 3.1 clips`}
+              {/* Same per-clip price the pricing page quotes, so the two never disagree. */}
+              {zh ? `约可生成 ${Math.floor((balance?.availableCredits ?? 0) / veoClip.credits)} 条 ${veoClip.name} 视频` : `About ${Math.floor((balance?.availableCredits ?? 0) / veoClip.credits)} ${veoClip.name} clips`}
             </span>
           </div>
           <div className="db-stat">

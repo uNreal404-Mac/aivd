@@ -1,80 +1,242 @@
-
+/* The media library, laid out like the reference's: a frosted 600 x 672
+   panel (24px corners, 8px inset), pill tabs with a round close button, one
+   inset shelf (16px corners) whose header names it, and square 12px-corner
+   tiles four to a row with the upload tile first. Our footer (count and
+   "Select") stays, since several files can be picked at once. */
 .hmp-backdrop {
   position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: color-mix(in srgb, var(--du-bg) 78%, transparent);
+  padding: 24px; background: color-mix(in srgb, var(--du-bg) 55%, transparent);
 }
 .hmp-dialog {
-  position: relative; box-sizing: border-box; display: flex; flex-direction: column;
-  width: min(900px, calc(100vw - 48px)); height: min(560px, calc(100vh - 96px)); height: min(560px, calc(100dvh - 96px));
-  max-width: none; max-height: none; margin: 0; padding: 0; overflow: hidden;
-  border: 1px solid var(--du-border-strong); border-radius: var(--du-glass-radius-card);
-  background: var(--du-bg-elev); color: var(--du-text);
-  box-shadow: 0 30px 80px color-mix(in srgb, var(--du-bg) 75%, transparent);
+  position: relative; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;
+  width: min(600px, calc(100vw - 48px)); height: min(672px, calc(100vh - 96px)); height: min(672px, calc(100dvh - 96px));
+  max-width: none; max-height: none; margin: 0; padding: 8px; overflow: hidden;
+  border: 1px solid var(--ds-line-1); border-radius: var(--ds-r-3xl);
+  /* The reference's panel is 75% over a 40px blur; under our fading backdrop
+     the blur cannot reach the page, so the panel is nearly solid instead. */
+  background: color-mix(in srgb, color-mix(in srgb, white 6%, var(--du-surface-2)) 94%, transparent);
+  -webkit-backdrop-filter: blur(40px); backdrop-filter: blur(40px);
+  color: var(--du-text); box-shadow: var(--ds-shadow-2);
 }
-.hmp-header { display: flex; flex: 0 0 60px; align-items: stretch; justify-content: space-between; min-width: 0; padding: 0 20px; border-bottom: 1px solid var(--du-border); }
-.hmp-header nav { display: flex; align-items: stretch; gap: 22px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+
+/* Tabs: 32px pills, 12px semibold; the open one is a white pill. */
+.hmp-header { display: flex; flex: 0 0 32px; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.hmp-header nav { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .hmp-header nav::-webkit-scrollbar, .hmp-toolbar::-webkit-scrollbar { display: none; }
-.hmp-header button { flex: 0 0 auto; border: 0; background: none; color: var(--du-text-muted); white-space: nowrap; }
-.hmp-header nav button { padding: 0 2px; border-bottom: 2px solid transparent; font-size: .94rem; }
-.hmp-header nav button.active { border-bottom-color: var(--du-accent); color: var(--du-accent-text); }
-.hmp-header > button { display: grid; place-items: center; min-width: 44px; margin-left: 12px; }
-.hmp-header button:hover { color: var(--du-text); }
-.hmp-toolbar { display: flex; flex: 0 0 56px; align-items: center; gap: 6px; min-width: 0; padding: 8px 20px; overflow-x: auto; scrollbar-width: none; }
-.hmp-toolbar button { flex: 0 0 auto; min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 9999px; background: none; color: var(--du-text-muted); white-space: nowrap; }
-.hmp-toolbar button.active { border-color: var(--du-border-strong); background: var(--du-accent-soft); color: var(--du-accent-text); }
-.hmp-toolbar .hmp-toolbar-create { position: sticky; right: 0; display: flex; align-items: center; gap: 5px; margin-left: auto; border-color: var(--du-border-strong); background: var(--du-bg-elev); color: var(--du-accent-text); }
-.hmp-body { flex: 1; min-height: 0; padding: 12px 20px; overflow-y: auto; overscroll-behavior: contain; }
-.hmp-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 100%; min-height: 190px; padding: 20px; border: 1px dashed var(--du-border-strong); border-radius: var(--du-glass-radius-card); background: var(--du-surface); color: var(--du-text-muted); text-align: center; }
-.hmp-drop strong { font-size: 1rem; color: var(--du-text); }
-.hmp-drop span { font-size: .82rem; }
-.hmp-drop:hover { border-color: var(--du-accent); }
-.hmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-.hmp-card, .hmp-add { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--du-border); border-radius: .8rem; background: var(--du-surface-2); color: var(--du-text); text-align: left; }
-.hmp-card.selected { border-color: var(--du-accent); box-shadow: 0 0 0 1px var(--du-accent); }
-.hmp-card:hover, .hmp-add:hover { border-color: var(--du-accent-hover); }
-.hmp-thumb { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; background: var(--du-surface); }
-.hmp-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.hmp-card-name { display: block; overflow: hidden; padding: 9px; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
-.hmp-check { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--du-accent); color: var(--du-on-accent); font-weight: 700; }
-.hmp-check:empty { display: none; }
-.hmp-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 170px; border-style: dashed; }
-.hmp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 100%; padding: 22px; color: var(--du-text-muted); text-align: center; }
-.hmp-empty strong { color: var(--du-text); font-size: 1.1rem; }
-.hmp-empty p { max-width: 490px; margin: 0; font-size: .9rem; }
-.hmp-empty button, .hmp-create-actions button:last-child { display: flex; align-items: center; gap: 6px; min-height: 42px; padding: 9px 18px; border: 0; border-radius: 9999px; background: var(--du-accent); color: var(--du-on-accent); font-weight: 650; }
+.hmp-header nav button {
+  flex: 0 0 auto; height: 32px; padding: 0 12px; border: 0; border-radius: var(--ds-r-full); background: transparent;
+  color: var(--ds-text-1); font-size: var(--ds-fs-xs); font-weight: 600; white-space: nowrap;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+.hmp-header nav button:hover { background: var(--ds-fill-1); }
+.hmp-header nav button.active { background: var(--du-text); color: var(--du-bg); }
+.hmp-close {
+  display: grid; flex: 0 0 32px; place-items: center; width: 32px; height: 32px; border: 0; border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1); color: var(--ds-text-1); transition: background-color var(--m-instant) var(--m-ease-out);
+}
+.hmp-close:hover { background: var(--ds-fill-2); }
+
+/* The shelf: a lighter inset with its own header row. */
+.hmp-shelf { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; border-radius: var(--ds-r-xl); background: var(--ds-fill-1); }
+.hmp-toolbar {
+  display: flex; flex: 0 0 44px; align-items: center; gap: 6px; min-width: 0; padding: 0 8px 0 14px; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--ds-line-1);
+}
+.hmp-shelf-title { flex: 0 0 auto; margin-right: auto; color: var(--ds-text-4); font-size: var(--ds-fs-xs); font-weight: 600; white-space: nowrap; }
+.hmp-toolbar button {
+  display: flex; flex: 0 0 auto; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border: 0; border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1); color: var(--ds-text-2); font-size: var(--ds-fs-xs); font-weight: 500; white-space: nowrap;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+.hmp-toolbar button:hover { background: var(--ds-fill-2); color: var(--ds-text-1); }
+.hmp-toolbar button.active { background: var(--ds-fill-3); color: var(--ds-text-1); }
+.hmp-toolbar .hmp-toolbar-create { position: sticky; right: 0; color: var(--du-accent-text); }
+.hmp-manage-actions { display: flex; align-items: center; gap: 6px; margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--ds-line-2); }
+.hmp-toolbar .hmp-manage-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.hmp-toolbar .hmp-manage-actions .hmp-clear-all { color: var(--du-danger); }
+.hmp-body { flex: 1; min-height: 0; padding: 8px 4px 8px 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+
+/* Square tiles, four to a row. */
+.hmp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.hmp-card-wrap { position: relative; min-width: 0; }
+.hmp-card-wrap .hmp-card { display: block; width: 100%; }
+.hmp-card, .hmp-add { position: relative; min-width: 0; overflow: hidden; border: 0; border-radius: var(--ds-r-lg); background: var(--ds-fill-1); color: var(--du-text); text-align: left; }
+.hmp-card { transition: transform var(--m-instant) var(--m-ease-out); }
+.hmp-card:active { transform: scale(.98); }
+/* The ring sits over the picture: a hairline on hover, our accent when picked. */
+.hmp-card::after { position: absolute; inset: 0; border-radius: inherit; content: ""; pointer-events: none; }
+.hmp-card:hover::after { box-shadow: inset 0 0 0 1px var(--ds-line-3); }
+.hmp-card.selected::after { box-shadow: inset 0 0 0 2px var(--du-accent); }
+.hmp-thumb { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; color: var(--ds-text-3); }
+.hmp-thumb :is(img, video) { width: 100%; height: 100%; object-fit: cover; }
+/* A file's name is noise on a picture; saved elements and kits keep theirs. */
+.hmp-card-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hmp-grid[data-named] .hmp-card-name { position: static; display: block; width: auto; height: auto; overflow: hidden; clip-path: none; padding: 7px 9px; font-size: var(--ds-fs-xs); font-weight: 500; text-overflow: ellipsis; }
+.hmp-card.selected .hmp-thumb :is(img, video) { opacity: .92; }
+
+/* The upload tile: a hairline square with a round icon over "Upload file". */
+.hmp-add {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; aspect-ratio: 1;
+  border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-md); font-size: var(--ds-fs-xs); font-weight: 500;
+  transition: background-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
+}
+.hmp-add:hover { background: var(--ds-fill-2); }
+.hmp-add:active { transform: scale(.98); }
+.hmp-add:disabled { opacity: .5; cursor: not-allowed; }
+.hmp-add-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--ds-line-3); border-radius: var(--ds-r-full); background: var(--ds-fill-1); }
+.hmp-uploading {
+  display: flex; aspect-ratio: 1; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  border-radius: var(--ds-r-md); background: var(--ds-fill-2); color: var(--du-text); text-align: center;
+  font-size: var(--ds-fs-sm);
+}
+.hmp-uploading small { color: var(--ds-text-3); font-size: var(--ds-fs-xs); }
+
+/* Delete is a bin that shows on hover or focus (always on touch screens).
+   The first press turns it into a red "Delete?" for a few seconds; only a
+   second press deletes. */
+.hmp-delete {
+  position: absolute; top: 7px; left: 7px; z-index: 1; display: grid; place-items: center;
+  width: 28px; min-height: 28px; max-width: calc(100% - 14px); padding: 0;
+  border: 1px solid var(--du-border-strong); border-radius: var(--ds-r-xl);
+  background: var(--du-bg-elev); color: var(--du-text); opacity: 0;
+  transition: opacity var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+.hmp-card-wrap:hover .hmp-delete, .hmp-card-wrap:focus-within .hmp-delete, .hmp-delete[data-armed], .hmp-delete[data-busy] { opacity: 1; }
+@media (hover: none) { .hmp-delete { opacity: 1; } }
+.hmp-delete:hover:not(:disabled) { border-color: var(--du-danger); color: var(--du-danger); }
+.hmp-delete:active:not(:disabled) { transform: scale(.94); }
+.hmp-delete:disabled { cursor: not-allowed; }
+.hmp-delete[data-armed], .hmp-delete[data-armed]:hover:not(:disabled) { width: auto; padding: 4px 10px; border-color: var(--du-danger); background: var(--du-danger); color: var(--du-on-accent); box-shadow: var(--ds-shadow-1); }
+.hmp-delete-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; }
+.hmp-delete-confirm strong { font-size: var(--ds-fs-xs); font-weight: 700; line-height: 1.3; }
+.hmp-delete-confirm small { font-size: var(--ds-fs-2xs); font-weight: 600; line-height: 1.3; }
+/* A deleted card fades out before the grid closes the gap. */
+@keyframes hmp-leave { to { opacity: 0; transform: scale(.94); } }
+.hmp-card-wrap[data-leaving] { animation: hmp-leave var(--m-fast) var(--m-ease-exit) both; pointer-events: none; }
+/* The check settles in when picked and drops away a little faster. */
+.hmp-check {
+  position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 22px; height: 22px;
+  border-radius: var(--ds-r-full); background: var(--du-accent); color: var(--du-on-accent);
+  opacity: 0; transform: scale(.6); pointer-events: none;
+  transition: opacity var(--m-instant) var(--m-ease-exit), transform var(--m-instant) var(--m-ease-exit);
+}
+.hmp-card.selected .hmp-check { opacity: 1; transform: none; transition-duration: var(--m-fast); transition-timing-function: var(--m-ease-out); }
+
+/* Empty shelves: a quiet line in the middle, an action where there is one. */
+.hmp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 100%; padding: 22px; color: var(--ds-text-3); text-align: center; }
+.hmp-empty-uploads { min-height: 0; padding-top: 40px; }
+.hmp-empty-icon { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: var(--ds-r-lg); background: var(--ds-fill-2); color: var(--ds-text-2); }
+.hmp-empty strong { color: var(--ds-text-1); font-size: var(--ds-fs-sm); font-weight: 500; }
+.hmp-empty p { max-width: 420px; margin: 0; font-size: var(--ds-fs-xs); line-height: 1.5; }
+.hmp-empty button, .hmp-create-actions button:last-child { display: flex; align-items: center; gap: 6px; min-height: 36px; margin-top: 6px; padding: 0 16px; border: 0; border-radius: var(--ds-r-full); background: var(--du-accent); color: var(--du-on-accent); font-size: var(--ds-fs-ui); font-weight: 600; }
 .hmp-empty button:hover, .hmp-create-actions button:last-child:hover, .hmp-footer button:not(:disabled):hover { background: var(--du-accent-hover); }
-.hmp-count { flex: 0 0 auto; padding: 7px 20px; color: var(--du-text-muted); font-size: .78rem; text-align: right; }
-.hmp-footer { display: flex; flex: 0 0 62px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-top: 1px solid var(--du-border); }
-.hmp-footer span { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--du-text-muted); font-size: .8rem; }
-.hmp-footer button { flex: 0 0 auto; min-height: 42px; padding: 9px 24px; border: 0; border-radius: var(--du-glass-radius-btn); background: var(--du-accent); color: var(--du-on-accent); font-weight: 700; }
+
+/* Footer: what is chosen on the left, "Select" on the right. */
+.hmp-footer { display: flex; flex: 0 0 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 0 8px; }
+.hmp-footer span { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--ds-text-3); font-size: var(--ds-fs-xs); }
+.hmp-footer button { flex: 0 0 auto; min-height: 36px; padding: 0 20px; border: 0; border-radius: var(--ds-r-full); background: var(--du-accent); color: var(--du-on-accent); font-size: var(--ds-fs-ui); font-weight: 600; }
 .hmp-footer button:disabled { opacity: .38; cursor: not-allowed; }
+.hmp-count { font-variant-numeric: tabular-nums; }
+.hmp-status { animation: du-fade-in var(--m-fast) var(--m-ease-out) both; }
+/* A loading indicator: motion.css keeps it turning under reduced motion. */
 .hmp-spin { animation: hmp-rotate 1s linear infinite; }
 @keyframes hmp-rotate { to { transform: rotate(360deg); } }
-.hmp-create { display: flex; flex-direction: column; gap: 13px; max-width: 480px; margin: 4px auto; }
-.hmp-create h3 { margin: 0; font-size: 1.2rem; }
-.hmp-create label { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; color: var(--du-text-muted); }
-.hmp-create input, .hmp-create select, .hmp-create textarea { width: 100%; min-height: 40px; padding: 9px; border: 1px solid var(--du-border-strong); border-radius: .6rem; background: var(--du-surface-2); color: var(--du-text); outline: none; }
-.hmp-create textarea { min-height: 70px; }
+.hmp-create { display: flex; flex-direction: column; gap: 13px; max-width: 420px; margin: 8px auto; }
+.hmp-create label { display: flex; flex-direction: column; gap: 6px; font-size: var(--ds-fs-xs); color: var(--ds-text-3); }
+.hmp-create input, .hmp-create select { width: 100%; min-height: 40px; padding: 9px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-md); background: var(--ds-fill-1); color: var(--du-text); outline: none; }
 .hmp-create-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.hmp-create-actions button:first-child { border: 0; background: transparent; color: var(--du-text-muted); }
-.hmp-dialog :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--du-accent-text); outline-offset: 2px; }
+.hmp-create-actions button:first-child { border: 0; background: transparent; color: var(--ds-text-3); }
+.hmp-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--du-accent-text); outline-offset: 2px; }
+.hmp-confirm-backdrop { position: absolute; z-index: 5; inset: 0; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--du-bg) 70%, transparent); }
+.hmp-confirm { width: min(420px, 100%); padding: 24px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-xl); background: var(--du-surface-2); box-shadow: var(--ds-shadow-2); }
+.hmp-confirm h2 { margin: 0 0 10px; color: var(--du-text); font-size: var(--ds-fs-lg); }
+.hmp-confirm p { margin: 0; color: var(--ds-text-2); font-size: var(--ds-fs-sm); line-height: 1.6; }
+.hmp-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.hmp-confirm-actions button { min-height: 36px; padding: 0 16px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-r-full); background: var(--ds-fill-2); color: var(--du-text); }
+.hmp-confirm-actions button.danger { border-color: var(--du-danger); background: var(--du-danger); color: var(--du-on-accent); }
+.hmp-confirm-actions button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 640px) {
   .hmp-backdrop { align-items: flex-end; padding: 0; }
-  .hmp-dialog { width: 100%; height: min(82vh, 700px); height: min(82dvh, 700px); border-radius: var(--du-glass-radius-card) var(--du-glass-radius-card) 0 0; }
-  .hmp-header { flex-basis: 56px; padding: 0 12px; }
-  .hmp-header nav { gap: 16px; }
-  .hmp-header nav button { font-size: .87rem; }
-  .hmp-toolbar { flex-basis: 50px; padding: 6px 12px; }
-  .hmp-toolbar button { min-height: 40px; }
-  .hmp-body { padding: 10px 12px; }
-  .hmp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-  .hmp-count { padding: 5px 12px; }
-  .hmp-footer { flex-basis: calc(60px + env(safe-area-inset-bottom, 0px)); padding: 0 12px env(safe-area-inset-bottom, 0px); }
+  /* On phones the picker is a bottom sheet, so it slides up and back down. */
+  .hmp-dialog[data-presence="dialog"] { --m-enter-offset: 0 100%; --m-enter-scale: 1; }
+  .hmp-dialog { width: 100%; height: min(82vh, 700px); height: min(82dvh, 700px); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); border-bottom: 0; border-radius: var(--ds-r-3xl) var(--ds-r-3xl) 0 0; }
+  .hmp-header { flex-basis: 40px; }
+  .hmp-header nav button, .hmp-close { height: 40px; }
+  .hmp-close { width: 40px; flex-basis: 40px; }
+  .hmp-toolbar { flex-basis: 48px; }
+  .hmp-toolbar button { height: 36px; }
+  .hmp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .hmp-footer { flex-basis: 52px; }
+  .hmp-footer button { min-height: 44px; }
 }
 @media (max-height: 620px) and (min-width: 641px) {
   .hmp-dialog { height: calc(100dvh - 24px); }
-  .hmp-header { flex-basis: 50px; }
-  .hmp-toolbar { flex-basis: 46px; }
-  .hmp-footer { flex-basis: 56px; }
 }
-@media (prefers-reduced-motion: reduce) { .hmp-spin { animation: none; } }
+
+/* The home composer opens the full media shelf. Other tools retain their compact picker. */
+@media (min-width: 768px) {
+  .hmp-backdrop[data-home-library] .hmp-dialog {
+    width: min(1200px, calc(100vw - 32px));
+    height: min(800px, calc(100dvh - 64px));
+    padding: 16px;
+    border-radius: var(--ds-r-xl);
+    gap: 12px;
+  }
+  .hmp-backdrop[data-home-library] .hmp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  }
+}
+.hmp-backdrop[data-mention] { background: transparent; padding: 0; }
+.hmp-backdrop[data-mention] .hmp-dialog {
+  position: fixed;
+  width: min(420px, calc(100vw - 24px));
+  height: min(400px, calc(100dvh - 24px));
+  padding: 8px;
+  border-radius: var(--ds-r-xl);
+  background: var(--du-surface-2);
+}
+.hmp-backdrop[data-mention] .hmp-header,
+.hmp-backdrop[data-mention] .hmp-shelf-title,
+.hmp-backdrop[data-mention] .hmp-footer button { display: none; }
+.hmp-backdrop[data-mention] .hmp-shelf { background: transparent; }
+.hmp-backdrop[data-mention] .hmp-footer:has(.hmp-count) { display: none; }
+.hmp-backdrop[data-mention] .hmp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hmp-preview-button,
+.hmp-preview-close {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-full);
+  background: var(--du-surface-2);
+  color: var(--du-text);
+}
+.hmp-preview-button {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+}
+.hmp-card-wrap:is(:hover, :focus-within) .hmp-preview-button { opacity: 1; }
+@media (hover: none) { .hmp-preview-button { opacity: 1; } }
+.hmp-preview {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  color: var(--du-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px 12px;
+  background: var(--du-bg);
+}
+.hmp-preview-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; }
+.hmp-preview :is(img, video) { min-height: 0; max-height: calc(100% - 2rem); max-width: 100%; object-fit: contain; }
+.hmp-preview p { font-size: var(--ds-fs-ui); overflow-wrap: anywhere; }

@@ -166,7 +166,7 @@ const STEPS = [
 
 function DemoChip() {
   return (
-    <span className="absolute left-2 top-2 rounded bg-[var(--du-surface)] px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-[var(--du-text)]">
+    <span className="absolute left-2 top-2 rounded bg-[var(--du-surface)] px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-[var(--du-text)]">
       DEMO
     </span>
   );
@@ -174,7 +174,7 @@ function DemoChip() {
 
 function SoonChip() {
   return (
-    <span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-text-muted)]">
+    <span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[11px] font-semibold uppercase text-[var(--du-text-muted)]">
       Soon
     </span>
   );
@@ -282,7 +282,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
               <>
                 <div className="flex items-start justify-between">
                   <Icon className="h-5 w-5 text-[var(--du-accent-text)]" />
-                  <span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-text-muted)]">
+                  <span className="rounded-md bg-[var(--du-surface-2)] px-1.5 py-0.5 text-[11px] font-semibold uppercase text-[var(--du-text-muted)]">
                     {tool.tag}
                   </span>
                 </div>
@@ -291,7 +291,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
                     {tool.title}
                   </h3>
                   {tool.chip ? (
-                    <span className="rounded-md bg-[var(--du-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--du-on-accent)]">
+                    <span className="rounded-md bg-[var(--du-accent)] px-1.5 py-0.5 text-[11px] font-semibold uppercase text-[var(--du-on-accent)]">
                       {tool.chip}
                     </span>
                   ) : null}
@@ -365,7 +365,7 @@ export function HfExploreHome({ lang }: { lang: string }) {
               key={step.title}
               className="rounded-[16px] bg-[var(--du-surface)] p-4"
             >
-              <span className="font-mono text-[10px] font-semibold uppercase text-[var(--du-accent-text)]">
+              <span className="font-mono text-[11px] font-semibold uppercase text-[var(--du-accent-text)]">
                 {`0${index + 1}`}
               </span>
               <h3 className="mt-2 text-sm font-semibold text-[var(--du-text)]">

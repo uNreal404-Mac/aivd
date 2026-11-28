@@ -1,41 +1,56 @@
 :root {
-  --du-bg: #000000;
-  --du-bg-elev: #0B0C10;
-  --du-surface: #0B0C10;
-  --du-surface-2: #1F2833;
-  --du-border: rgba(31, 40, 51, 0.9);
-  --du-border-strong: #45A29E;
-  --du-text: #C5C6C7;
-  --du-text-muted: rgba(197, 198, 199, 0.78);
-  --du-text-dim: #45A29E;
-  --du-accent: #66FCF1;
-  --du-accent-hover: #45A29E;
-  --du-accent-soft: rgba(102, 252, 241, 0.12);
-  --du-accent-text: #66FCF1;
-  --du-accent-2: #45A29E;
-  --du-gradient: #66FCF1;
-  --du-glow: 0 0 28px rgba(102, 252, 241, 0.24);
-  --du-on-accent: #000000;
-  --du-success: #66FCF1;
-  --du-danger: #C5C6C7;
-  --du-warning: #45A29E;
+  /* Palette (docs/design-audit/DESIGN.md). Layers step up in clear
+     increments from the page, so depth comes from the surfaces themselves
+     rather than from shadows and blur. One accent, the logo cyan, used flat. */
+  --du-bg: #0d0e11;
+  --du-bg-elev: #131418;
+  --du-surface: #17191d;
+  --du-surface-2: #1e2025;
+  --du-border: rgba(255, 255, 255, 0.07);
+  --du-border-strong: rgba(255, 255, 255, 0.13);
+  --du-text: #f5f5f7;
+  --du-text-muted: rgba(245, 245, 247, 0.7);
+  --du-text-dim: rgba(245, 245, 247, 0.5);
+  --du-accent: #1de8f0;
+  --du-accent-hover: #53f3f8;
+  --du-accent-soft: rgba(29, 232, 240, 0.1);
+  --du-accent-text: #29cff4;
+  --du-accent-2: #29cff4;
+  /* Kept as names so existing styles still resolve: the accent is flat now,
+     and an accent button gets a pressed-in lower edge instead of a glow. */
+  --du-gradient: linear-gradient(var(--du-accent), var(--du-accent));
+  --du-glow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+  --du-on-accent: #04070a;
+  --du-success: #34d399;
+  --du-danger: #f87171;
+  --du-warning: #fbbf24;
 
-  /* Frosted glass (Apple-style) */
-  --du-glass-blur: 24px;
-  --du-glass-saturate: 160%;
-  --du-glass-bg: rgba(11, 12, 16, 0.84);
-  --du-glass-bg-hover: rgba(31, 40, 51, 0.92);
-  --du-glass-bg-strong: rgba(31, 40, 51, 0.88);
-  --du-glass-border: #1F2833;
-  --du-glass-border-hover: #45A29E;
-  --du-glass-highlight: inset 0 1px 0 rgba(69, 162, 158, 0.32);
-  --du-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.46);
+  /* Frosted Obsidian Glass (Specular Rim + Deep Ambient Shadow) */
+  --du-glass-blur: 20px;
+  --du-glass-saturate: 140%;
+  --du-glass-bg: rgba(19, 20, 24, 0.82);
+  --du-glass-bg-hover: rgba(30, 32, 37, 0.9);
+  --du-glass-bg-strong: rgba(23, 25, 29, 0.94);
+  --du-glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
+  --du-glass-border: rgba(255, 255, 255, 0.075);
+  --du-glass-border-hover: rgba(255, 255, 255, 0.16);
+  --du-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --du-glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   --du-glass-radius-card: 20px;
   --du-glass-radius-btn: 12px;
   --du-glass-radius-round: 9999px;
-  --du-glass-fallback-bg: #0B0C10;
-  --du-glass-text: #C5C6C7;
-  --du-glass-overlay-scrim: rgba(0, 0, 0, 0.64);
+  --du-glass-fallback-bg: #111116;
+  --du-glass-text: #f5f5f7;
+  --du-glass-overlay-scrim: rgba(7, 7, 9, 0.72);
+
+  /* Pricing tier visual accents (used on /pricing) */
+  --du-tier-pro-from: var(--du-accent);
+  --du-tier-pro-to: var(--du-accent);
+  --du-tier-pro-glow: transparent;
+  --du-tier-ultimate: #f5b841;
+  --du-save-bg: rgba(16, 185, 129, 0.16);
+  --du-save-text: #34d399;
+  --du-badge-hot: #f43f5e;
 }
 
 .du-glass {
@@ -58,7 +73,7 @@
   border-radius: var(--du-glass-radius-btn);
   box-shadow: var(--du-glass-highlight);
   color: var(--du-glass-text);
-  transition: background 0.2s, border-color 0.2s;
+  transition: background var(--m-fast), border-color var(--m-fast);
 }
 
 .du-glass-btn:hover {
@@ -96,4 +111,14 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
+}
+
+/* Canvas node marker colours, paired with the semantic red, yellow and green. */
+.nc-shell { --du-pin-blue: #609af4; --du-pin-purple: #ac7ae8; }
+
+/* The homepage uses the same brand palette as its portals and the studios. */
+.du-hero {
+  --du-agent-shadow: #0006;
+  --du-agent-scrim: rgb(0 0 0 / .93);
+  --du-agent-close-bg: #141418cc;
 }

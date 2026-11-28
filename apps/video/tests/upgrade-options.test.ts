@@ -20,7 +20,7 @@ describe("upgrade dialog rows", () => {
   it("yearly rows: the price over 12 months to one decimal, the monthly price struck, the real charge kept", () => {
     const rows = upgradeOptions("year");
     expect(rows.map((row) => row.tier)).toEqual(["basic", "pro", "ultimate"]);
-    expect(rows.map((row) => row.perMonthUsd)).toEqual([7.9, 23.9, 68.9]);
+    expect(rows.map((row) => row.perMonthUsd)).toEqual([6.9, 20.9, 55.9]);
     for (const row of rows) {
       const yearly = product(row.tier!, "year");
       const monthly = product(row.tier!, "month");
@@ -34,9 +34,9 @@ describe("upgrade dialog rows", () => {
     }
   });
 
-  it("yearly saving: 20% on Basic and Pro, less on Ultimate, and the tab badge quotes the largest", () => {
-    expect(upgradeOptions("year").map((row) => row.savingPercent)).toEqual([20, 20, 14]);
-    expect(maxYearlySavingPercent()).toBe(20);
+  it("yearly saving: unified 30% off across all tiers, and the tab badge quotes the largest", () => {
+    expect(upgradeOptions("year").map((row) => row.savingPercent)).toEqual([30, 30, 30]);
+    expect(maxYearlySavingPercent()).toBe(30);
     expect(upgradeOptions("month").every((row) => row.savingPercent === 0 && row.wasPerMonthUsd === null)).toBe(true);
   });
 
@@ -49,7 +49,7 @@ describe("upgrade dialog rows", () => {
       expect(row.chargedTodayUsd).toBe(monthly.priceUsd);
       expect(row.firstMonthUsd).toBe(FIRST_MONTH_OFFER.enabled && row.tier === FIRST_MONTH_OFFER.tier ? FIRST_MONTH_OFFER.priceUsd : null);
     }
-    expect(rows.find((row) => row.tier === "pro")!.firstMonthUsd).toBe(19.9);
+    expect(rows.find((row) => row.tier === "pro")!.firstMonthUsd).toBe(20.9);
   });
 
   it("plan rows carry the tier's perks and Pro is the popular one", () => {

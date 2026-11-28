@@ -383,7 +383,7 @@
     "signin_subtitle": "一个账户，视频、图片和音频都能生成",
     "privacy": "继续即表示您同意我们的服务条款和隐私政策。",
     "continue_google": "使用 Google 继续",
-    "continue_email": "使用邮箱继续",
+    "continue_email": "发送登录链接",
     "or_continue_with": "或使用以下方式继续",
     "email_placeholder": "name@example.com",
     "terms_notice": "继续即表示您同意我们的服务条款和隐私政策。",
@@ -482,7 +482,7 @@
   },
   "dashboard": {
     "myCreations": {
-      "title": "我的创作",
+      "title": "我的作品",
       "tabs": {
         "all": "全部",
         "queued": "排队中",
@@ -528,21 +528,71 @@
         "retry": "重试",
         "viewDetails": "查看详情",
         "downloadSuccess": "开始下载",
-        "downloadError": "下载失败",
-        "deleteSuccess": "删除成功",
-        "deleteError": "删除失败",
+        "downloadError": "下载失败，请重试",
+        "downloadErrorOpen": "仍然无法直接下载，请在新标签页打开后保存",
+        "downloading": "下载中…",
+        "downloaded": "已下载",
+        "openFile": "在新标签页打开",
+        "confirmDelete": "确认删除",
+        "regenerate": "用这个提示词再生成",
+        "undoDelete": "撤销",
+        "restored": "作品已恢复",
+        "restoreError": "恢复失败，请重试",
+        "restoring": "正在恢复作品…",
+        "deleting": "正在删除作品…",
+        "undoExpired": "这次撤销已失效",
+        "deleteSuccess": "已删除",
+        "deleteError": "删除失败，请重试",
         "retrySuccess": "已开始重试",
         "retryError": "重试失败"
       },
       "empty": {
-        "title": "暂无创作",
-        "description": "您生成的视频将显示在这里",
+        "title": "还没有作品",
+        "description": "生成的视频、图片和音频都会出现在这里",
         "cta": "开始创作",
-        "ctaStart": "开始创作"
+        "ctaStart": "开始创作",
+        "video": {
+          "title": "还没有视频",
+          "description": "生成的视频会出现在这里",
+          "cta": "去生成视频"
+        },
+        "image": {
+          "title": "还没有图片",
+          "description": "生成的图片会出现在这里",
+          "cta": "去生成图片"
+        },
+        "audio": {
+          "title": "还没有音频",
+          "description": "生成的音频会出现在这里",
+          "cta": "去生成音频"
+        },
+        "filtered": {
+          "queued": "没有排队中的{kind}",
+          "generating": "没有正在生成的{kind}",
+          "done": "还没有已完成的{kind}",
+          "failed": "没有失败的{kind}",
+          "description": "换个筛选条件看看，或查看全部{kind}",
+          "showAll": "查看全部"
+        }
+      },
+      "kindNoun": {
+        "video": "视频",
+        "image": "图片",
+        "audio": "音频"
+      },
+      "processing": {
+        "title": "正在生成…",
+        "queuedTitle": "排队中…",
+        "hint": "完成后会自动显示在这里，不用刷新页面"
+      },
+      "credits": "{count} 积分",
+      "loadError": {
+        "title": "作品暂时没加载出来",
+        "description": "可能是网络不稳定，点下面的按钮重试"
       },
       "deleteConfirm": {
-        "title": "删除视频？",
-        "message": "此操作无法撤销。",
+        "title": "删除这个作品？",
+        "message": "再次点击确认。删除后可在提示中撤销。",
         "confirm": "删除",
         "cancel": "取消"
       },
@@ -552,7 +602,8 @@
         "aspectRatio": "宽高比",
         "prompt": "提示词",
         "createdAt": "创建时间",
-        "creditsUsed": "消耗积分"
+        "creditsUsed": "消耗积分",
+        "cost": "消耗"
       }
     },
     "credits": {
@@ -660,7 +711,7 @@
     "comingSoonSection": "即将上线",
     "details": {
       "bytedance_seedance_2_5": "文字 · 图片 · 多模态",
-      "bytedance_seedance_2_5_draft": "需先生成草稿任务",
+      "bytedance_seedance_2_5_draft": "低价 480p 草稿",
       "bytedance_seedance_2": "文字 · 图片",
       "bytedance_seedance_2_fast": "快速生成",
       "bytedance_seedance_2_mini": "快速生成",
@@ -683,6 +734,7 @@
       "gemini_omni_flash_1_2": "多模态视频 · 最高 4K",
       "grok_imagine_1_5": "图片生成视频 · 有声",
       "happyhorse_1_1": "文字/图片生成视频",
+      "magi_2": "文字/图片/参考 · 有声",
       "grok_imagine_image_2_0_text_to_image": "文字生成图片",
       "flux3_klein_text_to_image": "文字生成图片",
       "flux2_pro_text_to_image": "文字生成图片",
@@ -697,10 +749,39 @@
       "seedream_5_5": "文字/图片生成图片",
       "gpt_image_2_6_sunburst": "文字/图片生成图片",
       "gpt_image_2_6_flare": "文字/图片生成图片",
+      "gpt_image_2": "文字/图片生成图片",
       "nano_banana_2_1": "文字/图片生成图片",
       "nano_banana_pro": "最高 4K",
       "kling_image_4": "最高 8K · 最多 9 张图",
-      "minimax_h3_image": "文字/图片生成图片"
+      "minimax_h3_image": "文字/图片生成图片",
+      "bytedance_v1_pro_text_to_video": "文字/图片生成视频",
+      "bytedance_v1_pro_fast_image_to_video": "图片生成视频",
+      "wan_2_7_text_to_video": "文字/图片生成视频",
+      "wan_2_5_text_to_video": "文字/图片生成视频",
+      "wan_2_6_flash_image_to_video": "图片生成视频",
+      "kling_v3_turbo_text_to_video": "文字/图片生成视频",
+      "kling_v3_omni_text_to_video": "文字/图片/参考图生成视频",
+      "kling_text_to_video": "文字/图片生成视频",
+      "kling_v25_turbo_text_to_video_pro": "文字/图片生成视频",
+      "hailuo_2_3_image_to_video_pro": "图片生成视频",
+      "hailuo_2_3_image_to_video_standard": "图片生成视频",
+      "vidu_q4_image_to_video": "图片/参考图生成视频",
+      "pixverse_text_to_video": "文字/图片生成视频",
+      "wan_2_2_a14b_text_to_video_turbo": "文字/图片生成视频",
+      "gemini_omni_video": "文字/图片生成视频",
+      "kling_4_0_long_image": "文字/图片生成图片",
+      "gpt_gpt_image_2_5_sunburst_text_to_image": "文字/图片生成图片",
+      "gpt_gpt_image_2_5_flare_text_to_image": "文字/图片生成图片",
+      "gpt_image_1_5_text_to_image": "文字/图片生成图片",
+      "seedream_5_lite_text_to_image": "文字/图片生成图片",
+      "seedream_4_5_text_to_image": "文字/图片生成图片",
+      "seedream_seedream_v4_text_to_image": "文字/图片生成图片",
+      "google_nanobanana2": "文字/图片生成图片",
+      "google_nano_banana_2_lite": "文字/图片生成图片",
+      "qwen3_pro_text_to_image": "文字/图片生成图片",
+      "wan_2_7_image": "文字/图片生成图片",
+      "wan_2_7_image_pro": "文字/图片生成图片",
+      "grok_imagine_text_to_image": "文字/图片生成图片"
     }
   }
 }

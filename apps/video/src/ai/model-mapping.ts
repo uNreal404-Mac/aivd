@@ -237,6 +237,12 @@ function kieParamsTransformer(
     baseInput.resolution =
       normalizeQuality(params.quality, "kie", internalModelId) || "1080p";
     baseInput.multi_shots = params.multiShots || false;
+    if (params.videoUrls?.length) {
+      baseInput.video_urls = params.videoUrls;
+      // This mode takes its subject from clips, and exposes no aspect-ratio or watermark control.
+      delete baseInput.aspect_ratio;
+      delete baseInput.remove_watermark;
+    }
   }
 
   // Veo 3.1 specific parameters

@@ -1,3 +1,6 @@
+import { VOICE_LANGUAGES } from "@/lib/audio-voice-settings";
+import { generationRequestKey, readGenerationReplay } from "@/lib/api/generation-replay";
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -23,19 +26,39 @@ const schema = z.object({
   imageUrls: z.array(imageRefSchema).max(16).optional(),
   voice: z.string().max(64).optional(),
   style: z.string().max(1000).optional(),
+  instrumental: z.boolean().optional(),
+  customMode: z.boolean().optional(),
+  voiceSettings: z.object({
+    stability: z.number().min(0).max(1).optional(),
+    similarity: z.number().min(0).max(1).optional(),
+    expression: z.number().min(0).max(1).optional(),
+    language: z.enum(VOICE_LANGUAGES).optional(),
+  }).strict().optional(),
+  speed: z.number().min(0.7).max(1.2).optional(),
   idempotencyKey: z.string().max(200).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
+
+    const parsed = schema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      const tooLong = parsed.error.issues.some((issue) => issue.path[0] === "prompt" && issue.code === "too_big");
+      return apiError(tooLong ? "The prompt is too long: 5,000 characters at most." : "The request is not valid.", 400, {
+        code: tooLong ? "PROMPT_TOO_LONG" : "INVALID_REQUEST",
+      });
+    }
+    const data = parsed.data;
+    const idempotencyKey = generationRequestKey(request, data.idempotencyKey);
+    const replay = await readGenerationReplay(user.id, idempotencyKey);
+    if (replay) return apiSuccess(replay);
     if (!canGenerateInPreview(user)) {
       return apiError("Generation is coming soon on this preview. No credits were used.", 503, {
         code: "GENERATION_DISABLED",
       });
     }
-
-    const data = schema.parse(await request.json());
     const model = getMarketModel(data.model);
     if (!model || model.kind === "video") {
       return apiError("Unsupported model", 400, { code: "UNSUPPORTED_MODEL" });
@@ -62,7 +85,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const headerKey = request.headers.get("Idempotency-Key");
     const result = await videoService.generateMedia({
       userId: user.id,
       model: model.id,
@@ -73,7 +95,11 @@ export async function POST(request: NextRequest) {
       imageUrls,
       voice: data.voice,
       style: data.style,
-      idempotencyKey: headerKey ? headerKey.slice(0, 200) : data.idempotencyKey,
+      instrumental: data.instrumental,
+      customMode: data.customMode,
+      speed: data.speed,
+      voiceSettings: data.voiceSettings,
+      idempotencyKey,
     });
     return apiSuccess(result);
   } catch (error) {

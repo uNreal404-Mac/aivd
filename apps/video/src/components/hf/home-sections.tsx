@@ -50,7 +50,7 @@ export function HfHomeSections({ lang }: { lang: string }) {
           style={{ background: "var(--hfh-glow-b)" }}
         />
         <div className="relative flex flex-col items-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--hfh-accent)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--hfh-accent-text)]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--hfh-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--hfh-accent-text)]">
             <Sparkles className="h-3 w-3" aria-hidden="true" />
             Try free
           </span>
@@ -147,7 +147,7 @@ export function HfHomeSections({ lang }: { lang: string }) {
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0 bg-[var(--hfh-overlay)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
                   />
-                  <span className="absolute left-3 top-3 rounded-full bg-[var(--hfh-accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--hfh-accent)]">
+                  <span className="absolute left-3 top-3 rounded-full bg-[var(--hfh-accent-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--hfh-accent)]">
                     Preset
                   </span>
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--hfh-accent)] px-3 py-1 text-[11px] font-semibold text-[var(--hfh-accent-text)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -182,7 +182,7 @@ export function HfHomeSections({ lang }: { lang: string }) {
           style={{ background: gradientFor(2) }}
         />
         <div>
-          <span className="inline-flex rounded-full bg-[var(--hfh-accent)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--hfh-accent-text)]">
+          <span className="inline-flex rounded-full bg-[var(--hfh-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--hfh-accent-text)]">
             New model
           </span>
           <h2

@@ -1,0 +1,266 @@
+/* My creations: card actions, two-step delete, in-progress tiles and the
+   motion of cards and the viewer. Layout and colours live in
+   styles/creations-tokens.css, which loads after this file, so rules here
+   that change one of its properties are scoped under .cr-library. Timings
+   and curves come from styles/motion.css. */
+
+/* ---------- Cards arrive and leave ---------- */
+
+.cr-card,
+.cr-row,
+.cr-empty-in {
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+@keyframes cr-leave {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* A deleted card shrinks away before it is taken out of the list. */
+.cr-card[data-leaving],
+.cr-row[data-leaving] {
+  animation: cr-leave var(--m-fast) var(--m-ease-exit) both;
+  pointer-events: none;
+}
+
+/* ---------- Grid card: open area and hover tools ---------- */
+
+.cr-card {
+  position: relative;
+}
+
+.cr-card-open {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cr-settings-summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--cr-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cr-card-open:focus-visible {
+  outline: none;
+}
+
+.cr-card:has(> .cr-card-open:focus-visible) {
+  outline: 2px solid var(--cr-accent);
+  outline-offset: 2px;
+}
+
+/* Over the picture's top right corner; shown on hover or keyboard focus. */
+.cr-card-tools {
+  position: absolute;
+  top: calc(12px + var(--ds-space-2));
+  right: calc(12px + var(--ds-space-2));
+  display: flex;
+  gap: var(--ds-space-1);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.cr-card:hover .cr-card-tools,
+.cr-card:focus-within .cr-card-tools,
+.cr-card-tools:has([data-armed]),
+.cr-card-tools:has([data-state="busy"]),
+.cr-card-tools:has([data-state="done"]) {
+  opacity: 1;
+  transform: none;
+}
+
+/* On touch screens the viewer holds these actions; a tap opens it. */
+@media (hover: none) {
+  .cr-card-tools {
+    display: none;
+  }
+}
+
+.cr-tool {
+  display: inline-flex;
+  height: 30px;
+  min-width: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-1);
+  padding: 0 var(--ds-space-2);
+  border: 1px solid var(--ds-fill-2);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
+  color: var(--cr-text);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.cr-tool:hover {
+  background: color-mix(in srgb, var(--du-bg) 88%, transparent);
+  border-color: var(--ds-fill-3);
+}
+
+.cr-tool svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ---------- Buttons press in, as everywhere on the site ---------- */
+
+.cr-library .cr-button,
+.cr-library .cr-cta {
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    opacity var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.cr-library .cr-button:active:not(:disabled),
+.cr-library .cr-cta:active,
+.cr-tool:active {
+  transform: scale(0.97);
+}
+
+.cr-row-actions .cr-button svg,
+.cr-library .cr-cta svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.cr-library .cr-cta[aria-busy="true"] {
+  cursor: progress;
+}
+
+.cr-library .cr-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+.cr-library .cr-button[data-state="done"] svg,
+.cr-tool[data-state="done"] svg {
+  color: var(--du-success);
+}
+
+/* ---------- Delete: quiet until pressed, red while it asks ---------- */
+
+.cr-library .cr-del:hover {
+  border-color: color-mix(in srgb, var(--du-danger) 50%, transparent);
+  color: var(--du-danger);
+}
+
+/* In the viewer, delete sits apart from the main actions. */
+.cr-detail-danger {
+  display: flex;
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid var(--cr-border);
+}
+
+.cr-library .cr-del--detail {
+  width: 100%;
+  height: 38px;
+  border-color: color-mix(in srgb, var(--du-danger) 35%, transparent);
+  background: transparent;
+  color: var(--du-danger);
+}
+
+.cr-library .cr-del--detail:hover {
+  background: color-mix(in srgb, var(--du-danger) 10%, transparent);
+}
+
+.cr-del--detail svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Armed: the one red, filled state, whatever the button looked like before. */
+.cr-library .cr-del[data-armed],
+.cr-library .cr-del[data-armed]:hover {
+  border-color: var(--du-danger);
+  background: var(--du-danger);
+  color: var(--du-bg);
+}
+
+/* ---------- Still generating ---------- */
+
+.cr-thumb-pending {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--cr-generating) 6%, var(--cr-surface-raised));
+  color: var(--cr-text-muted);
+  font-size: var(--ds-fs-xs);
+}
+
+.cr-thumb-pending svg {
+  width: 20px;
+  height: 20px;
+  color: var(--cr-generating);
+}
+
+.cr-detail-pending {
+  display: flex;
+  max-width: 320px;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  color: var(--cr-text-muted);
+  font-size: var(--ds-fs-sm);
+  text-align: center;
+}
+
+.cr-detail-pending strong {
+  color: var(--cr-text);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.cr-detail-pending svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: var(--ds-space-1);
+  color: var(--cr-generating);
+}
+
+/* ---------- Viewer backdrop follows the dialog in and out ---------- */
+
+.cr-dialog::backdrop {
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+.cr-dialog[data-state="closed"]::backdrop {
+  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
+}

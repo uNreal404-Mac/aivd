@@ -1,22 +1,51 @@
-/* Homepage layout. Colours come from theme tokens only. */
+/* Homepage Hero — Jimeng 6.2:1 Wide Slate Proportion × Pollo Soft Diffused Studio Aura. */
 
 .du-hero {
   position: relative;
-  padding: 64px 24px 32px;
+  overflow-x: clip;
+  padding: 52px 24px 44px;
 }
 
-/* One soft glow behind the top of the page, as on the reference layout. */
+/* One single ultra-soft diffused Logo cyan-blue studio mist behind tabs & composer (Pollo lighting). */
 .du-hero-glow {
   position: absolute;
-  inset: -80px 0 auto 0;
+  inset: -64px 0 auto;
   height: 900px;
-  background: radial-gradient(
-    585px 585px at 50% 18%,
-    color-mix(in srgb, var(--du-accent) 20%, transparent) 0%,
-    color-mix(in srgb, var(--du-accent) 9%, transparent) 47%,
-    transparent 100%
-  );
+  /* A wide soft light behind the title and composer, and a faint 11px dot
+     grid over it, fading out towards the gallery (Pollo's backdrop). */
+  background:
+    radial-gradient(585px 585px at 50% 18%, color-mix(in srgb, var(--du-accent) 20%, transparent) 0%, color-mix(in srgb, var(--du-accent) 9%, transparent) 47%, transparent 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='1' height='1' fill='white' fill-opacity='.22'/%3E%3C/svg%3E");
+  mask-image: linear-gradient(to bottom, black 35%, transparent 92%);
   pointer-events: none;
+}
+
+/* The dots and soft cyan light brighten around the pointer, like a responsive
+   field rather than a static image. The base pattern stays visible at rest. */
+.du-hero-glow::before,
+.du-hero-glow::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.du-hero-glow::before {
+  background: radial-gradient(circle 360px at var(--du-pointer-x, 50%) var(--du-pointer-y, 38%), color-mix(in srgb, var(--du-accent) 19%, transparent), transparent 76%);
+}
+
+.du-hero-glow::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Crect width='2' height='2' fill='white' fill-opacity='.7'/%3E%3C/svg%3E");
+  mask-image: radial-gradient(circle 280px at var(--du-pointer-x, 50%) var(--du-pointer-y, 38%), black 4%, transparent 92%);
+}
+
+.du-hero-glow[data-pointer]::before,
+.du-hero-glow[data-pointer]::after { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .du-hero-glow::before,
+  .du-hero-glow::after { transition: none; }
 }
 
 .du-hero-inner {
@@ -25,69 +54,9 @@
   flex-direction: column;
   align-items: center;
   margin: 0 auto;
-  max-width: 1280px;
+  width: 100%;
+  max-width: 1120px;
   text-align: center;
-}
-
-/* Give the homepage composer the wider, flatter proportions of the hero layout. */
-.du-hero #home-generator {
-  max-width: 1200px;
-}
-
-.du-hero .du-composer {
-  margin-top: 22px;
-  padding: 14px 16px 12px;
-}
-
-.du-hero .du-composer-prompt-row {
-  min-height: 68px;
-}
-
-.du-hero #home-generator-prompt {
-  min-height: 60px;
-}
-
-.du-hero .du-composer-suggestions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px 8px;
-  margin-top: 10px;
-  padding-top: 8px;
-}
-
-.du-hero .du-composer-suggestions > div:first-child {
-  grid-column: 1 / -1;
-}
-
-.du-hero .du-composer-suggestion {
-  min-width: 0;
-  padding-top: 3px;
-  padding-bottom: 3px;
-}
-
-@media (max-width: 900px) {
-  .du-hero .du-composer-suggestions {
-    display: flex;
-  }
-}
-
-@media (max-width: 600px) {
-  .du-hero {
-    padding: 44px 16px 28px;
-  }
-
-  .du-hero .du-composer {
-    margin-top: 18px;
-    padding: 14px 14px 12px;
-  }
-
-  .du-hero .du-composer-prompt-row {
-    min-height: 72px;
-  }
-
-  .du-hero #home-generator-prompt {
-    min-height: 96px;
-  }
 }
 
 .du-hero-title {
@@ -110,7 +79,303 @@
   text-wrap: balance;
 }
 
+/* Composer at Jimeng's proportions (1010 x 158 at a 1440 window, about
+   6.4 : 1) and can still be resized within the content column. */
+.du-hero #home-generator {
+  width: min(100%, var(--du-editor-width, 1010px));
+  max-width: 1200px;
+}
+
+/* Tabs: a 40px pill with a gradient hairline that brightens into the accent
+   along its bottom, 56 x 32 tabs of light 12px text, and the chosen one on a
+   faint fill with an inner light (hooks/use-segment-indicator). */
+.du-hero .du-composer-tabs {
+  --seg-bg: color-mix(in srgb, white 7%, transparent);
+  --seg-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
+    inset 4px 4px 5px color-mix(in srgb, black 8%, transparent),
+    inset 0 -3px 8px color-mix(in srgb, var(--du-accent) 22%, transparent);
+  position: relative;
+  height: 40px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--du-accent) 70%, transparent);
+  backdrop-filter: none;
+}
+
+.du-hero .du-composer-tabs::after {
+  position: absolute;
+  inset: 0;
+  padding: 0.8px;
+  border-radius: inherit;
+  background: linear-gradient(177deg, color-mix(in srgb, white 30%, transparent) 0%, color-mix(in srgb, var(--du-accent) 20%, transparent) 36%, color-mix(in srgb, var(--du-accent) 12%, transparent) 45%, color-mix(in srgb, var(--du-accent) 20%, transparent) 48%, var(--du-accent) 91%, var(--du-accent-2) 100%);
+  content: "";
+  mask: linear-gradient(black 0 0) content-box exclude, linear-gradient(black 0 0);
+  pointer-events: none;
+}
+
+.du-hero .du-composer-tab {
+  display: inline-flex;
+  min-width: 56px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: 300;
+}
+
+.du-hero .du-composer-tab-active,
+.du-hero .du-composer-tab-active:hover {
+  color: white;
+  font-weight: 300;
+}
+
+.du-hero .du-composer {
+  position: relative;
+  display: flex;
+  min-height: var(--du-editor-height, 158px);
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, white 4%, transparent);
+  border-radius: var(--ds-r-3xl);
+  background: color-mix(in srgb, black 66%, transparent);
+  box-shadow:
+    0 -4px 8px color-mix(in srgb, var(--du-accent) 8%, transparent),
+    0 -12px 42px color-mix(in srgb, var(--du-accent) 20%, transparent);
+  backdrop-filter: blur(17px);
+  -webkit-backdrop-filter: blur(17px);
+}
+
+/* The light caught along the top edge: a bright hairline in the middle and a
+   soft glow falling a little way into the box. */
+.du-hero .du-composer::before,
+.du-hero .du-composer::after {
+  position: absolute;
+  left: 50%;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.du-hero .du-composer::before {
+  top: -1px;
+  width: 94%;
+  height: 40px;
+  background: radial-gradient(50% 100% at 50% 0%, color-mix(in srgb, var(--du-accent) 30%, transparent) 0%, transparent 75%);
+}
+
+.du-hero .du-composer::after {
+  top: -1px;
+  width: 84%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--du-accent) 65%, white) 50%, transparent);
+}
+
+.du-hero .du-composer:focus-within {
+  border-color: color-mix(in srgb, white 7%, transparent);
+}
+
+.du-hero .du-composer-prompt-row {
+  min-height: 84px;
+  gap: 16px;
+}
+
+.du-hero #home-generator-prompt {
+  min-height: 84px;
+  padding: 0;
+  font-size: var(--ds-fs-ui);
+  font-weight: 300;
+  line-height: 20px;
+}
+
+.du-hero .du-composer-placeholder {
+  top: 0;
+  color: color-mix(in srgb, white 25%, transparent);
+  font-size: var(--ds-fs-ui);
+  font-weight: 300;
+  line-height: 20px;
+}
+
+/* Reference slot: a 39 x 52 dashed card with a plus. */
+.du-hero .du-composer-ref-slot {
+  width: 39px;
+  height: 52px;
+  margin-top: 0;
+  border: 1px dashed color-mix(in srgb, white 16%, transparent);
+  border-radius: var(--ds-r-sm);
+  background: color-mix(in srgb, white 5%, transparent);
+  color: color-mix(in srgb, white 40%, transparent);
+  transform: none;
+}
+
+.du-hero .du-composer-ref-slot:hover {
+  border-color: color-mix(in srgb, white 30%, transparent);
+  background: var(--ds-fill-2);
+  color: white;
+  transform: none;
+}
+
+.du-hero .du-composer-ref-label {
+  font-size: var(--ds-fs-2xs);
+}
+
+/* Bottom row: the mode pill on a fill, then quiet 28px controls split by
+   10px hairlines; credits and the send circle on the right. */
+.du-hero .du-composer-bar {
+  margin-top: 0;
+}
+
+/* Only the bar's own controls: popovers opened from it (model list,
+   settings, mode menu) keep their own row heights. */
+.du-hero .du-composer-mode,
+.du-hero .du-composer-bar [data-model-trigger],
+.du-hero .du-composer-bar > button,
+.du-hero .du-composer-bar > div:not(.du-composer-model, .ml-auto) > button:not(.du-composer-mode) {
+  height: 28px;
+  min-height: 28px;
+  gap: 4px;
+  padding: 0 12px;
+  border-radius: var(--ds-r-full);
+  background: transparent;
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: var(--ds-fs-ui);
+  font-weight: 300;
+}
+
+.du-hero .du-composer-mode {
+  display: inline-flex;
+  align-items: center;
+  background: color-mix(in srgb, white 5%, transparent);
+  color: var(--du-text);
+  white-space: nowrap;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-hero .du-composer-mode:hover,
+.du-hero .du-composer-mode[aria-expanded="true"] {
+  background: var(--ds-fill-2);
+  color: white;
+}
+
+.du-hero .du-composer-bar [data-model-trigger] span {
+  color: inherit;
+}
+
+.du-hero .du-composer-bar [data-model-trigger]:hover,
+.du-hero .du-composer-bar > button:hover,
+.du-hero .du-composer-bar > div:not(.du-composer-model, .ml-auto) > button:not(.du-composer-mode):hover {
+  background: color-mix(in srgb, white 5%, transparent);
+  color: white;
+}
+
+.du-hero .du-composer-divider {
+  display: block;
+  width: 1px;
+  height: 10px;
+  flex-shrink: 0;
+  margin: 0 2px;
+  background: color-mix(in srgb, white 16%, transparent);
+}
+
+.du-hero .du-composer-settings .du-composer-divider {
+  margin: 0 8px;
+}
+
+.du-hero .du-composer-cost {
+  height: 28px;
+  gap: 4px;
+  padding: 0 6px;
+  color: color-mix(in srgb, white 40%, transparent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+}
+
+/* Send: a quiet 32px circle until there is something to send. */
+.du-hero .du-composer-send {
+  width: 32px;
+  height: 32px;
+  background: color-mix(in srgb, white 4%, transparent);
+  box-shadow: none;
+  color: color-mix(in srgb, white 25%, transparent);
+}
+
+.du-hero .du-composer-send[data-ready],
+.du-hero .du-composer-send.du-composer-send-busy {
+  background: var(--du-accent);
+  color: var(--du-on-accent);
+}
+
+.du-hero .du-composer-send[data-ready]:hover:not(:disabled) {
+  background: var(--du-accent-hover);
+}
+
+.du-hero-skills {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 1010px;
+  margin-top: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.du-hero-skills::-webkit-scrollbar {
+  display: none;
+}
+
+.du-hero-skill-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, white 7%, transparent);
+  border-radius: var(--ds-r-full);
+  background: color-mix(in srgb, white 5%, transparent);
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 300;
+  white-space: nowrap;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-hero-skill-pill:hover {
+  background: var(--ds-fill-2);
+  color: white;
+}
+
+.du-hero-skill-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: color-mix(in srgb, white 65%, transparent);
+}
+
+.du-hero-skill-more {
+  color: color-mix(in srgb, white 50%, transparent);
+}
+
+@media (max-width: 900px) {
+  .du-hero-skills {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 600px) {
+  .du-hero {
+    padding: 32px 16px 28px;
+  }
+
   .du-hero-title {
     font-size: clamp(1.625rem, 7vw, 2rem);
     line-height: 1.25;
@@ -121,202 +386,215 @@
     margin-bottom: 28px;
     font-size: 0.9375rem;
   }
+
+  .du-hero .du-composer {
+    margin-top: 16px;
+    min-height: 152px;
+    border-radius: var(--ds-r-2xl);
+  }
+
+  .du-hero #home-generator-prompt,
+  .du-hero .du-composer-placeholder {
+    /* 16px stops iOS zooming into the field. */
+    font-size: var(--ds-fs-md);
+    line-height: 24px;
+  }
+
+  .du-hero .du-composer-bar > .du-composer-divider {
+    display: none;
+  }
 }
 
-/* Feature cards */
-.du-features {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 auto;
-  max-width: 1280px;
-  padding: 12px 24px 40px;
+/* Popups opened from the composer sit inside its backdrop blur, so they
+   cannot blur what is behind the box: give them a solid surface instead. */
+.du-hero .du-home-popover,
+.du-hero .du-composer-mentions,
+.du-hero .du-model-picker-panel {
+  background: color-mix(in srgb, var(--du-surface) 96%, black);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 18px 48px color-mix(in srgb, black 55%, transparent);
 }
 
-.du-feature {
+/* Image tab: "try these prompts" hangs under the composer in place of the
+   quick actions (Pollo): a slim panel, three one-line ideas with a thumb. */
+.du-hero:has(.du-image-ideas) .du-hero-skills {
+  display: none;
+}
+
+/* Give open generator menus the whole area below the composer. */
+.du-hero:has(#home-generator[data-function-menu-open]) .du-hero-skills {
+  display: none;
+}
+
+.du-image-ideas {
+  width: calc(100% - 48px);
+  margin: -1px auto 0;
+  padding: 6px 12px 8px;
+  border: 1px solid color-mix(in srgb, white 5%, transparent);
+  border-top: 0;
+  border-radius: 0 0 var(--ds-r-xl) var(--ds-r-xl);
+  background: color-mix(in srgb, black 55%, transparent);
+  text-align: left;
+}
+
+.du-image-ideas-head {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: var(--ds-r-xl);
-  background: var(--ds-fill-1);
-  transition: background 160ms ease;
-}
-
-.du-feature:hover {
-  background: var(--ds-fill-2);
-}
-
-.du-feature-media {
-  position: relative;
-  display: block;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-}
-
-.du-feature-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 500ms ease;
-}
-
-.du-feature:hover .du-feature-media img {
-  transform: scale(1.04);
-}
-
-.du-feature-media::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 70%, transparent), transparent 60%);
-  content: "";
-}
-
-.du-feature-art {
-  position: absolute;
-  bottom: 14px;
-  left: 0;
-  z-index: 1;
-  width: 100%;
-  color: white;
-  font-size: clamp(1.6rem, 3vw, 2.6rem);
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-align: center;
-  text-shadow: 0 4px 18px color-mix(in srgb, var(--du-bg) 80%, transparent);
-}
-
-.du-feature-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 16px 16px;
-}
-
-.du-feature-title {
-  color: white;
-  font-size: var(--ds-fs-md);
-  font-weight: 500;
-}
-
-.du-feature-text {
-  color: var(--du-text-muted);
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px 6px;
+  color: color-mix(in srgb, white 40%, transparent);
   font-size: var(--ds-fs-xs);
   font-weight: 300;
-  line-height: 1.5;
 }
 
-.du-section-eyebrow {
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-align: center;
-}
-
-.du-section-title {
-  margin-top: 10px;
-  color: white;
-  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  text-align: center;
-}
-
-.du-steps {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 24px 24px 72px;
-}
-
-.du-steps-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 32px;
-}
-
-.du-step {
-  padding: 24px;
-}
-
-.du-step-index {
+.du-image-ideas-head button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--du-accent-text);
-  font-size: var(--ds-fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  color: inherit;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
-.du-step-title {
-  margin-top: 14px;
+.du-image-ideas-head button:hover {
   color: white;
-  font-size: var(--ds-fs-lg);
-  font-weight: 600;
 }
 
-.du-step-body {
-  margin-top: 8px;
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.65;
+.du-image-ideas-head svg {
+  width: 12px;
+  height: 12px;
 }
 
-.du-cta {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 0 24px 88px;
-}
-
-.du-cta-inner {
+.du-image-idea {
   display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border-radius: var(--ds-r-sm);
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 300;
+  text-align: left;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-image-idea:hover {
+  background: color-mix(in srgb, white 6%, transparent);
+  color: white;
+}
+
+.du-image-idea img {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-xs);
+  object-fit: cover;
+}
+
+.du-image-idea span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.du-hero .du-composer-resize {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: var(--ds-r-sm);
+  background: transparent;
+  color: var(--ds-text-3);
+  opacity: 0;
+  cursor: nesw-resize;
+  touch-action: none;
+}
+.du-hero .du-composer:hover .du-composer-resize,
+.du-hero .du-composer-resize:focus-visible { opacity: 1; }
+.du-hero .du-composer-prompt-row { flex: 1; }
+.du-hero .du-composer-prompt-row > div { align-self: stretch; }
+.du-hero #home-generator-prompt { height: 100%; }
+.du-hero .du-composer-expand { display: none; }
+.du-hero .du-model-picker-panel { width: min(384px, calc(100vw - 32px)); }
+.du-hero .du-mode-menu { min-width: 162px; border-radius: var(--ds-r-lg); }
+.du-hero .du-mode-menu :is(button, a) {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  padding: 36px 40px;
-  border: 1px solid var(--du-border);
-  border-radius: var(--ds-r-3xl);
-  background:
-    radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--du-accent) 10%, transparent), transparent 60%),
-    var(--du-surface);
-}
-
-.du-cta-title {
-  color: white;
-  font-size: clamp(1.4rem, 2vw, 1.9rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.du-cta-body {
-  margin-top: 8px;
-  max-width: 560px;
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-sm);
-  line-height: 1.6;
-}
-
-.du-cta-actions {
-  display: flex;
-  flex-shrink: 0;
   gap: 12px;
+  padding: 4px 8px;
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-ui);
+  text-decoration: none;
+}
+.du-hero .du-mode-menu a:hover { background: var(--ds-fill-2); }
+.du-hero .du-mode-menu button[aria-pressed="true"] svg { color: var(--du-accent-text); }
+.du-home-agent { width: 100%; margin-top: 24px; text-align: left; }
+.du-home-agent .cs-agent-form { min-height: 158px; display: flex; flex-direction: column; justify-content: space-between; }
+.du-home-agent .cs-input { min-height: 84px; }
+@media (max-width: 767px) {
+  .du-hero .du-composer-resize { display: none; }
+  .du-hero #home-generator { width: 100%; }
+  .du-hero .du-composer { min-height: 152px; }
+  .du-hero .du-composer-ref-slot { width: 48px; height: 48px; }
+  .du-hero .du-composer-bar { position: relative; flex-wrap: nowrap; gap: 2px; }
+  .du-hero .du-composer-bar[data-expanded] > div:has(> .du-composer-mode) { display: none; }
+  .du-hero .du-composer-bar[data-expanded] > .du-composer-model { flex: 1; max-width: 112px; }
+  .du-hero .du-composer-bar[data-expanded] > button:not(.du-composer-expand) { padding-inline: 4px; }
+  .du-hero .du-composer-bar[data-expanded] .du-composer-settings { padding-inline: 4px; }
+  .du-hero .du-composer-settings .du-composer-divider { display: none; }
+  .du-hero .du-composer-bar > .du-composer-divider { display: none; }
+  .du-hero .du-composer-bar:not([data-expanded]) > :is(button:not(.du-composer-expand), div:has(> .du-composer-settings)) { display: none; }
+  .du-hero .du-composer-bar > .du-composer-expand { display: grid; width: 28px; padding: 0; place-items: center; }
+  .du-hero .du-composer-expand[aria-expanded=true] svg { transform: rotate(180deg); }
+  .du-hero .du-composer-model { max-width: 35%; }
+  .du-hero .du-composer-model [data-model-trigger] { max-width: 100%; padding-inline: 4px; }
+  .du-hero .du-composer-bar > div:has(> .du-composer-settings) { position: static; }
+  .du-hero .du-home-settings { inset-inline: 0; width: 100%; }
+  .du-hero .du-composer-mode { max-width: 112px; padding-inline: 6px; font-size: var(--ds-fs-xs); }
 }
 
-@media (max-width: 900px) {
-  .du-features {
-    grid-template-columns: 1fr;
-  }
 
-  .du-steps-grid {
-    grid-template-columns: 1fr;
-  }
+.du-composer-mobile-aspect { display: none; }
+@media (max-width: 767px) {
+  .du-hero .du-composer-settings .du-composer-settings-summary { display: none; }
+  .du-hero .du-composer-mobile-aspect { display: inline; }
+}
+.du-wan-sound {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 8px;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-ui);
+}
+@media (max-width: 767px) {
+  .du-hero .du-composer-bar:not([data-expanded]) > .du-wan-sound { display: none; }
+}
 
-  .du-cta-inner {
-    flex-direction: column;
-    align-items: flex-start;
+
+.du-composer-reference-well { display: contents; }
+@media (max-width: 767px) {
+  .du-hero .du-composer:has(.du-composer-reference-well) { min-height: 174px; }
+  .du-hero .du-composer-prompt-row { flex-direction: column; gap: 8px; }
+  .du-hero .du-composer-reference-well {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding: 4px;
+    border: 1px solid var(--ds-line-1);
+    border-radius: var(--ds-r-lg);
+    background: var(--ds-fill-1);
   }
+  .du-hero .du-composer-prompt-row > div:not(.du-composer-reference-well) { width: 100%; }
+  .du-hero #home-generator-prompt { display: block; height: 40px; min-height: 40px; }
+  .du-hero #home-generator-prompt, .du-hero .du-composer-placeholder { line-height: 20px; }
 }

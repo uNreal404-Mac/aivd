@@ -35,6 +35,7 @@ import type {
   GeneratorTexts,
   OutputNumberOption,
 } from "./types";
+import { secondsBetween } from "@/lib/video-durations";
 
 // ============================================================================
 // Video Models
@@ -70,7 +71,7 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     description: "Fast video generation, lower cost",
     maxDuration: "12 sec",
     creditCost: 15, // 5s 720p = 5×3 = 15
-    durations: ["2s", "4s", "5s", "6s", "8s", "10s", "12s"],
+    durations: secondsBetween(2, 12).map((seconds) => `${seconds}s`),
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     resolutions: ["480P", "720P", "1080P"],
     maxImages: 1,
@@ -87,7 +88,7 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     description: "Highest quality video generation",
     maxDuration: "12 sec",
     creditCost: 25, // 5s 720p = 5×5 = 25
-    durations: ["2s", "4s", "5s", "6s", "8s", "10s", "12s"],
+    durations: secondsBetween(2, 12).map((seconds) => `${seconds}s`),
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
     resolutions: ["480P", "720P", "1080P"],
     maxImages: 1,
@@ -118,9 +119,9 @@ export const DEFAULT_VIDEO_MODELS: VideoModel[] = [
     icon: "https://videocdn.pollo.ai/model-icon/svg/Group.svg",
     color: "#ff6a00",
     description: "Text/Image/Reference video to video with audio support",
-    maxDuration: "10 sec",
+    maxDuration: "15 sec",
     creditCost: 25,
-    durations: ["5s", "10s"],
+    durations: ["5s", "10s", "15s"],
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"],
     resolutions: ["720P", "1080P"],
     maxImages: 1,

@@ -913,7 +913,7 @@ export function VideoGeneratorInput({
                           <Plus className="w-5 h-5" />
                         </button>
                       )}
-                      <div className="text-[10px] text-muted-foreground text-center w-14">
+                      <div className="text-[11px] text-muted-foreground text-center w-14">
                         <div>{slot.label}</div>
                         {slot.subLabel && <div>{slot.subLabel}</div>}
                       </div>
@@ -1087,7 +1087,7 @@ export function VideoGeneratorInput({
                       {renderModelIcon(currentModel, "sm")}
                       <span>{currentModel.name}</span>
                       {currentModel.isPro && (
-                        <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
+                        <span className="text-[11px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
                       )}
                       <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -1343,7 +1343,7 @@ export function VideoGeneratorInput({
                             <span className="flex items-center justify-center gap-1">
                               {option.value}
                               {option.isPro && !isPro && (
-                                <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
+                                <span className="text-[11px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">PRO</span>
                               )}
                             </span>
                           </button>

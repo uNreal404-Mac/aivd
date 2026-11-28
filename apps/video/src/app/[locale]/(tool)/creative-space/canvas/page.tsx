@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 
-import { CreativeSpaceStudio } from "@/components/creative-space/creative-space-studio";
+import { NodeCanvas } from "@/components/creative-space/canvas/node-canvas";
 import type { Locale } from "@/config/i18n-config";
+import { readCanvasEditEntry } from "@/lib/creative-space/canvas-edit-entry";
 import { buildAlternates } from "@/lib/seo";
 
 interface CreativeSpacePageProps {
   params: Promise<{ locale: Locale }>;
-  searchParams: Promise<{ prompt?: string | string[] }>;
+  searchParams: Promise<{ prompt?: string | string[]; edit?: string | string[] }>;
 }
 
 export async function generateMetadata({
@@ -19,8 +20,8 @@ export async function generateMetadata({
   return {
     title: isChinese ? "创作空间画布" : "Creative Space Canvas",
     description: isChinese
-      ? "在无限画布中整理图片和视频，并通过 Agent 编排创意。"
-      : "Arrange images and videos on an infinite canvas and plan with an Agent.",
+      ? "在节点画布上连接文字、图片和视频，一步步生成并保存你的作品流程。"
+      : "Wire text, images and video together on a node canvas, generate step by step and save the flow.",
     alternates: {
       canonical: alternates.canonical,
       languages: alternates.languages,
@@ -35,8 +36,8 @@ export default async function CreativeSpacePage({
   searchParams,
 }: CreativeSpacePageProps) {
   const { locale } = await params;
-  const { prompt } = await searchParams;
+  const { prompt, edit } = await searchParams;
   const initialPrompt = (Array.isArray(prompt) ? prompt[0] : prompt)?.slice(0, 2000) ?? "";
 
-  return <CreativeSpaceStudio locale={locale} initialPrompt={initialPrompt} />;
+  return <NodeCanvas locale={locale} initialPrompt={initialPrompt} initialEdit={readCanvasEditEntry(edit)} />;
 }

@@ -83,7 +83,7 @@ export const NEW_USER_GIFT = {
   /** 是否启用赠送 */
   enabled: true,
   /** 赠送积分数量 */
-  credits: 70,  // 够生成一条 Veo 3.1 Fast（65 积分），或十几张图片
+  credits: 75, // 够生成一条 Veo 3.1 Fast（75 积分），或十几张图片
   /** 积分有效期（天）*/
   validDays: 7,
 };
@@ -152,11 +152,11 @@ export const SUBSCRIPTION_PRODUCTS = [
     features: ["hd_videos", "fast_generation", "commercial_use"],
   },
 
-  // ===== 年付订阅（Basic、Pro 八折，Ultimate 约 86 折；积分一次发全年） =====
+  // ===== 年付订阅（全线统一 7 折 / 立省 30%；积分一次发全年） =====
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z10", // 从 Creem 后台复制 Basic Yearly Product ID
     name: "Basic Plan (Yearly)",
-    priceUsd: 94.9, // 月付 × 12 × 0.8
+    priceUsd: 82.9, // 月付 × 12 × 0.7（折合 US$6.9/月，立省 30%）
     credits: 12000, // 1000 × 12
     period: "year" as const,
     popular: false,
@@ -166,7 +166,7 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z55", // 从 Creem 后台复制 Pro Yearly Product ID
     name: "Pro Plan (Yearly)",
-    priceUsd: 286.9, // 月付 × 12 × 0.8
+    priceUsd: 250.9, // 月付 × 12 × 0.7（折合 US$20.9/月，立省 30%）
     credits: 39600, // 3300 × 12
     period: "year" as const,
     popular: true,
@@ -176,7 +176,7 @@ export const SUBSCRIPTION_PRODUCTS = [
   {
     id: "prod_3tlZPSRNHZSaNq22zX2Z21", // 从 Creem 后台复制 Ultimate Yearly Product ID
     name: "Ultimate Plan (Yearly)",
-    priceUsd: 826.9, // 约 86 折，折合 US$68.9/月：折扣比 Basic、Pro 小以保住毛利，但每积分仍比 Pro 年付便宜
+    priceUsd: 670.9, // 月付 × 12 × 0.7（折合 US$55.9/月，立省 30%）
     credits: 115200, // 9600 × 12
     period: "year" as const,
     popular: false,
@@ -206,7 +206,7 @@ export const CREDIT_PACKAGES: CreditPackageConfig[] = [
     id: "prod_aivd_pack_trial", // 本地商品编号；Stripe 按下单时的金额收款，不需要在后台建商品
     name: "Trial Pack",
     priceUsd: 4.9,
-    credits: 330, // 一条 Seedance 2.5（260）加一条 Veo 3.1 Fast（65）
+    credits: 330, // 够生成 1 条 Seedance 2.5（325）或 4 条 Veo 3.1 Fast（75×4）
     popular: false,
     enabled: true,
     allowFreeUser: true,
@@ -294,11 +294,12 @@ export const FIRST_MONTH_OFFER = {
   tier: "pro" as const,
   /**
    * 首月实付（美元）。结账时按"原价减去这个数"生成一次性折扣。
-   * 2026-11-20 从 14.9 调到 19.9：五折给全额积分时首月必亏，市场上首期折扣多在 20–40%。
+   * 配合 VIDEO_MARKUP=1.95 与年付 7 折（US$20.9/月）保持一致：
+   * 首月 US$20.9（立省 30%），即使极端满载最贵模型仍保持 ~14% 正毛利。
    */
-  priceUsd: 19.9,
+  priceUsd: 20.9,
   /** 页面上说的折扣力度，约数。 */
-  percentOff: 33,
+  percentOff: 30,
 };
 
 /** 退款规则：首次购买后这么多天内、积分未使用，可全额退款。天数与退款政策页同源。 */

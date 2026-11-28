@@ -14,7 +14,11 @@ export async function GET(
     // Refresh and get latest status
     const result = await videoService.refreshStatus(uuid, user.id);
 
-    return apiSuccess(result);
+    const row = result.status === "COMPLETED" ? await videoService.getVideo(uuid, user.id) : null;
+    return apiSuccess({
+      ...result,
+      ...(row ? { model: row.model, parameters: row.parameters, duration: row.duration, resolution: row.resolution, aspectRatio: row.aspectRatio } : {}),
+    });
   } catch (error) {
     return handleApiError(error);
   }

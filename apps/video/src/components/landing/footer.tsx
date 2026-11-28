@@ -70,7 +70,7 @@ export function LandingFooter() {
         {
           title: zh ? "产品" : "Products",
           links: [
-            { title: zh ? "创作空间" : "Creative Space", href: "/creative-space" },
+            { title: "AGENT", href: "/creative-space" },
             { title: zh ? "画布" : "Canvas", href: "/creative-space/canvas" },
             { title: zh ? "视频模板" : "Video templates", href: "/templates" },
             { title: zh ? "我的作品" : "My creations", href: "/my-creations" },

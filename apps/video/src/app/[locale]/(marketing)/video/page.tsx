@@ -29,7 +29,7 @@ export default async function VideoPage({ params, searchParams }: Props) {
     ({ id, name, durations, aspectRatios }) => ({
       id,
       name,
-      durations: durations.filter((duration) => duration >= 4 && duration <= 15),
+      durations,
       aspects: aspectRatios.filter((aspect) => aspect !== "Auto"),
     }),
   );

@@ -1,4 +1,6 @@
-/* Composer used by the home page and the section pages. */
+/* Pollo × 字节即梦 Jimeng Flagship Composer:
+   Wide 6.2:1 slate proportion, velvety matte obsidian surface, whisper hairline border,
+   soft ambient backlight, and tilted reference dropzone. */
 .du-composer-tabs {
   display: flex;
   width: fit-content;
@@ -6,35 +8,70 @@
   padding: 3px;
   border: 1px solid var(--ds-line-2);
   border-radius: var(--ds-r-full);
-  background: var(--ds-fill-1);
+  background: color-mix(in srgb, var(--du-surface) 76%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .du-composer-tab {
-  min-width: 68px;
-  padding: 6px 16px;
+  min-width: 78px;
+  padding: 6px 20px;
   border-radius: var(--ds-r-full);
-  color: var(--du-text-muted);
-  font-size: var(--ds-fs-xs);
-  transition: color 160ms ease, background 160ms ease;
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition: color var(--m-instant) var(--m-ease-out), background var(--m-fast) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
 }
 
 .du-composer-tab:hover {
   color: white;
 }
 
+.du-composer-tabs {
+  --seg-bg: color-mix(in srgb, var(--du-accent) 16%, var(--ds-surface-3));
+  --seg-shadow: inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+}
+
 .du-composer-tab-active,
 .du-composer-tab-active:hover {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--du-accent) 34%, transparent),
-    color-mix(in srgb, var(--du-accent) 12%, transparent)
-  );
   color: white;
+  font-weight: 600;
+}
+
+/* Jimeng-style subtly tilted matte reference upload card on left of prompt */
+.du-composer-ref-slot {
+  display: flex;
+  width: 56px;
+  height: 68px;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 2px;
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, white 3%, transparent);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-2xs);
+  font-weight: 500;
+  transform: rotate(-3deg);
+  transition:
+    border-color var(--m-fast) var(--m-ease-out),
+    background-color var(--m-fast) var(--m-ease-out),
+    color var(--m-fast) var(--m-ease-out),
+    transform var(--m-fast) var(--m-ease-out);
+}
+
+.du-composer-ref-slot:hover {
+  border-color: color-mix(in srgb, var(--du-accent) 55%, var(--ds-line-3));
+  background: color-mix(in srgb, var(--du-accent) 7%, transparent);
+  color: white;
+  transform: rotate(0deg) translateY(-1px);
 }
 
 .du-canvas-entry {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
   text-align: left;
@@ -54,11 +91,11 @@
   color: var(--du-text);
   font-size: clamp(0.875rem, 1vw, 1rem);
   font-weight: 600;
-  transition: border-color 160ms ease, transform 160ms ease;
+  transition: border-color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
-.du-canvas-entry-card:hover,
-.du-canvas-entry-card:focus-visible {
+.du-canvas-entry-new:hover,
+.du-canvas-entry-new:focus-visible {
   border-color: var(--du-accent);
   transform: translateY(-2px);
 }
@@ -78,52 +115,63 @@
   height: 42px;
   place-items: center;
   border-radius: var(--ds-r-md);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
 }
 
-.du-canvas-entry-video {
-  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 85%, transparent), color-mix(in srgb, var(--du-accent) 25%, transparent)), url('/home/samples/rain-couple.webp') center / cover;
+.du-canvas-entry-preview {
+  margin: 0;
+  isolation: isolate;
+  background: var(--du-surface);
 }
 
-.du-canvas-entry-image {
-  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 85%, transparent), color-mix(in srgb, var(--du-accent) 25%, transparent)), url('/home/samples/cosmic-bloom.webp') center / cover;
-}
-
-.du-canvas-entry-visual {
+.du-canvas-entry-preview::after {
   position: absolute;
-  top: 28%;
-  left: 50%;
-  display: grid;
-  width: 54px;
-  height: 54px;
-  place-items: center;
-  transform: translateX(-50%);
-  border: 1px solid color-mix(in srgb, var(--du-accent) 48%, transparent);
-  border-radius: var(--ds-r-lg);
-  background: color-mix(in srgb, var(--du-bg) 62%, transparent);
-  color: var(--du-accent-text);
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--du-bg) 78%, transparent), transparent 62%);
+  content: "";
 }
 
-.du-canvas-entry-visual > svg { width: 22px; height: 22px; }
+.du-canvas-entry-media,
+.du-canvas-entry-media video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.du-canvas-entry-media { z-index: 0; }
+.du-canvas-entry-media video { object-fit: cover; }
+.du-canvas-entry-preview figcaption { position: relative; z-index: 2; }
 
 @media (max-width: 640px) {
-  .du-canvas-entry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .du-canvas-entry-new { grid-column: 1 / -1; min-height: 132px; }
+  .du-canvas-entry { grid-template-columns: minmax(0, 1fr); }
+  .du-canvas-entry-new { min-height: 132px; }
   .du-canvas-entry-card { min-height: 150px; padding: 14px; }
 }
 
 .du-composer {
   position: relative;
-  margin-top: 16px;
-  padding: 12px 12px 10px;
-  border: 1px solid var(--ds-line-2);
-  border-top-color: color-mix(in srgb, var(--du-accent) 45%, transparent);
+  margin-top: 22px;
+  padding: 18px 20px 14px;
+  border: 1px solid var(--ds-line-1);
   border-radius: var(--ds-r-2xl);
-  background: color-mix(in srgb, var(--du-bg) 72%, transparent);
-  box-shadow: 0 -18px 48px -22px color-mix(in srgb, var(--du-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--du-bg-elev) 92%, var(--du-surface));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+    0 24px 64px -20px color-mix(in srgb, black 85%, transparent);
   text-align: left;
-  backdrop-filter: blur(18px);
+  transition: border-color var(--m-fast) var(--m-ease-out), box-shadow var(--m-fast) var(--m-ease-out);
+}
+
+.du-composer:focus-within {
+  border-color: var(--ds-line-2);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent),
+    0 24px 72px -18px color-mix(in srgb, black 90%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--du-accent) 16%, transparent);
 }
 
 .du-home-popover,
@@ -144,19 +192,21 @@
 
 .du-composer-send {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
-  transition: background 160ms ease, opacity 160ms ease;
+  transition: filter var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out), opacity var(--m-instant) var(--m-ease-out);
 }
 
-.du-composer-send:hover {
-  background: var(--du-accent-hover);
+.du-composer-send:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: scale(1.04);
 }
 
 .du-composer-send:disabled {
@@ -233,7 +283,7 @@
   font-size: var(--ds-fs-2xs);
 }
 
-.du-composer-reference img {
+.du-composer-reference :is(img, video) {
   width: 100%;
   height: 44px;
   border-radius: var(--ds-r-xs);
@@ -289,7 +339,7 @@
   background: var(--ds-fill-1);
 }
 
-.du-composer-mentions img {
+.du-composer-mentions :is(img, video) {
   width: 24px;
   height: 24px;
   border-radius: var(--ds-r-xs);
@@ -298,20 +348,30 @@
 
 .du-composer-suggestions {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 10px -4px 0;
-  padding: 8px 4px 0;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px -2px 0;
+  padding: 8px 2px 2px;
   border-top: 1px solid var(--ds-line-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.du-composer-suggestions::-webkit-scrollbar {
+  display: none;
 }
 
 .du-composer-suggestions-label {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
+  gap: 5px;
+  padding: 2px 6px;
   color: var(--du-text-muted);
   font-size: var(--ds-fs-xs);
+  white-space: nowrap;
 }
 
 .du-composer-suggestions-label:hover {
@@ -319,28 +379,35 @@
 }
 
 .du-composer-suggestion {
-  display: flex;
+  display: inline-flex;
+  width: auto;
+  flex-shrink: 0;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 5px 8px;
-  border-radius: var(--ds-r-md);
+  gap: 7px;
+  padding: 4px 11px 4px 4px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
   color: var(--ds-text-2);
   font-size: var(--ds-fs-xs);
-  font-weight: 300;
+  font-weight: 500;
   text-align: left;
+  white-space: nowrap;
+  transition: border-color var(--m-instant) var(--m-ease-out), background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .du-composer-suggestion:hover {
-  background: var(--ds-fill-1);
+  border-color: var(--ds-line-3);
+  background: var(--ds-fill-2);
   color: white;
+  transform: translateY(-1px);
 }
 
 .du-composer-suggestion img {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border-radius: var(--ds-r-xs);
+  border-radius: var(--ds-r-full);
   object-fit: cover;
 }
 
@@ -350,28 +417,7 @@
   white-space: nowrap;
 }
 
-/* A short shake when generate is pressed with nothing to work from. */
-.du-composer-nudge {
-  animation: du-composer-nudge 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes du-composer-nudge {
-  20%,
-  60% {
-    transform: translateX(-5px);
-  }
-
-  40%,
-  80% {
-    transform: translateX(5px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .du-composer-nudge {
-    animation-duration: 1ms;
-  }
-}
+/* Validation nudge animation is provided globally by src/styles/motion.css (.du-composer-nudge). */
 
 /* Phones: the composer's tabs, send button and prompt suggestions are at
    least 44px tall, so a thumb lands on the one it aims at. */
@@ -394,4 +440,204 @@
   .du-composer-suggestion {
     min-height: 44px;
   }
+}
+
+/* Hint over the empty prompt: the field's own placeholder stays for screen
+   readers, this one can show the @ as a small chip that mentions an image. */
+.du-composer-input::placeholder {
+  color: transparent;
+}
+
+.du-composer-placeholder {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  left: 0;
+  color: color-mix(in srgb, white 38%, transparent);
+  font-size: var(--ds-fs-sm);
+  line-height: 1.625;
+  pointer-events: none;
+}
+
+.du-composer-at {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  margin: 0 4px;
+  place-items: center;
+  border-radius: var(--ds-r-sm);
+  background: color-mix(in srgb, white 9%, var(--du-bg));
+  color: var(--du-accent-text);
+  vertical-align: -5px;
+  pointer-events: auto;
+}
+
+.du-composer-at > svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Mode menu under the mode pill: a compact list, one line per mode, 32px
+   rows of light 14px text, the chosen one on a faint fill (Pollo). */
+.du-mode-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  min-width: 152px;
+  padding: 6px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-lg);
+  transform-origin: top left;
+}
+
+.du-mode-menu button {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: var(--ds-r-sm);
+  color: color-mix(in srgb, white 85%, transparent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  white-space: nowrap;
+  text-align: left;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.du-mode-menu button:hover,
+.du-mode-menu button[aria-pressed="true"] {
+  background: color-mix(in srgb, white 7%, transparent);
+  color: white;
+}
+
+/* Settings: Pollo's grouped panel. Small grey labels, each group on a darker
+   rounded track with the chosen item lifted; ratios as shape + label tiles;
+   length on a thin slider with its value on the right. */
+.du-home-settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  width: min(92vw, 432px);
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-xl);
+  transform-origin: top left;
+}
+
+@media (max-width: 640px) {
+  .du-home-settings {
+    right: 0;
+    left: auto;
+    transform-origin: top right;
+  }
+}
+
+.du-home-settings section {
+  padding: 4px 0;
+}
+
+.du-set-label {
+  padding: 4px 4px 8px;
+  color: color-mix(in srgb, white 40%, transparent);
+  font-size: var(--ds-fs-xs);
+  font-weight: 300;
+}
+
+.du-set-track {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ds-r-md);
+  background: color-mix(in srgb, black 35%, transparent);
+}
+
+.du-set-track button {
+  display: flex;
+  min-height: 34px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ds-r-sm);
+  color: color-mix(in srgb, white 65%, transparent);
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  transition: background-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.du-set-track button:hover {
+  color: white;
+}
+
+.du-set-track button[aria-pressed="true"] {
+  background: color-mix(in srgb, white 10%, transparent);
+  color: white;
+}
+
+.du-set-aspects button {
+  min-height: 52px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.du-aspect-shape {
+  display: block;
+  border: 1.5px solid currentColor;
+  border-radius: calc(var(--ds-r-xs) / 2);
+}
+
+.du-aspect-shape.is-auto {
+  border-style: dashed;
+}
+
+.du-set-slider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 6px 6px 10px;
+}
+
+.du-set-slider input {
+  height: 4px;
+  flex: 1;
+  appearance: none;
+  border-radius: var(--ds-r-full);
+  background: linear-gradient(to right, color-mix(in srgb, white 75%, transparent) var(--fill, 0%), color-mix(in srgb, white 12%, transparent) var(--fill, 0%));
+  cursor: pointer;
+}
+
+.du-set-slider input::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  appearance: none;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px color-mix(in srgb, black 45%, transparent);
+}
+
+.du-set-slider input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: white;
+}
+
+.du-set-slider > span,
+.du-set-fixed {
+  min-width: 32px;
+  color: white;
+  font-size: var(--ds-fs-sm);
+  font-weight: 300;
+  text-align: right;
+}
+
+.du-set-fixed {
+  padding: 4px;
+  text-align: left;
 }

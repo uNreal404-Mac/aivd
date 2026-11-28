@@ -1,5 +1,5 @@
 import "@/styles/pricing-tokens.css";
-import { HomePricing } from "@/components/hf/home-pricing";
+import { HomePricing, PricingClosingBanner } from "@/components/hf/home-pricing";
 import { PricingFaq } from "@/components/pricing/pricing-page";
 import { faqItemsFor } from "@/components/pricing/pricing-data";
 import { jsonLd, pricingGraph } from "@/lib/structured-data";
@@ -72,12 +72,14 @@ export default async function PricingPage({
     faqItemsFor(locale).map((item) => ({ q: item.question, a: item.answer })),
   );
 
-  // Same pricing block as the homepage, buying in place, then the FAQ.
+  // Same pricing block as the homepage, buying in place, then FAQ, then closing banner.
+  const checkout = { enabled: isPaymentsConfigured() };
   return (
     <div className="bg-[var(--du-bg)]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }} />
-      <HomePricing lang={locale} asPage checkout={{ enabled: isPaymentsConfigured() }} />
+      <HomePricing lang={locale} asPage checkout={checkout} />
       <PricingFaq locale={locale} />
+      <PricingClosingBanner lang={locale} checkout={checkout} />
       <p className="mx-auto max-w-3xl px-6 pb-16 text-center text-[13px] text-[var(--ds-text-3)]">
         {locale === "zh" ? "价格更新于 " : "Prices last updated "}
         <time dateTime={CONTENT_UPDATED.pricing}>{formatUpdated(CONTENT_UPDATED.pricing, locale === "zh")}</time>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { safeReturnTo } from "@/lib/credit-return";
 import { localizedHref } from "@/lib/locale-path";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -18,6 +19,7 @@ import "./checkout.css";
 export type CheckoutSuccessProps = {
   lang: string;
   sessionId: string | null;
+  returnTo?: string;
 };
 
 type View =
@@ -43,6 +45,7 @@ type Copy = {
   errorText: string;
   viewCredits: string;
   testModeNotice: string;
+  returnToCreation: string;
 };
 
 const COPY: Record<"en" | "zh", Copy> = {
@@ -64,6 +67,7 @@ const COPY: Record<"en" | "zh", Copy> = {
       "If you completed checkout, your credits will appear shortly. Refresh this page or check your credits.",
     viewCredits: "View credits",
     testModeNotice: "Test mode — no real money was charged.",
+    returnToCreation: "Return to your draft",
   },
   zh: {
     notFoundTitle: "我们找不到这笔付款",
@@ -83,6 +87,7 @@ const COPY: Record<"en" | "zh", Copy> = {
       "如果你已完成支付，积分很快会到账。请刷新页面或查看积分。",
     viewCredits: "查看积分",
     testModeNotice: "测试模式——未产生真实扣款。",
+    returnToCreation: "返回之前的创作",
   },
 };
 
@@ -110,11 +115,19 @@ function parseStatus(body: unknown): CheckoutStatus | null {
 export default function CheckoutSuccess({
   lang,
   sessionId,
+  returnTo,
 }: CheckoutSuccessProps) {
   const copy = lang === "zh" ? COPY.zh : COPY.en;
   const [view, setView] = useState<View>({ kind: "pending" });
   const sessionValid = isValidSessionId(sessionId);
   const testMode = isValidSessionId(sessionId) && isTestModeSession(sessionId);
+  const destination = safeReturnTo(returnTo);
+
+  useEffect(() => {
+    if (view.kind !== "paid" || !destination) return;
+    const timer = setTimeout(() => window.location.replace(destination), 1800);
+    return () => clearTimeout(timer);
+  }, [view.kind, destination]);
 
   useEffect(() => {
     if (!isValidSessionId(sessionId)) {
@@ -212,8 +225,8 @@ export default function CheckoutSuccess({
           {copy.creditsAdded.replace("{credits}", String(view.credits))}
         </p>
         <div className="co-actions">
-          <Link className="co-btn" href={localizedHref(lang, "/ai/video")}>
-            {copy.startCreating}
+          <Link className="co-btn" href={destination ?? localizedHref(lang, "/ai/video")}>
+            {destination ? copy.returnToCreation : copy.startCreating}
           </Link>
           <Link className="co-link" href={localizedHref(lang, "/my-creations")}>
             {copy.myCreations}

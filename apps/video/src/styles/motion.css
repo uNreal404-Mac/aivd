@@ -1,54 +1,318 @@
-/* Site-wide motion, after the reference sites: one easing and duration,
-   popovers that settle in, dropdown rows that stagger, cards that lift (and
-   tilt toward the pointer where marked with data-tilt), buttons that press,
-   and sections that rise in once as they scroll into view. Everything stops
-   for people who ask for reduced motion. */
+/* aivd motion language. One set of timings for the whole site, so the same
+   kind of change always moves the same way.
+
+   Durations (frequent actions are the fastest):
+     --m-instant 120ms  press, hover colour, icon swap, anything leaving
+     --m-fast    180ms  menus and popovers arriving, segment indicators, chips
+     --m-base    260ms  dialogs and sheets arriving, panels opening, content swaps
+     --m-slow    380ms  large things settling: sections revealing, media viewer
+   Curves:
+     --m-ease-out     things arriving or moving to a new place (decelerates)
+     --m-ease-in-out  things changing in place (toggle knobs, height, rotation)
+     --m-ease-exit    things leaving (accelerates away, a little faster)
+
+   Rules: animate opacity and transform only; leaving is quicker than
+   arriving; nothing loops for decoration; reduced motion stops movement but
+   keeps loading indicators turning. A test (tests/motion-language.test.ts)
+   keeps component styles on these variables. */
 
 :root {
-  --du-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --du-dur: 400ms;
-  --du-dur-fast: 180ms;
+  --m-instant: 120ms;
+  --m-fast: 180ms;
+  --m-base: 260ms;
+  --m-slow: 380ms;
+  --m-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --m-ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+  --m-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Tailwind's transition utilities (transition-colors and friends) use
+     these when a class does not set its own duration or curve. */
+  --default-transition-duration: var(--m-instant);
+  --default-transition-timing-function: var(--m-ease-out);
+
+  /* Older names, kept so existing styles follow the new language. */
+  --du-ease: var(--m-ease-out);
+  --du-dur: var(--m-base);
+  --du-dur-fast: var(--m-instant);
+  --du-dur-micro: var(--m-instant);
+  --du-dur-slow: var(--m-slow);
+  --du-ease-out: var(--m-ease-out);
+  --du-ease-micro: var(--m-ease-out);
 }
 
 @keyframes du-pop {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.985);
+    transform: translateY(-4px) scale(0.98);
   }
 }
 
+@keyframes du-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.985);
+  }
+}
+
+@keyframes du-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes du-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes du-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes du-sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes du-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes du-dialog-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+
+/* A row arriving in a list (camera presets). */
 @keyframes du-row-in {
   from {
     opacity: 0;
-    transform: translateX(8px);
+    transform: translateY(-3px);
   }
 }
 
 @keyframes du-rise {
   from {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(12px);
   }
 }
 
-/* Popovers: nav dropdowns, account menu, model picker, toggles. */
-.hf-dd,
-.hf-acct {
-  animation: du-pop var(--du-dur) var(--du-ease) both;
-  transform-origin: top left;
+@keyframes du-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
 }
 
+/* Popovers: nav dropdowns, account menu, model picker. They grow out of
+   the control that opened them and leave a little faster than they came.
+   data-state="closed" is set by lib/use-presence while the exit plays. */
 .hf-acct {
+  animation: du-pop var(--m-fast) var(--m-ease-out) both;
   transform-origin: top right;
 }
 
-/* Dropdown rows arrive one after another (--i is set per row). */
-.hf-dd-row {
-  animation: du-row-in var(--du-dur) var(--du-ease) both;
-  animation-delay: calc(var(--i, 0) * 30ms + 30ms);
+.hf-acct[data-state="closed"] {
+  animation: du-pop-out var(--m-instant) var(--m-ease-exit) both;
+  pointer-events: none;
 }
 
-/* Cards lift on hover; data-tilt cards also lean toward the pointer. */
+/* The nav panel is placed with translateX(--dd-x), so its pop keeps it. */
+@keyframes hf-dd-pop {
+  from {
+    opacity: 0;
+    transform: translateX(var(--dd-x, 16px)) translateY(-4px) scale(0.98);
+  }
+}
+
+@keyframes hf-dd-pop-out {
+  to {
+    opacity: 0;
+    transform: translateX(var(--dd-x, 16px)) translateY(-2px) scale(0.985);
+  }
+}
+
+.hf-dd {
+  /* backwards, not both: once in, the transform is free to glide between menus. */
+  animation: hf-dd-pop var(--m-fast) var(--m-ease-out) backwards;
+  transform-origin: top left;
+}
+
+.hf-dd[data-state="closed"] {
+  animation: hf-dd-pop-out var(--m-instant) var(--m-ease-exit) both;
+  pointer-events: none;
+}
+
+/* Shared presence helpers for components that mount on open: add
+   data-presence="pop" (popover), "dialog", "sheet" (bottom sheet on phones)
+   or "fade" (scrims, overlays), and lib/use-presence sets data-state. */
+[data-presence] {
+  --m-enter-offset: 0 0;
+  --m-enter-scale: 1;
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  transition:
+    opacity var(--m-fast) var(--m-ease-out),
+    translate var(--m-fast) var(--m-ease-out),
+    scale var(--m-fast) var(--m-ease-out);
+}
+
+[data-presence="pop"] {
+  --m-enter-offset: 0 -4px;
+  --m-enter-scale: .98;
+}
+
+[data-presence="dialog"] {
+  --m-enter-offset: 0 8px;
+  --m-enter-scale: .98;
+  transition-duration: var(--m-base);
+}
+
+[data-presence="sheet"] {
+  --m-enter-offset: 0 100%;
+  transition-duration: var(--m-base);
+}
+
+[data-presence][data-state="closed"] {
+  opacity: 0;
+  translate: var(--m-enter-offset);
+  scale: var(--m-enter-scale);
+  transition-duration: var(--m-instant);
+  transition-timing-function: var(--m-ease-exit);
+  pointer-events: none;
+}
+
+@starting-style {
+  [data-presence]:not([data-state="closed"]) {
+    opacity: 0;
+    translate: var(--m-enter-offset);
+    scale: var(--m-enter-scale);
+  }
+}
+
+/* Dialogs (components/ui/dialog): Radix keeps them mounted until the
+   closing animation ends. */
+.du-dialog {
+  animation: du-dialog-in var(--m-base) var(--m-ease-out) both;
+}
+
+.du-dialog[data-state="closed"] {
+  animation: du-dialog-out var(--m-fast) var(--m-ease-exit) both;
+}
+
+.du-dialog-overlay {
+  background: var(--du-glass-overlay-scrim);
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+.du-dialog-overlay[data-state="closed"] {
+  animation: du-fade-out var(--m-fast) var(--m-ease-exit) both;
+}
+
+/* Radix observes the end of the exit keyframe before removing a sheet. */
+.du-sheet-panel {
+  --m-sheet-x: 0;
+  --m-sheet-y: 100%;
+  animation: du-sheet-arrive var(--m-base) var(--m-ease-out) both;
+}
+.du-sheet-panel[data-edge="top"] { --m-sheet-y: -100%; }
+.du-sheet-panel[data-edge="left"] { --m-sheet-x: -100%; --m-sheet-y: 0; }
+.du-sheet-panel[data-edge="right"] { --m-sheet-x: 100%; --m-sheet-y: 0; }
+.du-sheet-panel[data-state="closed"] {
+  animation: du-sheet-leave var(--m-fast) var(--m-ease-exit) both;
+}
+@keyframes du-sheet-arrive { from { translate: var(--m-sheet-x) var(--m-sheet-y); } }
+@keyframes du-sheet-leave { to { translate: var(--m-sheet-x) var(--m-sheet-y); } }
+
+/* Constrain panel scrolling on touch screens; keep an easy-to-hit dismiss
+   button with a smaller visible circle so the heading still has room. */
+.du-dialog { overscroll-behavior: contain; }
+.du-dialog-dismiss {
+  position: absolute;
+  top: var(--ds-space-1);
+  right: var(--ds-space-1);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--ds-r-full);
+  color: var(--ds-text-2);
+}
+.du-dialog-dismiss::before {
+  position: absolute;
+  inset: var(--ds-space-2);
+  border-radius: inherit;
+  background: var(--ds-fill-2);
+  content: "";
+}
+.du-dialog-dismiss svg { position: relative; width: 16px; height: 16px; }
+.du-dialog-dismiss:hover::before { background: var(--ds-fill-3); }
+@media (prefers-reduced-transparency: reduce) {
+  .du-dialog-overlay { backdrop-filter: none; }
+}
+
+/* An icon that replaces another (copy → check, play → pause, menu → close)
+   settles in instead of blinking: give the incoming icon data-swap and a
+   key that changes with the state. */
+[data-swap] {
+  animation: du-icon-in var(--m-instant) var(--m-ease-out) both;
+}
+
+/* Segmented controls and tabs (hooks/use-segment-indicator): one highlight
+   glides under the chosen option. Set --seg-bg on the group for its colour;
+   the chosen option itself stays transparent. */
+.du-seg {
+  position: relative;
+  isolation: isolate;
+}
+
+.du-seg::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: var(--seg-w, 0);
+  height: var(--seg-h, 0);
+  border-radius: var(--seg-r, 999px);
+  background: var(--seg-bg, var(--ds-fill-3));
+  box-shadow: var(--seg-shadow, none);
+  content: "";
+  transform: translate(var(--seg-x, 0), var(--seg-y, 0));
+}
+
+.du-seg[data-seg-ready]::before {
+  transition:
+    transform var(--m-fast) var(--m-ease-out),
+    width var(--m-fast) var(--m-ease-out);
+}
+
+/* Chevrons on anything that opens turn with it. */
+:where([aria-expanded]) > :where(svg.lucide-chevron-down, svg.lucide-chevron-up, svg.lucide-chevron-right) {
+  transition: transform var(--m-fast) var(--m-ease-in-out);
+}
+
+:where([aria-expanded="true"]) > :where(svg.lucide-chevron-down) {
+  transform: rotate(180deg);
+}
+
+/* Numbers that change in place do not shift the text around them. */
+:where(.du-num, [data-num]) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cards lift a little on hover, only where there is a pointer to hover
+   with (on touch screens a tap would leave them stuck lifted). */
 :root .hs-tile,
 :root .hs-usecase,
 :root .hs-tall,
@@ -60,33 +324,31 @@
 :root .vs-step .vs-howto-media,
 :root .as-card {
   transition:
-    transform var(--du-dur) var(--du-ease),
-    box-shadow var(--du-dur) var(--du-ease),
-    background-color var(--du-dur) var(--du-ease);
+    transform var(--m-base) var(--m-ease-out),
+    box-shadow var(--m-base) var(--m-ease-out),
+    background-color var(--m-fast) var(--m-ease-out),
+    border-color var(--m-fast) var(--m-ease-out);
 }
 
-:root .hs-tile:hover,
-:root .hs-usecase:hover,
-:root .hs-tall:hover,
-:root .hs-wall-item:hover,
-:root .hs-slide:hover .hs-slide-media,
-:root .hp-pack:hover,
-:root .as-card:hover {
-  transform: translateY(-2px) scale(1.015);
+@media (hover: hover) and (pointer: fine) {
+  :root .hs-tile:hover,
+  :root .hs-usecase:hover,
+  :root .hs-tall:hover,
+  :root .hs-wall-item:hover,
+  :root .hs-slide:hover .hs-slide-media,
+  :root .hp-pack:hover,
+  :root .as-card:hover {
+    transform: translateY(-2px);
+  }
 }
 
-:root [data-tilt] {
-  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg));
-  transition: transform var(--du-dur) var(--du-ease);
-  will-change: transform;
-}
-
+/* Pointer tilt is decoration, not explanation: cards no longer lean. */
+:root [data-tilt],
 :root [data-tilt]:hover {
-  transform: perspective(40rem) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg))
-    translateY(-2px) scale(1.02);
+  transform: none;
 }
 
-/* Buttons press in. */
+/* Buttons press in, quickly, and spring back as fast. */
 :root .hs-btn,
 :root .hp-cta,
 :root .hp-more,
@@ -101,12 +363,22 @@
 :root .hs-mini button,
 :root .vs-chip,
 :root .is-chip,
-:root .hs-chip {
+:root .hs-chip,
+:root .hs-tab,
+:root .hs-cloud-pill,
+:root .du-composer-tab,
+:root .du-hero-skill-pill,
+:root .hs-welcome-cta,
+:root .hmp-footer button,
+:root .cr-button {
   transition:
-    transform var(--du-dur-fast) var(--du-ease),
-    filter var(--du-dur-fast) ease,
-    background-color var(--du-dur-fast) ease,
-    color var(--du-dur-fast) ease;
+    transform var(--m-instant) var(--m-ease-out),
+    filter var(--m-instant) var(--m-ease-out),
+    background-color var(--m-instant) var(--m-ease-out),
+    border-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    opacity var(--m-instant) var(--m-ease-out),
+    box-shadow var(--m-instant) var(--m-ease-out);
 }
 
 :root .hs-btn:active,
@@ -121,26 +393,30 @@
 :root .cs-send:active:not(:disabled),
 :root .hs-mini button:active:not(:disabled),
 :root .vs-chip:active,
-:root .is-chip:active {
+:root .is-chip:active,
+:root .hs-tab:active:not(:disabled),
+:root .hs-cloud-pill:active:not(:disabled),
+:root .du-composer-tab:active:not(:disabled),
+:root .du-hero-skill-pill:active:not(:disabled),
+:root .hs-welcome-cta:active:not(:disabled),
+:root .hmp-footer button:active:not(:disabled),
+:root .cr-button:active:not(:disabled) {
   transform: scale(0.97);
 }
 
 /* Sections rise in once as they scroll into view. components/scroll-reveal
    marks the ones still below the screen as waiting and switches each to "in"
-   when it arrives; a section that is already on screen is never hidden, and
-   none is left half faded at the foot of the screen. (An animation tied to
-   the scroll position did both, and the reduced-motion rule below cannot
-   stop one.) Only opacity while waiting: the keyframe supplies the offset, so
-   a section keeps a transform of its own. */
+   when it arrives; a section already on screen is never hidden. Only opacity
+   while waiting: the keyframe supplies the offset, so a section keeps a
+   transform of its own. */
 [data-reveal="wait"] {
   opacity: 0;
 }
 
 [data-reveal="in"] {
-  animation: du-rise 600ms var(--du-ease);
+  animation: du-rise var(--m-slow) var(--m-ease-out);
 }
 
-/* On paper, and for reduced motion, a waiting section just shows. */
 @media print, (prefers-reduced-motion: reduce) {
   [data-reveal="wait"] {
     opacity: 1;
@@ -148,9 +424,9 @@
 }
 
 /* Reduced motion: nothing on the site moves by itself. What a visitor asks
-   for still plays: a showcase clip on hover, keyboard focus or its play
-   button (lib/hover-play.ts, components/hf/video-play-toggle), and an effect
-   card's move on hover (components/effects/effects.css). */
+   for still plays (a showcase clip on hover, keyboard focus or its play
+   button: lib/hover-play.ts, components/hf/video-play-toggle), and loading
+   indicators keep turning so "working" still reads as working. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -159,11 +435,12 @@
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
   }
 
-  [data-tilt],
-  [data-tilt]:hover {
-    transform: none;
+  :root :is(.animate-spin, .cw-spin, .hmp-spin, .du-composer-spinner, .co-spinner, [data-essential-motion]) {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
@@ -176,7 +453,6 @@
   width: 100%;
   height: 2px;
   background: var(--du-accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--du-accent) 60%, transparent);
   transform-origin: left;
   pointer-events: none;
 }
@@ -189,8 +465,8 @@
   transform: scaleX(1);
   opacity: 0;
   transition:
-    transform 200ms ease,
-    opacity 300ms ease 150ms;
+    transform var(--m-fast) var(--m-ease-out),
+    opacity var(--m-base) var(--m-ease-out) var(--m-instant);
 }
 
 @keyframes route-progress-grow {
@@ -208,4 +484,105 @@
     animation: none;
     transform: scaleX(0.6);
   }
+}
+
+/* ---------- Brought in from main (995fef4), on the same timings ---------- */
+
+/* Popovers that mount on open and have no exit of their own yet arrive the
+   same way as the rest. */
+.du-composer-mentions {
+  animation: du-pop var(--m-fast) var(--m-ease-out) both;
+  transform-origin: top left;
+}
+
+.vs-presets-backdrop {
+  animation: du-fade-in var(--m-base) var(--m-ease-out) both;
+}
+
+.vs-presets-modal,
+.cc-cmd-modal {
+  animation: du-dialog-in var(--m-base) var(--m-ease-out) both;
+}
+
+/* Inline notices and errors appear instead of blinking in. */
+.draft-note,
+.si-error,
+.vs-duration-warning,
+.du-notice-enter {
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
+}
+
+/* Selection checkmarks and "copied" ticks settle in. */
+.hmp-check,
+.du-check-pop {
+  animation: du-icon-in var(--m-instant) var(--m-ease-out) both;
+}
+
+/* Carets turn with what they open. */
+.du-caret,
+.hf-item-caret,
+.vs-duration-trigger > svg {
+  transition: transform var(--m-fast) var(--m-ease-in-out);
+}
+
+[aria-expanded="true"] > .du-caret,
+[aria-expanded="true"] .du-caret,
+.hf-item[aria-expanded="true"] .hf-item-caret {
+  transform: rotate(180deg);
+}
+
+.vs-duration-trigger[aria-expanded="true"] > svg {
+  transform: rotate(90deg);
+}
+
+/* Numbers that change in place keep their width. */
+.du-composer-cost,
+.vs-generate-cost,
+.vs-count,
+.sr-elapsed,
+.hmp-count,
+.hp-price-val,
+.hp-price-num,
+.du-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Direct manipulation stays 1:1 with the hand: no easing while dragging. */
+.cc-compare-before-layer,
+.cc-compare-divider,
+[data-dragging="true"] {
+  transition: none !important;
+}
+
+/* An empty submit shakes the composer a little (a "no", not an error). */
+@keyframes du-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-4px);
+  }
+
+  45% {
+    transform: translateX(4px);
+  }
+
+  70% {
+    transform: translateX(-2px);
+  }
+
+  88% {
+    transform: translateX(1.5px);
+  }
+}
+
+.du-composer-nudge {
+  animation: du-nudge var(--m-slow) var(--m-ease-out);
+}
+
+/* Content swapped under a tab or filter cross-fades in (keyed). */
+.du-fade-swap {
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
 }

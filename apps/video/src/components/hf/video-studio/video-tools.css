@@ -1,0 +1,242 @@
+.vtool-create-body,
+.vtool-extend-body {
+  display: contents;
+}
+.vtool-create-body[hidden],
+.vtool-extend-body[hidden] {
+  display: none;
+}
+.vtool-mode-pane:not([hidden]),
+.vtool-create-body:not([hidden]),
+.vtool-extend-body:not([hidden]) {
+  animation: du-fade-in var(--m-instant) var(--m-ease-out);
+}
+.vtool-tabs {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+  gap: var(--ds-space-1);
+}
+.vtool-tabs button {
+  flex: 1;
+  white-space: nowrap;
+  min-height: 38px;
+  color: var(--ds-text-3);
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+  font-size: var(--ds-fs-sm);
+}
+.vtool-tabs button[aria-pressed="true"] {
+  color: var(--ds-text-1);
+  border-color: var(--du-accent);
+}
+.vtool-panel {
+  display: grid;
+  gap: var(--ds-space-3);
+  padding-bottom: var(--ds-space-3);
+}
+.vtool-cover {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+  height: 132px;
+  padding: var(--ds-space-4);
+  border-radius: var(--ds-r-xl);
+  background: var(--ds-surface-2);
+}
+.vtool-cover > img {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.55);
+}
+.vtool-cover strong,
+.vtool-cover span {
+  display: block;
+}
+.vtool-cover strong {
+  font-size: var(--ds-fs-lg);
+}
+.vtool-cover span,
+.vtool-slot small,
+.vtool-rate {
+  font-size: var(--ds-fs-xs);
+}
+.vtool-slots {
+  display: grid;
+  gap: var(--ds-space-2);
+}
+.vtool-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.vtool-slot {
+  position: relative;
+  min-width: 0;
+}
+.vtool-slot > button:first-child {
+  height: 136px;
+  width: 100%;
+  min-width: 0;
+  padding: var(--ds-space-2);
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-1);
+  border: 1px dashed var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
+}
+.vtool-slot strong {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--ds-fs-sm);
+}
+.vtool-slot small,
+.vtool-rate {
+  color: var(--ds-text-3);
+}
+.vtool-slot img,
+.vtool-slot video {
+  height: 64px;
+  max-width: 100%;
+  object-fit: contain;
+}
+.vtool-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: var(--ds-space-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-3);
+}
+.vtool-remove svg,
+.vtool-instruction summary svg {
+  width: 16px;
+  height: 16px;
+}
+.vtool-setting,
+.vtool-instruction {
+  background: var(--ds-surface-2);
+  border: 1px solid var(--ds-line-2);
+  padding: var(--ds-space-3);
+  border-radius: var(--ds-r-lg);
+  font-size: var(--ds-fs-sm);
+}
+.vtool-setting,
+.vtool-instruction summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+.vtool-setting select,
+.vtool-setting option {
+  background: var(--ds-surface-2);
+  color: var(--ds-text-1);
+}
+.vtool-instruction summary {
+  cursor: pointer;
+}
+.vtool-instruction textarea {
+  display: block;
+  width: 100%;
+  min-height: 82px;
+  resize: vertical;
+  background: transparent;
+  margin-top: var(--ds-space-2);
+}
+.vtool-segment {
+  display: flex;
+  padding: 2px;
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-1);
+}
+.vtool-segment button {
+  padding: var(--ds-space-1) var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+}
+.vtool-segment button[aria-pressed="true"] {
+  background: var(--ds-fill-3);
+  color: var(--ds-text-1);
+}
+.vtool-guide-icon {
+  display: grid;
+  place-items: center;
+}
+.vtool-guide-icon svg {
+  width: 42px;
+  height: 42px;
+  color: var(--ds-text-2);
+}
+.vtool-upload-extend {
+  display: flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  padding: var(--ds-space-3);
+  border: 1px dashed var(--ds-line-3);
+  border-radius: var(--ds-r-lg);
+}
+.vtool-upload-extend svg {
+  width: 18px;
+}
+
+.vtool-mode-pane[hidden] {
+  display: none;
+}
+.vtool-edit-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+  font-size: var(--ds-fs-sm);
+}
+.vtool-edit-menu svg {
+  width: 16px;
+  height: 16px;
+}
+.vtool-edit-menu > div {
+  padding: var(--ds-space-1);
+  background: var(--ds-surface-2);
+  border: 1px solid var(--ds-line-2);
+  border-radius: var(--ds-r-lg);
+}
+.vtool-edit-menu small {
+  color: var(--ds-text-3);
+}
+
+.vtool-cover > div {
+  position: relative;
+  color: CanvasText;
+  color-scheme: only dark;
+}
+.vtool-guide-icon > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vtool-guide-icon > span {
+  position: absolute;
+  left: var(--ds-space-2);
+  bottom: var(--ds-space-2);
+  display: grid;
+  place-items: center;
+  padding: var(--ds-space-2);
+  border-radius: var(--ds-r-full);
+  background: var(--du-bg-elev);
+}
+.vtool-guide-icon > span svg {
+  width: 18px;
+  height: 18px;
+}

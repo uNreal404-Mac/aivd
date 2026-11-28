@@ -29,6 +29,7 @@ export interface VideoGenerationParams {
   quality?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  videoUrls?: string[];
   mode?: string;
   outputNumber?: number;
   generateAudio?: boolean;

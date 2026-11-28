@@ -48,6 +48,43 @@
   margin: 0 auto;
 }
 
+.gl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  margin: 0 auto var(--ds-space-5);
+  padding: 0;
+  border: 0;
+}
+
+.gl-chip {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--ds-line-1);
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  transition: background-color var(--m-instant) var(--m-ease-out), border-color var(--m-instant) var(--m-ease-out), color var(--m-instant) var(--m-ease-out);
+}
+
+.gl-chip:hover {
+  border-color: var(--ds-line-2);
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.gl-chip-on,
+.gl-chip-on:hover {
+  border-color: transparent;
+  background: var(--ds-text-1);
+  color: var(--du-bg);
+}
+
 .gl-grid {
   margin: 0;
   padding: 0;
@@ -77,7 +114,7 @@
 
 .gl-open img,
 .gl-open video {
-  transition: transform 700ms var(--du-ease, ease);
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .gl-card:hover .gl-open img,
@@ -172,16 +209,17 @@
   height: 30px;
   flex: none;
   align-items: center;
-  gap: 4px;
-  padding: 0 10px;
+  gap: 5px;
+  padding: 0 12px;
   border-radius: var(--ds-r-full);
-  background: var(--du-accent);
+  background: var(--du-gradient);
+  box-shadow: var(--du-glow);
   color: var(--du-on-accent);
   font-size: var(--ds-fs-xs);
-  font-weight: 600;
+  font-weight: 700;
   opacity: 0;
   pointer-events: auto;
-  transition: opacity var(--du-dur-fast, 180ms) ease;
+  transition: opacity var(--m-instant) var(--m-ease-out), transform var(--m-instant) var(--m-ease-out);
 }
 
 .gl-use svg {

@@ -12,35 +12,35 @@
   isolation: isolate;
 }
 
+/* One light sweep moved with a transform (not a repainted background), over
+   a still accent glow. The card's own ds-shimmer loop is switched off below,
+   so a running job shows one moving thing, not three. */
 .sr-shimmer {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    radial-gradient(120% 80% at 20% 0%, color-mix(in srgb, var(--du-accent) 16%, transparent), transparent 60%),
-    linear-gradient(
-      100deg,
-      transparent 20%,
-      var(--ds-fill-2) 45%,
-      transparent 70%
-    );
-  background-size:
-    100% 100%,
-    220% 100%;
-  animation: sr-shimmer 1.8s linear infinite;
+  overflow: hidden;
+  background: radial-gradient(120% 80% at 20% 0%, color-mix(in srgb, var(--du-accent) 12%, transparent), transparent 60%);
 }
 
-@keyframes sr-shimmer {
-  from {
-    background-position:
-      0 0,
-      120% 0;
-  }
+.sr-shimmer::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 25%, var(--ds-fill-2) 50%, transparent 75%);
+  content: "";
+  transform: translateX(-100%);
+  animation: sr-sweep 1.8s var(--m-ease-in-out) infinite;
+}
+
+@keyframes sr-sweep {
   to {
-    background-position:
-      0 0,
-      -120% 0;
+    transform: translateX(100%);
   }
+}
+
+.sr-pending.ds-shimmer {
+  background: var(--ds-surface-2);
+  animation: none;
 }
 
 .sr-pending-body {
@@ -65,16 +65,28 @@
   height: 8px;
   border-radius: var(--ds-r-full);
   background: var(--du-accent);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--du-accent) 60%, transparent);
-  animation: sr-ping 1.4s var(--du-ease, ease) infinite;
+  position: relative;
+}
+
+/* The dot breathes with a ring that grows and fades (transform and opacity,
+   not a repainted shadow). */
+.sr-dot::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--du-accent);
+  content: "";
+  animation: sr-ping 1.4s var(--m-ease-out) infinite;
 }
 
 @keyframes sr-ping {
-  70% {
-    box-shadow: 0 0 0 8px transparent;
+  from {
+    opacity: 0.6;
+    transform: scale(1);
   }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
+  to {
+    opacity: 0;
+    transform: scale(2.6);
   }
 }
 
@@ -121,8 +133,8 @@
   color: var(--du-text);
   backdrop-filter: blur(10px);
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .sr-icon:hover {
@@ -145,8 +157,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .sr-pill:hover {
@@ -182,12 +194,32 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 600ms var(--du-ease, ease);
+  opacity: 0;
+  transition:
+    transform var(--m-slow) var(--m-ease-out),
+    opacity var(--m-base) var(--m-ease-out);
 }
 
-.sr-card:hover > img,
-.sr-card:hover > video {
-  transform: scale(1.03);
+/* Fades in once it has a frame (studio-results markReady / readyRef). */
+.sr-card > [data-ready] {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sr-card:hover > img,
+  .sr-card:hover > video {
+    transform: scale(1.03);
+  }
+}
+
+/* Touch screens cannot hover: the card's actions are always there. */
+@media (hover: none) {
+  .sr-card .sr-card-shade,
+  .sr-card .sr-card-top,
+  .sr-card .sr-card-bottom {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .sr-card-shade {
@@ -196,7 +228,7 @@
   background: linear-gradient(to top, color-mix(in srgb, var(--du-bg) 78%, transparent), transparent 45%);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--du-dur, 400ms) var(--du-ease, ease);
+  transition: opacity var(--m-base) var(--m-ease-out);
 }
 
 .sr-card-top,
@@ -209,8 +241,8 @@
   gap: 6px;
   opacity: 0;
   transition:
-    opacity var(--du-dur, 400ms) var(--du-ease, ease),
-    transform var(--du-dur, 400ms) var(--du-ease, ease);
+    opacity var(--m-base) var(--m-ease-out),
+    transform var(--m-base) var(--m-ease-out);
 }
 
 .sr-card-top {
@@ -279,7 +311,7 @@
   z-index: 200;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  animation: sr-fade var(--du-dur, 400ms) var(--du-ease, ease) both;
+  animation: sr-fade var(--m-base) var(--m-ease-out) both;
 }
 
 @keyframes sr-fade {
@@ -313,7 +345,8 @@
   box-shadow: 0 30px 80px color-mix(in srgb, var(--du-bg) 70%, transparent);
   object-fit: contain;
   pointer-events: auto;
-  animation: du-pop var(--du-dur, 400ms) var(--du-ease, ease) both;
+  /* A short cross-fade, also when stepping to the next item (keyed). */
+  animation: du-fade-in var(--m-fast) var(--m-ease-out) both;
 }
 
 .sr-viewer-nav {
@@ -329,7 +362,7 @@
   color: var(--du-text);
   pointer-events: auto;
   transform: translateY(-50%);
-  transition: background-color var(--du-dur-fast, 180ms) ease;
+  transition: background-color var(--m-instant) var(--m-ease-out);
 }
 
 .sr-viewer-nav:hover {
@@ -393,6 +426,23 @@
   word-break: break-word;
 }
 
+.sr-viewer-settings {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ds-line-1);
+}
+
+.sr-viewer-settings dl { display: grid; gap: 8px; margin: 0; }
+.sr-viewer-settings dl > div { display: flex; justify-content: space-between; gap: 16px; font-size: var(--ds-fs-sm); }
+.sr-viewer-settings dt { color: var(--du-text-muted); }
+.sr-viewer-settings dd { margin: 0; color: var(--du-text); text-align: right; word-break: break-word; }
+
+.sr-card-text { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.sr-card-text .sr-card-prompt { flex: none; }
+.sr-card-settings { overflow: hidden; color: var(--du-text-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
 .sr-viewer-actions {
   display: flex;
   flex-wrap: wrap;
@@ -425,7 +475,7 @@
   border-radius: var(--ds-r-full);
   background: var(--du-accent);
   color: var(--du-on-accent);
-  transition: transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+  transition: transform var(--m-instant) var(--m-ease-out);
 }
 
 .sr-wave-play:active {
@@ -449,13 +499,13 @@
 }
 
 .sr-bar {
-  min-height: 3px;
+  height: 100%;
   flex: 1;
   border-radius: var(--ds-r-xs);
   background: var(--ds-fill-4);
   transition:
-    height var(--du-dur, 400ms) var(--du-ease, ease),
-    background-color 120ms ease;
+    transform var(--m-base) var(--m-ease-out),
+    background-color var(--m-instant) var(--m-ease-out);
 }
 
 .sr-bar-on {

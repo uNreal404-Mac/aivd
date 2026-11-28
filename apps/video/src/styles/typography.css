@@ -9,6 +9,7 @@ body {
     ui-sans-serif, system-ui, sans-serif;
   --du-font-display: var(--font-display), "Space Grotesk", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
     "Noto Sans SC", ui-sans-serif, sans-serif;
+  --du-font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 body {
@@ -47,7 +48,12 @@ body {
 .sp-step-n,
 .is-step-n,
 .ft-logo,
-.ft-tagline {
+.ft-tagline,
+.vs-panel-title,
+.vs-stage-title,
+.vs-showcase-head h3,
+.cc-empty-card h2,
+.cc-agent-title {
   font-family: var(--du-font-display);
 }
 
@@ -79,6 +85,11 @@ body {
 .du-composer-cost,
 .hf-acct-credits-value,
 .hf-acct-left,
-.vs-count {
+.vs-count,
+.cc-zoom-val,
+.vs-meta-mono,
+.cc-node-badge,
+.vs-showcase-meta {
+  font-family: var(--du-font-mono);
   font-variant-numeric: tabular-nums;
 }

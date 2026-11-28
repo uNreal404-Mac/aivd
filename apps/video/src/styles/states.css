@@ -136,7 +136,7 @@
   border-radius: var(--ds-r-lg);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--du-bg) 60%, transparent);
   object-fit: cover;
-  transition: transform var(--du-dur, 400ms) var(--du-ease, ease);
+  transition: transform var(--m-base) var(--m-ease-out);
 }
 
 .st-art img:nth-child(1) {
@@ -238,8 +238,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 500;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .st-btn:hover {
@@ -288,8 +288,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   transition:
-    border-color var(--du-dur-fast, 180ms) ease,
-    color var(--du-dur-fast, 180ms) ease;
+    border-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out);
 }
 
 .st-idea:hover {

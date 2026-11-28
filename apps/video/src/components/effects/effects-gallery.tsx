@@ -11,7 +11,7 @@ import {
   copyFor,
   filterEffects,
   labelFor,
-  useHref,
+  presetHref,
   type EffectsCategory,
 } from "@/lib/effects-data";
 import "./effects.css";
@@ -79,12 +79,12 @@ export function EffectsGallery({ lang }: { lang: string }) {
             return (
               <li key={template.id} className="fx-item">
                 <Link
-                  href={useHref(lang, template)}
+                  href={presetHref(lang, template)}
                   className={`fx-card ${look.move ? `fx-move-${look.move}` : ""}`}
                   style={{ aspectRatio: SHAPES[index % SHAPES.length] }}
                 >
                   <img src={look.image} alt="" loading="lazy" />
-                  <span className="fx-tag">{zh ? "示意" : "Illustration"}</span>
+                  <span className="fx-tag">{labelFor(CATEGORY_LABELS[template.category], lang)}</span>
                   {template.badge === "new" ? (
                     <span className="fx-new">
                       <Sparkles aria-hidden="true" />
@@ -97,6 +97,7 @@ export function EffectsGallery({ lang }: { lang: string }) {
                       <span className="fx-desc">{labelFor(template.description, lang)}</span>
                     </span>
                     <span className="fx-go" aria-hidden="true">
+                      <span>{zh ? "使用" : "Use"}</span>
                       <ArrowUpRight />
                     </span>
                   </span>

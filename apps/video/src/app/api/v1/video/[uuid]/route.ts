@@ -31,9 +31,8 @@ export async function DELETE(
     const user = await requireAuth(request);
     const { uuid } = await params;
 
-    await videoService.deleteVideo(uuid, user.id);
-
-    return apiSuccess({ deleted: true });
+    const undoToken = await videoService.deleteVideo(uuid, user.id);
+    return undoToken ? apiSuccess({ deleted: true, undoToken }) : apiError("Creation not found", 404);
   } catch (error) {
     return handleApiError(error);
   }

@@ -92,11 +92,19 @@ vi.mock("@/lib/video-events", () => ({
 // Imports under test (after mocks)
 // ---------------------------------------------------------------------------
 
-import { db, videos, creditHolds, CreditTransType } from "@/db";
-import { videoService, type GenerateVideoParams } from "@/services/video";
+import { db, videos, mediaAssets, creditHolds, CreditTransType } from "@/db";
+import {
+  RECONCILE_MAX_AGE_MS,
+  RECONCILE_NO_TASK_MS,
+  RECONCILE_QUIET_MS,
+  STALE_UPLOAD_CLAIM_MS,
+  videoService,
+  type GenerateVideoParams,
+} from "@/services/video";
 import { creditService } from "@/services/credit";
 import { ApiError } from "@/lib/api/error";
 import { getModelConfig, calculateModelCredits } from "@/config/credits";
+import { transformParamsForProvider, getProviderModelId } from "@/ai/model-mapping";
 import { getStorage } from "@/lib/storage";
 import {
   countHoldsForUser,
@@ -165,6 +173,52 @@ describe("videoService.generate / creditService integration", () => {
   afterEach(() => {
     failState.failExternalTaskIdWrite = false;
     vi.restoreAllMocks();
+  });
+
+  it("dispatches owned Wan video references in order, with the existing quote and a stable replay", async () => {
+    process.env.DEFAULT_AI_PROVIDER = "kie";
+    const userId = uniqueUserId();
+    const keys = ["b.mov", "a.mp4"].map((name) => `uploads/${userId}/${name}`);
+    await giveCredits(userId, 1000);
+    await db.insert(mediaAssets).values(keys.map((key) => ({
+      id: key, userId, key, name: key, mimeType: key.endsWith(".mov") ? "video/quicktime" : "video/mp4", size: 2048,
+    })));
+    fakeProvider.createTask.mockResolvedValue({ taskId: "wan-test", provider: "kie", status: "pending" });
+    const request = { ...baseParams(userId), model: "wan2.6", duration: 5, quality: "720p", mode: "reference-to-video", videoKeys: keys, idempotencyKey: "replay" };
+    const first = await videoService.generate(request);
+    expect(first.creditsUsed).toBe(calculateModelCredits("wan2.6", { duration: 5, quality: "720p" }));
+    const providerInput = fakeProvider.createTask.mock.calls[0][0];
+    expect(getProviderModelId("wan2.6", "kie", providerInput)).toBe("wan/2-6-video-to-video");
+    expect(transformParamsForProvider("wan2.6", "kie", providerInput).input).toEqual({
+      prompt: request.prompt, duration: "5", resolution: "720p", multi_shots: false,
+      video_urls: keys.map((key) => `https://signed.test/${key}`),
+    });
+    expect(await getVideoRow(first.videoUuid)).toMatchObject({ aspectRatio: null, parameters: { videoKeys: keys, generateAudio: true } });
+    await db.delete(mediaAssets).where(eq(mediaAssets.userId, userId));
+    expect((await videoService.generate(request)).videoUuid).toBe(first.videoUuid);
+    expect(fakeProvider.createTask).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects unavailable, oversized, mixed and non-video Wan references before holding credits", async () => {
+    process.env.DEFAULT_AI_PROVIDER = "kie";
+    const userId = uniqueUserId();
+    const key = (name: string) => `uploads/${userId}/${name}`;
+    await giveCredits(userId, 1000);
+    await db.insert(mediaAssets).values([
+      { id: key("large"), userId, key: key("large"), name: "a.mov", mimeType: "video/quicktime", size: 11 * 1024 * 1024 },
+      { id: key("image"), userId, key: key("image"), name: "a.png", mimeType: "image/png", size: 80 },
+    ]);
+    const base = { ...baseParams(userId), model: "wan2.6", mode: "reference-to-video" };
+    for (const invalid of [
+      { videoKeys: [key("large")] }, { videoKeys: [key("image")] }, { videoKeys: [key("missing")] },
+      { videoKeys: ["uploads/someone-else/a.mp4"] }, { videoKeys: ["https://remote.test/a.mp4"] },
+      { videoKeys: [key("a.mp4")], imageUrl: key("image") }, { model: "veo-3.1", videoKeys: [key("a.mp4")] },
+      { duration: 6, videoKeys: [key("a.mp4")] }, { outputNumber: 2, videoKeys: [key("a.mp4")] },
+    ]) {
+      await expect(videoService.generate({ ...base, ...invalid })).rejects.toMatchObject({ status: 400 });
+    }
+    expect(fakeProvider.createTask).not.toHaveBeenCalled();
+    expect((await getBalance(userId)).availableCredits).toBe(1000);
   });
 
   it("case 1: provider accepted but response timed out", async () => {
@@ -368,6 +422,134 @@ describe("videoService.generate / creditService integration", () => {
     expect(after.availableCredits).toBe(before.availableCredits - EXPECTED_COST);
   });
 
+  it("a failed video transfer gives back its claim so the next delivery retries it", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+    const before = await getBalance(userId);
+
+    fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_retry", provider: "evolink", status: "pending" });
+    const { videoUuid } = await videoService.generate(baseParams(userId));
+    fakeProvider.parseCallback.mockReturnValue({
+      taskId: "ext_retry", provider: "evolink", status: "completed", videoUrl: "http://provider.test/v.mp4",
+    });
+
+    downloadAndUpload.mockRejectedValueOnce(new Error("transfer cut off"));
+    await expect(videoService.handleCallback("evolink", {}, videoUuid)).rejects.toThrow("transfer cut off");
+    expect((await getVideoRow(videoUuid))?.status).toBe("GENERATING");
+    expect((await getHoldRow(videoUuid))?.status).toBe("HOLDING");
+
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("COMPLETED");
+    expect((await getHoldRow(videoUuid))?.status).toBe("SETTLED");
+    expect(await countTransactions(videoUuid, CreditTransType.VIDEO_CONSUME)).toBe(1);
+    expect((await getBalance(userId)).availableCredits).toBe(before.availableCredits - EXPECTED_COST);
+  });
+
+  it("a delivery cut off mid-transfer can be taken over once its claim is stale", async () => {
+    const userId = uniqueUserId();
+    await giveCredits(userId, 1000);
+
+    fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_stale", provider: "evolink", status: "pending" });
+    const { videoUuid } = await videoService.generate(baseParams(userId));
+    fakeProvider.parseCallback.mockReturnValue({
+      taskId: "ext_stale", provider: "evolink", status: "completed", videoUrl: "http://provider.test/v.mp4",
+    });
+
+    // A fresh claim is respected: a second delivery does nothing.
+    await db.update(videos).set({ status: "UPLOADING", updatedAt: new Date() }).where(eq(videos.uuid, videoUuid));
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("UPLOADING");
+    expect(downloadAndUpload).not.toHaveBeenCalled();
+
+    // An abandoned claim is taken over and the video completes.
+    await db.update(videos)
+      .set({ updatedAt: new Date(Date.now() - STALE_UPLOAD_CLAIM_MS - 1000) })
+      .where(eq(videos.uuid, videoUuid));
+    await videoService.handleCallback("evolink", {}, videoUuid);
+    expect((await getVideoRow(videoUuid))?.status).toBe("COMPLETED");
+    expect((await getHoldRow(videoUuid))?.status).toBe("SETTLED");
+  });
+
+  describe("reconcileStuckGenerations", () => {
+    const ago = (ms: number) => new Date(Date.now() - ms);
+    const age = (videoUuid: string, createdMs: number, updatedMs = createdMs) =>
+      db.update(videos).set({ createdAt: ago(createdMs), updatedAt: ago(updatedMs) }).where(eq(videos.uuid, videoUuid));
+    const actionFor = async (videoUuid: string) =>
+      (await videoService.reconcileStuckGenerations({ limit: 500 })).find((row) => row.uuid === videoUuid);
+
+    it("fails and refunds a submission that never recorded a provider task", async () => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 1000);
+      const before = await getBalance(userId);
+      fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_lost", provider: "evolink", status: "pending" });
+      const { videoUuid } = await videoService.generate(baseParams(userId));
+      await db.update(videos).set({ externalTaskId: null }).where(eq(videos.uuid, videoUuid));
+
+      await age(videoUuid, RECONCILE_QUIET_MS + 60_000);
+      expect((await actionFor(videoUuid))?.action).toBe("still_running");
+      expect((await getVideoRow(videoUuid))?.status).not.toBe("FAILED");
+
+      await age(videoUuid, RECONCILE_NO_TASK_MS + 60_000);
+      expect((await actionFor(videoUuid))?.action).toBe("failed_no_task");
+      expect((await getVideoRow(videoUuid))?.status).toBe("FAILED");
+      expect((await getHoldRow(videoUuid))?.status).toBe("RELEASED");
+      expect((await getBalance(userId)).availableCredits).toBe(before.availableCredits);
+    });
+
+    it("completes a task whose callback was lost", async () => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 1000);
+      fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_nocb", provider: "evolink", status: "pending" });
+      const { videoUuid } = await videoService.generate(baseParams(userId));
+      fakeProvider.getTaskStatus.mockResolvedValue({
+        taskId: "ext_nocb", provider: "evolink", status: "completed", videoUrl: "http://provider.test/v.mp4",
+      });
+
+      await age(videoUuid, RECONCILE_QUIET_MS + 60_000);
+      expect((await actionFor(videoUuid))?.action).toBe("synced");
+      expect((await getVideoRow(videoUuid))?.status).toBe("COMPLETED");
+      expect((await getHoldRow(videoUuid))?.status).toBe("SETTLED");
+    });
+
+    it("leaves a running task alone and moves it to the back of the queue", async () => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 1000);
+      fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_slow", provider: "evolink", status: "pending" });
+      const { videoUuid } = await videoService.generate(baseParams(userId));
+      fakeProvider.getTaskStatus.mockResolvedValue({ taskId: "ext_slow", provider: "evolink", status: "processing" });
+
+      await age(videoUuid, RECONCILE_QUIET_MS + 60_000);
+      expect((await actionFor(videoUuid))?.action).toBe("still_running");
+      const row = await getVideoRow(videoUuid);
+      expect(row?.status).toBe("GENERATING");
+      expect((await getHoldRow(videoUuid))?.status).toBe("HOLDING");
+      expect(Date.now() - (row?.updatedAt.getTime() ?? 0)).toBeLessThan(RECONCILE_QUIET_MS);
+    });
+
+    it("fails and refunds a generation open for more than a day", async () => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 1000);
+      const before = await getBalance(userId);
+      fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_old", provider: "evolink", status: "pending" });
+      const { videoUuid } = await videoService.generate(baseParams(userId));
+
+      await age(videoUuid, RECONCILE_MAX_AGE_MS + 60_000, RECONCILE_QUIET_MS + 60_000);
+      expect((await actionFor(videoUuid))?.action).toBe("failed_timeout");
+      expect((await getVideoRow(videoUuid))?.status).toBe("FAILED");
+      expect((await getHoldRow(videoUuid))?.status).toBe("RELEASED");
+      expect((await getBalance(userId)).availableCredits).toBe(before.availableCredits);
+    });
+
+    it("does not touch a generation that changed recently", async () => {
+      const userId = uniqueUserId();
+      await giveCredits(userId, 1000);
+      fakeProvider.createTask.mockResolvedValueOnce({ taskId: "ext_fresh", provider: "evolink", status: "pending" });
+      const { videoUuid } = await videoService.generate(baseParams(userId));
+      expect(await actionFor(videoUuid)).toBeUndefined();
+      expect(fakeProvider.getTaskStatus).not.toHaveBeenCalled();
+    });
+  });
+
   it("user isolation", async () => {
     const userA = uniqueUserId("user_a");
     const userB = uniqueUserId("user_b");
@@ -395,6 +577,19 @@ describe("videoService.generate / creditService integration", () => {
     const stillThere = await videoService.getVideo(uuidA, userA);
     expect(stillThere).not.toBeNull();
     expect(stillThere?.uuid).toBe(uuidA);
+
+    const undo = (await videoService.deleteVideo(uuidA, userA))!;
+    expect(await videoService.deleteVideo(uuidA, userA)).toBe(undo);
+    expect(await videoService.restoreVideo(uuidA, userB, undo)).toBe(false);
+    expect(await videoService.getVideo(uuidA, userA)).toBeNull();
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(true);
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(true);
+    const nextUndo = (await videoService.deleteVideo(uuidA, userA))!;
+    expect(nextUndo).not.toBe(undo);
+    expect(await videoService.restoreVideo(uuidA, userA, undo)).toBe(false);
+    expect(await videoService.getVideo(uuidA, userA)).toBeNull();
+    expect(await videoService.restoreVideo(uuidA, userA, nextUndo)).toBe(true);
+    expect((await videoService.listVideos(userA)).videos.some((item) => item.uuid === uuidA)).toBe(true);
   });
 
   it("credit freeze/settle/release consistency", async () => {

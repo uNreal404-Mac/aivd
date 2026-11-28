@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { localizedHref } from "@/lib/locale-path";
+import { languageSwitchSuffix, localizedHref } from "@/lib/locale-path";
 
 describe("localizedHref", () => {
   it("gives English pages no prefix", () => {
@@ -65,4 +65,11 @@ describe("links in the source", () => {
     }
     expect(offenders).toEqual([]);
   });
+});
+
+
+it("retains the tool settings and hash across languages without reissuing an autostart", () => {
+  expect(languageSwitchSuffix("?model=wan2.6&autostart=one-time&mode=extend", "#controls"))
+    .toBe("?model=wan2.6&mode=extend#controls");
+  expect(languageSwitchSuffix("?autostart=one-time", "")).toBe("");
 });

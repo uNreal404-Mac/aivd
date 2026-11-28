@@ -11,7 +11,7 @@ import {
   copyFor,
   filterEffects,
   labelFor,
-  useHref,
+  presetHref,
 } from "../src/lib/effects-data";
 
 const NON_ALL_CATEGORIES = EFFECT_CATEGORIES.filter(
@@ -121,12 +121,12 @@ describe("effect images", () => {
   });
 });
 
-describe("useHref", () => {
+describe("presetHref", () => {
   it("encodes preset and prompt for the studio", () => {
     const template = EFFECT_TEMPLATES[0];
-    const href = useHref("en", template);
+    const href = presetHref("en", template);
     expect(href.startsWith("/ai/video?preset=")).toBe(true);
-    expect(useHref("zh", template).startsWith("/zh/ai/video?preset=")).toBe(true);
+    expect(presetHref("zh", template).startsWith("/zh/ai/video?preset=")).toBe(true);
     expect(href).toContain(`preset=${encodeURIComponent(template.id)}`);
     expect(href).toContain(`prompt=${encodeURIComponent(template.prompt)}`);
   });

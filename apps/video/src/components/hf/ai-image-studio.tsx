@@ -1,178 +1,205 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AtSign, ChevronRight, Clapperboard, Clock, Gem, ImagePlus, Minus, Plus, RectangleHorizontal, RotateCcw, Sparkles, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, ChevronRight, Clock, Gem, Loader2, Paintbrush, Minus, Plus, Scan, Sparkles, X } from "lucide-react";
 import { KieModelPicker } from "@/components/hf/kie-model-picker";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
+import { imageOutputCount } from "@/lib/image-output-count";
+import { clearSubmittedHomePrompt } from "@/lib/home-draft";
+import { AUTOSTART_STORAGE_KEY, claimAutostart } from "@/lib/autostart";
+import { currentUploadUrls, readyPickerImage, type PickerAsset } from "@/lib/home-media-library";
+import { HomeMediaPicker } from "@/components/hf/home-media-picker";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
-import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
-import { uploadImage, validateImageFile } from "@/lib/image-to-video";
+import { getMarketModel, imageResolution, marketCredits, marketModelsOf } from "@/ai/kie-market";
+import { uploadErrorText, uploadImage, validateImageFile } from "@/lib/image-to-video";
 import { submitMedia, useMediaJobs } from "@/lib/media-studio";
+import { prepareVideoReferencePrompt, removeVideoReferenceToken } from "@/lib/video-references";
+import { marketImageNotice, marketInputNotice } from "@/lib/market-input-check";
 import { ImageShowcase } from "@/components/hf/image-showcase";
-import {
-  CopyPromptButton,
-  DownloadLink,
-  MediaViewer,
-  PendingCard,
-  sendImageToVideo,
-  useImageDrop,
-  type ViewerItem,
-} from "@/components/hf/studio-results";
+import { MediaViewer, sendImageToVideo, useImageDrop, type ViewerItem } from "@/components/hf/studio-results";
+import { BarSelect, RatioIcon, Tip } from "@/components/hf/image-studio/bar-menu";
+import { MentionMenu, mentionToken } from "@/components/hf/image-studio/mention-menu";
+import { ResultsGrid } from "@/components/hf/image-studio/results-grid";
+import { FilterMenu, INITIAL_FILTER, matchingHistory } from "./video-studio/history-filter";
+import { DrawDialog } from "./image-studio/draw-dialog";
+import { ImageMobileNavigation } from "./image-studio/mobile-navigation";
+import { StudioHero } from "@/components/hf/image-studio/studio-hero";
+import { ViewMenu, useImageView } from "@/components/hf/image-studio/view-menu";
 import { localizedHref } from "@/lib/du-home";
 import { scrollMotion } from "@/lib/reduced-motion";
 import "./ai-image-studio.css";
 
-// Tilted photo stack above the title, as on the reference image page.
-const COLLAGE = [
-  { src: "/home/samples/red-carpet.webp", className: "is-1" },
-  { src: "/home/samples/rain-couple.webp", className: "is-2" },
-  { src: "/home/samples/dancer.webp", className: "is-3" },
-  { src: "/home/samples/autumn-walk.webp", className: "is-4" },
-];
-
 const IMAGE_MODELS = marketModelsOf("image");
 const IMAGE_MODEL_IDS = IMAGE_MODELS.map((model) => model.id);
+const DEFAULT_IMAGE_MODEL = IMAGE_MODELS.find(model => model.id === "nano-banana-pro") ?? IMAGE_MODELS[0];
+/** "@", "@图片" or "@图片2" right before the caret: the mention list opens. */
+const MENTION_AT_CARET = /@(?:图片|image)?\d*$/i;
+/** The ratio menu lists shapes in the reference's order: square, then each
+ * landscape shape followed by its portrait twin, widest last. Ratios a model
+ * adds beyond these keep their own order at the end. */
+const RATIO_ORDER = ["auto", "1:1", "3:2", "2:3", "16:9", "9:16", "4:3", "3:4", "21:9"];
+const byRatioOrder = (list: string[]) =>
+  [...list].sort((a, b) => {
+    const at = (value: string) => (RATIO_ORDER.includes(value) ? RATIO_ORDER.indexOf(value) : RATIO_ORDER.length + list.indexOf(value));
+    return at(a) - at(b);
+  });
 
-/**
- * Toolbar chip that opens a small menu of its options above the composer.
- * (It used to step to the next value on each click, which hid the choices.)
- * A single option reads as a plain value.
- */
-function MenuChip({
-  icon,
-  value,
-  options,
-  format,
-  onChange,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  options: readonly string[];
-  format: (option: string) => string;
-  onChange: (option: string) => void;
-  label: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLSpanElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: PointerEvent) => {
-      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  if (options.length <= 1) {
-    return (
-      <span className="is-chip is-chip-fixed" title={label}>
-        {icon}
-        {format(value)}
-      </span>
-    );
-  }
-
-  return (
-    <span ref={wrapRef} className="is-menu-wrap">
-      <button
-        ref={buttonRef}
-        type="button"
-        className="is-chip"
-        aria-label={`${label}: ${format(value)}`}
-        aria-haspopup="true"
-        aria-expanded={open}
-        title={label}
-        onClick={() => setOpen((current) => !current)}
-      >
-        {icon}
-        {format(value)}
-      </button>
-      {open ? (
-        <fieldset className="is-menu">
-          <legend className="is-menu-title">{label}</legend>
-          <span className="is-menu-grid">
-            {options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className="is-menu-item"
-                aria-pressed={option === value}
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                  buttonRef.current?.focus();
-                }}
-              >
-                {format(option)}
-              </button>
-            ))}
-          </span>
-        </fieldset>
-      ) : null}
-    </span>
-  );
+export function AiImageStudio(props: Parameters<typeof AiImageStudioForm>[0]) {
+  const { data: session, isPending } = useSession();
+  return <AiImageStudioForm key={session?.user?.id ?? (isPending ? "loading" : "guest")} {...props} />;
 }
 
-export function AiImageStudio({
+function AiImageStudioForm({
   locale,
   initialPrompt = "",
   initialModel = "",
   initialAspect = "",
+  initialResolution = "",
+  initialCount = 1,
+  homeHandoffToken = "",
+  expectedReferences = -1,
 }: {
   locale: string;
   initialPrompt?: string;
   initialModel?: string;
+  initialCount?: number | string;
   initialAspect?: string;
+  /** Resolution chosen on the homepage, used when this model offers it. */
+  initialResolution?: string;
+  homeHandoffToken?: string;
+  expectedReferences?: number;
 }) {
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
-  const { data: session } = useSession();
+  const { data: session, isPending: sessionLoading } = useSession();
+  const draftScope = session?.user?.id ? `image:${session.user.id}` : sessionLoading ? "image:loading" : "image";
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
     session?.user?.isAdmin === true && session.user.isSuperAccount === true;
-  const [modelId, setModelId] = useState(getMarketModel(initialModel)?.kind === "image" ? initialModel : IMAGE_MODELS[0].id);
+  const [modelId, setModelId] = useState(getMarketModel(initialModel)?.kind === "image" ? initialModel : DEFAULT_IMAGE_MODEL.id);
   const model = getMarketModel(modelId) ?? IMAGE_MODELS[0];
   const options = model.options;
-  const [prompt, setPrompt] = useState(initialPrompt);
-  const draft = usePromptDraft("image", prompt, setPrompt, Boolean(initialPrompt));
-  const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (options.aspects?.[0] ?? "1:1"));
-  const [resolution, setResolution] = useState(options.resolutions?.[0] ?? "");
-  const [count, setCount] = useState(1);
-  const [refs, setRefs] = useState<{ key: string; name: string; preview: string }[]>([]);
+  const [mobileComposer, setMobileComposer] = useState(Boolean(initialPrompt || initialModel || initialAspect || initialResolution));
+  const [drawOpen, setDrawOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   useEffect(() => {
+    try { setShowGuide(localStorage.getItem("aivd:image-studio-guide-dismissed") !== "1"); } catch { /* Storage is optional. */ }
+  }, []);
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const draft = usePromptDraft(draftScope, prompt, setPrompt, Boolean(initialPrompt || homeHandoffToken));
+  const [aspect, setAspect] = useState(options.aspects?.includes(initialAspect) ? initialAspect : (model.id === DEFAULT_IMAGE_MODEL.id && options.aspects?.includes("3:4") ? "3:4" : options.aspects?.[0] ?? "1:1"));
+  const [resolution, setResolution] = useState(imageResolution(model, initialResolution) ?? "");
+  const [count, setCount] = useState(() => imageOutputCount(initialCount, options.maxCount));
+  const [view, setView] = useImageView();
+  const [historyFilter, setHistoryFilter] = useState(INITIAL_FILTER);
+  const [refs, setRefs] = useState<{ key: string; name: string; preview: string; sourceId?: string }[]>([]);
+  const [mediaDraftReady, setMediaDraftReady] = useState(false);
+  const mediaDraftKey = `aivd:image-media-draft:${draftScope}`;
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  // Which shelf of the library opens: "@" can open it on the saved elements.
+  const [pickerTab, setPickerTab] = useState<"upload" | "elements">("upload");
+  const openPicker = (tab: "upload" | "elements") => {
+    setPickerTab(tab);
+    setMediaPickerOpen(true);
+  };
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [sessionWaited, setSessionWaited] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSessionWaited(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+  const [handoffRefsStatus, setHandoffRefsStatus] = useState<"loading" | "ready" | "invalid">(homeHandoffToken ? "loading" : "ready");
+  useEffect(() => {
+    if (sessionLoading || (homeHandoffToken && !session && !sessionWaited)) return;
     const handoff = sessionStorage.getItem("aivd:home-image-references");
-    if (!handoff) return;
+    const owner = sessionStorage.getItem("aivd:home-image-reference-owner");
+    sessionStorage.removeItem("aivd:home-image-reference-owner");
+    if (!handoff) { setHandoffRefsStatus(owner || expectedReferences > 0 ? "invalid" : "ready"); return; }
     sessionStorage.removeItem("aivd:home-image-references");
+    if (owner && owner !== session?.user?.id) { setHandoffRefsStatus("invalid"); return; }
     try {
       const rows: unknown = JSON.parse(handoff);
-      if (Array.isArray(rows)) setRefs(rows.filter((row): row is { key: string; name: string; url: string } =>
-        typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string"
-      ).map((row) => ({ key: row.key, name: row.name, preview: row.url })).slice(0, maxImages));
-    } catch { /* Ignore a stale handoff. */ }
-  }, []);
+      if (!Array.isArray(rows) || (expectedReferences >= 0 && rows.length !== expectedReferences) || rows.length > maxImages || !rows.every((row): row is { key: string; name: string; url: string } =>
+        typeof row?.key === "string" && typeof row?.name === "string" && typeof row?.url === "string" &&
+        (!row.key.startsWith("uploads/") || row.key.startsWith(`uploads/${session?.user?.id}/`))
+      )) { setHandoffRefsStatus("invalid"); return; }
+      setRefs(rows.map((row) => ({ key: row.key, name: row.name, preview: row.url })));
+      setHandoffRefsStatus("ready");
+    } catch { setHandoffRefsStatus("invalid"); }
+  }, [sessionLoading, session?.user?.id, sessionWaited, homeHandoffToken, expectedReferences]);
+  useEffect(() => {
+    if (sessionLoading || handoffRefsStatus === "loading") return;
+    if (!homeHandoffToken) {
+      try {
+        const saved: unknown = JSON.parse(sessionStorage.getItem(mediaDraftKey) || "null");
+        if (Array.isArray(saved)) setRefs(saved.filter((item): item is { key: string; name: string; preview: string; sourceId?: string } =>
+          typeof item?.key === "string" && typeof item?.name === "string" && typeof item?.preview === "string" &&
+          (!item.key.startsWith("uploads/") || item.key.startsWith(`uploads/${session?.user?.id}/`))
+        ).slice(0, maxImages));
+        if (Array.isArray(saved)) void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
+      } catch { /* An unavailable draft does not block the studio. */ }
+    }
+    setMediaDraftReady(true);
+  }, [sessionLoading, handoffRefsStatus, homeHandoffToken, mediaDraftKey]);
+  useEffect(() => {
+    if (!mediaDraftReady) return;
+    try {
+      if (refs.length) sessionStorage.setItem(mediaDraftKey, JSON.stringify(refs));
+      else sessionStorage.removeItem(mediaDraftKey);
+    } catch { /* Storage is optional. */ }
+  }, [mediaDraftReady, mediaDraftKey, refs]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
-  const fileRef = useRef<HTMLInputElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
-  const { jobs, add } = useMediaJobs("image");
+  const { jobs, add } = useMediaJobs("image", Boolean(session));
+  const [pendingSubmission, setPendingSubmission] = useState<import("@/lib/media-studio").MediaJob | null>(() => homeHandoffToken ? {
+    uuid: `submitting:${homeHandoffToken}`, status: "submitting", urls: [], prompt: initialPrompt,
+    model: initialModel, createdAt: Date.now(),
+  } : null);
+  const inFlight = useRef(false);
+  const autostartDone = useRef(false);
   const [viewing, setViewing] = useState<number | null>(null);
+  // The card that opened the viewer gets focus back when it closes.
+  const viewerOpener = useRef<HTMLElement | null>(null);
+  const openViewer = (index: number) => {
+    viewerOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setViewing(index);
+  };
+  const closeViewer = useCallback(() => {
+    setViewing(null);
+    const opener = viewerOpener.current;
+    viewerOpener.current = null;
+    requestAnimationFrame(() => {
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    });
+  }, []);
+  const openInCanvas = (url: string, text: string, modelName?: string, uuid?: string, index?: number) => {
+    try {
+      sessionStorage.setItem("aivd:canvas-handoff", JSON.stringify({ url, prompt: text, model: modelName, kind: "image", uuid, index, ownerId: session?.user?.id }));
+    } catch { /* ignore */ }
+    window.location.href = localizedHref(locale, "/creative-space/canvas");
+  };
+  useCreditReturnDraft(draftScope, () => ({ modelId, prompt, aspect, resolution, count, refs }), (saved) => {
+    const savedModel = getMarketModel(saved.modelId);
+    const restored = savedModel?.kind === "image" ? savedModel : model;
+    setModelId(restored.id);
+    setPrompt(saved.prompt ?? "");
+    setAspect(saved.aspect ?? "1:1");
+    setResolution(imageResolution(restored, saved.resolution) ?? "");
+    setCount(imageOutputCount(saved.count, restored.options.maxCount));
+    setRefs(Array.isArray(saved.refs) ? saved.refs.slice(0, restored.options.maxImages ?? 0) : []);
+    void currentUploadUrls().then((urls) => setRefs((items) => items.map((item) => ({ ...item, preview: urls.get(item.key) ?? item.preview }))));
+  }, () => {
+    if (sessionLoading || !session || !homeHandoffToken || sessionStorage.getItem("aivd:home-image-handoff") !== homeHandoffToken) return false;
+    sessionStorage.removeItem("aivd:home-image-handoff");
+    return true;
+  });
 
+  const modelName = (id?: string) => (id ? (getMarketModel(id)?.name ?? id) : "");
   // Every finished image, in order, for the full-screen viewer.
   const gallery = useMemo<ViewerItem[]>(
     () =>
@@ -183,7 +210,8 @@ export function AiImageStudio({
               url,
               kind: "image" as const,
               prompt: job.prompt,
-              model: getMarketModel(job.model)?.name ?? job.model,
+              model: getMarketModel(job.model ?? "")?.name ?? job.model,
+              parameters: job.parameters,
             }))
           : [],
       ),
@@ -191,26 +219,26 @@ export function AiImageStudio({
   );
 
   const reuse = (text: string) => {
+    setMobileComposer(true);
     setPrompt(text);
     setNotice(null);
     promptRef.current?.focus();
     promptRef.current?.scrollIntoView({ block: "center", behavior: scrollMotion() });
   };
-  const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image");
+  const toVideo = (url: string) => sendImageToVideo(url, localizedHref(locale, "/ai/video"), zh ? "生成的图片" : "Generated image", session?.user?.id);
 
   const maxCount = options.maxCount ?? 1;
   const maxImages = options.maxImages ?? 0;
-  const credits = useMemo(
-    () =>
-      marketCredits(model, {
-        prompt,
-        aspectRatio: aspect,
-        resolution: resolution || undefined,
-        count,
-        imageUrls: refs.map((item) => item.key),
-      }),
-    [model, prompt, aspect, resolution, count, refs],
-  );
+  const request = {
+    model: model.id,
+    prompt,
+    aspectRatio: aspect,
+    resolution: resolution || undefined,
+    count,
+    imageUrls: refs.map((item) => item.key),
+  };
+  const creditsFor = (size: string) => internalFree ? 0 : marketCredits(model, { ...request, resolution: size });
+  const credits = internalFree ? 0 : marketCredits(model, request);
 
   // Switching models keeps choices that the new model accepts.
   const chooseModel = (id: string) => {
@@ -218,278 +246,422 @@ export function AiImageStudio({
     if (!next) return;
     setModelId(id);
     setAspect((current) => (next.options.aspects?.includes(current) ? current : (next.options.aspects?.[0] ?? "1:1")));
-    setResolution((current) => (next.options.resolutions?.includes(current) ? current : (next.options.resolutions?.[0] ?? "")));
+    setResolution((current) => imageResolution(next, current) ?? "");
     setCount((current) => Math.min(current, next.options.maxCount ?? 1));
     setRefs((current) => current.slice(0, next.options.maxImages ?? 0));
   };
 
   const onFiles = async (files: File[]) => {
+    if (uploading) return;
     if (maxImages === 0) {
       setNotice(zh ? "该模型不支持参考图。" : "This model takes no reference image.");
       return;
     }
     const room = maxImages - refs.length;
-    for (const file of files.slice(0, Math.max(0, room))) {
-      const error = validateImageFile(file);
-      if (error) {
-        setNotice(error);
-        continue;
+    if (room <= 0) return;
+    setUploading(true);
+    try {
+      for (const file of files.slice(0, room)) {
+        const error = validateImageFile(file, zh ? "zh" : "en");
+        if (error) {
+          setNotice(error);
+          continue;
+        }
+        try {
+          const result = await uploadImage(file, fetch, session?.user?.id);
+          if (result.ok) {
+            setRefs((current) => [...current, { key: result.key, name: file.name, preview: result.url, sourceId: `upload:${result.key}` }]);
+            setHandoffRefsStatus("ready");
+          } else {
+            setNotice(uploadErrorText(result, zh));
+          }
+        } catch (error) {
+          setNotice(uploadErrorText(error, zh));
+        }
       }
-      setUploading(true);
-      const result = await uploadImage(file);
+    } finally {
       setUploading(false);
-      if (result.ok) {
-        setRefs((current) => [...current, { key: result.key, name: file.name, preview: URL.createObjectURL(file) }]);
-      } else {
-        setNotice(result.message);
-      }
     }
   };
 
-  const generate = async () => {
-    if (submitting || uploading) return;
-    // An empty prompt gets a hint and the cursor, not a dead button.
-    if (!prompt.trim()) {
-      setNotice(zh ? "先写一句提示词，描述你想要的画面。" : "Write a prompt describing the image you want.");
-      promptRef.current?.focus();
-      return;
-    }
-    setSubmitting(true);
+  const selectMedia = async (items: PickerAsset[]) => {
+    setUploading(true);
     setNotice(null);
-    const result = await submitMedia(
-      {
-        model: model.id,
-        prompt: prompt.trim(),
-        aspectRatio: aspect,
-        resolution: resolution || undefined,
-        count,
-        imageUrls: refs.map((item) => item.key),
-      },
-      zh,
-    );
-    setSubmitting(false);
-    if (!result.ok) {
-      setNotice(result.message);
-      if (result.needsLogin) signIn.onOpen();
-      if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
+    try {
+      const selected = await Promise.all(items.map(item => readyPickerImage(item, session?.user?.id)));
+      setRefs([...new Map(selected.map(item => [item.key, item])).values()].map((item) => ({ key: item.key, name: item.name, preview: item.url, sourceId: item.sourceId })));
+      setHandoffRefsStatus("ready");
+    } catch (error) { setNotice(uploadErrorText(error, zh)); }
+    finally { setUploading(false); }
+  };
+
+  // Removing a reference also drops its @mention and renumbers the later ones.
+  const removeRef = (index: number) => {
+    setRefs((current) => current.filter((_, at) => at !== index));
+    setPrompt((current) => removeVideoReferenceToken(current, index + 1));
+  };
+
+  const insertMention = (index: number) => {
+    const field = promptRef.current;
+    const start = field?.selectionStart ?? prompt.length;
+    const end = field?.selectionEnd ?? start;
+    const before = prompt.slice(0, start);
+    const typed = before.match(MENTION_AT_CARET);
+    const from = typed ? start - typed[0].length : start;
+    const head = prompt.slice(0, from);
+    const insertion = `${head && !/\s$/.test(head) ? " " : ""}${mentionToken(index, zh)} `;
+    const next = `${head}${insertion}${prompt.slice(end)}`;
+    // Never cut the visitor's text to make room for a mention.
+    if (next.length > 5000) {
+      setNotice(zh ? "提示词已到 5000 字上限，先删掉一些再引用图片。" : "The prompt is at its 5,000-character limit. Shorten it before adding a reference.");
       return;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, createdAt: Date.now() });
+    setPrompt(next);
+    setMentionOpen(false);
+    setNotice(null);
+    requestAnimationFrame(() => {
+      field?.focus({ preventScroll: true });
+      field?.setSelectionRange(from + insertion.length, from + insertion.length);
+    });
   };
+  const closeMention = useCallback((open: boolean) => setMentionOpen(open), []);
+
+  const generate = async (autostart = false) => {
+    if (inFlight.current || submitting || uploading) return;
+    if (homeHandoffToken && handoffRefsStatus === "loading") {
+      setNotice(zh ? "正在准备参考素材，请稍候。" : "Preparing your reference images. Please wait.");
+      return;
+    }
+    if (homeHandoffToken && handoffRefsStatus === "invalid") {
+      setNotice(zh ? "参考素材未能完整恢复，请重新选择后再生成。" : "The reference images could not be restored. Select them again before generating.");
+      return;
+    }
+    inFlight.current = true;
+    try {
+      if (!autostart && !autostartDone.current) {
+        autostartDone.current = true;
+        if (homeHandoffToken) {
+          claimAutostart(homeHandoffToken, sessionStorage);
+          const url = new URL(window.location.href);
+          url.searchParams.delete("handoff");
+          window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+        }
+      }
+      // An empty prompt gets a hint and the cursor, not a dead button.
+      if (!prompt.trim()) {
+        setNotice(zh ? "先写一句提示词，描述你想要的画面。" : "Write a prompt describing the image you want.");
+        promptRef.current?.focus();
+        return;
+      }
+      // "@图片2" with only one picture attached would send the model a reference
+      // that is not there.
+      const prepared = prepareVideoReferencePrompt(prompt.trim(), refs.length);
+      if (!prepared.ok) {
+        setNotice(zh ? `找不到 @图片${prepared.index} 对应的参考图，请添加图片或删掉这个引用。` : `No reference image for @Image${prepared.index}. Add one or remove it from the prompt.`);
+        promptRef.current?.focus();
+        return;
+      }
+      const inputNotice = marketInputNotice(model.id, { prompt: prepared.prompt, imageCount: refs.length }, zh);
+      if (inputNotice) {
+        setNotice(inputNotice);
+        promptRef.current?.focus();
+        return;
+      }
+      const imageNotice = await marketImageNotice(model.id, refs.map((ref) => ({ url: ref.preview, name: ref.name })), zh);
+      if (imageNotice) {
+        setNotice(imageNotice);
+        return;
+      }
+      setPendingSubmission((current) => current ?? {
+        uuid: `submitting:${crypto.randomUUID()}`, status: "submitting", urls: [], prompt: prompt.trim(),
+        model: model.id, createdAt: Date.now(),
+      });
+      setSubmitting(true);
+      setNotice(null);
+      const result = await submitMedia(
+        { ...request, prompt: prepared.prompt },
+        zh,
+        undefined,
+        session?.user?.id,
+      );
+      if (!result.ok) {
+        setNotice(result.message);
+        if (result.needsLogin) signIn.onOpen();
+        if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
+        return;
+      }
+      add({ uuid: result.uuid, status: "queued", urls: [], prompt: prompt.trim(), model: model.id, parameters: { ...request, prompt: undefined }, createdAt: Date.now() });
+      if (homeHandoffToken && session?.user?.id) {
+        try {
+          clearSubmittedHomePrompt(sessionStorage, [localStorage, sessionStorage], {
+            token: homeHandoffToken, kind: "image", owner: session.user.id, prompt: prompt.trim(),
+          });
+        } catch { /* Draft storage is optional. */ }
+      }
+      // Keep any new text the user typed while the request was in flight.
+      if (promptRef.current?.value === prompt) draft.discard();
+    } finally {
+      setPendingSubmission(null);
+      setSubmitting(false);
+      inFlight.current = false;
+    }
+  };
+  useEffect(() => {
+    if (autostartDone.current || !homeHandoffToken || sessionLoading || handoffRefsStatus === "loading") return;
+    autostartDone.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("handoff");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    const claimed = claimAutostart(homeHandoffToken, sessionStorage);
+    if (session && claimed && handoffRefsStatus === "ready") void generate(true);
+    else {
+      setPendingSubmission(null);
+      if (handoffRefsStatus === "invalid") setNotice(zh ? "参考素材未能完整恢复，请重新选择后再生成。" : "The reference images could not be restored. Select them again before generating.");
+    }
+  }, [homeHandoffToken, sessionLoading, session, handoffRefsStatus]);
   const drop = useImageDrop((files) => void onFiles(files), !uploading);
 
-  return (
-    <main className="is-root">
-      <div className="is-first">
-      {jobs.length === 0 ? (
-        <section className="is-hero">
-          <div className="is-collage" aria-hidden="true">
-            {COLLAGE.map((item) => (
-              <img key={item.src} src={item.src} alt="" className={`is-photo ${item.className}`} />
-            ))}
-          </div>
-          <h1 className={zh ? "is-title is-title-inline" : "is-title"}>
-            <span>{zh ? "用" : "Create with"}</span>
-            <span className="is-title-model">{model.name}</span>
-            <span>{zh ? "开始创作" : "today"}</span>
-          </h1>
-          <p className="is-sub">
-            {zh ? "描述一个场景、角色、氛围或风格，看它即刻成真" : "Describe a scene, a character, a mood or a style and watch it appear"}
-          </p>
-        </section>
-      ) : (
-        <section className="is-results" aria-label={zh ? "生成结果" : "Results"}>
-          {jobs.map((job) =>
-            job.status === "completed" && job.urls.length > 0 ? (
-              job.urls.map((url, index) => {
-                const position = gallery.findIndex((item) => item.key === `${job.uuid}-${index}`);
-                return (
-                  <figure key={`${job.uuid}-${index}`} className="sr-card is-result">
-                    <img src={url} alt={job.prompt} loading="lazy" />
-                    <button type="button" className="sr-card-open" aria-label={zh ? "查看大图" : "Open image"} onClick={() => setViewing(position)} />
-                    <span className="sr-card-shade" aria-hidden="true" />
-                    <span className="sr-card-top">
-                      <CopyPromptButton prompt={job.prompt} zh={zh} />
-                      <DownloadLink url={url} zh={zh} />
-                    </span>
-                    <span className="sr-card-bottom">
-                      <span className="sr-card-prompt">{job.prompt}</span>
-                      <button type="button" className="sr-icon" title={zh ? "复用提示词" : "Reuse prompt"} aria-label={zh ? "复用提示词" : "Reuse prompt"} onClick={() => reuse(job.prompt)}>
-                        <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button type="button" className="sr-icon" title={zh ? "用这张图生成视频" : "Make a video from this"} aria-label={zh ? "用这张图生成视频" : "Make a video from this"} onClick={() => toVideo(url)}>
-                        <Clapperboard className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </span>
-                  </figure>
-                );
-              })
-            ) : (
-              <PendingCard
-                key={job.uuid}
-                className="is-result is-result-wait"
-                status={job.status === "completed" ? "failed" : job.status}
-                since={job.createdAt}
-                prompt={job.prompt}
-                message={job.status === "completed" ? (zh ? "没有返回图片" : "No image came back") : job.message}
-                zh={zh}
-                onReuse={() => reuse(job.prompt)}
-              />
-            ),
-          )}
-        </section>
-      )}
+  const visibleJobs = pendingSubmission ? [pendingSubmission, ...jobs] : jobs;
+  const hasResults = visibleJobs.length > 0;
+  const shownJobs = [...(pendingSubmission ? [pendingSubmission] : []), ...matchingHistory(jobs, historyFilter, Date.now(), job => Boolean(job.urls.length))];
+  const filtered = Boolean(historyFilter.model || historyFilter.range !== "all" || historyFilter.hideFailed);
+  const noRefsNote = zh ? "该模型不支持参考图" : "This model takes no reference image";
 
-      <form
-        {...drop.bind}
-        className={`is-composer sr-drop ${drop.over ? "sr-drop-on" : ""}`}
-        data-drop-label={zh ? "松开即可添加参考图" : "Drop to add reference images"}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void generate();
-        }}
-      >
-        <div className="is-composer-main">
-          {refs.length > 0 ? (
-            <div className="is-refs">
-              {refs.map((item) => (
-                <span key={item.key} className="is-ref">
-                  <img src={item.preview} alt={item.name} />
-                  <button type="button" aria-label={zh ? "移除" : "Remove"} onClick={() => setRefs((current) => current.filter((ref) => ref.key !== item.key))}>
-                    <X className="h-3 w-3" aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <label htmlFor="image-prompt" className="sr-only">
-            {zh ? "图片提示词" : "Image prompt"}
-          </label>
-          <textarea
-            id="image-prompt"
-            ref={promptRef}
-            value={prompt}
-            maxLength={5000}
-            rows={2}
-            onChange={(event) => {
-              setPrompt(event.target.value);
-              setNotice(null);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void generate();
-            }}
-            placeholder={zh ? "描述你想象中的场景" : "Describe the scene you imagine"}
-          />
-          {draft.restored ? (
-                <p className="draft-note">
-                  {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
-                  <button type="button" onClick={draft.discard}>
-                    {zh ? "清空" : "Clear"}
-                  </button>
-                </p>
-              ) : null}
-          <div className="is-toolbar">
-            <span className="is-chip-group">
-              <button
-                type="button"
-                className="is-chip is-chip-icon"
-                disabled={maxImages === 0 || refs.length >= maxImages || uploading}
-                title={maxImages === 0 ? (zh ? "该模型不支持参考图" : "This model takes no reference image") : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}
-                aria-label={zh ? "添加参考图" : "Add reference image"}
-                onClick={() => fileRef.current?.click()}
-              >
-                {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <ImagePlus className="h-4 w-4" aria-hidden="true" />}
-              </button>
-              <span className="is-chip-sep" aria-hidden="true" />
-              <button type="button" className="is-chip is-chip-icon" disabled title={zh ? "引用元素即将上线" : "Elements coming soon"} aria-label={zh ? "引用元素（即将上线）" : "Mention an element (coming soon)"}>
-                <AtSign className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                void onFiles(Array.from(event.target.files ?? []));
-                event.target.value = "";
-              }}
-            />
-            <div className="is-model">
-              <KieModelPicker kind="image" locale={locale} value={modelId} connectedIds={IMAGE_MODEL_IDS} onChange={chooseModel} placement="top" compact />
-              <ChevronRight className="is-model-chevron" aria-hidden="true" />
-            </div>
-            {options.aspects?.length ? (
-              <MenuChip
-                icon={<RectangleHorizontal className="h-4 w-4" aria-hidden="true" />}
-                label={zh ? "画面比例" : "Aspect ratio"}
-                value={aspect}
-                options={options.aspects}
-                format={(option) => (option === "auto" ? (zh ? "自动" : "Auto") : option)}
-                onChange={setAspect}
-              />
-            ) : null}
-            {options.resolutions?.length ? (
-              <MenuChip
-                icon={<Gem className="h-4 w-4" aria-hidden="true" />}
-                label={zh ? "分辨率" : "Resolution"}
-                value={resolution}
-                options={options.resolutions}
-                format={(option) => option}
-                onChange={setResolution}
-              />
-            ) : null}
-            {maxCount <= 1 ? (
-              <span className="is-chip is-chip-fixed" title={zh ? "这个模型每次生成 1 张" : "This model makes one image at a time"}>
-                {zh ? "1 张" : "1 image"}
-              </span>
-            ) : (
-            <span className="is-stepper">
-              <button type="button" aria-label={zh ? "减少数量" : "Fewer images"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
-                <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-              <span>
-                {count}/{maxCount}
-              </span>
-              <button type="button" aria-label={zh ? "增加数量" : "More images"} disabled={count >= maxCount} onClick={() => setCount((value) => Math.min(maxCount, value + 1))}>
-                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </span>
-            )}
-          </div>
+  return (
+    <div className="is-root" data-composer-open={mobileComposer || undefined}>
+      <ImageMobileNavigation locale={locale} zh={zh} open={mobileComposer} onToggle={() => setMobileComposer(open => !open)} />
+      {drawOpen ? <DrawDialog open onClose={() => setDrawOpen(false)} locale={locale} userId={session?.user?.id} signIn={() => { setDrawOpen(false); signIn.onOpen(); }} /> : null}
+      <HomeMediaPicker
+        lang={locale}
+        open={mediaPickerOpen}
+        initialTab={pickerTab}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(items) => void selectMedia(items)}
+        onDelete={(id) => setRefs((current) => current.filter((item) => (item.sourceId ?? `upload:${item.key}`) !== id))}
+        maxSelected={maxImages}
+        selectedIds={refs.map((item) => item.sourceId ?? `upload:${item.key}`)}
+        userId={session?.user?.id}
+      />
+      <div className={hasResults ? "is-first is-first-results" : "is-first"}>
+        {/* "View" sits top right whether or not there are results yet, as on
+            the reference; the choice is remembered for when they arrive. */}
+        <div className="is-topbar">
+          {filtered ? <button type="button" className="is-clear-filter" onClick={() => setHistoryFilter(INITIAL_FILTER)}>{zh ? "清除筛选" : "Clear filters"}</button> : null}
+          <FilterMenu zh={zh} filter={historyFilter} onChange={setHistoryFilter} models={IMAGE_MODELS} />
+          <ViewMenu zh={zh} view={view} onChange={setView} />
         </div>
-        <button type="submit" className="is-generate" disabled={submitting || uploading}>
-          <span>{submitting ? (zh ? "提交中…" : "Submitting…") : zh ? "生成" : "Generate"}</span>
-          <span className="is-generate-sub">
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            {internalFree ? 0 : credits}
-          </span>
-        </button>
-      </form>
+        {!hasResults && showGuide ? (
+          <div className="is-guide">
+            <BookOpen aria-hidden="true" />
+            <a href={localizedHref(locale, "/help")}>{zh ? "查看创作指南" : "Explore the creation guides"}<ChevronRight aria-hidden="true" /></a>
+            <button type="button" aria-label={zh ? "关闭指南提示" : "Dismiss guide"} onClick={() => {
+              setShowGuide(false);
+              try { localStorage.setItem("aivd:image-studio-guide-dismissed", "1"); } catch { /* Still dismissed for this visit. */ }
+            }}><X aria-hidden="true" /></button>
+          </div>
+        ) : null}
+        {hasResults && !shownJobs.length ? <p className="is-filter-empty">{zh ? "没有符合筛选条件的作品。" : "No creations match your filters."}</p> : hasResults ? (
+          <ResultsGrid
+            jobs={shownJobs}
+            view={view}
+            zh={zh}
+            modelName={modelName}
+            onOpen={(key) => openViewer(gallery.findIndex((item) => item.key === key))}
+            onReuse={reuse}
+            onCanvas={openInCanvas}
+            onVideo={toVideo}
+          />
+        ) : (
+          <StudioHero zh={zh} modelName={model.name} />
+        )}
+
+        <div className="is-dock" id="image-composer">
+          {/* Floats just above the bar, so a message never moves the page. */}
+          {notice ? (
+            <output className="is-notice" aria-live="polite">
+              {notice}
+              {creditsShortfall.action(notice)}
+            </output>
+          ) : null}
+          <form
+            {...drop.bind}
+            className={`is-bar sr-drop ${drop.over ? "sr-drop-on" : ""}`}
+            data-drop-label={zh ? "松开即可添加参考图" : "Drop to add reference images"}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void generate();
+            }}
+          >
+            <div className="is-bar-inner">
+              <div className="is-bar-main">
+                {refs.length > 0 || uploading ? (
+                  <div className="is-refs">
+                    {refs.map((item, index) => (
+                      <span key={item.key} className="is-ref">
+                        <button
+                          type="button"
+                          className="is-ref-mention"
+                          title={zh ? `在提示词里引用 ${mentionToken(index, zh)}` : `Mention ${mentionToken(index, zh)} in the prompt`}
+                          aria-label={zh ? `在提示词里引用 ${mentionToken(index, zh)}` : `Mention ${mentionToken(index, zh)} in the prompt`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => insertMention(index)}
+                        >
+                          <img src={item.preview} alt={item.name} />
+                          <span className="is-ref-index">{index + 1}</span>
+                        </button>
+                        <button type="button" className="is-ref-remove" aria-label={zh ? `移除第 ${index + 1} 张参考图` : `Remove reference ${index + 1}`} onClick={() => removeRef(index)}>
+                          <X className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      </span>
+                    ))}
+                    {uploading ? <output className="is-ref-uploading"><Loader2 className="animate-spin" size={16} aria-hidden="true" />{zh ? "上传中" : "Uploading"}</output> : null}
+                  </div>
+                ) : null}
+                {draft.restored ? (
+                  <p className="draft-note">
+                    {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
+                    <button type="button" onClick={draft.discard}>
+                      {zh ? "清空" : "Clear"}
+                    </button>
+                  </p>
+                ) : null}
+                <label htmlFor="image-prompt" className="sr-only">
+                  {zh ? "图片提示词" : "Image prompt"}
+                </label>
+                <textarea
+                  id="image-prompt"
+                  ref={promptRef}
+                  value={prompt}
+                  maxLength={5000}
+                  rows={2}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setPrompt(next);
+                    setNotice(null);
+                    setMentionOpen(refs.length > 0 && MENTION_AT_CARET.test(next.slice(0, event.target.selectionStart)));
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape" && mentionOpen) {
+                      // Close the list but stay in the prompt.
+                      event.stopPropagation();
+                      setMentionOpen(false);
+                    }
+                    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void generate();
+                  }}
+                  placeholder={zh ? "写下你想看到的画面" : "Describe the image you have in mind"}
+                />
+                <div className="is-controls">
+                  <span className="is-icon-group">
+                    <Tip id="is-add-tip" text={maxImages === 0 ? noRefsNote : zh ? `添加参考图（最多 ${maxImages} 张）` : `Add reference images (up to ${maxImages})`}>
+                      <button
+                        type="button"
+                        className="is-icon-btn"
+                        disabled={maxImages === 0 || uploading}
+                        aria-label={zh ? "添加参考图" : "Add reference images"}
+                        aria-describedby="is-add-tip"
+                        onClick={() => openPicker("upload")}
+                      >
+                        {uploading ? <Clock className="h-4 w-4 animate-pulse" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
+                      </button>
+                    </Tip>
+                    <span className="is-icon-sep" aria-hidden="true" />
+                    <MentionMenu
+                      zh={zh}
+                      refs={refs}
+                      open={mentionOpen}
+                      onOpenChange={closeMention}
+                      onPick={insertMention}
+                      onAdd={() => openPicker("upload")}
+                      onElements={() => openPicker("elements")}
+                      disabled={maxImages === 0}
+                      disabledNote={noRefsNote}
+                    />
+                  </span>
+                  <div className="is-model">
+                    <KieModelPicker kind="image" locale={locale} value={modelId} connectedIds={IMAGE_MODEL_IDS} onChange={chooseModel} placement="top" compact />
+                    <ChevronRight className="is-model-chevron" aria-hidden="true" />
+                  </div>
+                  {options.aspects?.length ? (
+                    <BarSelect
+                      id="is-aspect"
+                      title={zh ? "画面比例" : "Aspect ratio"}
+                      icon={<Scan className="h-4 w-4" aria-hidden="true" />}
+                      value={aspect}
+                      options={byRatioOrder(options.aspects).map((option) => ({
+                        value: option,
+                        label: option === "auto" ? (zh ? "自动" : "Auto") : option,
+                        icon: option === "auto" ? <Scan className="h-4 w-4" aria-hidden="true" /> : <RatioIcon ratio={option} />,
+                      }))}
+                      onChange={setAspect}
+                      fixedNote={zh ? "这个模型只有这一种比例" : "This model has one aspect ratio"}
+                    />
+                  ) : null}
+                  {options.resolutions?.length ? (
+                    <BarSelect
+                      id="is-resolution"
+                      title={zh ? "分辨率" : "Resolution"}
+                      icon={<Gem className="h-4 w-4" aria-hidden="true" />}
+                      value={resolution}
+                      wide
+                      side="right"
+                      options={options.resolutions.map((option) => ({
+                        value: option,
+                        label: option,
+                        sub: `${creditsFor(option)} ${zh ? "积分" : "credits"}`,
+                      }))}
+                      onChange={setResolution}
+                      fixedNote={zh ? "这个模型只有这一档分辨率" : "This model has one resolution"}
+                    />
+                  ) : null}
+                  <Tip id="is-count-tip" text={zh ? `每次生成张数（最多 ${maxCount} 张）` : `Images per run (up to ${maxCount})`}>
+                      <fieldset className="is-stepper" aria-label={zh ? "每次生成张数" : "Images per run"} aria-describedby="is-count-tip">
+                        <button type="button" aria-label={zh ? "减少一张" : "One fewer"} disabled={count <= 1} onClick={() => setCount((value) => Math.max(1, value - 1))}>
+                          <Minus className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <output className="is-stepper-value" aria-live="polite">
+                          {count}
+                          <span>/{maxCount}</span>
+                        </output>
+                        <button type="button" aria-label={zh ? "增加一张" : "One more"} disabled={count >= maxCount} onClick={() => setCount((value) => Math.min(maxCount, value + 1))}>
+                          <Plus className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </fieldset>
+                  </Tip>
+                  <button type="button" className="is-chip" onClick={() => setDrawOpen(true)}><Paintbrush aria-hidden="true" />{zh ? "绘制" : "Draw"}</button>
+                </div>
+              </div>
+              <button type="submit" className="is-generate" disabled={submitting || uploading}>
+                <span>{submitting ? (zh ? "提交中…" : "Submitting…") : zh ? "生成" : "Generate"}</span>
+                <span className="is-generate-cost">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="du-num">{credits}</span>
+                  <span className="sr-only">{zh ? "积分" : "credits"}</span>
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
       {viewing !== null && gallery[viewing] ? (
         <MediaViewer
           items={gallery}
           index={viewing}
           zh={zh}
           onIndex={setViewing}
-          onClose={() => setViewing(null)}
+          onClose={closeViewer}
           onReuse={(item) => reuse(item.prompt)}
           onToVideo={(item) => toVideo(item.url)}
         />
       ) : null}
-      {notice ? (
-        <output className="is-notice" aria-live="polite">
-          {notice}
-          {creditsShortfall.action(notice)}
-        </output>
-      ) : null}
-      </div>
 
-      {/* Scrolling past the first screen: the shared homepage-style showcase */}
-      <div className="is-below">
-        <ImageShowcase lang={locale} />
-      </div>
-    </main>
+      {/* Below an empty studio: the shared homepage-style showcase. Once there
+          are results the page is a workspace (results under a pinned bar),
+          as on the reference, and the showcase steps aside. */}
+      {hasResults ? null : (
+        <div className="is-below">
+          <ImageShowcase lang={locale} />
+        </div>
+      )}
+    </div>
   );
 }

@@ -94,8 +94,8 @@
   font-size: var(--ds-fs-sm);
   font-weight: 600;
   transition:
-    background-color var(--du-dur-fast, 180ms) ease,
-    transform var(--du-dur-fast, 180ms) var(--du-ease, ease);
+    background-color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
 }
 
 .si-google {
@@ -158,7 +158,7 @@
   color: var(--ds-text-1);
   font-size: var(--ds-fs-sm);
   outline: none;
-  transition: border-color var(--du-dur-fast, 180ms) ease;
+  transition: border-color var(--m-instant) var(--m-ease-out);
 }
 
 .si-input::placeholder {
@@ -194,4 +194,53 @@
 
 .si-legal a:hover {
   color: var(--ds-text-1);
+}
+
+/* After the login link is sent: where it went, resend, another address. */
+.si-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-2);
+  text-align: center;
+  color: var(--ds-text-2);
+}
+
+.si-sent > svg {
+  color: var(--du-accent-text);
+}
+
+.si-sent-title {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+}
+
+.si-sent-to {
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.si-sent-hint {
+  max-width: 34ch;
+  margin-bottom: var(--ds-space-2);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
+  line-height: 1.5;
+}
+
+.si-sent .si-email {
+  width: 100%;
+}
+
+.si-sent-change {
+  min-height: 44px;
+  color: var(--du-accent-text);
+  font-size: var(--ds-fs-sm);
+}
+
+.si-sent-change:hover {
+  text-decoration: underline;
 }

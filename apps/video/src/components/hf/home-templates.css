@@ -18,7 +18,7 @@
   border-bottom: 2px solid transparent;
   color: var(--du-text-muted);
   font-size: var(--ds-fs-md);
-  transition: color 160ms ease;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
 .home-templates-tab:hover {
@@ -72,7 +72,7 @@
   background: var(--ds-fill-1);
   text-align: left;
   cursor: pointer;
-  transition: background 160ms ease;
+  transition: background var(--m-instant) var(--m-ease-out);
 }
 
 .home-templates-card:hover {
@@ -96,7 +96,7 @@
   height: 100%;
   object-fit: cover;
   object-position: 50% 28%;
-  transition: transform 500ms ease;
+  transition: transform var(--m-slow) var(--m-ease-out);
 }
 
 .home-templates-card:hover .home-templates-cover img,
@@ -119,7 +119,7 @@
   font-weight: 600;
   opacity: 0;
   transform: translateY(4px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity var(--m-fast) var(--m-ease-out), transform var(--m-fast) var(--m-ease-out);
 }
 
 .home-templates-card:hover .home-templates-use,

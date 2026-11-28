@@ -1,82 +1,274 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { AudioLines, BookOpen, ChevronRight, Clock, Image as ImageIcon, Music, RotateCcw, Sparkles } from "lucide-react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { ChevronRight, Info, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { getMarketModel, marketCredits, marketModelsOf } from "@/ai/kie-market";
 import { usePromptDraft } from "@/hooks/use-prompt-draft";
+import { useCreditReturnDraft } from "@/hooks/use-credit-return-draft";
+import { usePresence } from "@/hooks/use-presence";
+import { useSegmentIndicator } from "@/hooks/use-segment-indicator";
 import { useSigninModal } from "@/hooks/use-signin-modal";
 import { useCreditsShortfall } from "@/components/upgrade/credits-shortfall";
 import { useSession } from "@/lib/auth/client";
-import { submitMedia, useMediaJobs } from "@/lib/media-studio";
-import { CopyPromptButton, DownloadLink, PendingCard, WaveformPlayer } from "@/components/hf/studio-results";
-import { StateBlock } from "@/components/states/state-block";
-import "./ai-video-studio.css";
+import { submitMedia, useMediaJobs, type MediaJob, type SubmitBody } from "@/lib/media-studio";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
+import {
+  type AudioShowcaseItem,
+  DETAIL_MAX,
+  MODE_MODELS,
+  MODE_PARAMS,
+  MODES,
+  type Mode,
+  MUSIC_STYLE_CHIPS,
+  SFX_QUICK_IDEAS,
+  SPEED_MAX,
+  SPEED_MIN,
+  SPEED_MODELS,
+  SPEED_STEP,
+  STYLE_MODELS,
+  voiceTag,
+} from "./audio-studio/audio-data";
+import { AudioFillSlider, AudioSwitchRow } from "./audio-studio/audio-controls";
+import { AudioClipForm, type LocalVoiceTool } from "./audio-studio/local-voice-tools";
+import { ElevenControls } from "./audio-studio/eleven-controls";
+import { cleanVoiceSettings, submittedVoiceSettings, type VoiceSettings } from "@/lib/audio-voice-settings";
+import { AudioModelMenu } from "./audio-studio/audio-menus";
+import { AudioStage, type HowPick, type StageTab } from "./audio-studio/audio-stage";
+import { AudioVoiceCard, AudioVoicePicker } from "./audio-studio/audio-voice";
+import { useAudioPreview } from "./audio-studio/use-audio-preview";
+import "./audio-studio/audio-studio.css";
 
-const MODES = ["tts", "music", "voice", "translate"] as const;
-type Mode = (typeof MODES)[number];
-// URL values used by the reference site's audio page, plus our music tab.
-const MODE_PARAMS: Record<string, Mode> = { voiceover: "tts", music: "music", "change-voice": "voice", translate: "translate" };
-// Which models each tab offers. Voice changing and translation need an audio
-// upload that no connected model accepts yet.
-const MODE_MODELS: Record<Mode, string[]> = {
-  tts: ["elevenlabs-v3", "elevenlabs-multilingual-v2", "elevenlabs-turbo-2-5", "gemini-3-8-flash-tts", "suno-speech"],
-  music: ["suno-music", "suno-sounds"],
-  voice: [],
-  translate: [],
-};
-const DETAIL_MAX = 500;
 const AUDIO_MODELS = marketModelsOf("audio");
 
-/** Audio studio, laid out after the reference site's audio page. */
-export function AiAudioStudio({
+/** Advanced settings kept for next time ("Remember settings"). */
+const BASE_SETTINGS_KEY = "aivd:audio:settings";
+const MAX_EARLIER_DRAFTS = 5;
+
+/** Set-aside drafts, newest first (an older page stored a single string). */
+function readEarlierDrafts(storageKey: string): string[] {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((item): item is string => typeof item === "string");
+    } catch {
+      // Not JSON: the single draft an older version kept.
+    }
+    return [raw];
+  } catch {
+    return [];
+  }
+}
+
+function writeEarlierDrafts(storageKey: string, drafts: string[]): void {
+  try {
+    if (drafts.length) localStorage.setItem(storageKey, JSON.stringify(drafts));
+    else localStorage.removeItem(storageKey);
+  } catch {
+    // Storage can be blocked; nothing is kept then.
+  }
+}
+
+export function AiAudioStudio(props: Parameters<typeof AiAudioStudioForm>[0]) {
+  const { data: session, isPending } = useSession();
+  return <AiAudioStudioForm key={session?.user?.id ?? (isPending ? "loading" : "guest")} {...props} />;
+}
+
+function AiAudioStudioForm({
   locale,
   initialVoiceMode = "",
   initialModelId = "",
+  initialPrompt = "",
 }: {
   locale: string;
   initialVoiceMode?: string;
   initialModelId?: string;
+  /** A script to open with ("Generate again" from My creations). */
+  initialPrompt?: string;
 }) {
+  const { data: session, isPending: sessionLoading } = useSession();
+  const draftScope = session?.user?.id ? `audio:${session.user.id}` : sessionLoading ? "audio:loading" : "audio";
+  const settingsKey = session?.user?.id ? `${BASE_SETTINGS_KEY}:${session.user.id}` : BASE_SETTINGS_KEY;
+  const earlierKey = `aivd:draft:${draftScope}:earlier`;
   const zh = locale.toLowerCase().startsWith("zh");
   const signIn = useSigninModal();
-  const initialModel = getMarketModel(initialModelId);
-  // A model link opens the tab that offers that model.
+  const initialModel = getMarketModel(initialModelId || (initialVoiceMode === "effects" ? "suno-sounds" : ""));
   const startMode: Mode =
     initialModel?.kind === "audio"
       ? ((Object.keys(MODE_MODELS) as Mode[]).find((key) => MODE_MODELS[key].includes(initialModel.id)) ?? "tts")
-      : (MODE_PARAMS[initialVoiceMode] ?? "tts");
+      : (Object.hasOwn(MODE_PARAMS, initialVoiceMode) ? MODE_PARAMS[initialVoiceMode] : "tts");
   const [mode, setMode] = useState<Mode>(startMode);
   const [modelId, setModelId] = useState(
     initialModel?.kind === "audio" ? initialModel.id : (MODE_MODELS[startMode][0] ?? AUDIO_MODELS[0].id),
   );
   const model = getMarketModel(modelId) ?? AUDIO_MODELS[0];
   const [voice, setVoice] = useState(model.options.voices?.[0]?.id ?? "");
-  const [script, setScript] = useState("");
-  const { data: session, isPending: sessionLoading } = useSession();
+  const [script, setScript] = useState(initialPrompt);
+  // Opening with a script of its own must not lose an unsent draft: it is
+  // kept here and offered back.
+  const [earlierDraft, setEarlierDraft] = useState<string | null>(null);
+  useEffect(() => {
+    if (sessionLoading) return;
+    try {
+      // Every unsent draft set aside by opening a creation's script is kept
+      // (newest first) and offered back one at a time, also after a reload.
+      const saved = localStorage.getItem(`aivd:draft:${draftScope}`);
+      let earlier = readEarlierDrafts(earlierKey);
+      if (initialPrompt && saved?.trim() && saved.trim() !== initialPrompt.trim() && !earlier.some((item) => item.trim() === saved.trim())) {
+        earlier = [saved, ...earlier].slice(0, MAX_EARLIER_DRAFTS);
+        writeEarlierDrafts(earlierKey, earlier);
+      }
+      // The script came from the address once; a reload restores the draft
+      // (with the visitor's edits) instead of the original script again.
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("prompt")) {
+        url.searchParams.delete("prompt");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+      }
+      const shown = (initialPrompt || saved || "").trim();
+      const rest = earlier.filter((item) => item.trim() && item.trim() !== shown);
+      if (rest.length !== earlier.length) writeEarlierDrafts(earlierKey, rest);
+      setEarlierDraft(rest[0] ?? null);
+    } catch {
+      // Storage can be blocked; nothing to offer back then.
+    }
+  }, [initialPrompt, sessionLoading, draftScope, earlierKey]);
+  const [speed, setSpeed] = useState(1);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>({});
+  const [foot, setFoot] = useState<HTMLDivElement | null>(null);
+  const [instrumental, setInstrumental] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+  // "Remember settings": the advanced settings come back on the next visit.
+  // Restored before a credit-return draft, which then wins (it is newer).
+  const [keepSettings, setKeepSettings] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(settingsKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { voiceSettings?: unknown; speed?: unknown; instrumental?: unknown; customMode?: unknown; modelId?: string; voice?: string };
+      if (!initialModel && saved.modelId && MODE_MODELS[startMode].includes(saved.modelId)) {
+        const remembered = getMarketModel(saved.modelId);
+        if (remembered) {
+          setModelId(remembered.id);
+          setVoice(remembered.options.voices?.find(v => v.id === saved.voice)?.id ?? remembered.options.voices?.[0]?.id ?? "");
+        }
+      }
+      setVoiceSettings(cleanVoiceSettings(saved.voiceSettings));
+      if (typeof saved.speed === "number" && Number.isFinite(saved.speed)) {
+        const stepped = Math.round(saved.speed / SPEED_STEP) * SPEED_STEP;
+        setSpeed(Math.min(SPEED_MAX, Math.max(SPEED_MIN, Number(stepped.toFixed(2)))));
+      }
+      if (typeof saved.instrumental === "boolean") setInstrumental(saved.instrumental);
+      if (typeof saved.customMode === "boolean") setCustomMode(saved.customMode);
+      setKeepSettings(true);
+    } catch {
+      // Storage blocked or a broken entry: start from the defaults.
+    }
+  }, []);
+  useEffect(() => {
+    if (!keepSettings) return;
+    try {
+      localStorage.setItem(settingsKey, JSON.stringify({ speed, voiceSettings, instrumental, customMode, modelId, voice }));
+    } catch {
+      // Storage can be blocked; the settings then last for this visit only.
+    }
+  }, [keepSettings, speed, voiceSettings, instrumental, customMode, modelId, voice, settingsKey]);
+  const chooseKeepSettings = (on: boolean) => {
+    setKeepSettings(on);
+    if (!on) {
+      try {
+        localStorage.removeItem(settingsKey);
+      } catch {
+        // Nothing stored then.
+      }
+    }
+  };
   const signedOut = !sessionLoading && !session;
   const internalFree = process.env.NEXT_PUBLIC_IS_PREVIEW === "true" &&
     session?.user?.isAdmin === true && session.user.isSuperAccount === true;
-  const draft = usePromptDraft("audio", script, setScript, false);
+  const draft = usePromptDraft(draftScope, script, setScript, Boolean(initialPrompt));
   const [detail, setDetail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingSubmission, setPendingSubmission] = useState<MediaJob | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const creditsShortfall = useCreditsShortfall(zh);
-  const { jobs, add } = useMediaJobs("audio");
+  const { jobs, add } = useMediaJobs("audio", Boolean(session));
+  const preview = useAudioPreview(zh, setNotice);
   const scriptRef = useRef<HTMLTextAreaElement>(null);
   const reuse = (text: string) => {
     setScript(text);
     setNotice(null);
     scriptRef.current?.focus();
   };
-  const [tab, setTab] = useState<"history" | "how">("how");
-  const shownTab = tab;
+  // The reference opens on "How it works" until there is something to show.
+  const [tab, setTabState] = useState<StageTab>("how");
+  const tabChosen = useRef(false);
+  const setTab = (next: StageTab) => {
+    tabChosen.current = true;
+    setTabState(next);
+  };
+  useEffect(() => {
+    if (jobs.length > 0 && !tabChosen.current) setTabState("history");
+  }, [jobs.length]);
+  const [localTool, setLocalTool] = useState<LocalVoiceTool | null>(initialVoiceMode === "change" || initialVoiceMode === "change-voice" ? "change-voice" : initialVoiceMode === "translate" ? "translate" : null);
+  useCreditReturnDraft(draftScope, () => ({ mode, localTool, modelId, voice, script, detail, tab, speed, voiceSettings, instrumental, customMode }), (saved) => {
+    if (MODES.includes(saved.mode as Mode)) setMode(saved.mode as Mode);
+    if (saved.localTool === "change-voice" || saved.localTool === "translate" || saved.localTool === null) setLocalTool(saved.localTool);
+    if (getMarketModel(saved.modelId)?.kind === "audio") setModelId(saved.modelId);
+    const savedModel = getMarketModel(saved.modelId);
+    const savedVoices = savedModel?.options.voices ?? [];
+    setVoice(savedVoices.find((item) => item.id === saved.voice)?.id ?? savedVoices.find((item) => item.name === saved.voice)?.id ?? saved.voice ?? "");
+    setScript(saved.script ?? "");
+    setDetail(saved.detail ?? "");
+    setVoiceSettings(cleanVoiceSettings(saved.voiceSettings));
+    if (typeof saved.speed === "number") setSpeed(saved.speed);
+    if (typeof saved.instrumental === "boolean") setInstrumental(saved.instrumental);
+    if (typeof saved.customMode === "boolean") setCustomMode(saved.customMode);
+    if (saved.tab === "history" || saved.tab === "how") setTab(saved.tab);
+  });
+
+  const [menu, setMenu] = useState<"model" | "voice" | null>(null);
+  const modelRowRef = useRef<HTMLButtonElement>(null);
+  const voiceCardRef = useRef<HTMLButtonElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+  const [panelWidth, setPanelWidth] = useState(394);
+  const panelDrag = useRef<{ x: number; width: number } | null>(null);
+  const resizePanel = (width: number) => setPanelWidth(Math.max(342, Math.min(640, Math.round(width))));
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const advanced = usePresence(advancedOpen);
+  const advancedRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (advancedOpen) advancedRef.current?.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  }, [advancedOpen]);
+  const modesRef = useSegmentIndicator<HTMLDivElement>(localTool ?? mode);
 
   const modeModels = MODE_MODELS[mode]
     .map((id) => getMarketModel(id))
     .filter((item): item is NonNullable<typeof item> => item !== undefined);
-  const available = modeModels.length > 0;
   const maxScript = model.options.maxPromptLength ?? 5000;
-  const credits = useMemo(() => marketCredits(model, { prompt: script, voice, style: detail }), [model, script, voice, detail]);
+  const supportsSpeed = SPEED_MODELS.includes(model.id);
+  const supportsStyle = STYLE_MODELS.includes(model.id);
+  const isSunoMusic = model.id === "suno-music";
+  const isSunoSounds = model.id === "suno-sounds";
+  const voices = model.options.voices ?? [];
+  const currentVoice = voices.find((item) => item.id === voice) ?? voices[0];
+  const isEleven = model.id.startsWith("elevenlabs-");
+  const hasAdvanced = supportsSpeed || isSunoMusic || voices.length > 0;
+  const advancedChanged = (isEleven && Object.keys(voiceSettings).length > 0) || (supportsSpeed && speed !== 1) || (isSunoMusic && (instrumental || customMode));
+
+  // Priced from exactly what is sent (trimmed script and details).
+  const generationBody: SubmitBody = {
+    model: model.id,
+    prompt: script.trim(),
+    voice: voice || undefined,
+    style: supportsStyle && detail.trim() ? detail.trim() : undefined,
+    instrumental: isSunoMusic ? instrumental : undefined,
+    customMode: isSunoMusic ? customMode : undefined,
+    speed: supportsSpeed ? speed : undefined,
+    voiceSettings: submittedVoiceSettings(model.id, voiceSettings),
+  };
+  const credits = marketCredits(model, generationBody);
 
   const chooseModel = (id: string) => {
     const next = getMarketModel(id);
@@ -86,190 +278,305 @@ export function AiAudioStudio({
   };
 
   const chooseMode = (next: Mode) => {
+    preview.stopAll();
+    setLocalTool(null);
     setMode(next);
     setNotice(null);
+    setMenu(null);
     const first = MODE_MODELS[next][0];
     if (first && !MODE_MODELS[next].includes(modelId)) chooseModel(first);
   };
 
+  /** Pick a voice from the how-it-works card, switching to its model if needed. */
+  const pickVoice = (forModel: string, voiceId: string) => {
+    if (mode !== "tts") setMode("tts");
+    if (forModel !== modelId) chooseModel(forModel);
+    setVoice(voiceId);
+    setNotice(null);
+  };
+
+  const applyShowcasePreset = (item: AudioShowcaseItem) => {
+    setLocalTool(null);
+    setMode(item.mode);
+    chooseModel(item.modelId);
+    // Showcase items name their voice; the request needs the voice's id.
+    const voiceId = getMarketModel(item.modelId)?.options.voices?.find((option) => option.name === item.voice)?.id;
+    if (voiceId) setVoice(voiceId);
+    setInstrumental(Boolean(item.instrumental));
+    setDetail(item.detail ?? "");
+    setScript(zh ? item.scriptZh : item.scriptEn);
+    setNotice(null);
+    scriptRef.current?.focus();
+  };
+
+  const resetAdvanced = () => {
+    setVoiceSettings({});
+    setSpeed(1);
+    setInstrumental(false);
+    setCustomMode(false);
+  };
+
   const t = zh
     ? {
-        modes: { tts: "文本转语音", music: "音乐与音效", voice: "变声", translate: "翻译" } as Record<Mode, string>,
-        upload: "上传媒体",
-        uploadSub: "变声和翻译需要上传音频，即将上线",
+        modes: { tts: "文本转语音", music: "音乐与音效" } as Record<Mode, string>,
         optional: "可选",
-        script: mode === "music" ? "描述" : "脚本",
-        scriptHint: mode === "music" ? "描述想要的歌曲或音效，例如：雨夜城市的慢节奏爵士。" : "逐字写下要朗读的内容。",
+        script: isSunoMusic ? (customMode ? "歌词" : "歌曲描述") : isSunoSounds ? "音效描述" : "配音台词",
+        scriptInfo: isSunoMusic
+          ? customMode
+            ? "这里的文字会按歌词来唱，可用 [Verse] / [Chorus] 标出段落。"
+            : "写下想要的歌：情绪、主题、乐器都可以。打开「自定义歌词」后，这里按歌词来唱。"
+          : isSunoSounds
+            ? "描述想要的声音和场景，越具体越好。"
+            : "声音会一字不差地朗读这里的文字。",
+        aboutScript: "关于这一栏",
+        writeFirst: "先写下内容",
+        keepSettings: "记住这些设置",
+        keepSettingsHint: "下次打开时自动用上",
+        scriptHint: isSunoMusic
+          ? customMode
+            ? "写下完整歌词，可用 [Verse] / [Chorus] 标出段落"
+            : "描述想要的歌曲情绪、主题与乐器，例如：雨夜城市的慢节奏爵士。"
+          : isSunoSounds
+            ? "描述想要的音效场景，例如：雨夜远雷与敲窗雨声，环境沉浸感强。"
+            : "逐字写下声音要朗读的内容。",
         model: "模型",
         voice: "音色",
-        detail: mode === "music" ? "曲风" : "声音详情",
-        detailHint: mode === "music" ? "例如：爵士、钢琴、慢节奏、温暖" : "例如：语速放慢，带一点笑意（Gemini 支持）",
-        generate: "生成",
+        voiceAuto: "按文意自动匹配",
+        detail: isSunoMusic ? "曲风" : "声音详情",
+        detailHint: isSunoMusic ? "例如：爵士、钢琴、慢节奏、温暖" : "例如：语速放慢，带一点笑意，像深夜电台主播",
+        advanced: "高级设置",
+        advancedFor: `${model.name} 设置`,
+        reset: "重置",
+        speed: "语速",
+        instrumental: "纯音乐",
+        instrumentalHint: "只要伴奏，不唱歌词",
+        customMode: "自定义歌词",
+        customModeHint: "脚本框里的文字按歌词来唱",
+        generate: isSunoMusic ? "生成音乐" : isSunoSounds ? "生成音效" : "生成配音",
         submitting: "提交中…",
-        soon: "即将上线",
-        soonNote: "变声和翻译需要上传音频，目前接入的模型还不支持，即将上线。",
-        history: "历史记录",
-        how: "工作原理",
-        empty: "还没有音频，生成的内容会显示在这里。",
-        generating: "生成中…",
-        failed: "生成失败，积分已退回",
-        heroTitle: "将文字变成语音",
-        heroSub: "任意脚本都能生成逼真语音，也能一句话生成歌曲和音效",
-        card1: "挑选声音",
-        card1Sub: "选择 ElevenLabs 或 Gemini 的预设音色",
-        card2: "撰写、描述并生成",
-        card2Sub: "输入脚本，描述想要的声音，开始创作",
-        demoVoices: [
-          { name: "James", tag: "ElevenLabs" },
-          { name: "Bella", tag: "ElevenLabs" },
-          { name: "Kore", tag: "Gemini" },
-        ],
-        demoPrompt: "温暖、沉稳的男声，语速从容，略带沙哑，像深夜的自然纪录片旁白。",
+        models: mode === "music" ? "音乐与音效模型" : "语音模型",
+        voices: "音色",
       }
     : {
-        modes: { tts: "Text to speech", music: "Music & sound", voice: "Voice changer", translate: "Translate" } as Record<Mode, string>,
-        upload: "Upload media",
-        uploadSub: "Voice changing and translation need an audio upload; coming soon",
+        modes: { tts: "Text to speech", music: "Music & SFX" } as Record<Mode, string>,
         optional: "Optional",
-        script: mode === "music" ? "Description" : "Script",
-        scriptHint: mode === "music" ? "Describe the song or sound, e.g. slow jazz for a rainy city night." : "Write exactly what the voice should read.",
+        script: isSunoMusic ? (customMode ? "Lyrics" : "Song description") : isSunoSounds ? "Sound description" : "Voiceover text",
+        scriptInfo: isSunoMusic
+          ? customMode
+            ? "This text is sung as lyrics; mark parts with [Verse] / [Chorus]."
+            : "Describe the song: mood, theme, instruments. With Custom lyrics on, this text is sung as lyrics."
+          : isSunoSounds
+            ? "Describe the sound and the scene; the more specific, the better."
+            : "The voice reads this text word for word.",
+        aboutScript: "About this field",
+        writeFirst: "Write something first",
+        keepSettings: "Remember settings",
+        keepSettingsHint: "Used again next time you open this page",
+        scriptHint: isSunoMusic
+          ? customMode
+            ? "Write your lyrics; mark parts with [Verse] / [Chorus]"
+            : "Describe the song's mood, theme and instruments, e.g. slow jazz for a rainy city night."
+          : isSunoSounds
+            ? "Describe the sound, e.g. heavy rain on a window with distant thunder."
+            : "Write exactly what the voice should read.",
         model: "Model",
         voice: "Voice",
-        detail: mode === "music" ? "Style" : "Voice details",
-        detailHint: mode === "music" ? "e.g. jazz, piano, slow, warm" : "e.g. slower, with a smile (Gemini)",
-        generate: "Generate",
+        voiceAuto: "Matched to your script",
+        detail: isSunoMusic ? "Style" : "Voice details",
+        detailHint: isSunoMusic ? "e.g. jazz, piano, slow, warm" : "e.g. slower, a warm smile, late-night radio host",
+        advanced: "Advanced settings",
+        advancedFor: `${model.name} settings`,
+        reset: "Reset",
+        speed: "Speed",
+        instrumental: "Instrumental",
+        instrumentalHint: "Backing track only, no vocals",
+        customMode: "Custom lyrics",
+        customModeHint: "The script box is sung as lyrics",
+        generate: isSunoMusic ? "Generate music" : isSunoSounds ? "Generate sound effect" : "Generate voiceover",
         submitting: "Submitting…",
-        soon: "Coming soon",
-        soonNote: "Voice changing and translation need an audio upload that the connected models do not take yet.",
-        history: "History",
-        how: "How it works",
-        empty: "No audio yet. Your generations will show up here.",
-        generating: "Generating…",
-        failed: "Failed, credits returned",
-        heroTitle: "Turn text into speech",
-        heroSub: "Lifelike voices for any script, plus songs and sound effects from one line",
-        card1: "Pick a voice",
-        card1Sub: "Choose a preset voice from ElevenLabs or Gemini",
-        card2: "Write, describe and generate",
-        card2Sub: "Enter a script, describe the voice and create",
-        demoVoices: [
-          { name: "James", tag: "ElevenLabs" },
-          { name: "Bella", tag: "ElevenLabs" },
-          { name: "Kore", tag: "Gemini" },
-        ],
-        demoPrompt: "Warm, calm male voice, unhurried pace, a little gravel, like a late-night nature documentary narrator.",
+        models: mode === "music" ? "Music & SFX models" : "Speech models",
+        voices: "Voices",
       };
 
-  // The "how it works" panel follows the mode picked on the left.
+  const advancedSummary = [
+    supportsSpeed && speed !== 1 ? `${speed.toFixed(2)}×` : "",
+    isSunoMusic && instrumental ? t.instrumental : "",
+    isSunoMusic && customMode ? t.customMode : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // First how-it-works card: voices to hear and pick (speech), or styles to
+  // apply (music). Every entry does what it shows.
+  const pickModel = voices.length > 0 ? model : (getMarketModel("elevenlabs-v3") ?? model);
+  const picks: HowPick[] =
+    mode === "music"
+      ? MUSIC_STYLE_CHIPS.slice(0, 3).map((chip) => ({
+          key: chip.value,
+          title: zh ? chip.zh : chip.en,
+          sub: chip.value,
+          on: isSunoMusic && detail === chip.value,
+          onPick: () => {
+            if (!isSunoMusic) chooseModel("suno-music");
+            setDetail(chip.value);
+            setNotice(null);
+          },
+        }))
+      : (pickModel.options.voices ?? []).slice(0, 3).map((item) => ({
+          key: item.id,
+          title: item.name,
+          sub: voiceTag(item.name, zh),
+          voiceName: item.name,
+          on: model.id === pickModel.id && voice === item.id,
+          onPick: () => pickVoice(pickModel.id, item.id),
+        }));
   const how =
     mode === "music"
       ? {
-          title: zh ? "一句话写歌和做音效" : "Songs and sound from one line",
-          sub: zh ? "描述风格、情绪和乐器，生成完整的歌曲或音效" : "Describe the style, mood and instruments; get a full song or a sound effect",
-          card1: zh ? "描述风格" : "Describe the style",
-          card1Sub: zh ? "曲风、乐器、节奏和情绪，越具体越接近你想要的" : "Genre, instruments, tempo and mood; the more specific the closer",
-          chips: zh
-            ? [
-                { name: "爵士 · 钢琴", tag: "慢节奏" },
-                { name: "电子 · 合成器", tag: "律动" },
-                { name: "古风 · 笛子", tag: "空灵" },
-              ]
-            : [
-                { name: "Jazz · piano", tag: "slow" },
-                { name: "Electronic · synth", tag: "groove" },
-                { name: "Folk · flute", tag: "airy" },
-              ],
-          card2: zh ? "生成并下载" : "Generate and download",
-          card2Sub: zh ? "完成后在历史记录里播放和下载" : "Play and download it from History when it is done",
+          title: zh ? "一句话写歌、做音效" : "Songs and sound effects from one line",
+          sub: zh ? "可以只要纯音乐，也可以自己写歌词，还能生成场景音效" : "Instrumentals, your own lyrics, or sound effects for a scene",
+          card1: zh ? "选一个曲风" : "Pick a style",
+          card1Sub: zh ? "点一个曲风，切到 Suno V6 并填好曲风标签" : "Tap a style to switch to Suno V6 with its tags filled in",
+          picks,
+          card2: zh ? "描述并生成" : "Describe and generate",
+          card2Sub: zh ? "写下情绪、乐器或场景，点生成" : "Describe the mood, instruments or scene, then generate",
           demo: zh ? "清晨的海边，轻柔的钢琴和海浪声，安静治愈。" : "A calm morning by the sea, soft piano and waves, quiet and soothing.",
-          soon: false,
         }
-      : mode === "voice" || mode === "translate"
-        ? {
-            title: mode === "voice" ? (zh ? "变声 · 即将上线" : "Voice changer · coming soon") : zh ? "翻译 · 即将上线" : "Translate · coming soon",
-            sub:
-              mode === "voice"
-                ? zh
-                  ? "上传一段音频，换成另一种声音。功能接入后会在这里说明用法。"
-                  : "Upload audio and hear it in another voice. How to use it will be here once it is live."
-                : zh
-                  ? "上传一段音频，翻译成其他语言。功能接入后会在这里说明用法。"
-                  : "Upload audio and get it in another language. How to use it will be here once it is live.",
-            soon: true,
-          }
-        : {
-            title: t.heroTitle,
-            sub: t.heroSub,
-            card1: t.card1,
-            card1Sub: t.card1Sub,
-            chips: t.demoVoices,
-            card2: t.card2,
-            card2Sub: t.card2Sub,
-            demo: t.demoPrompt,
-            soon: false,
-          };
+      : {
+          title: zh ? "把文字变成自然语音" : "Turn text into natural speech",
+          sub: zh ? "选好声音、写下脚本，生成后在历史记录里试听和下载" : "Pick a voice, write your script, then play and download it from History",
+          card1: zh ? "挑选模型与音色" : "Pick a model and voice",
+          card1Sub: zh ? "每个音色都标了性别和风格，点 ▶ 先听再选" : "Every voice is tagged; press ▶ to hear it first",
+          picks,
+          card2: zh ? "写下脚本，描述声音，生成" : "Write, describe, generate",
+          card2Sub:
+            model.id === "gemini-3-8-flash-tts"
+              ? zh ? "写下台词，再用一句话说明语气" : "Write the lines, then describe the tone in a sentence"
+              : zh ? "写下要朗读的文字，点生成即可" : "Type what to read and press Generate",
+          demo: zh
+            ? "欢迎收看本期节目。今天我们一起用 AI 为短片配上电影级旁白与背景音乐。"
+            : "Welcome back to the show. Today we pair AI visuals with cinema-grade voiceovers and custom soundtracks.",
+        };
 
   const generate = async () => {
-    if (!available || submitting) return;
-    // An empty script gets a hint and the cursor, not a dead button.
+    if (submitting) return;
     if (!script.trim()) {
-      setNotice(zh ? "先写下要朗读的内容。" : "Write what should be read out first.");
+      setNotice(zh ? "请先填写脚本或描述内容。" : "Write your script or description first.");
       scriptRef.current?.focus();
       return;
     }
+    await submitTrack(generationBody);
+  };
+
+  const submittingRef = useRef(false);
+  const submitTrack = async (body: SubmitBody) => {
+    if (submittingRef.current || sessionLoading) return false;
+    if (!session?.user?.id) {
+      signIn.onOpen();
+      return false;
+    }
+    submittingRef.current = true;
     setSubmitting(true);
+    setPendingSubmission({ uuid: `submitting:${crypto.randomUUID()}`, status: "submitting", urls: [], prompt: body.prompt, model: body.model, createdAt: Date.now() });
+    setTab("history");
     setNotice(null);
-    const result = await submitMedia(
-      { model: model.id, prompt: script.trim(), voice: voice || undefined, style: detail.trim() || undefined },
-      zh,
-    );
-    setSubmitting(false);
+    let result: Awaited<ReturnType<typeof submitMedia>>;
+    try {
+      result = await submitMedia(body, zh, undefined, session.user.id);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+      setPendingSubmission(null);
+    }
     if (!result.ok) {
       setNotice(result.message);
       if (result.needsLogin) signIn.onOpen();
       if (result.code === "INSUFFICIENT_CREDITS") creditsShortfall.report(result.message, result.requiredCredits);
-      return;
+      return false;
     }
-    add({ uuid: result.uuid, status: "queued", urls: [], prompt: script.trim(), model: model.id, createdAt: Date.now() });
+    add({ uuid: result.uuid, status: "queued", urls: [], prompt: body.prompt, model: body.model, createdAt: Date.now() });
     setTab("history");
+    return true;
   };
 
-  return (
-    <div className="vs-root">
-      <aside aria-label={t.modes[mode]} className="vs-panel">
-        <div className="vs-modes" role="tablist">
-          {MODES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={option === mode}
-              onClick={() => chooseMode(option)}
-              className={option === mode ? "vs-mode vs-mode-on" : "vs-mode"}
-            >
-              {t.modes[option]}
-            </button>
-          ))}
-        </div>
+  const previewingCurrent = currentVoice !== undefined && preview.previewingVoice === currentVoice.name;
+  // Like the reference, Generate waits for something to read or describe.
+  const scriptEmpty = !script.trim();
 
-        {!available ? (
-          <>
-            <div className="vs-upload vs-upload-off" aria-disabled="true">
-              <span className="vs-upload-tag">{t.soon}</span>
-              <span className="vs-upload-icons" aria-hidden="true">
-                <span><AudioLines className="h-4 w-4" /></span>
-                <span><Music className="h-4 w-4" /></span>
-                <span><ImageIcon className="h-4 w-4" /></span>
-              </span>
-              <span className="vs-upload-title">{t.upload}</span>
-              <span className="vs-upload-sub">{t.uploadSub}</span>
+  return (
+    <div className="au-root" style={{ "--au-panel-width": `${panelWidth}px` } as CSSProperties}>
+      <aside id="audio-settings" aria-label={t.modes[mode]} className="au-panel">
+        <div className="au-scroll">
+          <div className="au-modes-bar">
+            <div ref={modesRef} role="tablist" aria-label={zh ? "音频类型" : "Audio type"} className="au-modes du-seg">
+              {(mode === "music" ? ["tts", "music", "change-voice", "translate"] as const : ["tts", "change-voice", "translate"] as const).map(option => (
+                <button key={option} type="button" role="tab" className="au-mode" aria-selected={option === (localTool ?? mode)}
+                  onClick={() => {
+                    if (option === "tts" || option === "music") chooseMode(option);
+                    else {
+                      preview.stopAll();
+                      setLocalTool(option);
+                      setNotice(null);
+                      setMenu(null);
+                      setTab("how");
+                    }
+                  }}>
+                  {option === "change-voice" ? zh ? "变声" : "Voice changer" : option === "translate" ? zh ? "翻译" : "Translate" : t.modes[option]}
+                </button>
+              ))}
             </div>
-            <p className="vs-hint">{t.soonNote}</p>
-          </>
-        ) : (
-          <>
-            <div className="vs-card vs-prompt">
-              <label htmlFor="audio-script" className="vs-prompt-label vs-prompt-label-muted">{t.script}</label>
+          </div>
+
+          {(["change-voice", "translate"] as const).map(tool => <div key={tool} hidden={localTool !== tool}>
+            <AudioClipForm
+              tool={tool} active={localTool === tool} zh={zh} foot={foot} draftScope={draftScope}
+              internalFree={internalFree} submitting={submitting} onGenerate={submitTrack}
+              onAudition={preview.auditionVoice} auditioning={preview.previewingVoice}
+            />
+          </div>)}
+          {!localTool ? <div className="au-fields">
+            {voices.length > 0 && currentVoice ? (
+              <AudioVoiceCard
+                zh={zh}
+                voice={currentVoice}
+                open={menu === "voice"}
+                onOpen={() => setMenu((open) => (open === "voice" ? null : "voice"))}
+                triggerRef={voiceCardRef}
+                playing={previewingCurrent}
+                onPreview={() => preview.auditionVoice(currentVoice.name)}
+              />
+            ) : null}
+            {voices.length > 0 ? (
+              <AudioVoicePicker
+                open={menu === "voice"}
+                onClose={() => setMenu(null)}
+                anchorRef={voiceCardRef}
+                stageRef={stageRef}
+                zh={zh}
+                voices={voices}
+                value={currentVoice?.id ?? ""}
+                onChange={(id) => {
+                  setVoice(id);
+                  setNotice(null);
+                }}
+                previewing={preview.previewingVoice}
+                onPreview={preview.auditionVoice}
+              />
+            ) : null}
+            <div className="au-card au-script">
+              <span className="au-card-head au-card-head-info">
+                <label htmlFor="audio-script" className="au-card-label">
+                  {t.script}
+                </label>
+                <span className="au-info">
+                  <button type="button" className="au-info-btn" aria-label={t.aboutScript} aria-describedby="audio-script-info">
+                    <Info className="h-[18px] w-[18px]" aria-hidden="true" />
+                  </button>
+                  <span role="tooltip" id="audio-script-info" className="au-info-tip">
+                    {t.scriptInfo}
+                  </span>
+                </span>
+              </span>
               <textarea
                 id="audio-script"
                 ref={scriptRef}
@@ -287,6 +594,35 @@ export function AiAudioStudio({
                   setNotice(null);
                 }}
               />
+              {earlierDraft !== null ? (
+                <p className="draft-note">
+                  {initialPrompt ? (zh ? "已填入作品里的文案" : "Filled in from your creation") : (zh ? "还有一份上次没生成的草稿" : "You have another unsent draft")}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // The script on screen is kept too, so nothing is lost.
+                      const current = script;
+                      setScript(earlierDraft);
+                      const rest = readEarlierDrafts(earlierKey).filter((item) => item !== earlierDraft);
+                      const next = current.trim() ? [current, ...rest].slice(0, MAX_EARLIER_DRAFTS) : rest;
+                      writeEarlierDrafts(earlierKey, next);
+                      setEarlierDraft(null);
+                    }}
+                  >
+                    {zh ? "换回上次没生成的草稿" : "Use your unsent draft instead"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rest = readEarlierDrafts(earlierKey).filter((item) => item !== earlierDraft);
+                      writeEarlierDrafts(earlierKey, rest);
+                      setEarlierDraft(rest.find((item) => item.trim() !== script.trim()) ?? null);
+                    }}
+                  >
+                    {zh ? "不用了" : "Dismiss"}
+                  </button>
+                </p>
+              ) : null}
               {draft.restored ? (
                 <p className="draft-note">
                   {zh ? "已恢复上次没生成的草稿" : "Your unsent draft is back"}
@@ -295,196 +631,233 @@ export function AiAudioStudio({
                   </button>
                 </p>
               ) : null}
-              <span className="vs-count">
-                {script.length}/{maxScript}
-              </span>
+              <div className="au-card-foot">
+                {isSunoSounds ? (
+                  <div className="au-chips" aria-label={zh ? "音效示例" : "Sound ideas"}>
+                    {SFX_QUICK_IDEAS.map((item) => (
+                      <button key={item.en} type="button" className="au-chip" onClick={() => reuse(zh ? item.promptZh : item.promptEn)}>
+                        {zh ? item.zh : item.en}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <span className="au-count" data-num="">
+                  {script.length} / {maxScript}
+                </span>
+              </div>
             </div>
 
-            <label htmlFor="audio-model" className="vs-card vs-select">
-              <span className="min-w-0 flex-1">
-                <span className="vs-card-label">{t.model}</span>
-                <span className="vs-card-value">{model.name}</span>
+            <button
+              ref={modelRowRef}
+              type="button"
+              className="au-row"
+              aria-haspopup="dialog"
+              aria-expanded={menu === "model"}
+              onClick={() => setMenu((open) => (open === "model" ? null : "model"))}
+            >
+              <span className="au-row-text">
+                <span className="au-row-label">{t.model}</span>
+                <span className="au-row-value">{model.name}</span>
               </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--hfv-muted)]" aria-hidden="true" />
-              <select id="audio-model" value={modelId} onChange={(event) => chooseModel(event.target.value)}>
-                {modeModels.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <ChevronRight className="au-row-chevron" aria-hidden="true" />
+            </button>
+            <AudioModelMenu
+              open={menu === "model"}
+              onClose={() => setMenu(null)}
+              anchorRef={modelRowRef}
+              zh={zh}
+              title={t.models}
+              models={modeModels}
+              value={model.id}
+              onChange={(id) => {
+                chooseModel(id);
+                setNotice(null);
+              }}
+            />
 
-            {model.options.voices?.length ? (
-              <fieldset className="as-voice-pick">
-                <legend className="vs-card-label">{t.voice}</legend>
-                <div className="as-voice-grid">
-                  {model.options.voices.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-pressed={voice === item.id}
-                      className={voice === item.id ? "as-voice-opt as-voice-opt-on" : "as-voice-opt"}
-                      onClick={() => setVoice(item.id)}
-                    >
-                      <span className="as-voice-avatar" aria-hidden="true">
-                        {item.name.slice(0, 1)}
-                      </span>
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+            {model.id === "suno-speech" ? (
+              <div className="au-row au-row-fixed">
+                <span className="au-row-text">
+                  <span className="au-row-label">{t.voice}</span>
+                  <span className="au-row-value">{t.voiceAuto}</span>
+                </span>
+              </div>
             ) : null}
 
-            {model.id === "gemini-3-8-flash-tts" || model.id === "suno-music" ? (
-              <div className="vs-card vs-prompt">
-                <span className="flex items-center justify-between">
-                  <label htmlFor="audio-detail" className="vs-prompt-label vs-prompt-label-muted">{t.detail}</label>
-                  <span className="vs-soon">{t.optional}</span>
+            {supportsStyle ? (
+              <div className="au-card au-detail">
+                <span className="au-card-head">
+                  <label htmlFor="audio-detail" className="au-card-label">
+                    {t.detail}
+                  </label>
+                  <span className="au-optional">{t.optional}</span>
                 </span>
                 <textarea
                   id="audio-detail"
-                  className="vs-textarea-short"
                   value={detail}
                   maxLength={DETAIL_MAX}
                   placeholder={t.detailHint}
                   onChange={(event) => setDetail(event.target.value)}
                 />
+                <div className="au-card-foot">
+                  {isSunoMusic ? (
+                    <div className="au-chips" aria-label={zh ? "曲风示例" : "Style ideas"}>
+                      {MUSIC_STYLE_CHIPS.map((chip) => (
+                        <button
+                          key={chip.value}
+                          type="button"
+                          aria-pressed={detail === chip.value}
+                          className="au-chip"
+                          onClick={() => setDetail(chip.value)}
+                        >
+                          {zh ? chip.zh : chip.en}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  <span className="au-count au-count-sm" data-num="">
+                    {detail.length} / {DETAIL_MAX}
+                  </span>
+                </div>
               </div>
             ) : null}
 
-            <button type="button" className="vs-generate as-generate" disabled={submitting} onClick={() => void generate()}>
-              {submitting ? t.submitting : t.generate}
-              <span className="vs-generate-cost">
+            <div className="au-batch-row" title={zh ? "这个模型每次生成一条音频" : "This model produces one audio track per request"}>
+              <span>{zh ? "批量大小" : "Batch size"}</span><output>1 / 1</output>
+            </div>
+            {hasAdvanced ? (
+              <button
+                type="button"
+                className="au-adv-row"
+                aria-expanded={advancedOpen}
+                aria-controls={advancedOpen ? "audio-advanced" : undefined}
+                onClick={() => setAdvancedOpen((open) => !open)}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                <span className="flex-1 text-left">{t.advanced}</span>
+                {advancedSummary ? <span className="au-adv-sum">{advancedSummary}</span> : null}
+                <ChevronRight className="au-adv-chevron" aria-hidden="true" />
+              </button>
+            ) : null}
+            {hasAdvanced && advanced.mounted ? (
+              <div ref={advancedRef} id="audio-advanced" className="au-adv-card" data-presence="fade" data-state={advanced.state}>
+                <div className="au-adv-head">
+                  <span>{t.advancedFor}</span>
+                  <button
+                    type="button"
+                    className="au-reset"
+                    aria-disabled={!advancedChanged}
+                    onClick={() => {
+                      // Stays focusable when there is nothing to reset, so focus is never dropped.
+                      if (advancedChanged) resetAdvanced();
+                    }}
+                  >
+                    <RotateCcw className="h-3 w-3" aria-hidden="true" />
+                    {t.reset}
+                  </button>
+                </div>
+                {isEleven ? <ElevenControls model={model.id} settings={voiceSettings} onChange={setVoiceSettings} zh={zh} /> : null}
+                {supportsSpeed ? (
+                  <AudioFillSlider
+                    label={t.speed}
+                    value={speed}
+                    min={SPEED_MIN}
+                    max={SPEED_MAX}
+                    step={SPEED_STEP}
+                    format={(value) => `${value.toFixed(2)}×`}
+                    onChange={setSpeed}
+                  />
+                ) : null}
+                {isSunoMusic ? (
+                  <>
+                    <AudioSwitchRow label={t.instrumental} hint={t.instrumentalHint} checked={instrumental} onChange={setInstrumental} />
+                    <AudioSwitchRow label={t.customMode} hint={t.customModeHint} checked={customMode} onChange={setCustomMode} />
+                  </>
+                ) : null}
+                <AudioSwitchRow label={t.keepSettings} hint={t.keepSettingsHint} checked={keepSettings} onChange={chooseKeepSettings} quiet />
+              </div>
+            ) : null}
+
+            {notice ? (
+              <output aria-live="polite" className="au-notice">
+                {notice}
+                {creditsShortfall.action(notice)}
+              </output>
+            ) : null}
+          </div> : null}
+          {localTool && notice ? <output className="au-notice" aria-live="polite">{notice}{creditsShortfall.action(notice)}</output> : null}
+        </div>
+
+        <div className="au-foot" ref={setFoot}>{!localTool ? <>
+          <button
+            type="button"
+            className="au-generate"
+            disabled={submitting || scriptEmpty}
+            title={scriptEmpty && !submitting ? t.writeFirst : undefined}
+            onClick={() => void generate()}
+          >
+            {submitting ? t.submitting : t.generate}
+            {scriptEmpty ? null : (
+              <span className="au-generate-cost" data-num="">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 {internalFree ? 0 : credits}
               </span>
-            </button>
-          </>
-        )}
-        {notice ? <output aria-live="polite" className="vs-notice">{notice}{creditsShortfall.action(notice)}</output> : null}
+            )}
+          </button>
+        </> : null}</div>
       </aside>
 
-      <section aria-label={t.heroTitle} className="vs-stage">
-        <div className="vs-stage-tabs">
-          <button type="button" aria-pressed={shownTab === "history"} onClick={() => setTab("history")} className={shownTab === "history" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
-            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-            {t.history}
-            {jobs.length > 0 ? <span className="vs-stage-count">{jobs.length}</span> : null}
-          </button>
-          <button type="button" aria-pressed={shownTab === "how"} onClick={() => setTab("how")} className={shownTab === "how" ? "vs-stage-tab vs-stage-tab-on" : "vs-stage-tab"}>
-            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-            {t.how}
-          </button>
-        </div>
-
-        {shownTab === "history" ? (
-          jobs.length === 0 ? (
-            <StateBlock
-              icon={AudioLines}
-              title={signedOut ? (zh ? "登录后查看你的音频" : "Sign in to see your audio") : zh ? "还没有生成过音频" : "No audio yet"}
-              body={
-                signedOut
-                  ? zh
-                    ? "生成过的配音和音乐都保存在账户里，换设备也能听到。也可以先从一句示例开始："
-                    : "Your voiceovers and music are kept in your account, on any device. Or start from an example:"
-                  : zh
-                    ? "在左边写好文本再点生成，配音和音乐会出现在这里。也可以从一句示例开始："
-                    : "Write your text on the left and generate; voiceovers and music land here. Or start from an example:"
-              }
-              actions={signedOut ? [{ label: zh ? "登录" : "Sign in", onClick: () => signIn.onOpen(), primary: true }] : []}
-            >
-              <div className="st-ideas">
-                {(zh
-                  ? ["欢迎收看本期节目，今天我们聊聊 AI 视频。", "清晨的海边，轻柔的钢琴与海浪声。", "一段热血的游戏预告片旁白。"]
-                  : ["Welcome back to the show. Today we talk about AI video.", "A calm morning by the sea, soft piano and waves.", "An epic voiceover for a game trailer."]
-                ).map((line) => (
-                  <button key={line} type="button" className="st-idea" onClick={() => reuse(line)}>
-                    <Sparkles aria-hidden="true" />
-                    {line}
-                  </button>
-                ))}
-              </div>
-            </StateBlock>
-          ) : (
-            <div className="as-list">
-              {jobs.map((job) => {
-                const done = job.status === "completed" && job.urls.length > 0;
-                return (
-                  <div key={job.uuid} className="as-item">
-                    <div className="as-item-head">
-                      <span className="as-item-model">{getMarketModel(job.model)?.name ?? job.model}</span>
-                      <span className="as-item-prompt" title={job.prompt}>{job.prompt}</span>
-                      {done ? (
-                        <span className="as-item-tools">
-                          <CopyPromptButton prompt={job.prompt} zh={zh} />
-                          <button type="button" className="sr-icon" title={zh ? "复用文本" : "Reuse text"} aria-label={zh ? "复用文本" : "Reuse text"} onClick={() => reuse(job.prompt)}>
-                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                        </span>
-                      ) : null}
-                    </div>
-                    {done ? (
-                      job.urls.map((url, index) => (
-                        <div key={`${job.uuid}-${index}`} className="as-item-player">
-                          <WaveformPlayer url={url} zh={zh} />
-                          <DownloadLink url={url} zh={zh} className="as-item-dl" />
-                        </div>
-                      ))
-                    ) : (
-                      <PendingCard
-                        className="as-pending"
-                        status={job.status === "completed" ? "failed" : job.status}
-                        since={job.createdAt}
-                        message={job.status === "completed" ? (zh ? "没有返回音频" : "No audio came back") : job.message}
-                        zh={zh}
-                        onReuse={() => reuse(job.prompt)}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )
-        ) : (
-          <div className="vs-howto vs-howto-center">
-            <h2 className="vs-howto-title">{how.title}</h2>
-            <p className="vs-howto-sub">{how.sub}</p>
-            {how.soon ? null : (
-            <div className="as-cards">
-              <div className="as-card">
-                <h3 className="vs-step-title">{how.card1}</h3>
-                <p className="vs-step-body">{how.card1Sub}</p>
-                <div className="as-voices">
-                  {(how.chips ?? []).map((item, index) => (
-                    <div key={item.name} className={index === 0 ? "as-voice as-voice-main" : "as-voice"}>
-                      <span className="as-voice-wave" aria-hidden="true">
-                        <AudioLines className="h-5 w-5" />
-                      </span>
-                      <span>
-                        <span className="as-voice-name">{item.name}</span>
-                        {item.tag ? <span className="as-voice-tag">{item.tag}</span> : null}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="as-card">
-                <h3 className="vs-step-title">{how.card2}</h3>
-                <p className="vs-step-body">{how.card2Sub}</p>
-                <div className="as-mock">
-                  <div className="as-mock-box">
-                    <span className="vs-card-label">{zh ? "提示词" : "Prompt"}</span>
-                    <p className="as-mock-text">{how.demo}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            )}
-          </div>
-        )}
-      </section>
+      <div
+        className="au-panel-resizer"
+        role="separator"
+        tabIndex={0}
+        aria-label={zh ? "调整音频面板宽度" : "Resize audio panel"}
+        aria-controls="audio-settings"
+        aria-orientation="vertical"
+        aria-valuemin={342}
+        aria-valuemax={640}
+        aria-valuenow={panelWidth}
+        onPointerDown={(event) => {
+          if (event.button !== 0 || !event.isPrimary) return;
+          panelDrag.current = { x: event.clientX, width: panelWidth };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (panelDrag.current && event.currentTarget.hasPointerCapture(event.pointerId)) {
+            resizePanel(panelDrag.current.width + event.clientX - panelDrag.current.x);
+          }
+        }}
+        onLostPointerCapture={() => { panelDrag.current = null; }}
+        onKeyDown={(event) => {
+          const widths: Record<string, number> = {
+            ArrowLeft: panelWidth - 16, ArrowRight: panelWidth + 16, Home: 342, End: 640,
+          };
+          if (Object.hasOwn(widths, event.key)) {
+            event.preventDefault();
+            resizePanel(widths[event.key]);
+          }
+        }}
+      />
+      <AudioStage
+        sectionRef={stageRef}
+        zh={zh}
+        locale={locale}
+        mode={mode}
+        localTool={localTool}
+        ownerId={session?.user?.id}
+        tab={tab}
+        onTab={setTab}
+        jobs={pendingSubmission ? [pendingSubmission, ...jobs] : jobs}
+        signedOut={signedOut}
+        onSignIn={() => signIn.onOpen()}
+        onReuse={reuse}
+        playingDemoId={preview.playingDemoId}
+        onPreviewShowcase={preview.previewShowcase}
+        onRecreate={applyShowcasePreset}
+        how={how}
+        previewingVoice={preview.previewingVoice}
+        onPreviewVoice={preview.auditionVoice}
+      />
     </div>
   );
 }

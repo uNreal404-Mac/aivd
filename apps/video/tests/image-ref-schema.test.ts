@@ -42,6 +42,10 @@ describe("imageRefSchema", () => {
     expect(imageRefSchema.safeParse("uploads/u_1/abc.png").success).toBe(true);
   });
 
+  it("accepts a canvas upload path", () => {
+    expect(imageRefSchema.safeParse("uploads/u_1/canvas/abc.png").success).toBe(true);
+  });
+
   it("rejects path traversal", () => {
     expect(imageRefSchema.safeParse("../x").success).toBe(false);
   });

@@ -22,7 +22,7 @@ export const KIE_PRICES_CHECKED_AT = "2026-11-20";
 /** What one credit is worth on the price list, in USD. Video prices are quoted in it. */
 export const CREDIT_LIST_USD = 0.01;
 
-const VIDEO_MARKUP = 1.55;
+const VIDEO_MARKUP = 1.95;
 const VIDEO_FIXED_USD = 0.15;
 
 /** The most KIE cost one video credit can ever stand for. */
@@ -141,6 +141,9 @@ export const KIE_PER_IMAGE_USD: Record<string, number> = {
   "gpt-image-2-6-economy-1k": 0.025,
   "gpt-image-2-5-1k": 0.03,
   "gpt-image-2-5-2k": 0.05,
+  "gpt-image-2-1k": 0.03,
+  "gpt-image-2-2k": 0.05,
+  "gpt-image-2-4k": 0.08,
   "google/nano-banana-2-1k": 0.04,
   "google/nano-banana-2-2k": 0.06,
   "google/nano-banana-pro-2k": 0.09,

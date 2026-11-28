@@ -13,6 +13,12 @@ import type {
   BillingResponse,
 } from "../types/dashboard";
 
+export class DashboardRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
 class ApiClient {
   private baseUrl = "/api/v1";
 
@@ -32,8 +38,8 @@ class ApiClient {
 
     const data = await response.json();
 
-    if (!data.success) {
-      throw new Error(data.error?.message || "API request failed");
+    if (!response.ok || !data.success) {
+      throw new DashboardRequestError(data.error?.message || "API request failed", response.status);
     }
 
     return data.data as T;
@@ -70,6 +76,13 @@ class ApiClient {
   async deleteVideo(uuid: string): Promise<DeleteVideoResponse> {
     return this.request<DeleteVideoResponse>(`/video/${uuid}`, {
       method: "DELETE",
+    });
+  }
+
+  async restoreVideo(uuid: string, undoToken: string): Promise<{ restored: boolean }> {
+    return this.request(`/video/${uuid}/restore`, {
+      method: "POST",
+      body: JSON.stringify({ undoToken }),
     });
   }
 

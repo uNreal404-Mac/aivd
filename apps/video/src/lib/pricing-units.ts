@@ -35,12 +35,17 @@ export const PRICING_UNITS: PricingUnit[] = [
   { id: "grok-imagine/text-to-video", kind: "video", name: "Grok Imagine", spec: { zh: "6 秒 · 720p", en: "6s · 720p" }, credits: market("grok-imagine/text-to-video", { prompt: "", duration: 6, resolution: "720p" }) },
   { id: "nano-banana-2-1", kind: "image", name: "Nano Banana 2.1", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-2-1", { prompt: "", resolution: "1K" }) },
   { id: "nano-banana-pro", kind: "image", name: "Nano Banana Pro", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("nano-banana-pro", { prompt: "", resolution: "1K" }) },
+  { id: "gpt-image-2", kind: "image", name: "GPT Image 2", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("gpt-image-2", { prompt: "", resolution: "1K" }) },
   { id: "gpt-image-2-6-sunburst", kind: "image", name: "GPT Image 2.6", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("gpt-image-2-6-sunburst", { prompt: "", resolution: "1K" }) },
   { id: "flux3/klein-text-to-image", kind: "image", name: "FLUX 3", spec: { zh: "1K · 每张", en: "1K · per image" }, credits: market("flux3/klein-text-to-image", { prompt: "", resolution: "1K" }) },
   { id: "grok-imagine-image-2-0/text-to-image", kind: "image", name: "Grok Imagine 2.0", spec: { zh: "每张", en: "per image" }, credits: market("grok-imagine-image-2-0/text-to-image", { prompt: "" }) },
   { id: "elevenlabs-turbo-2-5", kind: "audio", name: "Eleven Turbo 2.5", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("elevenlabs-turbo-2-5", { prompt: "x".repeat(1000) }) },
+  { id: "elevenlabs-multilingual-v2", kind: "audio", name: "Eleven Multilingual v2", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("elevenlabs-multilingual-v2", { prompt: "x".repeat(1000) }) },
   { id: "elevenlabs-v3", kind: "audio", name: "Eleven v3", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("elevenlabs-v3", { prompt: "x".repeat(1000) }) },
+  { id: "gemini-3-8-flash-tts", kind: "audio", name: "Gemini 3.8 Flash TTS", spec: { zh: "每 1000 字", en: "per 1,000 chars" }, credits: market("gemini-3-8-flash-tts", { prompt: "x".repeat(1000) }) },
   { id: "suno-music", kind: "audio", name: "Suno V6", spec: { zh: "每首歌", en: "per song" }, credits: market("suno-music", { prompt: "" }) },
+  { id: "suno-sounds", kind: "audio", name: "Suno Sounds", spec: { zh: "每条音效", en: "per SFX clip" }, credits: market("suno-sounds", { prompt: "" }) },
+  { id: "suno-speech", kind: "audio", name: "Suno Speech", spec: { zh: "每段配音", en: "per speech" }, credits: market("suno-speech", { prompt: "" }) },
 ];
 
 /** The cheapest generation of a kind, ignoring models with no price yet. */

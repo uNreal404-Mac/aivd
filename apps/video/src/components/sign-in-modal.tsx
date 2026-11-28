@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { localizedHref } from "@/lib/locale-path";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -33,6 +33,17 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
   const [internalLoginOpen, setInternalLoginOpen] = useState(false);
   const [internalUsername, setInternalUsername] = useState("");
   const [internalPassword, setInternalPassword] = useState("");
+  // After a login link is sent the dialog stays open and says where it went,
+  // with "resend" (after a short wait) and "use another email".
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+  const [resent, setResent] = useState(false);
+  const zh = lang.startsWith("zh");
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
 
   const callbackURL = getSafeCallbackURL(
     landing ?? signInModal.callbackURL ?? searchParams?.get("callbackURL") ?? pathname,
@@ -68,11 +79,14 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
     }
 
     setEmailError("");
-    setSignInClicked("email");
+    await sendLink(email.toLowerCase());
+  };
 
+  const sendLink = async (address: string, again = false) => {
+    setSignInClicked("email");
     try {
       const { error } = await authClient.signIn.magicLink({
-        email: email.toLowerCase(),
+        email: address,
         callbackURL,
       });
 
@@ -82,10 +96,9 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
         return;
       }
 
-      toast.success(t("check_email"), { description: t("check_email_desc") });
-
-      setEmail("");
-      signInModal.onClose();
+      setSentTo(address);
+      setResent(again);
+      setResendIn(60);
     } catch (error) {
       console.error("Magic link signIn error:", error);
       toast.error(t("request_failed"), { description: t("request_failed_desc") });
@@ -137,14 +150,47 @@ export const SignInModalContent = ({ lang, callbackURL: landing }: SignInModalCo
       </div>
 
       <div className="si-body">
-        {siteConfig.auth.enableGoogleLogin && (
+        {sentTo ? (
+          <div className="si-sent" data-presence="fade" aria-live="polite">
+            <Icons.Mail className="h-5 w-5" aria-hidden="true" />
+            <p className="si-sent-title">{zh ? "登录链接已发到你的邮箱" : "Check your email"}</p>
+            <p className="si-sent-to">{sentTo}</p>
+            <p className="si-sent-hint">
+              {resent
+                ? zh ? "已重新发送，请查看最新的一封邮件。" : "Sent again. Open the newest email."
+                : zh ? "点邮件里的链接就能直接登录，第一次用会自动创建账号。没收到的话，看看垃圾邮件，或者稍后重新发送。" : "Click the link in the email to sign in. New here? Your account is created automatically. Didn't get it? Check spam or resend."}
+            </p>
+            <button type="button" className="si-email" disabled={isLoading || resendIn > 0} onClick={() => void sendLink(sentTo, true)}>
+              {signInClicked === "email" ? <Icons.Spinner className="h-4 w-4 animate-spin" /> : <Icons.Mail className="h-4 w-4" />}
+              {resendIn > 0 ? (zh ? `${resendIn} 秒后可重发` : `Resend in ${resendIn}s`) : zh ? "重新发送" : "Resend"}
+            </button>
+            <button
+              type="button"
+              className="si-sent-change"
+              onClick={() => {
+                setSentTo(null);
+                setResent(false);
+                // Straight back to the address, selected, to fix a typo.
+                requestAnimationFrame(() => {
+                  const field = document.getElementById("email") as HTMLInputElement | null;
+                  field?.focus();
+                  field?.select();
+                });
+              }}
+            >
+              {zh ? "换一个邮箱" : "Use another email"}
+            </button>
+          </div>
+        ) : null}
+
+        {!sentTo && siteConfig.auth.enableGoogleLogin && (
           <button type="button" className="si-google" disabled={isLoading} onClick={() => handleSocialLogin("google")}>
             {signInClicked === "google" ? <Icons.Spinner className="h-4 w-4 animate-spin" /> : <Icons.Google className="h-4 w-4" />}
             {t("continue_google")}
           </button>
         )}
 
-        {siteConfig.auth.enableMagicLinkLogin && (
+        {!sentTo && siteConfig.auth.enableMagicLinkLogin && (
           <>
             {siteConfig.auth.enableGoogleLogin && (
               <div className="si-or">

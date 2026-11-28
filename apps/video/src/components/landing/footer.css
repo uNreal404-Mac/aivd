@@ -1,9 +1,13 @@
-/* Footer laid out after the reference site's: a full-width accent block with
-   the brand on the left and the site directory in columns, then a dark bar. */
+/* Obsidian studio footer: deep carbon surface, subtle Logo cyan-blue top
+   hairline wash, crisp white & muted silver typography (Higgsfield × Pollo). */
 
 .ft {
-  background: var(--du-accent);
-  color: var(--du-on-accent);
+  position: relative;
+  border-top: 1px solid var(--ds-line-2);
+  background:
+    radial-gradient(62% 220px at 50% 0%, color-mix(in srgb, var(--du-accent) 9%, transparent), transparent 72%),
+    var(--du-bg-elev);
+  color: var(--ds-text-1);
 }
 
 .ft-main {
@@ -12,32 +16,33 @@
   gap: 32px;
   max-width: 1680px;
   margin: 0 auto;
-  padding: 72px 24px 88px;
+  padding: 64px 24px 72px;
 }
 
 .ft-logo {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--du-on-accent);
+  color: var(--ds-text-1);
   font-size: var(--ds-fs-2xl);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 /* The logo carries its own dark tile, so it needs no chip here. */
 .ft-logo-img {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--ds-r-sm);
 }
 
 .ft-tagline {
   margin-top: 14px;
   max-width: 320px;
-  color: var(--du-on-accent);
-  font-size: clamp(24px, 2.2vw, 34px);
-  font-weight: 900;
-  line-height: 1.1;
+  color: var(--ds-text-2);
+  font-size: clamp(var(--ds-fs-xl), 2vw, var(--ds-fs-2xl));
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .ft-col {
@@ -49,24 +54,27 @@
 .ft-group ul {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ft-group-title {
-  margin-bottom: 14px;
-  color: color-mix(in srgb, var(--du-on-accent) 68%, transparent);
-  font-size: var(--ds-fs-md);
+  margin-bottom: 12px;
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .ft-link {
-  color: var(--du-on-accent);
-  font-size: var(--ds-fs-md);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-sm);
   font-weight: 500;
-  transition: opacity 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
 .ft-link:hover {
-  opacity: 0.6;
+  color: var(--du-accent-text);
 }
 
 .ft-bottom {
@@ -75,10 +83,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 22px 24px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--ds-line-1);
   background: var(--du-bg);
-  color: color-mix(in srgb, var(--ds-text-1) 60%, transparent);
-  font-size: var(--ds-fs-sm);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-xs);
 }
 
 .ft-bottom-links {
@@ -89,7 +98,7 @@
 
 .ft-bottom-links a {
   color: white;
-  transition: color 150ms ease;
+  transition: color var(--m-instant) var(--m-ease-out);
 }
 
 .ft-lang {

@@ -1,3 +1,4 @@
+import { assertMediaAccount } from "@/lib/api/media-account";
 import { nanoid } from "nanoid";
 import { db, mediaAssets } from "@/db";
 
@@ -28,6 +29,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
+    assertMediaAccount(request, user.id);
 
     if (!isStorageConfigured()) {
       throw new ApiError("Storage not configured", 503);
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+    const canvasUpload = formData.get("scope") === "canvas";
 
     if (!(file instanceof File)) {
       throw new ApiError("Missing file", 400);
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const ext = file.name.split(".").pop() || "jpg";
-    const key = `uploads/${user.id}/${nanoid()}.${ext}`;
+    const key = `uploads/${user.id}/${canvasUpload ? "canvas/" : ""}${nanoid()}.${ext}`;
 
     const storage = getStorage();
     const buffer = Buffer.from(await file.arrayBuffer());

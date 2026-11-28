@@ -1,0 +1,166 @@
+/* History controls and portal menus shared by image and video workspaces. */
+.vst-menu {
+  z-index: 60;
+  display: flex;
+  min-width: 160px;
+  max-width: min(280px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 16px));
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  padding: var(--ds-space-2);
+  border-radius: var(--ds-r-lg);
+  background: color-mix(in srgb, var(--du-surface-2) 80%, transparent);
+  box-shadow:
+    0 0 0 1px var(--ds-line-1),
+    var(--ds-shadow-float);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  transform-origin: bottom left;
+}
+
+.vst-menu-title {
+  display: flex;
+  min-height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 var(--ds-space-2);
+  color: var(--ds-text-4);
+  font-size: var(--ds-fs-xs);
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.vst-menu-item {
+  display: flex;
+  min-height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+  padding: 0 var(--ds-space-2);
+  border-radius: var(--ds-r-sm);
+  color: var(--ds-text-1);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  text-align: left;
+  transition: background-color var(--m-instant) var(--m-ease-out);
+}
+
+.vst-menu-item:hover,
+.vst-menu-item:focus-visible,
+.vst-menu-item[aria-checked="true"] {
+  background: var(--ds-fill-1);
+}
+
+.vst-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.vst-bar-button {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--ds-space-3);
+  border-radius: var(--ds-r-md);
+  background: var(--ds-fill-1);
+  color: var(--ds-text-3);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  transition:
+    background-color var(--m-instant) var(--m-ease-out),
+    color var(--m-instant) var(--m-ease-out),
+    transform var(--m-instant) var(--m-ease-out);
+}
+
+.vst-bar-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.vst-bar-button:hover,
+.vst-bar-button[aria-expanded="true"] {
+  background: var(--ds-fill-2);
+  color: var(--ds-text-1);
+}
+
+.vst-bar-button[data-active] {
+  color: var(--ds-text-1);
+}
+
+.vst-bar-button:active {
+  transform: scale(0.97);
+}
+
+.vst-filter-menu {
+  width: 220px;
+}
+
+.vst-bar-item {
+  justify-content: flex-start;
+}
+
+.vst-bar-item-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--ds-text-2);
+}
+
+.vst-bar-item-label {
+  min-width: 0;
+  flex: 1;
+}
+
+.vst-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-fill-4);
+  transition: background-color var(--m-fast) var(--m-ease-out);
+}
+
+.vst-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-text-1);
+  content: "";
+  transition: transform var(--m-fast) var(--m-ease-out);
+}
+
+.vst-switch-on {
+  background: var(--du-accent);
+}
+
+.vst-switch-on::after {
+  background: var(--du-on-accent);
+  transform: translateX(12px);
+}
+
+.vst-menu [data-highlighted], .vst-menu [role="menuitem"][data-state="open"] {
+  border-radius: var(--ds-r-sm);
+  background: var(--ds-fill-2);
+  outline: none;
+}
+.vst-filter-models { width: min(250px, calc(100vw - 16px)); }
+.vst-date-menu { width: min(270px, calc(100vw - 16px)); }
+.vst-calendar { position: relative; }
+.vst-calendar table { width: 100%; text-align: center; }
+.vst-calendar [role="status"] { display: block; text-align: center; }
+.vst-calendar button {
+  padding: 4px;
+  border-radius: var(--ds-r-sm);
+  font-size: var(--ds-fs-sm);
+}
+.vst-calendar button:hover, .vst-calendar [aria-selected="true"] button { background: var(--ds-fill-2); }
+.vst-calendar nav { position: absolute; inset: 0 0 auto; display: flex; justify-content: space-between; pointer-events: none; }
+.vst-calendar nav button { pointer-events: auto; }
+.vst-calendar svg { width: 16px; height: 16px; fill: currentColor; }
+.vst-calendar .rdp-month_caption { min-height: 32px; text-align: center; }

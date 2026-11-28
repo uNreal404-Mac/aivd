@@ -27,9 +27,11 @@ export default async function AudioPage({
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   const mode = typeof query.voiceMode === "string" ? query.voiceMode : "";
   const model = typeof query.audioModel === "string" ? query.audioModel : "";
+  // "Generate again" from My creations opens with that creation's script.
+  const prompt = typeof query.prompt === "string" ? query.prompt.slice(0, 5000) : "";
   return (
     <ToolLanding>
-      <AiAudioStudio key={`${mode}:${model}`} locale={locale} initialVoiceMode={mode} initialModelId={model} />
+      <AiAudioStudio key={`${mode}:${model}:${prompt}`} locale={locale} initialVoiceMode={mode} initialModelId={model} initialPrompt={prompt} />
       <FeatureContent kind="audio" locale={locale} />
     </ToolLanding>
   );
